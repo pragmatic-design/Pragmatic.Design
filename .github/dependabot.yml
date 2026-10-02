@@ -14,7 +14,8 @@ updates:
 
   # Minor and patch only. A major of Astro, Starlight or TypeScript changes the site's configuration, and
   # bundled together they arrive as one red pull request nobody can merge; a major is an upgrade done on
-  # purpose, in its own change.
+  # purpose, in its own change. Below 1.0 a minor is the breaking step: Starlight 0.38 to 0.42 rejected
+  # the site's configuration, so the 0.x packages get patches only.
   - package-ecosystem: npm
     directory: /site
     schedule:
@@ -25,6 +26,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@astrojs/starlight"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "sharp"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: github-actions
     directory: /
