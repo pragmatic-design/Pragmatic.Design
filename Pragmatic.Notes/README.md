@@ -4,8 +4,6 @@ Add internal staff notes to any Pragmatic entity with a single attribute.
 
 `Pragmatic.Notes` is the "internal annotation" sibling of `Pragmatic.Comments`: flat notes, no threading, no anonymous authors, and no public-facing discussion model.
 
-> Status: functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
-
 ## The Problem
 
 Internal notes are common in line-of-business systems, but they still require repetitive boilerplate:
@@ -138,6 +136,11 @@ Both `Update` and `Delete` require the caller to be the author **or** to hold
 - `Pragmatic.Notes` is for staff-only internal annotations
 
 Use one or both depending on the domain.
+
+## Status
+
+**Functional** within 1.0.0-alpha — the `[HasNotes<TParent>]` trait with its entity, actions and
+endpoints, tested end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

@@ -88,9 +88,9 @@ dotnet add package Pragmatic.SourceGenerator   # generates the strongly-typed T 
 
 ## Status
 
-Preview (`1.0.0-alpha`) — the five pillars, the translation generator, and the ASP.NET Core /
-EF Core integrations are in place and API-settled, but the surface may still change before the
-stable release. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) and [CHANGELOG](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Internationalization/CHANGELOG.md).
+**Functional** within 1.0.0-alpha — the five pillars, the translation generator, and the ASP.NET Core and
+EF Core integrations; the surface may still change before 1.0. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) and
+the [CHANGELOG](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Internationalization/CHANGELOG.md).
 
 | [Concepts](/modules/i18n/concepts/) | The five pillars in depth: culture context, Money/Currency, formatting, plural rules, humanizers, integrations |
 | [Getting Started](/modules/i18n/getting-started/) | Translations, Money, formatting, and humanizers from zero |

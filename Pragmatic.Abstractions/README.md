@@ -40,7 +40,7 @@ dotnet add package Pragmatic.Abstractions
 
 ## Status
 
-Stable within 1.0.0-alpha — the contract surface is the ecosystem's foundation. See the
+**Stable** within 1.0.0-alpha — the contract surface is the ecosystem's foundation. See the
 [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

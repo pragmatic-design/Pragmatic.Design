@@ -53,6 +53,12 @@ Generated contract test classes join the `PragmaticContractTests` xUnit collecti
 `PragmaticContractTestBase` exposes the shared `Client` wired once by the collection
 fixture — no per-class setup.
 
+## Status
+
+**Functional** within 1.0.0-alpha — generated contract tests, the typed test client (`Api.*`), and the
+HTTP assertions; four of the reference applications' suites run on it. See the
+[roadmap](../docs/ROADMAP.md).
+
 ## Documentation
 
 | Guide | What it covers |

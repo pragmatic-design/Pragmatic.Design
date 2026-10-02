@@ -142,8 +142,8 @@ guard side effects by a business key. In cross-boundary scenarios, publish throu
 
 ## Status
 
-Core handler pipeline, outbox, sagas, transports, and batch are functional within 1.0.0-alpha; see
-the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for what is settling before 1.0.
+**Functional** within 1.0.0-alpha — the handler pipeline, the outbox, sagas, the transports, and batch.
+See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/messaging/concepts/) | Message lifecycle, handler pipeline, transport architecture, registration, Events vs Messaging |
 | [Getting Started](/modules/messaging/getting-started/) | Define a message, handler, publish, configure a transport |

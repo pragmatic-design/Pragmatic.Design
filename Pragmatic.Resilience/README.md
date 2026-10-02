@@ -83,8 +83,8 @@ and reads the message side out of the generated pipeline.
 
 ## Status
 
-The strategy set, pipeline composition, DI integration, and the `[ResiliencePolicy]` generator are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the strategy set, pipeline composition, DI integration, and the
+`[ResiliencePolicy]` generator. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

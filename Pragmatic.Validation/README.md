@@ -101,7 +101,7 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 ## Status
 
-Stable within 1.0.0-alpha — the attribute set, sync/async validators, and the L1/L2 pipeline are
+**Stable** within 1.0.0-alpha — the attribute set, sync/async validators, and the L1/L2 pipeline are
 settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

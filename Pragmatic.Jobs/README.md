@@ -109,8 +109,8 @@ actionable message rather than running on the in-memory store.
 
 ## Status
 
-Recurring/delayed jobs, retry/timeout, continuations, EF Core persistence, and distributed locking are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — recurring and delayed jobs, retry and timeout, continuations, EF Core
+persistence, and distributed locking. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

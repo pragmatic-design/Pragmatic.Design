@@ -60,8 +60,8 @@ referencing any of these.
 
 ## Status
 
-Tenant resolution strategies, shared-schema filtering, DB-per-tenant, and non-HTTP propagation are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — tenant resolution strategies, shared-schema filtering,
+database-per-tenant, and non-HTTP propagation. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/multi-tenancy/concepts/) | The tenancy model, `ITenantEntity`, ambient context, cache scoping |
 | [Getting Started](/modules/multi-tenancy/getting-started/) | Mark entities, choose a resolver, wire the middleware |

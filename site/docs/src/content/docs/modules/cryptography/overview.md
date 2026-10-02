@@ -185,6 +185,11 @@ each ring key under the legacy framing. New writes always use the versioned form
 - It is **not a KMS**. It integrates with an external secret store as a key source; it does not replace one.
 - It cannot protect against a process that already holds the keys in memory.
 
+## Status
+
+**Preview** within 1.0.0-alpha — key management, encryption at rest, and per-subject keys for
+crypto-shredding; one reference application (Time off) uses them. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10.0+

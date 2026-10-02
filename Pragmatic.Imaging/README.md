@@ -4,8 +4,6 @@ Image processing for .NET via a Rust native library.
 
 `Pragmatic.Imaging` is designed for AOT-friendly server-side image work: decode, encode, resize, crop, rotate, filter, inspect, and generate QR codes without pulling in large managed imaging stacks.
 
-> Status: implemented preview package. The runtime is real and tested. The package ships native binaries for `win-x64`, `linux-x64` (glibc) and `osx-arm64` — the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner; no test runs it on macOS yet (see [native-deployment.md](docs/native-deployment.md)).
-
 ## Features
 
 - Decode and encode: PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF
@@ -110,6 +108,14 @@ Important public entrypoints:
   memory the .NET GC cannot reclaim. A pipeline is not thread-safe: do not use one from
   several threads. The static helpers (`ImageConverter`, `ImageBatch`) create and dispose
   their own pipelines.
+
+## Status
+
+**Preview** within 1.0.0-alpha — decoding, encoding, resizing, cropping, rotation, filters and QR codes
+run on a native library. The package ships native binaries for `win-x64`, `linux-x64` (glibc) and
+`osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner,
+and no test runs it on macOS yet ([native-deployment.md](docs/native-deployment.md)). See the
+[roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

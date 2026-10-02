@@ -97,7 +97,7 @@ production. Domain code is unchanged across environments.
 
 ## Status
 
-Stable within 1.0.0-alpha — the `IFileStorage` contract, `LocalDiskFileStorage`, and the Azure/S3
+**Stable** within 1.0.0-alpha — the `IFileStorage` contract, `LocalDiskFileStorage`, and the Azure/S3
 providers are settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/storage/concepts/) | The abstraction, container organization, entity file-reference pattern |

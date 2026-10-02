@@ -46,7 +46,7 @@ dotnet add package Pragmatic.Abstractions
 
 ## Status
 
-Stable within 1.0.0-alpha — the contract surface is the ecosystem's foundation. See the
+**Stable** within 1.0.0-alpha — the contract surface is the ecosystem's foundation. See the
 [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/abstractions/concepts/) | Why Layer 0 exists, what belongs here, what doesn't |

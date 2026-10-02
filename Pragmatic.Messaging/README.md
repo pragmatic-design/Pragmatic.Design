@@ -136,8 +136,8 @@ guard side effects by a business key. In cross-boundary scenarios, publish throu
 
 ## Status
 
-Core handler pipeline, outbox, sagas, transports, and batch are functional within 1.0.0-alpha; see
-the [roadmap](../docs/ROADMAP.md) for what is settling before 1.0.
+**Functional** within 1.0.0-alpha — the handler pipeline, the outbox, sagas, the transports, and batch.
+See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

@@ -107,7 +107,7 @@ Full walkthrough: [Getting Started](/modules/validation/getting-started/).
 
 ## Status
 
-Stable within 1.0.0-alpha — the attribute set, sync/async validators, and the L1/L2 pipeline are
+**Stable** within 1.0.0-alpha — the attribute set, sync/async validators, and the L1/L2 pipeline are
 settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/validation/concepts/) | L1/L2 model, sync vs async, change-aware validation, decision guide |

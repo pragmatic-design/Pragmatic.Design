@@ -55,7 +55,7 @@ dotnet add package Pragmatic.Ensure
 
 ## Status
 
-Stable within 1.0.0-alpha — the guard surface is settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Stable** within 1.0.0-alpha — the guard surface is settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/ensure/concepts/) | Guards vs Result, the precondition boundary, design |
 | [Getting Started](/modules/ensure/getting-started/) | Your first guards |

@@ -63,6 +63,11 @@ from here and **still carries the rest of its set on its own** — national iden
 credentials (AWS keys, GitHub tokens, Stripe keys, private keys), which are a different problem from
 personal data and are not in scope here.
 
+## Status
+
+**Preview** within 1.0.0-alpha — the personal-data shapes recognised in free text, used by the logging
+and audit modules and by the composed host. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10.0+

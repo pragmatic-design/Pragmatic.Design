@@ -49,9 +49,9 @@ dotnet add package Pragmatic.Logging
 
 ## Status
 
-The builder, providers (console, rolling file, JSON, NDJSON, memory, debug, null, Windows Event Log),
-presets, redaction, audit trail, rate limiting, and context enrichment are functional within
-1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the builder, the providers (console, rolling file, JSON, NDJSON,
+memory, debug, null, Windows Event Log), presets, redaction, the audit trail, rate limiting, and context
+enrichment. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

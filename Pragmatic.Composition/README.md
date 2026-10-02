@@ -99,8 +99,8 @@ dotnet add package Pragmatic.SourceGenerator   # the unified analyzer
 
 ## Status
 
-The composition model, service/decorator registration, startup steps, builder, remote boundaries, and
-maintenance mode are functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the composition model, service/decorator registration, startup steps,
+the builder, remote boundaries, and maintenance mode. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

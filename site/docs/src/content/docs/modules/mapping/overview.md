@@ -189,8 +189,8 @@ ambiguous call does not compile rather than being flagged after the fact.
 
 ## Status
 
-Stable within 1.0.0-alpha — the attribute surface and generated API are settled; see the
-[roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for what is still moving before 1.0.
+**Stable** within 1.0.0-alpha — the attribute surface and generated API are settled. See the
+[roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/mapping/concepts/) | Architecture, core concepts, and decision guide |
 | [Getting Started](/modules/mapping/getting-started/) | Your first mapping from entity to DTO |

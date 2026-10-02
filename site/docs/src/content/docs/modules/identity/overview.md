@@ -95,8 +95,8 @@ Full walkthrough: [Getting Started](/modules/identity/getting-started/).
 
 ## Status
 
-`ICurrentUser`, local identity, JWT, and EF-backed persistence are functional within 1.0.0-alpha.
-See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `ICurrentUser`, local identity, JWT, and EF-backed persistence. See
+the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/identity/concepts/) | `ICurrentUser` model, claim mapping, accessors, the permission chain |
 | [Getting Started](/modules/identity/getting-started/) | Wire authentication, consume the current user |

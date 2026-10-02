@@ -4,8 +4,6 @@ Add normalized many-to-many tags to any Pragmatic entity with a single attribute
 
 `Pragmatic.Tags` is a trait package that generates the shared tag entity, junction entity, actions, and endpoints in the consuming boundary.
 
-> Status: functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
-
 ## The Problem
 
 Tagging looks simple until you try to keep it consistent:
@@ -141,6 +139,11 @@ public sealed class ArticleTagPolicy : ITagPolicy<Guid>
 // Registration
 services.AddScoped<ITagPolicy<Guid>, ArticleTagPolicy>();
 ```
+
+## Status
+
+**Functional** within 1.0.0-alpha — the `[HasTags]` trait with its entity, actions and endpoints, tested
+end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

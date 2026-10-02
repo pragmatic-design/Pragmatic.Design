@@ -54,8 +54,8 @@ referencing any of these.
 
 ## Status
 
-Tenant resolution strategies, shared-schema filtering, DB-per-tenant, and non-HTTP propagation are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — tenant resolution strategies, shared-schema filtering,
+database-per-tenant, and non-HTTP propagation. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

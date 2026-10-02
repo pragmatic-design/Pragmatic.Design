@@ -69,8 +69,8 @@ dotnet add package Pragmatic.SourceGenerator   # generates the patch types
 
 ## Status
 
-`Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization, and `ModifiedProperties` tracking are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization,
+and `ModifiedProperties` tracking. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/patch/concepts/) | Tri-state, `Optional<T>`, generated apply logic, change tracking |
 | [Getting Started](/modules/patch/getting-started/) | Your first patch DTO and `ApplyTo` |

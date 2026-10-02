@@ -71,8 +71,8 @@ dotnet add package Pragmatic.SourceGenerator   # generates permission constants/
 
 ## Status
 
-Roles, groups, wildcard permissions, resource authorizers, and the permission cache are functional
-within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — roles, groups, wildcard permissions, resource authorizers, and the
+permission cache. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/authorization/concepts/) | Mental model, permission strings, the resolution chain, where authorization runs |
 | [Getting Started](/modules/authorization/getting-started/) | Protect an action, define permissions, map a role |

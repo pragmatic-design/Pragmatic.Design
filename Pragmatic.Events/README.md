@@ -57,9 +57,9 @@ dotnet add package Pragmatic.Events.EFCore   # post-SaveChanges interceptor disp
 
 ## Status
 
-Raise/dispatch/handle, handler ordering, continue-on-failure, declarative lifecycle events
-(`[Raises<T>]`), the EF Core interceptor, and the transactional outbox are functional within
-1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — raise, dispatch and handle, handler ordering, continue-on-failure,
+declarative lifecycle events (`[Raises<T>]`), the EF Core interceptor, and the transactional outbox. See
+the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

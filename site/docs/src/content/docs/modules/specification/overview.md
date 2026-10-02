@@ -46,7 +46,7 @@ dotnet add package Pragmatic.Specification
 
 ## Status
 
-Stable within 1.0.0-alpha — composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
+**Stable** within 1.0.0-alpha — composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
 evaluation are settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/specification/concepts/) | The pattern, expression vs delegate, when to use it |

@@ -205,8 +205,8 @@ every call site as an authorization boundary. See [Query Filters](/modules/persi
 
 ## Status
 
-Core entity/repository/query/mutation surface is stable within 1.0.0-alpha; some advanced areas are
-still settling. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for what is moving before 1.0.
+**Stable** within 1.0.0-alpha — the core entity, repository, query and mutation surface is settled; some
+advanced areas are still settling. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Documentation
 

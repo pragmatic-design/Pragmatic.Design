@@ -86,8 +86,8 @@ the markup cannot express (styling, page-number fields, hyperlinks) — see
 
 ## Status
 
-PDF, DOCX, HTML email, CSV, and XLSX rendering are functional within 1.0.0-alpha. Note: parsing is
-currently in-memory — see the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for streaming and large-file guidance.
+**Functional** within 1.0.0-alpha — PDF, DOCX, HTML email, CSV, and XLSX rendering. Parsing is currently
+in-memory; see the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for streaming and large files.
 
 | [Concepts](/modules/documents/concepts/) | The model-first architecture, choosing a package |
 | [Getting Started](/modules/documents/getting-started/) | Build a model and render it |

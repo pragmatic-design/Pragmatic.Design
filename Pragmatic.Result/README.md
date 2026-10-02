@@ -126,7 +126,7 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 ## Status
 
-Stable within 1.0.0-alpha — the core `Result` API, error types, and the ASP.NET Core and EF Core
+**Stable** within 1.0.0-alpha — the core `Result` API, error types, and the ASP.NET Core and EF Core
 integrations are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

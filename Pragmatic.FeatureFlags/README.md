@@ -58,8 +58,8 @@ dotnet add package Pragmatic.FeatureFlags.Configuration   # optional: flags read
 
 ## Status
 
-The evaluation engine, targeting rules, deterministic bucketing, strongly-typed flags, and stores are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the evaluation engine, targeting rules, deterministic bucketing,
+strongly-typed flags, and the stores. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

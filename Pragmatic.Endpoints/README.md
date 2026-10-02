@@ -103,8 +103,8 @@ All of these are attribute/convention-driven and documented in depth (see Docume
 
 ## Status
 
-The endpoint pipeline, binding, groups, versioning, rate-limiting, caching, and DomainAction/Query/
-Mutation integration are functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the endpoint pipeline, binding, groups, versioning, rate limiting,
+caching, and the DomainAction/Query/Mutation integration. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

@@ -39,8 +39,8 @@ modules, cross-host `ReadAccess`, and provider mismatches.
 
 ## Status
 
-Topology registration, querying, validation, and the in-memory and Agent backends are functional
-within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — topology registration, querying, validation, and the in-memory and
+Agent backends. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

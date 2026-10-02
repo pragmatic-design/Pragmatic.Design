@@ -145,6 +145,11 @@ anyone's data, and it is not verifiable.
 
 See the [threat model](../docs/security/threat-model-compliance.md).
 
+## Status
+
+**Functional** within 1.0.0-alpha — the append-only trail, sealing and verification, and retention; four
+of the reference applications use it. See the [roadmap](../docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10.0+
