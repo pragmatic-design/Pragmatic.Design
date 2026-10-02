@@ -7,6 +7,9 @@ name: Release
 # No API key is stored. Trusted Publishing exchanges this job's GitHub OIDC token for a nuget.org key
 # valid for an hour; the policy on nuget.org names this repository, this file and the `nuget`
 # environment, so no other workflow can publish under it.
+#
+# Every package pushed carries a signed build-provenance attestation (which repository, commit and
+# workflow built it), and the gate's SBOMs are attached to the GitHub Release that changelog.yml creates.
 
 on:
   push:
@@ -31,7 +34,8 @@ jobs:
     environment: nuget
     permissions:
       contents: read
-      id-token: write
+      id-token: write       # the nuget.org login, and the Sigstore certificate that signs the attestation
+      attestations: write   # storing the attestation with the repository
 
     steps:
       - name: Download the validated packages
@@ -59,6 +63,13 @@ jobs:
           [ "$wrong" -eq 0 ]
           echo "$(ls ./artifacts/*.nupkg | wc -l) packages at $version"
 
+      # Before the push, over the exact files pushed. Anyone can check a package downloaded from nuget.org
+      # with `gh attestation verify <file>.nupkg --repo pragmatic-design/Pragmatic.Design`.
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ./artifacts/*.nupkg
+
       - name: Setup .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -78,3 +89,34 @@ jobs:
           --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
+
+  # Its own job, so the publishing job never holds a token that can write to the repository.
+  sbom:
+    name: Attach the SBOM to the release
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # uploading a release asset
+
+    steps:
+      - name: Download the gate's SBOMs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sbom
+          path: ./sbom
+
+      # changelog.yml creates the release as soon as the tag is pushed; this job runs after the whole gate
+      # and the approval, so the release is there. If it is not, fail rather than create a second one.
+      - name: Attach
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          archive="sbom-${TAG#nuget-v}.zip"
+          (cd sbom && zip -q -r "../$archive" .)
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh release upload "$TAG" "$archive" --repo "$GITHUB_REPOSITORY" --clobber
+          echo "$(ls sbom | wc -l) SBOMs attached as $archive"
