@@ -7,7 +7,7 @@ sidebar:
   label: Overview
 ---
 Source-generated CQRS-style domain actions for .NET 10. Declare the operation; the generator writes
-the pipeline — DI, validation, authorization, telemetry, persistence — at compile time, with no
+the pipeline (DI, validation, authorization, telemetry, persistence) at compile time, with no
 reflection on the executed path.
 
 ## The Problem
@@ -62,7 +62,7 @@ public partial class CreateReservationAction : DomainAction<Guid, NotFoundError,
 ```
 
 The generator produces the invoker pipeline, DI/field injection, authorization enforcement, validation,
-telemetry, and persistence. For entity CRUD it collapses even further — a `Mutation<T>` is the whole
+telemetry, and persistence. For entity CRUD it collapses even further: a `Mutation<T>` is the whole
 class (property mapping, lifecycle, validation, persistence, DI all generated):
 
 ```csharp
@@ -82,7 +82,7 @@ public partial class CreateAmenityMutation : Mutation<Amenity>
 |------------|-----|---------|
 | `DomainAction<TReturn>` (`<TReturn, TError>`) | Custom logic: orchestrate repos, compute, call services | `Result<TReturn, …>` |
 | `VoidDomainAction` | Commands with no return value | `VoidResult` |
-| `Mutation<TEntity>` | Entity CRUD (create/update/delete) — minimal boilerplate | the entity |
+| `Mutation<TEntity>` | Entity CRUD (create/update/delete), minimal boilerplate | the entity |
 
 Operation taxonomy (Mutation / SideEffect / Query) and the pipeline (filters → execute → save →
 after-hooks) are covered in [Concepts](/modules/actions/concepts/).
@@ -98,19 +98,19 @@ dotnet add package Pragmatic.SourceGenerator   # the unified analyzer
 
 ## What the generator gives you
 
-- **Invoker pipeline** — before/after filters, validation, authorization, save ordering, telemetry.
-- **DI & field injection** — private fields resolved automatically; no constructor boilerplate.
-- **Authorization** — `[RequirePermission]` / `[RequirePolicy]` enforced in the pipeline.
-- **Validation** — runs before `Execute()` by default, the synchronous rules first and the async
+- **Invoker pipeline**: before/after filters, validation, authorization, save ordering, telemetry.
+- **DI & field injection**: private fields resolved automatically; no constructor boilerplate.
+- **Authorization**: `[RequirePermission]` / `[RequirePolicy]` enforced in the pipeline.
+- **Validation**: runs before `Execute()` by default, the synchronous rules first and the async
   validators declared for it after; `[Validate]` only changes that default and `[NoValidation]`
   switches it off.
-- **Boundaries** — the namespace decides the boundary (and the sub-boundary group); `[BelongsTo<T>]`
+- **Boundaries**: the namespace decides the boundary (and the sub-boundary group); `[BelongsTo<T>]`
   names it explicitly, and it keys the unit of work / DbContext.
 - **Action versioning**, **entity pre-loading**, and **composite (single-transaction) actions**.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the DomainAction/Mutation pipeline, filters, authorization,
+**Functional** within 1.0.0-alpha: the DomainAction/Mutation pipeline, filters, authorization,
 validation, boundaries, and versioning. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/actions/concepts/) | Pipeline lifecycle, operation taxonomy, base-class decision guide, composite actions |
@@ -136,6 +136,6 @@ Actions are invoked by [Endpoints](/modules/endpoints/overview/), persist via
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/actions/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/actions/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Actions is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

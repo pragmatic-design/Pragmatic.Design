@@ -69,12 +69,12 @@ public partial class Article : IEntity
 Generated workflows, under `/api/{boundary}/articles/{articleId}/tags` (`{boundary}` is the lowercased
 boundary name, or `v1` when the entity has no `[BelongsTo<TBoundary>]`):
 
-- `POST   …/tags` — add a tag to an entity
-- `GET    …/tags` — list the tags on an entity (paged)
-- `DELETE …/tags/{tagId}` — remove a tag from an entity
+- `POST   …/tags`: add a tag to an entity
+- `GET    …/tags`: list the tags on an entity (paged)
+- `DELETE …/tags/{tagId}`: remove a tag from an entity
 
-Each route is gated on a generated permission constant — `ArticleTagPermissions.Add`, `.Remove`, `.Read`
-= `{boundary}.article.tags.{add|remove|read}`, boundary and entity in kebab-case — so a caller without
+Each route is gated on a generated permission constant: `ArticleTagPermissions.Add`, `.Remove`, `.Read`
+= `{boundary}.article.tags.{add|remove|read}`, boundary and entity in kebab-case, so a caller without
 it receives 403. Without a boundary the first segment is **omitted** (`article.tags.add`), unlike the
 other traits, which use `app`: tags predate that fallback and existing grants depend on the shape.
 
@@ -115,7 +115,7 @@ default implementations, so override only what you need:
 
 | Member | When the generated action calls it |
 |--------|-------------------------------------|
-| `Task<bool> IsAllowedAsync(string tagValue, CancellationToken)` | On **add**, before anything else — return `false` to reject the value (`ForbiddenError`). Default allows any non-blank value. |
+| `Task<bool> IsAllowedAsync(string tagValue, CancellationToken)` | On **add**, before anything else: return `false` to reject the value (`ForbiddenError`). Default allows any non-blank value. |
 | `string Normalize(string tagValue)` | On **add**, to normalize the value before storage/matching (overrides the built-in trim/lowercase, honoring `CaseSensitive` only in the default path). |
 | `Task OnTagAddedAsync(TEntityId entityId, Guid tagId, string tagValue, CancellationToken)` | On **add**, after the junction is created (audit, projections, notifications). |
 | `Task OnTagRemovedAsync(TEntityId entityId, Guid tagId, string tagValue, CancellationToken)` | On **remove**, after the junction is removed. |
@@ -142,7 +142,7 @@ services.AddScoped<ITagPolicy<Guid>, ArticleTagPolicy>();
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the `[HasTags]` trait with its entity, actions and endpoints, tested
+**Functional** within 1.0.0-alpha: the `[HasTags]` trait with its entity, actions and endpoints, tested
 end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -166,5 +166,5 @@ Related modules:
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Tags is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

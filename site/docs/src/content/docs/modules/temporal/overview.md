@@ -41,7 +41,7 @@ transitions are handled correctly.
 | `Pragmatic.Temporal.AspNetCore` | Middleware, timezone detection, model binding |
 | `Pragmatic.Temporal.Testing` | `TestClock`, `TestTemporalContext`, `TestHolidayProvider` |
 | `Pragmatic.Temporal.Internationalization` | Culture-aware display formatting for `LocalDateTime`/`ZonedDateTime` via Pragmatic.Internationalization |
-| `Pragmatic.Temporal.Analyzers` / `.CodeFixers` | Diagnostics PRAG0900-0904 — `DateTime.Now`/`Today` instead of `IClock`, a `DateTime` without a `Kind`, a `DateTimeOffset` compared with relational operators — with fixes |
+| `Pragmatic.Temporal.Analyzers` / `.CodeFixers` | Diagnostics PRAG0900-0904: `DateTime.Now`/`Today` instead of `IClock`, a `DateTime` without a `Kind`, a `DateTimeOffset` compared with relational operators, with fixes |
 
 ## Installation
 
@@ -70,12 +70,12 @@ Full walkthrough: [Getting Started](/modules/temporal/getting-started/).
 
 ## Status
 
-**Stable** within 1.0.0-alpha — the type set, calendar/business-day arithmetic, DST handling, and the
+**Stable** within 1.0.0-alpha: the type set, calendar/business-day arithmetic, DST handling, and the
 JSON/EF Core/ASP.NET integrations are settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/temporal/concepts/) | Type = scope, `IClock`, the mental model, NodaTime comparison |
 | [Getting Started](/modules/temporal/getting-started/) | First temporal types, arithmetic, injecting `IClock` |
-| [Core Types](/modules/temporal/core-types/) | `LocalDate`/`LocalTime`/`LocalDateTime`/`ZonedDateTime`/`Duration`/… — full reference |
+| [Core Types](/modules/temporal/core-types/) | `LocalDate`/`LocalTime`/`LocalDateTime`/`ZonedDateTime`/`Duration`/…: full reference |
 | [Business Days](/modules/temporal/business-days/) | Holiday providers, business-day arithmetic, cron |
 | [DST Handling](/modules/temporal/dst-handling/) | Ambiguous/non-existent local times, safe conversions |
 | [Testing](/modules/temporal/testing/) | `TestClock` and deterministic time |
@@ -91,5 +91,5 @@ JSON/EF Core/ASP.NET integrations are settled. See the [roadmap](https://github.
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/temporal/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/temporal/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Temporal is **MIT-licensed**.

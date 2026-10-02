@@ -1,12 +1,12 @@
 ---
 title: "Pragmatic.Identity"
-description: "Identity and authentication for the Pragmatic.Design ecosystem — a structured `ICurrentUser` that works"
+description: "Identity and authentication for the Pragmatic.Design ecosystem: a structured `ICurrentUser` that works"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Identity/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Identity and authentication for the Pragmatic.Design ecosystem — a structured `ICurrentUser` that works
+Identity and authentication for the Pragmatic.Design ecosystem: a structured `ICurrentUser` that works
 in HTTP requests, background jobs, and tests, layering up to database-backed identity with temporal
 roles and groups.
 
@@ -27,7 +27,7 @@ var userId = principal?.FindFirst("sub")?.Value
 
 Replace `ClaimsPrincipal` with a structured `ICurrentUser` (identity + authorization + authentication
 sub-objects). Claim mapping is centralized and configurable; the same code runs across HTTP
-(`ClaimsPrincipalUserAccessor`), background jobs (`SystemUser`), and tests — unchanged. Dev vs
+(`ClaimsPrincipalUserAccessor`), background jobs (`SystemUser`), and tests, unchanged. Dev vs
 production auth switches by configuration (HTTP headers in dev, JWT in production).
 
 ```csharp
@@ -49,14 +49,14 @@ public class OrderService(ICurrentUser currentUser)
 
 | Package | Role |
 |---------|------|
-| `Pragmatic.Identity` | `SystemUser`, identity options, claim mapping — no ASP.NET Core dependency |
+| `Pragmatic.Identity` | `SystemUser`, identity options, claim mapping; no ASP.NET Core dependency |
 | `Pragmatic.Identity.AspNetCore` | `ClaimsPrincipal` → `ICurrentUser`, header-based development identity |
 | `Pragmatic.Identity.Local` | Self-contained local identity: signup, login, password reset (`LocalIdentityPackage`) |
-| `Pragmatic.Identity.Local.Jwt` | JWT issuing and bearer authentication — `UseJwtAuthentication()` |
-| `Pragmatic.Identity.Oidc` | Bearer tokens from any external OpenID Connect provider — `UseOidcAuthentication()` |
-| `Pragmatic.Identity.Keycloak` | Keycloak realm roles, plus an admin client for provisioning — `UseKeycloakAuthentication()` |
+| `Pragmatic.Identity.Local.Jwt` | JWT issuing and bearer authentication: `UseJwtAuthentication()` |
+| `Pragmatic.Identity.Oidc` | Bearer tokens from any external OpenID Connect provider: `UseOidcAuthentication()` |
+| `Pragmatic.Identity.Keycloak` | Keycloak realm roles, plus an admin client for provisioning: `UseKeycloakAuthentication()` |
 | `Pragmatic.Identity.Persistence` | EF Core stores for roles, groups and permissions, with temporal assignments |
-| `Pragmatic.Identity.Auditing` | Failed logins and lockouts on the [Audit](/modules/audit/overview/) trail, pseudonymised — `AddIdentitySecurityAuditing()` |
+| `Pragmatic.Identity.Auditing` | Failed logins and lockouts on the [Audit](/modules/audit/overview/) trail, pseudonymised: `AddIdentitySecurityAuditing()` |
 
 `ICurrentUser` itself lives in `Pragmatic.Abstractions`, so a library can consume it without any of
 these.
@@ -74,7 +74,7 @@ dotnet add package Pragmatic.Identity.Local.Jwt   # optional: JWT authentication
 // JWT from the Jwt section of the configuration: Key, Issuer, Audience
 app.UseJwtAuthentication();
 
-// consume the current user anywhere — no IHttpContextAccessor, no magic strings
+// consume the current user anywhere: no IHttpContextAccessor, no magic strings
 public class Handler(ICurrentUser user) { /* user.Id, user.TenantId, user.Authorization.HasPermission(...) */ }
 ```
 
@@ -82,20 +82,20 @@ Full walkthrough: [Getting Started](/modules/identity/getting-started/).
 
 ## What you get
 
-- **`ICurrentUser`** — identity, authorization, authentication sub-objects; multi-value claims, tenant,
+- **`ICurrentUser`**: identity, authorization, authentication sub-objects; multi-value claims, tenant,
   impersonation; works in HTTP, jobs, and tests.
-- **Local identity** — signup/login/password-reset actions (`Pragmatic.Identity.Local`).
-- **JWT** — bearer authentication with configurable issuer/audience/expiry.
-- **Users** — a plain entity marked `[PragmaticUser]`; the generator owns its identity members and EF
+- **Local identity**: signup/login/password-reset actions (`Pragmatic.Identity.Local`).
+- **JWT**: bearer authentication with configurable issuer/audience/expiry.
+- **Users**: a plain entity marked `[PragmaticUser]`; the generator owns its identity members and EF
   configuration.
-- **Persistence** — EF stores for roles, groups and permissions, with temporal assignments. There is no
+- **Persistence**: EF stores for roles, groups and permissions, with temporal assignments. There is no
   JIT provisioning: creating a local record on first external login is not implemented (see
   [Persistence](/modules/identity/persistence/)).
-- **Authorization integration** — feeds [Authorization](/modules/authorization/overview/)'s permission resolution.
+- **Authorization integration**: feeds [Authorization](/modules/authorization/overview/)'s permission resolution.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — `ICurrentUser`, local identity, JWT, and EF-backed persistence. See
+**Functional** within 1.0.0-alpha: `ICurrentUser`, local identity, JWT, and EF-backed persistence. See
 the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/identity/concepts/) | `ICurrentUser` model, claim mapping, accessors, the permission chain |
@@ -113,6 +113,6 @@ the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/doc
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/identity/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/identity/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Identity is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

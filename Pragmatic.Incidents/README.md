@@ -1,6 +1,6 @@
 # Pragmatic.Incidents
 
-Security incident records and the reporting clocks that run against them — NIS2 windows by default.
+Security incident records and the reporting clocks that run against them, NIS2 windows by default.
 
 ## The line this module does not cross
 
@@ -8,7 +8,7 @@ It notices, starts the clocks, and makes the remaining time visible. **It does n
 incident is notifiable.** That is a judgement about impact, and automating it produces both kinds of
 error: a stream of reports nobody reads, and silence about the one that mattered.
 
-What it does do is the arithmetic that is easy to get wrong by hand — against a deadline that started at
+What it does do is the arithmetic that is easy to get wrong by hand: against a deadline that started at
 a moment nobody wrote down.
 
 ## Quick start
@@ -29,18 +29,18 @@ if (incident.IsOverdue(now))
 ```
 
 `Assess` requires a note. "Not notifiable" without a reason is indistinguishable from nobody having
-looked — and that is the version an inspection will assume.
+looked, and that is the version an inspection will assume.
 
 ## Deadlines run from detection
 
 Not from when the incident happened, which is usually unknowable, and not from when someone got round to
-recording it — otherwise a delay in recording silently buys more time. `IncidentDeadlines.Nis2` is
+recording it; otherwise a delay in recording silently buys more time. `IncidentDeadlines.Nis2` is
 24 hours / 72 hours / one month; every window is configurable, because the applicable regime depends on
 the sector and the member state.
 
 ## Detecting from the audit trail
 
-`Pragmatic.Incidents.Audit` raises incidents from patterns in `Pragmatic.Audit` — repeated failed
+`Pragmatic.Incidents.Audit` raises incidents from patterns in `Pragmatic.Audit`: repeated failed
 sign-ins, lockouts, permission denials.
 
 ```csharp
@@ -53,8 +53,8 @@ var incidents = await detector.ScanAsync([
 ```
 
 **Configure both forms.** Per-subject finds many attempts against one account; global finds a few against
-many. Per-subject counting cannot see attempts against accounts that do not exist — those entries carry
-no subject pseudonym by design — and enumerating non-existent accounts is exactly a spraying pattern.
+many. Per-subject counting cannot see attempts against accounts that do not exist (those entries carry
+no subject pseudonym by design) and enumerating non-existent accounts is exactly a spraying pattern.
 
 The detector is a pure function of the trail and the window: it keeps no memory of what it raised, so
 overlapping scans raise twice. Deduplication belongs to whatever persists incidents, which is the only
@@ -70,12 +70,12 @@ package for the same reason.
 
 | Package | For |
 |---------|-----|
-| `Pragmatic.Incidents` | `SecurityIncident`, `IncidentDeadlines` — no dependencies |
-| `Pragmatic.Incidents.Audit` | `AuditPatternDetector`, `DetectionRule` — detection over the `Pragmatic.Audit` trail |
+| `Pragmatic.Incidents` | `SecurityIncident`, `IncidentDeadlines`; no dependencies |
+| `Pragmatic.Incidents.Audit` | `AuditPatternDetector`, `DetectionRule`: detection over the `Pragmatic.Audit` trail |
 
 ## Status
 
-**Preview** within 1.0.0-alpha — incident records and the reporting clocks that run against them; one
+**Preview** within 1.0.0-alpha: incident records and the reporting clocks that run against them; one
 reference application (Time off) uses them. See the [roadmap](../docs/ROADMAP.md).
 
 ## Requirements
@@ -84,6 +84,6 @@ reference application (Time off) uses them. See the [roadmap](../docs/ROADMAP.md
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Incidents is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

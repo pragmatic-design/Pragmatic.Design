@@ -69,7 +69,7 @@ dotnet run --project Pragmatic.Agent/src/Pragmatic.Agent/Pragmatic.Agent.csproj 
 
 There is no TLS layer, and none is needed on the two links that exist:
 
-- **App ↔ daemon** is local IPC — a Unix socket, owner-only (file 0600, directory 0700), or a named pipe on Windows. Nothing crosses the network.
+- **App ↔ daemon** is local IPC: a Unix socket, owner-only (file 0600, directory 0700), or a named pipe on Windows. Nothing crosses the network.
 - **Agent ↔ agent gossip** is UDP, and every datagram carries an HMAC-SHA256 over its JSON payload with the cluster-shared key (`GossipAuthenticator`); a datagram whose tag does not verify, in constant time, is dropped. All agents of a cluster need the same key.
 
 A binary wire format and a TLS transport were prototyped and removed: the message model is JSON-native, and gossip over UDP would need DTLS, not a stream wrapper.
@@ -80,13 +80,13 @@ Values stored under the `secret/` KV namespace are encrypted at rest via `IKvSec
 
 | Implementation | Behavior |
 |----------------|----------|
-| `KvSecretProtector` | AES-256-GCM via `Pragmatic.Cryptography`. Format: `base64([0x01][keyIdLen][keyId][nonce 12][tag 16][ciphertext])` — the embedded key id is what makes rotation possible. Requires a 32-byte key. |
+| `KvSecretProtector` | AES-256-GCM via `Pragmatic.Cryptography`. Format: `base64([0x01][keyIdLen][keyId][nonce 12][tag 16][ciphertext])`; the embedded key id is what makes rotation possible. Requires a 32-byte key. |
 | `RejectEncryption` | Fail-closed: any secret read/write throws "no encryption key configured". Used outside production when no key is present. |
 | `NoEncryption` | Pass-through (development only, must be explicitly opted in). |
 
 The cryptography itself is not the agent's: `KvSecretProtector` adapts `Pragmatic.Cryptography.ISecretEncryptor` to the store's string-in/string-out port, base64-encoding the packed ciphertext so it survives JSON persistence and gossip replication.
 
-**Values written before this migration** used a different framing — `base64(nonce[12] + ciphertext + tag[16])`, with the tag last. They stay readable: a value that fails to decrypt under the current framing is retried under the retired one, and the next write stores it in the current format.
+**Values written before this migration** used a different framing: `base64(nonce[12] + ciphertext + tag[16])`, with the tag last. They stay readable: a value that fails to decrypt under the current framing is retried under the retired one, and the next write stores it in the current format.
 
 Key resolution order in `CreateFromEnvironment`:
 
@@ -94,7 +94,7 @@ Key resolution order in `CreateFromEnvironment`:
 2. `{dataDir}/secret.key` file (base64, 32 bytes)
 3. No key found → **throws** in Production (`ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT` = `Production`); otherwise returns `RejectEncryption` so the daemon still starts for non-secret workflows while secret operations fail closed.
 
-A configured-but-invalid key (bad base64 or wrong length) always throws — it is treated as operator misconfiguration, not silently ignored. Secret values are also masked (`***`) from prefix listings, so they are only readable via an explicit `KvGet` on the exact key.
+A configured-but-invalid key (bad base64 or wrong length) always throws: it is treated as operator misconfiguration, not silently ignored. Secret values are also masked (`***`) from prefix listings, so they are only readable via an explicit `KvGet` on the exact key.
 
 ## How It Fits
 
@@ -125,7 +125,7 @@ Still evolving:
 
 ## Status
 
-**Preview** within 1.0.0-alpha — the daemon, its shared key-value store, SWIM gossip and IPC run today,
+**Preview** within 1.0.0-alpha: the daemon, its shared key-value store, SWIM gossip and IPC run today,
 and the Showcase and Warehouse use them. The daemon runs as a regular .NET executable; a Native AOT build
 is planned. See the [roadmap](../docs/ROADMAP.md).
 
@@ -141,5 +141,5 @@ Local docs:
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Agent is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

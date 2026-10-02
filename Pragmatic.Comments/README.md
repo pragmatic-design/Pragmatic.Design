@@ -127,7 +127,7 @@ Implement `ICommentPolicy<TEntityId>` to customize behavior:
 public class ReservationCommentPolicy : ICommentPolicy<Guid>
 {
     // Every member is a default interface method: override only what you need.
-    // Returning a failure surfaces YOUR error to the caller — CommentRejectedError
+    // Returning a failure surfaces YOUR error to the caller: CommentRejectedError
     // maps to 422 and carries the reason, so the client learns why it was refused.
     public Task<VoidResult<CommentRejectedError>> CanAddAsync(
         Guid reservationId, string content, string? authorId, CancellationToken ct = default)
@@ -164,10 +164,10 @@ emitted, precisely so that someone can act on content they did not write.
 ### Moderation
 
 With `RequireApproval = true` a new comment is created as `PendingApproval` and **is not readable**
-until a moderator approves it — reads only return `Visible` comments. Approve, reject or hide one
+until a moderator approves it: reads only return `Visible` comments. Approve, reject or hide one
 with `PUT .../comments/{cid}/moderation` (body: the new status), gated on
 `{boundary}.{entity}.comments.moderate`. A rejected comment stays reachable to that endpoint, so a
-rejection can be undone. What awaits approval is listed by `GET .../comments/pending` — the moderation
+rejection can be undone. What awaits approval is listed by `GET .../comments/pending`, the moderation
 queue, oldest first, paged with `page`/`pageSize`, under the same permission.
 
 ### Internal comments
@@ -185,11 +185,11 @@ ReservationCommentPermissions.Create   // "booking.reservation.comments.create"
 ReservationCommentPermissions.Read     // "booking.reservation.comments.read"
 ReservationCommentPermissions.Update   // "booking.reservation.comments.update"  (AllowEditing only)
 ReservationCommentPermissions.Delete   // "booking.reservation.comments.delete"
-ReservationCommentPermissions.Moderate // "booking.reservation.comments.moderate" (always — see below)
+ReservationCommentPermissions.Moderate // "booking.reservation.comments.moderate" (always, see below)
 ReservationCommentPermissions.ViewInternal // "booking.reservation.comments.view-internal" (SupportInternalNotes only)
 ```
 
-The generated endpoints enforce these themselves — the constants exist so you can grant them by
+The generated endpoints enforce these themselves; the constants exist so you can grant them by
 name rather than retyping the string. `Moderate` is emitted even without `RequireApproval`: it gates
 the moderation endpoint when there is one, and it is also what lets someone edit or delete a comment
 they did not write.
@@ -217,7 +217,7 @@ From a single `[HasComments]` on an entity:
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the `[HasComments]` trait with its entity, actions, endpoints,
+**Functional** within 1.0.0-alpha: the `[HasComments]` trait with its entity, actions, endpoints,
 moderation and policy hooks, tested end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
 
 ## Requirements
@@ -230,5 +230,5 @@ moderation and policy hooks, tested end to end in the Showcase. See the [roadmap
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Comments is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

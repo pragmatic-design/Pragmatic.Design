@@ -32,24 +32,24 @@ card-verification values, bearer tokens, and secrets assigned by name (`password
 
 Pattern matching cannot recognise a name, an address, or a sentence about someone's health. A caller
 that puts a personal value into free text is relying on a net with holes. The point is that the obvious
-shapes do not get through — not that nothing does.
+shapes do not get through, not that nothing does.
 
 ## Dates are deliberately absent
 
 A date is personal data only in context: a birth date is, `locked until 2026-08-01` is not, and no
 pattern tells them apart. Redacting every date would empty the one field that explains why an entry
-exists — which is how a redactor stops being used at all.
+exists, which is how a redactor stops being used at all.
 
 ## Redaction by declaration
 
 A pattern cannot see what has no shape: an internal identifier, a pricing coefficient, a token that
-looks like any other string. For those the type says it — `[NotLogged]` (in `Pragmatic.Abstractions`)
-or `[PersonalData]` — and the source generator emits an `IRedactionMap` per type, with the path to every
+looks like any other string. For those the type says it: `[NotLogged]` (in `Pragmatic.Abstractions`)
+or `[PersonalData]`, and the source generator emits an `IRedactionMap` per type, with the path to every
 marked member, owned records and collections included. `DeclaredRedactor` walks those paths; nothing
 reflects over the payload.
 
 In a Pragmatic host this is wired for you: when any map exists the generated startup calls
-`AddDeclaredRedaction()`, which wraps the `ILoggerFactory` in a `RedactingLoggerFactory` — so every
+`AddDeclaredRedaction()`, which wraps the `ILoggerFactory` in a `RedactingLoggerFactory`, so every
 provider, including one a test adds later, receives the masked value.
 
 The two are governed differently on purpose. Pattern redaction is a heuristic, with false positives, and
@@ -59,13 +59,13 @@ has no environment qualifier**: "never in the logs" does not mean "except on my 
 ## Where the patterns are used
 
 `Pragmatic.Audit` uses `PersonalDataRedactor`. `Pragmatic.Logging` takes its e-mail and IBAN patterns
-from here and **still carries the rest of its set on its own** — national identifiers, cards, and
+from here and **still carries the rest of its set on its own**: national identifiers, cards, and
 credentials (AWS keys, GitHub tokens, Stripe keys, private keys), which are a different problem from
 personal data and are not in scope here.
 
 ## Status
 
-**Preview** within 1.0.0-alpha — the personal-data shapes recognised in free text, used by the logging
+**Preview** within 1.0.0-alpha: the personal-data shapes recognised in free text, used by the logging
 and audit modules and by the composed host. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Requirements
@@ -74,6 +74,6 @@ and audit modules and by the composed host. See the [roadmap](https://github.com
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/redaction/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/redaction/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Redaction is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

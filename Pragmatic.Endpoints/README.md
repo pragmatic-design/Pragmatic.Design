@@ -1,7 +1,7 @@
 # Pragmatic.Endpoints
 
 Source-generated HTTP endpoints for ASP.NET Core. Declare the shape; the generator writes the plumbing
-— binding, DI, authorization, error-to-HTTP mapping, and OpenAPI metadata — at compile time, zero
+(binding, DI, authorization, error-to-HTTP mapping, and OpenAPI metadata) at compile time, zero
 reflection.
 
 ## The Problem
@@ -48,7 +48,7 @@ public partial class GetProduct : Endpoint<ProductDto, NotFoundError>
 ```
 
 The generator produces the route registration, parameter binding, DI wiring, authorization
-enforcement, error-to-HTTP mapping, and OpenAPI metadata — all at compile time.
+enforcement, error-to-HTTP mapping, and OpenAPI metadata, all at compile time.
 
 ## Installation
 
@@ -103,7 +103,7 @@ All of these are attribute/convention-driven and documented in depth (see Docume
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the endpoint pipeline, binding, groups, versioning, rate limiting,
+**Functional** within 1.0.0-alpha: the endpoint pipeline, binding, groups, versioning, rate limiting,
 caching, and the DomainAction/Query/Mutation integration. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -119,7 +119,7 @@ caching, and the DomainAction/Query/Mutation integration. See the [roadmap](../d
 
 | Guide | What it covers |
 |-------|----------------|
-| [Binding Reference](docs/binding-reference.md) | Route, query, header, body, form, claim binding — all scenarios |
+| [Binding Reference](docs/binding-reference.md) | Route, query, header, body, form, claim binding: all scenarios |
 | [Endpoint Groups](docs/endpoint-groups.md) | Shared route prefix, tags, auth, nesting |
 | [Endpoint Processors](docs/processors.md) | Pre/post processor pipeline, ordering, short-circuit |
 | [API Versioning](docs/versioning.md) | HandleAsyncV2 convention, SinceVersion, versioned body DTOs |
@@ -129,10 +129,10 @@ caching, and the DomainAction/Query/Mutation integration. See the [roadmap](../d
 | [Error Handling](docs/error-handling.md) | Result types, ProblemDetails RFC 7807, custom errors |
 | [DomainAction Integration](docs/domain-action-integration.md) | DomainAction pipeline, invoker, convention versioning |
 | [Query and Mutation Endpoints](docs/query-mutation-endpoints.md) | Query filters, Mutation CRUD, pagination, autocomplete |
-| [Idempotency](docs/idempotency.md) | `[Idempotent]` — safe retries with Idempotency-Key, replay, caching rules |
+| [Idempotency](docs/idempotency.md) | `[Idempotent]`: safe retries with Idempotency-Key, replay, caching rules |
 | [SSE Streaming](docs/sse-streaming.md) | `StreamingEndpoint`, typed mid-stream errors, backpressure, heartbeat |
 | [Request Constraints](docs/request-constraints.md) | `[MaxBodySize]`, antiforgery, OpenAPI examples, HEAD/OPTIONS |
-| [MCP Tools](docs/mcp.md) | `[McpTool]` — expose endpoints to AI agents via Model Context Protocol |
+| [MCP Tools](docs/mcp.md) | `[McpTool]`: expose endpoints to AI agents via Model Context Protocol |
 
 ### Help
 
@@ -157,6 +157,6 @@ versioning, and cross-boundary events.
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Endpoints is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

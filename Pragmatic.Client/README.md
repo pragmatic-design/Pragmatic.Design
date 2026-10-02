@@ -1,6 +1,6 @@
 # Pragmatic.Client
 
-Compile-time typed API clients generated from Pragmatic manifests. No hand-written HTTP code, full `Result<T, IError>` integration, and a generated JSON context (`PragmaticJsonContext`, written out from the manifest) instead of reflection-based serialization — designed for AOT, not yet proven by a Native AOT smoke.
+Compile-time typed API clients generated from Pragmatic manifests. No hand-written HTTP code, full `Result<T, IError>` integration, and a generated JSON context (`PragmaticJsonContext`, written out from the manifest) instead of reflection-based serialization; designed for AOT, not yet proven by a Native AOT smoke.
 
 > ⚠️ **Known limitations**
 >
@@ -161,7 +161,7 @@ services.AddBookingClient("https://api.example.com", client =>
 
 ## Status
 
-**Preview** within 1.0.0-alpha — the C# client generated from the endpoint manifest and the
+**Preview** within 1.0.0-alpha: the C# client generated from the endpoint manifest and the
 `pragmatic-client` TypeScript CLI; the Showcase is the reference application that uses it. See the
 [roadmap](../docs/ROADMAP.md).
 
@@ -188,5 +188,5 @@ Pragmatic.Client/
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Client is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

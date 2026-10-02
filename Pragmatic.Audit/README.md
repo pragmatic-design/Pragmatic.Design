@@ -1,11 +1,11 @@
 # Pragmatic.Audit
 
-An append-only audit trail whose entries can be shown not to have changed — and which survives erasing
+An append-only audit trail whose entries can be shown not to have changed, and which survives erasing
 the people they are about.
 
 ## Why it exists
 
-"Who did what, on whose authority" has to be answerable later — and provably unaltered — without the
+"Who did what, on whose authority" has to be answerable later, and provably unaltered, without the
 trail itself becoming a store of the personal data it describes. Two properties drive the whole design:
 
 **An entry never holds a personal value.** It identifies who and what by reference, and proves a change
@@ -24,13 +24,13 @@ time segments; a sealed segment gets a Merkle root, and each root chains to its 
 | `Pragmatic.Audit` | The contracts: `IAuditTrail`, `ITransactionalAuditTrail`, `IAuditTrailReader`, `AuditEntry` |
 | `Pragmatic.Audit.EFCore` | The EF Core store: `AuditDbContext`, `AddAuditTrail()`, sealing and retention |
 | `Pragmatic.Audit.AdoNet` | The same transactional write for a producer on raw ADO.NET |
-| `Pragmatic.Audit.Management` | `[UsePackage<AuditManagementPackage>]` — retention as a callable `PruneAuditTrail` action, for an application to trigger (the framework does not schedule it) |
+| `Pragmatic.Audit.Management` | `[UsePackage<AuditManagementPackage>]`: retention as a callable `PruneAuditTrail` action, for an application to trigger (the framework does not schedule it) |
 
 ## Quick start
 
 In a Pragmatic host with an `[Audited]` entity there is nothing to write: the generated host registers
 `AuditDbContext` and `AddAuditTrail()` on that entity's database, whose migration creates the trail's
-tables. It steps aside when the application registered `AuditDbContext` itself — the one thing it
+tables. It steps aside when the application registered `AuditDbContext` itself: the one thing it
 cannot decide is `[Audited]` entities in more than one database, and then the generated host says so.
 Anywhere else:
 
@@ -69,7 +69,7 @@ if (!report.IsIntact)
 
 ## Where the tables come from
 
-The trail is three tables — `__AuditEntries`, `__AuditSegments` and `__PrunedRanges` — and they are only
+The trail is three tables (`__AuditEntries`, `__AuditSegments` and `__PrunedRanges`) and they are only
 meaningful together: an entry whose segment row is missing cannot be sealed, so it can be written and
 never checked.
 
@@ -77,7 +77,7 @@ never checked.
   database's generated schema contains them and the runner creates them.
 - **With EF Core migrations**, call `AuditDbContext.ApplyAuditConfigurations(modelBuilder)` from the
   context that should hold them, then add a migration.
-- **With neither** — a producer on raw ADO.NET, such as the configuration store — the dialect carries
+- **With neither**: a producer on raw ADO.NET, such as the configuration store: the dialect carries
   the DDL: `IAuditSqlDialect.CreateSchema`.
 
 The `__` prefix is what keeps them safe beside an application's own tables: the schema differ never drops
@@ -85,7 +85,7 @@ a framework-prefixed table for being absent from the desired schema.
 
 ## Writing inside someone else's transaction
 
-Some producers already guarantee that a change and its audit record commit together — the configuration
+Some producers already guarantee that a change and its audit record commit together: the configuration
 store and the persistence interceptor both do. `ITransactionalAuditTrail` keeps that guarantee:
 
 ```csharp
@@ -97,7 +97,7 @@ await transaction.CommitAsync();
 
 The cost is not hidden: enlisting means writing on the caller's connection, so the trail's tables must
 live in the same database. If the trail cannot join, it **throws** rather than writing outside the
-transaction — an entry that commits independently of the change it describes is worse than the missing
+transaction: an entry that commits independently of the change it describes is worse than the missing
 feature, because the trail would then disagree with the data while looking correct.
 
 ## Producers without a DbContext
@@ -112,14 +112,14 @@ var trail = new AdoNetAuditTrail(new PostgresAuditDialect(), preparer);
 await trail.RecordAsync(entry, connection, transaction);
 ```
 
-The dialect also carries the trail's DDL, for a producer that provisions its own schema — kept beside
+The dialect also carries the trail's DDL, for a producer that provisions its own schema, kept beside
 the statements that read and write those tables, because those are the two things that have to agree.
 
 ## Sealing and retention
 
 `AuditSealingService` seals segments once they are closed **plus a grace period**. The grace period is
 not tuning: sealing the window that just closed would exclude writes still in flight, and the result is
-a false tampering alarm — worse than no check at all, because it teaches people to ignore the real one.
+a false tampering alarm, worse than no check at all, because it teaches people to ignore the real one.
 
 `AddAuditTrail()` registers `AuditSealingWorker`, which runs it once per grace period while the host
 runs. Nothing else has to be scheduled for sealing, and it matters that something does: `VerifyAsync`
@@ -137,7 +137,7 @@ Tamper-**evidence**, not tamper-proofing. Anyone with write access to the databa
 row; verification reveals it, nothing here prevents it. Prevention needs database permissions or WORM
 storage, which are deployment concerns.
 
-And an integrity chain nobody verifies proves nothing — schedule `VerifyAsync`.
+And an integrity chain nobody verifies proves nothing: schedule `VerifyAsync`.
 
 It is also the only trail. `Pragmatic.Logging` records that a value was redacted from a log line, and
 its docs call that an audit; it is telemetry about the logging pipeline, not a record of what happened to
@@ -147,7 +147,7 @@ See the [threat model](../docs/security/threat-model-compliance.md).
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the append-only trail, sealing and verification, and retention; four
+**Functional** within 1.0.0-alpha: the append-only trail, sealing and verification, and retention; four
 of the reference applications use it. See the [roadmap](../docs/ROADMAP.md).
 
 ## Requirements
@@ -156,6 +156,6 @@ of the reference applications use it. See the [roadmap](../docs/ROADMAP.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Audit is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

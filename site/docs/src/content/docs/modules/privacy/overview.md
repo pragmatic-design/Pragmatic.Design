@@ -1,18 +1,18 @@
 ---
 title: "Pragmatic.Privacy"
-description: "Erasure, retention, consent, access and portability — the parts of GDPR that have entities, policies and"
+description: "Erasure, retention, consent, access and portability: the parts of GDPR that have entities, policies and"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Privacy/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Erasure, retention, consent, access and portability — the parts of GDPR that have entities, policies and
+Erasure, retention, consent, access and portability: the parts of GDPR that have entities, policies and
 a lifecycle.
 
 ## The shape
 
 Classification is a **trait on the entity**; the process is a **module**. The dichotomy the design
-started from — trait *or* service — was false. The attribute declares what a property is, the source
+started from (trait *or* service) was false. The attribute declares what a property is, the source
 generator turns that declaration into an executor, and the module owns the workflow that runs it.
 
 ```csharp
@@ -43,15 +43,15 @@ behind an endpoint that names nobody (PRAG2904), a `[LinksToSubject]` path that 
 unclassified string; across a solution that has not opted in that is noise, and noise is how a real
 finding gets ignored.
 
-**What an entity owns is part of what it holds.** The reader descends into an owned record — an
-identity record, a value object — and names its columns by the path to them: `Identity.Email` in the
+**What an entity owns is part of what it holds.** The reader descends into an owned record (an
+identity record, a value object) and names its columns by the path to them: `Identity.Email` in the
 register, in the erasure plan, in the export and in PRAG2903. An owned record is analysed through its
 owner and not as an entity of its own, so it needs no `[LinksToSubject]`: its owner has the path. The
-descent stops where another entity begins (`[Entity]`, `[DataSubject]`, `[LinksToSubject]` — each has
+descent stops where another entity begins (`[Entity]`, `[DataSubject]`, `[LinksToSubject]`; each has
 its own plan), at a collection, and four levels down.
 
 **And so is what it inherits.** The reader walks the base chain, stopping outside `System.*`, and counts
-a member hidden with `new` once — from the derived type, which is the declaration the compiler binds. A
+a member hidden with `new` once, from the derived type, which is the declaration the compiler binds. A
 base class is not an entity of its own either, so it is folded in the same way an owned record is.
 
 ## Quick start
@@ -63,30 +63,30 @@ services.AddPrivacy();           // the processes: erasure, access, portability,
 ```
 
 The registry also needs an `ISecretEncryptor` for the identities it stores and an
-`ISubjectLookupKeyProvider` for the blind index it searches by — keys the application supplies, and
+`ISubjectLookupKeyProvider` for the blind index it searches by: keys the application supplies, and
 never from the database the table is in.
 
 **Where the tables come from.** In a Pragmatic host the migration of the boundary that holds a
 `[DataSubject]` creates the registry's tables (`__Subjects`, `__Consents`) beside that boundary's data, once
 the host references `Pragmatic.Privacy.EFCore`: the generated context applies
 `PrivacyDbContext.ApplyPrivacyConfigurations`, as it applies the audit trail's for an `[Audited]` entity.
-`PrivacyDbContext` then reads and writes those same tables — and in that host the first two lines above
+`PrivacyDbContext` then reads and writes those same tables, and in that host the first two lines above
 are not written either: the generated host registers `PrivacyDbContext` on that database and calls
 `AddSubjectRegistry()`, unless the application registered the context itself. The keys stay yours.
 
-**From an operation**, depend on the interfaces — `ISubjectAccess`, `ISubjectErasure`,
-`IProcessingRegisterBuilder` — which resolve to the same instances as `SubjectAccessService`,
+**From an operation**, depend on the interfaces: `ISubjectAccess`, `ISubjectErasure`,
+`IProcessingRegisterBuilder`, which resolve to the same instances as `SubjectAccessService`,
 `ErasureOrchestrator` and `ProcessingRegisterBuilder`. The generator does not inject a concrete type into
 an action (PRAG0419).
 
-You still contribute the parts only the application knows — `IErasureStep` (what erasure touches),
+You still contribute the parts only the application knows: `IErasureStep` (what erasure touches),
 `IPersonalDataSource` (what an access request collects), `IProcessingActivitySource` (what the register
 describes), and `ILegalHoldStore` when holds apply. Each is an enumerable, so adding one is a
 registration rather than a replacement.
 
 With the source generator, the first three arrive on their own: classifying a field generates the
-adapters and the activity source, and the generated `AddGeneratedPrivacyAdapters()` — which the host
-calls for you — contributes them and calls `AddPrivacy()` itself. The call above is what an application
+adapters and the activity source, and the generated `AddGeneratedPrivacyAdapters()` (which the host
+calls for you) contributes them and calls `AddPrivacy()` itself. The call above is what an application
 supplying its own implementations writes; it is `TryAdd` throughout, so writing it anyway changes
 nothing.
 
@@ -98,7 +98,7 @@ like it worked.
 every call and name what to register instead. The point is separability: the Article 30 register uses
 neither, so classifying a field must not oblige you to stand up a database, an encryptor and a lookup
 key before the application will start. Without them the choice was between refusing to boot and an
-access request that answered "no data" — and the second is the one that reaches production.
+access request that answered "no data", and the second is the one that reaches production.
 
 ## Things that are less obvious than they look
 
@@ -114,7 +114,7 @@ periods depending on why it was collected, so `[PersonalData]` carries classific
 notice nobody can reproduce is not consent. Revocation does not delete the record, and is not an
 erasure request.
 
-**The Article 30 register declares what it is missing** rather than filling gaps in — a register that
+**The Article 30 register declares what it is missing** rather than filling gaps in: a register that
 looks complete and is not is worse than one that says where it is thin.
 
 **A purpose belongs to an operation, not to a type.** The register has two halves: `Activities`, one per
@@ -123,24 +123,24 @@ type holding personal data, and `ProcessingOperations`, one per operation that t
 touch it for different reasons; asking why `ListMembersQuery` runs has one. Declare them in
 `ProcessingRegisterOptions.OperationPurposes`, and read what is still undeclared from
 `IncompleteOperations`. A query and a mutation name their entity; a **domain action** does not, and its
-entities are derived from the dependencies it declares — an `IRepository<T>` or `IReadRepository<T>` it
+entities are derived from the dependencies it declares: an `IRepository<T>` or `IReadRepository<T>` it
 holds, or an `IMutationInvoker<TMutation, TEntity>` it composes. What an action or a mutation **loads** is
 derived too: `[LoadEntity<T>]`, `[LoadEntities<T>]`, the entity of a `[LoadFrom<TQuery>]` query, and the
 `[PragmaticUser]` entity for `[LoadCurrentUser]`. One that reaches data any other way stays out rather
-than being listed against a guess — `[ProcessesData<T>]` is for that, and only for that: one naming an
+than being listed against a guess; `[ProcessesData<T>]` is for that, and only for that: one naming an
 entity the generator already derives is `PRAG2913` (Info), unless the operation also composes through a
 boundary interface, where the declaration may be answering for the composition.
 
 **Reads are recorded only where an operation asks.** Writes reach the audit trail through an interceptor
 over `SaveChanges`, which never sees a query, so nothing records a read. Recording them all is the wrong
-default — reads outnumber writes by orders of magnitude, and a trail holding all of them cannot be
-searched when it matters — so a query opts in with `[RecordAccess]`, and the entry carries the
+default: reads outnumber writes by orders of magnitude, and a trail holding all of them cannot be
+searched when it matters, so a query opts in with `[RecordAccess]`, and the entry carries the
 operation, the actor and the time, never the rows. `ProcessingRegister.UnrecordedReads` lists the rest,
 because "who looked at this person's record" cannot be answered retroactively: the evidence was written
 at the time or it does not exist.
 
-**The trail names the operation, not only the change.** Every audit entry carries `BusinessOperation` —
-the fully qualified query, mutation or action that was running — which is the same key the register uses.
+**The trail names the operation, not only the change.** Every audit entry carries `BusinessOperation` (
+the fully qualified query, mutation or action that was running), which is the same key the register uses.
 Without it the register described what *can* touch personal data and the trail recorded that something
 did, with no way to join them. It is read from an ambient the invokers set, deliberately not from
 `Activity.Current`: `StartActivity` returns null when no listener is registered, and a field populated
@@ -153,7 +153,7 @@ the hold exists to preserve.
 ## Encryption and erasure
 
 Erasure by key destruction relies on `Pragmatic.Cryptography`: each subject has a key, and destroying it
-makes their data unreadable everywhere it was copied — backups included, which is the only way to erase
+makes their data unreadable everywhere it was copied, backups included, which is the only way to erase
 a copy you do not control. See [that module's README](/modules/cryptography/overview/), and
 [the compliance threat model](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/security/threat-model-compliance.md) for what this does and does
 not protect against.
@@ -162,13 +162,13 @@ not protect against.
 
 | Package | For |
 |---------|-----|
-| `Pragmatic.Privacy.Abstractions` | The classification attributes (`[PersonalData]`, `[DataSubject]`, `[LinksToSubject]`, …) — no dependencies, so entity assemblies can reference it alone |
+| `Pragmatic.Privacy.Abstractions` | The classification attributes (`[PersonalData]`, `[DataSubject]`, `[LinksToSubject]`, …); no dependencies, so entity assemblies can reference it alone |
 | `Pragmatic.Privacy` | The processes: erasure, access, portability, the Article 30 register (`AddPrivacy()`) |
 | `Pragmatic.Privacy.EFCore` | The subject registry and consent store over `PrivacyDbContext` (`AddSubjectRegistry()`) |
 
 ## Status
 
-**Preview** within 1.0.0-alpha — erasure, retention, consent, access and portability work and are tested
+**Preview** within 1.0.0-alpha: erasure, retention, consent, access and portability work and are tested
 end to end; one reference application (Time off) uses them. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Requirements
@@ -178,6 +178,6 @@ end to end; one reference application (Time off) uses them. See the [roadmap](ht
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/privacy/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/privacy/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Privacy is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

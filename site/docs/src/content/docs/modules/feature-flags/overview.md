@@ -1,17 +1,17 @@
 ---
 title: "Pragmatic.FeatureFlags"
-description: "Context-aware feature flag evaluation for .NET 10 — targeting rules, percentage rollout, and"
+description: "Context-aware feature flag evaluation for .NET 10: targeting rules, percentage rollout, and"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.FeatureFlags/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Context-aware feature flag evaluation for .NET 10 — targeting rules, percentage rollout, and
+Context-aware feature flag evaluation for .NET 10: targeting rules, percentage rollout, and
 deterministic bucketing.
 
 ## The Problem
 
-Apps need runtime control over feature visibility — gradual rollouts, A/B tests, beta programs, kill
+Apps need runtime control over feature visibility: gradual rollouts, A/B tests, beta programs, kill
 switches. Plain configuration gives you on/off, but the same value applies to every user, tenant, and
 environment, so teams hand-roll targeting:
 
@@ -27,7 +27,7 @@ configuration with context-dependent evaluation.
 
 ## The Solution
 
-Define flags with targeting rules; a deterministic evaluation engine handles the rest — stable
+Define flags with targeting rules; a deterministic evaluation engine handles the rest: stable
 per-user/tenant bucketing (the same input always resolves the same way), percentage rollout, and change
 watching.
 
@@ -48,7 +48,7 @@ if (await store.IsEnabledAsync("new-checkout", context, ct)) { /* new path */ }
 if (await flags.IsEnabledAsync<NewCheckout>(ct)) { /* new path */ }
 ```
 
-`IFeatureFlags` knows the caller only through an `IFeatureFlagContextProvider` you register — no package
+`IFeatureFlags` knows the caller only through an `IFeatureFlagContextProvider` you register; no package
 ships one, and multi-tenancy is not bridged automatically. Without it every evaluation uses
 `FeatureFlagContext.Empty`: the global state and percentage rules apply, targeting rules never match.
 
@@ -64,7 +64,7 @@ dotnet add package Pragmatic.FeatureFlags.Configuration   # optional: flags read
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the evaluation engine, targeting rules, deterministic bucketing,
+**Functional** within 1.0.0-alpha: the evaluation engine, targeting rules, deterministic bucketing,
 strongly-typed flags, and the stores. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/feature-flags/concepts/) | Evaluation engine, rule types, deterministic bucketing, vs configuration |
@@ -79,5 +79,5 @@ strongly-typed flags, and the stores. See the [roadmap](https://github.com/pragm
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/feature-flags/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/feature-flags/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.FeatureFlags is **MIT-licensed**.

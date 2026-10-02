@@ -1,10 +1,10 @@
 # Pragmatic.Logging
 
-Feature-rich structured logging for the Pragmatic.Design ecosystem — extends .NET `ILogger` with
+Feature-rich structured logging for the Pragmatic.Design ecosystem: extends .NET `ILogger` with
 privacy-aware redaction, an audit trail, context enrichment, an expression filter DSL, and multiple
 providers.
 
-> **Performance:** first in every benchmarked category against Serilog and NLog — with Microsoft's
+> **Performance:** first in every benchmarked category against Serilog and NLog, with Microsoft's
 > `[LoggerMessage]` call sites a log call is **allocation-free end-to-end** (33.6 ns / 0 B vs ~295 ns /
 > 712–1032 B). The pipeline defers all materialization to the sink; enabling
 > redaction/enrichment/filters routes calls through the full pipeline. See [BENCHMARK-RESULTS.md](BENCHMARK-RESULTS.md).
@@ -24,7 +24,7 @@ logger.LogInformation($"Order {orderId} by {email} via {connectionString}");
 ## The Solution
 
 A fluent `PragmaticLoggingBuilder` over standard `ILogger<T>` (no proprietary abstraction) configures
-every concern in one place — providers, presets, privacy, performance, context enrichment.
+every concern in one place: providers, presets, privacy, performance, context enrichment.
 
 ```csharp
 builder.Services.AddPragmaticLogging(logging => logging
@@ -49,7 +49,7 @@ dotnet add package Pragmatic.Logging
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the builder, the providers (console, rolling file, JSON, NDJSON,
+**Functional** within 1.0.0-alpha: the builder, the providers (console, rolling file, JSON, NDJSON,
 memory, debug, null, Windows Event Log), presets, redaction, the audit trail, rate limiting, and context
 enrichment. See the [roadmap](../docs/ROADMAP.md).
 
@@ -72,5 +72,5 @@ enrichment. See the [roadmap](../docs/ROADMAP.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Logging is **MIT-licensed**.
