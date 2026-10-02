@@ -87,11 +87,13 @@ public class InMemoryJobStoreTests
         for (var i = 0; i < workerCount; i++)
         {
             var workerId = $"worker-{i}";
-            tasks[i] = Task.Run(() =>
+            // A dedicated thread per contender: the barrier blocks every one of them, and on pool threads
+            // that starves the pool for every other test in the process while it grows to 32.
+            tasks[i] = Task.Factory.StartNew(() =>
             {
                 barrier.SignalAndWait();
                 return _store.TryAcquireLeaseAsync(job.Id, workerId, TimeSpan.FromMinutes(5));
-            });
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
         }
 
         var results = await Task.WhenAll(tasks);

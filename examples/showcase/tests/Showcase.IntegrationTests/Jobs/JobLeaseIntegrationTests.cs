@@ -138,13 +138,15 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
 
         using var barrier = new Barrier(workers);
 
-        var tasks = Enumerable.Range(0, workers).Select(i => Task.Run(async () =>
+        // A dedicated thread per contender: the barrier blocks every one of them, and on pool threads
+        // that starves the pool for every other test in the process while it grows to fit them.
+        var tasks = Enumerable.Range(0, workers).Select(i => Task.Factory.StartNew(async () =>
         {
             await using var context = CreateDbContext();
             var store = new EfCoreJobStore(context, SystemClock.Instance, NullLogger<EfCoreJobStore>.Instance);
             barrier.SignalAndWait();
             return await store.TryAcquireLeaseAsync(job.Id, $"worker-{i}", Lease).ConfigureAwait(false);
-        }));
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap());
 
         var results = await Task.WhenAll(tasks);
 
@@ -432,14 +434,15 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
         const int hosts = 8;
         using var barrier = new Barrier(hosts);
 
-        var tasks = Enumerable.Range(0, hosts).Select(_ => Task.Run(async () =>
+        // A dedicated thread per contender, for the reason given in the lease test above.
+        var tasks = Enumerable.Range(0, hosts).Select(_ => Task.Factory.StartNew(async () =>
         {
             await using var context = CreateDbContext();
             var store = new EfCoreRecurringJobStore(context);
             barrier.SignalAndWait();
             return await store.TryClaimDueAsync(id, occurrence, occurrence.AddHours(1), occurrence)
                 .ConfigureAwait(false);
-        }));
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap());
 
         var results = await Task.WhenAll(tasks);
 
