@@ -173,8 +173,9 @@ semantics without a broker.
 | `ConsumerCount` | N reader tasks for **one** subscription, competing for its own messages |
 
 ⚠️ **A publish nobody subscribes to is discarded**, as a topic exchange with no bound queue discards it.
-Publishing before a consumer has bound therefore loses the message — start the consumer and wait for the
-subscription, do not sleep. `Capacity` is per **subscription**, so N subscribers to one topic hold up to
+Publishing before a consumer has bound therefore loses the message. `ChannelConsumerService` binds every
+subscription inside `StartAsync`, so once the host has started — or a test has awaited the service's
+`StartAsync` — a publish finds its subscribers; nothing needs to wait or sleep. `Capacity` is per **subscription**, so N subscribers to one topic hold up to
 N × `Capacity`, and with `FullMode = Wait` one slow subscriber blocks the publisher for that address.
 
 ⚠️ Why not **one** channel per topic, shared by every subscription: `System.Threading.Channels` readers
