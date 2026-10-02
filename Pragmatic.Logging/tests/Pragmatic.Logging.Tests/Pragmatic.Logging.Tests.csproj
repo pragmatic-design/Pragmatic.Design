@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- No generator tests here anymore (the Logging source generator was removed in favor of
+         Microsoft's [LoggerMessage]); skip the shared generator-testing helpers. -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- Test packages (xunit, coverlet, etc.) are auto-provided by Directory.Build.props -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Logging\Pragmatic.Logging.csproj" />
+  </ItemGroup>
+
+</Project>

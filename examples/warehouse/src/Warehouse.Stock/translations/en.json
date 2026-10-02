@@ -1,0 +1,8 @@
+{
+  "error.stock.would.go.negative.title": "Not enough on hand",
+  "error.stock.would.go.negative.detail": "{onHand} on hand: an adjustment of {delta} would leave less than nothing.",
+  "error.nothing.to.pick.title": "Nothing to pick",
+  "error.nothing.to.pick.detail": "The order has no confirmed stock to pick: it was not confirmed, its holds expired, or it was already picked.",
+  "error.import.file.unreadable.title": "The file cannot be imported",
+  "error.import.file.unreadable.detail": "{reason}. Nothing was imported."
+}

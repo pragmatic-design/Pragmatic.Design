@@ -1,0 +1,41 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/aspnetcore.md" />
+    <File Path="docs/business-days.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/core-types.md" />
+    <File Path="docs/dst-handling.md" />
+    <File Path="docs/efcore.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/json.md" />
+    <File Path="docs/testing.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Temporal/Pragmatic.Temporal.csproj" />
+    <Project Path="src/Pragmatic.Temporal.Analyzers/Pragmatic.Temporal.Analyzers.csproj" />
+    <Project Path="src/Pragmatic.Temporal.AspNetCore/Pragmatic.Temporal.AspNetCore.csproj" />
+    <Project Path="src/Pragmatic.Temporal.CodeFixers/Pragmatic.Temporal.CodeFixers.csproj" />
+    <Project Path="src/Pragmatic.Temporal.EFCore/Pragmatic.Temporal.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Temporal.Internationalization/Pragmatic.Temporal.Internationalization.csproj" />
+    <Project Path="src/Pragmatic.Temporal.Json/Pragmatic.Temporal.Json.csproj" />
+    <Project Path="src/Pragmatic.Temporal.Testing/Pragmatic.Temporal.Testing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Temporal.Tests/Pragmatic.Temporal.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.Analyzers.Tests/Pragmatic.Temporal.Analyzers.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.AspNetCore.Tests/Pragmatic.Temporal.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.CodeFixers.Tests/Pragmatic.Temporal.CodeFixers.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.EFCore.Tests/Pragmatic.Temporal.EFCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.Internationalization.Tests/Pragmatic.Temporal.Internationalization.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Temporal.Json.Tests/Pragmatic.Temporal.Json.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Temporal.Samples/Pragmatic.Temporal.Samples.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Spreadsheet model — immutable records for XLSX and CSV generation/reading.</Description>
+    <PackageTags>spreadsheet;xlsx;csv;model</PackageTags>
+  </PropertyGroup>
+
+</Project>

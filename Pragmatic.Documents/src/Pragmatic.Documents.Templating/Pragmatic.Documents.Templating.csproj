@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Template expression engine for Pragmatic.Documents and Pragmatic.Email — parser, evaluator, pipes, DataContext.</Description>
+    <PackageTags>template;expression;binding;pipe;datasource</PackageTags>
+    <NoWarn>$(NoWarn);CA2007;CA1822;IL2080</NoWarn>
+  </PropertyGroup>
+
+</Project>

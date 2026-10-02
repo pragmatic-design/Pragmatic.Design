@@ -1,0 +1,43 @@
+{
+  "invoice": {
+    "title": "Fattura",
+    "dueDate": "Data scadenza",
+    "status": {
+      "draft": "Bozza",
+      "issued": "Emessa",
+      "paid": "Pagata",
+      "partiallyPaid": "Parzialmente pagata",
+      "overdue": "Scaduta",
+      "cancelled": "Annullata",
+      "refunded": "Rimborsata"
+    },
+    "document": {
+      "issuedOn": "Emessa il",
+      "billedTo": "Intestata a",
+      "description": "Descrizione",
+      "amount": "Importo",
+      "subtotal": "Imponibile",
+      "tax": "Imposta",
+      "total": "Totale"
+    }
+  },
+  "payment": {
+    "title": "Pagamento",
+    "method": {
+      "card": "Carta di credito",
+      "transfer": "Bonifico bancario",
+      "cash": "Contanti"
+    }
+  },
+  "lineItem": {
+    "title": "Voce",
+    "quantity": "Quantità",
+    "unitPrice": "Prezzo unitario"
+  },
+  "errors": {
+    "invoiceNotFound": "Fattura non trovata",
+    "paymentFailed": "Pagamento non riuscito",
+    "alreadyPaid": "Questa fattura è già stata pagata",
+    "invoiceCancelled": "Impossibile pagare una fattura annullata"
+  }
+}

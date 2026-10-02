@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A partial every mail of the hotel starts with. -->
+<email>
+  <hero background="#1f3a5f">
+    <heading level="1" color="#ffffff">{{ hotel.name }}</heading>
+  </hero>
+</email>

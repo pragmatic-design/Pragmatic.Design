@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pragmatic.Messaging.Core on its own: no broker, no database, no container.
+
+       ⚠️ This project exists because its folder did not have one. Two tests sat here, tracked, edited
+       by a repository-wide pass, and compiled by nobody — the gate discovers suites by walking for
+       *Tests.csproj, so a folder with no project file is not a suite that is missing from the
+       solution, it is not a suite at all.
+
+       Hermetic on purpose: Pragmatic.Messaging.Tests declares RequiresDocker, so every messaging unit
+       test in it runs only in the container tier. What lands here runs in the full tier, where a
+       regression in a plain attribute belongs. Moving the rest of those unit tests over is a separate
+       decision (it changes which tier covers them) and is not done here. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Messaging.Core.Tests</RootNamespace>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+    <!-- Channels is the one transport that needs no broker, so its semantics belong in the full tier
+         rather than behind Docker with the others. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Channels\Pragmatic.Messaging.Channels.csproj" />
+    <!-- A saga the generator writes an orchestrator for, driven against a repository that loses a save
+         on purpose: what the orchestrator does after a conflict has to run to be known. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <!-- The generator runs over this project, so a test can declare a handler and drive the pipeline
+         the SG writes for it. A snapshot pins the shape of that pipeline; what happens when it runs —
+         [Redelivery] re-scheduling instead of dead-lettering — has to be executed to be known
+. Same arrangement as Pragmatic.Jobs.Tests. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

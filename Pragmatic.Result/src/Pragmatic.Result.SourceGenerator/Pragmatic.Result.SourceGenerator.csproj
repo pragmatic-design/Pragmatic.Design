@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Source generators for Pragmatic.Result. Generates Result variants and custom Result types.</Description>
+    <PackageTags>result;source-generator;roslyn;codegen</PackageTags>
+  </PropertyGroup>
+
+  <!-- Analyzer DLL packaging is handled automatically via IsRoslynComponent=true
+       from Directory.Build.props; an explicit None include duplicates the file. -->
+
+</Project>

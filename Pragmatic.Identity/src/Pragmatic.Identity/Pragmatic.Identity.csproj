@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Identity runtime for the Pragmatic.Design ecosystem. Provides SystemUser, identity options, and claim mapping configuration — no ASP.NET Core dependency.</Description>
+    <PackageTags>identity;currentuser;authentication;claims</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <!--
+      So IdentityRecord can classify what it holds. Attributes only and zero dependencies, which is
+      what that package exists for — its own project file names Identity as one of the cases: an
+      entity assembly annotates, and the privacy runtime stays out of the graph.
+    -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Abstractions\Pragmatic.Privacy.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Privacy.EFCore</RootNamespace>
+    <Description>EF Core-backed subject registry for Pragmatic.Privacy: identities stored encrypted, found through a keyed blind index, and erased by breaking the link.</Description>
+    <PackageTags>pragmatic;privacy;gdpr;efcore;pseudonymisation</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Privacy.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography\Pragmatic.Cryptography.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

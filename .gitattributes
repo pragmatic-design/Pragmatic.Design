@@ -1,0 +1,65 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cs text diff=csharp
+*.csproj text
+*.slnx text
+*.sln text
+*.props text
+*.targets text
+
+# Documentation — force LF everywhere. The docs-sync tool (site/scripts/sync-docs.mjs)
+# writes LF; pinning eol=lf keeps Windows checkouts LF too, so regenerating the site
+# produces no spurious CRLF/LF churn.
+*.md text eol=lf
+*.txt text
+*.mdx text eol=lf
+
+# Configuration
+*.json text
+*.xml text
+*.yml text
+*.yaml text
+*.editorconfig text
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Windows scripts
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary — native libraries (never normalize / diff as text)
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.pdb binary
+
+# Binary — media & documents
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.bmp binary
+*.tiff binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+
+# Binary — build / signing artifacts
+*.snk binary
+*.nupkg binary
+*.snupkg binary

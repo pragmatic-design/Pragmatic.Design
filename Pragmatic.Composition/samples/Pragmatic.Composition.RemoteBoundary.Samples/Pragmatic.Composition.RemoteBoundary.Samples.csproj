@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- ========================================================================
+       Single-process RemoteBoundary demo.
+
+       Stands up a minimal WebApplication on http://localhost:5390 that hosts
+       the /_pragmatic/invoke endpoint with a hand-rolled handler for
+       CalculateTaxAction. Then constructs an HttpActionInvoker pointing at the
+       same address and issues three invocations (success, server-side error,
+       unroutable action) so the console output shows the full request /
+       response lifecycle including the RemoteError wire format.
+
+       For the end-to-end story with full Composition / SG / [RemoteBoundary]
+       attribute wiring, see examples/showcase/src/Showcase.Host.Distributed
+       together with Showcase.Billing.Host in the showcase solution.
+       ======================================================================== -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+</Project>

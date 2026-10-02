@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>CSV reader and writer — RFC 4180 compliant, culture-aware, zero dependencies.</Description>
+    <PackageTags>csv;reader;writer;rfc4180</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Documents.Csv.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Spreadsheet\Pragmatic.Documents.Spreadsheet.csproj" />
+  </ItemGroup>
+
+</Project>

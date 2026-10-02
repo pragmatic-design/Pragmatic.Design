@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Generated mocks on disk: diagnosing "member X does not exist" means reading what the
+         generator actually emitted, and deducing it from compiler errors costs far more. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <!-- Note: Test packages are auto-configured by Directory.Build.props -->
+
+  <ItemGroup>
+    <!-- Generator testing -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+    <!-- ASP.NET Core testing (includes DI transitively) -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <!-- OpenAPI manifest transformer (unit tests via InternalsVisibleTo) -->
+    <ProjectReference Include="..\..\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <!-- Direct reference to test the generator (we run it manually via CSharpGeneratorDriver) -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+    <!-- Required for generator output compilation -->
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <!-- Required for [Query<>] + [Endpoint] tests: IQueryExecutor -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- Required for authorization bridge tests: PragmaticPermissionRequirement -->
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <!-- Required for the rate-limiter concurrency regression test: real in-process atomic ICacheStack -->
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <!-- Required for [RecordAccess] on a query: the attribute, and the trail it writes to. Both, so the
+         test asserting that nothing is recorded without the attribute fails for the right reason — with
+         the audit package absent it would pass whatever the attribute did. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Abstractions\Pragmatic.Privacy.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

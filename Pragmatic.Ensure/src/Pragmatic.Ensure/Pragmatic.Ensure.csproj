@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Guard clauses for parameter validation. ThrowIf pattern for preconditions, Is pattern for conditional logic.</Description>
+    <PackageTags>guards;validation;preconditions;argument-validation;throw-if;ensure</PackageTags>
+  </PropertyGroup>
+
+  <!-- The analyzer ships inside this package so consuming projects get PRAG0100 without referencing
+       anything extra. ReferenceOutputAssembly=false: consumers must not compile against it, only load
+       it as an analyzer. PackAsCompanionAnalyzer packs it under analyzers/ (Directory.Build.targets). -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Ensure.Analyzers\Pragmatic.Ensure.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" PackAsCompanionAnalyzer="true" />
+  </ItemGroup>
+
+</Project>

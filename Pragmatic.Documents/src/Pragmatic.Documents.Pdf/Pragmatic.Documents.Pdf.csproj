@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>PDF renderer for DocumentModel — via Rust Typst compiler.</Description>
+    <PackageTags>pdf;document;typst;renderer</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Documents.Pdf.Tests" />
+  </ItemGroup>
+
+  <!-- Native library. Each file is packed under the name the P/Invoke asks for, 'Pragmatic.Pdf.Native':
+       the loader tries Pragmatic.Pdf.Native.dll on Windows and libPragmatic.Pdf.Native.so / .dylib
+       elsewhere, case-sensitively. The files in runtimes/ keep cargo's names (libpragmatic_pdf_native.so),
+       so the Linux one is renamed here, as Pragmatic.Imaging does. Packed as runtimes/**, it kept its
+       cargo name, and a Linux consumer of the package got IsSupported=false. -->
+  <ItemGroup>
+    <None Include="..\..\runtimes\win-x64\native\Pragmatic.Pdf.Native.dll"
+          Condition="Exists('..\..\runtimes\win-x64\native\Pragmatic.Pdf.Native.dll')"
+          Pack="true" PackagePath="runtimes\win-x64\native\Pragmatic.Pdf.Native.dll" Visible="false" />
+    <None Include="..\..\runtimes\linux-x64\native\libpragmatic_pdf_native.so"
+          Condition="Exists('..\..\runtimes\linux-x64\native\libpragmatic_pdf_native.so')"
+          Pack="true" PackagePath="runtimes\linux-x64\native\libPragmatic.Pdf.Native.so" Visible="false" />
+    <None Include="..\..\runtimes\osx-arm64\native\libpragmatic_pdf_native.dylib"
+          Condition="Exists('..\..\runtimes\osx-arm64\native\libpragmatic_pdf_native.dylib')"
+          Pack="true" PackagePath="runtimes\osx-arm64\native\libPragmatic.Pdf.Native.dylib" Visible="false" />
+  </ItemGroup>
+
+  <!-- Dev: copy native DLL to output for local testing (cross-platform) -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">
+    <None Include="..\..\runtimes\win-x64\native\Pragmatic.Pdf.Native.dll" CopyToOutputDirectory="PreserveNewest" Link="Pragmatic.Pdf.Native.dll" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Linux'))">
+    <None Include="..\..\runtimes\linux-x64\native\libpragmatic_pdf_native.so" CopyToOutputDirectory="PreserveNewest" Link="libPragmatic.Pdf.Native.so" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">
+    <None Include="..\..\runtimes\osx-arm64\native\libpragmatic_pdf_native.dylib" CopyToOutputDirectory="PreserveNewest" Link="libPragmatic.Pdf.Native.dylib" Visible="false" />
+  </ItemGroup>
+
+</Project>

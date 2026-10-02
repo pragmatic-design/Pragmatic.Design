@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- AWSSDK.Core 4.x has a low-severity advisory (GHSA-9cvc-h2w8-phrp) — suppressed pending AWS fix -->
+    <NoWarn>$(NoWarn);NU1901</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Storage.S3</RootNamespace>
+    <Description>Amazon S3 / Cloudflare R2 file storage provider for Pragmatic.Design.</Description>
+    <PackageTags>pragmatic;storage;s3;aws;r2;cloudflare</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+
+</Project>

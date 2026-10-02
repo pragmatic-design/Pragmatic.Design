@@ -1,0 +1,35 @@
+Pragmatic.Design — Licensing
+
+Copyright (c) 2026 Alessandro Saiani. "Pragmatic.Design" is a brand operated by
+Alessandro Saiani.
+
+This repository is DUAL-LICENSED. Which of the two licenses applies to a given
+package is listed below and in docs/LICENSING.md; each published NuGet package
+includes the full text of its applicable license:
+
+  • Foundation, capabilities & tooling  →  MIT
+    (see licenses/LICENSE-MIT.txt)
+    Free for everyone, forever — including production and commercial use, at any
+    scale. Covers: Result, Ensure, Abstractions, Specification, Validation,
+    Mapping, Caching, Patch, Temporal, Internationalization, Resilience,
+    Configuration, Logging, FeatureFlags, Discovery, Storage, Testing, and the
+    SourceGenerator.
+
+  • Framework runtime (the value)  →  PolyForm Small Business 1.0.0
+    (see licenses/LICENSE-PolyForm-Small-Business-1.0.0.txt)
+    Free for small businesses (under US $1,000,000 annual revenue AND under 100
+    employees/contractors), plus personal, educational, and open-source use. A
+    commercial license is required above that threshold. Covers the
+    domain-driven runtime and the composed-framework experience (Persistence,
+    Actions, Endpoints, Composition, Events, Messaging, Jobs, Migrations,
+    Identity, Authorization, MultiTenancy, Client, the Medium
+    Blocks, the Documents & media packages, the compliance packages (Audit,
+    Privacy, Cryptography, Redaction, Incidents), and the Platform preview).
+
+There is no conversion clause and no time-bomb: code the generator emits into
+your project is yours and keeps working.
+
+Plain-language summary, the full package map, and commercial-license terms:
+
+    docs/LICENSING.md
+

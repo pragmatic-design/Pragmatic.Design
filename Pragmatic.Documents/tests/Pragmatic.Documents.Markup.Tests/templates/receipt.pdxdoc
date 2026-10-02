@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document title="{{ t:receipt.title }}">
+  <page>
+    <import src="letterhead.pdxdoc" />
+    <heading level="1">{{ t:receipt.title }}</heading>
+    <text>{{ t:receipt.issued(when=receipt.issuedOn | date:"d") }}</text>
+    <text>{{ receipt.missing }}</text>
+  </page>
+</document>

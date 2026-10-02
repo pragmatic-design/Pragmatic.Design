@@ -1,0 +1,21 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/contract-tests.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/troubleshooting.md" />
+    <File Path="docs/typed-client.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Testing/Pragmatic.Testing.csproj" />
+    <Project Path="src/Pragmatic.Testing.SourceGenerator/Pragmatic.Testing.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Testing.Tests/Pragmatic.Testing.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Testing.SourceGenerator.Tests/Pragmatic.Testing.SourceGenerator.Tests.csproj" />
+  </Folder>
+</Solution>

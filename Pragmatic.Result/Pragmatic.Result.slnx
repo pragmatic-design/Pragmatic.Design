@@ -1,0 +1,44 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/api-reference.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/localization.md" />
+    <File Path="docs/migration.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Result/Pragmatic.Result.csproj" />
+    <Project Path="src/Pragmatic.Result.Analyzers/Pragmatic.Result.Analyzers.csproj" />
+    <Project Path="src/Pragmatic.Result.SourceGenerator/Pragmatic.Result.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/src/AspNetCore/">
+    <Project Path="src/Pragmatic.Result.AspNetCore/Pragmatic.Result.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/src/EFCore/">
+    <Project Path="src/Pragmatic.Result.EFCore/Pragmatic.Result.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Result.EFCore.MySql/Pragmatic.Result.EFCore.MySql.csproj" />
+    <Project Path="src/Pragmatic.Result.EFCore.PostgreSQL/Pragmatic.Result.EFCore.PostgreSQL.csproj" />
+    <Project Path="src/Pragmatic.Result.EFCore.SqlServer/Pragmatic.Result.EFCore.SqlServer.csproj" />
+    <Project Path="src/Pragmatic.Result.EFCore.Sqlite/Pragmatic.Result.EFCore.Sqlite.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Result.Tests/Pragmatic.Result.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Result.Analyzers.Tests/Pragmatic.Result.Analyzers.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Result.AspNetCore.Tests/Pragmatic.Result.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Result.EFCore.Tests/Pragmatic.Result.EFCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Result.Samples/Pragmatic.Result.Samples.csproj" />
+    <Project Path="samples/Pragmatic.Result.AspNetCore.Samples/Pragmatic.Result.AspNetCore.Samples.csproj" />
+    <Project Path="samples/Pragmatic.Result.EFCore.Samples/Pragmatic.Result.EFCore.Samples.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Result.Benchmarks/Pragmatic.Result.Benchmarks.csproj" />
+  </Folder>
+</Solution>

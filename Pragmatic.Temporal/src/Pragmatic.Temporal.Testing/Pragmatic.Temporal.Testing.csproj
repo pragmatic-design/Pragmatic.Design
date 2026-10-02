@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Testing utilities for Pragmatic.Temporal. Provides TestClock, TestTemporalContext, and other helpers for time-dependent tests.</Description>
+    <PackageTags>testing;datetime;clock;temporal;testclock</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+  </ItemGroup>
+
+</Project>

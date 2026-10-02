@@ -1,0 +1,33 @@
+<!-- Sdk.Web for the ASP.NET Core shared framework; intended to move back to BlazorWebAssembly -->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Opt out of shared testing, analyzers, etc. from Directory.Build.props -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>Showcase.BlazorClient</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Runtime deps: only Client helpers + Result for Result<T,E> + Abstractions for IError -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Client\src\Pragmatic.Client\Pragmatic.Client.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Client\src\Pragmatic.Client.SourceGenerator\Pragmatic.Client.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!--
+    Mode B: compile-only reference to domain assembly.
+    Private=false → DLL NOT copied to output (not deployed to browser).
+    The Client SG reads [PragmaticMetadata] assembly attributes at compile time
+    and generates typed clients — zero file sync, always up to date.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>

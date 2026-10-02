@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Billing.Host.Tests — boots the standalone Billing host.
+
+       ⚠️ A project of its own for the same reason as Showcase.Host.Distributed.Tests: a host's entry
+       point is a `Program` in the GLOBAL namespace and `PragmaticApp` is a public class in
+       `Pragmatic.Composition.Hosting` in EVERY host assembly, so a test project that references two
+       hosts cannot name either.
+       ======================================== -->
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: not meaningful in test projects (no SynchronizationContext) -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Showcase.Billing.Host\Showcase.Billing.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+</Project>

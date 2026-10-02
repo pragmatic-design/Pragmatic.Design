@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<email subject="{{ t:welcome.subject(name=customer.name) }}" preheader="{{ t:welcome.preheader }}">
+  <article>
+    <partial name="mail-header" />
+    <text>{{ t:welcome.body(name=customer.name) }}</text>
+    <button href="https://example.test/start">{{ t:welcome.start }}</button>
+  </article>
+</email>

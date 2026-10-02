@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- CA2007 conflicts with xUnit1030 in test projects -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- No source generator, exclude shared generator testing code -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+  </ItemGroup>
+
+</Project>

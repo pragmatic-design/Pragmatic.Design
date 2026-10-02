@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>I18N pipes and translation integration for Pragmatic.Documents.Templating — date, currency, percent, t: expressions via IStringLocalizer.</Description>
+    <PackageTags>template;i18n;date;currency;localization</PackageTags>
+    <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+  </ItemGroup>
+
+</Project>

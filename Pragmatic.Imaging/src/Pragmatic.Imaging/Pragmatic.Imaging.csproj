@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Image processing via Rust native library — decode, encode, resize, crop, filters, QR. Currently ships win-x64; other platforms via CI.</Description>
+    <PackageTags>imaging;image;resize;crop;qr;webp;avif;native;aot</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    Native library: NuGet packaging uses runtimes/{rid}/native/.
+
+    Each asset is packed under the name the P/Invoke will PROBE for, which is derived from
+    LibName ("Pragmatic.Imaging.Native" in NativeImports.cs) and not from the filename the Rust build
+    produces. Packed verbatim, linux-x64 would ship libpragmatic_imaging_native.so while the runtime
+    looks for libPragmatic.Imaging.Native.so, and every call from a Linux consumer of the package
+    would throw DllNotFoundException. A build in this repo cannot show it, because the dev-copy items
+    below rename the same file on the way to the output directory.
+  -->
+  <ItemGroup>
+    <None Include="..\..\runtimes\win-x64\native\Pragmatic.Imaging.Native.dll"
+          Condition="Exists('..\..\runtimes\win-x64\native\Pragmatic.Imaging.Native.dll')"
+          Pack="true" PackagePath="runtimes\win-x64\native\Pragmatic.Imaging.Native.dll" Visible="false" />
+    <None Include="..\..\runtimes\linux-x64\native\libpragmatic_imaging_native.so"
+          Condition="Exists('..\..\runtimes\linux-x64\native\libpragmatic_imaging_native.so')"
+          Pack="true" PackagePath="runtimes\linux-x64\native\libPragmatic.Imaging.Native.so" Visible="false" />
+    <!-- Not built on every machine: the RIDs present locally are a subset of what CI produces. An
+         explicit item must tolerate absence through its Condition, or a pack fails on a file that
+         was simply never compiled here. -->
+    <None Include="..\..\runtimes\osx-arm64\native\libpragmatic_imaging_native.dylib"
+          Condition="Exists('..\..\runtimes\osx-arm64\native\libpragmatic_imaging_native.dylib')"
+          Pack="true" PackagePath="runtimes\osx-arm64\native\libPragmatic.Imaging.Native.dylib" Visible="false" />
+  </ItemGroup>
+
+  <!-- Dev: copy native DLL for current RID to output directory for local testing -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">
+    <None Include="..\..\runtimes\win-x64\native\Pragmatic.Imaging.Native.dll" CopyToOutputDirectory="PreserveNewest" Link="Pragmatic.Imaging.Native.dll" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Linux'))">
+    <None Include="..\..\runtimes\linux-x64\native\libpragmatic_imaging_native.so" CopyToOutputDirectory="PreserveNewest" Link="libPragmatic.Imaging.Native.so" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">
+    <None Include="..\..\runtimes\osx-arm64\native\libpragmatic_imaging_native.dylib" CopyToOutputDirectory="PreserveNewest" Link="libPragmatic.Imaging.Native.dylib" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Imaging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

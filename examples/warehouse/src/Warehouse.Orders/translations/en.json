@@ -1,0 +1,6 @@
+{
+  "error.insufficient.stock.title": "Not enough stock",
+  "error.insufficient.stock.detail": "The order was not placed and nothing was held. Short: {lines}.",
+  "error.stock.unanswered.title": "Stock is not answering",
+  "error.stock.unanswered.detail": "The order was not placed: the stock could not be checked. Try again shortly."
+}

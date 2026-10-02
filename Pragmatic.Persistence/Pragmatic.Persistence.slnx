@@ -1,0 +1,58 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/01-getting-started.md" />
+    <File Path="docs/02-entity-system.md" />
+    <File Path="docs/03-attributes.md" />
+    <File Path="docs/04-relationships.md" />
+    <File Path="docs/05-repository.md" />
+    <File Path="docs/06-mutations.md" />
+    <File Path="docs/07-query-filters.md" />
+    <File Path="docs/08-advanced.md" />
+    <File Path="docs/09-query-system.md" />
+    <File Path="docs/10-grid-filtering.md" />
+    <File Path="docs/11-projections-views.md" />
+    <File Path="docs/12-datasource-loading.md" />
+    <File Path="docs/13-patch.md" />
+    <File Path="docs/14-diagnostics.md" />
+    <File Path="docs/15-query-pipeline.md" />
+    <File Path="docs/16-mutation-pipeline.md" />
+    <File Path="docs/17-boundaries.md" />
+    <File Path="docs/18-data-ownership.md" />
+    <File Path="docs/19-state-machine.md" />
+    <File Path="docs/20-eager-loading.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/docs/efcore/">
+    <File Path="docs/efcore/01-dbcontext-generation.md" />
+    <File Path="docs/efcore/02-repository-implementation.md" />
+    <File Path="docs/efcore/03-entity-configuration.md" />
+    <File Path="docs/efcore/04-interceptors-runtime.md" />
+    <File Path="docs/efcore/05-bulk-operations.md" />
+    <File Path="docs/efcore/06-filter-pipeline.md" />
+    <File Path="docs/efcore/07-testing-generated-persistence.md" />
+    <File Path="docs/efcore/08-migration-patterns.md" />
+    <File Path="docs/efcore/README.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Persistence/Pragmatic.Persistence.csproj" />
+    <Project Path="src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Analyzers/Pragmatic.Persistence.Analyzers.csproj" />
+    <Project Path="src/Pragmatic.Persistence.CodeFixers/Pragmatic.Persistence.CodeFixers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
+    <Project Path="samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
+  </Folder>
+</Solution>

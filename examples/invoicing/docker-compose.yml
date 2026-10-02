@@ -1,0 +1,25 @@
+# What Invoicing needs to run: one PostgreSQL. `docker compose up -d --wait`, then
+# `dotnet run --project src/Invoicing.Host`.
+# Port 5441, not 5432 and not 5440: Time off holds 5440, and the two examples must be able to run at once.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: invoicing
+      POSTGRES_USER: invoicing
+      # The password of this local, disposable container, written in the host's appsettings.json so the
+      # example runs as cloned. Not a secret and not what a deployment uses: that comes from its own
+      # configuration, never from a committed file.
+      POSTGRES_PASSWORD: Invoicing@Dev!
+    ports:
+      - "5441:5432"
+    volumes:
+      - invoicing-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoicing -d invoicing"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  invoicing-data:

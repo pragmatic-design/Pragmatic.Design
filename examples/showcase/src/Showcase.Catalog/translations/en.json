@@ -1,0 +1,15 @@
+{
+  "property": {
+    "title": "Properties",
+    "checkIn": "Check-in time",
+    "checkOut": "Check-out time",
+    "rating": "Star rating",
+    "noDescription": "No description available"
+  },
+  "amenity": { "title": "Amenities" },
+  "errors": {
+    "propertyNotFound": "Property not found",
+    "amenityNotFound": "Amenity not found",
+    "propertyInactive": "This property is no longer active"
+  }
+}

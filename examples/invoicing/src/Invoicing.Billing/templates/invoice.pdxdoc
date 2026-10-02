@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The invoice as its customer reads it: one template, every language the module has translations for.
+
+  Rendered by IPdxTemplates in the customer's language — the one frozen onto the invoice at issue — so
+  the words (t:), the dates (date) and the amounts (currency, over Money: each amount carries its own
+  currency) are all the customer's, whoever issues it.
+
+  The roots are issuer, invoice and lines; InvoiceDocument writes them down, and nothing else is
+  reachable from here.
+-->
+<document title="{{ t:invoice.document.heading }} {{ invoice.number }}" author="{{ issuer.legalName }}" page-size="A4" margin="20">
+  <page>
+    <heading level="1">{{ t:invoice.document.heading }} {{ invoice.number }}</heading>
+    <text>{{ issuer.legalName }} — {{ t:invoice.document.vat_number }} {{ issuer.vatNumber }}</text>
+    <text>{{ issuer.street }}, {{ issuer.postCode }} {{ issuer.city }} ({{ issuer.country }})</text>
+    <spacer />
+
+    <heading level="2">{{ t:invoice.document.billed_to }}</heading>
+    <text>{{ invoice.billedToName }}</text>
+    <text>{{ t:invoice.document.vat_number }} {{ invoice.billedToVatNumber }}</text>
+    <text>{{ invoice.billedToStreet }}, {{ invoice.billedToPostCode }} {{ invoice.billedToCity }} ({{ invoice.billedToCountry }})</text>
+    <spacer />
+
+    <text>{{ t:invoice.document.issued_on }} {{ invoice.issuedOn | date:"d" }} — {{ t:invoice.document.due_on }} {{ invoice.dueOn | date:"d" }}</text>
+    <spacer />
+
+    <table data-source="lines">
+      <column>{{ t:invoice.document.description }}</column>
+      <column align="right">{{ t:invoice.document.quantity }}</column>
+      <column align="right">{{ t:invoice.document.unit_price }}</column>
+      <column align="right">{{ t:invoice.document.vat_rate }}</column>
+      <column align="right">{{ t:invoice.document.net }}</column>
+      <column align="right">{{ t:invoice.document.vat_amount }}</column>
+      <row-template>
+        <cell>{{ item.description }}</cell>
+        <cell>{{ item.quantity | number:"2" }}</cell>
+        <cell>{{ item.unitPrice | currency }}</cell>
+        <cell>{{ item.vatRate | number:"0" }}%</cell>
+        <cell>{{ item.net | currency }}</cell>
+        <cell>{{ item.vat | currency }}</cell>
+      </row-template>
+    </table>
+    <spacer />
+
+    <text>{{ t:invoice.document.net }} {{ invoice.net | currency }} — {{ t:invoice.document.vat_rate }} {{ invoice.vat | currency }} — {{ t:invoice.document.total }} {{ invoice.gross | currency }}</text>
+  </page>
+</document>

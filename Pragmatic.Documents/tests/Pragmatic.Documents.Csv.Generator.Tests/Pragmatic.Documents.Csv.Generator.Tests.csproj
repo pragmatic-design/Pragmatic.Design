@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- NU1608: the generator (built against Roslyn 3.8) is also referenced as a normal assembly for the
+         in-memory diagnostic test, which uses Roslyn 4.8; the higher version resolves and runs the
+         IIncrementalGenerator fine. -->
+    <NoWarn>$(NoWarn);CA2007;NU1608</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
+    <!-- Referenced as an analyzer (so the runtime DTOs are generated) AND as a normal assembly
+         (ReferenceOutputAssembly=true) so the diagnostic test can drive the generator in-memory. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv.Generator\Pragmatic.Documents.Csv.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+</Project>

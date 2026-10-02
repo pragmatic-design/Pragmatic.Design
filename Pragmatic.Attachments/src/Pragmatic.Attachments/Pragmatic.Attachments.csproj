@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Attachments</RootNamespace>
+    <Description>Attachment trait plugin for Pragmatic.Design — adds [HasAttachments] for auto-generated file attachment entities, actions (upload/download/delete), and endpoints via source generation.</Description>
+    <PackageTags>pragmatic;attachments;files;trait;source-generator</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

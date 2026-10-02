@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Pragmatic.Discovery</PackageId>
+    <Description>Runtime service discovery for the Pragmatic.Design ecosystem. Enables hosts to register their topology and discover other hosts in single-process and distributed deployments.</Description>
+    <PackageTags>discovery;service-mesh;topology;pragmatic</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+  </ItemGroup>
+
+</Project>

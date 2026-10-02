@@ -1,0 +1,53 @@
+# What Warehouse needs to run: one PostgreSQL, one RabbitMQ, one Redis. `docker compose up -d --wait`,
+# then `node run.mjs`, which starts the Agents, the four hosts and the gateway in front of them.
+#
+# Ports: 5443 for PostgreSQL (Time off 5440, Invoicing 5441, Casework 5442), RabbitMQ 5673/15673 and Redis
+# 6380, so this example runs beside the others. The broker and the cache are here from the start, and the
+# stories that use them wire them: request/reply and the saga over RabbitMQ, the shared cache over Redis.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: warehouse
+      # The password of this local, disposable container, written in the hosts' appsettings.json so the
+      # example runs as cloned. Not a secret and not what a deployment uses: that comes from its own
+      # configuration, never from a committed file.
+      POSTGRES_PASSWORD: Warehouse@Dev!
+    ports:
+      - "5443:5432"
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+      - ./docker/create-databases.sql:/docker-entrypoint-initdb.d/create-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warehouse -d warehouse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: warehouse
+      RABBITMQ_DEFAULT_PASS: Warehouse@Dev!
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  warehouse-data:

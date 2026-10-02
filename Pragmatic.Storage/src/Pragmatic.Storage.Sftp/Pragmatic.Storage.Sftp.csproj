@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Pragmatic.Storage.Sftp</RootNamespace>
+    <Description>SFTP (SSH File Transfer Protocol) file storage provider for Pragmatic.Design.</Description>
+    <PackageTags>pragmatic;storage;sftp;ssh;file</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SSH.NET" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Storage.Sftp.Tests" />
+  </ItemGroup>
+
+</Project>

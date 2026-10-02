@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The one module of Time off: people, allowances, kinds of absence, holidays and requests. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <!-- The decisions go into the audit trail, which outlives the people it is about. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <!-- Content in several languages (LocalizedString) and the messages of the module. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <!-- The employees' personal data: classified on the entities, exported and erased through the
+         adapters the generator writes from that classification. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+    <!-- LeaveRequest.Reason is a ProtectedValue: the module names the type, protects the text when a
+         request is submitted, and destroys the key when the employee is erased. The EF side of it — the
+         converter and the key table — is the host's, as every storage decision is. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography\Pragmatic.Cryptography.csproj" />
+    <!-- Security incidents and their reporting clocks, read out of the same trail. The framework starts
+         the clocks and makes the remaining time visible; whether an incident is notifiable is a
+         judgement, and this application does not automate it either. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Incidents\src\Pragmatic.Incidents\Pragmatic.Incidents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Incidents\src\Pragmatic.Incidents.Audit\Pragmatic.Incidents.Audit.csproj" />
+  </ItemGroup>
+
+  <!-- Who the caller is and what they may do. Every user is an employee: the employee carries the local
+       credentials (Identity.Local), Identity.Persistence resolves the signed-in employee from the token,
+       and the module signs its own tokens (Identity.Local.Jwt) because it is the identity provider. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+  </ItemGroup>
+
+  <!-- The module's messages, one file per language. The generator reads them at compile time into keys
+       (T.Validation.…) and refuses a key one language has and the other lacks (PRAG1802); the host reads
+       them at run time, from the output folder, to answer in the caller's language. -->
+  <ItemGroup>
+    <AdditionalFiles Include="translations\*.json" />
+    <Content Include="translations\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

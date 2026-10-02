@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Pragmatic.Composition.RemoteBoundary.Samples": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:64049;http://localhost:64050"
+    }
+  }
+}

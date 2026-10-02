@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Consumer samples are standalone NuGet consumers — they MUST NOT inherit any of
+    the monorepo-wide packaging metadata (MinVer, copyright, LICENSE/README pack
+    items, TreatWarningsAsErrors, etc.). Stopping the inheritance chain here is
+    the whole point: prove that a plain .csproj with a PackageReference works.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+</Project>

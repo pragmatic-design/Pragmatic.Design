@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Persistence.EFCore</RootNamespace>
+    <Description>Entity Framework Core implementation for Pragmatic.Persistence. DbContext, Repository implementations, and EF-specific features.</Description>
+    <PackageTags>pragmatic;persistence;entityframework;efcore;repository</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Persistence.EFCore.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Persistence.EFCore.Samples" />
+  </ItemGroup>
+
+  <!-- Dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <!-- Classifies a provider exception into a domain error: a declared [LogicKey] or relation must not
+         surface as an unhandled 500. The base package carries a provider-agnostic heuristic; installing
+         Pragmatic.Result.EFCore.<Provider> sharpens it. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+  </ItemGroup>
+
+  <!-- EF Core -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <!-- Required so the AspNetCore sample can use DefaultHttpContext / detection strategies
+       (FrameworkReference does not flow transitively from the referenced AspNetCore project). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>ASP.NET Core bridge for Pragmatic.MultiTenancy. HTTP-based tenant resolvers (header, claim, subdomain, route) and resolution middleware.</Description>
+    <PackageTags>multitenancy;aspnetcore;tenant;resolver;middleware</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
+    <!-- For IStartupStep: this package ships TenantResolutionStep, which is the only way the
+         resolution middleware reaches the pipeline. Same shape as Internationalization.AspNetCore,
+         Identity, Discovery and Temporal, which all reference Composition to ship their own step. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

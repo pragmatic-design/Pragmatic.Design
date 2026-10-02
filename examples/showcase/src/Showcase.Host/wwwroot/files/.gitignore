@@ -1,0 +1,4 @@
+# Runtime file storage (LocalDiskFileStorage). Everything here is uploaded by the app at
+# runtime (e.g. UploadPropertyPhotoAction) and is not part of the repository.
+*
+!.gitignore

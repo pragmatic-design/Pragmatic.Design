@@ -1,0 +1,546 @@
+---
+import Base from "@/layouts/Base.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+---
+
+<Base title="Pragmatic Design — The Foundry of Precision Code">
+  <Header />
+
+  <!-- Corner ribbon: Preview Docs -->
+  <a href="https://docs.pragmaticdesign.net" class="corner-ribbon" aria-label="Preview Documentation">
+    <span>Preview Docs</span>
+  </a>
+
+  <main>
+    <!-- Hero -->
+    <section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+      <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-primary/5 blur-[140px] pointer-events-none"></div>
+
+      <div class="relative max-w-7xl mx-auto px-6">
+        <div class="text-center mb-14">
+          <div class="flex items-center justify-center gap-3 mb-8">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel text-xs font-body text-text-variant">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              1.0.0-alpha · Preview
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-panel text-xs font-body text-primary">
+              <span>🤖</span> Agent-Ready
+            </div>
+          </div>
+
+          <h1 class="font-heading font-extrabold text-5xl md:text-7xl leading-tight tracking-tight mb-6">
+            <span class="metal-gradient">Pragmatic</span> Design<br />
+            <span class="text-text-variant text-4xl md:text-5xl font-bold">for .NET</span>
+          </h1>
+
+          <p class="text-2xl md:text-3xl text-text-variant max-w-2xl mx-auto mb-4 font-heading font-medium tracking-tight">
+            The Foundry of Precision Code
+          </p>
+
+          <p class="text-base md:text-lg text-text-muted italic max-w-2xl mx-auto mb-6 font-body leading-relaxed">
+            One generator to rule them all, one generator to find them,<br />
+            one generator to bring them all — and at compile time bind them.
+          </p>
+
+          <p class="text-lg md:text-xl text-text-muted max-w-3xl mx-auto mb-10 font-body leading-relaxed">
+            Describe your domain. One source generator writes the application around it — plain C# you can read,
+            checked at compile time, and yours.
+          </p>
+
+          <div class="flex items-center justify-center gap-4">
+            <a href="https://docs.pragmaticdesign.net" class="btn-primary">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Read the Docs
+            </a>
+            <a href="#the-shift" class="btn-secondary">
+              Why a Source Generator?
+            </a>
+          </div>
+        </div>
+
+        <!-- Side-by-side: You write / The generator writes -->
+        <div class="grid md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+          <!-- Left: What you write -->
+          <div class="glass-panel rounded-xl overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-2.5 border-b border-outline-variant">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
+              </div>
+              <span class="text-xs text-text-muted font-mono ml-2">ConfirmReservationMutation.cs</span>
+              <span class="ml-auto text-[10px] font-body text-primary/70 uppercase tracking-wider">You write</span>
+            </div>
+            <pre class="p-5 text-[13px] leading-relaxed overflow-x-auto"><code class="font-mono"><span class="text-[#c678dd]">[Endpoint</span>(<span class="text-[#e5c07b]">HttpVerb</span>.Post, <span class="text-[#98c379]">"/&#123;id&#125;/confirm"</span>)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[EndpointGroup</span>&lt;<span class="text-[#e5c07b]">ReservationsGroup</span>&gt;<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[RequirePermission</span>(<span class="text-[#e5c07b]">BookingPermissions</span>.Reservation.Update)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[Mutation</span>(Mode = <span class="text-[#e5c07b]">MutationMode</span>.Update)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[TransitionsTo</span>&lt;<span class="text-[#e5c07b]">ReservationStatus</span>&gt;(<span class="text-[#e5c07b]">ReservationStatus</span>.Confirmed)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">public partial class</span> <span class="text-[#e5c07b]">ConfirmReservationMutation</span>
+    : <span class="text-[#e5c07b]">Mutation</span>&lt;<span class="text-[#e5c07b]">Reservation</span>, <span class="text-[#e5c07b]">ConflictError</span>&gt;
+&#123;
+    <span class="text-[#c678dd]">public required</span> <span class="text-[#e5c07b]">Guid</span> <span class="text-[#61afef]">Id</span> &#123; <span class="text-[#c678dd]">get</span>; <span class="text-[#c678dd]">init</span>; &#125;
+&#125;
+
+<span class="text-text-muted">// No body: load, permission, transition, commit</span>
+<span class="text-text-muted">// and the 409 are all declared.</span></code></pre>
+          </div>
+
+          <!-- Right: What gets generated -->
+          <div class="glass-panel rounded-xl overflow-hidden border-primary/10">
+            <div class="flex items-center gap-2 px-4 py-2.5 border-b border-outline-variant">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
+              </div>
+              <span class="text-xs text-text-muted font-mono ml-2">ConfirmReservationMutation.Endpoint.g.cs</span>
+              <span class="ml-auto text-[10px] font-body text-primary/70 uppercase tracking-wider">Generated</span>
+            </div>
+            <pre class="p-5 text-[13px] leading-relaxed overflow-x-auto"><code class="font-mono"><span class="text-text-muted">// excerpt — ordinary C#, in obj/</span>
+<span class="text-[#c678dd]">var</span> builder = endpoints.MapPost(<span class="text-[#98c379]">"/&#123;id&#125;/confirm"</span>, ...
+&#123;
+    <span class="text-[#c678dd]">if</span> (!<span class="text-[#e5c07b]">RequestBinder</span>.TryBind&lt;<span class="text-[#e5c07b]">Guid</span>&gt;(__raw_id, <span class="text-[#c678dd]">out var</span> id))
+    &#123; <span class="text-text-muted">/* 400, naming the field */</span> &#125;
+    <span class="text-[#c678dd]">var</span> invoker = services.GetRequiredService&lt;
+        <span class="text-[#e5c07b]">IMutationInvoker</span>&lt;<span class="text-[#e5c07b]">ConfirmReservationMutation</span>, <span class="text-[#e5c07b]">Reservation</span>&gt;&gt;();
+    <span class="text-text-muted">// …</span>
+&#125;);
+builder.RequireAuthorization(policy =&gt; policy.AddRequirements(
+    <span class="text-[#c678dd]">new</span> <span class="text-[#e5c07b]">PragmaticPermissionRequirement</span>(
+        <span class="text-[#c678dd]">new</span>[] &#123; <span class="text-[#98c379]">"booking.reservation.update"</span> &#125;, <span class="text-[#e5c07b]">PermissionMode</span>.All)));
+builder.WithMetadata(<span class="text-[#c678dd]">new</span> <span class="text-[#e5c07b]">ProducesResponseTypeMetadata</span>(<span class="text-[#d19a66]">409</span>, ...));
+<span class="text-text-muted">// … 200, 400, 401, 403, 404, 422 and 500 likewise</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-24">
+      <div class="max-w-6xl mx-auto px-6">
+        <h2 class="font-heading font-bold text-3xl md:text-4xl text-center mb-4">
+          Declare Intent.<br />
+          <span class="text-text-variant">The Compiler Writes the Plumbing.</span>
+        </h2>
+        <p class="text-text-muted text-center max-w-2xl mx-auto mb-16 font-body">
+          What the generator can decide at compile time, it decides there, and emits the line that does it —
+          not a lookup that might find nothing at runtime.
+        </p>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: "⚡",
+              title: "One Generator",
+              desc: "One incremental source generator, 31 feature pipelines: repositories, endpoints, validators, invokers, DI wiring, OpenAPI — from the declarations you write.",
+            },
+            {
+              icon: "🧩",
+              title: "Modular by Design",
+              desc: "45 modules. Reference a package and its feature switches on; remove it and the code it generated disappears. Adopt one library or the whole stack.",
+            },
+            {
+              icon: "🔒",
+              title: "Mistakes Are Diagnostics",
+              desc: "Over 400 PRAG diagnostics, each with an ID and a location, catch at build time what would otherwise fail on the first request — or in production.",
+            },
+            {
+              icon: "🤖",
+              title: "Built for Agents Too",
+              desc: "A declaration is a dozen typed lines an agent can read; a diagnostic is a loop it can close on its own. 35 skills for Claude Code, Codex and other agents teach the framework.",
+            },
+            {
+              icon: "🚀",
+              title: "AOT-First Design",
+              desc: "The generated code never reflects, and a web host serving generated endpoints is published Native AOT by the gate. EF Core is not AOT-compatible yet, so a host with persistence is not an AOT application today.",
+            },
+            {
+              icon: "📐",
+              title: "The Module Declares, the Host Composes",
+              desc: "Each module states facts about itself; the host, which sees every assembly, puts them together — the same modules run as one host or as two.",
+            },
+          ].map((feature) => (
+            <div class="glass-panel rounded-xl p-6 hover:border-primary/20 transition-colors">
+              <div class="text-2xl mb-3">{feature.icon}</div>
+              <h3 class="font-heading font-semibold text-lg mb-2">{feature.title}</h3>
+              <p class="text-sm text-text-variant leading-relaxed font-body">{feature.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- The Shift: Verbosity as Advantage -->
+    <section id="the-shift" class="py-24">
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="font-heading font-bold text-3xl md:text-4xl mb-4">
+            The Shift.<br />
+            <span class="metal-gradient">Verbosity Becomes Advantage.</span>
+          </h2>
+          <p class="text-text-muted max-w-3xl mx-auto font-body leading-relaxed">
+            For decades, C# developers fought verbosity with abstractions, magic strings, and reflection.
+            Source generators change the equation.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Before -->
+          <div class="glass-panel rounded-xl p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-lg bg-[#ff5f57]/10 flex items-center justify-center text-[#ff5f57]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 class="font-heading font-semibold text-lg">The Old Approach</h3>
+            </div>
+            <p class="text-text-variant font-body text-sm leading-relaxed mb-4">
+              You write explicit, descriptive code — but then you <strong class="text-text">pay the price at runtime</strong>.
+              The framework uses reflection to discover your types, scan assemblies, build registrations.
+              Startup is slow, trimming breaks, and a missing registration is found by the first request.
+            </p>
+            <ul class="space-y-2 text-sm text-text-muted font-body">
+              <li class="flex items-start gap-2">
+                <span class="text-[#ff5f57] mt-0.5">✗</span>
+                <span>Reflection-based discovery at startup</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[#ff5f57] mt-0.5">✗</span>
+                <span>Convention-over-configuration hides intent</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[#ff5f57] mt-0.5">✗</span>
+                <span>Runtime errors for compile-time mistakes</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[#ff5f57] mt-0.5">✗</span>
+                <span>Hand-written plumbing, a little different every time</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- After -->
+          <div class="glass-panel rounded-xl p-8 border-primary/15">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 class="font-heading font-semibold text-lg">The Pragmatic Approach</h3>
+            </div>
+            <p class="text-text-variant font-body text-sm leading-relaxed mb-4">
+              You write the same explicit, descriptive code — but now the <strong class="text-text">compiler reads it before the runtime does</strong>.
+              Attributes and types become instructions for the source generator.
+              Verbosity is no longer a cost. It's the input.
+            </p>
+            <ul class="space-y-2 text-sm text-text-muted font-body">
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">✓</span>
+                <span>Compile-time code generation — no runtime discovery</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">✓</span>
+                <span>Explicit declarations are the input, not the cost</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">✓</span>
+                <span>Build errors for declarations that do not fit together</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">✓</span>
+                <span>Plumbing written the same way every time, tested once</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-12 text-center">
+          <p class="text-text-variant font-body text-sm max-w-2xl mx-auto italic">
+            "The best code is not the shortest — it's the most <strong class="text-text not-italic">legible to both humans and machines</strong>.
+            A source generator lets you be as descriptive as you want, at no runtime cost."
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agent-Ready Deep Dive -->
+    <section class="py-24">
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 class="font-heading font-bold text-3xl mb-4">
+              Your code speaks.<br />
+              <span class="metal-gradient">Agents read it.</span>
+            </h2>
+            <p class="text-text-variant font-body leading-relaxed mb-6">
+              A declarative API is semantic by construction. Attributes like
+              <code class="text-primary font-mono text-sm">[DomainAction]</code>,
+              <code class="text-primary font-mono text-sm">[Mutation(Mode = MutationMode.Create)]</code> and
+              <code class="text-primary font-mono text-sm">[Query&lt;T, TDto&gt;]</code>
+              carry meaning — not just configuration.
+            </p>
+            <p class="text-text-variant font-body leading-relaxed mb-6">
+              Repetitive code is where agents are weakest: every copy is a little different, and every copy is
+              code to review. A generator writes it the same way every time. What is left to review is the
+              declaration and the domain logic — a few dozen lines, not a few hundred.
+            </p>
+            <ul class="space-y-3 text-sm text-text-variant font-body">
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">→</span>
+                <span><strong class="text-text">The context is small</strong> — a declaration is a dozen typed lines</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">→</span>
+                <span><strong class="text-text">The feedback is immediate</strong> — a diagnostic at build time, with a location</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary mt-0.5">→</span>
+                <span><strong class="text-text">Patterns are consistent</strong> — one way to do each thing</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- A read, declared -->
+          <div class="glass-panel rounded-xl overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-2.5 border-b border-outline-variant">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
+              </div>
+              <span class="text-xs text-text-muted font-mono ml-2">SearchReservationsQuery.cs</span>
+            </div>
+            <pre class="p-5 text-[13px] leading-relaxed overflow-x-auto"><code class="font-mono"><span class="text-text-muted">// A read with no body: filters, sorting and a</span>
+<span class="text-text-muted">// projection computed in SQL.</span>
+
+<span class="text-[#c678dd]">[Query</span>&lt;<span class="text-[#e5c07b]">Reservation</span>, <span class="text-[#e5c07b]">ReservationSummaryDto</span>&gt;<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[RequirePermission</span>(<span class="text-[#e5c07b]">BookingPermissions</span>.Reservation.Read)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">[Endpoint</span>(<span class="text-[#e5c07b]">HttpVerb</span>.Get, <span class="text-[#98c379]">"api/reservations/search"</span>)<span class="text-[#c678dd]">]</span>
+<span class="text-[#c678dd]">public partial class</span> <span class="text-[#e5c07b]">SearchReservationsQuery</span>
+&#123;
+    <span class="text-[#c678dd]">[Filter]</span> <span class="text-[#c678dd]">public</span> <span class="text-[#e5c07b]">Guid</span>? <span class="text-[#61afef]">GuestId</span> &#123; <span class="text-[#c678dd]">get</span>; <span class="text-[#c678dd]">init</span>; &#125;
+    <span class="text-[#c678dd]">[Filter]</span> <span class="text-[#c678dd]">public</span> <span class="text-[#e5c07b]">ReservationStatus</span>? <span class="text-[#61afef]">Status</span> &#123; <span class="text-[#c678dd]">get</span>; <span class="text-[#c678dd]">init</span>; &#125;
+
+    <span class="text-[#c678dd]">[Sort</span>(DefaultDirection = <span class="text-[#e5c07b]">SortDirection</span>.Descending)<span class="text-[#c678dd]">]</span>
+    <span class="text-[#c678dd]">public</span> <span class="text-[#e5c07b]">SortDirection</span>? <span class="text-[#61afef]">CheckInSort</span> &#123; <span class="text-[#c678dd]">get</span>; <span class="text-[#c678dd]">init</span>; &#125;
+&#125;</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Tooling -->
+    <section class="py-24">
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="font-heading font-bold text-3xl md:text-4xl mb-4">
+            Built for the<br />
+            <span class="metal-gradient">AI-Assisted Developer.</span>
+          </h2>
+          <p class="text-text-muted max-w-2xl mx-auto font-body">
+            You still read what the agent wrote. There is just much less of it, and none of it is plumbing.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="glass-panel rounded-xl p-6 hover:border-primary/20 transition-colors">
+            <div class="text-2xl mb-3">📖</div>
+            <h3 class="font-heading font-semibold text-lg mb-2">Docs for People and Agents</h3>
+            <p class="text-sm text-text-variant leading-relaxed font-body mb-3">
+              Every module documents its concepts, common mistakes and troubleshooting, and an
+              <code class="text-primary font-mono text-xs">llms.txt</code> indexes it all for an agent.
+            </p>
+            <span class="text-xs text-primary font-mono">338 pages · 44 modules</span>
+          </div>
+
+          <div class="glass-panel rounded-xl p-6 hover:border-primary/20 transition-colors">
+            <div class="text-2xl mb-3">🛠️</div>
+            <h3 class="font-heading font-semibold text-lg mb-2">Agent Skills</h3>
+            <p class="text-sm text-text-variant leading-relaxed font-body mb-3">
+              Skills that teach the framework, for Claude Code, Codex and any agent that reads
+              <code class="text-primary font-mono text-xs">SKILL.md</code>:
+              <code class="text-primary font-mono text-xs">pragmatic-new-app</code> interviews you about your domain and
+              scaffolds the solution; <code class="text-primary font-mono text-xs">pragmatic-use-persistence</code> and
+              the others know each module, with examples copied from tested code.
+              <a href="https://docs.pragmaticdesign.net/getting-started/with-an-agent/" class="text-primary hover:underline">Install them →</a>
+            </p>
+            <span class="text-xs text-primary font-mono">35 skills</span>
+          </div>
+
+          <div class="glass-panel rounded-xl p-6 hover:border-primary/20 transition-colors">
+            <div class="text-2xl mb-3">🧠</div>
+            <h3 class="font-heading font-semibold text-lg mb-2">A Loop the Agent Closes</h3>
+            <p class="text-sm text-text-variant leading-relaxed font-body mb-3">
+              When two declarations do not fit together, the build says so, with an ID and a location —
+              feedback an agent can act on before a person looks at anything.
+            </p>
+            <span class="text-xs text-primary font-mono">400+ diagnostics</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AOT Story -->
+    <section class="py-24">
+      <div class="max-w-4xl mx-auto px-6">
+        <div class="glass-panel rounded-2xl p-10 md:p-14">
+          <div class="flex items-start gap-6">
+            <div class="hidden md:flex w-16 h-16 rounded-xl bg-primary/10 items-center justify-center text-3xl shrink-0">
+              🚀
+            </div>
+            <div>
+              <h2 class="font-heading font-bold text-2xl md:text-3xl mb-4">
+                AOT-First. <span class="text-text-variant">Not Full-Stack Yet.</span>
+              </h2>
+              <p class="text-text-variant font-body leading-relaxed mb-4">
+                The code Pragmatic generates never reflects: serialization goes through generated
+                <code class="text-primary font-mono text-sm">JsonTypeInfo</code>, and endpoints are mapped as plain
+                request delegates rather than through ASP.NET's runtime delegate factory.
+                Three smoke applications — a web host serving a generated endpoint among them — are published
+                Native AOT and run by the gate.
+              </p>
+              <p class="text-text-variant font-body leading-relaxed mb-6">
+                <strong class="text-text">What is not AOT yet.</strong> Entity Framework Core is not fully compatible
+                with trimming and AOT, so a host with persistence is not a Native AOT application today. The generated
+                HTTP client has no JSON context yet. And some runtime code is not trim-safe — reflective fallbacks,
+                configuration binding: it is annotated, and the gate counts it, with a budget that can only go down.
+              </p>
+              <div class="flex flex-wrap gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-primary/10 text-primary">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Generated serialization — proven under AOT
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-primary/10 text-primary">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Generated endpoints — proven under AOT
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-[#ffbd2e]/10 text-[#ffbd2e]">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#ffbd2e]"></span>
+                  Generated client — not yet
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-[#ffbd2e]/10 text-[#ffbd2e]">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#ffbd2e]"></span>
+                  Persistence — not AOT (EF Core)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Where it stands -->
+    <section class="py-24">
+      <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="font-heading font-bold text-3xl md:text-4xl mb-4">
+            What's Forged.<br />
+            <span class="metal-gradient">What's Next.</span>
+          </h2>
+          <p class="text-text-muted max-w-2xl mx-auto font-body">
+            The first public release is 1.0.0-alpha: a core set of modules is stable, the others are functional
+            or in preview, and APIs can still change before 1.0.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          {[
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "45 Modules, One Generator",
+              desc: "Entities, repositories and declarative queries; mutations and domain actions with a generated pipeline; minimal-API endpoints with OpenAPI; identity, roles, permissions and multi-tenancy — composed by one source generator.",
+            },
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "Messaging, Sagas, Jobs",
+              desc: "A transactional outbox; transports over Channels, RabbitMQ, Kafka, Azure Service Bus or SQL; sagas with compensation; background jobs with retry, timeout and distributed locking.",
+            },
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "Compliance",
+              desc: "GDPR erasure, retention, consent, access and portability; an append-only audit trail that can be verified; NIS2 incident reporting clocks; personal-data redaction in logs and audit; encryption at rest with key rotation.",
+            },
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "Reference Applications",
+              desc: "The Showcase and four applications — Time off, Invoicing, Casework, Warehouse — each tested end to end against real databases and brokers, plus runnable samples for every module.",
+            },
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "Entity Traits",
+              desc: "[HasComments], [HasTags], [HasAttachments] and [HasNotes]: one attribute on an entity brings its child entity, actions and endpoints.",
+            },
+            {
+              status: "ready",
+              label: "In 1.0.0-alpha",
+              title: "Documents & Media",
+              desc: "PDF, DOCX, XLSX, CSV and e-mail from templates, in the recipient's language; native (Rust) image resizing, conversion and QR codes; file storage on disk and in the cloud.",
+            },
+            {
+              status: "building",
+              label: "Next",
+              title: "Packages on nuget.org",
+              desc: "Today the alpha builds are consumed from a local feed. Publishing them is the next step.",
+            },
+            {
+              status: "next",
+              label: "Before 1.0",
+              title: "Settle the Functional Modules",
+              desc: "The modules still marked functional or preview fix their names and shapes and become stable. Each module's README says where it stands.",
+            },
+          ].map((item) => (
+            <div class="glass-panel rounded-xl p-6 hover:border-primary/20 transition-colors">
+              <div class="flex items-center gap-2 mb-3">
+                <span class={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-body uppercase tracking-wider ${
+                  item.status === 'ready' ? 'bg-[#28c840]/10 text-[#28c840]' :
+                  item.status === 'building' ? 'bg-primary/10 text-primary' :
+                  'bg-text-muted/10 text-text-muted'
+                }`}>
+                  <span class={`w-1.5 h-1.5 rounded-full ${
+                    item.status === 'ready' ? 'bg-[#28c840]' :
+                    item.status === 'building' ? 'bg-primary animate-pulse' :
+                    'bg-text-muted'
+                  }`}></span>
+                  {item.label}
+                </span>
+              </div>
+              <h3 class="font-heading font-semibold text-lg mb-2">{item.title}</h3>
+              <p class="text-sm text-text-variant leading-relaxed font-body">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Preview CTA -->
+    <section class="py-24">
+      <div class="max-w-3xl mx-auto px-6 text-center">
+        <div class="glass-panel rounded-2xl p-12">
+          <h2 class="font-heading font-bold text-3xl mb-4">
+            <span class="metal-gradient">Forging in Progress</span>
+          </h2>
+          <p class="text-text-variant font-body mb-8 max-w-md mx-auto">
+            Pragmatic Design is in public alpha.
+            Explore the documentation to see what's already built.
+          </p>
+          <a href="https://docs.pragmaticdesign.net" class="btn-primary">
+            Explore Documentation
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Base>

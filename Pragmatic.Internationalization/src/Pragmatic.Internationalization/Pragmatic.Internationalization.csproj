@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Unified internationalization library combining globalization (formatting) and localization (translations). Money type, currency codes, plural strings, relative time, and type-safe translations.</Description>
+    <PackageTags>i18n;l10n;internationalization;localization;globalization;money;currency;translations;plural;humanizer</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Unified SG: TranslationKeys generation -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- Standalone SG: Country/Currency/Language code generation (embedded JSON resources) -->
+    <ProjectReference Include="..\Pragmatic.Internationalization.SourceGenerator\Pragmatic.Internationalization.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+  </ItemGroup>
+
+  <!-- Marker files to trigger source generation -->
+  <ItemGroup>
+    <AdditionalFiles Include=".generate-currencies" />
+    <AdditionalFiles Include=".generate-languages" />
+    <AdditionalFiles Include=".generate-countries" />
+  </ItemGroup>
+
+</Project>

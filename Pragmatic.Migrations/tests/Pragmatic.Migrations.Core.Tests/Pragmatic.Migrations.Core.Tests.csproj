@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pragmatic.Migrations without a container: the diff engine, the SQL generators, the runner, the
+       tenant orchestration and the CLI parsing — all of which answer on SQLite or on nothing at all.
+
+       ⚠️ This project exists because `Pragmatic.Migrations.Tests` declares RequiresDocker for the whole
+       suite, so ~340 hermetic tests were paying the container tier: they ran once per batch gate
+       instead of once per story, and a regression in the diff engine was invisible to the full tier.
+       The shape is the one messaging uses.
+
+       What stayed behind is what genuinely needs a server: the PostgreSQL and SQL Server schema
+       scenarios and their container fixtures. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Migrations.Core.Tests</RootNamespace>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Migrations.Cli\Pragmatic.Migrations.Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <!-- The drivers are referenced, not started: the unified generator registers a connection factory
+         for each one, and without them MigrationDriverRegistry is empty and no provider resolves. -->
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

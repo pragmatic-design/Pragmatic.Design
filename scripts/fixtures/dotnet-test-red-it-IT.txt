@@ -1,0 +1,67 @@
+Esecuzione dei test per C:\Pragmatic\Pragmatic.Design\artifacts\build\bin\Conformance.Poco.Tests\debug\Conformance.Poco.Tests.dll (.NETCoreApp,Version=v10.0)
+Un totale di 1 file di test corrisponde al criterio specificato.
+C:\Pragmatic\Pragmatic.Design\artifacts\build\bin\Conformance.Poco.Tests\debug\Conformance.Poco.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.09]   Discovering: Conformance.Poco.Tests
+[xUnit.net 00:00:00.14]   Discovered:  Conformance.Poco.Tests
+[xUnit.net 00:00:00.14]   Starting:    Conformance.Poco.Tests
+[xUnit.net 00:00:00.22]     Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnAssertionWithAReasonOnItsOwnLine [FAIL]
+[xUnit.net 00:00:00.22]       Pragmatic.Testing.PragmaticTestAssertionException : Expected total to be 42 because the number that matters is here, and it used to be cut off by the 160-character cap, but found 41.
+[xUnit.net 00:00:00.22]       Stack Trace:
+[xUnit.net 00:00:00.22]         C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\AssertionFailure.cs(32,0): at Pragmatic.Testing.Assertions.AssertionFailure.Throw(String subject, String expectation, String actual, String because, Object[] becauseArgs)
+[xUnit.net 00:00:00.22]         C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\SubjectAssertions.cs(50,0): at Pragmatic.Testing.Assertions.SubjectAssertions`2.Be(TSubject expected, String because, Object[] becauseArgs)
+[xUnit.net 00:00:00.22]         C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs(24,0): at Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnAssertionWithAReasonOnItsOwnLine()
+[xUnit.net 00:00:00.22]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.22]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Conformance.Poco.Tests.Cases.ReadingShapes.ALeaf_StillPublishesBothLists [12 ms]
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.ToEntity_BuildsTheWholeGraph [11 ms]
+  Superato Conformance.Poco.Tests.Cases.ShapesThatNeedADeclaration.UnCanaleCheNessunoConosce_AtterraSulDefault [11 ms]
+  Non superato Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnAssertionWithAReasonOnItsOwnLine [6 ms]
+  Messaggio di errore:
+   Pragmatic.Testing.PragmaticTestAssertionException : Expected total to be 42 because the number that matters is here, and it used to be cut off by the 160-character cap, but found 41.
+  Analisi dello stack:
+     at Pragmatic.Testing.Assertions.AssertionFailure.Throw(String subject, String expectation, String actual, String because, Object[] becauseArgs) in C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\AssertionFailure.cs:line 32
+   at Pragmatic.Testing.Assertions.SubjectAssertions`2.Be(TSubject expected, String because, Object[] becauseArgs) in C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\SubjectAssertions.cs:line 50
+   at Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnAssertionWithAReasonOnItsOwnLine() in C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs:line 24
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.WithoutEfCore_ThePlainApplyToExists [4 ms]
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.TheIdentity_IsNeverWritten [< 1 ms]
+[xUnit.net 00:00:00.26]     Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnExceptionFromThreeFramesDown [FAIL]
+[xUnit.net 00:00:00.26]       System.Collections.Generic.KeyNotFoundException : The given key 'missing-key' was not present in the dictionary.
+[xUnit.net 00:00:00.26]       Stack Trace:
+[xUnit.net 00:00:00.26]            at System.Collections.Generic.Dictionary`2.get_Item(TKey key)
+[xUnit.net 00:00:00.26]         C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs(9,0): at Conformance.Poco.Tests.Cases.ProbeFailureRecord.Deep(IReadOnlyDictionary`2 from)
+[xUnit.net 00:00:00.26]         C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs(11,0): at Conformance.Poco.Tests.Cases.ProbeFailureRecord.Middle(IReadOnlyDictionary`2 from)
+[xUnit.net 00:00:00.26]         C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs(16,0): at Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnExceptionFromThreeFramesDown()
+[xUnit.net 00:00:00.26]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:00.26]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.ApplyTo_MergesTheSingleNavigation [< 1 ms]
+  Non superato Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnExceptionFromThreeFramesDown [1 ms]
+  Messaggio di errore:
+   System.Collections.Generic.KeyNotFoundException : The given key 'missing-key' was not present in the dictionary.
+  Analisi dello stack:
+     at System.Collections.Generic.Dictionary`2.get_Item(TKey key)
+   at Conformance.Poco.Tests.Cases.ProbeFailureRecord.Deep(IReadOnlyDictionary`2 from) in C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs:line 9
+   at Conformance.Poco.Tests.Cases.ProbeFailureRecord.Middle(IReadOnlyDictionary`2 from) in C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs:line 11
+   at Conformance.Poco.Tests.Cases.ProbeFailureRecord.AnExceptionFromThreeFramesDown() in C:\Pragmatic\Pragmatic.Design\examples\conformance\tests\Conformance.Poco.Tests\Cases\ProbeFailureRecord.cs:line 16
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.ApplyTo_MergesTheCollectionByKey [3 ms]
+  Superato Conformance.Poco.Tests.Cases.ShapesThatNeedADeclaration.IlDelta_AggiungeSenzaTogliere [11 ms]
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.ANullSingleNavigation_LeavesItAlone [< 1 ms]
+  Superato Conformance.Poco.Tests.Cases.ReadingShapes.FromEntity_DescendsTwoLevels [10 ms]
+  Superato Conformance.Poco.Tests.Cases.ShapesThatNeedADeclaration.LoStessoInvioSenzaLaDichiarazione_Sostituisce [< 1 ms]
+[xUnit.net 00:00:00.26]   Finished:    Conformance.Poco.Tests
+  Superato Conformance.Poco.Tests.Cases.ReadingShapes.FromEntity_CopiesTheScalars [< 1 ms]
+  Superato Conformance.Poco.Tests.Cases.ShapesThatNeedADeclaration.IlNomeSiConfrontaSenzaGuardareIlCaso [< 1 ms]
+  Superato Conformance.Poco.Tests.Cases.ShapesThatNeedADeclaration.UnCanaleCheEsiste_SiMappaPerNome [< 1 ms]
+  Superato Conformance.Poco.Tests.Cases.WritingShapes.ApplyTo_MergesTwoLevelsDown [2 ms]
+  Superato Conformance.Poco.Tests.Cases.ReadingShapes.FromEntity_ReadsTheSingleNavigation [2 ms]
+  Superato Conformance.Poco.Tests.Cases.ReadingShapes.TheNavigationLists_AreDeepAndPrefixed [1 ms]
+
+L'esecuzione dei test non è riuscita.
+Totale test: 19
+     Superati: 17
+     Non superati: 2
+ Tempo totale: 0,9241 Secondi

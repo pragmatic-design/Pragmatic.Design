@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Invoicing end to end: the real host over HTTP, PostgreSQL in a container. -->
+
+  <PropertyGroup>
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: there is no SynchronizationContext to leave in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Invoicing.Host\Invoicing.Host.csproj" />
+    <!-- TestClock: an invoice number carries a year, and the year has to be the one the test names. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+    <!-- The mailbox: InMemoryTransport in place of whatever the host configured, and the assertions over it. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email.Testing\Pragmatic.Email.Testing.csproj" />
+    <!-- The local double in place of the disk: the suite asserts documents through IFileStorage, so it
+         has no reason to write any, and this is the repository's own double for that. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage.InMemory\Pragmatic.Storage.InMemory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+  <!-- The README is an input of this suite: TheReadmeQuotesWhatTheSuiteMeasures checks the counts it
+       quotes against the ones the application produces.
+       ⚠️ Copied, not found by walking up from the binary: the gate builds into an output folder of its
+       own, so a path relative to AppContext.BaseDirectory reaches the source tree when `dotnet test`
+       runs it and reaches nothing when `scripts/check.mjs` does. Measured, as four errors in the type
+       initializer that passed locally minutes earlier. -->
+  <ItemGroup>
+    <Content Include="..\..\README.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The contract tests the Testing generator writes for this application: the harness (base class,
+       identity, assertions) plus the generator as an analyzer, which scans the referenced boundaries for
+       [Endpoint] and emits a test per create — including the one that proves tenant isolation.
+       ⚠️ ExcludeSharedTesting above stays: it keeps the shared test helpers out, not the generator. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.SourceGenerator\Pragmatic.Testing.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

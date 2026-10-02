@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Culture-aware display formatting for Pragmatic.Temporal types via Pragmatic.Internationalization. Adds GlobalizationFormatter overloads and ambient Format* extensions for LocalDateTime and ZonedDateTime.</Description>
+    <PackageTags>datetime;temporal;i18n;globalization;formatting;culture</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+  </ItemGroup>
+
+</Project>

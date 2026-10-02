@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Roslyn packages for generator diagnostic tests -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Required to compile tests that exercise ASP.NET Core integration (IApplicationBuilder, IStartupStep wiring). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Internationalization.EFCore\Pragmatic.Internationalization.EFCore.csproj" />
+    <!-- Unified generator: TranslationKeys, diagnostics, and all SG features.
+         Referenced BOTH as a library (the tests that drive it through CSharpGeneratorDriver) and as an
+         analyzer — UserCulture/ needs it to actually run, because the thing under test there is the
+         provider it emits, resolved out of a container. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" />
+    <!-- Standalone generator: Country/Currency/Language code generation only -->
+    <ProjectReference Include="..\..\src\Pragmatic.Internationalization.SourceGenerator\Pragmatic.Internationalization.SourceGenerator.csproj" />
+    <!-- [PragmaticUser] resolver generation is gated on Identity.Persistence being referenced. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <!-- IPragmaticBuilder, which the generated UseUserCulture() extends. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

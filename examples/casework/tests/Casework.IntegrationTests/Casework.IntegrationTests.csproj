@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Casework end to end: both real hosts over HTTP, PostgreSQL in a container. One suite and not two,
+       because two suites would prove two halves that never meet. -->
+
+  <PropertyGroup>
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: there is no SynchronizationContext to leave in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The mailbox the suite reads. AddEmailTestHarness replaces the transport with an
+         in-memory one, which is what makes a sent message assertable without an SMTP server. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email.Testing\Pragmatic.Email.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Casework.Intake.Host\Casework.Intake.Host.csproj" />
+    <ProjectReference Include="..\..\src\Casework.Verify.Host\Casework.Verify.Host.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <!-- The broker the two services meet on, in a container of the suite's own. -->
+    <PackageReference Include="Testcontainers.RabbitMq" />
+  </ItemGroup>
+
+  <!-- This repository's own assertions: Should() and the failure messages that carry the body.
+       ⚠️ ExcludeSharedTesting above stays — it keeps the shared generator-test helpers out, not this. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+
+    <!-- The contract tests the generator writes, against this application. It runs in the TEST
+         project (its input is this compilation, not the module's), and what it emits is one class per
+         endpoint operation plus the tenant-isolation test of each aggregate. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.SourceGenerator\Pragmatic.Testing.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- TestClock: a deadline ten days out is asserted by sealing the clock, not by
+         waiting. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

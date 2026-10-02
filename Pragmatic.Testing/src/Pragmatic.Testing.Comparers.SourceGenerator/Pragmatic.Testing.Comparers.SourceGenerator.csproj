@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Generates member-by-member BeEquivalentTo from [GenerateComparer&lt;T&gt;]. Equals answers whether two values differ; this answers where, and is the only correct answer on a type without value equality.</Description>
+    <PackageTags>testing;assertions;source-generator;roslyn;codegen</PackageTags>
+    <!-- RS2008: analyzer release tracking is not used anywhere in this repo (same call as every other
+         generator here); the PRAG2360-2362 descriptors are the record. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Testing.Comparers.SourceGenerator.Tests" />
+  </ItemGroup>
+
+</Project>

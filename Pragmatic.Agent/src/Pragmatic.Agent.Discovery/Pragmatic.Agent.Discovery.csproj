@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Bridge that backs Pragmatic.Discovery's IDiscoveryBackend with the Pragmatic Agent KV, so cross-host topology (modules + boundaries) is stored and gossip-replicated. Referenced by the host, never by the AOT daemon.</Description>
+    <PackageTags>agent;discovery;topology;kv</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Discovery\src\Pragmatic.Discovery\Pragmatic.Discovery.csproj" />
+  </ItemGroup>
+
+</Project>

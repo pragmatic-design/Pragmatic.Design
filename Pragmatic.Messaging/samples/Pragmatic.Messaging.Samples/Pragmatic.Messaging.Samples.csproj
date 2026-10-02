@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Surface the SG output in obj/ so the sample can be read alongside the source. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Batch\Pragmatic.Messaging.Batch.csproj" />
+    <!-- Generates the [Saga<T>] orchestrator + PragmaticSagaRegistration.AddPragmaticSagas(). -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

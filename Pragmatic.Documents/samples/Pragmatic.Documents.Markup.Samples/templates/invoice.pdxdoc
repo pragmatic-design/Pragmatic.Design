@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One template, two languages: every label is a t: key, and the date and currency pipes format in the
+  language the document is asked for — the reader's, never the thread's.
+-->
+<document title="{{ t:invoice.title(number=invoice.number) }}" author="{{ company.name }}">
+  <page>
+    <import src="letterhead.pdxdoc" />
+    <heading level="2">{{ t:invoice.title(number=invoice.number) }}</heading>
+    <text>{{ t:invoice.issued(date=invoice.date | date:"d MMMM yyyy") }}</text>
+    <text>{{ t:invoice.customer(name=customer.name, vat=customer.vatId) }}</text>
+    <spacer height="3" />
+    <table data-source="invoice.items" repeat-header="true">
+      <column width="90">{{ t:invoice.description }}</column>
+      <column width="20" align="center">{{ t:invoice.quantity }}</column>
+      <column width="25" align="right">{{ t:invoice.price }}</column>
+      <column width="25" align="right">{{ t:invoice.amount }}</column>
+      <row-template>
+        <cell>{{ item.description }}</cell>
+        <cell>{{ item.quantity }}</cell>
+        <cell>{{ item.price | currency:"EUR" }}</cell>
+        <cell>{{ item.amount | currency:"EUR" }}</cell>
+      </row-template>
+    </table>
+    <spacer height="3" />
+    <text>{{ t:invoice.subtotal }}: {{ invoice.items.sum(amount) | currency:"EUR" }}</text>
+    <text>{{ t:invoice.vat }}: {{ invoice.vat | currency:"EUR" }}</text>
+    <heading level="3">{{ t:invoice.total }}: {{ invoice.total | currency:"EUR" }}</heading>
+    <!-- Only when there is something to say: an empty note is false, so the line disappears. -->
+    <text if="invoice.note">{{ invoice.note }}</text>
+  </page>
+</document>

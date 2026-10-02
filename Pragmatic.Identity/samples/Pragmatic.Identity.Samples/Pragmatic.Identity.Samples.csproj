@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Identity\Pragmatic.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+  </ItemGroup>
+
+
+  <!-- AspNetCoreClaimsSample drives the real ClaimsPrincipalUserAccessor with a
+       DefaultHttpContext / HttpContextAccessor from Microsoft.AspNetCore.Http. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- DI + Options come transitively from the Identity/Authorization project references.
+       Only the EF Core in-memory provider (used by PersistenceStoresSample) is direct. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+</Project>

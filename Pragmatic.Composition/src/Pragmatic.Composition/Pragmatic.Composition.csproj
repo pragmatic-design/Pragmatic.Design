@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Meta-package for backward compatibility. References Pragmatic.Abstractions (interfaces/attributes) and Pragmatic.Composition.Host (ASP.NET Core hosting runtime).</Description>
+    <PackageTags>composition;meta-package;pragmatic</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+  </ItemGroup>
+
+</Project>

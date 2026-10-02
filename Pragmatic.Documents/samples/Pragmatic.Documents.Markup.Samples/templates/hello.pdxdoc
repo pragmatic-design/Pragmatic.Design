@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document title="Hello from PDX markup" author="Pragmatic.Design">
+  <page>
+    <heading level="1">Hello, PDX markup</heading>
+    <text>PDX markup is the authoring syntax for Pragmatic.Documents templates.</text>
+    <spacer />
+    <heading level="2">What just happened</heading>
+    <text>This file is embedded in the sample's assembly and found by name through IPdxTemplates,</text>
+    <text>which parses it, resolves it against its data in a language, and hands back the model:</text>
+    <spacer height="4" />
+    <text>  - Pragmatic.Documents.Markup     finds and parses the file</text>
+    <text>  - Pragmatic.Documents.Templating resolves expressions, translations and pipes</text>
+    <text>  - Pragmatic.Documents.Pdf        renders the model to bytes</text>
+    <hr />
+    <text>Swap PdfRenderer for DocxRenderer to change format: the template does not change.</text>
+  </page>
+</document>

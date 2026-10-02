@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>SQL transport for Pragmatic.Messaging — durable queues on PostgreSQL or SQL Server tables (no broker), with native delayed messages, restart-safe schedule cancellation and optional pg_notify low-latency wakeups.</Description>
+    <PackageTags>messaging;sql;postgresql;sqlserver;transport;queue;no-broker</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Messaging.Tests" />
+  </ItemGroup>
+
+  <!-- Core dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Relational only: the EF provider (Npgsql.EFCore / SqlServer) is brought by the app
+         via SqlTransportOptions.ConfigureDbContext. Npgsql ADO is used for LISTEN/NOTIFY. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,38 @@
+{
+  "welcome": "Benvenuto nella nostra app!",
+  "welcome_user": "Benvenuto, {0}!",
+  "goodbye": "Arrivederci!",
+
+  "errors": {
+    "not_found": "L'elemento richiesto non è stato trovato.",
+    "access_denied": "Non hai i permessi per accedere a questa risorsa.",
+    "validation": {
+      "required": "Questo campo è obbligatorio.",
+      "email": "Inserisci un indirizzo email valido.",
+      "min_length": "Deve contenere almeno {0} caratteri.",
+      "max_length": "Deve contenere al massimo {0} caratteri."
+    }
+  },
+
+  "buttons": {
+    "submit": "Invia",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "confirm": "Conferma"
+  },
+
+  "messages": {
+    "success": "Operazione completata con successo.",
+    "loading": "Caricamento...",
+    "saving": "Salvataggio in corso..."
+  },
+
+  "user": {
+    "profile": "Profilo",
+    "settings": "Impostazioni",
+    "logout": "Esci",
+    "login": "Accedi",
+    "register": "Registrati"
+  }
+}

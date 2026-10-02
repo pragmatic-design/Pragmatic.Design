@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Operational dashboard for Pragmatic.Messaging: ops API (status, outbox, dead-letters with replay, sagas, audit) plus an embedded HTML panel. API-key or localhost-only protected, excluded from OpenAPI.</Description>
+    <PackageTags>messaging;dashboard;ops;dead-letter;replay;saga</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+    <ProjectReference Include="..\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\Pragmatic.Messaging.Auditing\Pragmatic.Messaging.Auditing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

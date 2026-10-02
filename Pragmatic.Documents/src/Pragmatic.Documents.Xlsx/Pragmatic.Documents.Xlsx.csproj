@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XLSX reader and writer — zero-dependency OOXML generation via ZipArchive + XmlWriter.</Description>
+    <PackageTags>xlsx;excel;spreadsheet;ooxml;reader;writer</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Spreadsheet\Pragmatic.Documents.Spreadsheet.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Ooxml\Pragmatic.Documents.Ooxml.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Documents.Xlsx.Tests" />
+  </ItemGroup>
+
+</Project>

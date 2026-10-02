@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The application's own decision letter: what an organisation that has not sent us its own gets.
+
+  It is a file, not code. An organisation changes its wording by uploading a .pdxdoc of its own
+  (POST api/letter-templates) and nothing is deployed; this one is the declared fallback, and the
+  reason a new organisation has a letter on its first day.
+
+  ⚠️ ONE template, several languages. The text comes through `t:` — the application's translation
+  keys, resolved for the applicant's language — rather than from literals here, which is what keeps
+  this from becoming one file per language. The dates go through `date:`, so they follow the same
+  culture as the words around them: a letter that says "Decisa il" and then writes 2026-09-18 the
+  American way is two decisions disagreeing inside one paragraph.
+
+  Every {{ … }} is an expression over the named roots the application passes: case, applicant and
+  organization. A property that is not there is NOT an error — the expression resolves to null and the
+  data context records a TemplateWarning — so a template that asks for something nobody provides makes
+  a letter with a hole in it and no complaint. Reading those warnings is the application's job.
+-->
+<document title="{{ t:letter.decision.title }}" page-size="A4" margin="25">
+  <page>
+    <import src="header.pdxdoc" />
+
+    <heading level="1">{{ t:letter.decision.title }}</heading>
+
+    <text>{{ t:letter.decision.case(number=case.number, subject=case.subject) }}</text>
+    <text>{{ t:letter.decision.applicant(name=applicant.name) }}</text>
+    <text>{{ t:letter.decision.outcome(when=case.decidedOn | date:"D", outcome=case.outcome) }}</text>
+
+    <hr thickness="0.4" />
+
+    <text>{{ t:letter.decision.appeal(organization=organization.name) }}</text>
+  </page>
+</document>

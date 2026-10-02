@@ -1,0 +1,9 @@
+---
+// The docs are one half of the site: the logo leads back to the landing page, not to the docs' own index,
+// which the sidebar already reaches. Starlight's component renders unchanged; only its target moves.
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+
+Astro.locals.starlightRoute.siteTitleHref = 'https://pragmaticdesign.net';
+---
+
+<Default {...Astro.props} />

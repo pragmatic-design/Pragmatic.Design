@@ -1,0 +1,24 @@
+<Project>
+
+  <!--
+    Makes the generator's opt-in build properties visible to Roslyn in a consuming project.
+
+    Without this file the properties are readable only inside this repository, whose own
+    Directory.Build.props declares the same items — so every switch below worked for the framework's
+    tests and did nothing at all for an application that installed the package. Setting
+    <PublishAot>true</PublishAot>, which is the entire point of AOT, produced no JsonSerializerContext
+    and no warning saying why.
+
+    The equivalent [assembly: ...] attributes keep working and are unaffected; they are the path that
+    happened to be exercised, which is why the gap stayed invisible.
+  -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="PragmaticGenerateJsonContext" />
+    <CompilerVisibleProperty Include="PublishAot" />
+    <CompilerVisibleProperty Include="PragmaticAutoDerivePermissions" />
+    <!-- Not an opt-in: the use-case catalog uses it to record a project-relative path instead of the
+         compiler's absolute one. Missing, the catalog falls back to the bare file name. -->
+    <CompilerVisibleProperty Include="ProjectDir" />
+  </ItemGroup>
+
+</Project>

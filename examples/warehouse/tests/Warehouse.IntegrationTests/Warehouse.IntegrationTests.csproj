@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Warehouse end to end: every host of the example, two of them twice, the gateway in front and an
+       Agent beside each, against a real PostgreSQL. One suite, because the point of the example is how
+       the pieces meet. -->
+
+  <PropertyGroup>
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: there is no SynchronizationContext to leave in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Warehouse.Orders.Host\Warehouse.Orders.Host.csproj" />
+    <ProjectReference Include="..\..\src\Warehouse.Stock.Host\Warehouse.Stock.Host.csproj" />
+    <ProjectReference Include="..\..\src\Warehouse.Shipping.Host\Warehouse.Shipping.Host.csproj" />
+    <!-- The gateway is an executable of this repository, not a package: the suite boots its Program. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Gateway\src\Pragmatic.Gateway\Pragmatic.Gateway.csproj" />
+    <!-- The Agent daemon, for its build output: the suite starts it as the process it is in a deployment,
+         because its server is internal to that executable. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Agent\src\Pragmatic.Agent\Pragmatic.Agent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Testcontainers.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

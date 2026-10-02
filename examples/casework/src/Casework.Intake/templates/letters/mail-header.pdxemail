@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The mail's letterhead, as a piece of its own — the twin of header.pdxdoc.
+
+  An organisation that uploads only this one keeps the application's wording and gets its own name at
+  the top of the message: the same trade the letter offers, for the same reason.
+-->
+<email>
+  <article>
+    <heading>{{ organization.name | default:"Casework" }}</heading>
+    <divider />
+  </article>
+</email>

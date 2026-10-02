@@ -1,0 +1,21 @@
+{
+  "name": "pragmatic-design-site",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev:web": "pnpm --filter @pragmatic/web dev",
+    "dev:docs": "pnpm --filter @pragmatic/docs dev",
+    "build:web": "pnpm --filter @pragmatic/web build",
+    "build:docs": "pnpm --filter @pragmatic/docs build",
+    "sync:docs": "node scripts/sync-docs.mjs",
+    "build": "pnpm sync:docs && pnpm -r build",
+    "preview:web": "pnpm --filter @pragmatic/web preview",
+    "preview:docs": "pnpm --filter @pragmatic/docs preview"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

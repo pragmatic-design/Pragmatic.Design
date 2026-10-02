@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Messaging.Tests</RootNamespace>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Note: Test packages are auto-configured by Directory.Build.props -->
+
+  <ItemGroup>
+    <!-- M.E.DependencyInjection / M.E.Options come from the AspNetCore.App FrameworkReference (NU1510) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Testcontainers.Kafka" />
+    <PackageReference Include="Testcontainers.ServiceBus" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Channels\Pragmatic.Messaging.Channels.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.RabbitMQ\Pragmatic.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Auditing\Pragmatic.Messaging.Auditing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Batch\Pragmatic.Messaging.Batch.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Testing\Pragmatic.Messaging.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Jobs\Pragmatic.Messaging.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Kafka\Pragmatic.Messaging.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.AzureServiceBus\Pragmatic.Messaging.AzureServiceBus.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Sql\Pragmatic.Messaging.Sql.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.ClaimCheck\Pragmatic.Messaging.ClaimCheck.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Dashboard\Pragmatic.Messaging.Dashboard.csproj" />
+  </ItemGroup>
+
+</Project>

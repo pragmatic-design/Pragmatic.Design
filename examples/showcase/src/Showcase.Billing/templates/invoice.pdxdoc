@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The invoice a guest downloads, in the guest's own language.
+
+  The words come from translations/{en,it}.json (invoice.document.*); dates and amounts are written the
+  guest's way by the date and currency pipes — each amount is a Money, so it brings its currency. The
+  roots are invoice, guest and lines, written down by DownloadInvoicePdfEndpoint.
+-->
+<document title="{{ t:invoice.title }} {{ invoice.number }}" page-size="A4" margin="20">
+  <page>
+    <heading level="1">{{ t:invoice.title }} {{ invoice.number }}</heading>
+    <text>{{ t:invoice.document.issuedOn }} {{ invoice.issuedAt | date:"d" }}</text>
+    <text if="invoice.dueDate">{{ t:invoice.dueDate }}: {{ invoice.dueDate | date:"d" }}</text>
+    <spacer />
+
+    <heading level="2">{{ t:invoice.document.billedTo }}</heading>
+    <text>{{ guest.name }}</text>
+    <spacer />
+
+    <table data-source="lines">
+      <column>{{ t:invoice.document.description }}</column>
+      <column align="right">{{ t:lineItem.quantity }}</column>
+      <column align="right">{{ t:lineItem.unitPrice }}</column>
+      <column align="right">{{ t:invoice.document.amount }}</column>
+      <row-template>
+        <cell>{{ item.description }}</cell>
+        <cell>{{ item.quantity }}</cell>
+        <cell>{{ item.unitPrice | currency }}</cell>
+        <cell>{{ item.total | currency }}</cell>
+      </row-template>
+    </table>
+    <spacer />
+
+    <text>{{ t:invoice.document.subtotal }} {{ invoice.subTotal | currency }}</text>
+    <text>{{ t:invoice.document.tax }} {{ invoice.tax | currency }}</text>
+    <heading level="3">{{ t:invoice.document.total }} {{ invoice.total | currency }}</heading>
+  </page>
+</document>

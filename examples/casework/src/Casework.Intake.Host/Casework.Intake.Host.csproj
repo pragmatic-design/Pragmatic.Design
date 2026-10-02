@@ -1,0 +1,117 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Intake's own process. It composes one module onto one database, and it is the half of the
+       application that has users. Only what the example uses is referenced — composition by presence:
+       a package here is a feature this service has. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- The schema snapshot (schema/IntakeDatabase.schema.json), regenerated after each build and written
+       only when it changes, so a schema change shows up in the diff of the commit that caused it.
+       ⚠️ Two hosts means two snapshots, one per database: each host migrates its own organisations' databases, and a snapshot
+       that covered both services would be a file nobody could attribute. -->
+  <PropertyGroup>
+    <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The transport an organisation's mail leaves by. The module composes the message; the
+         host decides whether it goes to SMTP or nowhere. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email\Pragmatic.Email.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Casework.Intake\Casework.Intake.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The suite reads this host's own compile-time contract (the generated PragmaticOpenApi, which is
+         internal). ⚠️ Not the document served over HTTP: that one comes from a static of the process,
+         and with both hosts in one test process the last one loaded answers for both. -->
+    <InternalsVisibleTo Include="Casework.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <!-- This service has users: without an identity package the build stops on PRAG1695, and
+         [AnonymousHost] would be a lie. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <!-- The scheme: local JWT. Invoicing already showed OIDC, and this example's interesting half is
+         elsewhere — what matters here is that there is a caller with a name. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+    <!-- The audit trail lives in this service's database, beside the [Audited] rows it is about. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <!-- ⚠️ Needed as soon as the module declares ITenantEntity, before any tenancy strategy is chosen:
+         the generated host calls AddPragmaticMultiTenancy for a module that has a tenant's rows, and
+         without the package that defines it the generated file does not compile (CS1061: it is in
+         MultiTenancy.AspNetCore, not in MultiTenancy). So a service with one tenant-scoped entity
+         carries the whole tenancy package; the resolution strategy and the database per tenant are
+         configuration on top of it, not another reference. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <!-- A database per organisation: UseDbPerTenant, the connection resolver and the
+         interceptor EF Core discovers from DI. The hybrid model is this package's own — an organisation
+         without a connection string stays on the shared schema. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.Persistence\Pragmatic.MultiTenancy.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The bus, and the transport as a deployment choice: the module publishes, the host decides over
+         what. RabbitMQ here; nothing in either module names it. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.RabbitMQ\Pragmatic.Messaging.RabbitMQ.csproj" />
+    <!-- The bridge that makes a delayed redelivery survive a restart: it schedules a job rather than
+         holding a timer, so the retry is a row in the database like every other piece of work this
+         host has to finish. Needed by [Redelivery] on RecordTheVerificationOutcome. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Jobs\Pragmatic.Messaging.Jobs.csproj" />
+    <!-- The writer-side outbox the boundary declares: the table in this host's database, the capture
+         interceptor, the delivery pump and its retention purge. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <!-- The application's clock, which [FromClock] on the operation resolves on every request. Without
+         this package the generated host registers none: PRAG1698 at build time. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <!-- And the EF side of it, because the case stores an instant: without it nothing normalises what
+         reaches the column while the rest of the framework reads it as UTC — PRAG0690, which is an
+         error and named the property. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Where the documents are kept. Local disk is this example's deployment choice; the seam is
+         IFileStorage, and Azure Blob or S3 would be a different factory in Program.cs and nothing else. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <!-- The deadline sweep: the scheduler and the worker, plus the EF Core store its two
+         UseEfCore* calls choose. ⚠️ The module's [EnableJobPersistence] asks for the tables; this is
+         what runs against them, and UseEfCore() fails the start rather than falling back to memory. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.EFCore\Pragmatic.Jobs.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The database provider: the host's generated code calls UseNpgsql. A deployment choice, so it
+         lives in the host and not in the module. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- The API reference UI, served in Development only. -->
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- ProjectReference does not import a package's build/ targets, so the snapshot target is imported
+       by hand; LocalCli runs it with the migrations CLI built from this repository. -->
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.targets" />
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.LocalCli.targets" />
+
+</Project>

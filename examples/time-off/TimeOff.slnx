@@ -1,0 +1,19 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="README.md" />
+    <SolutionItem Path="docker-compose.yml" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/TimeOff.Leave/TimeOff.Leave.csproj" />
+    <Project Path="src/TimeOff.Host/TimeOff.Host.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/TimeOff.IntegrationTests/TimeOff.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

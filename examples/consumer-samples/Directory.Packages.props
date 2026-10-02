@@ -1,0 +1,7 @@
+<Project>
+  <!-- Isolated package versions — don't inherit the monorepo's Directory.Packages.props
+       (which pins SDK versions we don't need here). -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document>
+  <page>
+    <text>{{ t:receipt.title }}</text>
+    <text>{{ t:nobody.wrote.this }}</text>
+  </page>
+</document>

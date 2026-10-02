@@ -1,0 +1,98 @@
+# Pragmatic Design
+
+> Pragmatic Design is a .NET 10 framework for line-of-business software. You describe the domain —
+> entities, the operations on them, the rules they obey — with attributes and partial classes, and a
+> single incremental source generator writes the rest: persistence, HTTP endpoints, validation,
+> authorization, events, caching, DI wiring, OpenAPI. The generated code is plain C#, uses no runtime
+> reflection (EF Core excepted), and mistakes are reported at build time as PRAG diagnostics.
+> 45 modules, version 1.0.0-alpha.
+
+Key facts for building an app:
+- Two project shapes: a **boundary library** (entities, mutations, queries, actions) and a **web host**.
+- A boundary library that declares `[Endpoint]` must reference `Pragmatic.Endpoints.AspNetCore`, and for entity infrastructure also `Pragmatic.Persistence.EFCore`.
+- Entities live in the `{Boundary}.Entities` namespace (the generator derives the host database root namespace from it), each with `[Entity]` and `: IEntity`.
+- Query projection DTOs are `partial class` + `[MapFrom<TEntity>]` + `[GenerateProjection]`.
+- The host needs a `[Module]` topology class with `[Include<TModule, TDatabase>]`, an EF provider matching EF Core 10 (e.g. `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.*), and a UI culture — `app.UseI18N(...)` with a default, or translation files in the modules.
+- Repositories are `IRepository<TEntity>` / `IReadRepository<TEntity>`. Domain errors are values: `Result<T, IError>`, never exceptions.
+- Outside Development, a host whose endpoints require authorization needs an authentication method (`UseJwtAuthentication`, `UseOidcAuthentication`, `UseKeycloakAuthentication`), or it refuses to start.
+- To read the generated code: `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>`, then `obj/Debug/net10.0/generated/`.
+
+## Getting started
+
+- [Introduction](https://docs.pragmaticdesign.net/getting-started/introduction/): what it is, why it exists, who it's for.
+- [Installation](https://docs.pragmaticdesign.net/getting-started/installation/): packages, first action, inspecting generated code.
+- [Build with an agent](https://docs.pragmaticdesign.net/getting-started/with-an-agent/): the Pragmatic skills for Claude Code, Codex and any agent that reads SKILL.md.
+- [Architecture](https://docs.pragmaticdesign.net/getting-started/architecture/): 3-tier model, module layers, composition by presence.
+
+## Source generator
+
+- [How it works](https://docs.pragmaticdesign.net/source-generator/how-it-works/): the one unified incremental generator and the standalone ones.
+- [Feature detection](https://docs.pragmaticdesign.net/source-generator/feature-detection/): how referenced packages activate generation.
+- [Feature catalog](https://docs.pragmaticdesign.net/source-generator/feature-catalog/): every pipeline, its trigger, what it generates.
+
+## Reference
+
+- [Configuration](https://docs.pragmaticdesign.net/reference/configuration/): the `Use*()` strategy API.
+- [Diagnostics](https://docs.pragmaticdesign.net/reference/diagnostics/): every PRAG diagnostic and its fix.
+- [Versioning](https://docs.pragmaticdesign.net/reference/versioning/): 1.0.0-alpha, stability, MinVer.
+- [Glossary](https://docs.pragmaticdesign.net/reference/glossary/): boundary, module, host, invoker, trait, etc.
+
+## Guides
+
+- [Showcase walkthrough](https://docs.pragmaticdesign.net/guides/showcase-walkthrough/): end-to-end reference app.
+- [Authentication & authorization](https://docs.pragmaticdesign.net/guides/authentication-authorization/)
+- [Migrations & concurrent development](https://docs.pragmaticdesign.net/guides/migrations-concurrent-development/)
+- [Local NuGet server](https://docs.pragmaticdesign.net/guides/local-nuget-server/)
+- [AOT & trimming](https://docs.pragmaticdesign.net/guides/aot-and-trimming/)
+- [Security hardening](https://docs.pragmaticdesign.net/guides/security-hardening/)
+- [Diagnostics troubleshooting](https://docs.pragmaticdesign.net/guides/diagnostics-troubleshooting/)
+- [Consuming generated docs](https://docs.pragmaticdesign.net/guides/consuming-generated-docs/)
+- [Monorepo structure](https://docs.pragmaticdesign.net/guides/monorepo-structure/)
+- [IDE tips](https://docs.pragmaticdesign.net/guides/ide-tips/)
+
+## Modules
+
+- [abstractions](https://docs.pragmaticdesign.net/modules/abstractions/overview/)
+- [actions](https://docs.pragmaticdesign.net/modules/actions/overview/)
+- [agent](https://docs.pragmaticdesign.net/modules/agent/overview/)
+- [attachments](https://docs.pragmaticdesign.net/modules/attachments/overview/)
+- [audit](https://docs.pragmaticdesign.net/modules/audit/overview/)
+- [authorization](https://docs.pragmaticdesign.net/modules/authorization/overview/)
+- [caching](https://docs.pragmaticdesign.net/modules/caching/overview/)
+- [client](https://docs.pragmaticdesign.net/modules/client/overview/)
+- [comments](https://docs.pragmaticdesign.net/modules/comments/overview/)
+- [composition](https://docs.pragmaticdesign.net/modules/composition/overview/)
+- [configuration](https://docs.pragmaticdesign.net/modules/configuration-module/overview/)
+- [cryptography](https://docs.pragmaticdesign.net/modules/cryptography/overview/)
+- [discovery](https://docs.pragmaticdesign.net/modules/discovery/overview/)
+- [documents](https://docs.pragmaticdesign.net/modules/documents/overview/)
+- [email](https://docs.pragmaticdesign.net/modules/email/overview/)
+- [endpoints](https://docs.pragmaticdesign.net/modules/endpoints/overview/)
+- [ensure](https://docs.pragmaticdesign.net/modules/ensure/overview/)
+- [events](https://docs.pragmaticdesign.net/modules/events/overview/)
+- [feature-flags](https://docs.pragmaticdesign.net/modules/feature-flags/overview/)
+- [gateway](https://docs.pragmaticdesign.net/modules/gateway/overview/)
+- [i18n](https://docs.pragmaticdesign.net/modules/i18n/overview/)
+- [identity](https://docs.pragmaticdesign.net/modules/identity/overview/)
+- [imaging](https://docs.pragmaticdesign.net/modules/imaging/overview/)
+- [incidents](https://docs.pragmaticdesign.net/modules/incidents/overview/)
+- [jobs](https://docs.pragmaticdesign.net/modules/jobs/overview/)
+- [logging](https://docs.pragmaticdesign.net/modules/logging/overview/)
+- [mapping](https://docs.pragmaticdesign.net/modules/mapping/overview/)
+- [messaging](https://docs.pragmaticdesign.net/modules/messaging/overview/)
+- [migrations](https://docs.pragmaticdesign.net/modules/migrations/overview/)
+- [multi-tenancy](https://docs.pragmaticdesign.net/modules/multi-tenancy/overview/)
+- [notes](https://docs.pragmaticdesign.net/modules/notes/overview/)
+- [notifications](https://docs.pragmaticdesign.net/modules/notifications/overview/)
+- [patch](https://docs.pragmaticdesign.net/modules/patch/overview/)
+- [persistence](https://docs.pragmaticdesign.net/modules/persistence/overview/)
+- [privacy](https://docs.pragmaticdesign.net/modules/privacy/overview/)
+- [redaction](https://docs.pragmaticdesign.net/modules/redaction/overview/)
+- [resilience](https://docs.pragmaticdesign.net/modules/resilience/overview/)
+- [result](https://docs.pragmaticdesign.net/modules/result/overview/)
+- [specification](https://docs.pragmaticdesign.net/modules/specification/overview/)
+- [storage](https://docs.pragmaticdesign.net/modules/storage/overview/)
+- [tags](https://docs.pragmaticdesign.net/modules/tags/overview/)
+- [temporal](https://docs.pragmaticdesign.net/modules/temporal/overview/)
+- [testing](https://docs.pragmaticdesign.net/modules/testing/overview/)
+- [validation](https://docs.pragmaticdesign.net/modules/validation/overview/)

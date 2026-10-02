@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.IntegrationTests — E2E tests via HTTP + Testcontainers (PostgreSQL)
+       ======================================== -->
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: not meaningful in test projects (no SynchronizationContext) -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <!-- Showcase.Host (contains Program entry point for WebApplicationFactory) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Showcase.Catalog\Showcase.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Booking\Showcase.Booking.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Billing\Showcase.Billing.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Host\Showcase.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.EFCore\Pragmatic.Jobs.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email.Testing\Pragmatic.Email.Testing.csproj" />
+    <!-- The repository's own notification double, in place of two hand-rolled ones. Email.Testing
+         beside it was already adopted; this was the exception. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Testing\Pragmatic.Notifications.Testing.csproj" />
+    <!--
+      The SG-generated typed client, exercised against the running app by GeneratedClientTests.
+      Without this the client was only ever proven to *compile*, which is how dropped query parameters
+      and a GET issued as POST went unnoticed.
+    -->
+    <ProjectReference Include="..\..\src\Showcase.BlazorClient\Showcase.BlazorClient.csproj" />
+  </ItemGroup>
+
+  <!-- Testcontainers + ASP.NET Core testing -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.ServiceBus" />
+    <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+
+  <!-- #7 contract tests: the harness (base class, identity, assertions) + the generator as analyzer.
+       The generator scans the referenced boundary assemblies for [Endpoint] and emits contract tests. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.SourceGenerator\Pragmatic.Testing.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

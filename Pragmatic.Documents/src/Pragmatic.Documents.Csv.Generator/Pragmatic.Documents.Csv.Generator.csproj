@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Source generator for typed CSV serialization — generates AOT-safe reader/writer from [CsvSerializable] types.</Description>
+    <PackageTags>csv;source-generator;aot;serialization</PackageTags>
+    <!-- RS2008: analyzer release tracking is not used anywhere in this repo; the PRAG1900 diagnostic
+         is listed in docs/diagnostics.md instead. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+
+</Project>

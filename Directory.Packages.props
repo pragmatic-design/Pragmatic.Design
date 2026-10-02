@@ -1,0 +1,244 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Kept off: enabling it forces every CPM-pinned package that is ALSO pulled transitively to the
+         (lower) central version, which cascades into downgrade errors here — CodeAnalysis.CSharp 4.8
+         (generators need ns2.0-compatible Roslyn) vs 4.12, Microsoft.Data.SqlClient 5.2.2 vs 6.1.1,
+         Npgsql 9.0.2 vs 10.0.0. The vulnerable native SQLite lib is pinned per-project instead
+         (direct PackageReference to SQLitePCLRaw.lib.e_sqlite3 — see Data Providers below). -->
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Roslyn / Code Analysis
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+    <!-- 4.8.0 for generators (netstandard2.0); tests override to 4.12.0 in csproj -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Microsoft.Extensions.*
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- dotnet/extensions versions independently of the runtime: its 10.x line is not tied to
+         Microsoft.Extensions.* 10.0.x above. Keep the two in mind separately when bumping. -->
+    <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.8.0" />
+    <PackageVersion Include="StackExchange.Redis" Version="3.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyModel" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Memory" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Primitives" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="10.0.10" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Entity Framework Core
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <!-- Oracle's MySQL provider, the only one on EF Core 10 (Pomelo stops at 9.0.0). GPL-2.0-only WITH
+         Universal-FOSS-exception-1.0: referenced by tests only, never by a packed project. An application
+         that declares DatabaseProvider.MySql references it itself. -->
+    <PackageVersion Include="MySql.EntityFrameworkCore" Version="10.0.9" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       ASP.NET Core
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Asp.Versioning.Http" Version="8.1.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.1" />
+    <PackageVersion Include="ModelContextProtocol" Version="1.4.1" />
+    <!-- Direct pin: AspNetCore.OpenApi 10.0.x pulls Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc, NU1903); 2.7.5 is the first patched version -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.12.52" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Data Providers
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- Provider versions aligned with the EF Core 10 stack: EFCore.SqlServer 10 requires
+         SqlClient ≥ 6.1.1 and EFCore.PostgreSQL 10 requires Npgsql ≥ 10.0.0, so EF already
+         lifts these at runtime — pinning the direct floor to match avoids shipping a provider
+         dependency a major version behind the EF dependency in the same package. -->
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="MySqlConnector" Version="2.4.0" />
+    <PackageVersion Include="Npgsql" Version="10.0.0" />
+    <!-- Transitive pin (CVE-2025-6965): the native SQLite lib pulled by Microsoft.Data.Sqlite /
+         EFCore.Sqlite was ≤ 2.1.11 (SQLite < 3.50.2, memory corruption). 3.50.x retracks the
+         lib version to the bundled SQLite version; core/bundle stay 2.1.x and accept this lib. -->
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Messaging
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.18.4" />
+    <PackageVersion Include="RabbitMQ.Client" Version="7.1.2" />
+    <PackageVersion Include="Confluent.Kafka" Version="2.8.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       CLI Tools
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.49.1" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Testing
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- dotnet/extensions line — see the note on Caching.Hybrid. -->
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.8.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.Kafka" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.ServiceBus" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.RabbitMq" Version="4.2.0" />
+    <PackageVersion Include="Verify.Xunit" Version="26.6.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Observability / Logging
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="NLog.Extensions.Logging" Version="5.3.15" />
+    <PackageVersion Include="OpenTelemetry" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.1-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+    <PackageVersion Include="Serilog" Version="4.2.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.1" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Azure SDK
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Azure.Data.AppConfiguration" Version="1.6.0" />
+    <!-- 1.21.0 drops the deprecated MSAL.NET transitive dep (1.13.2/1.14.x were deprecated for it).
+         No CVE on our line — the Azure.Identity advisory only affects < 1.11.4. Pulls the .NET 10
+         servicing line (Microsoft.Extensions.* ≥ 10.0.3), which is why those are aligned across the
+         board — now to 10.0.10, the current servicing patch. -->
+    <PackageVersion Include="Azure.Identity" Version="1.21.0" />
+    <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.7.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       SignalR
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Security / Crypto
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.3" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Binary Serialization
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="MessagePack" Version="3.1.7" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Reverse Proxy
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Cloud Storage SDKs
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- 4.0.25.2 pulls AWSSDK.Core ≥ 4.0.3.3 (CVE-2026-22611: region host-label validation). -->
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.25.2" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.24.0" />
+    <PackageVersion Include="FluentFTP" Version="54.2.0" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.15.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Configuration provider SDKs (Wave 5)
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="VaultSharp" Version="1.17.5.1" />
+    <!-- 4.0.x pulls AWSSDK.Core ≥ 4.0.3.3 (same CVE fix as AWSSDK.S3). -->
+    <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.100.4" />
+    <PackageVersion Include="AWSSDK.SimpleSystemsManagement" Version="4.0.102" />
+    <PackageVersion Include="Consul" Version="1.8.0" />
+    <!-- StackExchange.Redis is already declared above (Caching module) — reused here for the Redis provider. -->
+    <PackageVersion Include="Google.Cloud.SecretManager.V1" Version="2.8.0" />
+    <PackageVersion Include="KubernetesClient" Version="19.0.2" />
+    <!-- Base + module containers pinned to 4.2.0 to match the existing Testcontainers submodules. -->
+    <PackageVersion Include="Testcontainers" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.LocalStack" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.Redis" Version="4.2.0" />
+    <PackageVersion Include="Testcontainers.K3s" Version="4.2.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Misc
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+
+  <!-- ══════════════════════════════════════════════════════
+       Release Tooling (versioning + source link)
+       ══════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <PackageVersion Include="MinVer" Version="6.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,40 @@
+name: Release Notes
+
+# On a release tag, git-cliff writes the notes of that release from its conventional commits and a
+# GitHub Release carries them. Nothing is pushed: main is protected and changes only through pull
+# requests, so CHANGELOG.md is updated by one (`git cliff -o CHANGELOG.md`) before the tag is cut.
+
+on:
+  push:
+    tags:
+      - 'nuget-v*'
+
+permissions:
+  contents: write   # creating a release, not pushing to a branch
+
+jobs:
+  release-notes:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Notes of this release
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+
+      # Every version before 1.0 is a pre-release: an alpha tag must not become "Latest".
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md --prerelease --verify-tag

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Attachments.Samples</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!--
+      Samples for the RUNTIME surface that executes in a bare console app.
+      The [HasAttachments] source generator IS implemented (it emits the
+      {Parent}Attachment metadata entity, EF config, upload/download/delete
+      actions and endpoints inside a real Pragmatic host). A console app does
+      NOT run that host SG pipeline, so these samples exercise only the
+      hand-written runtime types: HasAttachmentsAttribute, AttachmentBase<TId>.
+      A [HasAttachments]-annotated entity is included as a declaration to show
+      how a consumer opts in. The upload endpoint is intentionally NOT generated
+      (multipart Stream can't be JSON-bound); the upload validation contract is
+      described via the attribute options instead.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic</RootNamespace>
+    <Description>Cross-cutting abstractions for the Pragmatic.Design ecosystem. Contains interfaces, attributes, and contracts shared across all modules — no ASP.NET Core or EF Core dependency.</Description>
+    <PackageTags>abstractions;contracts;interfaces;composition;di;entity;unit-of-work;events</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <!-- Already in the closure through Hosting.Abstractions; declared because ObservedTenantStore
+         logs an observer that throws rather than swallowing it. Nothing new reaches a consumer. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Abstractions.Analyzers\Pragmatic.Abstractions.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Pragmatic.Abstractions.CodeFixers\Pragmatic.Abstractions.CodeFixers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <!-- The companion analyzer travels in this package. Published on its own it is referenced by
+       nobody — not the scaffolding template, not a single consumer — so its diagnostics have never
+       fired outside our own build. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Abstractions.Analyzers\Pragmatic.Abstractions.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" PackAsCompanionAnalyzer="true" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+{
+  "property": {
+    "title": "Proprietà",
+    "checkIn": "Orario di check-in",
+    "checkOut": "Orario di check-out",
+    "rating": "Stelle",
+    "noDescription": "Nessuna descrizione disponibile"
+  },
+  "amenity": { "title": "Servizi" },
+  "errors": {
+    "propertyNotFound": "Proprietà non trovata",
+    "amenityNotFound": "Servizio non trovato",
+    "propertyInactive": "Questa proprietà non è più attiva"
+  }
+}

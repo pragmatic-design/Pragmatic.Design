@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The reminder a guest receives the day before check-in, in the language the job was scheduled with.
+-->
+<email subject="{{ t:mail.reminder.subject(checkIn=reservation.checkIn | date:&quot;D&quot;) }}">
+  <article>
+    <heading>{{ t:mail.reminder.heading }}</heading>
+    <text>{{ t:mail.reminder.body }}</text>
+    <text>{{ t:mail.checkIn }}: {{ reservation.checkIn | date:"g" }}</text>
+    <text>{{ t:mail.reference(id=reservation.id) }}</text>
+    <text>{{ t:mail.reminder.closing }}</text>
+  </article>
+</email>

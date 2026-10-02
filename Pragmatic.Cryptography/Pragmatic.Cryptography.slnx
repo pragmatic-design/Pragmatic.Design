@@ -1,0 +1,16 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Cryptography/Pragmatic.Cryptography.csproj" />
+    <Project Path="src/Pragmatic.Cryptography.EFCore/Pragmatic.Cryptography.EFCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Cryptography.Tests/Pragmatic.Cryptography.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Cryptography.EFCore.Tests/Pragmatic.Cryptography.EFCore.Tests.csproj" />
+  </Folder>
+</Solution>

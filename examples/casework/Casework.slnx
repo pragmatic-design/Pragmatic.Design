@@ -1,0 +1,22 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="docker-compose.yml" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Casework.Intake/Casework.Intake.csproj" />
+    <Project Path="src/Casework.Intake.Contracts/Casework.Intake.Contracts.csproj" />
+    <Project Path="src/Casework.Intake.Host/Casework.Intake.Host.csproj" />
+    <Project Path="src/Casework.Verify/Casework.Verify.csproj" />
+    <Project Path="src/Casework.Verify.Contracts/Casework.Verify.Contracts.csproj" />
+    <Project Path="src/Casework.Verify.Host/Casework.Verify.Host.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Casework.IntegrationTests/Casework.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

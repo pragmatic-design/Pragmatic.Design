@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>Structured logging for .NET: privacy-aware redaction, audit trail, context enrichment, an expression filter DSL, and multiple providers over the standard ILogger. Pairs with Microsoft's [LoggerMessage] source generator on hot paths.</Description>
+    <PackageTags>logging;structured-logging;redaction;observability;aot</PackageTags>
+    <!-- CA2007/CA1822: prototype import — clean up in dedicated refactor pass -->
+    <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Logging.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Logging.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Redaction\src\Pragmatic.Redaction\Pragmatic.Redaction.csproj" />
+  </ItemGroup>
+
+</Project>

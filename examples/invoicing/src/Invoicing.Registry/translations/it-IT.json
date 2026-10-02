@@ -1,0 +1,12 @@
+{
+  "validation.required": "Questo campo è obbligatorio.",
+  "validation.email": "Questo non è un indirizzo email valido.",
+  "validation.maxlength": "Questo testo supera i {max} caratteri.",
+  "validation.range": "Questo valore deve stare fra {min} e {max}.",
+  "error.validation.error.title": "La richiesta non è valida",
+  "error.validation.error.detail": "Alcuni campi non sono validi: il messaggio è accanto a ciascuno.",
+  "error.organization.slug.taken.title": "Identificativo già in uso",
+  "error.organization.slug.taken.detail": "Un'altra azienda usa già questo identificativo: scegline un altro.",
+  "error.forbidden.title": "Operazione non consentita",
+  "error.forbidden.detail": "Manca il permesso necessario: {permissions}."
+}

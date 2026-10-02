@@ -1,0 +1,381 @@
+﻿<Project>
+
+  <!-- ============================================
+       Pragmatic.Design - Shared Build Properties
+       ============================================ -->
+
+  <PropertyGroup>
+    <!-- Versioning is driven by MinVer via git tags (e.g. nuget-v1.0.0-alpha.1).
+         Fallback version when building without tags (fresh clone, CI detached head). -->
+    <MinVerDefaultPreReleaseIdentifiers>alpha.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
+    <MinVerTagPrefix>nuget-v</MinVerTagPrefix>
+
+    <!-- Package Info -->
+    <Authors>Alessandro Saiani</Authors>
+    <Company>Pragmatic.Design</Company>
+    <Copyright>Copyright (c) Alessandro Saiani $([System.DateTime]::Now.Year)</Copyright>
+    <!-- PackageLicenseFile is set per-package below (dual licensing) — not here. -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://www.pragmaticdesign.net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/pragmatic-design/Pragmatic.Design</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <!-- Symbols & SourceLink -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <Deterministic>true</Deterministic>
+
+    <!-- Build Settings -->
+    <!-- Pinned, not "latest". C# 14 is the version that ships with .NET 10, which is what every
+         runtime project here targets. Left at "latest", the language version is decided by whichever
+         SDK happens to be installed: the day someone builds with the .NET 11 SDK the whole repo moves
+         to C# 15 with nobody having chosen it, and a generator that must compile for netstandard2.0
+         is the worst place to discover a new language rule. Raise this deliberately, with the gate as
+         the witness. -->
+    <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Output -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- Missing XML comments -->
+  </PropertyGroup>
+
+  <!-- Expose the full-AOT JSON opt-in to the source generator. Without these the SG can't read the
+       build property (only the [assembly: PragmaticGenerateJsonContext] attribute would work). -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="PragmaticGenerateJsonContext" />
+    <CompilerVisibleProperty Include="PublishAot" />
+    <!-- Same deal for the permission auto-derivation opt-in (see PragmaticAutoDerivePermissionsAttribute). -->
+    <CompilerVisibleProperty Include="PragmaticAutoDerivePermissions" />
+    <!-- The use-case catalog records where each [UseCase] is declared. Without this the generator only
+         has the compiler's absolute path, and would have to fall back to the bare file name — an
+         absolute build path must never reach a generated file. -->
+    <CompilerVisibleProperty Include="ProjectDir" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Paths
+       ============================================ -->
+
+  <PropertyGroup>
+    <PragmaticRoot>$(MSBuildThisFileDirectory)</PragmaticRoot>
+    <SharedSourceGenPath>$(PragmaticRoot)shared\SourceGen\</SharedSourceGenPath>
+    <SharedTestingPath>$(PragmaticRoot)shared\Testing\</SharedTestingPath>
+    <BuildPath>$(PragmaticRoot)build\</BuildPath>
+    <RootLicensePath>$(PragmaticRoot)LICENSE</RootLicensePath>
+    <RootReadmePath>$(PragmaticRoot)README.md</RootReadmePath>
+    <ModuleReadmePath>$(MSBuildProjectDirectory)\..\..\README.md</ModuleReadmePath>
+  </PropertyGroup>
+
+  <!-- ============================================
+       Per-package license (dual licensing)
+       ============================================
+       Foundation, capabilities & tooling are MIT (free for everyone); the framework runtime + Medium
+       Blocks + Documents/media + Platform default to PolyForm Small Business 1.0.0.
+       Mapping is centralised here (by module directory) so the free/gated boundary is one source of
+       truth. A project can still force its bucket with <PragmaticLicense>MIT|PolyForm</PragmaticLicense>.
+       See docs/LICENSING.md. -->
+  <PropertyGroup>
+    <_PragmaticFreeBucket>false</_PragmaticFreeBucket>
+    <_PragmaticFreeBucket Condition="
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Result')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Ensure')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Abstractions')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Specification')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Validation')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Mapping')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Caching')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Patch')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Temporal')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Internationalization')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Resilience')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Configuration')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Logging')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.FeatureFlags')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Discovery')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Storage')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.Testing')) OR
+        $(MSBuildProjectFullPath.Contains('Pragmatic.SourceGenerator'))">true</_PragmaticFreeBucket>
+
+    <PragmaticLicense Condition="'$(PragmaticLicense)' == '' AND '$(_PragmaticFreeBucket)' == 'true'">MIT</PragmaticLicense>
+    <PragmaticLicense Condition="'$(PragmaticLicense)' == ''">PolyForm</PragmaticLicense>
+
+    <PragmaticLicenseFile Condition="'$(PragmaticLicense)' == 'MIT'">$(PragmaticRoot)licenses/LICENSE-MIT.txt</PragmaticLicenseFile>
+    <PragmaticLicenseFile Condition="'$(PragmaticLicense)' != 'MIT'">$(PragmaticRoot)licenses/LICENSE-PolyForm-Small-Business-1.0.0.txt</PragmaticLicenseFile>
+
+    <!-- The package's license file keeps its real name at the package root (no rename) so
+         PackageLicenseFile resolves reliably; the name still contains "LICENSE". -->
+    <PackageLicenseFile Condition="'$(PragmaticLicense)' == 'MIT'">LICENSE-MIT.txt</PackageLicenseFile>
+    <PackageLicenseFile Condition="'$(PragmaticLicense)' != 'MIT'">LICENSE-PolyForm-Small-Business-1.0.0.txt</PackageLicenseFile>
+  </PropertyGroup>
+
+  <!-- ============================================
+       Project Type Detection
+       ============================================ -->
+
+  <PropertyGroup>
+    <IsGenerator>false</IsGenerator>
+    <IsGenerator Condition="$(MSBuildProjectName.EndsWith('.Generator')) OR $(MSBuildProjectName.EndsWith('.SourceGenerator'))">true</IsGenerator>
+
+    <IsAnalyzer>false</IsAnalyzer>
+    <IsAnalyzer Condition="$(MSBuildProjectName.EndsWith('.Analyzers'))">true</IsAnalyzer>
+
+    <IsTest>false</IsTest>
+    <IsTest Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTest>
+    <IsTest Condition="$(MSBuildProjectName.Contains('IntegrationTests'))">true</IsTest>
+
+    <IsBenchmark>false</IsBenchmark>
+    <IsBenchmark Condition="$(MSBuildProjectName.EndsWith('.Benchmarks'))">true</IsBenchmark>
+
+    <IsSample>false</IsSample>
+    <IsSample Condition="$(MSBuildProjectName.EndsWith('.Samples'))">true</IsSample>
+  </PropertyGroup>
+
+  <!-- ============================================
+       Source Generator Projects
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsGenerator)' == 'true'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <!-- Pack settings -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeSymbols>false</IncludeSymbols>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <!-- Auto-include shared SourceGen code for generators (excluding Testing subfolder) -->
+  <ItemGroup Condition="'$(IsGenerator)' == 'true' AND Exists('$(SharedSourceGenPath)')">
+    <Compile Include="$(SharedSourceGenPath)*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <!-- Roslyn packages for generators (4.8.0 via Directory.Packages.props) -->
+  <ItemGroup Condition="'$(IsGenerator)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- ============================================
+       Analyzer Projects (.Analyzers)
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsAnalyzer)' == 'true'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <!-- Pack settings -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeSymbols>false</IncludeSymbols>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <!-- Roslyn packages for analyzers (4.8.0 via Directory.Packages.props) -->
+  <ItemGroup Condition="'$(IsAnalyzer)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- ============================================
+       Test Projects
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsTest)' == 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTest)' == 'true'">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- The assertions, ours: `.Should()` comes from Pragmatic.Testing.Assertions, which carries no
+         dependencies of its own, so every test project can have it without pulling anything along.
+         No assertion library: FluentAssertions 8.0 left Apache 2.0 for a paid per-developer licence,
+         and a pin is a decision deferred, not a decision made. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj"
+                      Condition="'$(MSBuildProjectName)' != 'Pragmatic.Testing.Tests'" />
+    <!-- No mocking library. Mocks are generated from [GenerateMock<T>] by
+         Pragmatic.Testing.Mocking.SourceGenerator: no dynamic proxies, no reflection, AOT-safe,
+         and checked by the compiler. A test project opts in by referencing that generator. -->
+    <PackageReference Include="Verify.Xunit" />
+    <PackageReference Include="coverlet.collector">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- Global using for Verify.Xunit so ReSharper/VS can resolve Verify() method -->
+    <Using Include="VerifyXunit" />
+  </ItemGroup>
+
+  <!-- Generator test specific packages -->
+  <ItemGroup Condition="'$(IsTest)' == 'true' AND $(MSBuildProjectName.Contains('Generator'))">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" />
+  </ItemGroup>
+
+  <!-- Auto-include shared SourceGen Testing code for generator tests (unless ExcludeSharedTesting is set) -->
+  <ItemGroup Condition="'$(IsTest)' == 'true' AND Exists('$(SharedSourceGenPath)Testing\') AND '$(ExcludeSharedTesting)' != 'true'">
+    <Compile Include="$(SharedSourceGenPath)Testing\*.cs" LinkBase="Shared\SourceGen\Testing" />
+  </ItemGroup>
+
+  <!-- Auto-include shared Testing code for tests (unless ExcludeSharedTesting is set) -->
+  <ItemGroup Condition="'$(IsTest)' == 'true' AND Exists('$(SharedTestingPath)') AND '$(ExcludeSharedTesting)' != 'true'">
+    <Compile Include="$(SharedTestingPath)**\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Benchmark Projects
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsBenchmark)' == 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>true</IsPublishable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsBenchmark)' == 'true'">
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Sample Projects
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsSample)' == 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>true</IsPublishable>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <!-- Console samples need OutputType=Exe (Web samples use SDK default) -->
+  <PropertyGroup Condition="'$(IsSample)' == 'true' AND '$(UsingMicrosoftNETSdkWeb)' != 'true'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- ============================================
+       Runtime Library Projects (default)
+       ============================================ -->
+
+  <!-- Runtime Library Projects (default) -->
+  <PropertyGroup Condition="'$(IsGenerator)' != 'true' AND '$(IsAnalyzer)' != 'true' AND '$(IsTest)' != 'true' AND '$(IsBenchmark)' != 'true' AND '$(IsSample)' != 'true'">
+    <IsRuntimeLib>true</IsRuntimeLib>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- AOT compatibility: enables trimming + AOT analyzers.
+         Warnings kept as warnings (not errors) to allow incremental adoption. -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL2046;IL2055;IL2057;IL2060;IL2067;IL2070;IL2072;IL2075;IL2077;IL2080;IL2087;IL2090;IL2091;IL3002;IL3050;IL3051</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- MinVer drives the version of every packable Pragmatic NuGet. Generators and analyzers are
+       packable too, so they MUST get MinVer — otherwise they fall back to a default stable 1.0.0,
+       which shadows every 1.0.0-alpha.* prerelease (SemVer: stable > prerelease) and makes them
+       unrepublishable on a feed. Keeping them on MinVer pins generator+runtime to the same git
+       height, so the single-package experience (shared PackageId) stays version-consistent. -->
+  <ItemGroup Condition="'$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true'">
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    SourceLink is the SDK's, not a package's.
+
+    Microsoft.SourceLink.GitHub used to be referenced here for every runtime library. From .NET 8 the
+    SDK ships SourceLink itself — 10.0.303 carries Microsoft.SourceLink.GitHub and
+    Microsoft.Build.Tasks.Git as SDK-resolved MSBuild SDKs — so the reference added a second copy that
+    won over the SDK's, and the copy it added was older.
+
+    ⚠️ Older, and eventually vulnerable: the package pinned Microsoft.Build.Tasks.Git at 8.0.0, and
+    GHSA-23fw-v26w-5fgq was published against it. Bumping the package would have moved the advisory to
+    a new number and kept the duplication; removing it makes the version follow the SDK, so it cannot
+    go stale on its own again.
+
+    The properties SourceLink reads — PublishRepositoryUrl, EmbedUntrackedSources,
+    ContinuousIntegrationBuild — are set at the top of this file and are what drives it either way.
+    Measured rather than assumed: packing Pragmatic.Ensure before and after produces the same
+    <repository> element in the nuspec and a .pdb that still carries the raw.githubusercontent map.
+  -->
+
+  <!-- Pack the per-package LICENSE (dual licensing: MIT or PolyForm — see the selection above) into
+       every packable Pragmatic NuGet, AS the file named "LICENSE" so it satisfies PackageLicenseFile. -->
+  <ItemGroup Condition="('$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true') AND '$(IsPackable)' != 'false' AND Exists('$(PragmaticLicenseFile)')">
+    <None Include="$(PragmaticLicenseFile)" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+
+  <!-- The package icon nuget.org shows beside every Pragmatic package: the site's logo, one source. -->
+  <PropertyGroup Condition="('$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true') AND '$(IsPackable)' != 'false' AND Exists('$(PragmaticRoot)site\logo.png')">
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PackageIcon)' == 'icon.png'">
+    <None Include="$(PragmaticRoot)site\logo.png" Pack="true" PackagePath="icon.png" Visible="false" />
+  </ItemGroup>
+
+  <!-- Pack README: prefer the module README (Pragmatic.{Module}/README.md);
+       fall back to the repo root README when the module hasn't authored its own yet.
+       What is packed is not these files but copies whose links resolve where a consumer reads them,
+       in the extracted package: see PreparePackageMarkdown in Directory.Build.targets. A module
+       README ships with its module's docs/, which its links name; the root README ships alone. -->
+  <PropertyGroup Condition="('$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true') AND '$(IsPackable)' != 'false'">
+    <PragmaticModuleDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\'))</PragmaticModuleDir>
+    <!-- Two levels up from a project outside a module is the repository root: that README is the root
+         one, and root docs/ is not a module's documentation to ship. -->
+    <PackageReadmeSource Condition="Exists('$(ModuleReadmePath)') AND '$(PragmaticModuleDir)' != '$(PragmaticRoot)'">$(ModuleReadmePath)</PackageReadmeSource>
+    <PackageReadmeShipsDocs Condition="'$(PackageReadmeSource)' != ''">true</PackageReadmeShipsDocs>
+    <PackageReadmeSource Condition="'$(PackageReadmeSource)' == '' AND Exists('$(RootReadmePath)')">$(RootReadmePath)</PackageReadmeSource>
+  </PropertyGroup>
+  <!-- PackagePath is where each file lands in the package; it rides along onto the packed copy. The
+       docs are every doc of the module, published already on the site from the same folder.
+       Written with '/', the one separator both platforms read: on Linux a '\' is part of a file name. -->
+  <ItemGroup Condition="'$(PackageReadmeSource)' != ''">
+    <PackageMarkdown Include="$(PackageReadmeSource)" PackagePath="README.md" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageReadmeShipsDocs)' == 'true'">
+    <PackageMarkdown Include="$(PragmaticModuleDir)docs\**\*.md" PackagePath="docs/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Generator Runtime Support (OPT-IN)
+       ============================================ -->
+
+  <!-- When a runtime library needs to be referenced by its sibling generator,
+       set IsGeneratorRuntime=true in the csproj. This:
+       - Multi-targets netstandard2.0 + net10.0
+       - Suppresses pack (generator will pack both)
+
+       Use when: Generator needs to read attributes/types from runtime at compile time
+       Don't use when: Generator only generates code without referencing runtime
+
+       Example (in Pragmatic.Mapping.csproj):
+       <PropertyGroup>
+         <IsGeneratorRuntime>true</IsGeneratorRuntime>
+       </PropertyGroup>
+  -->
+  <PropertyGroup Condition="'$(IsRuntimeLib)' == 'true' AND '$(IsGeneratorRuntime)' == 'true'">
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

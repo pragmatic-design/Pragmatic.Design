@@ -1,0 +1,145 @@
+/* Google Fonts — must be first */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+/* Pragmatic Design — Starlight custom theme (gold)
+   Starlight gray scale: white (lightest) → black (darkest).
+   Set ONCE — Starlight inverts for light/dark automatically. */
+
+:root {
+  /* Gold accent */
+  --sl-color-accent-low: #2a2211;
+  --sl-color-accent: #d4af37;
+  --sl-color-accent-high: #ffe088;
+
+  /* Gray scale (warm gold-tinted grays) */
+  --sl-color-white: #e5e2e1;
+  --sl-color-gray-1: #d0c5af;
+  --sl-color-gray-2: #99907c;
+  --sl-color-gray-3: #4a4640;
+  --sl-color-gray-4: #2a2a2a;
+  --sl-color-gray-5: #201f1f;
+  --sl-color-gray-6: #181818;
+  --sl-color-black: #131313;
+
+  /* Typography */
+  --sl-font: "Inter", system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* Fix Starlight's hardcoded nav bg */
+  --sl-color-bg-nav: var(--sl-color-gray-6);
+
+  /* Content area — use available space */
+  --sl-content-width: 75rem;
+
+  /* Left sidebar */
+  --sl-sidebar-width: 16rem;
+}
+
+/* Content fills available space, right sidebar stays readable */
+.right-sidebar-container {
+  flex-shrink: 0 !important;
+  width: 16rem !important;
+  min-width: 16rem !important;
+}
+
+/* Main content area takes remaining space */
+.main-frame {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* Headings — Manrope with clear visual hierarchy */
+:is(h1, h2, h3, h4, h5, h6) {
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.sl-markdown-content h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.sl-markdown-content h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 2.5rem;
+}
+
+.sl-markdown-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+}
+
+.sl-markdown-content h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+}
+
+/* Hide theme selector — dark only */
+starlight-theme-select {
+  display: none !important;
+}
+
+/* Logo + title — match landing page style */
+.site-title {
+  gap: 0.5rem !important;
+  font-family: "Manrope", system-ui, sans-serif !important;
+  text-decoration: none !important;
+  color: var(--sl-color-white) !important;
+}
+
+.site-title img {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0.25rem;
+}
+
+.site-title > span {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: var(--sl-color-white) !important;
+}
+
+/* Aside/callout colors — gold-themed */
+:root {
+  --sl-color-blue: hsl(41, 70%, 50%);
+  --sl-color-blue-low: hsla(41, 50%, 50%, 0.12);
+  --sl-color-blue-high: hsl(41, 70%, 75%);
+  --sl-color-green: hsl(101, 50%, 50%);
+  --sl-color-green-low: hsla(101, 40%, 50%, 0.12);
+  --sl-color-green-high: hsl(101, 50%, 75%);
+  --sl-color-orange: hsl(30, 80%, 55%);
+  --sl-color-orange-low: hsla(30, 60%, 50%, 0.12);
+  --sl-color-orange-high: hsl(30, 80%, 75%);
+  --sl-color-red: hsl(350, 65%, 55%);
+  --sl-color-red-low: hsla(350, 50%, 50%, 0.12);
+  --sl-color-red-high: hsl(350, 65%, 75%);
+  --sl-color-purple: hsl(270, 50%, 55%);
+  --sl-color-purple-low: hsla(270, 40%, 50%, 0.12);
+  --sl-color-purple-high: hsl(270, 50%, 75%);
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(242, 202, 80, 0.3);
+  color: #fff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sl-color-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-4);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sl-color-gray-3);
+}

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- RS1036/RS1026: the stand-in analyzer used by the suppressor tests is never shipped. -->
+    <NoWarn>$(NoWarn);CA2007;RS1036;RS1026</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" />
+    <!-- The DiagnosticSuppressors ship inside the unified generator assembly. -->
+    <ProjectReference Include="..\..\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+  </ItemGroup>
+
+</Project>

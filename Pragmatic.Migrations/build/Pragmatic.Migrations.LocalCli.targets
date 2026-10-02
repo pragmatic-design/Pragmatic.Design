@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    For hosts inside this repository: the schema snapshot runs with the Pragmatic.Migrations CLI
+    built from source, not with the global tool Pragmatic.Migrations.targets expects. Import it
+    after Pragmatic.Migrations.targets. Not packed.
+
+    The reference orders the build: without it nothing guarantees the CLI is compiled before the
+    host. GetTargetPath then asks the CLI where its output is, in whatever layout the build uses.
+    The literal ..\Pragmatic.Migrations.Cli\bin\$(Configuration)\net10.0 path it replaces does not
+    exist in the artifacts layout the gate builds with: on a fresh checkout the host build failed,
+    and on a working copy it ran whatever CLI an earlier IDE build had left in that folder.
+  -->
+
+  <PropertyGroup>
+    <_PragmaticMigrateCliProject>$(MSBuildThisFileDirectory)..\src\Pragmatic.Migrations.Cli\Pragmatic.Migrations.Cli.csproj</_PragmaticMigrateCliProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(_PragmaticMigrateCliProject)"
+                      ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <Target Name="UseTheMigrateCliBuiltFromSource" BeforeTargets="GeneratePragmaticSchemaSnapshot">
+    <MSBuild Projects="$(_PragmaticMigrateCliProject)" Targets="GetTargetPath"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained">
+      <Output TaskParameter="TargetOutputs" PropertyName="_PragmaticMigrateCliPath" />
+    </MSBuild>
+    <PropertyGroup>
+      <PragmaticMigrateCommand>dotnet &quot;$(_PragmaticMigrateCliPath)&quot;</PragmaticMigrateCommand>
+    </PropertyGroup>
+  </Target>
+
+</Project>

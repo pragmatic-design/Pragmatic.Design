@@ -1,0 +1,6 @@
+{
+  "error.insufficient.stock.title": "Merce insufficiente",
+  "error.insufficient.stock.detail": "L'ordine non è stato inviato e non è stato riservato niente. Mancano: {lines}.",
+  "error.stock.unanswered.title": "Il magazzino non risponde",
+  "error.stock.unanswered.detail": "L'ordine non è stato inviato: non è stato possibile verificare la merce. Riprova tra poco."
+}

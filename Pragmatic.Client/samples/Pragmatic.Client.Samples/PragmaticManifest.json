@@ -1,0 +1,69 @@
+{
+    "$schema": "pragmatic-manifest/v1",
+    "version": "1.0.0",
+    "assembly": "Sample.Booking",
+    "boundaries": [],
+    "endpoints": [
+        {
+            "operationId": "Booking.CreateGuest",
+            "httpMethod": "Post",
+            "fullRoute": "/api/v1/guests",
+            "summary": "Create a new guest",
+            "successStatusCode": 201,
+            "isVoid": false,
+            "response": { "type": "global::System.Guid" },
+            "requestBody": {
+                "properties": [
+                    { "name": "FirstName", "type": "string", "isRequired": true, "isNullable": false },
+                    { "name": "LastName", "type": "string", "isRequired": true, "isNullable": false },
+                    { "name": "Email", "type": "string", "isRequired": false, "isNullable": true }
+                ]
+            },
+            "errors": [
+                { "type": "global::Pragmatic.Result.Http.ConflictError", "code": "CONFLICT", "statusCode": 409 }
+            ]
+        },
+        {
+            "operationId": "Booking.GetGuest",
+            "httpMethod": "Get",
+            "fullRoute": "/api/v1/guests/{id}",
+            "summary": "Get a guest by ID",
+            "successStatusCode": 200,
+            "isVoid": false,
+            "response": { "type": "global::Pragmatic.Client.Samples.GuestDto" },
+            "parameters": [
+                { "name": "id", "in": "path", "type": "global::System.Guid", "isRequired": true }
+            ]
+        },
+        {
+            "operationId": "Booking.DeleteGuest",
+            "httpMethod": "Delete",
+            "fullRoute": "/api/v1/guests/{id}",
+            "successStatusCode": 204,
+            "isVoid": true,
+            "parameters": [
+                { "name": "id", "in": "path", "type": "global::System.Guid", "isRequired": true }
+            ]
+        }
+    ],
+    "types": [
+        {
+            "type": "global::Pragmatic.Client.Samples.GuestDto",
+            "simpleName": "GuestDto",
+            "kind": "dto",
+            "properties": [
+                { "name": "Id", "type": "System.Guid", "isRequired": false, "isNullable": false },
+                { "name": "FirstName", "type": "string", "isRequired": true, "isNullable": false },
+                { "name": "LastName", "type": "string", "isRequired": true, "isNullable": false },
+                { "name": "Email", "type": "string", "isRequired": false, "isNullable": true }
+            ]
+        },
+        {
+            "type": "global::Pragmatic.Result.Http.ConflictError",
+            "simpleName": "ConflictError",
+            "kind": "error",
+            "code": "CONFLICT",
+            "statusCode": 409
+        }
+    ]
+}

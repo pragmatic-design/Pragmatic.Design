@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <Description>Source generator for typed API clients from PragmaticManifest.json.</Description>
+    <NoWarn>$(NoWarn);RS1032;RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Analyzer DLL packaging is handled automatically via IsRoslynComponent=true
+       from Directory.Build.props; an explicit None include duplicates the file. -->
+
+
+</Project>

@@ -1,0 +1,17 @@
+<Project>
+  <!-- Import root build props (versioning, analyzers, shared code, etc.) -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- Showcase projects are not packable -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!-- Read the implicit usings of the Pragmatic projects referenced, as an application gets them from the packages. -->
+    <PragmaticInRepoImplicitUsings>true</PragmaticInRepoImplicitUsings>
+    <!-- Suppress warnings from generated code (MigrationDbContext conflict across assemblies, unused vars) -->
+    <!-- PRAG0651: LocalizedString.Description on Property requires value converter — intentional showcase of LocalizedString, using InMemory provider -->
+    <NoWarn>$(NoWarn);CS0436;CS0168;IDE0044;PRAG1646;PRAG0651</NoWarn>
+    <!-- Emit generated files to disk for debugging -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+</Project>

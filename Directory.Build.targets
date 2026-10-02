@@ -1,0 +1,311 @@
+<Project>
+
+  <!-- ============================================
+       Pragmatic.Design - Shared Build Targets
+       ============================================ -->
+
+  <!-- ============================================
+       Source Generator Packaging
+       ============================================ -->
+
+  <!-- Pack generator DLL into analyzers folder -->
+  <ItemGroup Condition="'$(IsGenerator)' == 'true'">
+    <None Include="$(OutputPath)$(AssemblyName).dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Companion Analyzers
+       A package that carries a companion analyzer marks it with PackAsCompanionAnalyzer="true" on a
+       ReferenceOutputAssembly="false" ProjectReference, and the path comes from the referenced
+       project itself, in whatever output layout the build uses. GetTargetPath rather than
+       ResolveProjectReferences: the latter builds, and `dotnet pack` with no build refuses a build
+       (NETSDK1085). The literal
+       ..\X.Analyzers\bin\$(Configuration)\netstandard2.0 path it replaces does not exist in the
+       artifacts output layout the gate builds with: on a fresh checkout the gate's build failed to pack Ensure and Abstractions,
+       and on a working copy it packed whatever an earlier IDE build had left in that folder.
+       ============================================ -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackCompanionAnalyzers</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="PackCompanionAnalyzers">
+    <ItemGroup>
+      <_CompanionAnalyzerProject Include="@(ProjectReference)"
+                                 Condition="'%(ProjectReference.PackAsCompanionAnalyzer)' == 'true'" />
+    </ItemGroup>
+    <!-- Without TargetFramework the analyzer answers for its own netstandard2.0, as it was built. -->
+    <MSBuild Projects="@(_CompanionAnalyzerProject)" Targets="GetTargetPath"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained"
+             Condition="'@(_CompanionAnalyzerProject)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_CompanionAnalyzerAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_CompanionAnalyzerAssembly)" PackagePath="analyzers/dotnet/cs" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ============================================
+       Combined Runtime + Generator Package
+       When a .SourceGenerator project has a sibling runtime project,
+       pack both into a single NuGet package.
+
+       Example: Pragmatic.Mapping.SourceGenerator + Pragmatic.Mapping
+                -> Pragmatic.Mapping.nupkg (single package)
+       ============================================ -->
+
+  <PropertyGroup Condition="'$(IsGenerator)' == 'true'">
+    <!-- Derive runtime project name: Pragmatic.Mapping.SourceGenerator -> Pragmatic.Mapping -->
+    <RuntimeProjectName Condition="$(MSBuildProjectName.EndsWith('.SourceGenerator'))">$(MSBuildProjectName.Replace('.SourceGenerator', ''))</RuntimeProjectName>
+    <RuntimeProjectName Condition="$(MSBuildProjectName.EndsWith('.Generator'))">$(MSBuildProjectName.Replace('.Generator', ''))</RuntimeProjectName>
+    <RuntimeProjectPath>$(MSBuildProjectDirectory)\..\$(RuntimeProjectName)\$(RuntimeProjectName).csproj</RuntimeProjectPath>
+    <HasRuntimeProject Condition="Exists('$(RuntimeProjectPath)')">true</HasRuntimeProject>
+
+    <!-- Runtime project output paths -->
+    <RuntimeOutputBase>$(MSBuildProjectDirectory)\..\$(RuntimeProjectName)\bin\$(Configuration)\</RuntimeOutputBase>
+    <RuntimeDllNs20>$(RuntimeOutputBase)netstandard2.0\$(RuntimeProjectName).dll</RuntimeDllNs20>
+    <RuntimeDllNet10>$(RuntimeOutputBase)net10.0\$(RuntimeProjectName).dll</RuntimeDllNet10>
+
+    <!-- Detect if runtime project multi-targets (has ns2.0) -->
+    <RuntimeIsMultiTarget Condition="Exists('$(RuntimeDllNs20)')">true</RuntimeIsMultiTarget>
+  </PropertyGroup>
+
+  <!-- Single-Package Experience:
+       When the generator has a sibling runtime project that opts into
+       IsGeneratorRuntime=true (multi-targets ns2.0+net10.0), pack both
+       into a single package using the runtime name as PackageId.
+
+       For generators whose runtime doesn't opt-in (like Pragmatic.Result),
+       they remain separate packages. -->
+  <PropertyGroup Condition="'$(IsGenerator)' == 'true' AND '$(HasRuntimeProject)' == 'true' AND '$(RuntimeIsMultiTarget)' == 'true'">
+    <PackageId>$(RuntimeProjectName)</PackageId>
+  </PropertyGroup>
+
+  <!-- Include runtime DLLs in generator package when runtime multi-targets -->
+  <ItemGroup Condition="'$(IsGenerator)' == 'true' AND '$(RuntimeIsMultiTarget)' == 'true'">
+    <!-- Runtime ns2.0 in analyzers (for generator to reference at compile time) -->
+    <None Include="$(RuntimeDllNs20)"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false"
+          Condition="Exists('$(RuntimeDllNs20)')" />
+
+    <!-- Runtime ns2.0 in lib (for consumers on older TFMs) -->
+    <None Include="$(RuntimeDllNs20)"
+          Pack="true"
+          PackagePath="lib/netstandard2.0"
+          Visible="true"
+          Condition="Exists('$(RuntimeDllNs20)')" />
+
+    <!-- Runtime net10.0 in lib (for consumers on net10.0, optimal codegen) -->
+    <None Include="$(RuntimeDllNet10)"
+          Pack="true"
+          PackagePath="lib/net10.0"
+          Visible="true"
+          Condition="Exists('$(RuntimeDllNet10)')" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Verify Snapshot Settings
+       ============================================ -->
+
+  <ItemGroup Condition="'$(IsTest)' == 'true'">
+    <None Update="**\*.verified.*">
+      <ParentFile>$([System.IO.Path]::GetFileNameWithoutExtension('%(FileName)'))</ParentFile>
+      <DependentUpon>%(ParentFile).cs</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <!-- ============================================
+       Analyzer Warnings
+       ============================================ -->
+
+  <PropertyGroup>
+    <!-- Treat specific analyzer warnings as errors -->
+    <WarningsAsErrors>$(WarningsAsErrors);CA1822;CA1826;CA2007</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- ============================================
+       Transitive security pin: native SQLite lib (CVE-2025-6965)
+       ============================================
+       Microsoft.Data.Sqlite / EFCore.Sqlite pull SQLitePCLRaw.lib.e_sqlite3 ≤ 2.1.11
+       (SQLite < 3.50.2, memory corruption). We can't fix it via CentralPackageTransitive-
+       Pinning (it cascades into unrelated downgrade conflicts — see Directory.Packages.props),
+       so any project that references a SQLite provider gets a direct pin to the patched lib.
+       Evaluated here (after the project body) so @(PackageReference) is populated; one rule
+       covers every current and future SQLite-using project. Version comes from CPM. -->
+  <ItemGroup Condition="@(PackageReference->AnyHaveMetadataValue('Identity', 'Microsoft.Data.Sqlite')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Microsoft.EntityFrameworkCore.Sqlite'))">
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Transitive security pin: SSH.NET (GHSA-q939-rpr3-3284)
+       ============================================
+       Every Testcontainers.* module pulls the Testcontainers core, which depends on SSH.NET ≤ 2025.1.0
+       (ScpClient recursive download writes files at server-controlled paths). Same reason as the SQLite
+       pin above: CentralPackageTransitivePinning cascades into unrelated downgrades, so the projects
+       that receive it get a direct pin to the patched version instead.
+       Listed one by one: a prefix match needs %(Identity), which does not batch in an ItemGroup outside
+       a target — the first attempt read correctly and produced no pin at all. So a ninth Testcontainers
+       module added later must be added here too; the audit in `check.mjs` is what will say so.
+       Version comes from CPM. -->
+  <ItemGroup Condition="@(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.Kafka')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.LocalStack')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.MsSql')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.PostgreSql')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.RabbitMq')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.Redis')) Or @(PackageReference->AnyHaveMetadataValue('Identity', 'Testcontainers.ServiceBus'))">
+    <PackageReference Include="SSH.NET" />
+  </ItemGroup>
+
+  <!-- ============================================
+       Package markdown: links that resolve where they are read
+       ============================================
+       A consumer reads the README and the docs from the extracted package, not from the
+       repository, and a link resolves against that folder. Each packed copy (the files are
+       @(PackageMarkdown), Directory.Build.props) keeps a link as written when it names a file that
+       ships in the same package, and turns any other relative link into the repository URL of the
+       file it names — the rule site/scripts/sync-docs.mjs applies to the published site. A link to
+       a file that does not exist even in the repository is left as written, so
+       scripts/package-markdown-links.mjs names it instead of this step hiding it.
+       Links inside code are not links: fenced blocks and inline spans are copied untouched. -->
+  <UsingTask TaskName="PreparePackageMarkdown"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputDirectory ParameterType="System.String" Required="true" />
+      <RepositoryRoot ParameterType="System.String" Required="true" />
+      <RepositoryUrl ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var separator = Path.DirectorySeparatorChar.ToString();
+        var root = Path.GetFullPath(RepositoryRoot);
+        if (!root.EndsWith(separator)) root += separator;
+        var repository = RepositoryUrl.TrimEnd('/');
+        var images = new[] { ".png", ".jpg", ".jpeg", ".gif", ".svg" };
+        var shipped = new HashSet<string>(Files.Select(f => f.GetMetadata("FullPath")), StringComparer.OrdinalIgnoreCase);
+
+        Func<string, string, string> rewrite = (directory, target) =>
+        {
+            if (Regex.IsMatch(target, "^[A-Za-z][A-Za-z0-9+.-]*:") || target.StartsWith("#") || target.StartsWith("/"))
+                return target;
+            var hash = target.IndexOf('#');
+            var path = hash < 0 ? target : target.Substring(0, hash);
+            var anchor = hash < 0 ? "" : target.Substring(hash);
+            if (path.Length == 0)
+                return target;
+            var full = Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(path))).TrimEnd('\\', '/');
+            if (shipped.Contains(full) || shipped.Any(s => s.StartsWith(full + separator, StringComparison.OrdinalIgnoreCase)))
+                return target;
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                return target;
+            var kind = Directory.Exists(full) ? "tree" : File.Exists(full) ? "blob" : null;
+            if (kind == null)
+                return target;
+            if (kind == "blob" && Array.IndexOf(images, Path.GetExtension(full).ToLowerInvariant()) >= 0)
+                kind = "raw";
+            return repository + "/" + kind + "/main/" + full.Substring(root.Length).Replace('\\', '/') + anchor;
+        };
+
+        var link = new Regex("(`[^`]*`)|(\\]\\()([^)\\s]+)((?:\\s+\"[^\"]*\")?\\))");
+        foreach (var file in Files)
+        {
+            var source = file.GetMetadata("FullPath");
+            var directory = Path.GetDirectoryName(source);
+            var lines = File.ReadAllText(source).Split('\n');
+            string fence = null;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var trimmed = lines[i].TrimStart();
+                if (fence != null)
+                {
+                    // Only a bare fence closes one: "```csharp" inside a block is content (CommonMark).
+                    if (trimmed.TrimEnd().Length >= 3 && trimmed.TrimEnd().Trim(fence[0]).Length == 0) fence = null;
+                    continue;
+                }
+                if (trimmed.StartsWith("```") || trimmed.StartsWith("~~~"))
+                {
+                    fence = trimmed.Substring(0, 3);
+                    continue;
+                }
+                lines[i] = link.Replace(lines[i], m => m.Groups[1].Success
+                    ? m.Value
+                    : m.Groups[2].Value + rewrite(directory, m.Groups[3].Value) + m.Groups[4].Value);
+            }
+
+            // RecursiveDir carries '\' on Windows; on Linux that would be part of the file name.
+            var destination = Path.Combine(OutputDirectory, file.GetMetadata("PackagePath").Replace('\\', '/'));
+            var text = string.Join("\n", lines);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            if (!File.Exists(destination) || File.ReadAllText(destination) != text)
+                File.WriteAllText(destination, text);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <!-- The copies carry PackagePath over from @(PackageMarkdown), and it names the file, not its
+       folder: for a folder NuGet appends the recursive part of a wildcard itself, and packed
+       docs/efcore/ as docs/efcore/efcore/ the one time it was given one. -->
+  <Target Name="PreparePackageMarkdown"
+          BeforeTargets="_GetPackageFiles"
+          Condition="'@(PackageMarkdown)' != ''">
+    <PreparePackageMarkdown Files="@(PackageMarkdown)"
+                            OutputDirectory="$(IntermediateOutputPath)package-markdown"
+                            RepositoryRoot="$(PragmaticRoot)"
+                            RepositoryUrl="$(RepositoryUrl)" />
+    <ItemGroup>
+      <None Include="@(PackageMarkdown->'$(IntermediateOutputPath)package-markdown/%(PackagePath)')"
+            Pack="true"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ============================================
+       Implicit usings
+       A project with a build\{ProjectName}.targets ships it as build\{PackageId}.targets, where NuGet
+       imports it into a project that references the package: its <Using> items join the SDK's
+       ImplicitUsings. It is .targets because a package's .props is imported before the project body
+       sets ImplicitUsings; and build\ rather than buildTransitive\ because a project gets the imports
+       of what it references, the one reach a ProjectReference can reproduce (below).
+       ============================================ -->
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)\build\$(MSBuildProjectName).targets')">
+    <None Include="$(MSBuildProjectDirectory)\build\$(MSBuildProjectName).targets"
+          Pack="true"
+          PackagePath="build\$(PackageId).targets"
+          Visible="false" />
+  </ItemGroup>
+
+  <!-- NuGet imports a package's build\ targets; a ProjectReference imports nothing. A project that sets
+       PragmaticInRepoImplicitUsings (the examples) reads the <Using> items of the build\{Name}.targets
+       beside each project it references directly, so it builds with the imports an application gets
+       from the same packages. Only the items are read, not the file's conditions: the gate on this
+       target is the one they carry.
+       The references are the declared ones, taken here at evaluation: by the time the target runs the
+       SDK has added every transitive project to @(ProjectReference) (IncludeTransitiveProjectReferences),
+       and the imports would be those of the whole graph, which no package reference gives. -->
+  <ItemGroup Condition="'$(PragmaticInRepoImplicitUsings)' == 'true'">
+    <_PragmaticDeclaredReference Include="@(ProjectReference)" />
+  </ItemGroup>
+
+  <Target Name="PragmaticInRepoImplicitUsings"
+          BeforeTargets="GenerateGlobalUsings"
+          Condition="'$(PragmaticInRepoImplicitUsings)' == 'true' and ('$(ImplicitUsings)' == 'enable' or '$(ImplicitUsings)' == 'true') and '$(PragmaticImplicitUsings)' != 'false'">
+    <ItemGroup>
+      <_PragmaticUsingsFile Include="@(_PragmaticDeclaredReference->'%(RootDir)%(Directory)build\%(Filename).targets')"
+                            Condition="'%(_PragmaticDeclaredReference.ReferenceOutputAssembly)' != 'false'" />
+      <_PragmaticUsingsFile Remove="@(_PragmaticUsingsFile)"
+                            Condition="!Exists('%(_PragmaticUsingsFile.FullPath)')" />
+    </ItemGroup>
+    <XmlPeek XmlInputPath="%(_PragmaticUsingsFile.FullPath)"
+             Query="/Project/ItemGroup/Using/@Include"
+             Condition="'@(_PragmaticUsingsFile)' != ''">
+      <Output TaskParameter="Result" ItemName="Using" />
+    </XmlPeek>
+  </Target>
+
+</Project>

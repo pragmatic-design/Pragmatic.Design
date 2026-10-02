@@ -1,0 +1,24 @@
+services:
+  showcase-db:
+    image: postgres:17
+    container_name: pragmatic-showcase-db
+    environment:
+      POSTGRES_USER: pragmatic
+      # The password of this local, disposable container, written in the hosts' appsettings.json so the
+      # example runs as cloned. Not a secret and not what a deployment uses: that comes from its own
+      # configuration, never from a committed file.
+      POSTGRES_PASSWORD: Pragmatic@2026!
+      POSTGRES_DB: showcase_app
+    ports:
+      - "5433:5432"
+    volumes:
+      - showcase-pgdata:/var/lib/postgresql/data
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pragmatic -d showcase_app"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  showcase-pgdata:

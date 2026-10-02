@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The message a customer gets when an invoice of theirs is past due, in the customer's language.
+
+  The subject is an expression too, so the wording of the whole message lives here. The copy of the
+  invoice is attached by the code — the stored document, never a second rendering.
+-->
+<email subject="{{ t:reminder.subject(number=invoice.number) }}">
+  <article>
+    <text>{{ t:reminder.greeting(name=invoice.billedToName) }}</text>
+    <text>{{ t:reminder.body(number=invoice.number, outstanding=invoice.outstanding | currency, due=invoice.dueOn | date:"d") }}</text>
+    <text>{{ issuer.legalName }}</text>
+  </article>
+</email>

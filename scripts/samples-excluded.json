@@ -1,0 +1,10 @@
+{
+  "$comment": "Samples run-samples.mjs does not run, each with the reason. A reason is a fact about the sample (infrastructure the gate does not start, a host that serves until stopped), never 'it fails'.",
+  "excluded": {
+    "Pragmatic.Endpoints.Samples": "A web host: it serves on http://localhost:5000 until stopped, so it never exits.",
+    "Pragmatic.Result.AspNetCore.Samples": "A web host: it serves on http://localhost:5000 until stopped, so it never exits.",
+    "Pragmatic.Ensure.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it.",
+    "Pragmatic.Jobs.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it.",
+    "Pragmatic.Logging.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it."
+  }
+}

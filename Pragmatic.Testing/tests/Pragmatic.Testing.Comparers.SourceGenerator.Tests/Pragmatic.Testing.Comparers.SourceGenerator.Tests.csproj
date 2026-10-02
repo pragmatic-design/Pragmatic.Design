@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <!-- Only the comparer generator: each generator links the shared SourceGen code, so a project
+       referencing two would see EquatableArray<T> twice (CS0433). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Testing.Comparers.SourceGenerator\Pragmatic.Testing.Comparers.SourceGenerator.csproj" />
+    <!-- The tests compile the generated source against the real runtime, so the contract between
+         template and MockProperty/MockMethod is verified rather than assumed. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

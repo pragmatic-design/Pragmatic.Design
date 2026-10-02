@@ -1,0 +1,20 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/topology-validation.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Discovery/Pragmatic.Discovery.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Discovery.Tests/Pragmatic.Discovery.Tests.csproj" />
+  </Folder>
+</Solution>

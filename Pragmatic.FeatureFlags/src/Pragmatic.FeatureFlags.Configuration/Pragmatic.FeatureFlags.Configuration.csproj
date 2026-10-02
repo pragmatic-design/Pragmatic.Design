@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Configuration-backed feature flag store for Pragmatic.FeatureFlags. Reads flag definitions from any IConfiguration source (appsettings.json, environment variables, Azure App Configuration, Consul, etc.) and honors reload tokens, so flag changes propagate at runtime without a process restart.</Description>
+    <PackageTags>feature-flags;configuration;appsettings;reload;pragmatic</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.FeatureFlags.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" />
+  </ItemGroup>
+
+</Project>

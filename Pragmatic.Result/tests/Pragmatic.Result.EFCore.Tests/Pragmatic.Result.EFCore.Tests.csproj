@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- Brings MySql.Data, the Oracle driver whose exceptions the MySQL parser reads without referencing
+         it. GPL-2.0 with the Universal FOSS exception; a test project, never packed. -->
+    <PackageReference Include="MySql.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore.SqlServer\Pragmatic.Result.EFCore.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore.PostgreSQL\Pragmatic.Result.EFCore.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore.MySql\Pragmatic.Result.EFCore.MySql.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore.Sqlite\Pragmatic.Result.EFCore.Sqlite.csproj" />
+  </ItemGroup>
+
+</Project>

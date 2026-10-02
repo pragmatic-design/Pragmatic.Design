@@ -1,0 +1,24 @@
+[package]
+name = "pragmatic-imaging"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Native imaging library — decode/encode/resize/filters/QR. C ABI exports."
+
+[lib]
+name = "pragmatic_imaging_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pragmatic-core = { path = "../../../shared/native/pragmatic-core" }
+image = { version = "0.25", default-features = false, features = [
+    "png", "jpeg", "webp", "avif", "gif", "bmp", "tiff", "rayon"
+] }
+qrcode = "0.14"
+kamadak-exif = "0.5"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = true

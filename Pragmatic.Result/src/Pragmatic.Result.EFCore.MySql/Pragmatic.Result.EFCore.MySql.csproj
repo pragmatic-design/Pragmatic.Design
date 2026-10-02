@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MySQL provider for Pragmatic.Result.EFCore. Provides accurate error detection using the server's error numbers, from MySqlConnector's exceptions and from MySql.Data's (Oracle's provider), without referencing MySql.Data.</Description>
+    <PackageTags>result;efcore;mysql;mysqlconnector;mysql-data;error-handling</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+  </ItemGroup>
+
+</Project>

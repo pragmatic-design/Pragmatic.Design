@@ -1,0 +1,33 @@
+<Solution>
+  <!-- Declared rather than inferred: without them Visual Studio opens the solution with every project
+       unloaded. The .slnx schema makes them optional and the CLI does not need them. -->
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <!-- Visual Studio asks to install the .NET Compiler Platform SDK when it opens this solution: the
+       projects reference the generator as a project (ProjectReference OutputItemType="Analyzer"), and
+       that project has IsRoslynComponent=true. The same holds for Showcase and Pragmatic.Design.slnx.
+       Conformance must exercise the working tree, not the published packages, so the reference stays
+       a project reference. -->
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="README.md" />
+    <SolutionItem Path="../../docs/diagnostics.md" />
+  </Folder>
+
+  <!-- Mapping alone: no EF Core, no container. -->
+  <Folder Name="/poco/">
+    <Project Path="src/Conformance.Poco/Conformance.Poco.csproj" />
+    <Project Path="tests/Conformance.Poco.Tests/Conformance.Poco.Tests.csproj" />
+  </Folder>
+
+  <!-- The whole round trip: entities, mutations, endpoints, PostgreSQL. -->
+  <Folder Name="/e2e/">
+    <Project Path="src/Conformance.Catalog/Conformance.Catalog.csproj" />
+    <Project Path="src/Conformance.Sales/Conformance.Sales.csproj" />
+    <Project Path="src/Conformance.Split/Conformance.Split.csproj" />
+    <Project Path="src/Conformance.Host/Conformance.Host.csproj" />
+    <Project Path="tests/Conformance.Tests/Conformance.Tests.csproj" />
+  </Folder>
+</Solution>
