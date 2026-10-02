@@ -5,6 +5,9 @@
 [![License: MIT + PolyForm SB](https://img.shields.io/badge/license-MIT%20%2B%20PolyForm%20SB-blue.svg)](docs/LICENSING.md)
 [![Preview](https://img.shields.io/badge/status-1.0.0--alpha-ffe088)](docs/ROADMAP.md)
 
+**[Website](https://pragmaticdesign.net)** · **[Documentation](https://docs.pragmaticdesign.net)** ·
+**[Agent skills](https://github.com/pragmatic-design/skills)**
+
 > *One generator to rule them all, one generator to find them,*
 > *one generator to bring them all — and at compile time bind them.*
 
