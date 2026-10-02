@@ -26,19 +26,19 @@ jobs:
         working-directory: site
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # The version is site/package.json's "packageManager". `defaults.run.working-directory` does not
       # apply to `uses` steps, so without package_json_file the action read a package.json at the repo
       # root, which does not exist, and stopped: "No pnpm version is specified".
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: site/package.json
 
       # Astro 6 requires Node >= 22.12.
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm

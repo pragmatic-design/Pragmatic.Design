@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Download the validated packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: nupkgs
           path: ./artifacts
@@ -60,7 +60,7 @@ jobs:
           echo "$(ls ./artifacts/*.nupkg | wc -l) packages at $version"
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
