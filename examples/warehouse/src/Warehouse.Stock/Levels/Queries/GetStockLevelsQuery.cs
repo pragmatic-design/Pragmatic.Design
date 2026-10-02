@@ -1,3 +1,5 @@
+using Warehouse.Stock.Infrastructure.Caching;
+
 namespace Warehouse.Stock.Levels.Queries;
 
 /// <summary>
@@ -7,9 +9,9 @@ namespace Warehouse.Stock.Levels.Queries;
 /// <remarks>
 ///     <para>
 ///         Cached, because every order asks it and it changes only with a movement: every operation that
-///         moves stock — receipt, adjustment, hold, expiry, pick, restoration — drops the
-///         <c>availability</c> tag. The total is the sum of the rows; the rows are what a picker needs to
-///         know where to go.
+///         moves stock — receipt, adjustment, hold, expiry, pick, restoration — drops the tag of each product
+///         it moved (<see cref="AvailabilityCache" />), and only those. The total is the sum of the rows; the
+///         rows are what a picker needs to know where to go.
 ///     </para>
 ///     <para>
 ///         ⚠️ Each instance keeps its own copy. With Stock running twice, a movement on one instance drops
@@ -19,7 +21,7 @@ namespace Warehouse.Stock.Levels.Queries;
 ///     </para>
 /// </remarks>
 [Query<StockLevel, StockLevelDto>]
-[Cacheable(Duration = "5m", Tags = ["availability"])]
+[Cacheable(Duration = "5m", Tags = [AvailabilityCache.OfProductTemplate])]
 [RequirePermission(StockPermissions.StockLevel.Read)]
 [Endpoint(HttpVerb.Get, "api/levels")]
 public partial class GetStockLevelsQuery

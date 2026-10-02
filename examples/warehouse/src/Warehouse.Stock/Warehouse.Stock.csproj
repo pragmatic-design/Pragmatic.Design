@@ -23,7 +23,7 @@
          translated. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
     <!-- Availability is read by every order and changes only with a movement: [Cacheable] on the read,
-         [InvalidatesCache] on the movements. -->
+         tagged per product, and each movement drops the products it moved (Infrastructure/Caching). -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
     <!-- Orders asks for an order's stock over the broker and waits for the answer: [RequestHandler]. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />

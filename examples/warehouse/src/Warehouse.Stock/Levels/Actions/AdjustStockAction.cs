@@ -1,3 +1,5 @@
+using Warehouse.Stock.Infrastructure.Caching;
+
 namespace Warehouse.Stock.Levels.Actions;
 
 /// <summary>
@@ -19,7 +21,7 @@ namespace Warehouse.Stock.Levels.Actions;
 [RequirePermission(StockPermissions.StockLevel.Adjust)]
 [LoadEntity<Product>(nameof(ProductId))]
 [LoadEntity<Location>(nameof(LocationId))]
-[InvalidatesCache("availability")]
+[InvalidatesCache(AvailabilityCache.OfProductTemplate, AvailabilityCache.Unfiltered)]
 [Endpoint(HttpVerb.Post, "api/levels/adjustments")]
 public partial class AdjustStockAction : DomainAction<StockLevelDto, NotFoundError, StockWouldGoNegativeError>
 {

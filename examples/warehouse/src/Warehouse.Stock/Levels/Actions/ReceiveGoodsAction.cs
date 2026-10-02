@@ -1,3 +1,5 @@
+using Warehouse.Stock.Infrastructure.Caching;
+
 namespace Warehouse.Stock.Levels.Actions;
 
 /// <summary>
@@ -14,14 +16,15 @@ namespace Warehouse.Stock.Levels.Actions;
 ///         written in one transaction, which is what "a level changes only through a movement" rests on.
 ///     </para>
 ///     <para>
-///         The availability read (<see cref="Queries.GetStockLevelsQuery" />) is cached: this drops it.
+///         The availability read (<see cref="Queries.GetStockLevelsQuery" />) is cached: this drops the
+///         product's entry and the unfiltered one, and no other product's.
 ///     </para>
 /// </remarks>
 [DomainAction]
 [RequirePermission(StockPermissions.StockLevel.Receive)]
 [LoadEntity<Product>(nameof(ProductId))]
 [LoadEntity<Location>(nameof(LocationId))]
-[InvalidatesCache("availability")]
+[InvalidatesCache(AvailabilityCache.OfProductTemplate, AvailabilityCache.Unfiltered)]
 [Endpoint(HttpVerb.Post, "api/levels/receipts")]
 public partial class ReceiveGoodsAction : DomainAction<StockLevelDto, NotFoundError>
 {

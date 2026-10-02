@@ -69,6 +69,32 @@ public sealed class TwoInstancesAgreeOnAvailability(WarehouseFixture warehouse)
         (await OnHandAsync(a, product.Id)).Should().Be(10, "nothing invalidated the entry, so A did not query");
     }
 
+    /// <summary>
+    ///     A movement drops the availability of the products it moved, and of no other.
+    /// </summary>
+    /// <remarks>
+    ///     The control above rests on this. With one tag for every product, any movement anywhere in the
+    ///     suite — another test's receipt, or the expiry job of an order placed seconds earlier — dropped
+    ///     every entry, and the control saw the database whenever one landed between its two reads.
+    /// </remarks>
+    [Fact]
+    public async Task AReceiptOfAnotherProduct_LeavesThisProductCached()
+    {
+        var product = await StockCalls.InStockAsync(warehouse.StockA, 10);
+        using var a = StockCalls.ToInstance(warehouse.StockA, StockCalls.Manager);
+        (await OnHandAsync(a, product.Id)).Should().Be(10);
+
+        await using (var scope = warehouse.StockA.Services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope())
+            await scope.ServiceProvider.GetRequiredService<DbContext>().Set<StockLevel>()
+                .Where(level => level.ProductId == product.Id)
+                .ExecuteUpdateAsync(set => set.SetProperty(level => level.OnHand, 99));
+
+        // On A itself, so the drop is local and synchronous: no broadcast to wait for either way.
+        await StockCalls.InStockAsync(warehouse.StockA, 3);
+
+        (await OnHandAsync(a, product.Id)).Should().Be(10, "the receipt moved another product, so this entry stays");
+    }
+
     private static async Task<int> OnHandAsync(HttpClient instance, Guid product)
         => (await StockCalls.LevelsOfAsync(instance, product)).Single().GetProperty("onHand").GetInt32();
 

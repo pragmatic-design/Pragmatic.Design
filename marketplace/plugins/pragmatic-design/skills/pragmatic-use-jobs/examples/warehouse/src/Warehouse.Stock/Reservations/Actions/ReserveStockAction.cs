@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Options;
+using Pragmatic.Caching;
 using Pragmatic.Jobs;
 using Pragmatic.Temporal.Clock;
 using Warehouse.Stock.Contracts;
+using Warehouse.Stock.Infrastructure.Caching;
 using Warehouse.Stock.Infrastructure.Configuration;
 using Warehouse.Stock.Infrastructure.FeatureFlags;
 using Warehouse.Stock.Infrastructure.Jobs;
@@ -44,8 +46,7 @@ namespace Warehouse.Stock.Reservations.Actions;
 [DomainAction]
 [Transactional]
 [RequirePermission(StockPermissions.Reservation.Create)]
-[InvalidatesCache("availability")]
-public partial class ReserveStockAction : DomainAction<StockReservation>
+public partial class ReserveStockAction : DomainAction<StockReservation>, ICacheInvalidator
 {
     private IOptions<ReservationOptions> _options = null!;
     private IFeatureFlags _flags = null!;
@@ -53,6 +54,7 @@ public partial class ReserveStockAction : DomainAction<StockReservation>
     private IReadRepository<Product> _products = null!;
     private IRepository<StockLevel> _levels = null!;
     private IRepository<Reservation> _reservations = null!;
+    private readonly ISet<Guid> _moved = new HashSet<Guid>();
 
     public required Guid OrderId { get; init; }
 
@@ -122,6 +124,7 @@ public partial class ReserveStockAction : DomainAction<StockReservation>
                     continue;
 
                 _reservations.Add(level.Hold(OrderId, here, expiresAt));
+                _moved.Add(level.ProductId);
                 toHold -= here;
                 if (toHold == 0)
                     break;
@@ -136,4 +139,8 @@ public partial class ReserveStockAction : DomainAction<StockReservation>
 
         return reservation;
     }
+
+    /// <summary>Drops the availability of the products this call held, and of no other.</summary>
+    public ValueTask InvalidateAsync(ICacheStack cache, CancellationToken ct = default)
+        => AvailabilityCache.DropAsync(cache, _moved, ct);
 }

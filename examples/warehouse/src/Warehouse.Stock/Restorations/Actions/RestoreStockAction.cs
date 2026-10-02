@@ -1,4 +1,6 @@
+using Pragmatic.Caching;
 using Pragmatic.Temporal.Clock;
+using Warehouse.Stock.Infrastructure.Caching;
 
 namespace Warehouse.Stock.Restorations.Actions;
 
@@ -21,13 +23,13 @@ namespace Warehouse.Stock.Restorations.Actions;
 /// </remarks>
 [DomainAction]
 [RequirePermission(StockPermissions.StockRestoration.Create)]
-[InvalidatesCache("availability")]
-public partial class RestoreStockAction : DomainAction<bool, NotFoundError>
+public partial class RestoreStockAction : DomainAction<bool, NotFoundError>, ICacheInvalidator
 {
     private IRepository<StockRestoration> _restorations = null!;
     private IRepository<Reservation> _reservations = null!;
     private IRepository<StockLevel> _levels = null!;
     private IRepository<StockMovement> _movements = null!;
+    private readonly ISet<Guid> _moved = new HashSet<Guid>();
 
     public required Guid OrderId { get; init; }
 
@@ -67,9 +69,15 @@ public partial class RestoreStockAction : DomainAction<bool, NotFoundError>
                     return Result<bool, IError>.Failure(released.Error);
                 level.Release(reservation.Quantity);
             }
+
+            _moved.Add(reservation.ProductId);
         }
 
         _restorations.Add(StockRestoration.Of(OrderId, Now));
         return true;
     }
+
+    /// <summary>Drops the availability of the products this restoration gave back, and of no other.</summary>
+    public ValueTask InvalidateAsync(ICacheStack cache, CancellationToken ct = default)
+        => AvailabilityCache.DropAsync(cache, _moved, ct);
 }
