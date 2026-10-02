@@ -39,6 +39,10 @@ time. See [docs/TESTING.md](docs/TESTING.md).
 
 ## How to Contribute
 
+A question is not an issue: ask it in
+[Discussions → Q&A](https://github.com/pragmatic-design/Pragmatic.Design/discussions/categories/q-a).
+[SUPPORT.md](SUPPORT.md) says where everything else goes.
+
 ### Reporting Bugs
 
 Open an issue with:
@@ -49,7 +53,8 @@ Open an issue with:
 
 ### Suggesting Features
 
-Open an issue describing:
+Start in [Discussions → Ideas](https://github.com/pragmatic-design/Pragmatic.Design/discussions/categories/ideas),
+describing:
 - The problem you're solving
 - Your proposed approach
 - Which modules are affected
