@@ -25,20 +25,28 @@ public sealed partial class ChannelConsumerService(
 {
     private readonly List<IAsyncDisposable> _subscriptions = [];
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    /// <summary>Connects and binds every subscription before the host reports started.</summary>
+    /// <remarks>
+    ///     On .NET 10 a BackgroundService runs all of ExecuteAsync in the background, and this transport
+    ///     discards a publish to an address nobody subscribes to. Bound there, a publish issued as soon as
+    ///     the host started reached no subscriber and was lost — on a two-core machine every time, on a
+    ///     wide one almost never. Here, unlike a broker transport, connecting and binding do no I/O, so
+    ///     awaiting them costs the start nothing.
+    /// </remarks>
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        await transport.ConnectAsync(stoppingToken).ConfigureAwait(false);
+        await transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
         LogStarted();
 
         // Bind every registered subscription so published messages are actually consumed. Without this
         // the channel fills (BoundedChannelFullMode.Wait) and publishers block forever.
         _subscriptions.AddRange(
-            await TransportSubscriptionBinder.BindAsync(transport, router, scopeFactory, subscriptions, killSwitch, logger, busName: null, messaging?.Value.SubscriberName, stoppingToken)
+            await TransportSubscriptionBinder.BindAsync(transport, router, scopeFactory, subscriptions, killSwitch, logger, busName: null, messaging?.Value.SubscriberName, cancellationToken)
                 .ConfigureAwait(false));
 
         // Distributed request/reply: bind the SG-generated request executors (responder side).
         _subscriptions.AddRange(
-            await Pragmatic.Messaging.RequestReply.RequestReplyBinder.BindAsync(transport, scopeFactory, requestSubscriptions, logger, stoppingToken)
+            await Pragmatic.Messaging.RequestReply.RequestReplyBinder.BindAsync(transport, scopeFactory, requestSubscriptions, logger, cancellationToken)
                 .ConfigureAwait(false));
 
         if (_subscriptions.Count == 0)
@@ -46,6 +54,11 @@ public sealed partial class ChannelConsumerService(
         else
             LogSubscribed(_subscriptions.Count);
 
+        await base.StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
         try
         {
             await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
