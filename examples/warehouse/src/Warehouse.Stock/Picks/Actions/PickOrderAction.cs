@@ -1,5 +1,7 @@
+using Pragmatic.Caching;
 using Pragmatic.Temporal.Clock;
 using Warehouse.Stock.Contracts.Events;
+using Warehouse.Stock.Infrastructure.Caching;
 
 namespace Warehouse.Stock.Picks.Actions;
 
@@ -20,15 +22,15 @@ namespace Warehouse.Stock.Picks.Actions;
 /// </remarks>
 [DomainAction]
 [RequirePermission(StockPermissions.PickList.Create)]
-[InvalidatesCache("availability")]
 [Endpoint(HttpVerb.Post, "api/picks")]
-public partial class PickOrderAction : DomainAction<Guid, NothingToPickError, NotFoundError>
+public partial class PickOrderAction : DomainAction<Guid, NothingToPickError, NotFoundError>, ICacheInvalidator
 {
     private IReadRepository<Product> _products = null!;
     private IRepository<Reservation> _reservations = null!;
     private IRepository<StockLevel> _levels = null!;
     private IRepository<StockMovement> _movements = null!;
     private IRepository<PickList> _picks = null!;
+    private readonly ISet<Guid> _moved = new HashSet<Guid>();
 
     public required Guid OrderId { get; init; }
 
@@ -62,6 +64,7 @@ public partial class PickOrderAction : DomainAction<Guid, NothingToPickError, No
                 return Result<Guid, IError>.Failure(picked.Error);
 
             _movements.Add(level.Pick(reservation.Quantity));
+            _moved.Add(reservation.ProductId);
         }
 
         // One line per SKU, however many locations it was held at: the event is about what the order gets.
@@ -74,4 +77,8 @@ public partial class PickOrderAction : DomainAction<Guid, NothingToPickError, No
         _picks.Add(pick);
         return pick.PersistenceId;
     }
+
+    /// <summary>Drops the availability of the products this pick took off the shelves, and of no other.</summary>
+    public ValueTask InvalidateAsync(ICacheStack cache, CancellationToken ct = default)
+        => AvailabilityCache.DropAsync(cache, _moved, ct);
 }

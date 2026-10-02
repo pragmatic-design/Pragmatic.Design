@@ -1,3 +1,6 @@
+using Pragmatic.Caching;
+using Warehouse.Stock.Infrastructure.Caching;
+
 namespace Warehouse.Stock.Reservations.Actions;
 
 /// <summary>
@@ -14,14 +17,18 @@ namespace Warehouse.Stock.Reservations.Actions;
 ///     <para>
 ///         No <c>[Endpoint]</c>: nobody gives stock back by calling this service's API.
 ///     </para>
+///     <para>
+///         The cache is dropped for the products whose holds were given back, so an order confirmed in time
+///         — the usual case — drops nothing when its job runs (<see cref="AvailabilityCache" />).
+///     </para>
 /// </remarks>
 [DomainAction]
 [RequirePermission(StockPermissions.Reservation.Update)]
-[InvalidatesCache("availability")]
-public partial class ExpireReservationsAction : DomainAction<int, NotFoundError>
+public partial class ExpireReservationsAction : DomainAction<int, NotFoundError>, ICacheInvalidator
 {
     private IRepository<Reservation> _reservations = null!;
     private IRepository<StockLevel> _levels = null!;
+    private readonly ISet<Guid> _moved = new HashSet<Guid>();
 
     public required Guid OrderId { get; init; }
 
@@ -45,8 +52,14 @@ public partial class ExpireReservationsAction : DomainAction<int, NotFoundError>
             var given = reservation.Expire(level);
             if (given.IsFailure)
                 return Result<int, IError>.Failure(given.Error);
+
+            _moved.Add(reservation.ProductId);
         }
 
         return held.Count;
     }
+
+    /// <inheritdoc />
+    public ValueTask InvalidateAsync(ICacheStack cache, CancellationToken ct = default)
+        => AvailabilityCache.DropAsync(cache, _moved, ct);
 }

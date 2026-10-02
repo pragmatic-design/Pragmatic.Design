@@ -1,5 +1,7 @@
 using System.Globalization;
+using Pragmatic.Caching;
 using Warehouse.Stock.Imports.Messages;
+using Warehouse.Stock.Infrastructure.Caching;
 
 namespace Warehouse.Stock.Imports.Actions;
 
@@ -23,8 +25,7 @@ namespace Warehouse.Stock.Imports.Actions;
 /// </remarks>
 [DomainAction]
 [RequirePermission(StockPermissions.ImportedPart.Create)]
-[InvalidatesCache("availability")]
-public partial class ApplyImportPartAction : DomainAction<ImportPartOutcomeDto>
+public partial class ApplyImportPartAction : DomainAction<ImportPartOutcomeDto>, ICacheInvalidator
 {
     private IRepository<ImportedPart> _parts = null!;
     private IRepository<ImportRejection> _rejections = null!;
@@ -32,6 +33,7 @@ public partial class ApplyImportPartAction : DomainAction<ImportPartOutcomeDto>
     private IReadRepository<Location> _locations = null!;
     private IRepository<StockLevel> _levels = null!;
     private IRepository<StockMovement> _movements = null!;
+    private readonly ISet<Guid> _moved = new HashSet<Guid>();
 
     public required Guid ImportId { get; init; }
 
@@ -85,12 +87,17 @@ public partial class ApplyImportPartAction : DomainAction<ImportPartOutcomeDto>
             }
 
             _movements.Add(level.Receive(quantity));
+            _moved.Add(key.Item1);
             applied++;
         }
 
         _parts.Add(ImportedPart.Of(ImportId, PartIndex, applied, rejected));
         return new ImportPartOutcomeDto { Applied = applied, Rejected = rejected };
     }
+
+    /// <summary>Drops the availability of the products this part received, and of no other.</summary>
+    public ValueTask InvalidateAsync(ICacheStack cache, CancellationToken ct = default)
+        => AvailabilityCache.DropAsync(cache, _moved, ct);
 
     /// <summary>Why a row cannot be applied, or null when it can.</summary>
     private static string? WhyRefused(

@@ -131,6 +131,11 @@ carries that invalidation to the other instance. Without it, measured, a receipt
 what the other reads next — it answers what it cached, until the entry expires. Redis is here for that
 and nothing else: each instance reads the database again for its own copy.
 
+The entries are tagged per product, and a movement drops the products it moved — a receipt one product,
+an order's hold or pick the products on its lines — and the read without a product filter, which covers
+them all. One tag for every product made each movement empty the whole cache on both instances, the
+expiry job of an order confirmed in time included, which gives back nothing (`Infrastructure/Caching`).
+
 **A setting and a switch, changed while it runs.** Two things change at runtime on both Stock instances,
 written through the Agent and never in a file:
 
