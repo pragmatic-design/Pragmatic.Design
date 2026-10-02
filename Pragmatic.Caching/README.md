@@ -64,8 +64,8 @@ dotnet add package Pragmatic.SourceGenerator   # generates keys + invalidation
 
 ## Status
 
-`[Cacheable]`/`[InvalidatesCache]`, typed keys, tag invalidation, category routing, and HybridCache
-integration are functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `[Cacheable]`/`[InvalidatesCache]`, typed keys, tag invalidation,
+category routing, and the HybridCache integration. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

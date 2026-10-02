@@ -4,8 +4,6 @@ Local coordination daemon and client libraries for Pragmatic.Design applications
 
 `Pragmatic.Agent` gives distributed hosts a shared KV store, SWIM-based membership, local IPC, and operational primitives for configuration, feature flags, tenant data, and gateway/control coordination.
 
-> Status: implemented preview subsystem. The runtime exists today and is used inside the repo; this is not a shape-only placeholder. Native AOT for the daemon is planned, but the current daemon runs as a normal .NET executable.
-
 ## What Ships
 
 | Component | Type | Purpose |
@@ -124,6 +122,12 @@ Still evolving:
 - daemon AOT publishing
 - broader cloud sync and deployment workflows
 - wider operational tooling around the Agent ecosystem
+
+## Status
+
+**Preview** within 1.0.0-alpha — the daemon, its shared key-value store, SWIM gossip and IPC run today,
+and the Showcase and Warehouse use them. The daemon runs as a regular .NET executable; a Native AOT build
+is planned. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

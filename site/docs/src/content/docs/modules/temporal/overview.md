@@ -70,7 +70,7 @@ Full walkthrough: [Getting Started](/modules/temporal/getting-started/).
 
 ## Status
 
-Stable within 1.0.0-alpha — the type set, calendar/business-day arithmetic, DST handling, and the
+**Stable** within 1.0.0-alpha — the type set, calendar/business-day arithmetic, DST handling, and the
 JSON/EF Core/ASP.NET integrations are settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/temporal/concepts/) | Type = scope, `IClock`, the mental model, NodaTime comparison |

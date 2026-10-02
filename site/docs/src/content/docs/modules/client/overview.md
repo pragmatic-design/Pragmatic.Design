@@ -165,6 +165,12 @@ services.AddBookingClient("https://api.example.com", client =>
 | `Pragmatic.Client` | `Pragmatic.Abstractions`, `Pragmatic.Result` |
 | `Pragmatic.Client.SourceGenerator` | `System.Text.Json` (compile-time only) |
 
+## Status
+
+**Preview** within 1.0.0-alpha — the C# client generated from the endpoint manifest and the
+`pragmatic-client` TypeScript CLI; the Showcase is the reference application that uses it. See the
+[roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10 (runtime)

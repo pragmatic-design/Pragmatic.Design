@@ -304,6 +304,12 @@ Pragmatic.Migrations/
 └── Configuration/   # MigrationsBuilder, MigrationProviderFactory
 ```
 
+## Status
+
+**Functional** within 1.0.0-alpha — the declarative schema diff on SQLite, PostgreSQL and SQL Server, the
+CLI, hooks, and multi-tenant migrations; every reference application migrates with it. See the
+[roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+
 ## Documentation
 
 - [Concepts](/modules/migrations/concepts/) — declarative schema, diff engine, provider-specific idiomatic SQL

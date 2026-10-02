@@ -105,8 +105,8 @@ dotnet add package Pragmatic.SourceGenerator   # the unified analyzer
 
 ## Status
 
-The composition model, service/decorator registration, startup steps, builder, remote boundaries, and
-maintenance mode are functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the composition model, service/decorator registration, startup steps,
+the builder, remote boundaries, and maintenance mode. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/composition/concepts/) | Composition model, metadata aggregation, the 3-tier configuration model |
 | [Getting Started](/modules/composition/getting-started/) | Your first module, service, and `PragmaticApp.RunAsync` |

@@ -40,7 +40,7 @@ dotnet add package Pragmatic.Specification
 
 ## Status
 
-Stable within 1.0.0-alpha — composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
+**Stable** within 1.0.0-alpha — composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
 evaluation are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

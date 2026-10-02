@@ -115,8 +115,8 @@ actionable message rather than running on the in-memory store.
 
 ## Status
 
-Recurring/delayed jobs, retry/timeout, continuations, EF Core persistence, and distributed locking are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — recurring and delayed jobs, retry and timeout, continuations, EF Core
+persistence, and distributed locking. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/jobs/concepts/) | Job types, scheduler/store model, the invoker pipeline, continuation chains, distributed locking |
 | [Getting Started](/modules/jobs/getting-started/) | Your first recurring and delayed jobs, host wiring |

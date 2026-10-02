@@ -104,8 +104,8 @@ dotnet add package Pragmatic.SourceGenerator   # the unified analyzer
 
 ## Status
 
-Core DomainAction/Mutation pipeline, filters, authorization, validation, boundaries, and versioning are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the DomainAction/Mutation pipeline, filters, authorization,
+validation, boundaries, and versioning. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

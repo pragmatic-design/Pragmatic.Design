@@ -49,7 +49,7 @@ dotnet add package Pragmatic.SourceGenerator
 
 ## Status
 
-The unified generator and its feature pipelines are functional within 1.0.0-alpha. See the
+**Functional** within 1.0.0-alpha — the unified generator and its feature pipelines. See the
 [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

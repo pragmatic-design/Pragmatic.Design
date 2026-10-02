@@ -62,8 +62,8 @@ The SMTP channel ships inside `Pragmatic.Notifications` itself and delegates to 
 
 ## Status
 
-The pipeline, channel routing, user preferences, delivery tracking and background delivery are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the pipeline, channel routing, user preferences, delivery tracking,
+and background delivery. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 **Channels provided today: e-mail (SMTP), webhook, Slack and SMS (Twilio).** `NotificationChannel`
 also declares `Push` and `InApp`; those are extension points, not implementations — selecting one

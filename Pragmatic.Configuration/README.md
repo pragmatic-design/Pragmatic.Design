@@ -50,8 +50,8 @@ dotnet add package Pragmatic.SourceGenerator   # generates the [Configuration] b
 
 ## Status
 
-`[Configuration]` binding/validation and the runtime stores (cascade, hot-reload, the backends above)
-are functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `[Configuration]` binding and validation, and the runtime stores
+(cascade, hot-reload, the backends above). See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

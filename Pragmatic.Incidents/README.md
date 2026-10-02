@@ -73,6 +73,11 @@ package for the same reason.
 | `Pragmatic.Incidents` | `SecurityIncident`, `IncidentDeadlines` — no dependencies |
 | `Pragmatic.Incidents.Audit` | `AuditPatternDetector`, `DetectionRule` — detection over the `Pragmatic.Audit` trail |
 
+## Status
+
+**Preview** within 1.0.0-alpha — incident records and the reporting clocks that run against them; one
+reference application (Time off) uses them. See the [roadmap](../docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10.0+

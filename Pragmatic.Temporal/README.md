@@ -64,7 +64,7 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 ## Status
 
-Stable within 1.0.0-alpha — the type set, calendar/business-day arithmetic, DST handling, and the
+**Stable** within 1.0.0-alpha — the type set, calendar/business-day arithmetic, DST handling, and the
 JSON/EF Core/ASP.NET integrations are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation

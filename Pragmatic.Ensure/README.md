@@ -49,7 +49,7 @@ dotnet add package Pragmatic.Ensure
 
 ## Status
 
-Stable within 1.0.0-alpha — the guard surface is settled. See the [roadmap](../docs/ROADMAP.md).
+**Stable** within 1.0.0-alpha — the guard surface is settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

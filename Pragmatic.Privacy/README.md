@@ -160,6 +160,11 @@ not protect against.
 | `Pragmatic.Privacy` | The processes: erasure, access, portability, the Article 30 register (`AddPrivacy()`) |
 | `Pragmatic.Privacy.EFCore` | The subject registry and consent store over `PrivacyDbContext` (`AddSubjectRegistry()`) |
 
+## Status
+
+**Preview** within 1.0.0-alpha — erasure, retention, consent, access and portability work and are tested
+end to end; one reference application (Time off) uses them. See the [roadmap](../docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10.0+

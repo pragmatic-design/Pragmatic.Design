@@ -215,6 +215,11 @@ From a single `[HasComments]` on an entity:
 | Metadata | `_Metadata.TraitEntities.g.cs` | For host DbContext discovery |
 | Endpoints | `*.Endpoint.g.cs` | POST/GET/PUT/DELETE, plus the moderation `PUT` and the pending `GET` with `RequireApproval`; no update `PUT` with `AllowEditing = false` |
 
+## Status
+
+**Functional** within 1.0.0-alpha — the `[HasComments]` trait with its entity, actions, endpoints,
+moderation and policy hooks, tested end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
+
 ## Requirements
 
 - .NET 10+

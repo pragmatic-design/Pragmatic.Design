@@ -63,8 +63,8 @@ dotnet add package Pragmatic.SourceGenerator   # generates the patch types
 
 ## Status
 
-`Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization, and `ModifiedProperties` tracking are
-functional within 1.0.0-alpha. See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization,
+and `ModifiedProperties` tracking. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

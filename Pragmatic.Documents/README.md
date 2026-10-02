@@ -80,8 +80,8 @@ the markup cannot express (styling, page-number fields, hyperlinks) — see
 
 ## Status
 
-PDF, DOCX, HTML email, CSV, and XLSX rendering are functional within 1.0.0-alpha. Note: parsing is
-currently in-memory — see the [roadmap](../docs/ROADMAP.md) for streaming and large-file guidance.
+**Functional** within 1.0.0-alpha — PDF, DOCX, HTML email, CSV, and XLSX rendering. Parsing is currently
+in-memory; see the [roadmap](../docs/ROADMAP.md) for streaming and large files.
 
 ## Documentation
 

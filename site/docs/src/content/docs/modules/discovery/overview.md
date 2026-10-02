@@ -45,8 +45,8 @@ modules, cross-host `ReadAccess`, and provider mismatches.
 
 ## Status
 
-Topology registration, querying, validation, and the in-memory and Agent backends are functional
-within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — topology registration, querying, validation, and the in-memory and
+Agent backends. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/discovery/concepts/) | Topology metadata, the backend model, register/query/validate |
 | [Getting Started](/modules/discovery/getting-started/) | Register a host and query the topology |

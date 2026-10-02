@@ -132,7 +132,7 @@ Full walkthrough: [Getting Started](/modules/result/getting-started/).
 
 ## Status
 
-Stable within 1.0.0-alpha — the core `Result` API, error types, and the ASP.NET Core and EF Core
+**Stable** within 1.0.0-alpha — the core `Result` API, error types, and the ASP.NET Core and EF Core
 integrations are settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/result/concepts/) | Railway-oriented model, when Result beats exceptions, decision guide |

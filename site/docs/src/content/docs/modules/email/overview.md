@@ -63,8 +63,8 @@ dotnet add package Pragmatic.Email.Testing   # InMemoryTransport, FileTransport 
 
 ## Status
 
-SMTP transport, pooling, DKIM and S/MIME signing, the middleware pipeline, and test support are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — SMTP transport, pooling, DKIM and S/MIME signing, the middleware
+pipeline, and test support. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 TLS is negotiated with STARTTLS by default and switches to implicit TLS (SMTPS) automatically on port
 465 — set `UseImplicitTls` to force either mode. `TimeoutSeconds` bounds connect, reads and writes.

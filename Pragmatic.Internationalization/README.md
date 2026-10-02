@@ -82,9 +82,9 @@ dotnet add package Pragmatic.SourceGenerator   # generates the strongly-typed T 
 
 ## Status
 
-Preview (`1.0.0-alpha`) — the five pillars, the translation generator, and the ASP.NET Core /
-EF Core integrations are in place and API-settled, but the surface may still change before the
-stable release. See the [roadmap](../docs/ROADMAP.md) and [CHANGELOG](CHANGELOG.md).
+**Functional** within 1.0.0-alpha — the five pillars, the translation generator, and the ASP.NET Core and
+EF Core integrations; the surface may still change before 1.0. See the [roadmap](../docs/ROADMAP.md) and
+the [CHANGELOG](CHANGELOG.md).
 
 ## Documentation
 

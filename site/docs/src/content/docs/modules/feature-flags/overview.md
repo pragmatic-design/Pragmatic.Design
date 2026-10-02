@@ -64,8 +64,8 @@ dotnet add package Pragmatic.FeatureFlags.Configuration   # optional: flags read
 
 ## Status
 
-The evaluation engine, targeting rules, deterministic bucketing, strongly-typed flags, and stores are
-functional within 1.0.0-alpha. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — the evaluation engine, targeting rules, deterministic bucketing,
+strongly-typed flags, and the stores. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/feature-flags/concepts/) | Evaluation engine, rule types, deterministic bucketing, vs configuration |
 | [Getting Started](/modules/feature-flags/getting-started/) | Define a flag, add targeting, evaluate it |

@@ -2,9 +2,6 @@
 
 YARP-based API gateway for Pragmatic.Design applications, with Agent-driven routing, maintenance mode, tenant-aware proxying, and per-cluster resilience.
 
-> Status: functional within 1.0.0-alpha. The gateway is a standalone executable run from this
-> repository — it is not published as a NuGet package (`IsPackable` is false).
-
 ## What It Does
 
 - Reverse proxy based on YARP
@@ -221,6 +218,12 @@ Still evolving:
 
 - broader deployment UX and packaging guidance
 - deeper control-plane tooling around route authoring and rollout
+
+## Status
+
+**Preview** within 1.0.0-alpha — the gateway is a standalone executable run from this repository, used by
+the Warehouse reference application; it is not published as a NuGet package (`IsPackable` is false). See
+the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

@@ -183,8 +183,8 @@ ambiguous call does not compile rather than being flagged after the fact.
 
 ## Status
 
-Stable within 1.0.0-alpha — the attribute surface and generated API are settled; see the
-[roadmap](../docs/ROADMAP.md) for what is still moving before 1.0.
+**Stable** within 1.0.0-alpha — the attribute surface and generated API are settled. See the
+[roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

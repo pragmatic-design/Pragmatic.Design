@@ -4,8 +4,6 @@ Add file attachments to any Pragmatic entity with a single attribute.
 
 `Pragmatic.Attachments` is a trait package: you decorate an entity with `[HasAttachments]` and the source generator creates the attachment entity, EF configuration, actions, and HTTP surface in the consuming boundary.
 
-> Status: implemented preview package. The package is already functional in the repo; the remaining work is documentation and broader ecosystem hardening, not basic runtime existence.
-
 ## The Problem
 
 Every "entity with files" feature usually requires the same boilerplate:
@@ -242,6 +240,11 @@ reports **PRAG2651**.
   until your application reclaims it**; when a soft-deleted attachment is beyond
   recall is a business decision the attribute cannot make. See
   [Retention and purging](docs/concepts.md#retention-and-purging).
+
+## Status
+
+**Functional** within 1.0.0-alpha — the `[HasAttachments]` trait with its entity, actions, endpoints,
+thumbnails and retention purge, tested end to end in the Showcase. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 

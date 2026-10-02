@@ -89,8 +89,8 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 ## Status
 
-`ICurrentUser`, local identity, JWT, and EF-backed persistence are functional within 1.0.0-alpha.
-See the [roadmap](../docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha — `ICurrentUser`, local identity, JWT, and EF-backed persistence. See
+the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 
