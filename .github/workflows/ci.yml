@@ -53,6 +53,16 @@ jobs:
       - name: Gate
         run: node scripts/check.mjs --tier full --keep-going
 
+      # The CycloneDX SBOMs the gate just wrote, kept for release.yml to attach to the GitHub Release: it
+      # calls this workflow, so the artifact is in its own run. Small, and kept a week.
+      - name: Keep the SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: artifacts/sbom/Pragmatic.*.cdx.json
+          if-no-files-found: error
+          retention-days: 7
+
   # The eleven suites that start Testcontainers, run ONE AT A TIME. In parallel they exhaust Docker and
   # fail on container start-up, which reads exactly like a code regression — and on a developer machine
   # it can take the whole host down with it.
