@@ -12,6 +12,9 @@ updates:
       nuget:
         patterns: ["*"]
 
+  # Minor and patch only. A major of Astro, Starlight or TypeScript changes the site's configuration, and
+  # bundled together they arrive as one red pull request nobody can merge; a major is an upgrade done on
+  # purpose, in its own change.
   - package-ecosystem: npm
     directory: /site
     schedule:
@@ -19,6 +22,9 @@ updates:
     groups:
       site:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
