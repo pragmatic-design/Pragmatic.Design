@@ -92,11 +92,13 @@ public class RecurringJobClaimTests
         var store = await StoreWithDueDefinitionAsync();
         using var barrier = new Barrier(contenders);
 
-        var tasks = Enumerable.Range(0, contenders).Select(_ => Task.Run(async () =>
+        // A dedicated thread per contender: the barrier blocks every one of them, and on pool threads
+        // that starves the pool for every other test in the process while it grows to 32.
+        var tasks = Enumerable.Range(0, contenders).Select(_ => Task.Factory.StartNew(async () =>
         {
             barrier.SignalAndWait();
             return await store.TryClaimDueAsync("hourly", Due, Next, Due).ConfigureAwait(false);
-        }));
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap());
 
         var results = await Task.WhenAll(tasks);
 
