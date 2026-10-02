@@ -20,15 +20,13 @@ It generates **plain C# you can read** in `obj/`, it **refuses at compile time**
 runtime, and the code it writes into your project **is yours**.
 
 > [!TIP]
-> **Start here with your agent.** Install the Pragmatic skills, then describe the application you want:
-> one skill interviews you about your domain and scaffolds it from the packages.
+> **Start here with your agent.** Give your coding agent the Pragmatic skills from
+> **[pragmatic-design/skills](https://github.com/pragmatic-design/skills)**, then describe the application
+> you want: one skill interviews you about your domain and scaffolds it from the packages. They install as
+> a plugin in Claude Code and Codex, and work in any agent that reads `SKILL.md` —
+> [Build with an agent](https://docs.pragmaticdesign.net/getting-started/with-an-agent/) has the steps for
+> each.
 >
-> ```bash
-> claude plugin marketplace add pragmatic-design/skills
-> claude plugin install pragmatic-design@pragmatic-design
-> ```
->
-> Codex or another agent: [Build with an agent](https://docs.pragmaticdesign.net/getting-started/with-an-agent/).
 > Writing the code yourself: [Installation](https://docs.pragmaticdesign.net/getting-started/installation/).
 
 ---
