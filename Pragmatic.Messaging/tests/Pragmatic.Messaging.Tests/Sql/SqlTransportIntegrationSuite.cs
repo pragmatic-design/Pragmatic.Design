@@ -22,10 +22,22 @@ public abstract class SqlTransportIntegrationSuite
 
     protected abstract void Configure(DbContextOptionsBuilder db);
 
-    private sealed class Factory(DbContextOptions<SqlTransportDbContext> options)
+    /// <param name="options">The options every context is created with.</param>
+    /// <param name="hold">
+    ///     When given, every asynchronous context creation waits for it: the transport's connect stops at its
+    ///     first database call until the test lets it go.
+    /// </param>
+    private sealed class Factory(DbContextOptions<SqlTransportDbContext> options, Task? hold = null)
         : IDbContextFactory<SqlTransportDbContext>
     {
         public SqlTransportDbContext CreateDbContext() => new(options);
+
+        public async Task<SqlTransportDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            if (hold is not null)
+                await hold.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return CreateDbContext();
+        }
     }
 
     private async Task<(SqlTransport Transport, SqlTransportStorage Storage, Factory ContextFactory, SqlTransportOptions Options)>
@@ -37,7 +49,7 @@ public abstract class SqlTransportIntegrationSuite
     }
 
     private (SqlTransport Transport, SqlTransportStorage Storage, Factory ContextFactory, SqlTransportOptions Options)
-        Build(Action<SqlTransportOptions>? tune = null)
+        Build(Action<SqlTransportOptions>? tune = null, Task? hold = null)
     {
         var options = new SqlTransportOptions
         {
@@ -50,7 +62,7 @@ public abstract class SqlTransportIntegrationSuite
 
         var builder = new DbContextOptionsBuilder<SqlTransportDbContext>();
         Configure(builder);
-        var factory = new Factory(builder.Options);
+        var factory = new Factory(builder.Options, hold);
 
         var storage = new SqlTransportStorage(factory, options, NullLogger<SqlTransportStorage>.Instance);
         var schema = new SqlTransportSchema(factory, NullLogger<SqlTransportSchema>.Instance);
@@ -62,25 +74,35 @@ public abstract class SqlTransportIntegrationSuite
     ///     A publish that arrives while the connect is still preparing the schema waits for it,
     ///     instead of failing with "not connected".
     /// </summary>
+    /// <remarks>
+    ///     The connect is held at its first database call, so "while it connects" is a state the test
+    ///     chooses and not a window it hopes to land in: left to run, the connect could finish before the
+    ///     status was read, and on a fast enough machine it did.
+    /// </remarks>
     [Fact]
     public async Task APublishIssuedWhileTheTransportConnects_WaitsForTheConnect()
     {
         if (ConnectionString is null)
             return;
 
-        var (transport, _, _, _) = Build();
+        var hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var (transport, _, _, _) = Build(hold: hold.Task);
         try
         {
             var connecting = transport.ConnectAsync();
-            transport.Status.Should().Be(TransportStatus.Connecting, "the connect is still preparing the schema");
+            transport.Status.Should().Be(TransportStatus.Connecting, "the connect is held before its first database call");
 
-            await transport.PublishAsync("early"u8.ToArray(), $"t-{Guid.NewGuid():N}", MessageContext.New());
+            var publishing = transport.PublishAsync("early"u8.ToArray(), $"t-{Guid.NewGuid():N}", MessageContext.New());
+            publishing.IsCompleted.Should().BeFalse("a publish issued while the transport connects waits for the connect");
 
+            hold.SetResult();
+            await publishing.ConfigureAwait(true);
             await connecting.ConfigureAwait(true);
             transport.Status.Should().Be(TransportStatus.Connected);
         }
         finally
         {
+            hold.TrySetResult();
             await transport.DisposeAsync();
         }
     }
