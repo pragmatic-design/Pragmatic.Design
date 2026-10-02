@@ -5,6 +5,9 @@
 [![License: MIT + PolyForm SB](https://img.shields.io/badge/license-MIT%20%2B%20PolyForm%20SB-blue.svg)](docs/LICENSING.md)
 [![Preview](https://img.shields.io/badge/status-1.0.0--alpha-ffe088)](docs/ROADMAP.md)
 
+**[Website](https://pragmaticdesign.net)** · **[Documentation](https://docs.pragmaticdesign.net)** ·
+**[Agent skills](https://github.com/pragmatic-design/skills)**
+
 > *One generator to rule them all, one generator to find them,*
 > *one generator to bring them all — and at compile time bind them.*
 
@@ -22,7 +25,8 @@ runtime, and the code it writes into your project **is yours**.
 > [!TIP]
 > **Start here with your agent.** Give your coding agent the Pragmatic skills from
 > **[pragmatic-design/skills](https://github.com/pragmatic-design/skills)**, then describe the application
-> you want: one skill interviews you about your domain and scaffolds it from the packages. They install as
+> you want: `pragmatic-new-app` asks what it needs — the bounded contexts, who calls the API, whether rows
+> belong to a tenant, which capabilities — and scaffolds the solution from the packages. They install as
 > a plugin in Claude Code and Codex, and work in any agent that reads `SKILL.md` —
 > [Build with an agent](https://docs.pragmaticdesign.net/getting-started/with-an-agent/) has the steps for
 > each.
@@ -235,7 +239,7 @@ It also makes the agent better at the part that is left:
   diagnostic says so at build time, with a location — a loop the agent can close on its own, before
   a person looks at anything.
 - **The framework can be taught.** The repository ships [35 agent skills](marketplace/), for Claude
-  Code, Codex and any agent that reads `SKILL.md`: one interviews you about your domain and scaffolds
+  Code, Codex and any agent that reads `SKILL.md`: one asks what the application needs and scaffolds
   the solution, the others know each module.
 
 You still read what the agent wrote. There is just much less of it, and none of it is plumbing.
@@ -329,7 +333,7 @@ Then pick your way in:
   goes from an empty folder to a CRUD API on PostgreSQL, and every step of it has been built and run
   against the packages.
 - **Build it with an agent** — [install the skills](https://docs.pragmaticdesign.net/getting-started/with-an-agent/)
-  in Claude Code, Codex or another agent: one interviews you about your domain and scaffolds the
+  in Claude Code, Codex or another agent: one asks what the application needs and scaffolds the
   solution, the others know each module.
 - **Just one library** — `Result`, `Validation`, `Mapping`, `Temporal` and the other foundations work
   in any .NET 10 project, with no host and no buy-in.
