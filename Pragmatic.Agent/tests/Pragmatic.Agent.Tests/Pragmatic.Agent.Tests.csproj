@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Agent\Pragmatic.Agent.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Protocol\Pragmatic.Agent.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Discovery\Pragmatic.Agent.Discovery.csproj" />
+  </ItemGroup>
+
+</Project>

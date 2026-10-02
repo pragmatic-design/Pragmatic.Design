@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Redaction</RootNamespace>
+    <Description>The personal-data patterns Pragmatic redacts from text, in one place: e-mail, IBAN, payment-card and card-verification numbers, national identifiers, long digit runs, bearer tokens and key=value secrets.</Description>
+    <PackageTags>pragmatic;redaction;pii;gdpr;privacy</PackageTags>
+  </PropertyGroup>
+
+  <!-- One dependency, and only Abstractions. The property that matters is unchanged: a logging
+       pipeline and an append-only audit trail both reach these without dragging each other in.
+       That is not a preference — when Audit carried its own copy of the patterns the two sets
+       drifted, and on 2026-07-31 the trail let a national identifier and a card-verification value
+       through in plaintext while the logging pipeline caught both. Anything that would make one of
+       the two consumers reference the other belongs somewhere else.
+       Abstractions is here for IRedactionMap, the compile-time [NotLogged] map DeclaredRedactor
+       reads; it is a contracts assembly and pulls nothing in behind it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

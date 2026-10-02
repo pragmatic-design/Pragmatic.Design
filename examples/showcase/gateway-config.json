@@ -1,0 +1,25 @@
+{
+  "Gateway": {
+    "HttpUrl": "http://*:8080",
+    "AgentSocketPath": "pragmatic-agent",
+    "Routes": [
+      {
+        "RouteId": "showcase",
+        "Path": "/api/{**catch-all}",
+        "Backends": ["http://localhost:5000"]
+      },
+      {
+        "RouteId": "health",
+        "Path": "/health",
+        "Backends": ["http://localhost:5000"]
+      }
+    ],
+    "Cors": {
+      "Origins": ["*"],
+      "Methods": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      "Headers": ["*"]
+    },
+    "EnableCompression": true,
+    "MaintenancePagePath": null
+  }
+}

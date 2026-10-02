@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Pragmatic.Endpoints — Pure endpoint definitions
+       Contains attributes, base classes, processors, and models.
+       No ASP.NET Core or EF Core dependency.
+       ======================================== -->
+
+  <PropertyGroup>
+    <Description>Pure endpoint definitions: attributes, base classes, processors, and typed error models. No ASP.NET Core dependency — domain modules reference this package.</Description>
+    <PackageTags>endpoints;rest-api;source-generator;openapi;attributes</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+  </ItemGroup>
+
+  <!-- Include source generator as analyzer -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- DI Abstractions for ServiceCollectionExtensions (NOT ASP.NET Core) -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

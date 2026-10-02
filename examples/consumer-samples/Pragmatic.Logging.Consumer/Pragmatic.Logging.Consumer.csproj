@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Pragmatic.Logging" Version="1.0.0-alpha.0.*" />
+    <!-- High-performance logging uses Microsoft's built-in [LoggerMessage] source generator
+         (shipped with the SDK) — no extra analyzer package required. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

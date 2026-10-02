@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Jobs.EFCore\Pragmatic.Jobs.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Generator testing -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <!-- Runtime testing -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Billing — Invoice & payment domain module
+       Entities: Invoice, Payment, LineItem
+       Features: DomainAction, Mapping, Events, Validation, Temporal
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- Full-AOT JSON: the SG emits a JsonSerializerContext covering this module's boundary types
+         (mapping DTOs incl. init-only shapes). The host aggregates + registers it via metadata. -->
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Showcase.Tests" />
+  </ItemGroup>
+
+  <!-- Sibling modules -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- Documents — the invoice as a PDF, from templates/invoice.pdxdoc in the guest's language
+         (Markup resolves the template, Pdf renders it with its native library). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Pdf\Pragmatic.Documents.Pdf.csproj" />
+    <!-- Documents — XLSX invoice export (managed, cross-platform) -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Spreadsheet\Pragmatic.Documents.Spreadsheet.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
+    <!-- Documents — CSV, the format an accounts department asks for. The columns are declared on the
+         row type and the serializer is generated, so nothing here formats a header by hand. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
+    <!-- Imaging — QR / thumbnail endpoint: exercises the Rust native pipeline (encode→decode→resize→encode) E2E over HTTP -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- [CsvSerializable] is its own generator, outside the unified one: its input is a type's
+         declared columns, not the module's compilation. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Csv.Generator\Pragmatic.Documents.Csv.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- The invoice template, inside this assembly. -->
+  <ItemGroup>
+    <EmbeddedResource Include="templates\*.pdxdoc" />
+  </ItemGroup>
+
+  <!-- Translation files for i18n source generator -->
+  <ItemGroup>
+    <AdditionalFiles Include="translations\*.json" />
+  </ItemGroup>
+
+  <!-- EF Core comes transitively from Pragmatic.Persistence.EFCore -->
+
+</Project>

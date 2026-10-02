@@ -1,0 +1,2 @@
+# Marker file for CountryCode source generator
+# When present, the generator will produce static CountryCode properties from countries.json

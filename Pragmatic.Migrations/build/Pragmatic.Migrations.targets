@@ -1,0 +1,50 @@
+<Project>
+
+  <!--
+    Pragmatic.Migrations — schema snapshot generation.
+
+    Regenerates the committed schema snapshot (schema/<db>.schema.json) after a host
+    build, so schema changes surface in pull requests and a CI gate (a git-diff check
+    on the schema/ folder) catches a snapshot that drifted from the entities.
+
+    Opt-in. In the host project:
+      <PropertyGroup>
+        <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+      </PropertyGroup>
+
+    Requires the 'pragmatic-migrate' CLI on PATH
+    (dotnet tool install -g Pragmatic.Migrations.Cli). Override <PragmaticMigrateCommand>
+    to point at a custom CLI invocation, and <PragmaticSchemaSnapshotDir> to change the
+    output directory (default: <project>/schema).
+  -->
+
+  <PropertyGroup>
+    <PragmaticSchemaSnapshot Condition="'$(PragmaticSchemaSnapshot)' == ''">false</PragmaticSchemaSnapshot>
+    <PragmaticMigrateCommand Condition="'$(PragmaticMigrateCommand)' == ''">pragmatic-migrate</PragmaticMigrateCommand>
+    <PragmaticSchemaSnapshotDir Condition="'$(PragmaticSchemaSnapshotDir)' == ''">$(MSBuildProjectDirectory)\schema</PragmaticSchemaSnapshotDir>
+  </PropertyGroup>
+
+  <Target Name="GeneratePragmaticSchemaSnapshot"
+          AfterTargets="Build"
+          Condition="'$(PragmaticSchemaSnapshot)' == 'true'">
+    <Message Importance="high"
+             Text="Pragmatic.Migrations: writing schema snapshot to $(PragmaticSchemaSnapshotDir)" />
+    <!-- ContinueOnError: the snapshot is a review aid, not a build output. A missing global tool
+         (or a CLI that cannot load the assembly) must warn, not fail the host build — the CI gate
+         that compares the committed schema/ folder is what actually enforces freshness. -->
+    <!-- ConsoleToMSBuild: what the CLI printed travels with the failure. A quiet build (the gate's is
+         -v q) shows the warning and not the Exec output, so a snapshot that failed at random said
+         "exit code -1" and nothing of why. -->
+    <Exec Command="$(PragmaticMigrateCommand) snapshot --assembly &quot;$(TargetPath)&quot; --output &quot;$(PragmaticSchemaSnapshotDir)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          ConsoleToMSBuild="true"
+          EnvironmentVariables="NO_COLOR=1"
+          ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="ExitCode" PropertyName="PragmaticSnapshotExitCode" />
+      <Output TaskParameter="ConsoleOutput" ItemName="_PragmaticSnapshotOutput" />
+    </Exec>
+    <Warning Condition="'$(PragmaticSnapshotExitCode)' != '0'"
+             Text="Pragmatic.Migrations: schema snapshot not regenerated (exit code $(PragmaticSnapshotExitCode)). The CLI said: @(_PragmaticSnapshotOutput, ' | '). Install the CLI with 'dotnet tool install -g Pragmatic.Migrations.Cli' or set &lt;PragmaticSchemaSnapshot&gt;false&lt;/PragmaticSchemaSnapshot&gt;." />
+  </Target>
+
+</Project>

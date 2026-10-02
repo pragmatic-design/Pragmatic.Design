@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Spreadsheet\Pragmatic.Documents.Spreadsheet.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.Spreadsheet\Pragmatic.Documents.Templating.Spreadsheet.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
+  </ItemGroup>
+
+</Project>

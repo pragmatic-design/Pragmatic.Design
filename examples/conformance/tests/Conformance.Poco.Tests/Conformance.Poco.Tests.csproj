@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       The conformance cases of Mapping on its own.
+
+       ⚠️ No EF Core reference and no container: these are hermetic tests that run in
+       milliseconds. The E2E suite on PostgreSQL is another one, and proves another thing.
+       ======================================== -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Conformance.Poco\Conformance.Poco.csproj" />
+  </ItemGroup>
+
+</Project>

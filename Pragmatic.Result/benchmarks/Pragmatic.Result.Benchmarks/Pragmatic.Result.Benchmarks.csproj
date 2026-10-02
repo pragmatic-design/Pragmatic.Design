@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress CA1822 for BenchmarkDotNet (requires instance methods) -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+</Project>

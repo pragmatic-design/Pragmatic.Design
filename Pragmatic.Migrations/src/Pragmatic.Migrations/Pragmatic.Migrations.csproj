@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Declarative schema migrations for Pragmatic.Design. Diff engine, idempotent SQL generation, and migration runner. Zero EF Core dependency.</Description>
+    <PackageTags>migrations;schema;diff;sql;idempotent;declarative</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Migrations.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Migrations.Core.Tests" />
+  </ItemGroup>
+
+  <!-- Ship the schema-snapshot MSBuild target so referencing host projects can opt in
+       via <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>. -->
+  <ItemGroup>
+    <None Include="..\..\build\Pragmatic.Migrations.targets"
+          Pack="true" PackagePath="buildTransitive\Pragmatic.Migrations.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+
+</Project>

@@ -1,0 +1,12 @@
+<Project>
+
+  <!--
+    The namespaces a module writes against with Pragmatic.Mapping, added to the SDK's ImplicitUsings in a
+    project that references this package. <PragmaticImplicitUsings>false</PragmaticImplicitUsings> in the
+    project switches off the imports of every Pragmatic package.
+  -->
+  <ItemGroup Condition="('$(ImplicitUsings)' == 'enable' or '$(ImplicitUsings)' == 'true') and '$(PragmaticImplicitUsings)' != 'false'">
+    <Using Include="Pragmatic.Mapping.Attributes" />
+  </ItemGroup>
+
+</Project>

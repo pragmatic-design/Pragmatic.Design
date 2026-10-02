@@ -1,0 +1,19 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="docker-compose.yml" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Invoicing.Registry/Invoicing.Registry.csproj" />
+    <Project Path="src/Invoicing.Billing/Invoicing.Billing.csproj" />
+    <Project Path="src/Invoicing.Host/Invoicing.Host.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Invoicing.IntegrationTests/Invoicing.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

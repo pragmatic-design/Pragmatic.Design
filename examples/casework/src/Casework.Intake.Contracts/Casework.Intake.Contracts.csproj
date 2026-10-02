@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What Intake publishes, and the only thing another service is allowed to reference of it.
+       It takes two framework packages and no more: Abstractions for the markers, and Events for the
+       DomainEvent base — because in this framework a cross-service contract IS the publisher's domain
+       event (the writer-side outbox captures only what an entity raised, and
+       the generated AsyncAPI only catalogues domain events). A consumer that references this assembly
+       therefore takes those two with it, and nothing of Intake. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- IIntegrationEvent and IDomainEvent are declared here. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <!-- And the DomainEvent base record, for the EventId a consumer deduplicates on. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <!-- [CorrelationKey]: which conversation a message belongs to is a fact about the
+         message. Messaging.Core is the attributes, not the bus — and deliberately not Messaging.Saga,
+         which is where ICorrelatedMessage lives and would make a contract know that sagas exist. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

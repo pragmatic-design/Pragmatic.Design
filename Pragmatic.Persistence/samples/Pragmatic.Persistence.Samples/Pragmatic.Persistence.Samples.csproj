@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- Suppress CA1822 for sample code - instance methods are clearer for demonstration -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- Reference Specification for integration examples -->
+    <ProjectReference Include="..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+  </ItemGroup>
+
+</Project>

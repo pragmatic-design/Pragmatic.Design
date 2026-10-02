@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <!-- netstandard2.0 Roslyn component: the runtime-lib default IsAotCompatible=true is meaningless here and raises NETSDK1210 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <Description>Roslyn code fixers for Pragmatic.Design — IDE quick-fixes for SG-emitted diagnostics across all modules</Description>
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

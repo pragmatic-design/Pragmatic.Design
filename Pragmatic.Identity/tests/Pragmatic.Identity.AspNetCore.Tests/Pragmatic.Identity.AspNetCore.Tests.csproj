@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

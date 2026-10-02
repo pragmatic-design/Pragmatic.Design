@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Accounts — User account domain module
+       Entities: AppUser (with LocalIdentity owned)
+       Features: Identity, PragmaticUser, Persistence
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- Full-AOT JSON: the SG emits a JsonSerializerContext covering this module's boundary types. -->
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Showcase.Tests" />
+    <InternalsVisibleTo Include="Showcase.IntegrationTests" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <!-- The RBAC management package. Its operations declare a DbContext and it declares no boundary
+         of its own, so the import names one: [UsePackage<TPackage, TBoundary>]. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <!-- The other admin surface, beside authorization's: reading configuration values. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration.Management\Pragmatic.Configuration.Management.csproj" />
+    <!-- Identity.Persistence turns on AppUserResolver, Internationalization turns on the per-user
+         culture provider the SG builds on top of it. Both are feature detection, not API surface:
+         without them [ProfileProperty] on PreferredCulture generates an adapter nothing can read
+         from the database, and no provider at all. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

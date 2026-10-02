@@ -1,0 +1,10 @@
+{
+  "name": "@pragmatic/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./tailwind-preset": "./src/tailwind-preset.ts",
+    "./tokens": "./src/tokens.ts"
+  }
+}

@@ -1,0 +1,26 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/integration.md" />
+    <File Path="docs/translation-keys.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Internationalization/Pragmatic.Internationalization.csproj" />
+    <Project Path="src/Pragmatic.Internationalization.AspNetCore/Pragmatic.Internationalization.AspNetCore.csproj" />
+    <Project Path="src/Pragmatic.Internationalization.EFCore/Pragmatic.Internationalization.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Internationalization.SourceGenerator/Pragmatic.Internationalization.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Internationalization.Tests/Pragmatic.Internationalization.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Internationalization.Samples/Pragmatic.Internationalization.Samples.csproj" />
+  </Folder>
+</Solution>

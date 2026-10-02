@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Conformance.Poco — Mapping alone, between plain objects.
+
+       ⚠️ This project does NOT reference EF Core, and must never do so. That constraint is what makes
+       the cases what they claim to be: with a dependency on EF, half of what these tests demonstrate
+       would stop holding and nobody would notice. The dependency graph enforces what would otherwise
+       be discipline.
+
+       It also shows, by construction, that without EF referenced ApplyTo(entity) IS generated.
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

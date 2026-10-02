@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Domain validation checks that return Result instead of throwing. Use Check.* for business validation.</Description>
+    <PackageTags>guards;validation;result;domain-validation;check</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+</Project>

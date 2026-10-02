@@ -1,0 +1,14 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Incidents/Pragmatic.Incidents.csproj" />
+    <Project Path="src/Pragmatic.Incidents.Audit/Pragmatic.Incidents.Audit.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Incidents.Tests/Pragmatic.Incidents.Tests.csproj" />
+  </Folder>
+</Solution>

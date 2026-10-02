@@ -1,0 +1,43 @@
+name: Commit Messages
+
+# The same rules the commit-msg hook applies locally (scripts/commit-message-check.mjs), for a
+# contributor who never enabled the hook. A pull request is merged by squash with its title and
+# description as the message, so those become the commit on main: they are checked as well as every
+# commit in the pull request.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  messages:
+    name: Check commit messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pull request title and description (the squash commit)
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/commit-message-check.mjs --text "$TITLE"$'\n\n'"$BODY"
+
+      - name: Commits in the pull request
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/commit-message-check.mjs --range "$BASE..$HEAD"

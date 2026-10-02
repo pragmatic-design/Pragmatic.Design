@@ -1,0 +1,33 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/custom-providers.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Storage/Pragmatic.Storage.csproj" />
+    <Project Path="src/Pragmatic.Storage.Azure/Pragmatic.Storage.Azure.csproj" />
+    <Project Path="src/Pragmatic.Storage.S3/Pragmatic.Storage.S3.csproj" />
+    <Project Path="src/Pragmatic.Storage.GoogleCloud/Pragmatic.Storage.GoogleCloud.csproj" />
+    <Project Path="src/Pragmatic.Storage.Sftp/Pragmatic.Storage.Sftp.csproj" />
+    <Project Path="src/Pragmatic.Storage.Ftp/Pragmatic.Storage.Ftp.csproj" />
+    <Project Path="src/Pragmatic.Storage.InMemory/Pragmatic.Storage.InMemory.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Storage.Tests/Pragmatic.Storage.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.Azure.Tests/Pragmatic.Storage.Azure.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.S3.Tests/Pragmatic.Storage.S3.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.GoogleCloud.Tests/Pragmatic.Storage.GoogleCloud.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.Sftp.Tests/Pragmatic.Storage.Sftp.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.Ftp.Tests/Pragmatic.Storage.Ftp.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Storage.InMemory.Tests/Pragmatic.Storage.InMemory.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Storage.Samples/Pragmatic.Storage.Samples.csproj" />
+  </Folder>
+</Solution>

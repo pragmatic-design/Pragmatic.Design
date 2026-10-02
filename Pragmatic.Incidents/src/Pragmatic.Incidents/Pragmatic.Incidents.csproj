@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Security incident reporting clocks for Pragmatic.Design: detection, assessment, and the statutory windows (NIS2 by default). Records the obligations; never judges whether an incident is notifiable.</Description>
+    <PackageTags>pragmatic;security;incident;nis2;reporting</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    No dependencies on purpose. Escalation belongs to whatever the deployment already uses for
+    notifications, and pulling that in here would make a module about deadlines depend on a delivery
+    mechanism it does not need to know about.
+  -->
+
+</Project>

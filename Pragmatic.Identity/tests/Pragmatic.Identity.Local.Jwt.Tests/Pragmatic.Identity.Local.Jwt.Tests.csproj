@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The sign-in rate limit is measured on a running pipeline: status codes, not configuration. -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+
+</Project>

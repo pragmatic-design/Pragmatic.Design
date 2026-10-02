@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Specification pattern for composable, reusable predicates. Works with IQueryable and IEnumerable.</Description>
+    <PackageTags>specification;specification-pattern;predicates;queryable;composable;ddd;clean-architecture</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Pragmatic.Patch.Samples": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:52607;http://localhost:52608"
+    }
+  }
+}

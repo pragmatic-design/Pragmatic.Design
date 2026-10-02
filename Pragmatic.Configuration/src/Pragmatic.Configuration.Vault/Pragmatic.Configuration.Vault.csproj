@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>HashiCorp Vault backend for Pragmatic.Configuration — secrets via the KV v2 engine (read + write).</Description>
+    <PackageTags>configuration;vault;hashicorp;secrets;kv</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Configuration.Vault.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="VaultSharp" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

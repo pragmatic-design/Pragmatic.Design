@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- No source generator in this module, exclude generator test base -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <!-- Lists each entity's temporal properties into TemporalPropertyRegistry. Without it the
+         conventions have nothing to map and every temporal column disappears. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+</Project>

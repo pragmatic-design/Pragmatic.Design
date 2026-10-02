@@ -1,0 +1,8 @@
+{
+  "error.stock.would.go.negative.title": "Giacenza insufficiente",
+  "error.stock.would.go.negative.detail": "In giacenza {onHand}: una rettifica di {delta} lascerebbe meno di niente.",
+  "error.nothing.to.pick.title": "Niente da prelevare",
+  "error.nothing.to.pick.detail": "L'ordine non ha merce confermata da prelevare: non è stato confermato, le sue prenotazioni sono scadute, o è già stato prelevato.",
+  "error.import.file.unreadable.title": "Il file non si può importare",
+  "error.import.file.unreadable.detail": "{reason}. Non è stato importato niente."
+}

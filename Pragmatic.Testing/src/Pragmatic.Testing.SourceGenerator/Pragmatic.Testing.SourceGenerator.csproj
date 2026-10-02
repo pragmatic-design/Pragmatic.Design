@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Generates contract tests for any Pragmatic application from its compile-time metadata: authorization (401/2xx), CRUD round-trips, validation, tenant isolation and state transitions. Consumed alongside the Pragmatic.Testing harness.</Description>
+    <PackageTags>testing;contract-tests;mocks;source-generator;roslyn;codegen</PackageTags>
+    <!-- RS2008: analyzer release tracking is not used anywhere in this repo (same call as every other
+         generator here); the PRAG2350-2353 descriptors are the record. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Testing.SourceGenerator.Tests" />
+  </ItemGroup>
+
+</Project>

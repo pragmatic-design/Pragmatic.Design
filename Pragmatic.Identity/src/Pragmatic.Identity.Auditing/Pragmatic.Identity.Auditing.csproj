@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Identity.Auditing</RootNamespace>
+    <Description>Records Pragmatic.Identity security events on the Pragmatic.Audit trail, pseudonymised: a failed login against a known account carries its reference, one against an unknown identity carries none.</Description>
+    <PackageTags>pragmatic;identity;audit;security;gdpr</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    A bridge, like Pragmatic.Messaging.Auditing and Pragmatic.Incidents.Audit: identity has no business
+    knowing about the trail, and the trail none about logins. Privacy is here too because pseudonymising
+    the address is the whole point of the handler.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

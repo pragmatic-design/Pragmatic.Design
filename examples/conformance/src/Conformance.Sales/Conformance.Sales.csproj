@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Conformance.Sales — the one boundary, for now.
+       Entities exist to cover combinations, not to model a domain.
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- IFormFile is an ASP.NET type: the one feature that brings the shared framework into a domain
+       module is a [FromForm] upload (UploadOrderAttachmentAction), exactly as the Showcase does. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <!-- The seam between §5.1 and §5.2: a guard that returns the error instead of throwing it. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure.Result\Pragmatic.Ensure.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\Conformance.Catalog\Conformance.Catalog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>Pragmatic Gateway — YARP-based API Gateway with Agent-driven routing, maintenance page serving, and tenant-aware proxying.</Description>
+    <PackageTags>gateway;yarp;proxy;routing;maintenance</PackageTags>
+    <IsPackable>false</IsPackable>
+    <PublishAot>false</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Gateway.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Protocol\Pragmatic.Agent.Protocol.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Yarp.ReverseProxy" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  </ItemGroup>
+
+</Project>

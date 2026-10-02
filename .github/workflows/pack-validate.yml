@@ -1,0 +1,93 @@
+name: Pack Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:   # release.yml publishes the packages this job packs and validates
+
+concurrency:
+  group: pack-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  pack:
+    name: Pack & Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # MinVer needs full history for version resolution
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Pragmatic.Design.slnx
+
+      # Build, then pack what was built — the order scripts/publish-local.mjs uses. Runtime libraries set
+      # GeneratePackageOnBuild (Directory.Build.props), and with it `dotnet pack` does not run the build
+      # itself: on a fresh checkout it packed binaries that did not exist yet, and failed with NU5026 on
+      # every package.
+      - name: Build (Release)
+        run: dotnet build Pragmatic.Design.slnx --no-restore --configuration Release
+
+      - name: Pack (Release)
+        run: dotnet pack Pragmatic.Design.slnx --no-build --configuration Release --output ./artifacts
+
+      - name: Validate package metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ./artifacts
+          fail=0
+          for pkg in *.nupkg; do
+            # Skip symbol packages
+            if [[ "$pkg" == *.symbols.nupkg ]]; then continue; fi
+            echo "::group::Validating $pkg"
+            unzip -p "$pkg" '*.nuspec' > /tmp/nuspec.xml
+            for required in '<license' '<readme>' '<projectUrl>' '<repository' '<copyright>'; do
+              if ! grep -q "$required" /tmp/nuspec.xml; then
+                echo "::error file=$pkg::Missing required metadata: $required"
+                fail=1
+              fi
+            done
+            if ! unzip -l "$pkg" | grep -q "LICENSE"; then
+              echo "::error file=$pkg::LICENSE file missing from package"
+              fail=1
+            fi
+            if ! unzip -l "$pkg" | grep -q "README.md"; then
+              echo "::error file=$pkg::README.md missing from package"
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          if [ $fail -ne 0 ]; then
+            echo "::error::One or more packages failed validation"
+            exit 1
+          fi
+          echo "All $(ls *.nupkg | grep -v symbols | wc -l) packages validated"
+
+      - name: List produced packages
+        run: ls -la ./artifacts
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+          retention-days: 14

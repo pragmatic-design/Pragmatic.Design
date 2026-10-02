@@ -1,0 +1,102 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- ========================================
+       Showcase.Host — ASP.NET Core host
+       Features: Composition, Endpoints, Identity, MultiTenancy, I18n.AspNetCore, Temporal.AspNetCore
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Schema snapshot: regenerate schema/<db>.schema.json after build via the
+       Pragmatic.Migrations target. Monorepo wiring uses the CLI built from source
+       (Pragmatic.Migrations.LocalCli.targets, imported at the end). -->
+  <PropertyGroup>
+    <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+  </PropertyGroup>
+
+  <!-- Disable OpenAPI XML comment SG: causes 1000+ first-chance JsonReaderException in debug
+       because it tries JsonNode.Parse() on every XML <example> tag, including non-JSON text.
+       OpenAPI document generation works fine without it — just no XML comment enrichment. -->
+  <Target Name="DisableOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Domain modules -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Catalog\Showcase.Catalog.csproj" />
+    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" />
+    <ProjectReference Include="..\Showcase.Accounts\Showcase.Accounts.csproj" />
+    <ProjectReference Include="..\Showcase.Billing\Showcase.Billing.csproj" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Management\Pragmatic.Audit.Management.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Discovery\src\Pragmatic.Discovery\Pragmatic.Discovery.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events.EFCore\Pragmatic.Events.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Logging\src\Pragmatic.Logging\Pragmatic.Logging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Channels\Pragmatic.Messaging.Channels.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.AzureServiceBus\Pragmatic.Messaging.AzureServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Auditing\Pragmatic.Messaging.Auditing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Dashboard\Pragmatic.Messaging.Dashboard.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.EFCore\Pragmatic.Notifications.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.Mcp\Pragmatic.Endpoints.Mcp.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- JSON seeding for roles/groups -->
+  <ItemGroup>
+    <AdditionalFiles Include="roles.pragmatic.json" />
+  </ItemGroup>
+
+  <!-- NuGet -->
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- EF Core Design removed: Pragmatic Migrations replaces dotnet ef migrations -->
+    <!-- <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" /> -->
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <!-- ProjectReference does not auto-import package build/ targets — import explicitly. -->
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.targets" />
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.LocalCli.targets" />
+
+</Project>

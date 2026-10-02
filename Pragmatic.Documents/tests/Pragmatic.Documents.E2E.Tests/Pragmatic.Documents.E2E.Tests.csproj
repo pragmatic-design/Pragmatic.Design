@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Full pipeline: Template → Resolve → Model → Render -->
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templates\Pragmatic.Documents.Templates.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Email.Templates\Pragmatic.Email.Templates.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Email\Pragmatic.Documents.Email.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Docx\Pragmatic.Documents.Docx.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.Spreadsheet\Pragmatic.Documents.Templating.Spreadsheet.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv.Generator\Pragmatic.Documents.Csv.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

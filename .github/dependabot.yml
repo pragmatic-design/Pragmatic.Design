@@ -1,0 +1,29 @@
+version: 2
+
+# Versions are pinned centrally (Directory.Packages.props, site/pnpm-lock.yaml, the workflow `uses:`
+# lines), so each ecosystem is watched from one place. Updates are grouped per ecosystem: one pull
+# request a week to review and run through the gate, rather than one per package.
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      nuget:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: weekly
+    groups:
+      site:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Note: Test packages are auto-configured by Directory.Build.props -->
+
+  <ItemGroup>
+    <!-- Generator testing -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+
+    <!-- EF Core Integration Testing - will be added later in Phase 5 -->
+    <!-- <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" /> -->
+    <!-- <PackageReference Include="Testcontainers.MsSql" /> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <!-- Direct reference to test the generator (we run it manually via CSharpGeneratorDriver) -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+    <!-- Required for generator output compilation (generator uses Ensure.ThrowIfNull) -->
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <!-- Required for [Mutation<T>] integration tests -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

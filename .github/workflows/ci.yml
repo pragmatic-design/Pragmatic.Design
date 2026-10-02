@@ -1,0 +1,99 @@
+name: CI
+
+# The gate itself lives in scripts/check.mjs, and CI runs exactly that. When the gate was spelled out
+# here instead, it drifted from what anyone ran locally: this workflow built without --warnaserror (so
+# 14 errors reached main while the Pre-PR checklist claimed the flag was required), and two jobs pointed
+# at solution files that do not exist — harmless-looking because they were gated on `pull_request`,
+# which a trunk-based flow never produces. `--tier verify` now fails on a path CI names but the repo
+# does not have.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_call:   # release.yml runs the gate before it publishes
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  # Clean build with --warnaserror, plus every suite that needs no container.
+  # Clean is not optional: an incremental build does not re-evaluate up-to-date projects, so
+  # --warnaserror over one reports 0 errors on sources that clean-build with 14.
+  gate:
+    name: Gate (clean build + hermetic tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore
+        run: dotnet restore Pragmatic.Design.slnx
+
+      - name: Gate
+        run: node scripts/check.mjs --tier full --keep-going
+
+  # The eleven suites that start Testcontainers, run ONE AT A TIME. In parallel they exhaust Docker and
+  # fail on container start-up, which reads exactly like a code regression — and on a developer machine
+  # it can take the whole host down with it.
+  container-suites:
+    name: Container suites (sequential)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: gate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # This job holds the whole build (about 6 GB locally) and the images of fourteen suites at once,
+      # SQL Server's the largest. On 2026-09-12 every SQL Server pull came back "No such image" and a
+      # Postgres container could not write its init file, in the same run: the shape of a full disk,
+      # though nothing in that log measured it. The df lines here and after the suites do.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore
+        run: dotnet restore Pragmatic.Design.slnx
+
+      - name: Container suites
+        run: node scripts/check.mjs --tier docker --keep-going
+
+      - name: Disk after the suites
+        if: always()
+        run: |
+          df -h /
+          docker system df

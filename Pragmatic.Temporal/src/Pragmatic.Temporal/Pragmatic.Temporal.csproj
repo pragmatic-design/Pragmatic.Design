@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Core temporal types and utilities for .NET. Solves DateTime Hell with type-safe date/time handling, DST-aware arithmetic, and business day calculations.</Description>
+    <PackageTags>datetime;timezone;temporal;clock;localdatetime;zoneddatetime;duration;cron;dst;businessdays</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Temporal.EFCore" />
+    <InternalsVisibleTo Include="Pragmatic.Temporal.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+  <!-- The companion analyzer travels in this package. Published on its own it is referenced by
+       nobody — not the scaffolding template, not a single consumer — so its diagnostics have never
+       fired outside our own build. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Temporal.Analyzers\Pragmatic.Temporal.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" PackAsCompanionAnalyzer="true" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>SQLite provider for Pragmatic.Result.EFCore. Provides accurate error detection using SqliteException error codes.</Description>
+    <PackageTags>result;efcore;sqlite;error-handling</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+  </ItemGroup>
+
+</Project>

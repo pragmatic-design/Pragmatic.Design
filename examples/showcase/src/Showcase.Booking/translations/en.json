@@ -1,0 +1,50 @@
+{
+  "reservation": {
+    "title": "Reservation",
+    "checkIn": "Check-in date",
+    "checkOut": "Check-out date",
+    "nights": "Nights",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "paymentReceived": "Payment received",
+      "checkedIn": "Checked in",
+      "checkedOut": "Checked out",
+      "cancelled": "Cancelled",
+      "noShow": "No show"
+    }
+  },
+  "guest": {
+    "title": "Guest",
+    "preferences": "Guest preferences"
+  },
+  "roomAssignment": {
+    "title": "Room assignment",
+    "room": "Room"
+  },
+  "errors": {
+    "reservationNotFound": "Reservation not found",
+    "guestNotFound": "Guest not found",
+    "roomUnavailable": "The requested room is not available",
+    "alreadyCheckedIn": "Guest has already checked in",
+    "cannotCancelConfirmed": "Cannot cancel a confirmed reservation without a reason"
+  },
+  "mail": {
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "reference": "Reservation {id}",
+    "confirmed": {
+      "subject": "Reservation confirmed — {checkIn} to {checkOut}",
+      "preheader": "Your stay is booked.",
+      "heading": "Reservation confirmed",
+      "body": "Dear {name}, your reservation has been confirmed.",
+      "total": "Total"
+    },
+    "reminder": {
+      "subject": "Check-in reminder — {checkIn}",
+      "heading": "Check-in reminder",
+      "body": "A friendly reminder: your check-in is tomorrow.",
+      "closing": "We look forward to welcoming you!"
+    }
+  }
+}

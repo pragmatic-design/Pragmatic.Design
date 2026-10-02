@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/pragmatic-design/Pragmatic.Design/security/advisories/new
+    about: Privately, never in a public issue. See SECURITY.md.
+  - name: Documentation
+    url: https://docs.pragmaticdesign.net
+    about: Guides, module references and every diagnostic.

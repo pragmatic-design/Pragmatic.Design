@@ -1,0 +1,22 @@
+[xUnit.net 00:00:04.71]     Pragmatic.SourceGenerator.Tests.Features.Persistence.AJoinPathIsCheckedAgainstTheEntityTests.ADottedViaIsResolvedSegmentBySegment [FAIL]
+[xUnit.net 00:00:04.72]       Pragmatic.Testing.PragmaticTestAssertionException : Expected GeneratorTestHelper.HasDiagnostic(bad, "PRAG0737") to be true because the second segment is read on Other, not on Thing, but found False.
+[xUnit.net 00:00:04.72]       Stack Trace:
+[xUnit.net 00:00:04.72]         C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\AssertionFailure.cs(32,0): at Pragmatic.Testing.Assertions.AssertionFailure.Throw(String subject, String expectation, String actual, String because, Object[] becauseArgs)
+[xUnit.net 00:00:04.72]         C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\BooleanAssertions.cs(12,0): at Pragmatic.Testing.Assertions.BooleanAssertions.BeTrue(String because, Object[] becauseArgs)
+[xUnit.net 00:00:04.72]         C:\Pragmatic\Pragmatic.Design\Pragmatic.SourceGenerator\tests\Pragmatic.SourceGenerator.Tests\Features\Persistence\AJoinPathIsCheckedAgainstTheEntityTests.cs(112,0): at Pragmatic.SourceGenerator.Tests.Features.Persistence.AJoinPathIsCheckedAgainstTheEntityTests.ADottedViaIsResolvedSegmentBySegment()
+[xUnit.net 00:00:04.72]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[xUnit.net 00:00:04.72]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Pragmatic.SourceGenerator.Tests.Features.Lifecycle.RaisesOnAnEntityMethodTests.Raises_OnAnEntityMethod_ReportsPRAG2753 [357 ms]
+  Superato Pragmatic.SourceGenerator.Tests.Features.Actions.TheUserResolverIsInjectableTests.TheUserResolver_IsInjected_AndNotReportedAmbiguous [504 ms]
+  Non superato Pragmatic.SourceGenerator.Tests.Features.Persistence.AJoinPathIsCheckedAgainstTheEntityTests.ADottedViaIsResolvedSegmentBySegment [4 s]
+  Messaggio di errore:
+   Pragmatic.Testing.PragmaticTestAssertionException : Expected GeneratorTestHelper.HasDiagnostic(bad, "PRAG0737") to be true because the second segment is read on Other, not on Thing, but found False.
+  Analisi dello stack:
+     at Pragmatic.Testing.Assertions.AssertionFailure.Throw(String subject, String expectation, String actual, String because, Object[] becauseArgs) in C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\AssertionFailure.cs:line 32
+   at Pragmatic.Testing.Assertions.BooleanAssertions.BeTrue(String because, Object[] becauseArgs) in C:\Pragmatic\Pragmatic.Design\Pragmatic.Testing\src\Pragmatic.Testing\Assertions\BooleanAssertions.cs:line 12
+   at Pragmatic.SourceGenerator.Tests.Features.Persistence.AJoinPathIsCheckedAgainstTheEntityTests.ADottedViaIsResolvedSegmentBySegment() in C:\Pragmatic\Pragmatic.Design\Pragmatic.SourceGenerator\tests\Pragmatic.SourceGenerator.Tests\Features\Persistence\AJoinPathIsCheckedAgainstTheEntityTests.cs:line 112
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Superato Pragmatic.SourceGenerator.Tests.Features.Privacy.PrivacyDiagnosticsGeneratorTests.NullErasure_OnANullableProperty_IsSilent [365 ms]
+  Superato Pragmatic.SourceGenerator.Tests.Features.Persistence.AQueryOnIdTargetsTheKeyTests.ASingleQuery_OnADeclaredId_FiltersTheId [297 ms]
+  Superato Pragmatic.SourceGenerator.Tests.Features.Actions.AnInternalOperationJoinsItsGroupTests.TheRegisteredTwin_IsTheSameInstanceTheRootHandsOut [3 ms]

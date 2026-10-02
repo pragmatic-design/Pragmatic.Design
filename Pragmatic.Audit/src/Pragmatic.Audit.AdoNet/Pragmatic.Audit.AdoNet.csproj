@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Audit.AdoNet</RootNamespace>
+    <Description>ADO.NET writer for Pragmatic.Audit: appends trail entries on a connection and transaction the caller owns, for producers that have no DbContext to enlist.</Description>
+    <PackageTags>pragmatic;audit;ado.net;transaction;append-only</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+  </ItemGroup>
+
+</Project>

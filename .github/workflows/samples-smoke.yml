@@ -1,0 +1,69 @@
+name: Samples Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: samples-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_ENVIRONMENT: Development
+
+# Runs a representative set of console samples end-to-end. Ensures samples are
+# not just compilable but executable as onboarding assets. WebApplication samples
+# (Endpoints, Result.AspNetCore) are not run here: they start a server and wait.
+jobs:
+  console-smoke:
+    name: Run ${{ matrix.sample }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - Pragmatic.Email
+          - Pragmatic.Ensure
+          - Pragmatic.Jobs
+          - Pragmatic.Logging
+          - Pragmatic.Messaging
+          - Pragmatic.Migrations
+          - Pragmatic.Notifications
+          - Pragmatic.Result
+          - Pragmatic.Specification
+          - Pragmatic.Temporal
+          - Pragmatic.Validation
+          - Pragmatic.Mapping
+          - Pragmatic.Patch
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj
+
+      - name: Build
+        run: dotnet build ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj --configuration Release --no-restore
+
+      - name: Run sample (timeout 60s)
+        run: |
+          timeout --preserve-status 60s dotnet run \
+            --project ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj \
+            --configuration Release \
+            --no-build

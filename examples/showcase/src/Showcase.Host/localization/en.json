@@ -1,0 +1,8 @@
+{
+  "error.room.unavailable.detail": "The requested room is not available for the selected dates",
+  "error.room.unavailable.title": "Room Unavailable",
+  "error.validation.error.detail": "One or more fields are invalid",
+  "error.validation.error.title": "Validation Failed",
+  "error.entity.not.found.detail": "The requested resource was not found",
+  "error.entity.not.found.title": "Not Found"
+}

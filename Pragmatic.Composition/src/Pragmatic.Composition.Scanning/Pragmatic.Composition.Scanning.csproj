@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Composition</RootNamespace>
+    <Description>Convention-based assembly scanning for Pragmatic.Design. Opt-in: the framework registers services from generated code, and this package exists for the cases the generator cannot see. It loads assemblies and enumerates types at run time, so it is neither trim- nor AOT-safe — which is why it ships separately from Pragmatic.Composition.Host rather than inside it.</Description>
+    <PackageTags>composition;scanning;di;conventions</PackageTags>
+    <!-- Every public entry point here is annotated RequiresUnreferencedCode. The point of the package
+         is to do what the trimmer cannot follow, so the warnings are the contract, not a defect. -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
+  </ItemGroup>
+
+</Project>

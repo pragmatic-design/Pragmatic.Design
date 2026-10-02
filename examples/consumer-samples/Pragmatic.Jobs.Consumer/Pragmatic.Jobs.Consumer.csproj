@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Pragmatic.Jobs" Version="1.0.0-alpha.0.*" />
+    <!-- Unified source generator — packed standalone, pulled in as analyzer. -->
+    <PackageReference Include="Pragmatic.SourceGenerator" Version="*">
+      <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

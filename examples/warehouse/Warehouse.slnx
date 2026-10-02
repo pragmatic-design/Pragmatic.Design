@@ -1,0 +1,25 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="docker-compose.yml" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Warehouse.Orders/Warehouse.Orders.csproj" />
+    <Project Path="src/Warehouse.Orders.Contracts/Warehouse.Orders.Contracts.csproj" />
+    <Project Path="src/Warehouse.Orders.Host/Warehouse.Orders.Host.csproj" />
+    <Project Path="src/Warehouse.Shipping/Warehouse.Shipping.csproj" />
+    <Project Path="src/Warehouse.Shipping.Contracts/Warehouse.Shipping.Contracts.csproj" />
+    <Project Path="src/Warehouse.Shipping.Host/Warehouse.Shipping.Host.csproj" />
+    <Project Path="src/Warehouse.Stock/Warehouse.Stock.csproj" />
+    <Project Path="src/Warehouse.Stock.Contracts/Warehouse.Stock.Contracts.csproj" />
+    <Project Path="src/Warehouse.Stock.Host/Warehouse.Stock.Host.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Warehouse.IntegrationTests/Warehouse.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

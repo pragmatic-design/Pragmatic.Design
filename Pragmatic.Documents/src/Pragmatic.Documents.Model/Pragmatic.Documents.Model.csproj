@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Document Model — JSON-serializable node tree for PDF, DOCX, XLSX, CSV generation.</Description>
+    <PackageTags>documents;model;pdf;docx;json</PackageTags>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Azure Service Bus transport for Pragmatic.Messaging. Topic-per-boundary topology, native dead-lettering and scheduled messages, works against the local emulator.</Description>
+    <PackageTags>messaging;azure;servicebus;transport;distributed;queue</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Messaging.Tests" />
+  </ItemGroup>
+
+  <!-- Core dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Messaging.ServiceBus" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+  </ItemGroup>
+
+</Project>

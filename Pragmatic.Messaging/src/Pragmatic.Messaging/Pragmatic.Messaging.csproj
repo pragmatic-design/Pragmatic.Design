@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Messaging bridge: outbox interceptor, delivery service, event adapter. Depends on Events + EFCore. Core types are in Pragmatic.Messaging.Core.</Description>
+    <PackageTags>messaging;outbox;bridge;events;efcore</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to tests -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Messaging.Tests" />
+  </ItemGroup>
+
+  <!-- Core messaging types (RootNamespace=Pragmatic.Messaging → zero breaking changes) -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Bridge dependencies: Events + EFCore -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generator -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- EF Core for outbox interceptor + hosting for delivery service -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+  </ItemGroup>
+
+</Project>

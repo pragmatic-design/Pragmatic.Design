@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Time off end to end: the real host over HTTP, PostgreSQL in a container. -->
+
+  <PropertyGroup>
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: there is no SynchronizationContext to leave in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TimeOff.Host\TimeOff.Host.csproj" />
+    <!-- TestClock: the decisions are checked against the instant the application read. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Testing\Pragmatic.Temporal.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+</Project>

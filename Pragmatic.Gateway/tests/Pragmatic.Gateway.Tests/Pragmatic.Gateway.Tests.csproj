@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Gateway\Pragmatic.Gateway.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+  </ItemGroup>
+
+</Project>

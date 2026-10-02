@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>PostgreSQL provider for Pragmatic.Result.EFCore. Provides accurate error detection using PostgresException SqlState codes.</Description>
+    <PackageTags>result;efcore;postgresql;npgsql;error-handling</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+  </ItemGroup>
+
+</Project>

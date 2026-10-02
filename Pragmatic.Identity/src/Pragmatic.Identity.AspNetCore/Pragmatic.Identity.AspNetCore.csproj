@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>ASP.NET Core bridge for Pragmatic.Identity. Maps ClaimsPrincipal to ICurrentUser with configurable claim types.</Description>
+    <PackageTags>identity;aspnetcore;claims;authentication;currentuser</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Identity.AspNetCore.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Identity\Pragmatic.Identity.csproj" />
+    <!-- For IStartupStep: UseAuthentication registers AuthenticationStep, without which the
+         middleware is never added. Same shape as Local.Jwt, Keycloak and Oidc. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <!-- For ErrorExtensions.ToProblemDetails(resolver): the policy's 403 is written by the path that writes
+         every other error, so it has the same shape and speaks the host's language. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

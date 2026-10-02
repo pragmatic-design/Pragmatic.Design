@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The letterhead, as a piece of its own: <import src="header.pdxdoc" /> pulls it into the letter.
+
+  It is separate because it is what an organisation replaces most often and changes least: a name and
+  an address line above somebody else's wording. An organisation that uploads only this one keeps the
+  application's letter and gets its own heading — which is the point of a partial, and the reason the
+  provider looks for each piece in the tenant's own container before falling back.
+-->
+<document>
+  <page>
+    <heading level="2">{{ organization.name | default:"Casework" }}</heading>
+    <text>{{ organization.address | default:"" }}</text>
+    <hr thickness="0.8" />
+  </page>
+</document>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Notes</RootNamespace>
+    <Description>Note trait plugin for Pragmatic.Design — adds [HasNotes] attribute for auto-generated internal staff note entities, actions, and endpoints via source generation.</Description>
+    <PackageTags>pragmatic;notes;trait;source-generator</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Domain events infrastructure: IDomainEvent, handlers, dispatchers. Pure domain package, zero infrastructure dependencies.</Description>
+    <PackageTags>ddd;domain;events;event-driven;cqrs;event-sourcing</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Events.Tests" />
+  </ItemGroup>
+
+  <!-- Core dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+  </ItemGroup>
+
+  <!-- Microsoft.Extensions for DI, Logging -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

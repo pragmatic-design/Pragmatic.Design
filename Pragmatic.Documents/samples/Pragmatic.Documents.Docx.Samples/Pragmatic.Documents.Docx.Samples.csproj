@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Docx\Pragmatic.Documents.Docx.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="templates\*.pdxdoc" />
+  </ItemGroup>
+
+</Project>

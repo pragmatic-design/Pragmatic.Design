@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Pragmatic.Migrations.Cli": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53203;http://localhost:53204"
+    }
+  }
+}

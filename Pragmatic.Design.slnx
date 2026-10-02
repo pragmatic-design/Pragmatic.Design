@@ -1,0 +1,1004 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <!-- ══════════════════════════════════════════════════════════ DOCS -->
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="docs/ROADMAP.md" />
+    <File Path="docs/LICENSING.md" />
+    <File Path="docs/README.md" />
+    <File Path="docs/CONVENTIONS.md" />
+    <File Path="docs/TESTING.md" />
+    <File Path="docs/diagnostics.md" />
+  </Folder>
+  <Folder Name="/docs/howto/">
+    <File Path="docs/howto/aot-and-trimming.md" />
+    <File Path="docs/howto/authentication-authorization.md" />
+    <File Path="docs/howto/consuming-generated-docs.md" />
+    <File Path="docs/howto/diagnostics-troubleshooting.md" />
+    <File Path="docs/howto/ide-tips.md" />
+    <File Path="docs/howto/local-nuget-server.md" />
+    <File Path="docs/howto/migrations-concurrent-development.md" />
+    <File Path="docs/howto/monorepo-structure.md" />
+    <File Path="docs/howto/security-hardening.md" />
+    <File Path="docs/howto/showcase-walkthrough.md" />
+  </Folder>
+  <Folder Name="/docs/security/">
+    <File Path="docs/security/owasp-coverage.md" />
+    <File Path="docs/security/threat-model-compliance.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Abstractions/docs/">
+    <File Path="Pragmatic.Abstractions/README.md" />
+    <File Path="Pragmatic.Abstractions/CHANGELOG.md" />
+    <File Path="Pragmatic.Abstractions/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Abstractions/docs/concepts.md" />
+    <File Path="Pragmatic.Abstractions/docs/design-principles.md" />
+    <File Path="Pragmatic.Abstractions/docs/getting-started.md" />
+    <File Path="Pragmatic.Abstractions/docs/interfaces.md" />
+    <File Path="Pragmatic.Abstractions/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Abstractions/docs/how-it-works/">
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/analyzers.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/authoring.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/authorization.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/caching.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/composition-attributes.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/composition-core.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/configuration.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/control-plane.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/events.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/feature-flags.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/http.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/identity.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/maintenance.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/multi-tenancy.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/persistence-entity.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/persistence-repository.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/root-attributes.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/serialization.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/small-contracts.md" />
+    <File Path="Pragmatic.Abstractions/docs/how-it-works/telemetry.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Actions/docs/">
+    <File Path="Pragmatic.Actions/README.md" />
+    <File Path="Pragmatic.Actions/CHANGELOG.md" />
+    <File Path="Pragmatic.Actions/docs/boundaries.md" />
+    <File Path="Pragmatic.Actions/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Actions/docs/concepts.md" />
+    <File Path="Pragmatic.Actions/docs/getting-started.md" />
+    <File Path="Pragmatic.Actions/docs/mutations.md" />
+    <File Path="Pragmatic.Actions/docs/pipeline.md" />
+    <File Path="Pragmatic.Actions/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Agent/docs/">
+    <File Path="Pragmatic.Agent/README.md" />
+    <File Path="Pragmatic.Agent/CHANGELOG.md" />
+    <File Path="Pragmatic.Agent/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Agent/docs/concepts.md" />
+    <File Path="Pragmatic.Agent/docs/getting-started.md" />
+    <File Path="Pragmatic.Agent/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Attachments/docs/">
+    <File Path="Pragmatic.Attachments/README.md" />
+    <File Path="Pragmatic.Attachments/CHANGELOG.md" />
+    <File Path="Pragmatic.Attachments/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Attachments/docs/concepts.md" />
+    <File Path="Pragmatic.Attachments/docs/getting-started.md" />
+    <File Path="Pragmatic.Attachments/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Audit/docs/">
+    <File Path="Pragmatic.Audit/README.md" />
+    <File Path="Pragmatic.Audit/CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Authorization/docs/">
+    <File Path="Pragmatic.Authorization/README.md" />
+    <File Path="Pragmatic.Authorization/CHANGELOG.md" />
+    <File Path="Pragmatic.Authorization/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Authorization/docs/concepts.md" />
+    <File Path="Pragmatic.Authorization/docs/getting-started.md" />
+    <File Path="Pragmatic.Authorization/docs/permission-resolution.md" />
+    <File Path="Pragmatic.Authorization/docs/policies.md" />
+    <File Path="Pragmatic.Authorization/docs/roles-and-groups.md" />
+    <File Path="Pragmatic.Authorization/docs/stores.md" />
+    <File Path="Pragmatic.Authorization/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Caching/docs/">
+    <File Path="Pragmatic.Caching/README.md" />
+    <File Path="Pragmatic.Caching/CHANGELOG.md" />
+    <File Path="Pragmatic.Caching/docs/categories.md" />
+    <File Path="Pragmatic.Caching/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Caching/docs/concepts.md" />
+    <File Path="Pragmatic.Caching/docs/getting-started.md" />
+    <File Path="Pragmatic.Caching/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Client/docs/">
+    <File Path="Pragmatic.Client/README.md" />
+    <File Path="Pragmatic.Client/CHANGELOG.md" />
+    <File Path="Pragmatic.Client/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Client/docs/concepts.md" />
+    <File Path="Pragmatic.Client/docs/getting-started.md" />
+    <File Path="Pragmatic.Client/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Comments/docs/">
+    <File Path="Pragmatic.Comments/README.md" />
+    <File Path="Pragmatic.Comments/CHANGELOG.md" />
+    <File Path="Pragmatic.Comments/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Comments/docs/concepts.md" />
+    <File Path="Pragmatic.Comments/docs/getting-started.md" />
+    <File Path="Pragmatic.Comments/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Composition/docs/">
+    <File Path="Pragmatic.Composition/README.md" />
+    <File Path="Pragmatic.Composition/CHANGELOG.md" />
+    <File Path="Pragmatic.Composition/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Composition/docs/concepts.md" />
+    <File Path="Pragmatic.Composition/docs/getting-started.md" />
+    <File Path="Pragmatic.Composition/docs/remote-boundaries.md" />
+    <File Path="Pragmatic.Composition/docs/service-registration.md" />
+    <File Path="Pragmatic.Composition/docs/startup-pipeline.md" />
+    <File Path="Pragmatic.Composition/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Configuration/docs/">
+    <File Path="Pragmatic.Configuration/README.md" />
+    <File Path="Pragmatic.Configuration/CHANGELOG.md" />
+    <File Path="Pragmatic.Configuration/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Configuration/docs/concepts.md" />
+    <File Path="Pragmatic.Configuration/docs/getting-started.md" />
+    <File Path="Pragmatic.Configuration/docs/stores.md" />
+    <File Path="Pragmatic.Configuration/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Cryptography/docs/">
+    <File Path="Pragmatic.Cryptography/README.md" />
+    <File Path="Pragmatic.Cryptography/CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Discovery/docs/">
+    <File Path="Pragmatic.Discovery/README.md" />
+    <File Path="Pragmatic.Discovery/CHANGELOG.md" />
+    <File Path="Pragmatic.Discovery/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Discovery/docs/concepts.md" />
+    <File Path="Pragmatic.Discovery/docs/getting-started.md" />
+    <File Path="Pragmatic.Discovery/docs/topology-validation.md" />
+    <File Path="Pragmatic.Discovery/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Documents/docs/">
+    <File Path="Pragmatic.Documents/README.md" />
+    <File Path="Pragmatic.Documents/CHANGELOG.md" />
+    <File Path="Pragmatic.Documents/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Documents/docs/concepts.md" />
+    <File Path="Pragmatic.Documents/docs/csv-io.md" />
+    <File Path="Pragmatic.Documents/docs/docx-rendering.md" />
+    <File Path="Pragmatic.Documents/docs/email-rendering.md" />
+    <File Path="Pragmatic.Documents/docs/getting-started.md" />
+    <File Path="Pragmatic.Documents/docs/markup-parser.md" />
+    <File Path="Pragmatic.Documents/docs/pdf-rendering.md" />
+    <File Path="Pragmatic.Documents/docs/templating.md" />
+    <File Path="Pragmatic.Documents/docs/troubleshooting.md" />
+    <File Path="Pragmatic.Documents/docs/xlsx-rendering.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Email/docs/">
+    <File Path="Pragmatic.Email/README.md" />
+    <File Path="Pragmatic.Email/CHANGELOG.md" />
+    <File Path="Pragmatic.Email/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Email/docs/concepts.md" />
+    <File Path="Pragmatic.Email/docs/getting-started.md" />
+    <File Path="Pragmatic.Email/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Endpoints/docs/">
+    <File Path="Pragmatic.Endpoints/README.md" />
+    <File Path="Pragmatic.Endpoints/CHANGELOG.md" />
+    <File Path="Pragmatic.Endpoints/docs/binding-reference.md" />
+    <File Path="Pragmatic.Endpoints/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Endpoints/docs/concepts.md" />
+    <File Path="Pragmatic.Endpoints/docs/domain-action-integration.md" />
+    <File Path="Pragmatic.Endpoints/docs/endpoint-groups.md" />
+    <File Path="Pragmatic.Endpoints/docs/error-handling.md" />
+    <File Path="Pragmatic.Endpoints/docs/file-upload-download.md" />
+    <File Path="Pragmatic.Endpoints/docs/getting-started.md" />
+    <File Path="Pragmatic.Endpoints/docs/idempotency.md" />
+    <File Path="Pragmatic.Endpoints/docs/mcp.md" />
+    <File Path="Pragmatic.Endpoints/docs/processors.md" />
+    <File Path="Pragmatic.Endpoints/docs/query-mutation-endpoints.md" />
+    <File Path="Pragmatic.Endpoints/docs/rate-limiting.md" />
+    <File Path="Pragmatic.Endpoints/docs/request-constraints.md" />
+    <File Path="Pragmatic.Endpoints/docs/response-caching.md" />
+    <File Path="Pragmatic.Endpoints/docs/sse-streaming.md" />
+    <File Path="Pragmatic.Endpoints/docs/troubleshooting.md" />
+    <File Path="Pragmatic.Endpoints/docs/versioning.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Ensure/docs/">
+    <File Path="Pragmatic.Ensure/README.md" />
+    <File Path="Pragmatic.Ensure/CHANGELOG.md" />
+    <File Path="Pragmatic.Ensure/docs/api-reference.md" />
+    <File Path="Pragmatic.Ensure/docs/best-practices.md" />
+    <File Path="Pragmatic.Ensure/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Ensure/docs/concepts.md" />
+    <File Path="Pragmatic.Ensure/docs/getting-started.md" />
+    <File Path="Pragmatic.Ensure/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Events/docs/">
+    <File Path="Pragmatic.Events/README.md" />
+    <File Path="Pragmatic.Events/CHANGELOG.md" />
+    <File Path="Pragmatic.Events/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Events/docs/concepts.md" />
+    <File Path="Pragmatic.Events/docs/getting-started.md" />
+    <File Path="Pragmatic.Events/docs/internals.md" />
+    <File Path="Pragmatic.Events/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.FeatureFlags/docs/">
+    <File Path="Pragmatic.FeatureFlags/README.md" />
+    <File Path="Pragmatic.FeatureFlags/CHANGELOG.md" />
+    <File Path="Pragmatic.FeatureFlags/docs/common-mistakes.md" />
+    <File Path="Pragmatic.FeatureFlags/docs/concepts.md" />
+    <File Path="Pragmatic.FeatureFlags/docs/getting-started.md" />
+    <File Path="Pragmatic.FeatureFlags/docs/stores.md" />
+    <File Path="Pragmatic.FeatureFlags/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Gateway/docs/">
+    <File Path="Pragmatic.Gateway/README.md" />
+    <File Path="Pragmatic.Gateway/CHANGELOG.md" />
+    <File Path="Pragmatic.Gateway/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Gateway/docs/concepts.md" />
+    <File Path="Pragmatic.Gateway/docs/getting-started.md" />
+    <File Path="Pragmatic.Gateway/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Identity/docs/">
+    <File Path="Pragmatic.Identity/README.md" />
+    <File Path="Pragmatic.Identity/CHANGELOG.md" />
+    <File Path="Pragmatic.Identity/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Identity/docs/concepts.md" />
+    <File Path="Pragmatic.Identity/docs/dev-authentication.md" />
+    <File Path="Pragmatic.Identity/docs/getting-started.md" />
+    <File Path="Pragmatic.Identity/docs/jwt-authentication.md" />
+    <File Path="Pragmatic.Identity/docs/packages.md" />
+    <File Path="Pragmatic.Identity/docs/persistence.md" />
+    <File Path="Pragmatic.Identity/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Imaging/docs/">
+    <File Path="Pragmatic.Imaging/README.md" />
+    <File Path="Pragmatic.Imaging/CHANGELOG.md" />
+    <File Path="Pragmatic.Imaging/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Imaging/docs/concepts.md" />
+    <File Path="Pragmatic.Imaging/docs/getting-started.md" />
+    <File Path="Pragmatic.Imaging/docs/native-deployment.md" />
+    <File Path="Pragmatic.Imaging/docs/operations.md" />
+    <File Path="Pragmatic.Imaging/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Incidents/docs/">
+    <File Path="Pragmatic.Incidents/README.md" />
+    <File Path="Pragmatic.Incidents/CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Internationalization/docs/">
+    <File Path="Pragmatic.Internationalization/README.md" />
+    <File Path="Pragmatic.Internationalization/CHANGELOG.md" />
+    <File Path="Pragmatic.Internationalization/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Internationalization/docs/concepts.md" />
+    <File Path="Pragmatic.Internationalization/docs/getting-started.md" />
+    <File Path="Pragmatic.Internationalization/docs/integration.md" />
+    <File Path="Pragmatic.Internationalization/docs/translation-keys.md" />
+    <File Path="Pragmatic.Internationalization/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Jobs/docs/">
+    <File Path="Pragmatic.Jobs/README.md" />
+    <File Path="Pragmatic.Jobs/CHANGELOG.md" />
+    <File Path="Pragmatic.Jobs/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Jobs/docs/concepts.md" />
+    <File Path="Pragmatic.Jobs/docs/getting-started.md" />
+    <File Path="Pragmatic.Jobs/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Logging/docs/">
+    <File Path="Pragmatic.Logging/README.md" />
+    <File Path="Pragmatic.Logging/CHANGELOG.md" />
+    <File Path="Pragmatic.Logging/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Logging/docs/concepts.md" />
+    <File Path="Pragmatic.Logging/docs/context-enrichment.md" />
+    <File Path="Pragmatic.Logging/docs/getting-started.md" />
+    <File Path="Pragmatic.Logging/docs/performance.md" />
+    <File Path="Pragmatic.Logging/docs/privacy-security.md" />
+    <File Path="Pragmatic.Logging/docs/providers.md" />
+    <File Path="Pragmatic.Logging/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Mapping/docs/">
+    <File Path="Pragmatic.Mapping/README.md" />
+    <File Path="Pragmatic.Mapping/CHANGELOG.md" />
+    <File Path="Pragmatic.Mapping/docs/attributes-reference.md" />
+    <File Path="Pragmatic.Mapping/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Mapping/docs/concepts.md" />
+    <File Path="Pragmatic.Mapping/docs/custom-converters.md" />
+    <File Path="Pragmatic.Mapping/docs/feature-matrix.md" />
+    <File Path="Pragmatic.Mapping/docs/getting-started.md" />
+    <File Path="Pragmatic.Mapping/docs/projections.md" />
+    <File Path="Pragmatic.Mapping/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Messaging/docs/">
+    <File Path="Pragmatic.Messaging/README.md" />
+    <File Path="Pragmatic.Messaging/CHANGELOG.md" />
+    <File Path="Pragmatic.Messaging/docs/advanced-patterns.md" />
+    <File Path="Pragmatic.Messaging/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Messaging/docs/concepts.md" />
+    <File Path="Pragmatic.Messaging/docs/getting-started.md" />
+    <File Path="Pragmatic.Messaging/docs/operations.md" />
+    <File Path="Pragmatic.Messaging/docs/reliability.md" />
+    <File Path="Pragmatic.Messaging/docs/saga-guide.md" />
+    <File Path="Pragmatic.Messaging/docs/testing.md" />
+    <File Path="Pragmatic.Messaging/docs/transports.md" />
+    <File Path="Pragmatic.Messaging/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Migrations/docs/">
+    <File Path="Pragmatic.Migrations/README.md" />
+    <File Path="Pragmatic.Migrations/CHANGELOG.md" />
+    <File Path="Pragmatic.Migrations/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Migrations/docs/concepts.md" />
+    <File Path="Pragmatic.Migrations/docs/getting-started.md" />
+    <File Path="Pragmatic.Migrations/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.MultiTenancy/docs/">
+    <File Path="Pragmatic.MultiTenancy/README.md" />
+    <File Path="Pragmatic.MultiTenancy/CHANGELOG.md" />
+    <File Path="Pragmatic.MultiTenancy/docs/common-mistakes.md" />
+    <File Path="Pragmatic.MultiTenancy/docs/concepts.md" />
+    <File Path="Pragmatic.MultiTenancy/docs/getting-started.md" />
+    <File Path="Pragmatic.MultiTenancy/docs/tenant-resolution.md" />
+    <File Path="Pragmatic.MultiTenancy/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Notes/docs/">
+    <File Path="Pragmatic.Notes/README.md" />
+    <File Path="Pragmatic.Notes/CHANGELOG.md" />
+    <File Path="Pragmatic.Notes/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Notes/docs/concepts.md" />
+    <File Path="Pragmatic.Notes/docs/getting-started.md" />
+    <File Path="Pragmatic.Notes/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Notifications/docs/">
+    <File Path="Pragmatic.Notifications/README.md" />
+    <File Path="Pragmatic.Notifications/CHANGELOG.md" />
+    <File Path="Pragmatic.Notifications/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Notifications/docs/concepts.md" />
+    <File Path="Pragmatic.Notifications/docs/getting-started.md" />
+    <File Path="Pragmatic.Notifications/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Patch/docs/">
+    <File Path="Pragmatic.Patch/README.md" />
+    <File Path="Pragmatic.Patch/CHANGELOG.md" />
+    <File Path="Pragmatic.Patch/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Patch/docs/concepts.md" />
+    <File Path="Pragmatic.Patch/docs/getting-started.md" />
+    <File Path="Pragmatic.Patch/docs/tri-state-semantics.md" />
+    <File Path="Pragmatic.Patch/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Persistence/docs/">
+    <File Path="Pragmatic.Persistence/README.md" />
+    <File Path="Pragmatic.Persistence/CHANGELOG.md" />
+    <File Path="Pragmatic.Persistence/docs/01-getting-started.md" />
+    <File Path="Pragmatic.Persistence/docs/02-entity-system.md" />
+    <File Path="Pragmatic.Persistence/docs/03-attributes.md" />
+    <File Path="Pragmatic.Persistence/docs/04-relationships.md" />
+    <File Path="Pragmatic.Persistence/docs/05-repository.md" />
+    <File Path="Pragmatic.Persistence/docs/06-mutations.md" />
+    <File Path="Pragmatic.Persistence/docs/07-query-filters.md" />
+    <File Path="Pragmatic.Persistence/docs/08-advanced.md" />
+    <File Path="Pragmatic.Persistence/docs/09-query-system.md" />
+    <File Path="Pragmatic.Persistence/docs/10-grid-filtering.md" />
+    <File Path="Pragmatic.Persistence/docs/11-projections-views.md" />
+    <File Path="Pragmatic.Persistence/docs/12-datasource-loading.md" />
+    <File Path="Pragmatic.Persistence/docs/13-patch.md" />
+    <File Path="Pragmatic.Persistence/docs/14-diagnostics.md" />
+    <File Path="Pragmatic.Persistence/docs/15-query-pipeline.md" />
+    <File Path="Pragmatic.Persistence/docs/16-mutation-pipeline.md" />
+    <File Path="Pragmatic.Persistence/docs/17-boundaries.md" />
+    <File Path="Pragmatic.Persistence/docs/18-data-ownership.md" />
+    <File Path="Pragmatic.Persistence/docs/19-state-machine.md" />
+    <File Path="Pragmatic.Persistence/docs/20-eager-loading.md" />
+    <File Path="Pragmatic.Persistence/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Persistence/docs/concepts.md" />
+    <File Path="Pragmatic.Persistence/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Persistence/docs/efcore/">
+    <File Path="Pragmatic.Persistence/docs/efcore/01-dbcontext-generation.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/02-repository-implementation.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/03-entity-configuration.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/04-interceptors-runtime.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/05-bulk-operations.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/06-filter-pipeline.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/07-testing-generated-persistence.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/08-migration-patterns.md" />
+    <File Path="Pragmatic.Persistence/docs/efcore/README.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Privacy/docs/">
+    <File Path="Pragmatic.Privacy/README.md" />
+    <File Path="Pragmatic.Privacy/CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Redaction/docs/">
+    <File Path="Pragmatic.Redaction/README.md" />
+    <File Path="Pragmatic.Redaction/CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Resilience/docs/">
+    <File Path="Pragmatic.Resilience/README.md" />
+    <File Path="Pragmatic.Resilience/CHANGELOG.md" />
+    <File Path="Pragmatic.Resilience/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Resilience/docs/concepts.md" />
+    <File Path="Pragmatic.Resilience/docs/getting-started.md" />
+    <File Path="Pragmatic.Resilience/docs/policies.md" />
+    <File Path="Pragmatic.Resilience/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Result/docs/">
+    <File Path="Pragmatic.Result/README.md" />
+    <File Path="Pragmatic.Result/CHANGELOG.md" />
+    <File Path="Pragmatic.Result/docs/api-reference.md" />
+    <File Path="Pragmatic.Result/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Result/docs/concepts.md" />
+    <File Path="Pragmatic.Result/docs/getting-started.md" />
+    <File Path="Pragmatic.Result/docs/localization.md" />
+    <File Path="Pragmatic.Result/docs/migration.md" />
+    <File Path="Pragmatic.Result/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.SourceGenerator/docs/">
+    <File Path="Pragmatic.SourceGenerator/README.md" />
+    <File Path="Pragmatic.SourceGenerator/CHANGELOG.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/architecture.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/common-mistakes.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/concepts.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/feature-development.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/template-api.md" />
+    <File Path="Pragmatic.SourceGenerator/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Specification/docs/">
+    <File Path="Pragmatic.Specification/README.md" />
+    <File Path="Pragmatic.Specification/CHANGELOG.md" />
+    <File Path="Pragmatic.Specification/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Specification/docs/composition-patterns.md" />
+    <File Path="Pragmatic.Specification/docs/concepts.md" />
+    <File Path="Pragmatic.Specification/docs/getting-started.md" />
+    <File Path="Pragmatic.Specification/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Storage/docs/">
+    <File Path="Pragmatic.Storage/README.md" />
+    <File Path="Pragmatic.Storage/CHANGELOG.md" />
+    <File Path="Pragmatic.Storage/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Storage/docs/concepts.md" />
+    <File Path="Pragmatic.Storage/docs/custom-providers.md" />
+    <File Path="Pragmatic.Storage/docs/getting-started.md" />
+    <File Path="Pragmatic.Storage/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Tags/docs/">
+    <File Path="Pragmatic.Tags/README.md" />
+    <File Path="Pragmatic.Tags/CHANGELOG.md" />
+    <File Path="Pragmatic.Tags/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Tags/docs/concepts.md" />
+    <File Path="Pragmatic.Tags/docs/getting-started.md" />
+    <File Path="Pragmatic.Tags/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Temporal/docs/">
+    <File Path="Pragmatic.Temporal/README.md" />
+    <File Path="Pragmatic.Temporal/CHANGELOG.md" />
+    <File Path="Pragmatic.Temporal/docs/aspnetcore.md" />
+    <File Path="Pragmatic.Temporal/docs/business-days.md" />
+    <File Path="Pragmatic.Temporal/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Temporal/docs/concepts.md" />
+    <File Path="Pragmatic.Temporal/docs/core-types.md" />
+    <File Path="Pragmatic.Temporal/docs/dst-handling.md" />
+    <File Path="Pragmatic.Temporal/docs/efcore.md" />
+    <File Path="Pragmatic.Temporal/docs/getting-started.md" />
+    <File Path="Pragmatic.Temporal/docs/json.md" />
+    <File Path="Pragmatic.Temporal/docs/testing.md" />
+    <File Path="Pragmatic.Temporal/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Testing/docs/">
+    <File Path="Pragmatic.Testing/README.md" />
+    <File Path="Pragmatic.Testing/CHANGELOG.md" />
+    <File Path="Pragmatic.Testing/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Testing/docs/contract-tests.md" />
+    <File Path="Pragmatic.Testing/docs/getting-started.md" />
+    <File Path="Pragmatic.Testing/docs/troubleshooting.md" />
+    <File Path="Pragmatic.Testing/docs/typed-client.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Validation/docs/">
+    <File Path="Pragmatic.Validation/README.md" />
+    <File Path="Pragmatic.Validation/CHANGELOG.md" />
+    <File Path="Pragmatic.Validation/docs/attributes.md" />
+    <File Path="Pragmatic.Validation/docs/common-mistakes.md" />
+    <File Path="Pragmatic.Validation/docs/concepts.md" />
+    <File Path="Pragmatic.Validation/docs/custom-validators.md" />
+    <File Path="Pragmatic.Validation/docs/getting-started.md" />
+    <File Path="Pragmatic.Validation/docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/docs/Examples/">
+    <File Path="examples/showcase/README.md" />
+  </Folder>
+  <Folder Name="/Pragmatic.Redaction/" />
+  <!-- ══════════════════════════════════════════════════════ MODULES -->
+  <Folder Name="/Pragmatic.Abstractions/">
+    <Project Path="Pragmatic.Abstractions/src/Pragmatic.Abstractions.Analyzers/Pragmatic.Abstractions.Analyzers.csproj" />
+    <Project Path="Pragmatic.Abstractions/src/Pragmatic.Abstractions.CodeFixers/Pragmatic.Abstractions.CodeFixers.csproj" />
+    <Project Path="Pragmatic.Abstractions/src/Pragmatic.Abstractions/Pragmatic.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Actions/">
+    <Project Path="Pragmatic.Actions/src/Pragmatic.Actions.EFCore/Pragmatic.Actions.EFCore.csproj" />
+    <Project Path="Pragmatic.Actions/src/Pragmatic.Actions/Pragmatic.Actions.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Agent/">
+    <Project Path="Pragmatic.Agent/src/Pragmatic.Agent.Client/Pragmatic.Agent.Client.csproj" />
+    <Project Path="Pragmatic.Agent/src/Pragmatic.Agent.Discovery/Pragmatic.Agent.Discovery.csproj" />
+    <Project Path="Pragmatic.Agent/src/Pragmatic.Agent.Protocol/Pragmatic.Agent.Protocol.csproj" />
+    <Project Path="Pragmatic.Agent/src/Pragmatic.Agent/Pragmatic.Agent.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Attachments/">
+    <Project Path="Pragmatic.Attachments/src/Pragmatic.Attachments/Pragmatic.Attachments.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Audit/">
+    <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.AdoNet/Pragmatic.Audit.AdoNet.csproj" />
+    <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.EFCore/Pragmatic.Audit.EFCore.csproj" />
+    <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.Management/Pragmatic.Audit.Management.csproj" />
+    <Project Path="Pragmatic.Audit/src/Pragmatic.Audit/Pragmatic.Audit.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Authorization/">
+    <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization.Management/Pragmatic.Authorization.Management.csproj" />
+    <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization/Pragmatic.Authorization.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Caching/">
+    <Project Path="Pragmatic.Caching/src/Pragmatic.Caching.Redis/Pragmatic.Caching.Redis.csproj" />
+    <Project Path="Pragmatic.Caching/src/Pragmatic.Caching/Pragmatic.Caching.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Client/">
+    <Project Path="Pragmatic.Client/src/Pragmatic.Client.Cli/Pragmatic.Client.Cli.csproj" />
+    <Project Path="Pragmatic.Client/src/Pragmatic.Client.SourceGenerator/Pragmatic.Client.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Client/src/Pragmatic.Client/Pragmatic.Client.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Comments/">
+    <Project Path="Pragmatic.Comments/src/Pragmatic.Comments/Pragmatic.Comments.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Composition/">
+    <Project Path="Pragmatic.Composition/src/Pragmatic.Composition.Host/Pragmatic.Composition.Host.csproj" />
+    <Project Path="Pragmatic.Composition/src/Pragmatic.Composition.Scanning/Pragmatic.Composition.Scanning.csproj" />
+    <Project Path="Pragmatic.Composition/src/Pragmatic.Composition/Pragmatic.Composition.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Configuration/">
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Aws/Pragmatic.Configuration.Aws.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Azure/Pragmatic.Configuration.Azure.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Consul/Pragmatic.Configuration.Consul.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Database.Postgres/Pragmatic.Configuration.Database.Postgres.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Database/Pragmatic.Configuration.Database.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Gcp/Pragmatic.Configuration.Gcp.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Kubernetes/Pragmatic.Configuration.Kubernetes.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Management/Pragmatic.Configuration.Management.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Redis/Pragmatic.Configuration.Redis.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration.Vault/Pragmatic.Configuration.Vault.csproj" />
+    <Project Path="Pragmatic.Configuration/src/Pragmatic.Configuration/Pragmatic.Configuration.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Cryptography/">
+    <Project Path="Pragmatic.Cryptography/src/Pragmatic.Cryptography.EFCore/Pragmatic.Cryptography.EFCore.csproj" />
+    <Project Path="Pragmatic.Cryptography/src/Pragmatic.Cryptography/Pragmatic.Cryptography.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Discovery/">
+    <Project Path="Pragmatic.Discovery/src/Pragmatic.Discovery/Pragmatic.Discovery.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Documents/">
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Csv.Generator/Pragmatic.Documents.Csv.Generator.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Csv/Pragmatic.Documents.Csv.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Docx/Pragmatic.Documents.Docx.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Email/Pragmatic.Documents.Email.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Markup/Pragmatic.Documents.Markup.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Model/Pragmatic.Documents.Model.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Ooxml/Pragmatic.Documents.Ooxml.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Pdf/Pragmatic.Documents.Pdf.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Spreadsheet/Pragmatic.Documents.Spreadsheet.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Templates/Pragmatic.Documents.Templates.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Templating.I18N/Pragmatic.Documents.Templating.I18N.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Templating.Spreadsheet/Pragmatic.Documents.Templating.Spreadsheet.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Templating/Pragmatic.Documents.Templating.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Documents.Xlsx/Pragmatic.Documents.Xlsx.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Email.Model/Pragmatic.Email.Model.csproj" />
+    <Project Path="Pragmatic.Documents/src/Pragmatic.Email.Templates/Pragmatic.Email.Templates.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Email/">
+    <Project Path="Pragmatic.Email/src/Pragmatic.Email.Testing/Pragmatic.Email.Testing.csproj" />
+    <Project Path="Pragmatic.Email/src/Pragmatic.Email/Pragmatic.Email.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Endpoints/">
+    <Project Path="Pragmatic.Endpoints/src/Pragmatic.Endpoints.AspNetCore/Pragmatic.Endpoints.AspNetCore.csproj" />
+    <Project Path="Pragmatic.Endpoints/src/Pragmatic.Endpoints.Mcp/Pragmatic.Endpoints.Mcp.csproj" />
+    <Project Path="Pragmatic.Endpoints/tests/Pragmatic.Endpoints.Mcp.Tests/Pragmatic.Endpoints.Mcp.Tests.csproj" />
+    <Project Path="Pragmatic.Endpoints/src/Pragmatic.Endpoints.OpenApi/Pragmatic.Endpoints.OpenApi.csproj" />
+    <Project Path="Pragmatic.Endpoints/src/Pragmatic.Endpoints/Pragmatic.Endpoints.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Ensure/">
+    <Project Path="Pragmatic.Ensure/src/Pragmatic.Ensure.Result/Pragmatic.Ensure.Result.csproj" />
+    <Project Path="Pragmatic.Ensure/src/Pragmatic.Ensure/Pragmatic.Ensure.csproj" />
+    <Project Path="Pragmatic.Ensure/src/Pragmatic.Ensure.Analyzers/Pragmatic.Ensure.Analyzers.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Events/">
+    <Project Path="Pragmatic.Events/src/Pragmatic.Events.EFCore/Pragmatic.Events.EFCore.csproj" />
+    <Project Path="Pragmatic.Events/src/Pragmatic.Events/Pragmatic.Events.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.FeatureFlags/">
+    <Project Path="Pragmatic.FeatureFlags/src/Pragmatic.FeatureFlags.Configuration/Pragmatic.FeatureFlags.Configuration.csproj" />
+    <Project Path="Pragmatic.FeatureFlags/src/Pragmatic.FeatureFlags/Pragmatic.FeatureFlags.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Gateway/">
+    <Project Path="Pragmatic.Gateway/src/Pragmatic.Gateway/Pragmatic.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Identity/">
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.AspNetCore/Pragmatic.Identity.AspNetCore.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Keycloak/Pragmatic.Identity.Keycloak.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Local.Jwt/Pragmatic.Identity.Local.Jwt.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Auditing/Pragmatic.Identity.Auditing.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Local/Pragmatic.Identity.Local.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Oidc/Pragmatic.Identity.Oidc.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity.Persistence/Pragmatic.Identity.Persistence.csproj" />
+    <Project Path="Pragmatic.Identity/src/Pragmatic.Identity/Pragmatic.Identity.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Imaging/">
+    <Project Path="Pragmatic.Imaging/src/Pragmatic.Imaging/Pragmatic.Imaging.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Incidents/">
+    <Project Path="Pragmatic.Incidents/src/Pragmatic.Incidents/Pragmatic.Incidents.csproj" />
+    <Project Path="Pragmatic.Incidents/src/Pragmatic.Incidents.Audit/Pragmatic.Incidents.Audit.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Internationalization/">
+    <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.AspNetCore/Pragmatic.Internationalization.AspNetCore.csproj" />
+    <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.EFCore/Pragmatic.Internationalization.EFCore.csproj" />
+    <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.SourceGenerator/Pragmatic.Internationalization.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization/Pragmatic.Internationalization.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Jobs/">
+    <Project Path="Pragmatic.Jobs/src/Pragmatic.Jobs.EFCore/Pragmatic.Jobs.EFCore.csproj" />
+    <Project Path="Pragmatic.Jobs/src/Pragmatic.Jobs/Pragmatic.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Logging/">
+    <Project Path="Pragmatic.Logging/src/Pragmatic.Logging/Pragmatic.Logging.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Mapping/">
+    <Project Path="Pragmatic.Mapping/src/Pragmatic.Mapping.EFCore/Pragmatic.Mapping.EFCore.csproj" />
+    <Project Path="Pragmatic.Mapping/src/Pragmatic.Mapping/Pragmatic.Mapping.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Messaging/">
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Auditing/Pragmatic.Messaging.Auditing.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.AzureServiceBus/Pragmatic.Messaging.AzureServiceBus.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Batch/Pragmatic.Messaging.Batch.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Channels/Pragmatic.Messaging.Channels.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.ClaimCheck/Pragmatic.Messaging.ClaimCheck.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Core/Pragmatic.Messaging.Core.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Dashboard/Pragmatic.Messaging.Dashboard.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.EFCore/Pragmatic.Messaging.EFCore.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Jobs/Pragmatic.Messaging.Jobs.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Kafka/Pragmatic.Messaging.Kafka.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.RabbitMQ/Pragmatic.Messaging.RabbitMQ.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Saga/Pragmatic.Messaging.Saga.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Sql/Pragmatic.Messaging.Sql.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging.Testing/Pragmatic.Messaging.Testing.csproj" />
+    <Project Path="Pragmatic.Messaging/src/Pragmatic.Messaging/Pragmatic.Messaging.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Migrations/">
+    <Project Path="Pragmatic.Migrations/src/Pragmatic.Migrations.Cli/Pragmatic.Migrations.Cli.csproj" />
+    <Project Path="Pragmatic.Migrations/src/Pragmatic.Migrations/Pragmatic.Migrations.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.MultiTenancy/">
+    <Project Path="Pragmatic.MultiTenancy/src/Pragmatic.MultiTenancy.AspNetCore/Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <Project Path="Pragmatic.MultiTenancy/src/Pragmatic.MultiTenancy.Persistence/Pragmatic.MultiTenancy.Persistence.csproj" />
+    <Project Path="Pragmatic.MultiTenancy/src/Pragmatic.MultiTenancy/Pragmatic.MultiTenancy.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Notes/">
+    <Project Path="Pragmatic.Notes/src/Pragmatic.Notes/Pragmatic.Notes.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Notifications/">
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.EFCore/Pragmatic.Notifications.EFCore.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Slack/Pragmatic.Notifications.Slack.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Sms/Pragmatic.Notifications.Sms.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Testing/Pragmatic.Notifications.Testing.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Webhook/Pragmatic.Notifications.Webhook.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications/Pragmatic.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Patch/">
+    <Project Path="Pragmatic.Patch/src/Pragmatic.Patch/Pragmatic.Patch.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Persistence/">
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Analyzers/Pragmatic.Persistence.Analyzers.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.CodeFixers/Pragmatic.Persistence.CodeFixers.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence/Pragmatic.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Privacy/">
+    <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
+    <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.EFCore/Pragmatic.Privacy.EFCore.csproj" />
+    <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy/Pragmatic.Privacy.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Resilience/">
+    <Project Path="Pragmatic.Resilience/src/Pragmatic.Resilience/Pragmatic.Resilience.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Result/">
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.Analyzers/Pragmatic.Result.Analyzers.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.AspNetCore/Pragmatic.Result.AspNetCore.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.EFCore.MySql/Pragmatic.Result.EFCore.MySql.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.EFCore.PostgreSQL/Pragmatic.Result.EFCore.PostgreSQL.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.EFCore.Sqlite/Pragmatic.Result.EFCore.Sqlite.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.EFCore.SqlServer/Pragmatic.Result.EFCore.SqlServer.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.EFCore/Pragmatic.Result.EFCore.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result.SourceGenerator/Pragmatic.Result.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Redaction/src/Pragmatic.Redaction/Pragmatic.Redaction.csproj" />
+    <Project Path="Pragmatic.Result/src/Pragmatic.Result/Pragmatic.Result.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.SourceGenerator/">
+    <Project Path="Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator.Analyzers/Pragmatic.SourceGenerator.Analyzers.csproj" />
+    <Project Path="Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator.CodeFixers/Pragmatic.SourceGenerator.CodeFixers.csproj" />
+    <Project Path="Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Specification/">
+    <Project Path="Pragmatic.Specification/src/Pragmatic.Specification/Pragmatic.Specification.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Storage/">
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.Azure/Pragmatic.Storage.Azure.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.Ftp/Pragmatic.Storage.Ftp.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.GoogleCloud/Pragmatic.Storage.GoogleCloud.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.InMemory/Pragmatic.Storage.InMemory.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.S3/Pragmatic.Storage.S3.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage.Sftp/Pragmatic.Storage.Sftp.csproj" />
+    <Project Path="Pragmatic.Storage/src/Pragmatic.Storage/Pragmatic.Storage.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Tags/">
+    <Project Path="Pragmatic.Tags/src/Pragmatic.Tags/Pragmatic.Tags.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Temporal/">
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.Analyzers/Pragmatic.Temporal.Analyzers.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.AspNetCore/Pragmatic.Temporal.AspNetCore.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.CodeFixers/Pragmatic.Temporal.CodeFixers.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.EFCore/Pragmatic.Temporal.EFCore.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.Internationalization/Pragmatic.Temporal.Internationalization.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.Json/Pragmatic.Temporal.Json.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal.Testing/Pragmatic.Temporal.Testing.csproj" />
+    <Project Path="Pragmatic.Temporal/src/Pragmatic.Temporal/Pragmatic.Temporal.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Testing/">
+    <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.Comparers.SourceGenerator/Pragmatic.Testing.Comparers.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.Mocking.SourceGenerator/Pragmatic.Testing.Mocking.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.SourceGenerator/Pragmatic.Testing.SourceGenerator.csproj" />
+    <Project Path="Pragmatic.Testing/src/Pragmatic.Testing/Pragmatic.Testing.csproj" />
+  </Folder>
+  <Folder Name="/Pragmatic.Validation/">
+    <Project Path="Pragmatic.Validation/src/Pragmatic.Validation/Pragmatic.Validation.csproj" />
+  </Folder>
+
+  <!-- ══════════════════════════════════════════════════════ SAMPLES -->
+  <Folder Name="/Samples/">
+    <Project Path="Pragmatic.Actions/samples/Pragmatic.Actions.Samples/Pragmatic.Actions.Samples.csproj" />
+    <Project Path="Pragmatic.Agent/samples/Pragmatic.Agent.Samples/Pragmatic.Agent.Samples.csproj" />
+    <Project Path="Pragmatic.Attachments/samples/Pragmatic.Attachments.Samples/Pragmatic.Attachments.Samples.csproj" />
+    <Project Path="Pragmatic.Authorization/samples/Pragmatic.Authorization.Samples/Pragmatic.Authorization.Samples.csproj" />
+    <Project Path="Pragmatic.Caching/samples/Pragmatic.Caching.Samples/Pragmatic.Caching.Samples.csproj" />
+    <Project Path="Pragmatic.Client/samples/Pragmatic.Client.Samples/Pragmatic.Client.Samples.csproj" />
+    <Project Path="Pragmatic.Comments/samples/Pragmatic.Comments.Samples/Pragmatic.Comments.Samples.csproj" />
+    <Project Path="Pragmatic.Composition/samples/Pragmatic.Composition.RemoteBoundary.Samples/Pragmatic.Composition.RemoteBoundary.Samples.csproj" />
+    <Project Path="Pragmatic.Composition/samples/Pragmatic.Composition.Samples/Pragmatic.Composition.Samples.csproj" />
+    <Project Path="Pragmatic.Configuration/samples/Pragmatic.Configuration.Samples/Pragmatic.Configuration.Samples.csproj" />
+    <Project Path="Pragmatic.Discovery/samples/Pragmatic.Discovery.Samples/Pragmatic.Discovery.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Csv.Samples/Pragmatic.Documents.Csv.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Docx.Samples/Pragmatic.Documents.Docx.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Email.Samples/Pragmatic.Documents.Email.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Markup.Samples/Pragmatic.Documents.Markup.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Pdf.Samples/Pragmatic.Documents.Pdf.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Templating.Spreadsheet.Samples/Pragmatic.Documents.Templating.Spreadsheet.Samples.csproj" />
+    <Project Path="Pragmatic.Documents/samples/Pragmatic.Documents.Xlsx.Samples/Pragmatic.Documents.Xlsx.Samples.csproj" />
+    <Project Path="Pragmatic.Email/samples/Pragmatic.Email.Samples/Pragmatic.Email.Samples.csproj" />
+    <Project Path="Pragmatic.Endpoints/samples/Pragmatic.Endpoints.Samples/Pragmatic.Endpoints.Samples.csproj" />
+    <Project Path="Pragmatic.Ensure/samples/Pragmatic.Ensure.Samples/Pragmatic.Ensure.Samples.csproj" />
+    <Project Path="Pragmatic.Events/samples/Pragmatic.Events.Samples/Pragmatic.Events.Samples.csproj" />
+    <Project Path="Pragmatic.FeatureFlags/samples/Pragmatic.FeatureFlags.Samples/Pragmatic.FeatureFlags.Samples.csproj" />
+    <Project Path="Pragmatic.Gateway/samples/Pragmatic.Gateway.Samples/Pragmatic.Gateway.Samples.csproj" />
+    <Project Path="Pragmatic.Identity/samples/Pragmatic.Identity.Samples/Pragmatic.Identity.Samples.csproj" />
+    <Project Path="Pragmatic.Imaging/samples/Pragmatic.Imaging.Samples/Pragmatic.Imaging.Samples.csproj" />
+    <Project Path="Pragmatic.Internationalization/samples/Pragmatic.Internationalization.Samples/Pragmatic.Internationalization.Samples.csproj" />
+    <Project Path="Pragmatic.Jobs/samples/Pragmatic.Jobs.Samples/Pragmatic.Jobs.Samples.csproj" />
+    <Project Path="Pragmatic.Logging/samples/Pragmatic.Logging.Samples/Pragmatic.Logging.Samples.csproj" />
+    <Project Path="Pragmatic.Mapping/samples/Pragmatic.Mapping.Samples/Pragmatic.Mapping.Samples.csproj" />
+    <Project Path="Pragmatic.Messaging/samples/Pragmatic.Messaging.Outbox.Samples/Pragmatic.Messaging.Outbox.Samples.csproj" />
+    <Project Path="Pragmatic.Messaging/samples/Pragmatic.Messaging.Samples/Pragmatic.Messaging.Samples.csproj" />
+    <Project Path="Pragmatic.Migrations/samples/Pragmatic.Migrations.Samples/Pragmatic.Migrations.Samples.csproj" />
+    <Project Path="Pragmatic.MultiTenancy/samples/Pragmatic.MultiTenancy.Samples/Pragmatic.MultiTenancy.Samples.csproj" />
+    <Project Path="Pragmatic.Notes/samples/Pragmatic.Notes.Samples/Pragmatic.Notes.Samples.csproj" />
+    <Project Path="Pragmatic.Notifications/samples/Pragmatic.Notifications.Samples/Pragmatic.Notifications.Samples.csproj" />
+    <Project Path="Pragmatic.Patch/samples/Pragmatic.Patch.Samples/Pragmatic.Patch.Samples.csproj" />
+    <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
+    <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
+    <Project Path="Pragmatic.Resilience/samples/Pragmatic.Resilience.Samples/Pragmatic.Resilience.Samples.csproj" />
+    <Project Path="Pragmatic.Result/samples/Pragmatic.Result.AspNetCore.Samples/Pragmatic.Result.AspNetCore.Samples.csproj" />
+    <Project Path="Pragmatic.Result/samples/Pragmatic.Result.EFCore.Samples/Pragmatic.Result.EFCore.Samples.csproj" />
+    <Project Path="Pragmatic.Result/samples/Pragmatic.Result.Samples/Pragmatic.Result.Samples.csproj" />
+    <Project Path="Pragmatic.Specification/samples/Pragmatic.Specification.Samples/Pragmatic.Specification.Samples.csproj" />
+    <Project Path="Pragmatic.Storage/samples/Pragmatic.Storage.Samples/Pragmatic.Storage.Samples.csproj" />
+    <Project Path="Pragmatic.Tags/samples/Pragmatic.Tags.Samples/Pragmatic.Tags.Samples.csproj" />
+    <Project Path="Pragmatic.Temporal/samples/Pragmatic.Temporal.Samples/Pragmatic.Temporal.Samples.csproj" />
+    <Project Path="Pragmatic.Validation/samples/Pragmatic.Validation.Samples/Pragmatic.Validation.Samples.csproj" />
+  </Folder>
+
+  <!-- ══════════════════════════════════════════════════════ BENCHMARKS -->
+  <Folder Name="/Benchmarks/">
+    <Project Path="Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks/Pragmatic.Logging.Benchmarks.csproj" />
+    <Project Path="Pragmatic.Result/benchmarks/Pragmatic.Result.Benchmarks/Pragmatic.Result.Benchmarks.csproj" />
+  </Folder>
+
+  <!-- ══════════════════════════════════════════════════════ TESTS -->
+  <Folder Name="/Tests/">
+    <Project Path="Pragmatic.Abstractions/tests/Pragmatic.Abstractions.Analyzers.Tests/Pragmatic.Abstractions.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.Abstractions/tests/Pragmatic.Abstractions.CodeFixers.Tests/Pragmatic.Abstractions.CodeFixers.Tests.csproj" />
+    <Project Path="Pragmatic.Abstractions/tests/Pragmatic.Abstractions.Tests/Pragmatic.Abstractions.Tests.csproj" />
+    <Project Path="Pragmatic.Actions/tests/Pragmatic.Actions.AutoDerive.Tests/Pragmatic.Actions.AutoDerive.Tests.csproj" />
+    <Project Path="Pragmatic.Actions/tests/Pragmatic.Actions.Tests/Pragmatic.Actions.Tests.csproj" />
+    <Project Path="Pragmatic.Agent/tests/Pragmatic.Agent.Tests/Pragmatic.Agent.Tests.csproj" />
+    <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.AdoNet.Tests/Pragmatic.Audit.AdoNet.Tests.csproj" />
+    <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.EFCore.Tests/Pragmatic.Audit.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.Tests/Pragmatic.Audit.Tests.csproj" />
+    <Project Path="Pragmatic.Authorization/tests/Pragmatic.Authorization.Management.Tests/Pragmatic.Authorization.Management.Tests.csproj" />
+    <Project Path="Pragmatic.Authorization/tests/Pragmatic.Authorization.Tests/Pragmatic.Authorization.Tests.csproj" />
+    <Project Path="Pragmatic.Caching/tests/Pragmatic.Caching.Tests/Pragmatic.Caching.Tests.csproj" />
+    <Project Path="Pragmatic.Caching/tests/Pragmatic.Caching.Redis.Tests/Pragmatic.Caching.Redis.Tests.csproj" />
+    <Project Path="Pragmatic.Client/tests/Pragmatic.Client.Tests/Pragmatic.Client.Tests.csproj" />
+    <Project Path="Pragmatic.Attachments/tests/Pragmatic.Attachments.Tests/Pragmatic.Attachments.Tests.csproj" />
+    <Project Path="Pragmatic.Comments/tests/Pragmatic.Comments.Tests/Pragmatic.Comments.Tests.csproj" />
+    <Project Path="Pragmatic.Composition/tests/Pragmatic.Composition.HostWiring.Tests/Pragmatic.Composition.HostWiring.Tests.csproj" />
+    <Project Path="Pragmatic.Composition/tests/Pragmatic.Composition.Tests/Pragmatic.Composition.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Aws.Tests/Pragmatic.Configuration.Aws.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Azure.Tests/Pragmatic.Configuration.Azure.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Consul.Tests/Pragmatic.Configuration.Consul.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Database.Tests/Pragmatic.Configuration.Database.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Gcp.Tests/Pragmatic.Configuration.Gcp.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Kubernetes.Tests/Pragmatic.Configuration.Kubernetes.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Management.Tests/Pragmatic.Configuration.Management.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Redis.Tests/Pragmatic.Configuration.Redis.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Tests/Pragmatic.Configuration.Tests.csproj" />
+    <Project Path="Pragmatic.Configuration/tests/Pragmatic.Configuration.Vault.Tests/Pragmatic.Configuration.Vault.Tests.csproj" />
+    <Project Path="Pragmatic.Cryptography/tests/Pragmatic.Cryptography.EFCore.Tests/Pragmatic.Cryptography.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Cryptography/tests/Pragmatic.Cryptography.Tests/Pragmatic.Cryptography.Tests.csproj" />
+    <Project Path="Pragmatic.Discovery/tests/Pragmatic.Discovery.Tests/Pragmatic.Discovery.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Csv.Generator.Tests/Pragmatic.Documents.Csv.Generator.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Csv.Tests/Pragmatic.Documents.Csv.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Docx.Tests/Pragmatic.Documents.Docx.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Email.Tests/Pragmatic.Documents.Email.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Markup.Tests/Pragmatic.Documents.Markup.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Model.Tests/Pragmatic.Documents.Model.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Pdf.Tests/Pragmatic.Documents.Pdf.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Spreadsheet.Tests/Pragmatic.Documents.Spreadsheet.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Templates.Tests/Pragmatic.Documents.Templates.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Templating.I18N.Tests/Pragmatic.Documents.Templating.I18N.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Templating.Spreadsheet.Tests/Pragmatic.Documents.Templating.Spreadsheet.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Templating.Tests/Pragmatic.Documents.Templating.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.Xlsx.Tests/Pragmatic.Documents.Xlsx.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Email.Model.Tests/Pragmatic.Email.Model.Tests.csproj" />
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Email.Templates.Tests/Pragmatic.Email.Templates.Tests.csproj" />
+    <Project Path="Pragmatic.Email/tests/Pragmatic.Email.Tests/Pragmatic.Email.Tests.csproj" />
+    <Project Path="Pragmatic.Endpoints/tests/Pragmatic.Endpoints.Tests/Pragmatic.Endpoints.Tests.csproj" />
+    <Project Path="Pragmatic.Ensure/tests/Pragmatic.Ensure.Result.Tests/Pragmatic.Ensure.Result.Tests.csproj" />
+    <Project Path="Pragmatic.Ensure/tests/Pragmatic.Ensure.Analyzers.Tests/Pragmatic.Ensure.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.Ensure/tests/Pragmatic.Ensure.Tests/Pragmatic.Ensure.Tests.csproj" />
+    <Project Path="Pragmatic.Events/tests/Pragmatic.Events.Tests/Pragmatic.Events.Tests.csproj" />
+    <Project Path="Pragmatic.FeatureFlags/tests/Pragmatic.FeatureFlags.Tests/Pragmatic.FeatureFlags.Tests.csproj" />
+    <Project Path="Pragmatic.Gateway/tests/Pragmatic.Gateway.Tests/Pragmatic.Gateway.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.AspNetCore.Tests/Pragmatic.Identity.AspNetCore.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Keycloak.Tests/Pragmatic.Identity.Keycloak.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Local.Jwt.Tests/Pragmatic.Identity.Local.Jwt.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Auditing.Tests/Pragmatic.Identity.Auditing.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Local.Tests/Pragmatic.Identity.Local.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Oidc.Tests/Pragmatic.Identity.Oidc.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Persistence.Tests/Pragmatic.Identity.Persistence.Tests.csproj" />
+    <Project Path="Pragmatic.Identity/tests/Pragmatic.Identity.Tests/Pragmatic.Identity.Tests.csproj" />
+    <Project Path="Pragmatic.Imaging/tests/Pragmatic.Imaging.Tests/Pragmatic.Imaging.Tests.csproj" />
+    <Project Path="Pragmatic.Incidents/tests/Pragmatic.Incidents.Tests/Pragmatic.Incidents.Tests.csproj" />
+    <Project Path="Pragmatic.Internationalization/tests/Pragmatic.Internationalization.Tests/Pragmatic.Internationalization.Tests.csproj" />
+    <Project Path="Pragmatic.Jobs/tests/Pragmatic.Jobs.Tests/Pragmatic.Jobs.Tests.csproj" />
+    <Project Path="Pragmatic.Logging/tests/Pragmatic.Logging.Tests/Pragmatic.Logging.Tests.csproj" />
+    <Project Path="Pragmatic.Mapping/tests/Pragmatic.Mapping.EFCore.Tests/Pragmatic.Mapping.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Mapping/tests/Pragmatic.Mapping.Tests/Pragmatic.Mapping.Tests.csproj" />
+    <Project Path="Pragmatic.Messaging/tests/Pragmatic.Messaging.Core.Tests/Pragmatic.Messaging.Core.Tests.csproj" />
+    <Project Path="Pragmatic.Messaging/tests/Pragmatic.Messaging.Tests/Pragmatic.Messaging.Tests.csproj" />
+    <Project Path="Pragmatic.Migrations/tests/Pragmatic.Migrations.Core.Tests/Pragmatic.Migrations.Core.Tests.csproj" />
+    <Project Path="Pragmatic.Migrations/tests/Pragmatic.Migrations.Tests/Pragmatic.Migrations.Tests.csproj" />
+    <Project Path="Pragmatic.MultiTenancy/tests/Pragmatic.MultiTenancy.Tests/Pragmatic.MultiTenancy.Tests.csproj" />
+    <Project Path="Pragmatic.Notes/tests/Pragmatic.Notes.Tests/Pragmatic.Notes.Tests.csproj" />
+    <Project Path="Pragmatic.Notifications/tests/Pragmatic.Notifications.Tests/Pragmatic.Notifications.Tests.csproj" />
+    <Project Path="Pragmatic.Patch/tests/Pragmatic.Patch.Tests/Pragmatic.Patch.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.E2E.Tests/Pragmatic.Privacy.E2E.Tests.csproj" />
+    <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
+    <Project Path="Pragmatic.Resilience/tests/Pragmatic.Resilience.Tests/Pragmatic.Resilience.Tests.csproj" />
+    <Project Path="Pragmatic.Result/tests/Pragmatic.Result.Analyzers.Tests/Pragmatic.Result.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.Result/tests/Pragmatic.Result.AspNetCore.Tests/Pragmatic.Result.AspNetCore.Tests.csproj" />
+    <Project Path="Pragmatic.Result/tests/Pragmatic.Result.EFCore.Tests/Pragmatic.Result.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Redaction/tests/Pragmatic.Redaction.Tests/Pragmatic.Redaction.Tests.csproj" />
+    <Project Path="Pragmatic.Result/tests/Pragmatic.Result.Tests/Pragmatic.Result.Tests.csproj" />
+    <Project Path="Pragmatic.SourceGenerator/tests/Pragmatic.SourceGenerator.Analyzers.Tests/Pragmatic.SourceGenerator.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.SourceGenerator/tests/Pragmatic.SourceGenerator.CodeFixers.Tests/Pragmatic.SourceGenerator.CodeFixers.Tests.csproj" />
+    <Project Path="Pragmatic.SourceGenerator/tests/Pragmatic.SourceGenerator.Tests/Pragmatic.SourceGenerator.Tests.csproj" />
+    <Project Path="Pragmatic.Specification/tests/Pragmatic.Specification.Tests/Pragmatic.Specification.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.Azure.Tests/Pragmatic.Storage.Azure.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.Conformance/Pragmatic.Storage.Conformance.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.Ftp.Tests/Pragmatic.Storage.Ftp.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.GoogleCloud.Tests/Pragmatic.Storage.GoogleCloud.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.InMemory.Tests/Pragmatic.Storage.InMemory.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.S3.Tests/Pragmatic.Storage.S3.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.Sftp.Tests/Pragmatic.Storage.Sftp.Tests.csproj" />
+    <Project Path="Pragmatic.Storage/tests/Pragmatic.Storage.Tests/Pragmatic.Storage.Tests.csproj" />
+    <Project Path="Pragmatic.Tags/tests/Pragmatic.Tags.Tests/Pragmatic.Tags.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.Analyzers.Tests/Pragmatic.Temporal.Analyzers.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.AspNetCore.Tests/Pragmatic.Temporal.AspNetCore.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.CodeFixers.Tests/Pragmatic.Temporal.CodeFixers.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.EFCore.Tests/Pragmatic.Temporal.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.Internationalization.Tests/Pragmatic.Temporal.Internationalization.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.Json.Tests/Pragmatic.Temporal.Json.Tests.csproj" />
+    <Project Path="Pragmatic.Temporal/tests/Pragmatic.Temporal.Tests/Pragmatic.Temporal.Tests.csproj" />
+    <Project Path="Pragmatic.Testing/tests/Pragmatic.Testing.Comparers.SourceGenerator.Tests/Pragmatic.Testing.Comparers.SourceGenerator.Tests.csproj" />
+    <Project Path="Pragmatic.Testing/tests/Pragmatic.Testing.Mocking.SourceGenerator.Tests/Pragmatic.Testing.Mocking.SourceGenerator.Tests.csproj" />
+    <Project Path="Pragmatic.Testing/tests/Pragmatic.Testing.SourceGenerator.Tests/Pragmatic.Testing.SourceGenerator.Tests.csproj" />
+    <Project Path="Pragmatic.Testing/tests/Pragmatic.Testing.Tests/Pragmatic.Testing.Tests.csproj" />
+    <Project Path="Pragmatic.Validation/tests/Pragmatic.Validation.Tests/Pragmatic.Validation.Tests.csproj" />
+    <Project Path="shared/SourceGen.Tests/Pragmatic.SourceGen.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Integration &amp; E2E/">
+    <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.E2E.Tests/Pragmatic.Documents.E2E.Tests.csproj" />
+    <Project Path="Pragmatic.Integration.Tests/Pragmatic.Integration.Tests.csproj" />
+  </Folder>
+
+  <!-- ══════════════════════════════════════════════════════ EXAMPLES -->
+  <Folder Name="/Examples/Showcase/">
+    <Project Path="examples/showcase/src/Showcase.Accounts/Showcase.Accounts.csproj" />
+    <Project Path="examples/showcase/src/Showcase.Billing/Showcase.Billing.csproj" />
+    <Project Path="examples/showcase/src/Showcase.BlazorClient/Showcase.BlazorClient.csproj" />
+    <Project Path="examples/showcase/src/Showcase.Booking/Showcase.Booking.csproj" />
+    <Project Path="examples/showcase/src/Showcase.Catalog/Showcase.Catalog.csproj" />
+    <Project Path="examples/showcase/src/Showcase.Host/Showcase.Host.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Billing.Host.Tests/Showcase.Billing.Host.Tests.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Host.Distributed.Tests/Showcase.Host.Distributed.Tests.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.IntegrationTests/Showcase.IntegrationTests.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Tests/Showcase.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/Showcase.Distributed/">
+    <Project Path="examples/showcase/src/Showcase.Billing.Host/Showcase.Billing.Host.csproj" />
+    <Project Path="examples/showcase/src/Showcase.Host.Distributed/Showcase.Host.Distributed.csproj" />
+  </Folder>
+  <Folder Name="/Examples/Conformance/">
+    <Project Path="examples/conformance/src/Conformance.Poco/Conformance.Poco.csproj" />
+    <Project Path="examples/conformance/src/Conformance.Catalog/Conformance.Catalog.csproj" />
+    <Project Path="examples/conformance/src/Conformance.Sales/Conformance.Sales.csproj" />
+    <Project Path="examples/conformance/src/Conformance.Split/Conformance.Split.csproj" />
+    <Project Path="examples/conformance/src/Conformance.Host/Conformance.Host.csproj" />
+    <Project Path="examples/conformance/tests/Conformance.Poco.Tests/Conformance.Poco.Tests.csproj" />
+    <Project Path="examples/conformance/tests/Conformance.Tests/Conformance.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/TimeOff/">
+    <Project Path="examples/time-off/src/TimeOff.Leave/TimeOff.Leave.csproj" />
+    <Project Path="examples/time-off/src/TimeOff.Host/TimeOff.Host.csproj" />
+    <Project Path="examples/time-off/tests/TimeOff.IntegrationTests/TimeOff.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/Invoicing/">
+    <Project Path="examples/invoicing/src/Invoicing.Registry/Invoicing.Registry.csproj" />
+    <Project Path="examples/invoicing/src/Invoicing.Billing/Invoicing.Billing.csproj" />
+    <Project Path="examples/invoicing/src/Invoicing.Host/Invoicing.Host.csproj" />
+    <Project Path="examples/invoicing/tests/Invoicing.IntegrationTests/Invoicing.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/" />
+  <Folder Name="/Examples/Casework/">
+    <Project Path="examples/casework/src/Casework.Intake/Casework.Intake.csproj" />
+    <Project Path="examples/casework/src/Casework.Intake.Contracts/Casework.Intake.Contracts.csproj" />
+    <Project Path="examples/casework/src/Casework.Intake.Host/Casework.Intake.Host.csproj" />
+    <Project Path="examples/casework/src/Casework.Verify/Casework.Verify.csproj" />
+    <Project Path="examples/casework/src/Casework.Verify.Contracts/Casework.Verify.Contracts.csproj" />
+    <Project Path="examples/casework/src/Casework.Verify.Host/Casework.Verify.Host.csproj" />
+    <Project Path="examples/casework/tests/Casework.IntegrationTests/Casework.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/Warehouse/">
+    <Project Path="examples/warehouse/src/Warehouse.Orders/Warehouse.Orders.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Orders.Contracts/Warehouse.Orders.Contracts.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Orders.Host/Warehouse.Orders.Host.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Shipping/Warehouse.Shipping.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Shipping.Contracts/Warehouse.Shipping.Contracts.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Shipping.Host/Warehouse.Shipping.Host.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Stock/Warehouse.Stock.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Stock.Contracts/Warehouse.Stock.Contracts.csproj" />
+    <Project Path="examples/warehouse/src/Warehouse.Stock.Host/Warehouse.Stock.Host.csproj" />
+    <Project Path="examples/warehouse/tests/Warehouse.IntegrationTests/Warehouse.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

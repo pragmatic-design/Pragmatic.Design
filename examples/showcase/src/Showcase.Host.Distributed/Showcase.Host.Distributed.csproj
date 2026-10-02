@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- ========================================
+       Showcase.Host.Distributed — Distributed deployment demo.
+       Billing runs on a separate host and is accessed via HTTP.
+       Switch from monolith: replace [Include<BillingModule, DB>]
+       with [RemoteBoundary<BillingModule>].
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Domain modules (Billing is referenced for types only — invoked via HTTP) -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Catalog\Showcase.Catalog.csproj" />
+    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" />
+    <ProjectReference Include="..\Showcase.Accounts\Showcase.Accounts.csproj" />
+    <ProjectReference Include="..\Showcase.Billing\Showcase.Billing.csproj" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Discovery\src\Pragmatic.Discovery\Pragmatic.Discovery.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <!-- The invalidation broadcast: this is the topology that needs it, and the only one here that
+         has more than one host holding its own copy of a [Cacheable] answer. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching.Redis\Pragmatic.Caching.Redis.csproj" />
+    <!-- Flags from configuration: this host has no seeder, and an operator flipping one without a
+         deploy is the reason the package exists. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags.Configuration\Pragmatic.FeatureFlags.Configuration.csproj" />
+    <!-- The topology published through the Agent instead of kept in this host's memory: in a topology
+         with two hosts, an in-memory backend means each one knows only itself. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Discovery\Pragmatic.Agent.Discovery.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Logging\src\Pragmatic.Logging\Pragmatic.Logging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- NuGet -->
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+</Project>

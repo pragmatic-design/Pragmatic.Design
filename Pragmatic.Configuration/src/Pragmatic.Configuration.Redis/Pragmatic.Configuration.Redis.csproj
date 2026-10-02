@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Redis backend for Pragmatic.Configuration — configuration key-values on Redis strings.</Description>
+    <PackageTags>configuration;redis;kv;cache</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Configuration.Redis.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- No explicit Microsoft.Extensions.* refs: StackExchange.Redis pulls 10.0.5 transitively and a direct
+         10.0.3 ref would trip NU1605. DI/Logging abstractions arrive via the Configuration project ref. -->
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+</Project>

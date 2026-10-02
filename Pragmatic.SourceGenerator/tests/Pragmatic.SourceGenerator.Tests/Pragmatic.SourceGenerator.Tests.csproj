@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Note: Test packages (xunit, Verify.Xunit, etc.) auto-configured by Directory.Build.props -->
+
+  <ItemGroup>
+    <!-- Roslyn packages (align versions to suppress NU1608 conflict with Testing.XUnit transitive deps) -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The EF providers the generated UseXxx(…) call is compiled against. The MySQL one is
+         GPL-2.0 with the Universal FOSS exception; this project is a test and is never packed. -->
+    <PackageReference Include="MySql.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The unified SG under test -->
+    <ProjectReference Include="..\..\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+    <!-- The companion analyzer travels in the generator's package: AMustBePartialDiagnosticHasOneOwnerTests
+         runs the two together, as a build does, and counts what a user sees. -->
+    <ProjectReference Include="..\..\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" />
+  </ItemGroup>
+
+  <!-- Runtime packages referenced by TraitEndToEndCompilationTests so the generated
+       trait code (entities, IAction, EF Core markers) has real types to bind against.
+       These bring transitive deps (Persistence, Abstractions, Result, EFCore). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Tags\src\Pragmatic.Tags\Pragmatic.Tags.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Attachments\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <!-- The [HasAttachments(PurgeDeletedAfterDays = N)] purge job binds [RecurringJob] / IJob. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <!-- The converters an amount on the wire needs: the generator carries their types as names, and
+         TheConvertersAnAmountNeedsTests compares that list with what the extension really installs. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <!-- IFileStorage, the control in AJobsDependenciesAreCheckedTests: a contract that declares who
+         registers it, so a job taking it is refused nothing. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <!-- Patch: [GeneratePatch<T>] over an entity is a cross-feature case — the patch transform has
+         to predict the columns the Persistence generator adds, and both live in this suite. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Patch\src\Pragmatic.Patch\Pragmatic.Patch.csproj" />
+    <!-- AttributeNamesResolveTests resolves every AttributeNames constant against the runtime assemblies
+         next to this suite; these three own attributes listed there and arrive through nothing above. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Abstractions\Pragmatic.Privacy.Abstractions.csproj" />
+    <!-- SubjectRegistrySchemaMatchesEfModelTests reads the registry's EF configurations, to hold the
+         migration schema the transform emits to the model PrivacyDbContext maps. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.EFCore\Pragmatic.Privacy.EFCore.csproj" />
+    <!-- The key table's EF configuration, so a test can compare it against the schema the generator
+         emits — the two halves of a dual source have to be read from one place to be compared. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.EFCore\Pragmatic.Cryptography.EFCore.csproj" />
+    <!-- TheLocalIdentityStoreIsGeneratedTests compiles the generated store against the real
+         LocalIdentity and ILocalIdentityStore, not against stubs that could drift from them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <!-- [StoresNotifications], so ABoundaryDeclarationReachesItsDbContextTests declares the real
+         attribute rather than a copy of its name — the reader is pinned to the type it claims to read. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>

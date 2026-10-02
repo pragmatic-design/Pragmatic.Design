@@ -1,0 +1,42 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/advanced-patterns.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/operations.md" />
+    <File Path="docs/reliability.md" />
+    <File Path="docs/saga-guide.md" />
+    <File Path="docs/testing.md" />
+    <File Path="docs/transports.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Messaging.Core/Pragmatic.Messaging.Core.csproj" />
+    <Project Path="src/Pragmatic.Messaging/Pragmatic.Messaging.csproj" />
+    <Project Path="src/Pragmatic.Messaging.EFCore/Pragmatic.Messaging.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Channels/Pragmatic.Messaging.Channels.csproj" />
+    <Project Path="src/Pragmatic.Messaging.RabbitMQ/Pragmatic.Messaging.RabbitMQ.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Kafka/Pragmatic.Messaging.Kafka.csproj" />
+    <Project Path="src/Pragmatic.Messaging.AzureServiceBus/Pragmatic.Messaging.AzureServiceBus.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Sql/Pragmatic.Messaging.Sql.csproj" />
+    <Project Path="src/Pragmatic.Messaging.ClaimCheck/Pragmatic.Messaging.ClaimCheck.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Dashboard/Pragmatic.Messaging.Dashboard.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Auditing/Pragmatic.Messaging.Auditing.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Saga/Pragmatic.Messaging.Saga.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Batch/Pragmatic.Messaging.Batch.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Testing/Pragmatic.Messaging.Testing.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Jobs/Pragmatic.Messaging.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Messaging.Core.Tests/Pragmatic.Messaging.Core.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Messaging.Tests/Pragmatic.Messaging.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Messaging.Samples/Pragmatic.Messaging.Samples.csproj" />
+  </Folder>
+</Solution>

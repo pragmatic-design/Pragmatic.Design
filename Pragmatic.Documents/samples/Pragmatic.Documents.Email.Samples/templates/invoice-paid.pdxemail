@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The subject, the preheader, the HTML and the plain text all come from this one file, in the
+  recipient's language.
+-->
+<email subject="{{ t:paid.subject(number=invoice.number) }}"
+       preheader="{{ t:paid.preheader(date=invoice.paidAt | date:&quot;d MMMM yyyy&quot;) }}">
+  <import src="mail-header.pdxemail" />
+  <article>
+    <heading level="2">{{ t:paid.thanks(name=customer.name) }}</heading>
+    <text>{{ t:paid.received(amount=invoice.amount | currency:"EUR", date=invoice.paidAt | date:"d MMMM yyyy") }}</text>
+    <text if="invoice.note" color="#666666">{{ invoice.note }}</text>
+    <button href="https://hotel.example.com/invoices/{{ invoice.number }}">{{ t:paid.download }}</button>
+  </article>
+  <footer background="#f4f4f4">
+    <text align="center" size="12">{{ hotel.address }}</text>
+  </footer>
+</email>

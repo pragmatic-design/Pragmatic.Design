@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Admin management package for Pragmatic.Audit. Exposes the retention operation as a callable DomainAction, so bounding the trail's growth is something an application can trigger rather than a service nobody calls.</Description>
+    <PackageTags>audit;admin;management;retention;actions;endpoints</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Audit.Management.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <ProjectReference Include="..\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

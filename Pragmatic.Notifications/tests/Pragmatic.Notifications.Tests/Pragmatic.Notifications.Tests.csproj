@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications.Webhook\Pragmatic.Notifications.Webhook.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications.Slack\Pragmatic.Notifications.Slack.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications.Sms\Pragmatic.Notifications.Sms.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications.EFCore\Pragmatic.Notifications.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Notifications.Testing\Pragmatic.Notifications.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

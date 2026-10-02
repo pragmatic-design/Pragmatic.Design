@@ -1,0 +1,41 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/binding-reference.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/domain-action-integration.md" />
+    <File Path="docs/endpoint-groups.md" />
+    <File Path="docs/error-handling.md" />
+    <File Path="docs/file-upload-download.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/idempotency.md" />
+    <File Path="docs/mcp.md" />
+    <File Path="docs/processors.md" />
+    <File Path="docs/query-mutation-endpoints.md" />
+    <File Path="docs/rate-limiting.md" />
+    <File Path="docs/request-constraints.md" />
+    <File Path="docs/response-caching.md" />
+    <File Path="docs/sse-streaming.md" />
+    <File Path="docs/troubleshooting.md" />
+    <File Path="docs/versioning.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Endpoints/Pragmatic.Endpoints.csproj" />
+    <Project Path="src/Pragmatic.Endpoints.AspNetCore/Pragmatic.Endpoints.AspNetCore.csproj" />
+    <Project Path="src/Pragmatic.Endpoints.Mcp/Pragmatic.Endpoints.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Endpoints.Tests/Pragmatic.Endpoints.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Endpoints.Mcp.Tests/Pragmatic.Endpoints.Mcp.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Endpoints.Samples/Pragmatic.Endpoints.Samples.csproj" />
+  </Folder>
+
+  <!-- Unified source generator -->
+  <Project Path="../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />
+</Solution>

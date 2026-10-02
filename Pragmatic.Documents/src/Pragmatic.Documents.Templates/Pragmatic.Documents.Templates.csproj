@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Document template types and resolver — template with bindings to resolved DocumentModel.</Description>
+    <PackageTags>template;document;binding;resolver</PackageTags>
+    <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- ========================================
+       Showcase.Billing.Host — Standalone Billing host for distributed demo.
+       Contains only the Billing boundary with its own financial database.
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Domain module: Billing only -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Billing\Showcase.Billing.csproj" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Logging\src\Pragmatic.Logging\Pragmatic.Logging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Discovery\src\Pragmatic.Discovery\Pragmatic.Discovery.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- NuGet -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

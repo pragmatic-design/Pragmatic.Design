@@ -1,0 +1,575 @@
+{
+  "tables": [
+    {
+      "name": "Organisations",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantKey",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Name",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "DedicatedConnectionString",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "State",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Organisations_TenantKey",
+          "columns": [
+            "TenantKey"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Verifications",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CaseId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Kind",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Deadline",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Outcome",
+          "sqlType": "integer",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Note",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "AnsweredOn",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "AnsweredBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Verifications_TenantId",
+          "columns": [
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditEntries",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Seq",
+          "sqlType": "BIGSERIAL",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OccurredAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Category",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Operation",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ActorRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SubjectRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BusinessOperation",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OnBehalfOfRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TargetType",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TargetId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Outcome",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ValueHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Detail",
+          "sqlType": "varchar(2048)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___AuditEntries_OccurredAt",
+          "columns": [
+            "OccurredAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SegmentId_Seq",
+          "columns": [
+            "SegmentId",
+            "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditPrunedRanges",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "FromSegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UntilSegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PrunedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LinkHash",
+          "sqlType": "bytea",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditSegments",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "SegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OpenedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SealedAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "EntryCount",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MerkleRoot",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PreviousHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SegmentHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___AuditSegments_SealedAt",
+          "columns": [
+            "SealedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__OutboxMessages",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MessageType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Payload",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ProcessedAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "RetryCount",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NextAttemptAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Error",
+          "sqlType": "varchar(2048)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ClaimedBy",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ClaimedUntil",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UserId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "HeadersJson",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___OutboxMessages_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___OutboxMessages_ProcessedAt_NextAttemptAt_ClaimedUntil_CreatedAt",
+          "columns": [
+            "ProcessedAt",
+            "NextAttemptAt",
+            "ClaimedUntil",
+            "CreatedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    }
+  ],
+  "databaseName": "VerifyDatabase",
+  "providerName": "PostgreSql",
+  "configKey": "ConnectionStrings:Verify",
+  "hash": "4f51e0c8a391"
+}

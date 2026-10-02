@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Verify's own process. It has no users and one caller that is not the bus: a service recording what
+       a verification found. So it carries an identity package — for a token it validates and no accounts
+       it keeps — and its host module does not declare [AnonymousHost]. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The suite runs this host's own migration of every database, which is internal like
+         the rest of the host's wiring. Intake's project says the same thing for its generated
+         contract. -->
+    <InternalsVisibleTo Include="Casework.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Casework.Verify\Casework.Verify.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <!-- As in Intake: the module declares ITenantEntity, so the generated host composes multi-tenancy
+         and needs the package that defines AddPragmaticMultiTenancy — which is this one. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <!-- A database per organisation for this service too: a consumer's tenant comes from
+         the message, and the connection interceptor routes the write from there. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.Persistence\Pragmatic.MultiTenancy.Persistence.csproj" />
+    <!-- The caller of this service's own API is a system with a token. Identity for the pipeline, the
+         local JWT scheme for the token itself — the same scheme as Intake and a different issuer: the two
+         services do not accept each other's tokens, and nothing about them says they should. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The same bus and the same transport as Intake. This end both consumes and
+         publishes, which is why the outbox packages are here too. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.RabbitMQ\Pragmatic.Messaging.RabbitMQ.csproj" />
+    <!-- The writer-side outbox the boundary declares: the table in this host's database, the capture
+         interceptor, the delivery pump and its retention purge. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The clock [FromClock] resolves, and the EF side of it: this service stores instants (the
+         deadline, the answered-on), and without it nothing normalises what reaches the column while the
+         rest of the framework reads it as UTC — PRAG0690, an error that names the property. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.targets" />
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.LocalCli.targets" />
+
+</Project>

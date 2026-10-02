@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Agent.Samples</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!--
+      Samples for the pieces of Pragmatic.Agent that run IN-PROCESS, without a
+      live daemon, socket or gossip cluster. Those network-bound subsystems
+      (KvStore, AesSecretEncryptor, AgentSocketServer, SWIM gossip) live in the
+      Pragmatic.Agent *daemon* assembly and are `internal`, so a separate console
+      app cannot reach them and should not spin up a daemon. The runnable surface
+      is the PUBLIC wire protocol (Pragmatic.Agent.Protocol) and the client
+      configuration type (Pragmatic.Agent.Client):
+        1. Wire-format serialize/deserialize roundtrip (JSON — the live format)
+        2. FrameCodec length-prefixed framing roundtrip (in-memory stream)
+        3. AgentMessage + MessageType + typed payload roundtrip
+        4. AgentOptions configuration defaults
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Protocol\Pragmatic.Agent.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+  </ItemGroup>
+
+</Project>

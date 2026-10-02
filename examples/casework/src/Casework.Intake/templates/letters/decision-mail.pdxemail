@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The application's own decision mail: what an organisation that has not sent us its own gets.
+
+  Same shape as the letter, and deliberately so: a .pdxemail parsed by PdxEmailParser, resolved by
+  EmailTemplateResolver with the SAME expression engine, the same named roots (case, applicant,
+  organization), the same `t:` translations and the same `date` pipe. One vocabulary for both, so an
+  organisation that has learned to change its letter has learned to change its mail.
+
+  ⚠️ The subject is an expression too. A subject built in code is a string an organisation cannot
+  change, which is what Invoicing's reminder had to settle for.
+
+  The letterhead is <partial name="…" />, and <import src="…" /> — the spelling the letter beside it
+  uses — resolves to the same thing, so a mail written with the document's spelling keeps its letterhead.
+-->
+<email subject="{{ t:mail.decision.subject(number=case.number) }}"
+       preheader="{{ t:mail.decision.preheader }}"
+       width="600">
+  <article>
+    <partial name="mail-header" />
+
+    <text>{{ t:mail.decision.greeting(name=applicant.name) }}</text>
+    <text>{{ t:mail.decision.body(number=case.number, outcome=case.outcome, when=case.decidedOn | date:"D") }}</text>
+    <divider />
+    <text>{{ t:mail.decision.attachment }}</text>
+    <text>{{ organization.name }}</text>
+  </article>
+</email>

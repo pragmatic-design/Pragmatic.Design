@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Conformance.Tests — the full round trip over HTTP and PostgreSQL.
+
+       The hermetic suite is another one: Conformance.Poco.Tests, without containers and without EF.
+       That one proves Mapping on its own, this one proves that the round trip closes.
+       ======================================== -->
+
+  <PropertyGroup>
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: without a SynchronizationContext it means nothing in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Conformance.Sales\Conformance.Sales.csproj" />
+    <ProjectReference Include="..\..\src\Conformance.Host\Conformance.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <!-- UseDatabase, which the test calls the way an application would (TheDatabaseRestarts). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions.EFCore\Pragmatic.Actions.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+</Project>

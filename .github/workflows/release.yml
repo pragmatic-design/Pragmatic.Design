@@ -1,0 +1,80 @@
+name: Release
+
+# Publishes the packages to nuget.org when a `nuget-v*` tag is pushed. Nothing is built twice and
+# nothing is published that did not pass: the gate (ci.yml) runs first, then pack-validate.yml packs and
+# checks the packages, and this job pushes exactly the artifact that job uploaded.
+#
+# No API key is stored. Trusted Publishing exchanges this job's GitHub OIDC token for a nuget.org key
+# valid for an hour; the policy on nuget.org names this repository, this file and the `nuget`
+# environment, so no other workflow can publish under it.
+
+on:
+  push:
+    tags: ['nuget-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    uses: ./.github/workflows/ci.yml
+
+  pack:
+    needs: gate
+    uses: ./.github/workflows/pack-validate.yml
+
+  publish:
+    name: Publish to nuget.org
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download the validated packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: ./artifacts
+
+      # MinVer derives the version from the tag; a package carrying any other version means the tag was
+      # not where the build looked for it, and publishing it would ship a number nobody chose.
+      - name: Every package carries the tag's version
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#nuget-v}"
+          wrong=0
+          for pkg in ./artifacts/*.nupkg; do
+            case "$pkg" in
+              *".$version.nupkg") ;;
+              *) echo "::error::$pkg does not carry version $version"; wrong=1 ;;
+            esac
+          done
+          [ "$wrong" -eq 0 ]
+          echo "$(ls ./artifacts/*.nupkg | wc -l) packages at $version"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: NuGet login (OIDC to a temporary API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # The .snupkg beside each .nupkg is pushed with it. --skip-duplicate lets a re-run after a partial
+      # failure finish the packages that did not make it, instead of failing on the ones that did.
+      - name: Push
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

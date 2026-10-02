@@ -1,0 +1,35 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/dev-authentication.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/jwt-authentication.md" />
+    <File Path="docs/packages.md" />
+    <File Path="docs/persistence.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Identity/Pragmatic.Identity.csproj" />
+    <Project Path="src/Pragmatic.Identity.Local/Pragmatic.Identity.Local.csproj" />
+    <Project Path="src/Pragmatic.Identity.Local.Jwt/Pragmatic.Identity.Local.Jwt.csproj" />
+    <Project Path="src/Pragmatic.Identity.AspNetCore/Pragmatic.Identity.AspNetCore.csproj" />
+    <Project Path="src/Pragmatic.Identity.Persistence/Pragmatic.Identity.Persistence.csproj" />
+    <Project Path="src/Pragmatic.Identity.Oidc/Pragmatic.Identity.Oidc.csproj" />
+    <Project Path="src/Pragmatic.Identity.Keycloak/Pragmatic.Identity.Keycloak.csproj" />
+    <Project Path="src/Pragmatic.Identity.Auditing/Pragmatic.Identity.Auditing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Identity.Tests/Pragmatic.Identity.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Local.Tests/Pragmatic.Identity.Local.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Local.Jwt.Tests/Pragmatic.Identity.Local.Jwt.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.AspNetCore.Tests/Pragmatic.Identity.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Persistence.Tests/Pragmatic.Identity.Persistence.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Oidc.Tests/Pragmatic.Identity.Oidc.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Keycloak.Tests/Pragmatic.Identity.Keycloak.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Identity.Auditing.Tests/Pragmatic.Identity.Auditing.Tests.csproj" />
+  </Folder>
+</Solution>

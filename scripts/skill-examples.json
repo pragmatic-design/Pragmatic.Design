@@ -1,0 +1,400 @@
+{
+  "$comment": "Examples each skill ships, copied from code that compiles and is tested. Edit the source, then run: node scripts/sync-skill-examples.mjs. The gate fails when a copy drifts from its source.",
+  "skills": {
+    "pragmatic-use-actions-endpoints": {
+      "source": "examples/invoicing/src/Invoicing.Billing",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "Invoices/Mutations/CreateDraftInvoiceMutation.cs": "A create mutation on POST: permission, [CreatedAt], [ReturnsDto], and the lines it carries as child mutations",
+        "Invoices/Mutations/WriteInvoiceLineMutation.cs": "A child mutation: no [Endpoint], so a parent carries it and its rules travel with it",
+        "Invoices/Mutations/UpdateDraftInvoiceMutation.cs": "An update mutation on PUT that carries the same child lines",
+        "Invoices/Actions/IssueInvoiceAction.cs": "A domain action: [LoadEntity], [TransitionsTo], typed errors, and the PDF rendered through IPdxTemplates",
+        "Payments/Actions/RecordPaymentAction.cs": "A domain action with a conditional transition, validated money input, and a 409 for the wrong state",
+        "Invoices/Queries/ListInvoicesQuery.cs": "A paged list query with its endpoint and permission",
+        "Invoices/Queries/GetInvoiceQuery.cs": "A single-row query by id",
+        "Invoices/Endpoints/DownloadInvoiceEndpoint.cs": "An `Endpoint<FileResponse, NotFoundError>`: a route that returns a file",
+        "Invoices/Errors/InvoiceNotDraftError.cs": "A domain error record and the status code it maps to (409)"
+      }
+    },
+    "pragmatic-use-documents": {
+      "source": "examples/invoicing/src/Invoicing.Billing",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "templates/invoice.pdxdoc": "The invoice as a document template",
+        "templates/overdue-reminder.pdxemail": "The overdue reminder as a mail template",
+        "Infrastructure/Documents/Templates.cs": "`[assembly: PdxTemplates<BillingModule>]`: the module declares its templates, the host registers them",
+        "Invoices/InvoiceDocument.cs": "Composing the invoice in the customer's language, and refusing a document with missing data (Warnings)",
+        "Infrastructure/Email/OverdueReminder.cs": "Composing the reminder mail and building the message with the issued PDF attached",
+        "translations/it-IT.json": "The Italian translations the templates' t: keys read"
+      }
+    },
+    "pragmatic-use-audit": {
+      "source": "examples",
+      "testedBy": [
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/time-off/tests/TimeOff.IntegrationTests"
+      ],
+      "files": {
+        "invoicing/src/Invoicing.Billing/Invoices/Invoice.cs": "An entity with both `[Auditable]` (who last touched the row) and `[Audited]` (an entry on the trail for every change)",
+        "invoicing/src/Invoicing.Billing/Infrastructure/Audit/BillingAuditOperations.cs": "The operation names an application writes to the trail: constants, never assembled at runtime, and additive because they are stored data",
+        "invoicing/src/Invoicing.Billing/Infrastructure/EventHandlers/RecordWhatTheMoveMeant.cs": "Writing an entry yourself with `IAuditTrail`: what an invoice's move meant (issued, paid, voided), from its domain events",
+        "time-off/src/TimeOff.Leave/Compliance/Actions/VerifyAuditTrailAction.cs": "Verifying the sealed segments of a period with `IAuditTrailReader.VerifyAsync`, behind a permission of its own",
+        "time-off/src/TimeOff.Leave/Compliance/Actions/ScanForSecurityIncidentsAction.cs": "Raising incidents from trail patterns with `AuditPatternDetector`: a per-subject and a global rule on failed sign-ins"
+      }
+    },
+    "pragmatic-use-authorization": {
+      "source": "examples/time-off/src/TimeOff.Leave",
+      "testedBy": "examples/time-off/tests/TimeOff.IntegrationTests",
+      "files": {
+        "Infrastructure/Authorization/Permissions.cs": "Permissions that are not an entity's CRUD, declared with `[assembly: Permission]` — a description, a category, and why each stands on its own",
+        "Infrastructure/Authorization/EmployeeRole.cs": "A role: `[Role]` and `[Grants]` of generated constants, one of them another module's (`LocalIdentityPermissions`)",
+        "Infrastructure/Authorization/ManagerRole.cs": "A role that includes another (`[IncludesRole<EmployeeRole>]`) and adds one permission",
+        "Infrastructure/Authorization/HrAdministratorRole.cs": "Granting an entity's whole permission set with the generated `.All` wildcards, and `ViewAll` to see every row",
+        "Infrastructure/Authorization/TeamScopes.cs": "The scope a row carries for its team's manager, built with `ScopeIdentifiers.ForRole`",
+        "LeaveRequests/LeaveRequest.cs": "`[HasAccessScopes]`: the requester's and the team manager's scopes stamped when the request opens, and moved when it follows its employee to another team",
+        "LeaveRequests/Mutations/ApproveLeaveRequestMutation.cs": "`[RequirePermission]` on an operation, while the row filter decides whose rows: another team's request is not found"
+      }
+    },
+    "pragmatic-use-caching": {
+      "source": "examples/showcase/src",
+      "testedBy": [
+        "examples/showcase/tests/Showcase.IntegrationTests",
+        "examples/showcase/tests/Showcase.Host.Distributed.Tests"
+      ],
+      "files": {
+        "Showcase.Catalog/Amenities/Queries/SearchAmenitiesQuery.cs": "A cacheable query: `[Cacheable]` with a duration and a tag, every property in the key",
+        "Showcase.Catalog/Amenities/Mutations/CreateAmenityMutation.cs": "The write that drops that tag: `[InvalidatesCache(\"amenities\")]` on a mutation",
+        "Showcase.Catalog/Properties/Queries/SearchPropertiesQuery.cs": "`[CacheKey]` naming and ordering the key's parts on a search with many filters — the default key was 1 200 characters",
+        "Showcase.Catalog/Properties/Actions/ReactivatePropertiesInCityAction.cs": "`[InvalidatesCache]` on a domain action that writes rows a cached search answers with",
+        "Showcase.Host.Distributed/Program.cs": "Two hosts, one answer: `AddRedisCacheInvalidationBroadcast` carries an invalidation to the other host's in-process copy"
+      }
+    },
+    "pragmatic-use-client": {
+      "source": "examples/showcase",
+      "testedBy": "examples/showcase/tests/Showcase.IntegrationTests (GeneratedClientTests)",
+      "files": {
+        "src/Showcase.BlazorClient/Showcase.BlazorClient.csproj": "Where the manifest comes from: a compile-only reference to the domain assembly (`Private=\"false\"`), the Client generator as an analyzer, and only Client, Result and Abstractions at runtime",
+        "src/Showcase.BlazorClient/Program.cs": "Registering the generated client with `AddBookingClient(baseUrl)` and resolving `IBookingClient`",
+        "tests/Showcase.IntegrationTests/Endpoints/GeneratedClientTests.cs": "Driving the generated client against the running application: a round trip, a query parameter that filters, a GET that stays a GET, an unknown id as a typed error"
+      }
+    },
+    "pragmatic-use-composition": {
+      "source": "examples/invoicing/src",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "Invoicing.Host/Program.cs": "The host: `PragmaticApp.RunAsync` and only the strategy calls — languages, storage, jobs, mail, migrations, OIDC, tenancy, roles — while the registrations are generated",
+        "Invoicing.Host/InvoicingHostModule.cs": "The topology: `[Include<TModule, TDatabase>]` for each module, and the steps the host needs (`[NeedsStep<T>]`)",
+        "Invoicing.Host/AppDatabase.cs": "The database marker: `[PragmaticDatabase]` with its provider and connection-string key",
+        "Invoicing.Billing/BillingModule.cs": "A module that builds on another: `[IncludeModule<RegistryModule>]`",
+        "Invoicing.Billing/BillingBoundary.cs": "A `[Boundary]`, asking for the job store's tables in its own database (`[EnableJobPersistence]`)",
+        "Invoicing.Registry/Infrastructure/MultiTenancy/OrganizationTenantStore.cs": "`[Service<ITenantStore>]` replacing the framework's empty default with a read view over the application's own table",
+        "Invoicing.Billing/Infrastructure/Jobs/OverdueReminderSweep.cs": "`[Service<T>]` on a class whose dependencies are registered elsewhere — by another module and by the host's `UseStorage`/`UseEmail`"
+      }
+    },
+    "pragmatic-use-configuration": {
+      "source": "examples",
+      "testedBy": [
+        "examples/showcase/tests/Showcase.IntegrationTests",
+        "examples/warehouse/tests/Warehouse.IntegrationTests"
+      ],
+      "files": {
+        "showcase/src/Showcase.Host/Configuration/ShowcaseOptions.cs": "`[Configuration]` on an options class: DataAnnotations checked at start, `[Sensitive]` keeping a value out of the change history, `[ConfigInvariant]` for a rule between two settings",
+        "warehouse/src/Warehouse.Stock/Infrastructure/Configuration/ReorderOptions.cs": "`[Configuration(SectionPath = …)]` for a setting that changes at runtime",
+        "warehouse/src/Warehouse.Stock/Products/Actions/ListProductsToReorderAction.cs": "Reading it through `IOptionsMonitor<T>.CurrentValue`, so a change reaches every instance without a restart",
+        "showcase/src/Showcase.Accounts/AccountsModule.cs": "The management package: `[UsePackage<ConfigurationManagementPackage, …>]`, with only the read exposed as a route (`[ExposeEndpoint<GetConfigValues, …>]`)"
+      }
+    },
+    "pragmatic-use-delegation": {
+      "source": "examples/showcase",
+      "testedBy": "examples/showcase/tests/Showcase.IntegrationTests",
+      "files": {
+        "src/Showcase.Booking/Guests/Actions/RegisterGuestOnBehalfOfAction.cs": "`[StartsDelegation]` on a domain action: the permission is checked against the caller, then the whole invocation — the owner stamped at save included — runs as the subject",
+        "tests/Showcase.IntegrationTests/Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs": "What that means on the row: written under delegation it belongs to the subject, readable by them and not by the caller who typed it — with the ordinary write as the control"
+      }
+    },
+    "pragmatic-use-distributed": {
+      "source": "examples",
+      "testedBy": [
+        "examples/warehouse/tests/Warehouse.IntegrationTests",
+        "examples/showcase/tests/Showcase.Billing.Host.Tests"
+      ],
+      "files": {
+        "warehouse/src/Warehouse.Orders.Contracts/Warehouse.Orders.Contracts.csproj": "A contracts project: Abstractions, Events and Messaging.Core, nothing else — all a consumer references of the service",
+        "warehouse/src/Warehouse.Stock.Contracts/ReserveStock.cs": "A request in the answering service's contracts: the one type both sides name",
+        "warehouse/src/Warehouse.Orders/Actions/PlaceOrderAction.cs": "Request/reply over the broker from an action: `IMessageBus.RequestAsync`, a short answer as 409 and no answer as 503, nothing saved either way",
+        "warehouse/src/Warehouse.Stock/Infrastructure/RequestHandlers/AnswerReservationRequests.cs": "The `[RequestHandler]` answering it, from whichever instance takes the request off the shared queue",
+        "warehouse/src/Warehouse.Orders.Host/Program.cs": "A service's host: RabbitMQ, the outbox, the contracts registry (PRAG1699), the request timeout, JWT and the Agent",
+        "warehouse/src/Warehouse.Stock.Host/TheInstanceThatAnswered.cs": "An `IStartupStep` that writes `X-Served-By` on every response, so a test can tell which instance answered",
+        "showcase/src/Showcase.Billing.Host/BillingHostModule.cs": "`[RemoteBoundary<BookingModule>]`: a host reaching another module over HTTP behind the same interface"
+      }
+    },
+    "pragmatic-use-email": {
+      "source": "examples/invoicing",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "src/Invoicing.Billing/Infrastructure/Email/OverdueReminder.cs": "Building the message with `EmailMessageBuilder`: the template's subject, HTML and text, the company's own sender, the stored PDF attached",
+        "src/Invoicing.Billing/Infrastructure/Jobs/OverdueReminderSweep.cs": "Sending it with `IEmailSender`, and recording the reminder only once the transport accepted it",
+        "src/Invoicing.Host/Program.cs": "`UseEmail`: SMTP from configuration, the null transport without it, and no `DefaultFrom` on purpose",
+        "tests/Invoicing.IntegrationTests/ChasingOverdueInvoices.cs": "Testing with `AddEmailTestHarness()`: one reminder per invoice, from the company's address, with the issued PDF attached byte for byte"
+      }
+    },
+    "pragmatic-use-jobs": {
+      "source": "examples",
+      "testedBy": [
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/warehouse/tests/Warehouse.IntegrationTests"
+      ],
+      "files": {
+        "invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs": "A recurring job: `[RecurringJob]` with a cron and a time zone, `[Timeout]`, and one `TenantScope` per company — without it every read of a tenant-filtered module finds nothing",
+        "invoicing/src/Invoicing.Billing/BillingBoundary.cs": "`[EnableJobPersistence]`: the job store's tables in the boundary's own database",
+        "invoicing/src/Invoicing.Host/Program.cs": "`UseJobs`: worker count, polling interval, `UseEfCore()` and `UseEfCorePersistence()`",
+        "warehouse/src/Warehouse.Stock/Infrastructure/Jobs/ExpireReservationsJob.cs": "A parameterized job (`[Job]`, `IJob<T>`) that throws on failure so the store retries it",
+        "warehouse/src/Warehouse.Stock/Infrastructure/Jobs/ExpireReservations.cs": "Its parameters: a record",
+        "warehouse/src/Warehouse.Stock/Reservations/Actions/ReserveStockAction.cs": "Scheduling it with `IJobScheduler.ScheduleAtAsync` for the moment the holds expire, inside the `[Transactional]` action that holds them",
+        "invoicing/tests/Invoicing.IntegrationTests/ChasingOverdueInvoices.cs": "Testing a recurring job: its declared cron asserted, the work run on a day the test's clock chooses, the result read from the mailbox"
+      }
+    },
+    "pragmatic-use-events": {
+      "source": "examples/invoicing/src",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "Invoicing.Billing/Events/InvoiceIssued.cs": "A domain event: a record deriving from `DomainEvent`",
+        "Invoicing.Billing/Enums/InvoiceStatus.cs": "`[RaisesEvent<T>]` on the state machine's target states: the move raises the event, whichever operation takes it",
+        "Invoicing.Registry/Customers/Mutations/CreateCustomerMutation.cs": "`[Raises<T>]` on a create mutation",
+        "Invoicing.Registry/Events/CustomerRegistered.cs": "An event built after the save, so it carries the code the database sequence gave the row",
+        "Invoicing.Billing/Infrastructure/EventHandlers/RecordWhatTheMoveMeant.cs": "One `[EventHandler]` class handling three events",
+        "Invoicing.Registry/Infrastructure/EventHandlers/RecordTheCodeACustomerWasGiven.cs": "A handler that takes the generated value from the event instead of reading the row back"
+      }
+    },
+    "pragmatic-use-feature-flags": {
+      "source": "examples",
+      "testedBy": [
+        "examples/showcase/tests/Showcase.IntegrationTests",
+        "examples/warehouse/tests/Warehouse.IntegrationTests"
+      ],
+      "files": {
+        "warehouse/src/Warehouse.Stock/Infrastructure/FeatureFlags/AcceptBackordersFlag.cs": "A strongly-typed flag: `IFeatureFlag` with its name and description",
+        "warehouse/src/Warehouse.Stock/Reservations/Actions/ReserveStockAction.cs": "Read at each request with `IFeatureFlags.IsEnabledAsync<T>`, so a switch through the Agent reaches every instance without a restart",
+        "showcase/src/Showcase.Host/FeatureFlags/ShowcaseFeatureFlagSeeder.cs": "Defining flags in the in-memory store from their types, with the `FeatureFlagRule` factories: percentage, tenant, plan",
+        "showcase/src/Showcase.Host/FeatureFlags/ShowcaseFeatureFlagContextProvider.cs": "The `IFeatureFlagContextProvider` the application registers: tenant, user, a plan claim, the environment",
+        "showcase/src/Showcase.Booking/Reservations/Mutations/CheckInGuestMutation.cs": "Asking with the ambient context: `IFeatureFlags.IsEnabledAsync<EarlyCheckInFlag>`",
+        "showcase/src/Showcase.Booking/Reservations/Actions/CreateReservationAction.cs": "Asking about somebody else: `IFeatureFlagStore` with an explicit context — the guest, not the caller",
+        "showcase/src/Showcase.Host.Distributed/Program.cs": "Flags from configuration: `AddConfigurationFeatureFlagStore()`"
+      }
+    },
+    "pragmatic-use-foundation": {
+      "source": "examples",
+      "testedBy": [
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/showcase/tests/Showcase.IntegrationTests"
+      ],
+      "files": {
+        "invoicing/src/Invoicing.Billing/Payments/Errors/OverpaymentError.cs": "A typed error: a code, a status (422, and why not 409), and the values it carries — named parameters for the localized message, extensions in the problem details",
+        "invoicing/src/Invoicing.Billing/Payments/Actions/RecordPaymentAction.cs": "An action answering `Result<T, IError>` with the errors it declares, and `[PositiveMoney]`/`[MaxLength]` on its input",
+        "invoicing/src/Invoicing.Registry/Customers/Mutations/CreateCustomerMutation.cs": "Validation on an input: `[Required]`, `[Email]`, `[OneOf]`, `[Range]`, `[MaxLength]`",
+        "invoicing/src/Invoicing.Registry/Customers/Dtos/CustomerDto.cs": "A DTO: `[MapFrom<Customer>]` and `[GenerateProjection]`",
+        "invoicing/src/Invoicing.Registry/Customers/Dtos/PostalAddressDto.cs": "A value object mapped as one value, nested rather than flattened",
+        "invoicing/src/Invoicing.Billing/Invoices/InvoiceSpecifications.cs": "Specifications in the generated container: a named rule composed with `&`, and a cutoff captured as a value instead of computed inside the expression",
+        "showcase/src/Showcase.Catalog/Amenities/Mutations/PatchAmenityDto.cs": "`[GeneratePatch<Amenity>]`: an absent field is not a null one",
+        "showcase/src/Showcase.Catalog/Amenities/Endpoints/PatchAmenityEndpoint.cs": "An HTTP PATCH applying it with `ApplyTo` and answering the members it set"
+      }
+    },
+    "pragmatic-use-i18n": {
+      "source": "examples/time-off/src",
+      "testedBy": "examples/time-off/tests/TimeOff.IntegrationTests",
+      "files": {
+        "TimeOff.Leave/translations/it.json": "A module's translations: validation messages, and each error's title and detail under its code, with named `{placeholders}`",
+        "TimeOff.Leave/Infrastructure/Internationalization/TranslationKeys.cs": "`[assembly: TranslationKeys]`: the keys as symbols (`T`, `TKeys`), the texts read by the host at run time",
+        "TimeOff.Leave/LeaveRequests/Actions/SubmitLeaveRequestAction.cs": "Validation rules naming their message with `MessageKey = TKeys.…`, so a renamed key is a compile error",
+        "TimeOff.Leave/Employees/Employee.cs": "`[ProfileProperty] PreferredCulture` on the `[PragmaticUser]`: the generator writes the provider that answers in the employee's language",
+        "TimeOff.Leave/Employees/Actions/ChooseMyLanguageAction.cs": "Changing that language, and dropping the cached entry with `InvalidateCache()`",
+        "TimeOff.Host/Program.cs": "`UseI18N` — default and supported cultures, JSON translations beside the application, localized problem details — and `UseUserCulture()`",
+        "TimeOff.Leave/AbsenceKinds/AbsenceKind.cs": "`LocalizedString`: a name HR writes in each language and a reader gets in theirs"
+      }
+    },
+    "pragmatic-use-identity": {
+      "source": "examples",
+      "testedBy": [
+        "examples/time-off/tests/TimeOff.IntegrationTests",
+        "examples/invoicing/tests/Invoicing.IntegrationTests"
+      ],
+      "files": {
+        "time-off/src/TimeOff.Leave/LeaveModule.cs": "Local accounts: `[UsePackage<LocalIdentityPackage, …>]`, exposing only the identity actions the application wants, anonymous where they must be",
+        "time-off/src/TimeOff.Leave/Employees/Employee.cs": "The user entity: `[PragmaticUser]` owning its `LocalIdentity`, and sessions revoked by rotating the security stamp",
+        "time-off/src/TimeOff.Leave/Infrastructure/Identity/EmployeeClaims.cs": "`IUserClaimsContributor`: what the token says — a pseudonymous subject, the display name, the roles",
+        "time-off/src/TimeOff.Host/Program.cs": "`UseJwtAuthentication()`, the claims contributor, `AddIdentitySecurityAuditing<TLocator>()`, the out-of-band password-reset notifier",
+        "time-off/src/TimeOff.Host/Identity/TheEmployeeASignInWasAbout.cs": "`ISecuritySubjectLocator`: which subject a failed sign-in was about, so security entries on the trail are attributed",
+        "time-off/src/TimeOff.Host/Identity/FirstAdministrator.cs": "The first account, from configuration at start, through an operation run as an internal call",
+        "invoicing/src/Invoicing.Host/Program.cs": "An external provider: `UseOidcAuthentication` with authority, audience, role and name claims"
+      }
+    },
+    "pragmatic-use-imaging": {
+      "source": "examples/showcase",
+      "testedBy": "examples/showcase/tests/Showcase.IntegrationTests (InvoiceQrCodeTests)",
+      "files": {
+        "src/Showcase.Billing/Invoices/Endpoints/InvoiceQrCodeEndpoint.cs": "A QR code as a PNG from an endpoint: `QrCode.GeneratePng`, then `ImagePipeline.Load` with `ImagingOptions.Strict`, `Thumbnail`, `Encode`, returned as a `FileResponse`"
+      }
+    },
+    "pragmatic-use-logging": {
+      "source": "examples",
+      "testedBy": [
+        "examples/time-off/tests/TimeOff.IntegrationTests",
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/showcase/tests/Showcase.IntegrationTests"
+      ],
+      "files": {
+        "showcase/src/Showcase.Host/Program.cs": "`UseLogging`: the development console and a daily rolling file, among the host's other strategy calls",
+        "invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs": "`[LoggerMessage]` on a partial class: structured lines that name identifiers, not values",
+        "time-off/src/TimeOff.Leave/Employees/Actions/ProvisionFirstAdministratorAction.cs": "`[NotLogged]` on an input that is a secret with no data subject",
+        "time-off/tests/TimeOff.IntegrationTests/WhatTheLogsMayNotSay.cs": "Asserting declared redaction through the application's own logger factory: classified members masked and still named, secrets gone, an unclassified field as the control"
+      }
+    },
+    "pragmatic-use-messaging": {
+      "source": "examples/warehouse/src",
+      "testedBy": "examples/warehouse/tests/Warehouse.IntegrationTests",
+      "files": {
+        "Warehouse.Orders.Contracts/Events/OrderReadyToPick.cs": "An integration event in the publisher's contracts: a `DomainEvent` that is also `IIntegrationEvent`, with the `[CorrelationKey]` a saga starts on",
+        "Warehouse.Orders/Enums/OrderStatus.cs": "Raised by the move that confirms the order (`[RaisesEvent<T>]`), so the outbox captures it in the same transaction",
+        "Warehouse.Orders/OrdersBoundary.cs": "`[EnableOutbox]` and `[EnableSagaPersistence]` on the publishing boundary",
+        "Warehouse.Orders.Host/Program.cs": "RabbitMQ, the outbox's polling interval, and the contracts registry the outbox needs (PRAG1699)",
+        "Warehouse.Shipping/Infrastructure/MessageHandlers/MakeAShipmentOfAPickedOrder.cs": "A `[MessageHandler]` in the consuming service: idempotent on the event's id, through the internal interface, throwing so a failure is redelivered",
+        "Warehouse.Orders/Infrastructure/Sagas/OrderFulfilmentSaga.cs": "A saga in the service that owns the process: `[Saga<TState>]`, `[SagaStart]`, `[InState]` steps answering with commands, and a compensation that waits for every acknowledgement",
+        "Warehouse.Stock/Infrastructure/MessageHandlers/ApplyImportParts.cs": "Batch fan-out: a part failed through `BatchItemOutcome` rather than by throwing, and a part that met another writer applied again in a fresh scope",
+        "Warehouse.Stock.Host/Program.cs": "`EnableBatchProcessing()` with the application's `IBatchSplitter`, next to the outbox and the broker"
+      }
+    },
+    "pragmatic-use-migrations": {
+      "source": "examples",
+      "testedBy": [
+        "examples/warehouse/tests/Warehouse.IntegrationTests",
+        "examples/showcase/tests/Showcase.IntegrationTests"
+      ],
+      "files": {
+        "warehouse/src/Warehouse.Shipping.Host/Program.cs": "`UsePragmaticMigrations()`: the host's database migrated at start, before it serves",
+        "warehouse/src/Warehouse.Shipping.Host/ShippingDatabase.cs": "The database it migrates: `[PragmaticDatabase]` with its provider and connection-string key",
+        "warehouse/src/Warehouse.Shipping.Host/Warehouse.Shipping.Host.csproj": "`<PragmaticSchemaSnapshot>` and the migrations targets: the schema written at build time",
+        "warehouse/src/Warehouse.Shipping.Host/schema/ShippingDatabase.schema.json": "The committed snapshot — tables, columns, indexes, the outbox's table included — so a schema change shows in the diff of the commit that caused it",
+        "showcase/tests/Showcase.IntegrationTests/Migrations/MigrationRunnerE2ETests.cs": "The runner against a real PostgreSQL: a breaking change refused in one transaction with its suggestions, an `IDataMigration` run exactly once, `ManageDeclaredTablesOnly()` leaving a foreign table alone"
+      }
+    },
+    "pragmatic-use-multitenancy": {
+      "source": "examples",
+      "testedBy": [
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/casework/tests/Casework.IntegrationTests"
+      ],
+      "files": {
+        "invoicing/src/Invoicing.Billing/Invoices/Invoice.cs": "`ITenantEntity` on an entity: the tenant written on create and filtered on read",
+        "invoicing/src/Invoicing.Host/Program.cs": "`UseMultiTenancy` with the tenant from the token's claim and nowhere else, and the four guards written out",
+        "invoicing/src/Invoicing.Registry/Infrastructure/MultiTenancy/OrganizationTenantStore.cs": "The register of tenants as an `ITenantStore` over the application's own table — what gives `RequireKnownTenant` and `EnforceTenantState` something to check",
+        "invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs": "Work with no request: one `TenantScope` per active tenant, from the register",
+        "casework/src/Casework.Intake/Infrastructure/Jobs/ExpireOverdueVerifications.cs": "Reading across tenants with `FilterMode.Background`, then writing each tenant's rows in its own `TenantScope` and container scope",
+        "invoicing/tests/Invoicing.IntegrationTests/TheTenantComesFromTheToken.cs": "The refusals the guards make — no tenant 400, unknown 404, suspended 403 — with an onboarded company as the control",
+        "casework/src/Casework.Intake.Host/Program.cs": "A database per tenant beside the shared schema: `UseDbPerTenant`, the provisioner (`UseAutoProvision<PostgresTenantProvisioner>`), and the schema put into each new database"
+      }
+    },
+    "pragmatic-use-notifications": {
+      "source": "examples/showcase/src",
+      "testedBy": "examples/showcase/tests/Showcase.IntegrationTests",
+      "files": {
+        "Showcase.Booking/Infrastructure/Notifications/ReservationConfirmedNotificationHandler.cs": "Enqueueing a notification from an event handler: the content from a `.pdxemail` template in the guest's language, addressed to a user",
+        "Showcase.Booking/Infrastructure/Notifications/GuestRecipientResolver.cs": "`IRecipientResolver`: a user id becomes an address and a locale, without leaving the tenant",
+        "Showcase.Booking/BookingBoundary.cs": "`[StoresNotifications]` on the boundary that sends them, so the table is in its database",
+        "Showcase.Host/Program.cs": "`UseNotifications`: the recipient resolver, the SMTP channel, the EF Core store"
+      }
+    },
+    "pragmatic-use-persistence": {
+      "source": "examples/invoicing/src",
+      "testedBy": "examples/invoicing/tests/Invoicing.IntegrationTests",
+      "files": {
+        "Invoicing.Billing/Invoices/Invoice.cs": "An aggregate: `[Entity]`, `[ConcurrencyAware]`, `[StateMachine<T>]`, relations with their delete behaviour, a `[LogicKey]`, money columns, a `[ComputedFilter]` method, and another boundary's row kept as an id",
+        "Invoicing.Billing/Invoices/InvoiceLine.cs": "A child: `[PartOf<Invoice>]`, validation on its columns, and an `[Invariant]` a constant attribute could not express",
+        "Invoicing.Billing/Enums/InvoiceStatus.cs": "The state machine: `[InitialState]` and `[TransitionFrom]` — the generated `TransitionTo` refuses every other move",
+        "Invoicing.Registry/Customers/Customer.cs": "`[SoftDelete]`, `[Unique]` within the tenant, and a `[GeneratedValue]` code from a database sequence",
+        "Invoicing.Billing/Invoices/Queries/ListInvoicesQuery.cs": "A declarative paged query: `[Filter]` with operators, `[SearchAcross]`, `[Sort]`, and a `[BindSpecification]` fed by `[FromClock]`",
+        "Invoicing.Billing/Invoices/Queries/OutstandingByCustomerQuery.cs": "An aggregate query, narrowed by specifications the caller cannot switch off",
+        "Invoicing.Billing/Invoices/Queries/OutstandingByCustomerLine.cs": "Its view: `[QueryView<T>]`, `[GroupBy<T>]`, and `[Count]`/`[Sum]`/`[Min]` computed by the database",
+        "Invoicing.Billing/Invoices/InvoiceSpecifications.cs": "Specifications in the generated container, composing the entity's own computed filter"
+      }
+    },
+    "pragmatic-use-privacy": {
+      "source": "examples/time-off/src",
+      "testedBy": "examples/time-off/tests/TimeOff.IntegrationTests",
+      "files": {
+        "TimeOff.Leave/Employees/Employee.cs": "`[DataSubject]`, and `[PersonalData]` with a category and an erasure strategy on each field — pseudonymized where a column must stay unique, anonymized otherwise",
+        "TimeOff.Leave/LeaveRequests/LeaveRequest.cs": "`[LinksToSubject]`, and the one crypto-shredded field: a `ProtectedValue` with `ErasureStrategy.DestroyKey`",
+        "TimeOff.Leave/Employees/Actions/ExportMyPersonalDataAction.cs": "An access request answered from the classification with `ISubjectAccess.CollectAsync`",
+        "TimeOff.Leave/Employees/Actions/EraseEmployeeAction.cs": "Erasure with `ISubjectErasure.EraseAsync`, passing the key destroyer the crypto-shredded field needs",
+        "TimeOff.Leave/Infrastructure/Privacy/CloseTheAccount.cs": "An `IErasureStep` for what the classification cannot reach: the owned account",
+        "TimeOff.Leave/LeaveRequests/Actions/ReadTheReasonAction.cs": "Reading an encrypted field through `ISubjectDataProtector`: three outcomes, erased among them, and `[RecordAccess]` on the read",
+        "TimeOff.Leave/Compliance/Actions/GetProcessingRegisterAction.cs": "The register of processing activities, built from the code on every call",
+        "TimeOff.Host/Program.cs": "The host's half: the keys from configuration, the extra erasure step, the controller and the purposes of the register"
+      }
+    },
+    "pragmatic-use-resilience": {
+      "source": "examples/showcase",
+      "testedBy": [
+        "examples/showcase/tests/Showcase.IntegrationTests",
+        "examples/showcase/tests/Showcase.Tests"
+      ],
+      "files": {
+        "src/Showcase.Billing/Invoices/Actions/RefundInvoiceAction.cs": "`[ResiliencePolicy(\"payment-provider\")]` on an action that calls an external provider before it changes the invoice",
+        "src/Showcase.Billing/Infrastructure/EventHandlers/InvoicePaidHandler.cs": "`[Retry]` and `[CircuitBreaker]` on a message handler whose dependency is an HTTP call in the distributed topology — and why a failure counts per attempt",
+        "tests/Showcase.Tests/Unit/EventHandlers/WhenBookingIsDownTheHandlerStopsTryingTests.cs": "Testing the breaker: the assertion is that the handler stops being entered, not that it fails"
+      }
+    },
+    "pragmatic-use-storage": {
+      "source": "examples",
+      "testedBy": [
+        "examples/casework/tests/Casework.IntegrationTests",
+        "examples/invoicing/tests/Invoicing.IntegrationTests"
+      ],
+      "files": {
+        "casework/src/Casework.Intake/Cases/Actions/UploadCaseDocumentAction.cs": "An upload: `[MaxFileSize]` and `[AllowedContentTypes]` declared on the `IFormFile`, the bytes saved with `IFileStorage.SaveAsync` in a per-tenant container, the facts about them on the row",
+        "casework/src/Casework.Intake/Cases/Endpoints/DownloadCaseDocumentEndpoint.cs": "The download: two filtered reads, then `IFileStorage.GetAsync` into a `FileResponse` with the hash as ETag — 404, never 403",
+        "invoicing/src/Invoicing.Host/Program.cs": "`UseStorage` with a local-disk factory — the one line that changes for Azure or S3",
+        "invoicing/tests/Invoicing.IntegrationTests/Infrastructure/InvoicingWebFactory.cs": "Testing with `InMemoryFileStorage` in place of the disk, which can also count what was stored"
+      }
+    },
+    "pragmatic-use-temporal": {
+      "source": "examples",
+      "testedBy": [
+        "examples/time-off/tests/TimeOff.IntegrationTests",
+        "examples/showcase/tests/Showcase.IntegrationTests",
+        "examples/invoicing/tests/Invoicing.IntegrationTests"
+      ],
+      "files": {
+        "time-off/src/TimeOff.Leave/Infrastructure/Calendar/ItalianPublicHolidays.cs": "An `IHolidayProvider`: the national holidays computed for any year, Easter included",
+        "time-off/src/TimeOff.Host/Program.cs": "Wiring it: `UseTemporal(t => t.UseHolidayProvider<ItalianPublicHolidays>())`",
+        "time-off/src/TimeOff.Leave/LeaveRequests/Actions/SubmitLeaveRequestAction.cs": "Business days with `ITemporalCalculator`: `CountBusinessDays` with its end excluded, `IsBusinessDay` with a country, the company's closures taken off",
+        "time-off/src/TimeOff.Leave/LeaveRequests/Mutations/ApproveLeaveRequestMutation.cs": "`[FromClock]`: the decision's instant written by the invoker from the application's clock",
+        "showcase/src/Showcase.Booking/Reservations/Mutations/CheckInGuestMutation.cs": "`[FromBusinessTimezone]` on a wall time the front desk types, read in the zone the host declared",
+        "invoicing/tests/Invoicing.IntegrationTests/ChasingOverdueInvoices.cs": "A `TestClock` registered as `IClock`, so the test chooses the day"
+      }
+    },
+    "pragmatic-use-testing": {
+      "source": "examples",
+      "testedBy": [
+        "examples/invoicing/tests/Invoicing.IntegrationTests",
+        "examples/showcase/tests/Showcase.Tests"
+      ],
+      "files": {
+        "invoicing/tests/Invoicing.IntegrationTests/Infrastructure/InvoicingWebFactory.cs": "The host under test is the generated host: only the connection string, the identity provider and the storage replaced, settings through `UseSetting`",
+        "invoicing/tests/Invoicing.IntegrationTests/Infrastructure/PostgresFixture.cs": "One PostgreSQL container per run, and a fresh database for a class whose reads cover everything",
+        "invoicing/tests/Invoicing.IntegrationTests/Infrastructure/ContractAppFixture.cs": "The fixture of the generated contract tests: `PragmaticContractHost.Client`, `BodyFor` for the creates the generator cannot fill, `PrepareRequest` swapping the header identity for a real token",
+        "invoicing/tests/Invoicing.IntegrationTests/Infrastructure/TheContractTestsRanAtAll.cs": "Pinning what the generator emitted: a suite that emits nothing looks exactly like one that passes",
+        "invoicing/tests/Invoicing.IntegrationTests/ChasingOverdueInvoices.cs": "A hand-written test: `TestClock`, the mail harness, and a job driven through the unit it calls with the day as an argument",
+        "showcase/tests/Showcase.Tests/MockDeclarations.cs": "Generated mocks and comparers, declared once per test assembly with `[assembly: GenerateMock<T>]` and `[assembly: GenerateComparer<T>]`",
+        "showcase/tests/Showcase.Tests/Unit/EventHandlers/WhenBookingIsDownTheHandlerStopsTryingTests.cs": "A unit test with those mocks: a boundary interface mocked, a member made to throw, its calls counted"
+      }
+    },
+    "pragmatic-use-traits": {
+      "source": "examples/showcase/src/Showcase.Booking",
+      "testedBy": "examples/showcase/tests/Showcase.IntegrationTests",
+      "files": {
+        "Reservations/Reservation.cs": "`[HasComments]`, `[HasTags]`, and `[HasAttachments]` with allowed extensions, a purge after 30 days and thumbnails, on an entity with its `[Resource]`",
+        "Guests/Guest.cs": "`[HasNotes]`, moderated comments with internal notes (`RequireApproval`, `SupportInternalNotes`), and a per-entity tag limit"
+      }
+    }
+  }
+}

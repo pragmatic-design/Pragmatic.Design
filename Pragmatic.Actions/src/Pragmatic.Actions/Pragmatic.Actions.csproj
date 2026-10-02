@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>DomainAction pattern with Pipeline, Filters, and Boundary support. Zero reflection, compile-time safe, source-generated.</Description>
+    <PackageTags>ddd;domain;domain-action;cqrs;pipeline;filter;source-generator</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Actions.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Actions.EFCore" />
+  </ItemGroup>
+
+  <!-- Core dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+  </ItemGroup>
+
+  <!-- Include source generator as analyzer -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Microsoft.Extensions for DI, Logging -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+
+</Project>

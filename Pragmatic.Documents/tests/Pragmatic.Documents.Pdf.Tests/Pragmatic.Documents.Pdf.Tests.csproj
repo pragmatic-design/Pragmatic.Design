@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Pdf\Pragmatic.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templates\Pragmatic.Documents.Templates.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+  </ItemGroup>
+
+  <!-- Copy both native DLLs for testing (PDF + Imaging for QR generation) -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <None Include="..\..\runtimes\win-x64\native\Pragmatic.Pdf.Native.dll" CopyToOutputDirectory="PreserveNewest" Link="Pragmatic.Pdf.Native.dll" Visible="false" />
+    <None Include="..\..\..\Pragmatic.Imaging\runtimes\win-x64\native\Pragmatic.Imaging.Native.dll" CopyToOutputDirectory="PreserveNewest" Link="Pragmatic.Imaging.Native.dll" Visible="false" />
+  </ItemGroup>
+
+</Project>

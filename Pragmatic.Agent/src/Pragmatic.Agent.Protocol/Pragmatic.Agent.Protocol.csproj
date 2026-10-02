@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared protocol types for Pragmatic Agent socket communication. Used by both the Agent daemon and the Agent.Client NuGet package.</Description>
+    <PackageTags>agent;protocol;ipc;socket</PackageTags>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+{
+  "validation.required": "This is required.",
+  "validation.maxlength": "This is longer than {max} characters.",
+  "error.validation.error.title": "The request is not valid",
+  "error.validation.error.detail": "Some fields are not valid: see the message beside each one.",
+  "error.case.subject.too.short.title": "A case needs a subject",
+  "error.case.subject.too.short.detail": "Write what the applicant is asking for, in at least ten characters: a case nobody can read is a case nobody can work.",
+  "error.forbidden.title": "Not allowed",
+  "error.forbidden.detail": "You are missing the permission this needs: {permissions}.",
+  "error.not.found.title": "Not found",
+  "error.not.found.detail": "There is no such case in this organisation.",
+  "letter.decision.title": "Decision",
+  "letter.decision.case": "Case {number} — {subject}",
+  "letter.decision.applicant": "Applicant: {name}",
+  "letter.decision.outcome": "Decided on {when}: {outcome}",
+  "letter.decision.appeal": "If you disagree with this decision you may ask {organization} to look at it again.",
+  "mail.decision.subject": "Decision on case {number}",
+  "mail.decision.preheader": "Your case has been decided.",
+  "mail.decision.greeting": "Dear {name},",
+  "mail.decision.body": "Case {number} was decided on {when}: {outcome}.",
+  "mail.decision.attachment": "The decision letter is attached to this message."
+}

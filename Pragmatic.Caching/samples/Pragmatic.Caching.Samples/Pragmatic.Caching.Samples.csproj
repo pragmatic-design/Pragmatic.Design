@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity\Pragmatic.Identity.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <!-- Include source generator -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

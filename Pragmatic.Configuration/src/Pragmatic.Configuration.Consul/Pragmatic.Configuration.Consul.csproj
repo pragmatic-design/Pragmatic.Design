@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>HashiCorp Consul backend for Pragmatic.Configuration — configuration via the Consul KV store.</Description>
+    <PackageTags>configuration;consul;hashicorp;kv;service-discovery</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Configuration.Consul.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Consul" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Persistence</RootNamespace>
+    <Description>Persistence abstractions for Pragmatic.Design - Entity definitions, Repository pattern, UnitOfWork, and DTO-driven Query/Mutation patterns. Database-agnostic, works with any ORM.</Description>
+    <PackageTags>pragmatic;persistence;repository;entity;query;mutation;abstraction</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+  <!-- The names EntityJsonModifier strips, shared with Pragmatic.SourceGenerator as source so the
+       manifest and the OpenAPI document cannot publish what the wire does not carry. See the file's
+       remarks for why it is a linked file and why the type is internal. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\shared\Contracts\ReservedWireNames.cs" Link="Shared\ReservedWireNames.cs" />
+    <Compile Include="..\..\..\shared\Contracts\SensitiveGridFieldNames.cs" Link="Shared\SensitiveGridFieldNames.cs" />
+  </ItemGroup>
+
+  <!-- The companion analyzer travels in this package. Published on its own it is referenced by
+       nobody — not the scaffolding template, not a single consumer — so its diagnostics have never
+       fired outside our own build. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Persistence.Analyzers\Pragmatic.Persistence.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" PackAsCompanionAnalyzer="true" />
+  </ItemGroup>
+
+</Project>

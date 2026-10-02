@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Pragmatic.Storage.GoogleCloud</RootNamespace>
+    <Description>Google Cloud Storage file storage provider for Pragmatic.Design.</Description>
+    <PackageTags>pragmatic;storage;google;gcs;gcp;cloud</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Cloud.Storage.V1" />
+  </ItemGroup>
+
+</Project>

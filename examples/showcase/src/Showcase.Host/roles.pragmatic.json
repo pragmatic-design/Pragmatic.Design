@@ -1,0 +1,18 @@
+{
+  "roles": {
+    "front-desk": {
+      "description": "Front desk staff with basic booking access",
+      "permissions": ["booking.reservation.read", "booking.reservation.create", "booking.guest.read"]
+    },
+    "revenue-manager": {
+      "description": "Revenue management with full catalog and rate access",
+      "permissions": ["catalog.*", "booking.reservation.read"]
+    }
+  },
+  "groups": {
+    "operations": {
+      "description": "All operational staff",
+      "roles": ["front-desk", "catalog-viewer"]
+    }
+  }
+}

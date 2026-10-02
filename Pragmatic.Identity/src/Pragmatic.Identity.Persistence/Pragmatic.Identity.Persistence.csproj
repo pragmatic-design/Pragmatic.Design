@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>EF Core persistence for identity: temporal role, group and permission stores.</Description>
+    <PackageTags>identity;persistence;efcore;roles;groups;temporal</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Identity.Persistence.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+
+</Project>

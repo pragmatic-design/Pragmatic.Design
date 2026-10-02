@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Stock's own process, started twice. Reached only through the gateway, and each instance connected
+       to the Agent that runs beside it on its machine. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- The schema this host migrates to, written at build time and committed beside it. -->
+    <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Warehouse.Stock\Warehouse.Stock.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- PostgreSQL's errors read as the module's: a second product with a SKU already in the catalogue is
+         a 409 naming the field, not a 500 from the unique index. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.EFCore.PostgreSQL\Pragmatic.Result.EFCore.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <!-- The cache the availability read is kept in: in-process on each instance, and an invalidation on
+         one broadcast to the others through Redis. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Caching\src\Pragmatic.Caching.Redis\Pragmatic.Caching.Redis.csproj" />
+    <!-- A hold's expiry is an instant in a column: this is what writes it as UTC (PRAG0690). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <!-- The broker the reservation requests arrive on. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.RabbitMQ\Pragmatic.Messaging.RabbitMQ.csproj" />
+    <!-- The outbox an expired hold is published through. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <!-- The parts of an import and their progress table ([EnableBatchProgress]). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Batch\Pragmatic.Messaging.Batch.csproj" />
+    <!-- The workers that run the expiry jobs, from their rows in this service's database. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.EFCore\Pragmatic.Jobs.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <!-- The AcceptBackorders switch: evaluated here, stored in the Agent. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <!-- Who calls: a token this service validates. The gateway checks it at the edge as well,
+         and this host still decides what the caller may do. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local.Jwt\Pragmatic.Identity.Local.Jwt.csproj" />
+    <!-- The Agent beside this process: registration, heartbeat, and later the stores it backs. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Agent\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.targets" />
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.LocalCli.targets" />
+
+</Project>

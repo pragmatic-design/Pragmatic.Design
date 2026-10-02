@@ -1,0 +1,67 @@
+name: Docs
+
+# Gate the documentation site so it can't drift or ship broken internal links.
+# The module pages are GENERATED from the canonical README.md + docs/*.md by sync-docs.mjs;
+# this workflow re-syncs, fails on drift (someone edited a generated copy or forgot to re-sync),
+# fails on any unresolved relative link, then builds the Starlight site.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Sync, validate & build docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The version is site/package.json's "packageManager". `defaults.run.working-directory` does not
+      # apply to `uses` steps, so without package_json_file the action read a package.json at the repo
+      # root, which does not exist, and stopped: "No pnpm version is specified".
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: site/package.json
+
+      # Astro 6 requires Node >= 22.12.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync canonical docs into the site
+        run: pnpm sync:docs
+
+      - name: Fail on drift (generated pages must match canonical sources)
+        run: |
+          git diff --exit-code -- docs/src/content/docs/modules docs/src/content/docs/guides \
+            || (echo "::error::Generated docs are out of sync. Run 'pnpm sync:docs' and commit the result." && exit 1)
+
+      - name: Fail on unresolved internal links
+        run: |
+          if grep -rEq "\]\(\.\.?/" docs/src/content/docs/modules docs/src/content/docs/guides; then
+            echo "::error::Found unresolved relative links in generated docs (see matches below)."
+            grep -rEn "\]\(\.\.?/" docs/src/content/docs/modules docs/src/content/docs/guides || true
+            exit 1
+          fi
+
+      - name: Build site
+        run: pnpm build:docs

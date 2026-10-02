@@ -1,0 +1,17 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Audit/Pragmatic.Audit.csproj" />
+    <Project Path="src/Pragmatic.Audit.AdoNet/Pragmatic.Audit.AdoNet.csproj" />
+    <Project Path="src/Pragmatic.Audit.EFCore/Pragmatic.Audit.EFCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Audit.Tests/Pragmatic.Audit.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Audit.AdoNet.Tests/Pragmatic.Audit.AdoNet.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Audit.EFCore.Tests/Pragmatic.Audit.EFCore.Tests.csproj" />
+  </Folder>
+</Solution>

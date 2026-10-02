@@ -1,0 +1,12 @@
+{
+  "validation.required": "This is required.",
+  "validation.email": "This is not a valid email address.",
+  "validation.maxlength": "This is longer than {max} characters.",
+  "validation.range": "This must be between {min} and {max}.",
+  "error.validation.error.title": "The request is not valid",
+  "error.validation.error.detail": "Some fields are not valid: see the message beside each one.",
+  "error.organization.slug.taken.title": "That name is taken",
+  "error.organization.slug.taken.detail": "Another company already uses this identifier: pick another one.",
+  "error.forbidden.title": "Not allowed",
+  "error.forbidden.detail": "You are missing the permission this needs: {permissions}."
+}

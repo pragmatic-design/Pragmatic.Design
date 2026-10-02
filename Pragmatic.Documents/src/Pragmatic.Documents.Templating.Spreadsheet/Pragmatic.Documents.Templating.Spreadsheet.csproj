@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>DataSourceCatalog integration for XLSX and CSV — file-based and stream-based providers.</Description>
+    <PackageTags>datasource;xlsx;csv;templating;spreadsheet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Spreadsheet\Pragmatic.Documents.Spreadsheet.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
+  </ItemGroup>
+
+</Project>

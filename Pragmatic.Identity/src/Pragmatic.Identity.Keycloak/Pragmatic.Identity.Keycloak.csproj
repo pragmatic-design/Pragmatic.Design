@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Keycloak provider for Pragmatic.Identity.Oidc: maps Keycloak realm_access roles into the authorization pipeline and adds an admin client for user provisioning and role synchronisation.</Description>
+    <PackageTags>identity;keycloak;oidc;authentication;authorization;provisioning;sso</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Identity.Oidc\Pragmatic.Identity.Oidc.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+</Project>

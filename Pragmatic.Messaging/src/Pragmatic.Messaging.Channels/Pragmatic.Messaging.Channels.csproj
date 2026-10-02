@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>In-process async message transport using System.Threading.Channels. Backpressure, configurable consumer parallelism, zero external dependencies.</Description>
+    <PackageTags>messaging;channels;transport;async;backpressure;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Messaging.Tests" />
+  </ItemGroup>
+
+  <!-- Core dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+  </ItemGroup>
+
+</Project>

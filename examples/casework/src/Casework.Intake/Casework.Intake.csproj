@@ -1,0 +1,121 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Intake: the case, its documents, its state, and the saga that carries it to an end.
+       It talks to Verify over the bus and never through a reference: there is no project reference to
+       Casework.Verify here, and there must never be one. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The suite reaches this boundary's internal actions, as Verify's does: an operation with no
+         [Endpoint] is internal surface by design, and the generated public interface does not carry it. -->
+    <InternalsVisibleTo Include="Casework.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- What this module publishes, in a project of its own so another service can reference the
+         contract without referencing the module. Intake owns it; see VerificationRequested for why the
+         namespace inside it is Casework.Intake.Events and not the project's name. -->
+    <ProjectReference Include="..\Casework.Intake.Contracts\Casework.Intake.Contracts.csproj" />
+    <!-- And Verify's contract: this module consumes the answer. ⚠️ Its **contract** and
+         nothing else of Verify — there is no reference to Casework.Verify, where that service's entities
+         and operations are, and there must never be one. The dependency is symmetric and shallow: each
+         module references the other's contract, neither references the other's module. -->
+    <ProjectReference Include="..\Casework.Verify.Contracts\Casework.Verify.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- A case belongs to an organization: the entity declares ITenantEntity, and giving the tenant a
+         database of its own is the host's choice and does not change this line. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
+    <!-- Who moved a case and when, kept beside the rows it is about. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <!-- The case raises a domain event, which is what the outbox captures. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <!-- [EnableOutbox] on the boundary. ⚠️ Without Pragmatic.Messaging.EFCore the attribute is inert and
+         the build says so (PRAG0831): the outbox table is not mapped, the interceptor is not added, and
+         every event would be dispatched in process instead of published. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <!-- The deadline: [RecurringJob], IJob, and [EnableJobPersistence] on the boundary —
+         which is inert without the EF Core half (the two configurations that map __Jobs and
+         __RecurringJobs), so both are here. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.EFCore\Pragmatic.Jobs.EFCore.csproj" />
+    <!-- [Timeout] on the job. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+    <!-- The saga: ISaga<TState> and SagaRejectedException live here. ⚠️ Not transitive from
+         Pragmatic.Messaging, which brings Core (the attributes) and not this — so [Saga<T>] compiles
+         without it and the interface the class has to implement does not. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <!-- [FromClock] on the operation: the application's clock, which the tests seal. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <!-- The documents of a case: the module names IFileStorage, the host decides which store it is. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+
+    <!-- The decision letter is a template, not code. Model + Templating (expressions, pipes,
+         data context) + Templates (the resolver) + Markup (the .pdxdoc parser), and Pdf for the one
+         endpoint that wants bytes. ⚠️ The renderer is named in the endpoint and nowhere else: the
+         service that builds the letter answers with a DocumentModel, so the email is free to
+         want something other than a PDF out of the same template. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templates\Pragmatic.Documents.Templates.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Pdf\Pragmatic.Documents.Pdf.csproj" />
+    <!-- And the second renderer, which is what makes the sentence above true rather than intended:
+         the same DocumentModel leaves as a Word file when a caseworker has to amend it before it
+         goes out, and nothing upstream of the endpoint knows which was asked for. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Docx\Pragmatic.Documents.Docx.csproj" />
+    <!-- One template, several languages. This is where `date`, `currency` and `percent` live
+         (they are not in PipeRegistry.Default) and where `t:` expressions get an IStringLocalizer. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+
+    <!-- The letter may quote the organisation's own fee table, which the organisation
+         uploads and which therefore lives in IFileStorage rather than at a path. This is the package
+         with CsvStreamDataSource; its file-backed siblings could not read it without reaching
+         past the abstraction. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating.Spreadsheet\Pragmatic.Documents.Templating.Spreadsheet.csproj" />
+
+    <!-- The mail. Email.Templates is the .pdxemail resolver, Email.Model its document, and
+         Documents.Email turns that into the HTML a client shows. Pragmatic.Email is the message and the
+         sender the host wires. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Email.Model\Pragmatic.Email.Model.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Email.Templates\Pragmatic.Email.Templates.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Email\Pragmatic.Documents.Email.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email\Pragmatic.Email.csproj" />
+    <!-- The specification a document is read by: both ids, because the child has no tenant filter. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+  </ItemGroup>
+
+  <!-- This module's messages, one file per language: read by the compiler for the keys, and copied to
+       the output for the host to read at run time. Into a folder named after the module, through Link,
+       so a second module's en-US.json cannot land on the same path and overwrite this one. -->
+  <ItemGroup>
+    <AdditionalFiles Include="translations\*.json" />
+    <Content Include="translations\*.json" Link="translations\intake\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The application's own letter, the one an organisation that has not sent us its own gets. It is
+         a file beside the application and not an embedded resource, so that "change the wording" stays
+         true of the fallback as well. -->
+    <Content Include="templates\letters\*.pdxdoc" Link="templates\letters\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="templates\letters\*.pdxemail" Link="templates\letters\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+{
+  "validation.required": "Questo campo è obbligatorio.",
+  "validation.maxlength": "Questo supera i {max} caratteri.",
+  "error.validation.error.title": "La richiesta non è valida",
+  "error.validation.error.detail": "Alcuni campi non sono validi: il motivo è accanto a ciascuno.",
+  "error.case.subject.too.short.title": "La pratica ha bisogno di un oggetto",
+  "error.case.subject.too.short.detail": "Scrivi che cosa chiede il richiedente, in almeno dieci caratteri: una pratica che nessuno riesce a leggere è una pratica che nessuno può lavorare.",
+  "error.forbidden.title": "Non consentito",
+  "error.forbidden.detail": "Ti manca il permesso che serve: {permissions}.",
+  "error.not.found.title": "Non trovata",
+  "error.not.found.detail": "In questa organizzazione non c'è nessuna pratica con questo identificativo.",
+  "letter.decision.title": "Decisione",
+  "letter.decision.case": "Pratica {number} — {subject}",
+  "letter.decision.applicant": "Richiedente: {name}",
+  "letter.decision.outcome": "Decisa il {when}: {outcome}",
+  "letter.decision.appeal": "Se non è d'accordo con questa decisione può chiedere a {organization} di riesaminarla.",
+  "mail.decision.subject": "Decisione sulla pratica {number}",
+  "mail.decision.preheader": "La sua pratica è stata decisa.",
+  "mail.decision.greeting": "Gentile {name},",
+  "mail.decision.body": "La pratica {number} è stata decisa il {when}: {outcome}.",
+  "mail.decision.attachment": "La lettera di decisione è allegata a questo messaggio."
+}

@@ -1,0 +1,98 @@
+name: Imaging Native
+
+# Tests and builds the native image/QR library (native/pragmatic-imaging) for every supported RID and
+# uploads the shared libraries as artifacts. For osx-arm64 this workflow is the only source: that binary
+# can be built on a macOS runner only. win-x64 and linux-x64 also come from
+# `node scripts/refresh-native.mjs imaging --linux`.
+#
+# Each binary is stamped with the hash of the source it was built from (PRAGMATIC_IMAGING_SOURCE_HASH,
+# computed by scripts/native-stamp.mjs), and the run fails if the built library does not carry it. So the
+# artifacts pass the gate as they are: download them and place them under
+#   Pragmatic.Imaging/runtimes/{rid}/native/
+# with the names they already have (linux-x64/libpragmatic_imaging_native.so,
+# osx-arm64/libpragmatic_imaging_native.dylib, win-x64/Pragmatic.Imaging.Native.dll) — the names the gate
+# and the package expect. An artifact from another commit's source fails the gate, as it should.
+#
+# No NASM: rav1e is built without its asm feature (Cargo.lock has no nasm-rs), and the linux-x64 build
+# in a rust:1-bookworm container needs none.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Pragmatic.Imaging/native/**'
+      - 'shared/native/**'
+      - '.github/workflows/imaging-native.yml'
+
+concurrency:
+  group: imaging-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: libpragmatic_imaging_native.so
+            target_name: libpragmatic_imaging_native.so
+          - os: macos-14        # arm64 runner → native aarch64-apple-darwin
+            rid: osx-arm64
+            artifact: libpragmatic_imaging_native.dylib
+            target_name: libpragmatic_imaging_native.dylib
+          - os: windows-latest
+            rid: win-x64
+            artifact: pragmatic_imaging_native.dll
+            target_name: Pragmatic.Imaging.Native.dll
+
+    defaults:
+      run:
+        working-directory: Pragmatic.Imaging/native/pragmatic-imaging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # From the repository root: the hash covers the crate and shared/native, as the gate computes it.
+      - name: Source stamp
+        shell: bash
+        working-directory: .
+        # An assignment, not a substitution inside echo: under `bash -e` a failed hash stops the job
+        # here, instead of stamping an empty value the check below would take for a match.
+        run: |
+          hash=$(node scripts/native-stamp.mjs hash imaging)
+          [ "${#hash}" -eq 64 ] || { echo "::error::not a source hash: '$hash'"; exit 1; }
+          echo "PRAGMATIC_IMAGING_SOURCE_HASH=$hash" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        run: cargo test --release --locked
+
+      - name: Build (release)
+        run: cargo build --release --locked
+
+      - name: Stage native library
+        shell: bash
+        run: |
+          # The stamp build.rs wrote, read back by the gate's own reader. Not grep: macOS's BSD grep did
+          # not find a stamp GNU grep found on Linux and Windows.
+          node "$GITHUB_WORKSPACE/scripts/native-stamp.mjs" verify imaging "target/release/${{ matrix.artifact }}"
+          mkdir -p "$GITHUB_WORKSPACE/native-out/${{ matrix.rid }}"
+          cp "target/release/${{ matrix.artifact }}" \
+             "$GITHUB_WORKSPACE/native-out/${{ matrix.rid }}/${{ matrix.target_name }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: imaging-native-${{ matrix.rid }}
+          path: native-out/${{ matrix.rid }}/${{ matrix.target_name }}
+          retention-days: 30

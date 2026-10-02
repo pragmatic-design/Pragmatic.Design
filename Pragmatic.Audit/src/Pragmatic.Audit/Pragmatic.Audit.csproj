@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>One append-only, tamper-evident audit trail for Pragmatic.Design. Entries reference subjects by pseudonym and prove changes by hash, so a record survives an erasure while ceasing to be linkable to a person.</Description>
+    <PackageTags>pragmatic;audit;trail;append-only;compliance</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Audit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Redaction\src\Pragmatic.Redaction\Pragmatic.Redaction.csproj" />
+  </ItemGroup>
+
+</Project>

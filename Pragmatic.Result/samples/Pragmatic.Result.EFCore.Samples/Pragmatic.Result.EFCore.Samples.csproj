@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- SQLite gives the sample a real relational store so a unique-constraint violation
+         surfaces as a typed DbConflictError/DbConstraintError from SaveChangesAsResultAsync,
+         without a Docker dependency. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
+  </ItemGroup>
+
+</Project>

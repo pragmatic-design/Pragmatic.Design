@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <!-- Exclude shared Testing code - we don't need generator test helpers -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- TestContainers for PostgreSQL -->
+    <PackageReference Include="Testcontainers.PostgreSql" />
+
+    <!-- EF Core PostgreSQL -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+  </ItemGroup>
+
+</Project>

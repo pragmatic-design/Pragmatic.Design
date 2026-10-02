@@ -1,0 +1,30 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/attributes-reference.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/custom-converters.md" />
+    <File Path="docs/feature-matrix.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/projections.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Mapping/Pragmatic.Mapping.csproj" />
+    <Project Path="src/Pragmatic.Mapping.EFCore/Pragmatic.Mapping.EFCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Mapping.Tests/Pragmatic.Mapping.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Mapping.EFCore.Tests/Pragmatic.Mapping.EFCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Mapping.Samples/Pragmatic.Mapping.Samples.csproj" />
+  </Folder>
+
+  <!-- Unified source generator -->
+  <Project Path="../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />
+</Solution>

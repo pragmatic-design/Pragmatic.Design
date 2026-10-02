@@ -1,0 +1,35 @@
+<Solution>
+  <!-- Declared rather than left to inference: without it Visual Studio opens the solution with every
+       project unloaded and offers to install workloads, having nothing to tell it what to build. The
+       .slnx schema makes this optional and the CLI does not need it, which is what makes it easy to
+       omit and then blame the projects. -->
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <!-- docs -->
+  <Folder Name="/docs/">
+    <SolutionItem Path="README.md" />
+    <SolutionItem Path="ENV.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Showcase.Accounts/Showcase.Accounts.csproj" />
+    <Project Path="src/Showcase.Billing/Showcase.Billing.csproj" />
+    <Project Path="src/Showcase.Booking/Showcase.Booking.csproj" />
+    <Project Path="src/Showcase.Catalog/Showcase.Catalog.csproj" />
+    <Project Path="src/Showcase.Host/Showcase.Host.csproj" />
+    <Project Path="src/Showcase.Billing.Host/Showcase.Billing.Host.csproj" />
+    <Project Path="src/Showcase.Host.Distributed/Showcase.Host.Distributed.csproj" />
+    <Project Path="src/Showcase.BlazorClient/Showcase.BlazorClient.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Showcase.Tests/Showcase.Tests.csproj" />
+    <Project Path="tests/Showcase.Billing.Host.Tests/Showcase.Billing.Host.Tests.csproj" />
+    <Project Path="tests/Showcase.Host.Distributed.Tests/Showcase.Host.Distributed.Tests.csproj" />
+    <Project Path="tests/Showcase.IntegrationTests/Showcase.IntegrationTests.csproj" />
+  </Folder>
+
+  <!-- Unified source generator -->
+  <Project Path="../../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />
+</Solution>

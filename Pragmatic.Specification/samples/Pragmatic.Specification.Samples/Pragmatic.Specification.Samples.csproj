@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+  </ItemGroup>
+
+</Project>

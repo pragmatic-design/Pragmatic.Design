@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Incidents.Audit</RootNamespace>
+    <Description>Raises Pragmatic.Incidents records from patterns in the Pragmatic.Audit trail: repeated failed logins, lockouts, permission denials.</Description>
+    <PackageTags>pragmatic;security;incident;audit;detection;nis2</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    A bridge rather than a dependency added to either side: Pragmatic.Incidents is deliberately
+    dependency-free, and Pragmatic.Audit has no business knowing what anyone concludes from it. Same
+    shape as Pragmatic.Agent.Discovery, for the same reason.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Incidents\Pragmatic.Incidents.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+  </ItemGroup>
+
+</Project>

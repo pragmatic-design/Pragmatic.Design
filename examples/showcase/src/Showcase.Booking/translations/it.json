@@ -1,0 +1,50 @@
+{
+  "reservation": {
+    "title": "Prenotazione",
+    "checkIn": "Data check-in",
+    "checkOut": "Data check-out",
+    "nights": "Notti",
+    "status": {
+      "pending": "In attesa",
+      "confirmed": "Confermata",
+      "paymentReceived": "Pagamento ricevuto",
+      "checkedIn": "Arrivato",
+      "checkedOut": "Partito",
+      "cancelled": "Annullata",
+      "noShow": "Non presentato"
+    }
+  },
+  "guest": {
+    "title": "Ospite",
+    "preferences": "Preferenze ospite"
+  },
+  "roomAssignment": {
+    "title": "Assegnazione camera",
+    "room": "Camera"
+  },
+  "errors": {
+    "reservationNotFound": "Prenotazione non trovata",
+    "guestNotFound": "Ospite non trovato",
+    "roomUnavailable": "La camera richiesta non è disponibile",
+    "alreadyCheckedIn": "L'ospite ha già effettuato il check-in",
+    "cannotCancelConfirmed": "Impossibile annullare una prenotazione confermata senza motivazione"
+  },
+  "mail": {
+    "checkIn": "Arrivo",
+    "checkOut": "Partenza",
+    "reference": "Prenotazione {id}",
+    "confirmed": {
+      "subject": "Prenotazione confermata — dal {checkIn} al {checkOut}",
+      "preheader": "Il tuo soggiorno è prenotato.",
+      "heading": "Prenotazione confermata",
+      "body": "Gentile {name}, la tua prenotazione è confermata.",
+      "total": "Totale"
+    },
+    "reminder": {
+      "subject": "Promemoria arrivo — {checkIn}",
+      "heading": "Promemoria arrivo",
+      "body": "Ti ricordiamo che il tuo arrivo è previsto per domani.",
+      "closing": "Ti aspettiamo!"
+    }
+  }
+}

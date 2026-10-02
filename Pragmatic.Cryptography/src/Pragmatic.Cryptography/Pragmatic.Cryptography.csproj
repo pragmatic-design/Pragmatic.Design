@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Key management and encryption at rest for Pragmatic.Design. AES-256-GCM with a versioned, key-tagged ciphertext format and a key ring that supports rotation.</Description>
+    <PackageTags>pragmatic;cryptography;encryption;aes;key-rotation</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Cryptography.Tests" />
+  </ItemGroup>
+
+</Project>

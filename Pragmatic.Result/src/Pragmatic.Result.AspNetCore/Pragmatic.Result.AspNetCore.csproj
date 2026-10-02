@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>ASP.NET Core integration for Pragmatic.Result. Provides ProblemDetails serialization and HTTP result handling.</Description>
+    <PackageTags>result;problem-details;rfc7807;aspnetcore;http;minimal-api</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+</Project>

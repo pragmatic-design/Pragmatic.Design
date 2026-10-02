@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templates\Pragmatic.Documents.Templates.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Pdf\Pragmatic.Documents.Pdf.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The templates travel inside the assembly and IPdxTemplates finds them by name. -->
+    <EmbeddedResource Include="templates\*.pdxdoc" />
+  </ItemGroup>
+
+</Project>

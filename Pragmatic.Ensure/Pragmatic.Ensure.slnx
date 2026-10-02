@@ -1,0 +1,25 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/api-reference.md" />
+    <File Path="docs/best-practices.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/troubleshooting.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Ensure/Pragmatic.Ensure.csproj" />
+    <Project Path="src/Pragmatic.Ensure.Result/Pragmatic.Ensure.Result.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Ensure.Tests/Pragmatic.Ensure.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Ensure.Result.Tests/Pragmatic.Ensure.Result.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Pragmatic.Ensure.Samples/Pragmatic.Ensure.Samples.csproj" />
+  </Folder>
+</Solution>

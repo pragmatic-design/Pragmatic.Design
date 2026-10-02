@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>HTML email renderer — EmailModel to table-based HTML with inline CSS and MSO/VML conditionals.</Description>
+    <PackageTags>email;html;renderer;inline-css;mso;vml</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Email.Model\Pragmatic.Email.Model.csproj" />
+  </ItemGroup>
+
+</Project>

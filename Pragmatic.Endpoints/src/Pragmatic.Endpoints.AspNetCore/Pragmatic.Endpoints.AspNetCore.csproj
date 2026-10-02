@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Pragmatic.Endpoints.AspNetCore — ASP.NET Core integration
+       Contains EndpointContext (HttpContext), ErrorExtensions, FileResponseExtensions.
+       Referenced by host projects only.
+       ======================================== -->
+
+  <PropertyGroup>
+    <Description>ASP.NET Core integration for Pragmatic.Endpoints: EndpointContext, error-to-ProblemDetails conversion, and file response handling.</Description>
+    <PackageTags>endpoints;aspnetcore;http;problemdetails;minimal-api</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The storage contract every provider has to satisfy, written once.
+
+       Not a test project: it holds abstract base classes and no test of its own, so the gate's
+       "…Tests.csproj" discovery does not pick it up and `dotnet test` has nothing to run here. The
+       cases arrive in a provider's own suite when a concrete class there inherits them, which is how
+       one file can assert the same thing against seven providers without a project that references
+       five cloud SDKs.
+
+       xunit and the assertions are named here rather than inherited: Directory.Build.props gives them
+       to a project whose name ends in ".Tests", and this one deliberately does not. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

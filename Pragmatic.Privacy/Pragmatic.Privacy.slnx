@@ -1,0 +1,16 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
+    <Project Path="src/Pragmatic.Privacy/Pragmatic.Privacy.csproj" />
+    <Project Path="src/Pragmatic.Privacy.EFCore/Pragmatic.Privacy.EFCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Privacy.E2E.Tests/Pragmatic.Privacy.E2E.Tests.csproj" />
+  </Folder>
+</Solution>

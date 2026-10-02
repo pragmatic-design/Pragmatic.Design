@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Events.Tests</RootNamespace>
+    <!-- No source generator in this module, exclude shared testing code -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Note: Test packages are auto-configured by Directory.Build.props -->
+
+  <ItemGroup>
+    <!-- Runtime testing -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <!-- SQLite: the outbox delivery loop uses ExecuteUpdate (CAS claim), unsupported by the InMemory provider. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- PostgreSQL + Testcontainers: end-to-end outbox test against the real target database. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Events.EFCore\Pragmatic.Events.EFCore.csproj" />
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

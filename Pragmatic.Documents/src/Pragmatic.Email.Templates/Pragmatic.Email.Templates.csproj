@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Email template types and resolver — template with bindings to resolved EmailModel.</Description>
+    <PackageTags>template;email;binding;resolver</PackageTags>
+    <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Email.Model\Pragmatic.Email.Model.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+  </ItemGroup>
+
+</Project>

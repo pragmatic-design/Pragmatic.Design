@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A partial: every document that imports it gets the company's heading, written once. -->
+<document>
+  <page>
+    <heading level="1">{{ company.name }}</heading>
+    <text>{{ company.address }}</text>
+    <hr thickness="0.5" />
+  </page>
+</document>

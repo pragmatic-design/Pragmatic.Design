@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Privacy</RootNamespace>
+    <Description>Classification attributes for personal data: which properties are personal, what kind, and how they are erased. Zero dependencies, so entity assemblies can reference it without pulling in a privacy runtime.</Description>
+    <PackageTags>pragmatic;privacy;gdpr;classification;attributes</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    No ProjectReference and no PackageReference, deliberately. Persistence, Identity and the trait
+    packages all need to annotate their entities; if that meant depending on the privacy runtime, the
+    dependency would run the wrong way and close a cycle. Contracts here, behaviour elsewhere.
+  -->
+
+</Project>

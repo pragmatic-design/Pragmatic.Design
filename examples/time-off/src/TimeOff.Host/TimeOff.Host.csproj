@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The web host: composes the Leave module onto PostgreSQL. Only what the example uses is
+       referenced — composition by presence: a package here is a feature the application has. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- The schema snapshot (schema/AppDatabase.schema.json), regenerated after each build — and written
+       only when it changes — so a schema change shows up in the diff of the commit that caused it. -->
+  <PropertyGroup>
+    <PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TimeOff.Leave\TimeOff.Leave.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- Raises the entities' [Raises<T>] events when their rows are written. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events.EFCore\Pragmatic.Events.EFCore.csproj" />
+    <!-- The audit trail, in the application's database: the [Audited] change log and the decisions. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <!-- The subject registry, in the application's database: who each pseudonym stands for, until the
+         person is erased. Referencing it is also what makes the migration create its tables. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.EFCore\Pragmatic.Privacy.EFCore.csproj" />
+    <!-- The per-subject key store and the converter that puts a ProtectedValue in a column. The
+         generated context maps __SubjectKeys beside the subject registry, so one migration creates the
+         person, their pseudonym and the key that opens what is protected about them. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.EFCore\Pragmatic.Cryptography.EFCore.csproj" />
+    <!-- Instants (DateTimeOffset) reach the columns normalised to UTC, which is how the framework reads them. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping.EFCore\Pragmatic.Mapping.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <!-- Failed sign-ins and lockouts onto the same trail, so the incident scan has something to read.
+         Nothing in the module asks for this: it is the host that decides its security events are worth
+         recording, and the handlers listen to Identity.Local's events wherever they are raised. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Auditing\Pragmatic.Identity.Auditing.csproj" />
+    <!-- Reads PostgreSQL's SQLSTATE instead of its words. Pragmatic.Result.EFCore is already here
+         transitively — the unit of work classifies every failed save through it — but with no provider
+         parser registered it falls back to the heuristic one, which its own documentation calls fragile:
+         it matches English phrasing that changes between versions and does not survive a server whose
+         messages are localised. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result.EFCore.PostgreSQL\Pragmatic.Result.EFCore.PostgreSQL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The database provider: the host's generated code calls UseNpgsql. A deployment choice, so it
+         lives in the host and not in the module. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- The API reference UI, served in Development only. -->
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- ProjectReference does not import a package's build/ targets, so the snapshot target is imported
+       by hand; LocalCli runs it with the migrations CLI built from this repository. -->
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.targets" />
+  <Import Project="..\..\..\..\Pragmatic.Migrations\build\Pragmatic.Migrations.LocalCli.targets" />
+
+</Project>

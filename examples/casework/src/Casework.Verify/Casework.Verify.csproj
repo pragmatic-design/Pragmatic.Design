@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Verify: the verifications and their outcomes. It answers when it answers, which is the reason it is
+       a service of its own rather than a module of Intake. No project reference to Casework.Intake: the
+       request arrives as a published event, and the outcome leaves as one. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The suite calls the same interface the message handler calls. An operation with no [Endpoint] is
+         the boundary's internal surface by design — the generated public interface does not carry it —
+         and a test that went around it through a repository would be testing something else. The
+         Showcase's boundaries grant the same thing to their suites. -->
+    <InternalsVisibleTo Include="Casework.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ⚠️ Intake's **contract**, and nothing else of Intake: a message is deserialized by its fully
+         qualified type name, so the two services have to name the same type — two records of the same
+         shape in two assemblies never meet on the wire. There is no reference to Casework.Intake, where
+         the entities and the operations are, and there must never be one. -->
+    <ProjectReference Include="..\Casework.Intake.Contracts\Casework.Intake.Contracts.csproj" />
+    <!-- And what this service publishes, in a project of its own so Intake can consume the answer
+         without referencing this module. The mirror of the line above. -->
+    <ProjectReference Include="..\Casework.Verify.Contracts\Casework.Verify.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <!-- [MessageHandler] and IMessageHandler<T>: this module reacts to what another service publishes. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <!-- And it publishes as well: [EnableOutbox] on the boundary is inert without this
+         (PRAG0831) — the table is not mapped and the capture interceptor is not added. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <!-- The verification raises a domain event, which is what the outbox captures. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- A verification belongs to the tenant whose case asked for it, and that tenant
+         arrives on a message rather than on a request. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <!-- [FromClock] on the answer: this service's clock decides when an answer was recorded, never the
+         caller. The deadline and the answered-on are instants in columns; the EF half that normalises
+         them, Pragmatic.Temporal.EFCore, is referenced by the host. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

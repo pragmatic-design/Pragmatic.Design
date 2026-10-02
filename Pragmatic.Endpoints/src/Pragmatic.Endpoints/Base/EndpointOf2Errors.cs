@@ -1,0 +1,21 @@
+using Pragmatic.Result;
+
+namespace Pragmatic.Endpoints.Base;
+
+/// <summary>
+///     Base class for endpoints that return a response with two typed errors.
+/// </summary>
+/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TError1">The first error type.</typeparam>
+/// <typeparam name="TError2">The second error type.</typeparam>
+public abstract class Endpoint<TResponse, TError1, TError2>
+    where TError1 : IError
+    where TError2 : IError
+{
+    /// <summary>
+    ///     Handles the endpoint request.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The result containing the response or error.</returns>
+    public abstract Task<Result<TResponse, TError1, TError2>> HandleAsync(CancellationToken ct = default);
+}

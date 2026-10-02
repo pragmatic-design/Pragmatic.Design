@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>PDX-Doc and PDX-Email templates end to end: the markup parsers, template sources (embedded, directory, chained) and IPdxTemplates — a template by name, resolved in the reader's language, to a document model or a mail's subject, HTML and text.</Description>
+    <PackageTags>markup;pdx;parser;template;email;document</PackageTags>
+    <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Templates\Pragmatic.Documents.Templates.csproj" />
+    <ProjectReference Include="..\Pragmatic.Email.Templates\Pragmatic.Email.Templates.csproj" />
+    <!-- IPdxTemplates renders a mail's HTML and text, and resolves in the reader's language. -->
+    <ProjectReference Include="..\Pragmatic.Documents.Email\Pragmatic.Documents.Email.csproj" />
+    <ProjectReference Include="..\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+  </ItemGroup>
+
+</Project>

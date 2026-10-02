@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- CA2007 conflicts with xUnit1030 in test projects -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+
+    <!-- Wiring/ runs the generator's output. Emitting it makes the thing under test readable. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Privacy.EFCore\Pragmatic.Privacy.EFCore.csproj" />
+    <!-- The privacy adapters are gated on EF Core being present: they answer "which rows belong to
+         this subject", which is a query. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The generator, running for real over Wiring/: this suite exists to resolve what it emits out
+         of a container, which no snapshot can do. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+</Project>

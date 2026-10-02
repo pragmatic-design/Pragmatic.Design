@@ -1,0 +1,74 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The host-declared wiring probe. A host project that declares framework types IN ITSELF is a
+       shape no project in this repository has (the Showcase host declares nothing), so nothing
+       exercised it. This suite compiles both shapes in memory and compares them.
+
+       It has to reference the whole ecosystem on purpose: the SG's FeatureDetector switches on which
+       Pragmatic.* assemblies the compilation references, so a narrow reference set would silently
+       turn features off and the comparison would pass by having measured nothing. -->
+
+  <PropertyGroup>
+    <!-- The probe source is a string literal compiled by Roslyn at run time, never by MSBuild:
+         the module references below exist only to be handed to the test compilations as
+         MetadataReferences. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The generator under test, referenced as a library (not as an analyzer): the tests drive it
+         themselves through CSharpGeneratorDriver. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Mirrors the reference set of a realistic Pragmatic host. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <!-- Where HostManifest and the OpenAPI registry live: a host that references it gets both the
+         document and the manifest registered, and without it this suite never saw that registration
+. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions.EFCore\Pragmatic.Actions.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <!-- IFeatureFlag lives in Abstractions, which every host has; the extension the detector
+         probes for lives here. Without this reference the capability is off for a reason that has
+         nothing to do with what anybody declared, and the comparison measures nothing. -->
+    <ProjectReference Include="..\..\..\Pragmatic.FeatureFlags\src\Pragmatic.FeatureFlags\Pragmatic.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+    <!-- The stores of the audit trail and the subject registry: the host registers their contexts on the
+         database holding the [Audited] / [DataSubject] entities, and only when these are referenced. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.EFCore\Pragmatic.Privacy.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.AspNetCore\Pragmatic.Internationalization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+    <!-- The database wiring a host emits for [Include<TModule, TDatabase>]: the migration runner's
+         schema and the provider's Use* call. Without them the host names neither, and a host whose
+         database wiring is wrong compiles here for the wrong reason. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

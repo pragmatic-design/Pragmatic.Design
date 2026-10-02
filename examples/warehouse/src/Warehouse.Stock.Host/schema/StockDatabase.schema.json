@@ -1,0 +1,1143 @@
+{
+  "tables": [
+    {
+      "name": "ImportRejections",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ImportId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PartIndex",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Line",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Sku",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Reason",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "ImportedParts",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ImportId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PartIndex",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Applied",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Rejected",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_ImportedParts_ImportId_PartIndex",
+          "columns": [
+            "ImportId",
+            "PartIndex"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Locations",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Code",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Description",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Locations_Code",
+          "columns": [
+            "Code"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "PickLists",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OrderId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PickedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_PickLists_OrderId",
+          "columns": [
+            "OrderId"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Products",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Sku",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Name",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ReorderThreshold",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Products_Sku",
+          "columns": [
+            "Sku"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Reservations",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OrderId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Quantity",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ExpiresAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ProductId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LocationId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Reservations_LocationId",
+          "columns": [
+            "LocationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_Reservations_ProductId",
+          "columns": [
+            "ProductId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "FK_Reservations_LocationId_Locations",
+          "column": "LocationId",
+          "referencedTable": "Locations",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        },
+        {
+          "name": "FK_Reservations_ProductId_Products",
+          "column": "ProductId",
+          "referencedTable": "Products",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        }
+      ],
+      "checkConstraints": []
+    },
+    {
+      "name": "StockLevels",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OnHand",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Reserved",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ProductId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LocationId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_StockLevels_LocationId",
+          "columns": [
+            "LocationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_StockLevels_ProductId",
+          "columns": [
+            "ProductId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_StockLevels_ProductId_LocationId",
+          "columns": [
+            "ProductId",
+            "LocationId"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "FK_StockLevels_LocationId_Locations",
+          "column": "LocationId",
+          "referencedTable": "Locations",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        },
+        {
+          "name": "FK_StockLevels_ProductId_Products",
+          "column": "ProductId",
+          "referencedTable": "Products",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        }
+      ],
+      "checkConstraints": []
+    },
+    {
+      "name": "StockMovements",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Kind",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Quantity",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Reason",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ProductId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LocationId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_StockMovements_LocationId",
+          "columns": [
+            "LocationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_StockMovements_ProductId",
+          "columns": [
+            "ProductId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "FK_StockMovements_LocationId_Locations",
+          "column": "LocationId",
+          "referencedTable": "Locations",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        },
+        {
+          "name": "FK_StockMovements_ProductId_Products",
+          "column": "ProductId",
+          "referencedTable": "Products",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        }
+      ],
+      "checkConstraints": []
+    },
+    {
+      "name": "StockRestorations",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OrderId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "RestoredAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_StockRestorations_OrderId",
+          "columns": [
+            "OrderId"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__BatchProgress",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "BatchId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Total",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Completed",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Failed",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "DispatchedCount",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "StartedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CompletedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Label",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___BatchProgress_CompletedAt",
+          "columns": [
+            "CompletedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__Jobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ScheduledFor",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Priority",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "StartedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CompletedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Error",
+          "sqlType": "varchar(4096)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Attempt",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MaxAttempts",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeaseExpiresAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeasedBy",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationJobType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationParametersJson",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___Jobs_CompletedAt",
+          "columns": [
+            "CompletedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_LeaseExpiresAt",
+          "columns": [
+            "Status",
+            "LeaseExpiresAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_Priority_ScheduledFor",
+          "columns": [
+            "Status",
+            "Priority",
+            "ScheduledFor"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__OutboxMessages",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MessageType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Payload",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ProcessedAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "RetryCount",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NextAttemptAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Error",
+          "sqlType": "varchar(2048)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ClaimedBy",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ClaimedUntil",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UserId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "HeadersJson",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___OutboxMessages_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___OutboxMessages_ProcessedAt_NextAttemptAt_ClaimedUntil_CreatedAt",
+          "columns": [
+            "ProcessedAt",
+            "NextAttemptAt",
+            "ClaimedUntil",
+            "CreatedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__RecurringJobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "varchar(256)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CronExpression",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LastExecutedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NextExecutionAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "IsEnabled",
+          "sqlType": "boolean",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TimeZoneId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MisfirePolicy",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___RecurringJobs_IsEnabled_NextExecutionAt",
+          "columns": [
+            "IsEnabled",
+            "NextExecutionAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    }
+  ],
+  "databaseName": "StockDatabase",
+  "providerName": "PostgreSql",
+  "configKey": "ConnectionStrings:Stock",
+  "hash": "85dc4836c945"
+}

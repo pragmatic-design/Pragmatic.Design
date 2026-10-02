@@ -1,0 +1,12 @@
+<Project>
+  <!-- A Directory.Build.props here stops MSBuild's upward search, so the root one is imported by hand. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- The conformance projects exist to show what the generators produce, so it is written to disk. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- page-data-source repeats the page once per item: one PDF, one page per employee. -->
+<document title="Payslips April 2026" page-data-source="employees" page-item="emp">
+  <page>
+    <header>
+      <text>PRAGMATIC S.R.L. — Payslip April 2026</text>
+    </header>
+    <heading level="2">{{ emp.name }}</heading>
+    <text>Employee id: {{ emp.id }} — Department: {{ emp.department }}</text>
+    <spacer />
+    <hr />
+    <text>Gross salary:  {{ emp.gross | currency:"EUR" }}</text>
+    <text>Deductions:    {{ emp.deductions | currency:"EUR" }}</text>
+    <heading level="3">Net: {{ emp.net | currency:"EUR" }}</heading>
+    <spacer />
+    <text>Paid on: {{ emp.paidOn | date:"dd MMMM yyyy" }}</text>
+  </page>
+</document>

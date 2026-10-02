@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>Test harness for Pragmatic applications: typed HTTP contract assertions and dev-identity helpers, the runtime consumed by Pragmatic.Testing.SourceGenerator's generated contract tests.</Description>
+    <PackageTags>testing;integration;contract-tests;http;pragmatic</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The only dependency, and deliberately the smallest one that exists: CapturedLogs implements
+         ILoggerProvider so a test can assert on what the application logged. Logging.Abstractions is
+         not ASP.NET, xunit or Testcontainers — the three the note below keeps out. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <!-- Pure library: only BCL HTTP types. The Testcontainers/WebApplicationFactory fixtures are a consumer
+       concern (the generated test project supplies its own ContractAppFixture), so the harness carries no
+       ASP.NET/xunit/Testcontainers references — keeping it lightweight and packable (no NU5026). -->
+
+</Project>

@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.SourceGenerator</RootNamespace>
+    <Description>Unified Roslyn source generator powering the Pragmatic.Design ecosystem — detects referenced Pragmatic.* modules and generates invokers, registrations, mappings, metadata, and DI wiring.</Description>
+    <PackageTags>source-generator;roslyn;incremental-generator;codegen;pragmatic</PackageTags>
+    <!-- RS2008: Release tracking not required for unified generator -->
+    <NoWarn>$(NoWarn);RS1032;RS2008</NoWarn>
+  </PropertyGroup>
+
+  <!-- Allow test projects to access internal types -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.SourceGenerator.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Actions.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Caching.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Composition.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Endpoints.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Internationalization.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Mapping.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Patch.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Persistence.EFCore.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Validation.Tests" />
+  </ItemGroup>
+
+  <!-- System.Text.Json for i18n JSON parsing in netstandard2.0 -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- The names the runtime strips from the wire, shared with Pragmatic.Persistence as source. The
+       manifest and the OpenAPI document are built here and the stripping happens there, so two lists
+       drifted into disagreeing: the document announced ownerId on a DTO the wire never carries it on.
+       Linked rather than referenced because this assembly loads inside the compiler, and internal
+       rather than public for the CS0433 reason the note below records. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\shared\Contracts\ReservedWireNames.cs" Link="Shared\ReservedWireNames.cs" />
+    <Compile Include="..\..\..\shared\Contracts\SensitiveGridFieldNames.cs" Link="Shared\SensitiveGridFieldNames.cs" />
+  </ItemGroup>
+
+  <!-- MetadataCategory is deliberately NOT linked in as source. Doing so puts a second public
+       Pragmatic.Composition.Metadata.MetadataCategory in this assembly, and every project that
+       references both this one and Pragmatic.Abstractions — the test projects today, tooling
+       tomorrow — then fails to compile with CS0433. The correspondence between the two lists is
+       held by MetadataCategoryIdsTests instead, which can see both assemblies precisely because it
+       references both. -->
+
+
+  <!-- Ship the CompilerVisibleProperty declarations to consumers. Both folders: build/ for a direct
+       reference, buildTransitive/ so a project that gets the generator through another package still
+       gets them. -->
+  <ItemGroup>
+    <None Include="build\Pragmatic.SourceGenerator.props"
+          Pack="true" PackagePath="build/Pragmatic.SourceGenerator.props" Visible="false" />
+    <None Include="build\Pragmatic.SourceGenerator.props"
+          Pack="true" PackagePath="buildTransitive/Pragmatic.SourceGenerator.props" Visible="false" />
+  </ItemGroup>
+
+  <!-- Package output — IsRoslynComponent=true (from Directory.Build.props) already
+       packs the assembly into analyzers/dotnet/cs, so no explicit None include is
+       needed. An explicit one duplicates the file and trips NU5118. -->
+
+  <!-- The companion analyzers travel in this package rather than in one of their own.
+       Pragmatic.SourceGenerator.Analyzers is published separately and no consumer references it:
+       not the scaffolding template, not a single lab scenario. Five analyzer packages ship every
+       release and none of them is ever loaded, so their diagnostics — PRAG0600, PRAG0602, PRAG1100,
+       PRAG0822, PRAG0210 — have never fired outside our own build. Riding along with the generator
+       means they arrive wherever the generator does, which is everywhere. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" PackAsCompanionAnalyzer="true" />
+  </ItemGroup>
+
+</Project>

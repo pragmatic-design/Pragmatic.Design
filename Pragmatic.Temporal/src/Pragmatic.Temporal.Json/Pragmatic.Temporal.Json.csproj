@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>System.Text.Json converters for Pragmatic.Temporal types. Provides JSON serialization for LocalDate, LocalTime, ZonedDateTime, Duration, and CronExpression.</Description>
+    <PackageTags>json;serialization;datetime;temporal;systemtextjson</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+  </ItemGroup>
+
+</Project>

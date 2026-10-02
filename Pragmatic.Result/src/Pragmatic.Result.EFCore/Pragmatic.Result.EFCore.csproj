@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Entity Framework Core integration for Pragmatic.Result. Provides query extensions that return Result types.</Description>
+    <PackageTags>result;efcore;entity-framework;linq;query;not-found</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+</Project>

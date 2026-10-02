@@ -1,0 +1,129 @@
+# =============================================================================
+# Pragmatic.Design - Git Ignore
+# =============================================================================
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# Rust build artifacts
+**/target/
+
+# Temp pack files
+.tmp-pack*/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+coverage*/
+*.coverage
+*.coveragexml
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+Pragmatic.Logging/benchmarks/results/
+
+# Vite build cache (used by site/docs)
+.vite/
+
+# Local BaGetter feed data (dev-only — see docs/howto/local-nuget-server.md)
+.bagetter-data/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Verify snapshots (received files, not verified)
+*.received.*
+
+# Local environment
+.env
+.env.local
+*.local.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+*.test.log
+
+# .NET SDK local state
+.dotnet/
+
+# Root-level screenshots
+/*.png
+
+# =============================================================================
+# Local tooling state — editors, agents and per-machine configuration
+# =============================================================================
+.claude/
+.claude_settings.json
+.auto-claude-security.json
+.serena/
+.playwright-mcp/
+.agentflow/
+.worktrees/
+.security-key
+
+# Local working notes, never published
+.scratch/
+.internals/
+.plan/
+docs/audit/
+
+# =============================================================================
+# Site (Astro documentation & landing page)
+# =============================================================================
+node_modules/
+site/**/dist/
+site/**/.astro/
+
+# =============================================================================
+# Written by the test run itself, not inputs to it: the *Output tests render documents for a
+# human to open, and the templating tests build every file they then read. Tracking them meant
+# every test run left the working tree dirty.
+#
+# Listed one by one on purpose. `**/output/` and `**/Fixtures/` also matched
+# Pragmatic.Events.Tests/Fixtures and Pragmatic.Imaging.Tests/Fixtures, which hold twelve real
+# tracked inputs — already in the index, so nothing broke here, but a fresh clone or a copy into
+# a new repository would have dropped them without a word. A path added here has to be a
+# deliberate act, and grep has to be able to find it.
+# =============================================================================
+Pragmatic.Documents/tests/Pragmatic.Documents.Docx.Tests/output/
+Pragmatic.Documents/tests/Pragmatic.Documents.E2E.Tests/output/
+Pragmatic.Documents/tests/Pragmatic.Documents.Pdf.Tests/output/
+Pragmatic.Documents/tests/Pragmatic.Documents.Xlsx.Tests/output/
+Pragmatic.Documents/tests/Pragmatic.Documents.Templating.Tests/Fixtures/
+Pragmatic.Documents/tests/Pragmatic.Documents.Templating.Spreadsheet.Tests/Fixtures/

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared OOXML components for DOCX and XLSX — namespaces, relationships, theme, core properties.</Description>
+    <PackageTags>ooxml;shared;docx;xlsx</PackageTags>
+  </PropertyGroup>
+
+</Project>

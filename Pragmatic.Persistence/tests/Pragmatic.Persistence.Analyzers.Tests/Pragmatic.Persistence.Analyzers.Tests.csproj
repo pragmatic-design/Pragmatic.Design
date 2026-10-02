@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Analyzers\Pragmatic.Persistence.Analyzers.csproj" />
+  </ItemGroup>
+
+</Project>

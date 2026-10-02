@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The receipt as a file: the layout is here, the data comes from the caller, and the language is the
+  customer's.
+-->
+<document title="{{ t:receipt.title(number=receipt.number) }}" page-size="A5">
+  <page>
+    <heading level="1">{{ shop.name }}</heading>
+    <text>{{ t:receipt.issued(date=receipt.issuedOn | date:"d MMMM yyyy") }}</text>
+    <hr />
+    <table data-source="receipt.lines">
+      <column width="70">{{ t:receipt.item }}</column>
+      <column width="30" align="right">{{ t:receipt.amount }}</column>
+      <row-template>
+        <cell>{{ item.name }}</cell>
+        <cell>{{ item.amount | currency:"EUR" }}</cell>
+      </row-template>
+    </table>
+    <heading level="3">{{ t:receipt.total }}: {{ receipt.lines.sum(amount) | currency:"EUR" }}</heading>
+    <for-each source="receipt.payments" item="payment">
+      <text>{{ payment.method }} — {{ payment.amount | currency:"EUR" }}</text>
+    </for-each>
+  </page>
+</document>

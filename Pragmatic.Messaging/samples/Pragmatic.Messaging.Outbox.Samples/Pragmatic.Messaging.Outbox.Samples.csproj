@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Surface the SG resilience-pipeline output in obj/ so it can be read alongside the sample. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+    <!-- The multi-bus sample exercises the preview NamedBusMessageBus / AddBus API on purpose. -->
+    <NoWarn>$(NoWarn);PRAGMSG_MULTIBUS</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Auditing\Pragmatic.Messaging.Auditing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Testing\Pragmatic.Messaging.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Channels\Pragmatic.Messaging.Channels.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.ClaimCheck\Pragmatic.Messaging.ClaimCheck.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Sql\Pragmatic.Messaging.Sql.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <!-- Generates the [MessageHandler]+[Retry] ResiliencePipeline wrapper. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+</Project>

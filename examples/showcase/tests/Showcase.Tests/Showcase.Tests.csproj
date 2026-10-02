@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Tests — Unit + Integration tests
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <!-- Domain modules -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Showcase.Catalog\Showcase.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Booking\Showcase.Booking.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Billing\Showcase.Billing.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Accounts\Showcase.Accounts.csproj" />
+    <ProjectReference Include="..\..\src\Showcase.Host\Showcase.Host.csproj" />
+  </ItemGroup>
+
+  <!-- NuGet -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Mocking.SourceGenerator\Pragmatic.Testing.Mocking.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- …and the one that turns [GenerateComparer<T>] into a member-by-member BeEquivalentTo. A
+         separate generator because comparing is not mocking, and a suite may want either. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Comparers.SourceGenerator\Pragmatic.Testing.Comparers.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

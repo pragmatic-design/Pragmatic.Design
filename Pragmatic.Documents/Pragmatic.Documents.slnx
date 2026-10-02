@@ -1,0 +1,54 @@
+<Solution>
+  <!-- docs (auto-generated: node scripts/sync-slnx-docs.mjs) -->
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="docs/common-mistakes.md" />
+    <File Path="docs/concepts.md" />
+    <File Path="docs/csv-io.md" />
+    <File Path="docs/docx-rendering.md" />
+    <File Path="docs/email-rendering.md" />
+    <File Path="docs/getting-started.md" />
+    <File Path="docs/markup-parser.md" />
+    <File Path="docs/pdf-rendering.md" />
+    <File Path="docs/templating.md" />
+    <File Path="docs/troubleshooting.md" />
+    <File Path="docs/xlsx-rendering.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Pragmatic.Documents.Model/Pragmatic.Documents.Model.csproj" />
+    <Project Path="src/Pragmatic.Email.Model/Pragmatic.Email.Model.csproj" />
+    <Project Path="src/Pragmatic.Documents.Email/Pragmatic.Documents.Email.csproj" />
+    <Project Path="src/Pragmatic.Documents.Templating/Pragmatic.Documents.Templating.csproj" />
+    <Project Path="src/Pragmatic.Documents.Templates/Pragmatic.Documents.Templates.csproj" />
+    <Project Path="src/Pragmatic.Email.Templates/Pragmatic.Email.Templates.csproj" />
+    <Project Path="src/Pragmatic.Documents.Templating.I18N/Pragmatic.Documents.Templating.I18N.csproj" />
+    <Project Path="src/Pragmatic.Documents.Markup/Pragmatic.Documents.Markup.csproj" />
+    <Project Path="src/Pragmatic.Documents.Pdf/Pragmatic.Documents.Pdf.csproj" />
+    <Project Path="src/Pragmatic.Documents.Docx/Pragmatic.Documents.Docx.csproj" />
+    <Project Path="src/Pragmatic.Documents.Spreadsheet/Pragmatic.Documents.Spreadsheet.csproj" />
+    <Project Path="src/Pragmatic.Documents.Ooxml/Pragmatic.Documents.Ooxml.csproj" />
+    <Project Path="src/Pragmatic.Documents.Xlsx/Pragmatic.Documents.Xlsx.csproj" />
+    <Project Path="src/Pragmatic.Documents.Csv/Pragmatic.Documents.Csv.csproj" />
+    <Project Path="src/Pragmatic.Documents.Csv.Generator/Pragmatic.Documents.Csv.Generator.csproj" />
+    <Project Path="src/Pragmatic.Documents.Templating.Spreadsheet/Pragmatic.Documents.Templating.Spreadsheet.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Documents.Model.Tests/Pragmatic.Documents.Model.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Email.Model.Tests/Pragmatic.Email.Model.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Email.Tests/Pragmatic.Documents.Email.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Templating.Tests/Pragmatic.Documents.Templating.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Templates.Tests/Pragmatic.Documents.Templates.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Email.Templates.Tests/Pragmatic.Email.Templates.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Templating.I18N.Tests/Pragmatic.Documents.Templating.I18N.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.E2E.Tests/Pragmatic.Documents.E2E.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Markup.Tests/Pragmatic.Documents.Markup.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Pdf.Tests/Pragmatic.Documents.Pdf.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Docx.Tests/Pragmatic.Documents.Docx.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Spreadsheet.Tests/Pragmatic.Documents.Spreadsheet.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Xlsx.Tests/Pragmatic.Documents.Xlsx.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Csv.Tests/Pragmatic.Documents.Csv.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Csv.Generator.Tests/Pragmatic.Documents.Csv.Generator.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Documents.Templating.Spreadsheet.Tests/Pragmatic.Documents.Templating.Spreadsheet.Tests.csproj" />
+  </Folder>
+</Solution>

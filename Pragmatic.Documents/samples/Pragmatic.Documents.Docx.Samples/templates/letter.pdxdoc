@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A letter the recipient may edit before it goes out: rendered to DOCX, not PDF. The same template renders
+  to PDF with PdfRenderer — the format is the renderer's choice, not the template's.
+-->
+<document title="{{ t:letter.subject(number=contract.number) }}" author="{{ company.name }}">
+  <page>
+    <text>{{ company.name }}</text>
+    <text>{{ company.city }}, {{ letter.date | date:"d MMMM yyyy" }}</text>
+    <spacer />
+    <text>{{ recipient.name }}</text>
+    <text>{{ recipient.address }}</text>
+    <spacer />
+    <heading level="2">{{ t:letter.subject(number=contract.number) }}</heading>
+    <text>{{ t:letter.greeting(name=recipient.name) }}</text>
+    <text>{{ t:letter.body(start=contract.start | date:"d MMMM yyyy", fee=contract.fee | currency:"EUR") }}</text>
+    <list data-source="contract.services">
+      <item-template>{{ item }}</item-template>
+    </list>
+    <text if="contract.discount">{{ t:letter.discount(discount=contract.discount | percent) }}</text>
+    <spacer />
+    <text>{{ t:letter.closing }}</text>
+    <text>{{ company.signatory }}</text>
+  </page>
+</document>

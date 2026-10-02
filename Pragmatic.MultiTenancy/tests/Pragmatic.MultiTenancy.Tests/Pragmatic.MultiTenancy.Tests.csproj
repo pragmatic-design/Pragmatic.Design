@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.MultiTenancy.Persistence\Pragmatic.MultiTenancy.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.MultiTenancy.AspNetCore\Pragmatic.MultiTenancy.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+</Project>

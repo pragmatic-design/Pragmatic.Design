@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>DOCX renderer for DocumentModel — zero-dependency OOXML generation via ZipArchive + XmlWriter.</Description>
+    <PackageTags>docx;document;ooxml;renderer;word</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Documents.Model\Pragmatic.Documents.Model.csproj" />
+  </ItemGroup>
+
+</Project>

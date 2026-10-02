@@ -1,0 +1,1494 @@
+{
+  "tables": [
+    {
+      "name": "Customers",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Code",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Name",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VatNumber",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Email",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_Street",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_PostCode",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_City",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_Country",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PreferredCulture",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PaymentTermsDays",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "IsDeleted",
+          "sqlType": "boolean",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": "false",
+          "renamedFrom": null
+        },
+        {
+          "name": "DeletedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "DeletedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Customers_IsDeleted",
+          "columns": [
+            "IsDeleted"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_Customers_TenantId",
+          "columns": [
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_Customers_TenantId_Code",
+          "columns": [
+            "TenantId",
+            "Code"
+          ],
+          "isUnique": true,
+          "filter": "\u0022IsDeleted\u0022 = false"
+        },
+        {
+          "name": "IX_Customers_TenantId_VatNumber",
+          "columns": [
+            "TenantId",
+            "VatNumber"
+          ],
+          "isUnique": true,
+          "filter": "\u0022IsDeleted\u0022 = false"
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "InvoiceLines",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Description",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Quantity",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UnitPrice_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UnitPrice_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VatRate",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LineNet_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LineNet_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LineVat_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LineVat_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "InvoiceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_InvoiceLines_InvoiceId",
+          "columns": [
+            "InvoiceId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "FK_InvoiceLines_InvoiceId_Invoices",
+          "column": "InvoiceId",
+          "referencedTable": "Invoices",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 1
+        }
+      ],
+      "checkConstraints": []
+    },
+    {
+      "name": "InvoiceNumberSerieses",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Year",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LastNumber",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_InvoiceNumberSerieses_TenantId",
+          "columns": [
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_InvoiceNumberSerieses_TenantId_Year",
+          "columns": [
+            "TenantId",
+            "Year"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Invoices",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CustomerId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CustomerCode",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NetTotal_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NetTotal_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VatTotal_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VatTotal_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "GrossTotal_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "GrossTotal_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "AmountPaid_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "AmountPaid_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Notes",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Number",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "IssuedOn",
+          "sqlType": "date",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "DueOn",
+          "sqlType": "date",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToName",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToVatNumber",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToEmail",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToCulture",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToAddress_Street",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToAddress_PostCode",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToAddress_City",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BilledToAddress_Country",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PdfKey",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PdfByteLength",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PdfSha256",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LastRemindedOn",
+          "sqlType": "date",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VoidReason",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VoidedOn",
+          "sqlType": "date",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Invoices_TenantId",
+          "columns": [
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_Invoices_TenantId_Number",
+          "columns": [
+            "TenantId",
+            "Number"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Organizations",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Slug",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LegalName",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "VatNumber",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SenderEmail",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "InvoiceNumberPrefix",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_Street",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_PostCode",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_City",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Address_Country",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "State",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UpdatedBy",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Organizations_Slug",
+          "columns": [
+            "Slug"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "Payments",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "PersistenceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PaidOn",
+          "sqlType": "date",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Amount_Amount",
+          "sqlType": "numeric(18,2)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Amount_Currency",
+          "sqlType": "text",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Reference",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Method",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "InvoiceId",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX_Payments_InvoiceId",
+          "columns": [
+            "InvoiceId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX_Payments_TenantId",
+          "columns": [
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "FK_Payments_InvoiceId_Invoices",
+          "column": "InvoiceId",
+          "referencedTable": "Invoices",
+          "referencedColumn": "PersistenceId",
+          "onDelete": 3
+        }
+      ],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditEntries",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Seq",
+          "sqlType": "BIGSERIAL",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OccurredAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Category",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Operation",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ActorRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SubjectRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "BusinessOperation",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OnBehalfOfRef",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TargetType",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TargetId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Outcome",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ValueHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Detail",
+          "sqlType": "varchar(2048)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___AuditEntries_OccurredAt",
+          "columns": [
+            "OccurredAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SegmentId_Seq",
+          "columns": [
+            "SegmentId",
+            "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditPrunedRanges",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "FromSegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "UntilSegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PrunedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LinkHash",
+          "sqlType": "bytea",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__AuditSegments",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "SegmentId",
+          "sqlType": "varchar(32)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "OpenedAt",
+          "sqlType": "bigint",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SealedAt",
+          "sqlType": "bigint",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "EntryCount",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MerkleRoot",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "PreviousHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "SegmentHash",
+          "sqlType": "bytea",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___AuditSegments_SealedAt",
+          "columns": [
+            "SealedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__Jobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ScheduledFor",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Priority",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "StartedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CompletedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Error",
+          "sqlType": "varchar(4096)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Attempt",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MaxAttempts",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeaseExpiresAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeasedBy",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationJobType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationParametersJson",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___Jobs_CompletedAt",
+          "columns": [
+            "CompletedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_LeaseExpiresAt",
+          "columns": [
+            "Status",
+            "LeaseExpiresAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_Priority_ScheduledFor",
+          "columns": [
+            "Status",
+            "Priority",
+            "ScheduledFor"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__RecurringJobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "varchar(256)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CronExpression",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LastExecutedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NextExecutionAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "IsEnabled",
+          "sqlType": "boolean",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TimeZoneId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MisfirePolicy",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___RecurringJobs_IsEnabled_NextExecutionAt",
+          "columns": [
+            "IsEnabled",
+            "NextExecutionAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    }
+  ],
+  "databaseName": "AppDatabase",
+  "providerName": "PostgreSql",
+  "configKey": "ConnectionStrings:App",
+  "hash": "281816a95d22"
+}

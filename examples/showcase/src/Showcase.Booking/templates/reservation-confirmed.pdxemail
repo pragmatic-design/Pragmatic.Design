@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The confirmation a guest receives, in the guest's own language (Guest.PreferredLanguage).
+
+  Rendered by IPdxTemplates: the words come from translations/{en,it}.json (mail.confirmed.*), the dates
+  and the amount are formatted the guest's way by the date and currency pipes, and every value from the
+  reservation is encoded in the HTML. The same model gives the plain-text part.
+-->
+<email subject="{{ t:mail.confirmed.subject(checkIn=reservation.checkIn | date:&quot;d&quot;, checkOut=reservation.checkOut | date:&quot;d&quot;) }}"
+       preheader="{{ t:mail.confirmed.preheader }}">
+  <article>
+    <heading>{{ t:mail.confirmed.heading }}</heading>
+    <text>{{ t:mail.confirmed.body(name=guest.name) }}</text>
+    <table>
+      <column width="40" />
+      <column width="60" />
+      <row>
+        <cell bold="true">{{ t:mail.checkIn }}</cell>
+        <cell>{{ reservation.checkIn | date:"D" }}</cell>
+      </row>
+      <row>
+        <cell bold="true">{{ t:mail.checkOut }}</cell>
+        <cell>{{ reservation.checkOut | date:"D" }}</cell>
+      </row>
+      <row>
+        <cell bold="true">{{ t:mail.confirmed.total }}</cell>
+        <cell>{{ reservation.total | currency }}</cell>
+      </row>
+    </table>
+    <text>{{ t:mail.reference(id=reservation.id) }}</text>
+  </article>
+</email>

@@ -1,0 +1,91 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Booking — Reservation & guest domain module
+       Entities: Reservation, Guest, RoomAssignment
+       Features: DomainAction, AutoAction, Validation, Mapping, Events, Specification, Temporal
+       ======================================== -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- Full-AOT JSON: the SG emits a JsonSerializerContext covering this module's boundary types. -->
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
+  </PropertyGroup>
+
+  <!-- Allow test project to access generated internal SetXxx() methods -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Showcase.Tests" />
+  </ItemGroup>
+
+  <!-- Sibling modules -->
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Catalog\Showcase.Catalog.csproj" />
+    <!-- [ReadAccess<AppUser>] names the type, so the boundary has to see it. Same database, so the
+         join GetStaffAssignmentsQuery declares is one SQL statement. -->
+    <ProjectReference Include="..\Showcase.Accounts\Showcase.Accounts.csproj" />
+  </ItemGroup>
+
+  <!-- Pragmatic Runtime References -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <!-- Not the host's reference: a property's timezone behaviour is emitted in the compilation
+         that declares it, and the generator emits nothing where this is absent. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <!-- Decorate<> extension is in Pragmatic.Abstractions (via Pragmatic.Composition.Extensions) -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Tags\src\Pragmatic.Tags\Pragmatic.Tags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Attachments\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
+    <!-- What derives the thumbnail an attached image gets. The reference is the switch: the generator
+         emits the derivation only for a compilation that has it, so removing this line turns the
+         bounds on [HasAttachments] into a PRAG2651 warning and no generated code. Native, per RID. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <!-- [StoresNotifications] maps __Notifications into this boundary's DbContext: the type that
+         configures it has to be visible, or the attribute maps nothing. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.EFCore\Pragmatic.Notifications.EFCore.csproj" />
+    <!-- The guest's mails are templates (templates/*.pdxemail), resolved in the guest's language. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+  </ItemGroup>
+
+  <!-- The mail templates, inside this assembly: another module's template of the same name cannot
+       replace them, as two files copied to one output path would. -->
+  <ItemGroup>
+    <EmbeddedResource Include="templates\*.pdxemail" />
+  </ItemGroup>
+
+  <!-- Source Generators (Analyzers) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Translation files for i18n source generator -->
+  <ItemGroup>
+    <AdditionalFiles Include="translations\*.json" />
+  </ItemGroup>
+
+  <!-- Required for versioned endpoint samples ([ApiVersion], ExecuteV2) -->
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
+  </ItemGroup>
+
+  <!-- EF Core comes transitively from Pragmatic.Persistence.EFCore -->
+
+</Project>

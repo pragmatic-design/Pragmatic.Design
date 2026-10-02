@@ -1,0 +1,215 @@
+# Pragmatic.Design — EditorConfig
+# https://editorconfig.org
+
+root = true
+
+# ============================================
+#  Default: all files
+# ============================================
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ============================================
+#  XML, JSON, YAML, props, targets
+# ============================================
+
+[*.{xml,json,yml,yaml,props,targets,csproj,sln}]
+indent_size = 2
+
+# ============================================
+#  Markdown
+# ============================================
+
+[*.md]
+trim_trailing_whitespace = false
+
+# ============================================
+#  C# Code Style
+# ============================================
+
+[*.cs]
+
+# --- Language features ---
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_lambdas = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_extended_property_pattern = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+csharp_style_prefer_tuple_swap = true:suggestion
+csharp_style_prefer_utf8_string_literals = true:suggestion
+csharp_style_prefer_readonly_struct = true:suggestion
+csharp_style_prefer_readonly_struct_member = true:suggestion
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:suggestion
+
+# --- Nullable ---
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:suggestion
+
+# --- Formatting ---
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+# --- Naming: PascalCase for public members ---
+dotnet_naming_rule.public_members_must_be_pascal_case.severity = warning
+dotnet_naming_rule.public_members_must_be_pascal_case.symbols = public_symbols
+dotnet_naming_rule.public_members_must_be_pascal_case.style = pascal_case_style
+
+dotnet_naming_symbols.public_symbols.applicable_kinds = class, struct, interface, enum, property, method, event, delegate, namespace
+dotnet_naming_symbols.public_symbols.applicable_accessibilities = public, internal, protected, protected_internal
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# --- Naming: _camelCase for private fields ---
+dotnet_naming_rule.private_fields_must_be_camel_case.severity = warning
+dotnet_naming_rule.private_fields_must_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_must_be_camel_case.style = underscore_camel_case_style
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, private_protected
+
+dotnet_naming_style.underscore_camel_case_style.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case_style.required_prefix = _
+
+# --- Naming: camelCase for parameters and locals ---
+dotnet_naming_rule.parameters_must_be_camel_case.severity = warning
+dotnet_naming_rule.parameters_must_be_camel_case.symbols = parameter_symbols
+dotnet_naming_rule.parameters_must_be_camel_case.style = camel_case_style
+
+dotnet_naming_symbols.parameter_symbols.applicable_kinds = parameter, local
+
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+# --- Naming: I prefix for interfaces ---
+dotnet_naming_rule.interfaces_must_begin_with_i.severity = warning
+dotnet_naming_rule.interfaces_must_begin_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_must_begin_with_i.style = interface_style
+
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+
+dotnet_naming_style.interface_style.capitalization = pascal_case
+dotnet_naming_style.interface_style.required_prefix = I
+
+# --- Naming: T prefix for type parameters ---
+dotnet_naming_rule.type_parameters_must_begin_with_t.severity = warning
+dotnet_naming_rule.type_parameters_must_begin_with_t.symbols = type_parameter_symbols
+dotnet_naming_rule.type_parameters_must_begin_with_t.style = type_parameter_style
+
+dotnet_naming_symbols.type_parameter_symbols.applicable_kinds = type_parameter
+
+dotnet_naming_style.type_parameter_style.capitalization = pascal_case
+dotnet_naming_style.type_parameter_style.required_prefix = T
+
+# --- Using directives ---
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# --- Misc ---
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_prefer_auto_properties = true:suggestion
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_compound_assignment = true:suggestion
+dotnet_style_prefer_simplified_interpolation = true:suggestion
+
+# ============================================
+#  Generated code — relaxed rules
+# ============================================
+
+[*.g.cs]
+dotnet_style_require_accessibility_modifiers = never:none
+dotnet_naming_rule.public_members_must_be_pascal_case.severity = none
+dotnet_naming_rule.private_fields_must_be_camel_case.severity = none
+
+# ============================================
+#  Analyzer/generator projects — netstandard2.0
+# ============================================
+# These compile as netstandard2.0 even though the language version is latest. A
+# pure-language feature works; one that needs a BCL type does not. The IDE cannot see
+# the difference and offers the conversion anyway, and accepting it fails the build
+# with CS0246.
+# Turning it off here means a Code Cleanup can no longer break these projects,
+# whatever editor is running it.
+#
+# Only the runtime-dependent suggestions belong here. `field`, extension members,
+# primary constructors, collection expressions and target-typed `new` are pure
+# language or already polyfilled, and stay on.
+
+[**/src/*.SourceGenerator/**/*.cs]
+csharp_prefer_system_threading_lock = false
+dotnet_diagnostic.IDE0330.severity = none
+
+[**/src/*.Analyzers/**/*.cs]
+csharp_prefer_system_threading_lock = false
+dotnet_diagnostic.IDE0330.severity = none
+
+[**/src/*.CodeFixers/**/*.cs]
+csharp_prefer_system_threading_lock = false
+dotnet_diagnostic.IDE0330.severity = none
+
+# Linked into every generator, so it inherits the generators' constraints even though
+# it sits outside their directories.
+[shared/SourceGen/**/*.cs]
+csharp_prefer_system_threading_lock = false
+dotnet_diagnostic.IDE0330.severity = none
+
+# ============================================
+#  Library source — the consumers are not in this solution
+# ============================================
+# "This public member has no callers" is a sound inspection for an application and a
+# structurally wrong one for a published library: the callers are other people's code.
+# Pragmatic makes it worse, because a member can also be consumed by generated code in
+# a *downstream* assembly — a Query property read by the host's generated endpoint has
+# no caller in its own project, and taking the suggestion to make it private compiles
+# here and breaks there.
+#
+# The `.Global` variants are the ones that reason across the solution and therefore get
+# this wrong; the `.Local` variants still fire, so genuinely dead private code is still
+# reported. Real dead public API is found the way it was found for ObjectPooling and
+# PropertyPool — by looking for callers on purpose, not by trusting a squiggle.
+
+[**/src/**/*.cs]
+resharper_member_can_be_private_global_highlighting = none
+resharper_member_can_be_made_private_global_highlighting = none
+resharper_unused_member_global_highlighting = none
+resharper_unused_type_global_highlighting = none
+resharper_class_never_instantiated_global_highlighting = none
+resharper_unused_auto_property_accessor_global_highlighting = none
+resharper_auto_property_can_be_made_get_only_global_highlighting = none
+resharper_property_can_be_made_init_only_global_highlighting = none
+resharper_virtual_member_never_overridden_global_highlighting = none
+resharper_unused_parameter_global_highlighting = none

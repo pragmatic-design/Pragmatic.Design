@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Roslyn analyzers for Pragmatic.Temporal - detects DateTime.Now usage and suggests time abstractions.</Description>
+    <PackageTags>analyzers;datetime;temporal;code-analysis</PackageTags>
+    <!-- RS2008: Release tracking not required for this analyzer -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Temporal.Analyzers.Tests" />
+  </ItemGroup>
+
+  <!-- Pack analyzer DLL into the correct location -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

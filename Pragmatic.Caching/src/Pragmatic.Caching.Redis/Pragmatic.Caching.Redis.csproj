@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Redis for Pragmatic.Caching across hosts: atomic counters (ICacheStack.IncrementAsync via a single Lua INCRBY+PEXPIRE script) and the invalidation broadcast that makes every host drop what one host invalidated.</Description>
+    <PackageTags>caching;redis;rate-limiting;atomic-counter;distributed;invalidation;pubsub</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+    <!-- CacheInvalidationSubscriber is an IHostedService: it subscribes when the host starts. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+
+</Project>

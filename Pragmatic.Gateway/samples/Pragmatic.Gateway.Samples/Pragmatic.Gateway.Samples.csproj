@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Samples build YARP route/cluster configs, options, and exercise public
+       resilience helpers against an in-memory state store. They reference the
+       ASP.NET Core shared framework for HttpContext / YARP configuration types. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Gateway\Pragmatic.Gateway.csproj" />
+  </ItemGroup>
+
+</Project>

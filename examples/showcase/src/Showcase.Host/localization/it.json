@@ -1,0 +1,8 @@
+{
+  "error.room.unavailable.detail": "La camera richiesta non è disponibile per le date selezionate",
+  "error.room.unavailable.title": "Camera Non Disponibile",
+  "error.validation.error.detail": "Uno o più campi non sono validi",
+  "error.validation.error.title": "Errore di Validazione",
+  "error.entity.not.found.detail": "La risorsa richiesta non è stata trovata",
+  "error.entity.not.found.title": "Non Trovato"
+}
