@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -92,7 +92,7 @@ jobs:
              "$GITHUB_WORKSPACE/native-out/${{ matrix.rid }}/${{ matrix.target_name }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pdf-native-${{ matrix.rid }}
           path: native-out/${{ matrix.rid }}/${{ matrix.target_name }}
