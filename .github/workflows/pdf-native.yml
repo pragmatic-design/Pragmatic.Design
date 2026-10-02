@@ -55,10 +55,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          # Pinned to a commit, the ref no longer names the toolchain: say it.
+          toolchain: stable
 
       - name: Install Linux build deps
         if: matrix.os == 'ubuntu-latest'
@@ -92,7 +95,7 @@ jobs:
              "$GITHUB_WORKSPACE/native-out/${{ matrix.rid }}/${{ matrix.target_name }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pdf-native-${{ matrix.rid }}
           path: native-out/${{ matrix.rid }}/${{ matrix.target_name }}
