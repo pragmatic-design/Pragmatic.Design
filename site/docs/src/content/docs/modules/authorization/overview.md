@@ -7,7 +7,7 @@ sidebar:
   label: Overview
 ---
 The authorization engine for Pragmatic.Design: permissions, roles, groups, wildcard matching,
-resource (instance-level) policies, and a permission cache — declarative and observable.
+resource (instance-level) policies, and a permission cache, declarative and observable.
 
 ## The Problem
 
@@ -37,7 +37,7 @@ caching, and enforcement.
 [RequirePolicy<ReservationCancellationPolicy>]
 public sealed partial class CancelReservationAction : VoidDomainAction
 {
-    // business logic only — no authorization code here
+    // business logic only: no authorization code here
 }
 ```
 
@@ -55,12 +55,12 @@ app.UseAuthorization(authz =>
 
 ## What it covers
 
-- **Permissions** — wildcard-aware matching (`booking.*`, `*`), one generated `{Boundary}Permissions` class
+- **Permissions**: wildcard-aware matching (`booking.*`, `*`), one generated `{Boundary}Permissions` class
   of `const`s: the entities' CRUD and the custom ones declared with `[assembly: Permission]`.
-- **Roles & groups** — compose roles from reusable definitions; map groups to roles.
-- **Resource policies (`ResourcePolicy`)** — instance-level "can this user act on this object?" checks.
-- **Stores & caching** — pluggable role/permission/group stores; cross-request `HybridCache`.
-- **Pipeline enforcement** — `[RequirePermission]` / `[RequirePolicy]` enforced in the Actions/Endpoints pipeline.
+- **Roles & groups**: compose roles from reusable definitions; map groups to roles.
+- **Resource policies (`ResourcePolicy`)**: instance-level "can this user act on this object?" checks.
+- **Stores & caching**: pluggable role/permission/group stores; cross-request `HybridCache`.
+- **Pipeline enforcement**: `[RequirePermission]` / `[RequirePolicy]` enforced in the Actions/Endpoints pipeline.
 
 ## Installation
 
@@ -71,7 +71,7 @@ dotnet add package Pragmatic.SourceGenerator   # generates permission constants/
 
 ## Status
 
-**Functional** within 1.0.0-alpha — roles, groups, wildcard permissions, resource authorizers, and the
+**Functional** within 1.0.0-alpha: roles, groups, wildcard permissions, resource authorizers, and the
 permission cache. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/authorization/concepts/) | Mental model, permission strings, the resolution chain, where authorization runs |
@@ -96,6 +96,6 @@ identity comes from [Identity](/modules/identity/overview/); data-level filters 
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/authorization/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/authorization/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Authorization is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

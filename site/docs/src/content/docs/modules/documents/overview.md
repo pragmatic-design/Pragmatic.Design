@@ -1,17 +1,17 @@
 ---
 title: "Pragmatic.Documents"
-description: "Document, email, spreadsheet, templating, and export tooling for Pragmatic.Design — render a single"
+description: "Document, email, spreadsheet, templating, and export tooling for Pragmatic.Design: render a single"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Documents/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Document, email, spreadsheet, templating, and export tooling for Pragmatic.Design — render a single
+Document, email, spreadsheet, templating, and export tooling for Pragmatic.Design: render a single
 document model to PDF, DOCX, HTML email, CSV, and XLSX.
 
 `Pragmatic.Documents` is an umbrella module: a JSON-serializable document model plus renderers,
 template resolvers, markup parsers, and data-source integrations. You build a `DocumentModel` (directly
-or from markup/templates) and render it to whichever format you need — the model is the single source.
+or from markup/templates) and render it to whichever format you need: the model is the single source.
 
 ## Package map
 
@@ -27,10 +27,10 @@ or from markup/templates) and render it to whichever format you need — the mod
 | `Pragmatic.Documents.Email` | `EmailModel` → table-based HTML email with inline CSS (`EmailHtmlRenderer`), and its plain-text part (`EmailTextRenderer`) |
 | `Pragmatic.Documents.Csv` / `.Xlsx` | Read/write CSV / XLSX |
 | `Pragmatic.Documents.Csv.Generator` | Source generator: typed, AOT-safe CSV reader/writer for `[CsvSerializable]` types |
-| `Pragmatic.Documents.Ooxml` | OOXML parts — namespaces, relationships, theme, core properties — used by the XLSX writer |
+| `Pragmatic.Documents.Ooxml` | OOXML parts (namespaces, relationships, theme, core properties) used by the XLSX writer |
 | **Templates** | |
 | `Pragmatic.Documents.Markup` | PDX templates end to end: `IPdxTemplates` (a template by name, in the reader's language → document model, or mail subject/HTML/text), template sources, the PDX-Doc / PDX-Email parsers |
-| `Pragmatic.Documents.Templating` | Expression engine — parser, evaluator, pipes, data context |
+| `Pragmatic.Documents.Templating` | Expression engine: parser, evaluator, pipes, data context |
 | `Pragmatic.Documents.Templating.I18N` | Date, currency, percent and `t:` pipes over `IStringLocalizer` |
 | `Pragmatic.Documents.Templating.Spreadsheet` | XLSX and CSV files as template data sources |
 | `Pragmatic.Documents.Templates` / `Pragmatic.Email.Templates` | Template types and resolvers → `DocumentModel` / `EmailModel` |
@@ -39,8 +39,8 @@ Add only the packages you need; each renderer depends on its model, not on the o
 
 ## Quick Start
 
-A document is a template and its data. The template is a file — changed, translated and reviewed
-without a build — shipped inside the module that owns it:
+A document is a template and its data. The template is a file, changed, translated and reviewed
+without a build, shipped inside the module that owns it:
 
 ```xml
 <!-- templates/invoice.pdxdoc -->
@@ -66,7 +66,7 @@ using Pragmatic.Documents.Templating.Data;
 [assembly: PdxTemplates<BillingModule>]
 // (a hand-built host, or another source: services.AddPdxTemplates(t => t.FromAssemblyOf<BillingModule>()))
 
-// where the document is wanted — IPdxTemplates is injected
+// where the document is wanted: IPdxTemplates is injected
 var data = new TemplateDataContext()
     .AddSource("invoice", new Dictionary<string, object?> { ["number"] = "INV-001", ["total"] = invoice.Total });
 
@@ -75,18 +75,18 @@ byte[] pdf = PdfRenderer.Render(document.Model);   // → PDF
 // document.Warnings lists every name the template used and the data did not provide
 
 var mail = await templates.EmailAsync("reminder.pdxemail", customer.Language, data, ct);
-// mail.Subject, mail.Html, mail.Text — both bodies from one model
+// mail.Subject, mail.Html, mail.Text: both bodies from one model
 ```
 
 The language is the **reader's**, and it governs the `t:` translations and the `date` / `currency` /
 `percent` pipes alike. Use `DocumentBuilder` / `EmailBuilder` when code decides the layout, or for what
-the markup cannot express (styling, page-number fields, hyperlinks) — see
+the markup cannot express (styling, page-number fields, hyperlinks); see
 [Templating](/modules/documents/templating/), [Markup](/modules/documents/markup-parser/) and
 [Getting Started](/modules/documents/getting-started/).
 
 ## Status
 
-**Functional** within 1.0.0-alpha — PDF, DOCX, HTML email, CSV, and XLSX rendering. Parsing is currently
+**Functional** within 1.0.0-alpha: PDF, DOCX, HTML email, CSV, and XLSX rendering. Parsing is currently
 in-memory; see the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md) for streaming and large files.
 
 | [Concepts](/modules/documents/concepts/) | The model-first architecture, choosing a package |
@@ -102,6 +102,6 @@ in-memory; see the [roadmap](https://github.com/pragmatic-design/Pragmatic.Desig
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/documents/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/documents/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Documents is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

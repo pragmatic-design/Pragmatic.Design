@@ -1,12 +1,12 @@
 ---
 title: "Pragmatic.Caching"
-description: "Source-generated caching for .NET 10 — typed keys, tag-based invalidation, category routing, and"
+description: "Source-generated caching for .NET 10: typed keys, tag-based invalidation, category routing, and"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Caching/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Source-generated caching for .NET 10 — typed keys, tag-based invalidation, category routing, and
+Source-generated caching for .NET 10: typed keys, tag-based invalidation, category routing, and
 HybridCache integration.
 
 ## The Problem
@@ -15,7 +15,7 @@ Caching in .NET means scattered magic strings, manual serialization, hardcoded T
 invalidation:
 
 ```csharp
-var key = $"product:{id}";                                  // magic string — rename and it breaks
+var key = $"product:{id}";                                  // magic string: rename and it breaks
 var cached = await cache.GetStringAsync(key, ct);
 if (cached is not null) return JsonSerializer.Deserialize<ProductDto>(cached);
 var dto = ProductDto.FromEntity(await repo.GetByIdAsync(id, ct));
@@ -36,7 +36,7 @@ options, and invalidation at compile time.
 [Cacheable(Duration = "5m", Tags = ["products", "product:{ProductId}"])]
 public partial class GetProductQuery { public required Guid ProductId { get; init; } }
 
-// A mutation invalidates by tag — no key-pattern duplication
+// A mutation invalidates by tag: no key-pattern duplication
 [Mutation(Mode = MutationMode.Update)]
 [InvalidatesCache("products")]
 public partial class UpdateProductMutation : Mutation<Product> { /* ... */ }
@@ -48,7 +48,7 @@ distributed) integration.
 
 ## Distributed atomic counters (Redis)
 
-`ICacheStack.IncrementAsync` is atomic **per process** with the default `HybridCacheStack` — enough for
+`ICacheStack.IncrementAsync` is atomic **per process** with the default `HybridCacheStack`: enough for
 single-instance rate limiting, not for a multi-node deployment. The `Pragmatic.Caching.Redis` package
 routes counters to Redis (one atomic `INCRBY`+`PEXPIRE` Lua script), leaving every other cache
 operation on the existing backend:
@@ -70,7 +70,7 @@ dotnet add package Pragmatic.SourceGenerator   # generates keys + invalidation
 
 ## Status
 
-**Functional** within 1.0.0-alpha — `[Cacheable]`/`[InvalidatesCache]`, typed keys, tag invalidation,
+**Functional** within 1.0.0-alpha: `[Cacheable]`/`[InvalidatesCache]`, typed keys, tag invalidation,
 category routing, and the HybridCache integration. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/caching/concepts/) | Typed keys, tags, invalidation model, HybridCache |
@@ -86,5 +86,5 @@ category routing, and the HybridCache integration. See the [roadmap](https://git
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/caching/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/caching/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Caching is **MIT-licensed**.

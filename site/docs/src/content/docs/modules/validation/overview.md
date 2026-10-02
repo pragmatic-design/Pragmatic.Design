@@ -14,13 +14,13 @@ Validation in .NET scatters across layers and styles. Inline `if` checks bury ru
 logic and get duplicated. `DataAnnotations` uses reflection on every call, can't do async, and handles
 cross-property rules awkwardly. `FluentValidation` is expressive but runtime-only, and the validator
 class lives apart from the model it validates. In all three, rules are scattered, reflection-based, or
-disconnected from the model — and none integrates natively with a DomainAction pipeline or entity
+disconnected from the model, and none integrates natively with a DomainAction pipeline or entity
 change tracking.
 
 ## The Solution
 
 Declare rules as attributes on the model. The generator produces the exact validation code at compile
-time — no reflection, no runtime expression evaluation, no separate validator class.
+time: no reflection, no runtime expression evaluation, no separate validator class.
 
 ```csharp
 public partial class CreateReservationRequest
@@ -43,15 +43,15 @@ public partial class CreateReservationRequest
 ```
 
 The generator emits `ISyncValidator.Validate()` with inline `if` statements. For database checks,
-implement `IAsyncValidator<T>` with `[Validator]` — the generator wires up DI and a
+implement `IAsyncValidator<T>` with `[Validator]`: the generator wires up DI and a
 `CompositeValidator<T>`. A `DomainAction`'s pipeline runs validation before `Execute()` by default;
 `[Validate]` only changes that default and `[NoValidation]` switches it off.
 
 ## Two levels
 
-- **Level 1 (input)** — validates input DTOs before any database access: sync attributes first, then
+- **Level 1 (input)**: validates input DTOs before any database access: sync attributes first, then
   async validators (uniqueness, external checks).
-- **Level 2 (entity)** — validates entity invariants after a mutation is applied, before persistence;
+- **Level 2 (entity)**: validates entity invariants after a mutation is applied, before persistence;
   change-aware, so only modified properties are re-validated.
 
 ## Installation
@@ -98,7 +98,7 @@ public partial class RegisterGuestRequest
 // Run it directly…
 var result = request.Validate();
 
-// …or let a DomainAction run L1+L2 — it does by default, no attribute needed:
+// …or let a DomainAction run L1+L2: it does by default, no attribute needed:
 [DomainAction]
 public partial class RegisterGuest : DomainAction<Guid> { /* ... */ }
 ```
@@ -107,7 +107,7 @@ Full walkthrough: [Getting Started](/modules/validation/getting-started/).
 
 ## Status
 
-**Stable** within 1.0.0-alpha — the attribute set, sync/async validators, and the L1/L2 pipeline are
+**Stable** within 1.0.0-alpha: the attribute set, sync/async validators, and the L1/L2 pipeline are
 settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/validation/concepts/) | L1/L2 model, sync vs async, change-aware validation, decision guide |
@@ -124,5 +124,5 @@ settled. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/validation/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/validation/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Validation is **MIT-licensed**.

@@ -1,6 +1,6 @@
 # Pragmatic.Messaging
 
-Event-driven messaging for .NET 10 — zero reflection, AOT-safe handler pipelines, transactional
+Event-driven messaging for .NET 10: zero reflection, AOT-safe handler pipelines, transactional
 outbox, saga orchestration, batch processing, and multi-transport support, all source-generated at
 compile time.
 
@@ -27,8 +27,8 @@ services.AddMassTransit(x =>
 
 ## The Solution
 
-Resilience is declared **on the handler**. The generator produces the complete pipeline — retry loop,
-circuit breaker, timeout, idempotency, telemetry — as inline code at compile time. Zero Polly, zero
+Resilience is declared **on the handler**. The generator produces the complete pipeline (retry loop,
+circuit breaker, timeout, idempotency, telemetry) as inline code at compile time. Zero Polly, zero
 reflection.
 
 ```csharp
@@ -45,7 +45,7 @@ public sealed partial class OrderCreatedHandler(IOrderService service)
 ```
 
 The generator emits `OrderCreatedHandler.Pipeline.g.cs` (a nested `Pipeline` class) with the retry loop, circuit-breaker state,
-timeout token, idempotency check, and telemetry — all inline.
+timeout token, idempotency check, and telemetry, all inline.
 
 ## Installation
 
@@ -69,7 +69,7 @@ dotnet add package Pragmatic.Messaging.Auditing    # message audit trail
 
 ## Quick Start
 
-**1. Define a message and handler** (the generator auto-discovers handlers by `[MessageHandler]` — no
+**1. Define a message and handler** (the generator auto-discovers handlers by `[MessageHandler]`; no
 manual registration):
 
 ```csharp
@@ -115,28 +115,28 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 | Package | Role |
 |---------|------|
 | `Pragmatic.Messaging` | Bridge to Events + EF Core: outbox interceptor, delivery service, event adapter |
-| `Pragmatic.Messaging.Core` | Interfaces, attributes, in-memory bus, middleware, routing, distributed request/reply — no dependency on Events or EF Core |
+| `Pragmatic.Messaging.Core` | Interfaces, attributes, in-memory bus, middleware, routing, distributed request/reply; no dependency on Events or EF Core |
 | `Pragmatic.Messaging.Channels` / `.RabbitMQ` / `.Kafka` / `.AzureServiceBus` / `.Sql` | Transports (in-process / AMQP / streaming / cloud+emulator / PostgreSQL or SQL Server tables, no broker) |
 | `Pragmatic.Messaging.EFCore` | EF Core stores: outbox source, idempotency, audit persistence |
 | `Pragmatic.Messaging.Saga` | Saga orchestration over domain actions: compensation, timeouts, generated orchestrator |
 | `Pragmatic.Messaging.Batch` | Scatter/gather with progress tracking and rate limiting |
 | `Pragmatic.Messaging.ClaimCheck` | Large payloads moved to Pragmatic.Storage; the message carries the reference |
 | `Pragmatic.Messaging.Jobs` | Scheduled (future) message delivery, via Pragmatic.Jobs |
-| `Pragmatic.Messaging.Auditing` | Every handled message on the Pragmatic.Audit trail — by reference, never by payload |
+| `Pragmatic.Messaging.Auditing` | Every handled message on the Pragmatic.Audit trail, by reference, never by payload |
 | `Pragmatic.Messaging.Dashboard` | Ops API and embedded panel: status, outbox, dead-letter replay, sagas, audit |
 | `Pragmatic.Messaging.Testing` | `MessageBusTestHarness` (record-only + dispatching modes) |
 
 ## Operational note
 
 The outbox is **at-least-once**: a message can be delivered more than once (e.g. after a retry or a
-crash between commit and dispatch). Make handlers **idempotent** — enable `EnableIdempotency()` and/or
+crash between commit and dispatch). Make handlers **idempotent**: enable `EnableIdempotency()` and/or
 guard side effects by a business key. In cross-boundary scenarios, publish through the outbox
 (`[EnableOutbox]`) so the message commits in the same transaction as your data. See
 [Common Mistakes](docs/common-mistakes.md).
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the handler pipeline, the outbox, sagas, the transports, and batch.
+**Functional** within 1.0.0-alpha: the handler pipeline, the outbox, sagas, the transports, and batch.
 See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -145,7 +145,7 @@ See the [roadmap](../docs/ROADMAP.md).
 |-------|-------------------|
 | [Concepts](docs/concepts.md) | Message lifecycle, handler pipeline, transport architecture, registration, Events vs Messaging |
 | [Getting Started](docs/getting-started.md) | Define a message, handler, publish, configure a transport |
-| [Transports](docs/transports.md) | RabbitMQ / Kafka / Azure Service Bus / SQL (Postgres/SqlServer) / Channels — topology, dead-lettering, ordering, local testing (incl. ASB emulator) |
+| [Transports](docs/transports.md) | RabbitMQ / Kafka / Azure Service Bus / SQL (Postgres/SqlServer) / Channels: topology, dead-lettering, ordering, local testing (incl. ASB emulator) |
 | [Reliability](docs/reliability.md) | The failure ladder: `[Retry]` → `[Redelivery]` → transport dead-letter; kill switch, rate/concurrency limits, idempotency purge, claim check |
 | [Sagas](docs/saga-guide.md) | `ISaga<T>`, orchestration vs choreography, compensation, timeouts, generated Mermaid diagrams |
 | [Advanced Patterns](docs/advanced-patterns.md) | Distributed request/reply, multi-bus with isolated transports, scheduled messages (Jobs / ASB / SQL native), auditing, claim check |
@@ -167,6 +167,6 @@ for scheduled delivery, and is wired by [Composition](../Pragmatic.Composition/R
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Messaging is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

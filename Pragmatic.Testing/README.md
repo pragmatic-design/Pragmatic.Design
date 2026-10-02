@@ -1,25 +1,25 @@
 # Pragmatic.Testing
 
 Compile-time testing infrastructure for Pragmatic APIs: generated contract tests, a typed
-test client (`Api.*`), and HTTP assertion helpers. Zero reflection — the source generator
+test client (`Api.*`), and HTTP assertion helpers. Zero reflection: the source generator
 reads the endpoint contracts your app already emits.
 
 ## What you get
 
 | Piece | Where it lives | Purpose |
 |---|---|---|
-| Contract tests | generated into the test project | Authorization, CRUD and state-transition suites per endpoint — see [Contract tests](docs/contract-tests.md) |
+| Contract tests | generated into the test project | Authorization, CRUD and state-transition suites per endpoint; see [Contract tests](docs/contract-tests.md) |
 | `PragmaticTestIdentity` | `Pragmatic.Testing` runtime | Dev-identity headers (`AsUser`) for acting as a specific user, tenant, or a caller with no permission at all |
 | Typed client `Api.*` | generated into the test project | `Api.{Boundary}.{Name}Async(client, ...)` → `ApiResponse` / `ApiResponse<T>`; routes and verbs resolved at compile time |
 | `ApiResponse` / `ApiResponse<T>` | `Pragmatic.Testing` runtime | Lazy deserialization (`ReadAsync`), chainable assertions, implicit conversion to `HttpResponseMessage` |
 | `PragmaticHttpAssertions` | `Pragmatic.Testing` runtime | `ShouldBeOk()`, `ShouldBeCreated()`, `ShouldBeUnprocessable()`, `ShouldBeConflict()`, `ShouldHaveStatus(code)` … framework-agnostic (BCL-only) |
 | `PragmaticJson.Options` | `Pragmatic.Testing` runtime | The host's JSON conventions, for hand-rolled serialization in tests |
-| `.Should()` assertions | `Pragmatic.Testing` runtime (`Assertions/`) | The assertion library the repository's own tests use — no FluentAssertions |
+| `.Should()` assertions | `Pragmatic.Testing` runtime (`Assertions/`) | The assertion library the repository's own tests use; no FluentAssertions |
 | Mocks | `Pragmatic.Testing.Mocking.SourceGenerator` | `[GenerateMock<T>]` → a reflection-free, AOT-safe mock; opt in by referencing the generator |
 | Comparers | `Pragmatic.Testing.Comparers.SourceGenerator` | `[GenerateComparer<T>]` → a member-by-member `BeEquivalentTo` for types without value equality |
 
 The client pairs with the `ApiRoutes` class the unified source generator emits into the app
-assembly (route constants + typed URL builders) — rename a route and every test that calls
+assembly (route constants + typed URL builders): rename a route and every test that calls
 it breaks at build, not at runtime.
 
 ## Quick Start
@@ -51,11 +51,11 @@ var dto = await fetched.ReadAsync();   // ApiResponse<GuestDto> → GuestDto
 
 Generated contract test classes join the `PragmaticContractTests` xUnit collection;
 `PragmaticContractTestBase` exposes the shared `Client` wired once by the collection
-fixture — no per-class setup.
+fixture, no per-class setup.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — generated contract tests, the typed test client (`Api.*`), and the
+**Functional** within 1.0.0-alpha: generated contract tests, the typed test client (`Api.*`), and the
 HTTP assertions; four of the reference applications' suites run on it. See the
 [roadmap](../docs/ROADMAP.md).
 
@@ -64,7 +64,7 @@ HTTP assertions; four of the reference applications' suites run on it. See the
 | Guide | What it covers |
 |-------|----------------|
 | [Getting started](docs/getting-started.md) | Wiring the generator, the collection fixture, your first test |
-| [Contract tests](docs/contract-tests.md) | What each generated family asserts — and what it deliberately does not |
+| [Contract tests](docs/contract-tests.md) | What each generated family asserts, and what it deliberately does not |
 | [Typed test client](docs/typed-client.md) | The two tiers (`ApiRoutes` + `Api`), setup, usage, limits |
 | [Common mistakes](docs/common-mistakes.md) | Denial tests that pass for the wrong reason, assertion strength, fixture wiring |
 | [Troubleshooting](docs/troubleshooting.md) | Nothing generated, missing client, unexpected 401/400 |
@@ -76,5 +76,5 @@ HTTP assertions; four of the reference applications' suites run on it. See the
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Testing is **MIT-licensed**.

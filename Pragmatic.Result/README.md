@@ -6,7 +6,7 @@ Zero-allocation `Result` types for .NET 10 with railway-oriented programming.
 
 Most .NET code signals failure by throwing. That hides error paths from method signatures, forces
 callers to guess what to catch, and allocates expensive stack traces for *expected* outcomes like
-"entity not found". The compiler can't enforce handling — miss a `catch` and you ship a generic 500.
+"entity not found". The compiler can't enforce handling: miss a `catch` and you ship a generic 500.
 
 ```csharp
 // Without Pragmatic.Result: error paths are invisible, exceptions are expensive
@@ -21,7 +21,7 @@ public async Task<User> GetUserAsync(int id)
 
 ## The Solution
 
-Make error paths explicit in the type system. Return `Result<TValue, TError>` instead of throwing —
+Make error paths explicit in the type system. Return `Result<TValue, TError>` instead of throwing:
 the compiler ensures callers handle both outcomes. The wrapper itself is zero-allocation.
 
 ```csharp
@@ -40,38 +40,38 @@ var message = result.Match(
 
 ## Features
 
-- **Zero-allocation core** — `Result<TValue, TError>`, `Result<TValue>`, `VoidResult`,
+- **Zero-allocation core**: `Result<TValue, TError>`, `Result<TValue>`, `VoidResult`,
   `VoidResult<TError>`, and `Maybe<TValue>` are all `readonly struct`.
-- **Multi-error Results** — `Result<TValue, TError1, …, TError8>` and `VoidResult<TError1, …, TError8>`
+- **Multi-error Results**: `Result<TValue, TError1, …, TError8>` and `VoidResult<TError1, …, TError8>`
   variants for up to 8 typed errors per operation, shipped pre-generated in the package.
-- **Railway-oriented composition** — `Map`, `Bind`, `Match`, `Tap`, `Ensure`, `Recover`, `OrElse`,
+- **Railway-oriented composition**: `Map`, `Bind`, `Match`, `Tap`, `Ensure`, `Recover`, `OrElse`,
   each with async counterparts (`MapAsync`, `BindAsync`, `MatchAsync`, …) that chain on `Task<Result>`.
-- **Collection operators** — `Combine` (fail-fast), `CollectAll` (accumulate into `AggregateError`),
+- **Collection operators**: `Combine` (fail-fast), `CollectAll` (accumulate into `AggregateError`),
   `Partition`/`GetSuccesses`/`GetFailures`, plus `IAsyncEnumerable` variants.
-- **Exception boundary** — `Result.Try`/`Result.TryAsync` wrap throwing code; `Result.FromNullable`
+- **Exception boundary**: `Result.Try`/`Result.TryAsync` wrap throwing code; `Result.FromNullable`
   and `Maybe.ToResult` lift nullables into the Result world.
-- **Rich error model** — `Error` record base with `Code`, `StatusCode`, `Title`, `Parameters`,
+- **Rich error model**: `Error` record base with `Code`, `StatusCode`, `Title`, `Parameters`,
   `IsTransient`/`RetryAfter`, and `WriteExtensions` for structured ProblemDetails payloads.
-- **8 built-in HTTP error types** — `BadRequestError` (400), `UnauthorizedError` (401),
+- **8 built-in HTTP error types**: `BadRequestError` (400), `UnauthorizedError` (401),
   `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `BusinessRuleError` (422),
   `InternalServerError` (500), `DependencyError` (502/503/504), each with factory methods.
-- **ASP.NET Core integration** — return `Result` straight from Minimal API endpoints
+- **ASP.NET Core integration**: return `Result` straight from Minimal API endpoints
   (`WithResultHandling()`) or Controllers (`ResultActionFilter`); failures become RFC 7807
   ProblemDetails with the right status code; OpenAPI transformers document Result schemas and
   error responses (`AddResultTypeSupport()`).
-- **JSON round-trip** — typed, AOT-safe converters you register for the shapes you serialize
+- **JSON round-trip**: typed, AOT-safe converters you register for the shapes you serialize
   (`ResultJsonConverter<TValue, TError>`, `VoidResultJsonConverter<TError>`, `MaybeJsonConverter<T>`); a
   multi-error `Result<T, E1, E2, …>` is declared with `[assembly: JsonResultContract<…>]` and the generator
   writes its converter. There is no open-generic factory. The concrete error type travels in the
   `$errorType` discriminator. Endpoints need none of this: they unwrap a `Result` into the value or a
   ProblemDetails.
-- **EF Core integration** — `SaveChangesAsResultAsync` turns `DbUpdateException` into typed database
+- **EF Core integration**: `SaveChangesAsResultAsync` turns `DbUpdateException` into typed database
   errors; `FirstOrDefaultAsResultAsync`/`SingleOrDefaultAsResultAsync`/`FindAsResultAsync` return
   `Result` instead of null; provider packages parse SQL Server, PostgreSQL, MySQL, and SQLite
   exceptions into precise error types.
-- **Localization-ready** — every error carries a stable `Code` and derived `MessageKey`;
+- **Localization-ready**: every error carries a stable `Code` and derived `MessageKey`;
   `IErrorMessageResolver` plugs in custom/localized ProblemDetails messages.
-- **Analyzer** — `PRAG0001` warns when `.Value` is accessed without checking `IsSuccess` first.
+- **Analyzer**: `PRAG0001` warns when `.Value` is accessed without checking `IsSuccess` first.
 
 ## Packages
 
@@ -112,7 +112,7 @@ if (result.TryGetValue(out var value))
 ```
 
 In ASP.NET Core, return `Result` types straight from endpoints and let the integration map them to
-HTTP — success to `200`, typed errors to the right status + an RFC 7807 ProblemDetails:
+HTTP: success to `200`, typed errors to the right status + an RFC 7807 ProblemDetails:
 
 ```csharp
 builder.Services.AddPragmaticResult();
@@ -126,7 +126,7 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 ## Status
 
-**Stable** within 1.0.0-alpha — the core `Result` API, error types, and the ASP.NET Core and EF Core
+**Stable** within 1.0.0-alpha: the core `Result` API, error types, and the ASP.NET Core and EF Core
 integrations are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -147,5 +147,5 @@ integrations are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Result is **MIT-licensed**.

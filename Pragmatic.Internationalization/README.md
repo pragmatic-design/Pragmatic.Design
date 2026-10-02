@@ -9,28 +9,28 @@ plural support, and humanizers.
 .NET gives you low-level globalization primitives (`CultureInfo`, `.resx`), but a real multilingual app
 hits the same gaps:
 
-- **Thread culture is fragile** — `CurrentCulture` is thread-local; after an `await` your continuation
+- **Thread culture is fragile**: `CurrentCulture` is thread-local; after an `await` your continuation
   may run on a different thread, and `DefaultThreadCurrentCulture` is a process-wide, multi-tenant trap.
-- **No multi-scope culture** — a request may need Italian UI, English API responses, German invoices.
+- **No multi-scope culture**: a request may need Italian UI, English API responses, German invoices.
   .NET gives you two slots; beyond that you're on your own.
-- **Money is not a type** — every app reinvents a `Money` struct, silently adds USD to EUR, and formats
+- **Money is not a type**: every app reinvents a `Money` struct, silently adds USD to EUR, and formats
   inconsistently.
-- **Plurals are language-specific** — English has 2 forms, Russian 3, Arabic 6; `count == 1 ? a : b`
+- **Plurals are language-specific**: English has 2 forms, Russian 3, Arabic 6; `count == 1 ? a : b`
   is wrong for most of the world.
-- **`.resx` doesn't compose** — translations scatter across XML with no build-time completeness check;
+- **`.resx` doesn't compose**: translations scatter across XML with no build-time completeness check;
   you can ship with half a language missing.
 
-## The Solution — five pillars
+## The Solution: five pillars
 
-1. **`I18NContext`** — an `AsyncLocal` ambient context that flows across `await`, supports multiple
+1. **`I18NContext`**: an `AsyncLocal` ambient context that flows across `await`, supports multiple
    culture scopes (UI, Data, custom), and syncs with .NET thread cultures.
-2. **`Money` & `CurrencyCode`** — value types enforcing same-currency arithmetic, ISO 4217 metadata,
+2. **`Money` & `CurrencyCode`**: value types enforcing same-currency arithmetic, ISO 4217 metadata,
    and culture-aware formatting.
-3. **Formatting** — extension methods + an injectable `GlobalizationFormatter` for numbers, dates,
+3. **Formatting**: extension methods + an injectable `GlobalizationFormatter` for numbers, dates,
    money, percentages, and file sizes.
-4. **Translation keys (SG)** — a generator reads JSON at compile time and produces a static `T` class
+4. **Translation keys (SG)**: a generator reads JSON at compile time and produces a static `T` class
    of strongly-typed `LocalizedString` properties; missing translations are build warnings (PRAG1802).
-5. **Humanizers** — duration, ordinal, quantity, and relative-time formatters for 17+ languages.
+5. **Humanizers**: duration, ordinal, quantity, and relative-time formatters for 17+ languages.
 
 ```csharp
 var price = Money.From(99.99m, CurrencyCode.EUR);
@@ -42,7 +42,7 @@ var subject = T.Emails.OrderShipped.Value;       // compile-time-safe translatio
 The middleware sets `I18NContext` from `Accept-Language` / query string / a provider chain, and it
 flows across every `await` automatically.
 
-## Quick Start — translations
+## Quick Start: translations
 
 1. Add JSON files under `translations/` (one per culture: `en.json`, `it.json`, …).
 2. Include them in your `.csproj`: `<AdditionalFiles Include="translations/*.json" />`.
@@ -82,7 +82,7 @@ dotnet add package Pragmatic.SourceGenerator   # generates the strongly-typed T 
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the five pillars, the translation generator, and the ASP.NET Core and
+**Functional** within 1.0.0-alpha: the five pillars, the translation generator, and the ASP.NET Core and
 EF Core integrations; the surface may still change before 1.0. See the [roadmap](../docs/ROADMAP.md) and
 the [CHANGELOG](CHANGELOG.md).
 
@@ -104,5 +104,5 @@ the [CHANGELOG](CHANGELOG.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Internationalization is **MIT-licensed**.

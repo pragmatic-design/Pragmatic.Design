@@ -14,13 +14,13 @@ A modular monolith splits logic into modules, each with its own database. In a s
 Composition generator validates the whole topology at compile time. But split modules across multiple
 hosts and that validation disappears: you can't know at build time whether two hosts deploy the same
 module, whether `ReadAccess` spans hosts (breaking SQL joins), or whether DB providers mismatch.
-External registries (Consul, etcd) know "Host B is alive at :5002" — not "Host B owns BillingModule on
+External registries (Consul, etcd) know "Host B is alive at :5002", not "Host B owns BillingModule on
 BillingDb with PostgreSQL." So you maintain a separate config that drifts from the code.
 
 ## The Solution
 
 Pragmatic.Discovery reads the SG-emitted topology metadata that already lives in every compiled host
-assembly, stores it in a shared backend, and validates the deployment against the other hosts —
+assembly, stores it in a shared backend, and validates the deployment against the other hosts,
 automatically, at startup. No manual config, no drifting registry; the metadata travels with the
 assembly.
 
@@ -45,7 +45,7 @@ modules, cross-host `ReadAccess`, and provider mismatches.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — topology registration, querying, validation, and the in-memory and
+**Functional** within 1.0.0-alpha: topology registration, querying, validation, and the in-memory and
 Agent backends. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/discovery/concepts/) | Topology metadata, the backend model, register/query/validate |
@@ -60,5 +60,5 @@ Agent backends. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/discovery/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/discovery/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Discovery is **MIT-licensed**.

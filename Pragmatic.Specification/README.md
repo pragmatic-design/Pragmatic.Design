@@ -4,14 +4,14 @@ The specification pattern for composable, reusable query predicates in .NET 10.
 
 ## The Problem
 
-Business rules embedded in queries get duplicated across repositories, services, and validators — each
+Business rules embedded in queries get duplicated across repositories, services, and validators, each
 copy an inline lambda. Change the rule and you hunt every method; worse, SQL (expression trees) and
 in-memory checks (compiled delegates) drift apart.
 
 ```csharp
 db.Orders.Where(o => !o.IsCancelled && !o.IsDeleted)                 // repository
-db.Orders.Where(o => !o.IsCancelled && !o.IsDeleted && o.Total >= t) // service — same rule again
-!order.IsCancelled && !order.IsDeleted                               // validator — same rule, drifts
+db.Orders.Where(o => !o.IsCancelled && !o.IsDeleted && o.Total >= t) // service: same rule again
+!order.IsCancelled && !order.IsDeleted                               // validator: same rule, drifts
 ```
 
 ## The Solution
@@ -40,7 +40,7 @@ dotnet add package Pragmatic.Specification
 
 ## Status
 
-**Stable** within 1.0.0-alpha — composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
+**Stable** within 1.0.0-alpha: composition (`And`/`Or`/`Not`), EF Core translation, and in-memory
 evaluation are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -59,5 +59,5 @@ evaluation are settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Specification is **MIT-licensed**.

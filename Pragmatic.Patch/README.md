@@ -27,12 +27,12 @@ public class UpdateGuestRequest
 ## The Solution
 
 `Optional<T>` (a readonly struct with explicit tri-state) plus source-generated patch types. Mark an
-empty `partial record` with `[GeneratePatch<TEntity>]` — the generator emits one `Optional<T>` property
+empty `partial record` with `[GeneratePatch<TEntity>]`: the generator emits one `Optional<T>` property
 per settable entity property, plus the apply logic that updates only the properties that were actually
 sent, and tracks `ModifiedProperties` for change-aware validation/persistence.
 
 ```csharp
-// You write only this — an EMPTY partial record. Don't declare the properties.
+// You write only this: an EMPTY partial record. Don't declare the properties.
 [GeneratePatch<Guest>]
 public partial record PatchGuestRequest;
 
@@ -51,7 +51,7 @@ properties are excluded automatically.
 `Pragmatic.Persistence` has a second tri-state form, `[Patch<TEntity>]`: you declare the properties
 yourself as plain nullable types, and the generated JSON converter records which ones the body named
 (`MarkSet`) so that `ApplyPatch` can tell "sent as null" from "not sent". This package generates the
-whole DTO from the entity instead, with `Optional<T>` making the state part of each value — see
+whole DTO from the entity instead, with `Optional<T>` making the state part of each value; see
 [Persistence: Patch](../Pragmatic.Persistence/docs/13-patch.md).
 
 ## Installation
@@ -63,7 +63,7 @@ dotnet add package Pragmatic.SourceGenerator   # generates the patch types
 
 ## Status
 
-**Functional** within 1.0.0-alpha — `Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization,
+**Functional** within 1.0.0-alpha: `Optional<T>`, `[GeneratePatch<T>]` generation, JSON deserialization,
 and `ModifiedProperties` tracking. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -83,5 +83,5 @@ and `ModifiedProperties` tracking. See the [roadmap](../docs/ROADMAP.md).
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Patch is **MIT-licensed**.

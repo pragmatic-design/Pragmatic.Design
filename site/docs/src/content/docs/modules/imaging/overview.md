@@ -41,7 +41,7 @@ var jpeg = pipeline
     .Encode(ImageFormat.Jpeg, quality: 85);
 ```
 
-> The `quality` parameter currently applies to **JPEG only**. For WebP and AVIF it is ignored —
+> The `quality` parameter currently applies to **JPEG only**. For WebP and AVIF it is ignored:
 > WebP encodes lossless and AVIF uses the native library default.
 
 ### One-liner helpers
@@ -110,14 +110,14 @@ Important public entrypoints:
 ## Operational notes
 
 - **Native buffer lifecycle.** An `ImagePipeline` owns a native image handle. Dispose it
-  explicitly (`using var pipeline = ...` or `await using`) — skipping disposal leaks native
+  explicitly (`using var pipeline = ...` or `await using`); skipping disposal leaks native
   memory the .NET GC cannot reclaim. A pipeline is not thread-safe: do not use one from
   several threads. The static helpers (`ImageConverter`, `ImageBatch`) create and dispose
   their own pipelines.
 
 ## Status
 
-**Preview** within 1.0.0-alpha — decoding, encoding, resizing, cropping, rotation, filters and QR codes
+**Preview** within 1.0.0-alpha: decoding, encoding, resizing, cropping, rotation, filters and QR codes
 run on a native library. The package ships native binaries for `win-x64`, `linux-x64` (glibc) and
 `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner,
 and no test runs it on macOS yet ([native-deployment.md](/modules/imaging/native-deployment/)). See the
@@ -125,10 +125,10 @@ and no test runs it on macOS yet ([native-deployment.md](/modules/imaging/native
 
 ## Documentation
 
-- [Concepts](/modules/imaging/concepts/) — architecture, pipeline model, safety limits, thread safety
-- [Getting Started](/modules/imaging/getting-started/) — five concrete scenarios
-- [Operations Reference](/modules/imaging/operations/) — full catalogue of transforms and filters
-- [Native Deployment](/modules/imaging/native-deployment/) — platforms, AOT, Docker
+- [Concepts](/modules/imaging/concepts/): architecture, pipeline model, safety limits, thread safety
+- [Getting Started](/modules/imaging/getting-started/): five concrete scenarios
+- [Operations Reference](/modules/imaging/operations/): full catalogue of transforms and filters
+- [Native Deployment](/modules/imaging/native-deployment/): platforms, AOT, Docker
 - [Common Mistakes](/modules/imaging/common-mistakes/)
 - [Troubleshooting](/modules/imaging/troubleshooting/)
 
@@ -139,9 +139,9 @@ Samples:
 ## Requirements
 
 - .NET 10.0+
-- One of the platforms above — the native library is loaded from the package's `runtimes/` folder
+- One of the platforms above: the native library is loaded from the package's `runtimes/` folder
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/imaging/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/imaging/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Imaging is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

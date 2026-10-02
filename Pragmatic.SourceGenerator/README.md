@@ -1,11 +1,11 @@
 # Pragmatic.SourceGenerator
 
-The unified incremental source generator for the entire Pragmatic.Design ecosystem — one Roslyn
+The unified incremental source generator for the entire Pragmatic.Design ecosystem: one Roslyn
 analyzer that detects which runtime packages your project references and activates only the
 corresponding generation pipelines.
 
 > **Audience:** framework developers working on Pragmatic.Design internals. If you're *building an app*
-> with Pragmatic, you consume this generator indirectly through the runtime packages — add the
+> with Pragmatic, you consume this generator indirectly through the runtime packages: add the
 > `Pragmatic.SourceGenerator` package and the features for the modules you reference light up.
 
 ## The Problem
@@ -14,7 +14,7 @@ corresponding generation pipelines.
 **manual boilerplate** (verbose, drifts). Both compound as the codebase grows.
 
 ```csharp
-// Discovery-based registration — runs at startup, reflection-heavy, not AOT-safe
+// Discovery-based registration: runs at startup, reflection-heavy, not AOT-safe
 var entityTypes = Assembly.GetExecutingAssembly().GetTypes()
     .Where(t => t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHasKey<>)));
 ```
@@ -23,7 +23,7 @@ var entityTypes = Assembly.GetExecutingAssembly().GetTypes()
 
 One incremental generator that reads your attributes/partial classes at compile time and emits the
 wiring as plain, debuggable C#. **Feature detection** (`FeatureDetector` scanning referenced
-assemblies) activates a pipeline only when its runtime package is present — add a package, the
+assemblies) activates a pipeline only when its runtime package is present: add a package, the
 generation appears; remove it, the code disappears. No runtime discovery, AOT-ready output.
 
 It is a single `netstandard2.0` analyzer with **29 feature folders** under `Features/` (Persistence,
@@ -36,9 +36,9 @@ Temporal, Privacy, Redaction, …) sharing the `CSharpTemplate` infrastructure i
 |---------|------------|
 | `src/Pragmatic.SourceGenerator` | The unified `IIncrementalGenerator`, plus four `DiagnosticSuppressor`s (PRAGS001-004) that stop the IDE from warning about members the generator supplies |
 | `src/Pragmatic.SourceGenerator.Analyzers` | Design-time analyzers: `NotPartialClassAnalyzer` (13 "must be partial" IDs), `EventCycleAnalyzer` (PRAG0822), `BoundaryActionsInjectionAnalyzer` (PRAG0441), `IgnoredValidationAttributeAnalyzer` (PRAG0210), `VisibilityRuleAnalyzer` (PRAG0717-0721). **Packed inside the `Pragmatic.SourceGenerator` package**, so they arrive wherever the generator does |
-| `src/Pragmatic.SourceGenerator.CodeFixers` | `MakeClassPartialCodeFixProvider`, with a batch fix-all — its own package |
+| `src/Pragmatic.SourceGenerator.CodeFixers` | `MakeClassPartialCodeFixProvider`, with a batch fix-all; its own package |
 
-Tests live in the matching `tests/` projects — 2,149 for the generator alone at the last gate run
+Tests live in the matching `tests/` projects: 2,149 for the generator alone at the last gate run
 (`node scripts/check.mjs --tier full` prints the current count).
 
 ## Installation
@@ -49,7 +49,7 @@ dotnet add package Pragmatic.SourceGenerator
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the unified generator and its feature pipelines. See the
+**Functional** within 1.0.0-alpha: the unified generator and its feature pipelines. See the
 [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -64,7 +64,7 @@ dotnet add package Pragmatic.SourceGenerator
 | [Troubleshooting](docs/troubleshooting.md) | Problem/solution guide, including PRAG9000 |
 
 **Start here if you are new:** [Concepts](docs/concepts.md) for the model, then
-[Common Mistakes](docs/common-mistakes.md) — three of those mistakes (raw `ImmutableArray<T>` on a model,
+[Common Mistakes](docs/common-mistakes.md): three of those mistakes (raw `ImmutableArray<T>` on a model,
 plain `RegisterSourceOutput`, a hint name without its namespace) compile cleanly and fail silently.
 
 ## Requirements
@@ -73,5 +73,5 @@ plain `RegisterSourceOutput`, a hint name without its namespace) compile cleanly
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.SourceGenerator is **MIT-licensed**.

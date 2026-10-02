@@ -11,7 +11,7 @@ YARP-based API gateway for Pragmatic.Design applications, with Agent-driven rout
 ## What It Does
 
 - Reverse proxy based on YARP
-- Dynamic routes and clusters loaded from `Pragmatic.Agent`, including routes the running instances announce themselves (an instance that stops leaves the rotation — see [concepts](/modules/gateway/concepts/#3-announced-by-the-instances-themselves))
+- Dynamic routes and clusters loaded from `Pragmatic.Agent`, including routes the running instances announce themselves (an instance that stops leaves the rotation; see [concepts](/modules/gateway/concepts/#3-announced-by-the-instances-themselves))
 - Static route fallback from configuration
 - Maintenance middleware and graceful drain behavior
 - Tenant-aware request routing
@@ -84,14 +84,14 @@ individual clusters by YARP cluster ID. Each policy maps to `ClusterResiliencePo
 `ProxyResilienceMiddleware` runs inside the YARP proxy pipeline and maintains a circuit per
 cluster (state in `ICircuitBreakerStateStore`, in-memory by default):
 
-- **Closed** — requests flow through. A response whose status falls in the failure range
+- **Closed**: requests flow through. A response whose status falls in the failure range
   (default `500–599`), a timeout, or a backend connection error is counted as a failure.
   Any non-failure response resets the failure count. Once consecutive failures reach
   `FailureThreshold`, the circuit transitions to **Open**.
-- **Open** — requests are rejected immediately (fast-fail) with `503 Service Unavailable`,
+- **Open**: requests are rejected immediately (fast-fail) with `503 Service Unavailable`,
   a `Retry-After` header, and a JSON body `{"error":"circuit_open",...}`. The backend is not
   contacted. The circuit stays open for `BreakDuration`.
-- **Half-open** — after `BreakDuration` elapses, the next request is allowed through as a
+- **Half-open**: after `BreakDuration` elapses, the next request is allowed through as a
   probe. If it succeeds the circuit returns to **Closed**; if it fails the circuit re-opens
   for another `BreakDuration`.
 
@@ -134,7 +134,7 @@ either is absent, since leaving them open allows token reuse/forgery across issu
 }
 ```
 
-Load `ValidKeys` from a secrets manager or environment variables — never commit raw keys to
+Load `ValidKeys` from a secrets manager or environment variables; never commit raw keys to
 `appsettings.json`.
 
 When `Gateway:ApiKey` is configured with at least one `ValidKeys` entry, `ApiKeyMiddleware` runs in the
@@ -193,7 +193,7 @@ tenant from (1) the authenticated `tenant_id` claim, then (2) the request subdom
 Crucially, the middleware **always strips any client-supplied `X-Tenant-Id` header first**,
 before resolution. The gateway is the authoritative source of this header so downstream
 services can trust it. If the client value were honored, a user authenticated for tenant A
-could read or write tenant B's data simply by setting `X-Tenant-Id: B` — a cross-tenant
+could read or write tenant B's data simply by setting `X-Tenant-Id: B`: a cross-tenant
 isolation breach. Only the gateway-computed value (from the signed claim or DNS-controlled
 subdomain) is ever forwarded.
 
@@ -227,7 +227,7 @@ Still evolving:
 
 ## Status
 
-**Preview** within 1.0.0-alpha — the gateway is a standalone executable run from this repository, used by
+**Preview** within 1.0.0-alpha: the gateway is a standalone executable run from this repository, used by
 the Warehouse reference application; it is not published as a NuGet package (`IsPackable` is false). See
 the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
@@ -248,5 +248,5 @@ Local docs:
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/gateway/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/gateway/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Gateway is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).

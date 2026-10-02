@@ -1,6 +1,6 @@
 # Pragmatic.Ensure
 
-Guard clauses for parameter validation in .NET — consistent, fast, and intention-revealing.
+Guard clauses for parameter validation in .NET: consistent, fast, and intention-revealing.
 
 ## The Problem
 
@@ -17,7 +17,7 @@ if (order is null) throw new KeyNotFoundException($"Order {id} not found");     
 
 ## The Solution
 
-One consistent, readable guard API that throws the right exception with the right message — and a clear
+One consistent, readable guard API that throws the right exception with the right message, and a clear
 boundary: guards are for *programmer errors* (preconditions), not business outcomes (use
 [Result](../Pragmatic.Result/README.md) for those).
 
@@ -38,7 +38,7 @@ public async Task<Order> GetOrderAsync(Guid id)
 }
 ```
 
-Argument names are captured automatically via `[CallerArgumentExpression]` — no `nameof` noise. The
+Argument names are captured automatically via `[CallerArgumentExpression]`, no `nameof` noise. The
 guards are aggressively inlined and allocation-free on the success path.
 
 ## Installation
@@ -49,7 +49,7 @@ dotnet add package Pragmatic.Ensure
 
 ## Status
 
-**Stable** within 1.0.0-alpha — the guard surface is settled. See the [roadmap](../docs/ROADMAP.md).
+**Stable** within 1.0.0-alpha: the guard surface is settled. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
 
@@ -68,5 +68,5 @@ dotnet add package Pragmatic.Ensure
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Ensure is **MIT-licensed**.

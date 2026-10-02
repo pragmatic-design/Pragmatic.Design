@@ -1,12 +1,12 @@
 ---
 title: "Pragmatic.Configuration"
-description: "Zero-boilerplate configuration binding, validation, and DI registration via source generator — plus"
+description: "Zero-boilerplate configuration binding, validation, and DI registration via source generator, plus"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Configuration/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Zero-boilerplate configuration binding, validation, and DI registration via source generator — plus
+Zero-boilerplate configuration binding, validation, and DI registration via source generator, plus
 runtime stores with cascade resolution, multi-tenancy, hot-reload, and pluggable backends.
 
 ## The Problem
@@ -26,7 +26,7 @@ services.AddOptions<BookingOptions>()
 Beyond that: secrets vary by environment, dynamic reconfiguration needs a deploy, and per-tenant
 overrides become hardcoded switch statements.
 
-## The Solution — two pillars
+## The Solution: two pillars
 
 **Compile-time binding:** annotate a class with `[Configuration]`; the generator produces the binding,
 DataAnnotation validation (on start, by default), and DI registration; the Pragmatic host calls that
@@ -42,8 +42,8 @@ public partial class BookingOptions
 ```
 
 **Runtime stores** (opt-in, `AddPragmaticConfiguration()`): a unified API over configuration with
-cascade resolution — user → tenant → environment → base, highest first; the tenant layer only with
-`MultiTenant.Enabled` — hot-reload, and pluggable backends (Database, Azure App Configuration, Redis,
+cascade resolution (user → tenant → environment → base, highest first; the tenant layer only with
+`MultiTenant.Enabled`), hot-reload, and pluggable backends (Database, Azure App Configuration, Redis,
 Consul, Kubernetes), without redeploying. Secrets live in an `ISecretStore` (Database, Azure Key Vault,
 AWS, GCP, Vault, Kubernetes), and a `secret://{key}` value is resolved from it at read time.
 
@@ -56,7 +56,7 @@ dotnet add package Pragmatic.SourceGenerator   # generates the [Configuration] b
 
 ## Status
 
-**Functional** within 1.0.0-alpha — `[Configuration]` binding and validation, and the runtime stores
+**Functional** within 1.0.0-alpha: `[Configuration]` binding and validation, and the runtime stores
 (cascade, hot-reload, the backends above). See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/configuration-module/concepts/) | The two pillars, cascade resolution, hot-reload, choosing a backend |
@@ -72,5 +72,5 @@ dotnet add package Pragmatic.SourceGenerator   # generates the [Configuration] b
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/configuration-module/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/configuration-module/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Configuration is **MIT-licensed**.

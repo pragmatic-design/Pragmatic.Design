@@ -1,12 +1,12 @@
 ﻿# Pragmatic.Resilience
 
-Native, AOT-safe resilience for .NET 10 — strategy composition, a fluent builder, DI integration, and
+Native, AOT-safe resilience for .NET 10: strategy composition, a fluent builder, DI integration, and
 source-generator support. No Polly dependency.
 
 ## The Problem
 
-Distributed systems fail: calls time out, databases go down, APIs error. The usual fix — Polly policies
-or hand-rolled retry loops — scatters resilience across the codebase, pulls in external dependencies,
+Distributed systems fail: calls time out, databases go down, APIs error. The usual fix (Polly policies
+or hand-rolled retry loops) scatters resilience across the codebase, pulls in external dependencies,
 and treats every failure the same, whether it's transient (a network blip) or permanent (a validation
 error).
 
@@ -22,7 +22,7 @@ await combined.ExecuteAsync(ct => http.PostAsJsonAsync("/charges", request, ct),
 ## The Solution
 
 Declare a **policy name**; the generator composes the pipeline. One attribute, several strategies, zero
-manual wiring — and it distinguishes transient exceptions (retry/break) from `Result` failures
+manual wiring, and it distinguishes transient exceptions (retry/break) from `Result` failures
 (validation, not-found), which pass through unchanged.
 
 ```csharp
@@ -52,16 +52,16 @@ whole invocation, save included, and each retry starts from a clean unit of work
 dotnet add package Pragmatic.Resilience
 ```
 
-Strategies — retry (with backoff + jitter), circuit breaker, timeout, hedging, fallback, rate limiter,
-bulkhead — compose in a defined pipeline order; configure named policies in `Program.cs` or via the
+The strategies (retry with backoff and jitter, circuit breaker, timeout, hedging, fallback, rate limiter,
+bulkhead) compose in a defined pipeline order. Configure named policies in `Program.cs` or via the
 fluent builder. See [Policies](docs/policies.md).
 
 ## The declarations other modules read
 
 `Pragmatic.Resilience.Attributes` also holds `[Retry]`, `[Timeout]`, `[CircuitBreaker]` and
-`BackoffStrategy` — declared here and read elsewhere. `Pragmatic.Jobs` and `Pragmatic.Messaging`
+`BackoffStrategy`, declared here and read elsewhere. `Pragmatic.Jobs` and `Pragmatic.Messaging`
 each own an engine: a job retry is a lease and a durable reschedule, a message retry is a
-redelivery. Those stay apart. ⚠️ Only those two read them — and `[CircuitBreaker]` only the messaging
+redelivery. Those stay apart. ⚠️ Only those two read them, and `[CircuitBreaker]` only the messaging
 engine: anywhere else the attribute does nothing, and the generator reports **PRAG0464**. On a domain
 action use `[ResiliencePolicy]`. «How many attempts, what backoff, what base delay» is one question,
 so it has one declaration.
@@ -71,19 +71,19 @@ so it has one declaration.
 ```
 
 The attribute carries no numbers of its own. Leave a property out and the engine that reads the
-declaration applies its own — a job waits far longer between attempts than a redelivery does, and
+declaration applies its own: a job waits far longer between attempts than a redelivery does, and
 both are deliberate. ⚠️ Leaving a property out is not the same as setting it to `0`: the first is
 absent from the metadata a reader sees, the second is a value you chose, and an engine may reject it
 (the job engine reports `PRAG2504` for `MaxAttempts = 0`).
 
 One declaration, one curve. `Exponential` waits the base delay before the first retry and doubles
-from there — `base × 2^(n-1)` — and both engines stop growing at thirty minutes rather than asking
+from there (`base × 2^(n-1)`), and both engines stop growing at thirty minutes rather than asking
 for a wait measured in days. Pinned by `TheTwoRetryEnginesAgreeTests`, which executes the job side
 and reads the message side out of the generated pipeline.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the strategy set, pipeline composition, DI integration, and the
+**Functional** within 1.0.0-alpha: the strategy set, pipeline composition, DI integration, and the
 `[ResiliencePolicy]` generator. See the [roadmap](../docs/ROADMAP.md).
 
 ## Documentation
@@ -102,5 +102,5 @@ and reads the message side out of the generated pipeline.
 
 ## License
 
-Part of the [Pragmatic.Design](../README.md) ecosystem — see [Licensing](../docs/LICENSING.md).
+Part of the [Pragmatic.Design](../README.md) ecosystem. See [Licensing](../docs/LICENSING.md).
 Pragmatic.Resilience is **MIT-licensed**.

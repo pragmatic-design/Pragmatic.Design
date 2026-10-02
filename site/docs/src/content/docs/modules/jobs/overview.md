@@ -1,19 +1,19 @@
 ---
 title: "Pragmatic.Jobs"
-description: "AOT-safe background job scheduling for .NET 10 — recurring cron jobs, delayed fire-and-forget,"
+description: "AOT-safe background job scheduling for .NET 10: recurring cron jobs, delayed fire-and-forget,"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Jobs/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-AOT-safe background job scheduling for .NET 10 — recurring cron jobs, delayed fire-and-forget,
+AOT-safe background job scheduling for .NET 10: recurring cron jobs, delayed fire-and-forget,
 continuation chains, and lease-based distributed locking, all source-generated at compile time.
 
 ## The Problem
 
 Background jobs in .NET usually mean Hangfire or Quartz.NET. Both rely on runtime reflection for job
 discovery, serialization, and invocation, require separate dashboards/storage, and keep retry config
-*outside* the job definition — so the job class has no idea how it'll be scheduled, retried, or timed
+*outside* the job definition, so the job class has no idea how it'll be scheduled, retried, or timed
 out.
 
 ```csharp
@@ -25,7 +25,7 @@ GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3 });  // 
 ## The Solution
 
 Declare scheduling, retry, and timeout **on the job class**. The generator produces the invoker with
-linked cancellation tokens, telemetry, and DI wiring — zero reflection. Retries are applied durably by
+linked cancellation tokens, telemetry, and DI wiring, zero reflection. Retries are applied durably by
 the store, so an attempt survives a worker crash.
 
 ```csharp
@@ -39,7 +39,7 @@ public sealed partial class DailyReportJob(IReportService reports) : IJob
 }
 ```
 
-`[Retry]` and `[Timeout]` are the `Pragmatic.Resilience.Attributes` ones — the same declaration a message
+`[Retry]` and `[Timeout]` are the `Pragmatic.Resilience.Attributes` ones: the same declaration a message
 handler uses; each engine reads it its own way. That's the whole job. The generator emits the invoker (timeout + telemetry), the DI registration, an
 AOT-safe type registry (no `Type.GetType`), the recurring definitions, and metadata.
 
@@ -72,23 +72,23 @@ Enable processing in the host with `app.UseJobs(jobs => jobs.WithWorkerCount(2))
 
 ## What you can declare
 
-- **`[Job]` / `[RecurringJob(cron)]`** — fire-and-forget or recurring (5- or 6-field cron) jobs.
-- **`[Retry]`** — durable per-job retry: the attempt count lives in the job row and the store
+- **`[Job]` / `[RecurringJob(cron)]`**: fire-and-forget or recurring (5- or 6-field cron) jobs.
+- **`[Retry]`**: durable per-job retry: the attempt count lives in the job row and the store
   re-schedules the job with the declared backoff.
-- **`[Timeout]`** — a per-execution deadline via a linked cancellation token; expiry marks the job
+- **`[Timeout]`**: a per-execution deadline via a linked cancellation token; expiry marks the job
   failed and consumes an attempt.
-- **`Priority` on `[Job]` / `[RecurringJob]`** — scheduling priority (default `0`): due jobs with a
+- **`Priority` on `[Job]` / `[RecurringJob]`**: scheduling priority (default `0`): due jobs with a
   higher value are polled first, ties broken by scheduled time. The value is persisted on the job row.
-- **`MaxConcurrency` on `[Job]` / `[RecurringJob]`** — cap (default `0` = unbounded) on how many
+- **`MaxConcurrency` on `[Job]` / `[RecurringJob]`**: cap (default `0` = unbounded) on how many
   instances of that job type run at once **per host**; an instance over the cap stays `Pending` for
   the next poll instead of holding a worker.
-- **`Misfire` on `[RecurringJob]`** — what to do with an occurrence missed while the host was down past
+- **`Misfire` on `[RecurringJob]`**: what to do with an occurrence missed while the host was down past
   `JobsOptions.MisfireThreshold`: `RunOnce` (default) runs it once then resumes, `Skip` jumps straight
   to the next future occurrence.
-- **`[Continuation<T>]`** — continuation chains, enqueued after the job completes successfully.
-- **EF Core persistence** — durable jobs with **lease-based distributed locking** (one worker per job
+- **`[Continuation<T>]`**: continuation chains, enqueued after the job completes successfully.
+- **EF Core persistence**: durable jobs with **lease-based distributed locking** (one worker per job
   across instances), plus automatic retention of finished jobs.
-- **Messaging bridge** — `Pragmatic.Messaging.Jobs` for scheduled message delivery.
+- **Messaging bridge**: `Pragmatic.Messaging.Jobs` for scheduled message delivery.
 
 ## Durable persistence
 
@@ -115,7 +115,7 @@ actionable message rather than running on the in-memory store.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — recurring and delayed jobs, retry and timeout, continuations, EF Core
+**Functional** within 1.0.0-alpha: recurring and delayed jobs, retry and timeout, continuations, EF Core
 persistence, and distributed locking. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/jobs/concepts/) | Job types, scheduler/store model, the invoker pipeline, continuation chains, distributed locking |
@@ -130,6 +130,6 @@ persistence, and distributed locking. See the [roadmap](https://github.com/pragm
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/jobs/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/jobs/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Jobs is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

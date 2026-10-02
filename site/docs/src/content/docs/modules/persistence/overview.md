@@ -7,7 +7,7 @@ sidebar:
   label: Overview
 ---
 Source-generated persistence layer for .NET 10. Declare entities with attributes; the source generator
-emits repositories, query pipelines, filters, mutations, EF Core configurations, and DI registration —
+emits repositories, query pipelines, filters, mutations, EF Core configurations, and DI registration,
 all visible in `obj/`, fully debuggable, and free of reflection itself. EF Core underneath is not, and
 is the framework's stated exception.
 
@@ -17,7 +17,7 @@ Every EF Core project accumulates the same infrastructure per entity: identity p
 fields, soft-delete fields, `Create` factories, typed setters, repository classes, entity
 configuration, query filters, DI registration. For one entity with auditing, soft-delete, a
 relationship, and a search query, that is ~150 lines of mechanical code. For 30 entities, ~4,500 lines
-you write, maintain, and keep in sync — and every new property means touching the entity, the setter,
+you write, maintain, and keep in sync, and every new property means touching the entity, the setter,
 the factory, the configuration, the DTO mapping, and maybe the query filter.
 
 ```csharp
@@ -63,7 +63,7 @@ public partial class Order : IEntity
 From this, the generator emits: `PersistenceId`, `Id`, a `Create()` factory, typed setters, audit +
 soft-delete fields, FK + navigation properties, a nested `Repository`, EF Core entity configuration, a
 `SoftDeleteFilter`, and DI registration. Rename or add a property and the generated
-code follows — no drift, no silently-forgotten mapper.
+code follows: no drift, no silently-forgotten mapper.
 
 ## Architecture
 
@@ -93,10 +93,10 @@ matching code, with nothing else to wire.
 
 | Package | What it adds to an entity's surface |
 |---|---|
-| `Pragmatic.Actions` | `[DomainAction]` — an operation whose body you write; `[Mutation]` — an operation whose body is derived from the entity's shape. Both get a generated invoker and a boundary-keyed unit of work |
-| `Pragmatic.Endpoints` | `[Endpoint]` — the HTTP surface of an action, mutation or query |
+| `Pragmatic.Actions` | `[DomainAction]`: an operation whose body you write; `[Mutation]`: an operation whose body is derived from the entity's shape. Both get a generated invoker and a boundary-keyed unit of work |
+| `Pragmatic.Endpoints` | `[Endpoint]`: the HTTP surface of an action, mutation or query |
 | `Pragmatic.Validation` | property attributes (`[Email]`, `[Length]`, `[GreaterThan]`, …) and the validator the invoker runs before persisting |
-| `Pragmatic.Caching` | `[Cacheable]` on a query — generated cache key, duration and tag-based invalidation |
+| `Pragmatic.Caching` | `[Cacheable]` on a query: generated cache key, duration and tag-based invalidation |
 
 Contributors to Pragmatic itself install none of this: inside this repository the packages are
 referenced as projects, and every NuGet version is declared once in `Directory.Packages.props`.
@@ -104,18 +104,18 @@ referenced as projects, and every NuGet version is declared once in `Directory.P
 
 ## Quick Start
 
-**1. Declare a boundary** — a marker class naming one slice of the domain. Every entity carrying
+**1. Declare a boundary**: a marker class naming one slice of the domain. Every entity carrying
 `[BelongsTo<CatalogBoundary>]` ends up in the same generated `CatalogDbContext` and behind the same
 `IUnitOfWork`, keyed on the marker type: the boundary is the unit of transactional consistency. The
 names are derived from the class with the `Boundary` suffix trimmed.
 
 ```csharp
-[Boundary]                             // from Pragmatic.Actions — see below
+[Boundary]                             // from Pragmatic.Actions: see below
 public partial class CatalogBoundary;
 ```
 
 Persistence alone asks for no attribute here: `[BelongsTo<T>]` on the entity is what assigns it.
-`[Boundary]` is the Actions one, and it does a second thing — every operation in the namespace and its
+`[Boundary]` is the Actions one, and it does a second thing: every operation in the namespace and its
 sub-namespaces is collected into an `ICatalogActions` interface, with a sub-interface per intermediate
 namespace segment (`Catalog.Properties.Mutations` → `ICatalogPropertiesActions`). Past two levels of
 nesting that grouping is reported as **PRAG0412**, a warning and not a stop. See
@@ -200,12 +200,12 @@ Full walkthrough: [Getting Started](/modules/persistence/01-getting-started/).
 
 **`[WithoutFilter<T>]` is a privileged escape hatch.** It bypasses the configured query filters
 (tenant, soft-delete, ownership, scope) for the duration of a call. Use it only in privileged contexts
-— admin tooling, background jobs, cross-tenant reports — never under a normal request principal. Treat
+(admin tooling, background jobs, cross-tenant reports), never under a normal request principal. Treat
 every call site as an authorization boundary. See [Query Filters](/modules/persistence/07-query-filters/).
 
 ## Status
 
-**Stable** within 1.0.0-alpha — the core entity, repository, query and mutation surface is settled; some
+**Stable** within 1.0.0-alpha: the core entity, repository, query and mutation surface is settled; some
 advanced areas are still settling. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Documentation
@@ -225,7 +225,7 @@ advanced areas are still settling. See the [roadmap](https://github.com/pragmati
 | [Entity System](/modules/persistence/02-entity-system/) | `[Entity]`, PersistenceId, `Create()`, setters, `[LogicKey]`, `[PartOf<TParent>]`, identifiers (Guid7, OpaqueId, ShortGuid) |
 | [Attributes](/modules/persistence/03-attributes/) | `[Auditable]`, `[Audited]`, `[ValueObject]`, `[SoftDelete]`, `[ConcurrencyAware]`, `[Lookup]`, `[StateMachine]` |
 | [Relationships](/modules/persistence/04-relationships/) | `[Relation.*]` attributes, FK generation, cross-boundary rules |
-| [State Machine](/modules/persistence/19-state-machine/) | `[StateMachine<T>]` + `[TransitionFrom]` — compile-time guarded status transitions |
+| [State Machine](/modules/persistence/19-state-machine/) | `[StateMachine<T>]` + `[TransitionFrom]`: compile-time guarded status transitions |
 | [Advanced Features](/modules/persistence/08-advanced/) | Temporal relations, inheritance, hierarchy, polymorphic, lifecycle, presets, batch |
 
 ### Data access
@@ -234,7 +234,7 @@ advanced areas are still settling. See the [roadmap](https://github.com/pragmati
 |-------|-------------------|
 | [Repository](/modules/persistence/05-repository/) | `IRepository<T>`, concrete repos, specifications, `IUnitOfWork`, bulk operations |
 | [Mutations](/modules/persistence/06-mutations/) | `Mutation<T>`, `ApplyTo()`, collection strategies, modes |
-| [Patch](/modules/persistence/13-patch/) | `[Patch<T>]` and its property-set tracking — and why tri-state PATCH needs `[GeneratePatch<T>]` instead |
+| [Patch](/modules/persistence/13-patch/) | `[Patch<T>]` and its property-set tracking, and why tri-state PATCH needs `[GeneratePatch<T>]` instead |
 
 ### Querying
 
@@ -276,6 +276,6 @@ advanced areas are still settling. See the [roadmap](https://github.com/pragmati
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/persistence/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/persistence/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Persistence is licensed under the **PolyForm Small Business 1.0.0** license (free for small
 businesses; commercial license above the threshold).

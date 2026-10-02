@@ -39,7 +39,7 @@ public partial class Reservation : IEntity
 }
 ```
 
-`HasNotesAttribute<TParent>` is generic (arity 1) — pass the parent entity type, e.g. `[HasNotes<Reservation>]`. `[Resource(...)]` is required for endpoints; without it the generator reports `PRAG2601` and skips endpoint generation.
+`HasNotesAttribute<TParent>` is generic (arity 1): pass the parent entity type, e.g. `[HasNotes<Reservation>]`. `[Resource(...)]` is required for endpoints; without it the generator reports `PRAG2601` and skips endpoint generation.
 
 The generator creates:
 
@@ -108,10 +108,10 @@ For `[HasNotes<Reservation>]` on `Reservation` (`[Resource("reservations")]`), e
 | Verb | Route | Maps to | Request body | Response |
 |------|-------|---------|--------------|----------|
 | `POST` | `/notes` | `AddReservationNoteAction` | `{ "content": string }` | `201`, new note `Guid` |
-| `GET` | `/notes` | `ListReservationNotesQuery` (paged) | — | `ReservationNoteDto[]` (paged; `Page`/`PageSize`) |
-| `GET` | `/notes/{noteId}` | `GetReservationNoteAction` | — | `ReservationNoteDto` |
+| `GET` | `/notes` | `ListReservationNotesQuery` (paged) |none| `ReservationNoteDto[]` (paged; `Page`/`PageSize`) |
+| `GET` | `/notes/{noteId}` | `GetReservationNoteAction` |none| `ReservationNoteDto` |
 | `PUT` | `/notes/{noteId}` | `UpdateReservationNoteAction` | `{ "content": string }` | `204` |
-| `DELETE` | `/notes/{noteId}` | `DeleteReservationNoteAction` | — | `204` (soft-delete) |
+| `DELETE` | `/notes/{noteId}` | `DeleteReservationNoteAction` |none| `204` (soft-delete) |
 
 `ReservationNoteDto` shape: `Id`, `ReservationId`, `Content`, `AuthorId`, `AuthorName`, `IsEdited`, `CreatedAt`, `UpdatedAt?`. The route parameter `{reservationId}` binds to the action/query `ReservationId` property; `{noteId}` binds to `NoteId`.
 
@@ -119,18 +119,18 @@ For `[HasNotes<Reservation>]` on `Reservation` (`[Resource("reservations")]`), e
 
 Two layers apply.
 
-**Permission constants** — `ReservationNotePermissions` (static class) exposes:
+**Permission constants**: `ReservationNotePermissions` (static class) exposes:
 
 - `Create` = `{boundary}.reservation.notes.create`
 - `Read` = `{boundary}.reservation.notes.read`
-- `Update` = `{boundary}.reservation.notes.update` — only with `AllowEditing` (the default); without it
+- `Update` = `{boundary}.reservation.notes.update`, only with `AllowEditing` (the default); without it
   there is no update action or route, so no constant either
 - `Delete` = `{boundary}.reservation.notes.delete`
-- `Moderate` = `{boundary}.reservation.notes.moderate` — always emitted
+- `Moderate` = `{boundary}.reservation.notes.moderate`, always emitted
 
-(Boundary and entity segments are kebab-case; the boundary segment is `app` when the parent has no `[BelongsTo<TBoundary>]`; note the route falls back to `v1` in that same case, so prefix and route segment differ.) **The generated endpoints enforce these permissions themselves** — each route is gated on the constant for its operation, so a caller without it receives 403. The constants exist so you can grant them by name instead of retyping the string.
+(Boundary and entity segments are kebab-case; the boundary segment is `app` when the parent has no `[BelongsTo<TBoundary>]`; note the route falls back to `v1` in that same case, so prefix and route segment differ.) **The generated endpoints enforce these permissions themselves**: each route is gated on the constant for its operation, so a caller without it receives 403. The constants exist so you can grant them by name instead of retyping the string.
 
-**Author-ownership enforced in the action body** — independent of permissions, `UpdateReservationNoteAction` checks `note.AuthorId == ICurrentUser.Id` and returns `ForbiddenError` otherwise, so only the original author can edit a note. When `EditWindowMinutes > 0`, edits past `CreatedAt + EditWindowMinutes` also return `ForbiddenError`. On a successful edit the action sets `IsEdited = true`, `UpdatedAt`, and `UpdatedBy`. `Add` records `AuthorId`/`AuthorName` from `ICurrentUser`; `Delete` is a soft-delete (`IsDeleted`/`DeletedAt`/`DeletedBy`) and reads exclude soft-deleted rows via the EF query filter.
+**Author-ownership enforced in the action body**: independent of permissions, `UpdateReservationNoteAction` checks `note.AuthorId == ICurrentUser.Id` and returns `ForbiddenError` otherwise, so only the original author can edit a note. When `EditWindowMinutes > 0`, edits past `CreatedAt + EditWindowMinutes` also return `ForbiddenError`. On a successful edit the action sets `IsEdited = true`, `UpdatedAt`, and `UpdatedBy`. `Add` records `AuthorId`/`AuthorName` from `ICurrentUser`; `Delete` is a soft-delete (`IsDeleted`/`DeletedAt`/`DeletedBy`) and reads exclude soft-deleted rows via the EF query filter.
 
 Both `Update` and `Delete` require the caller to be the author **or** to hold
 `{boundary}.{entity}.notes.moderate`. Without the moderate permission, holding `notes.update` or
@@ -145,7 +145,7 @@ Use one or both depending on the domain.
 
 ## Status
 
-**Functional** within 1.0.0-alpha — the `[HasNotes<TParent>]` trait with its entity, actions and
+**Functional** within 1.0.0-alpha: the `[HasNotes<TParent>]` trait with its entity, actions and
 endpoints, tested end to end in the Showcase. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Documentation
@@ -169,5 +169,5 @@ Related modules:
 
 ## License
 
-Part of the [Pragmatic.Design](/modules/notes/overview/) ecosystem — see [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
+Part of the [Pragmatic.Design](/modules/notes/overview/) ecosystem. See [Licensing](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/LICENSING.md).
 Pragmatic.Notes is licensed under the **PolyForm Small Business 1.0.0** license (free for small businesses; commercial license above the threshold).
