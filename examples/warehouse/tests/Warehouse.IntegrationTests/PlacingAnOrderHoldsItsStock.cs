@@ -113,7 +113,7 @@ public sealed class PlacingAnOrderHoldsItsStock(WarehouseFixture warehouse)
         clock.Stop();
 
         var body = await unanswered.Content.ReadAsStringAsync();
-        unanswered.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, body);
+        unanswered.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, $"{body}{Environment.NewLine}{orders.Errors}");
         body.Should().Contain("STOCK_UNANSWERED");
         clock.Elapsed.Should().BeLessThan(WarehouseFixture.RequestReplyTimeout + TimeSpan.FromSeconds(5),
             "the customer is told when the timeout runs out, not after a hang");

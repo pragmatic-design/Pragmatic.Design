@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Pragmatic.ControlPlane;
 
 namespace Warehouse.IntegrationTests.Infrastructure;
@@ -27,6 +28,9 @@ internal sealed class ServiceHost<TEntryPoint>(IReadOnlyDictionary<string, strin
 {
     /// <summary>The settings this instance was started with, for a restart that has to be the same instance.</summary>
     public IReadOnlyDictionary<string, string?> Settings { get; } = settings;
+
+    /// <summary>The errors this instance has logged, for an assertion to carry when a status is not the expected one.</summary>
+    public HostErrorLog Errors { get; } = new();
 
     /// <summary>Starts the host on a free port, or on <paramref name="port" /> when a restart needs the same one.</summary>
     public ServiceHost<TEntryPoint> Start(int port = 0)
@@ -62,5 +66,7 @@ internal sealed class ServiceHost<TEntryPoint>(IReadOnlyDictionary<string, strin
 
         foreach (var (key, value) in Settings)
             builder.UseSetting(key, value);
+
+        builder.ConfigureLogging(logging => logging.AddProvider(Errors));
     }
 }
