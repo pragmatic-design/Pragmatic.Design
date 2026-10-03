@@ -7,4 +7,6 @@ pub mod operations;
 #[cfg(test)]
 mod compile_tests;
 #[cfg(test)]
+mod operations_tests;
+#[cfg(test)]
 mod style_tests;
