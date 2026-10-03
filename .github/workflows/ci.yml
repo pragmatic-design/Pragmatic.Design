@@ -53,6 +53,17 @@ jobs:
       - name: Gate
         run: node scripts/check.mjs --tier full --keep-going
 
+      # The log prints one capped line per failed test; the record beside it holds the message and the
+      # stack. A failure that does not reproduce on a re-run is only diagnosable from that record.
+      - name: Keep the failure record
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-failures-full
+          path: artifacts/gate/failures-*.json
+          if-no-files-found: ignore
+          retention-days: 30
+
       # The CycloneDX SBOMs the gate just wrote, kept for release.yml to attach to the GitHub Release: it
       # calls this workflow, so the artifact is in its own run. Small, and kept a week.
       - name: Keep the SBOM
@@ -101,6 +112,15 @@ jobs:
 
       - name: Container suites
         run: node scripts/check.mjs --tier docker --keep-going
+
+      - name: Keep the failure record
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-failures-docker
+          path: artifacts/gate/failures-*.json
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Disk after the suites
         if: always()
