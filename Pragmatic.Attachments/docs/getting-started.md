@@ -41,7 +41,7 @@ await PragmaticApp.RunAsync(args, builder =>
 
 After build, the consuming boundary gets attachment actions and endpoints for upload, read (metadata list and detail), download, and delete under the parent resource.
 
-The read side is split in two: `GET .../attachments/{attachmentId}` returns the metadata as JSON, and `GET .../attachments/{attachmentId}/content` streams the file with its recorded content type and file name. Both require the same `attachments.read` permission. The metadata does **not** include `StorageUri` — the content endpoint removes any reason to hand a storage location to the client.
+The read side is split in two: `GET .../attachments/{attachmentId}` returns the metadata as JSON, and `GET .../attachments/{attachmentId}/content` streams the file with its recorded content type and file name. Both require the same `attachments.read` permission. The metadata does **not** include `StorageUri`: the content endpoint removes any reason to hand a storage location to the client.
 
 To have soft-deleted attachments' blobs reclaimed on a schedule, set a retention window:
 

@@ -42,5 +42,5 @@ at its default (`0`) no job is generated and the bucket grows forever. See
 ### 8. Calling `/content` with an attachment id from a different parent
 
 That is a 404, not a download. Every generated attachment action filters on the parent id in
-the route as well as the attachment id — the id alone is never sufficient.
+the route as well as the attachment id; the id alone is never sufficient.
 

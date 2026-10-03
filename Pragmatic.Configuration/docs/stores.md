@@ -71,7 +71,7 @@ Default store for development and testing. Uses `ConcurrentDictionary` for threa
 Features:
 - Tenant isolation via separate `ConcurrentDictionary<string, ConcurrentDictionary<string, string>>`.
 - Tenant-scoped `GetAsync`/`GetSectionAsync` return **only** the tenant's overrides (or `null` / an
-  empty section) — the cascade to base is the resolver's job, not the store's.
+  empty section); the cascade to base is the resolver's job, not the store's.
 - `SetAsync` emits a `ConfigurationChange`; each `WatchAsync` subscriber only receives changes whose
   key matches the prefix it subscribed with (filtered at broadcast time).
 
@@ -118,7 +118,7 @@ environment chain (most specific to least) → base.
 For a section (`ResolveSectionAsync`), overlays are applied least-specific to most-specific so the
 highest-precedence scope wins on a key collision: base → environment → tenant → user.
 
-The store returns **only** the scoped override for a `GetAsync(key, scopeId)` call — it does not fall
+The store returns **only** the scoped override for a `GetAsync(key, scopeId)` call; it does not fall
 back to base itself, so a tenant (or user) without an override for a key still lets the environment
 overlay win.
 

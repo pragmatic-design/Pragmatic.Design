@@ -41,8 +41,8 @@ its own: a caller allowed to read one parent's attachments cannot reach another 
 substituting an id.
 
 The content response carries `Content-Type` from the recorded `ContentType` and
-`Content-Disposition` from `FileName`. If the metadata row exists but the blob does not —
-removed out of band, a bucket lifecycle rule, a database restored from an older snapshot —
+`Content-Disposition` from `FileName`. If the metadata row exists but the blob does not (it was
+removed out of band, a bucket lifecycle rule, a database restored from an older snapshot),
 the response is **404**, not 500: a missing representation is an expected state of the
 resource, and no retry would help.
 
@@ -65,7 +65,7 @@ public partial class Invoice : IEntity { }
 ```
 
 That generates `Purge{Parent}AttachmentsJob`, a `[RecurringJob]` running at `PurgeCron`
-(default `"0 3 * * *"` — daily at 03:00) which, for every attachment soft-deleted longer
+(default `"0 3 * * *"`, daily at 03:00) which, for every attachment soft-deleted longer
 ago than the window:
 
 1. deletes the blob from `IFileStorage`;
@@ -74,19 +74,19 @@ ago than the window:
 That order is not cosmetic. The row is the only pointer to the file, so dropping it first
 and then failing leaks a file nobody can find again; this way a failure just leaves the row
 for the next run, and the storage delete is idempotent so the retry costs nothing. A single
-unreachable blob is logged and skipped — it does not stop the other attachments from being
+unreachable blob is logged and skipped: it does not stop the other attachments from being
 purged and it does not fail the job.
 
 **The default is no purge.** `PurgeDeletedAfterDays` left at `0` generates no job at all, so
 **stored files accumulate until the application removes them**. How long a soft-deleted
 attachment must remain recoverable is a business/compliance decision the trait cannot make
 for you; if your answer is "it depends, per record", keep the option off and write the job
-yourself — delete the blob first and the row second, and remember `IgnoreQueryFilters()`,
+yourself: delete the blob first and the row second, and remember `IgnoreQueryFilters()`,
 because the generated EF configuration applies `HasQueryFilter(e => !e.IsDeleted)` and hides
 exactly the rows you are looking for.
 
 One more detail: the FK to the parent is `OnDelete(Cascade)`, so deleting a parent removes
-its attachment **rows** — the files behind them are not touched, and cascade-removed rows
+its attachment **rows**; the files behind them are not touched, and cascade-removed rows
 are gone before any purge job can see them.
 
 ## Dependency Model

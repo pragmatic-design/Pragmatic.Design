@@ -318,7 +318,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new OptionalConverter<string>()));
 ```
 
-There is no open-generic factory — it would need `MakeGenericType`. `OptionalConverter<T>` is annotated `[RequiresDynamicCode]`/`[RequiresUnreferencedCode]`; the SG-generated converters are the AOT-safe path.
+There is no open-generic factory: it would need `MakeGenericType`. `OptionalConverter<T>` is annotated `[RequiresDynamicCode]`/`[RequiresUnreferencedCode]`; the SG-generated converters are the AOT-safe path.
 
 ---
 

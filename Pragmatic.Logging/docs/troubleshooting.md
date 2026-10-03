@@ -233,7 +233,7 @@ Yes. Each provider has its own `PrivacyConfiguration`. Enable global redaction, 
 // Aggressive redaction for file logs
 pragmatic.AddFile("logs/app.log", c => c.Privacy.RedactionMode = RedactionMode.Aggressive);
 
-// No redaction for memory provider (testing) — it uses its own configuration
+// No redaction for memory provider (testing); it uses its own configuration
 pragmatic.AddProvider(_ => new PragmaticMemoryProvider("Memory", PragmaticMemoryConfiguration.ForMemory()));
 ```
 

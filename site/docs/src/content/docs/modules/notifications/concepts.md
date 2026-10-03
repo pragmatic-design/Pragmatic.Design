@@ -74,8 +74,8 @@ Each delivery attempt returns a `DeliveryResult(Success, ProviderId, ErrorMessag
 
 **Partial success**: if some deliveries succeed and some fail, the result is still `Success = true` with the errors attached. Only when *all* deliveries fail does the result become `Success = false`.
 
-**Zero deliveries is a failure.** If nothing was even attempted — no channel is registered for the
-resolved channels, or the recipient's preferences suppressed every one — the result is `Success = false`
+**Zero deliveries is a failure.** If nothing was even attempted (no channel is registered for the
+resolved channels, or the recipient's preferences suppressed every one), the result is `Success = false`
 and the error distinguishes the two causes. Reporting success there would tell the caller the
 notification went out while it silently evaporated, which is precisely what an app that forgot to
 register a channel needs to be told. The tracking record for the same operation is settled to `Failed`

@@ -347,7 +347,7 @@ Two consequences to keep in mind:
 - `FeatureFlagChange` only carries `WasEnabled` / `IsEnabled`. A notification triggered by a rule edit
   reports the same value in both, so treat the event as "this flag's definition moved, re-read it" rather
   than as a description of what changed.
-- Defining a flag for the first time never emits a change — there is no previous state to transition from.
+- Defining a flag for the first time never emits a change: there is no previous state to transition from.
 
 ---
 

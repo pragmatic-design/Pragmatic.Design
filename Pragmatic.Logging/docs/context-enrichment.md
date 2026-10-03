@@ -116,7 +116,7 @@ services.AddContextManagerWithFactory(sp =>
 });
 ```
 
-A provider registered here lives as long as the manager — the whole process. What it reads per request it
+A provider registered here lives as long as the manager: the whole process. What it reads per request it
 reads per call (see [Creating a Custom Provider](#4-creating-a-custom-provider)), never from a scoped service
 captured at registration.
 
@@ -213,7 +213,7 @@ In a multi-tenant application, every log entry should carry the current tenant i
 The context manager is a singleton, and the tenant belongs to the request: a provider that took an
 `ITenantContext` in its constructor would hold the first tenant it saw for the life of the process (and,
 with scope validation on, fail to resolve at all). It reads the tenant of the current request on each call
-instead, through `IHttpContextAccessor` — the way the built-in `HttpContextProvider` reads the request.
+instead, through `IHttpContextAccessor`, the way the built-in `HttpContextProvider` reads the request.
 
 ```csharp
 public sealed class TenantContextProvider(IHttpContextAccessor httpContextAccessor)
@@ -368,7 +368,7 @@ services.AddPragmaticLogging(logging =>
 The three `Include*Context` switches decide which system providers the `IContextManager` carries.
 
 ⚠️ There is **one** context manager per process, and the container answers with it. A log provider is
-constructed with a name and a configuration — never from the container — so what it enriches an entry with
+constructed with a name and a configuration (never from the container), so what it enriches an entry with
 is the ambient manager, `ContextManager.Instance`. `ConfigureContext` therefore configures that one, and the
 ASP.NET integration registers `HttpContext` and `CorrelationId` on the same one, so neither half of the
 context goes to a manager of its own.

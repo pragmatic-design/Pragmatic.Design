@@ -192,7 +192,7 @@ public class CheckoutService(IFeatureFlags flags)
 
 `IFeatureFlags` is registered by `AddPragmaticFeatureFlags()` (scoped, since a provider usually reads
 per-request state). Without a provider it evaluates against `FeatureFlagContext.Empty`, so the code above
-keeps working — global state and percentage rules apply, targeting rules simply do not match.
+keeps working: global state and percentage rules apply, targeting rules simply do not match.
 
 Keep using `IFeatureFlagStore` directly when the context is deliberately **not** the ambient one: a
 background job evaluating on behalf of another tenant, or previewing what a different user would see.

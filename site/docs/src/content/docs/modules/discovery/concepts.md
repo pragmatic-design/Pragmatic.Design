@@ -290,7 +290,7 @@ Any class implementing `IDiscoveryBackend` can serve as a backend. The interface
 
 | Package | Backend | Status |
 |---------|---------|--------|
-| `Pragmatic.Agent.Discovery` | The Agent's gossip-replicated KV — `services.UseAgentDiscovery()`, after `UseAgent()` | Available |
+| `Pragmatic.Agent.Discovery` | The Agent's gossip-replicated KV: `services.UseAgentDiscovery()`, after `UseAgent()` | Available |
 | `Pragmatic.Discovery.Redis` | Redis-backed distributed registry | Planned |
 | `Pragmatic.Discovery.Consul` | HashiCorp Consul service catalog | Planned |
 

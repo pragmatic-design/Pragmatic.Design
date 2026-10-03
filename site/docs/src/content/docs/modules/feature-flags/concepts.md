@@ -193,7 +193,7 @@ This means you can safely increase the rollout percentage without "churning" use
 | `<= 0` | `false` for everyone | ignored | not consulted |
 | `>= 100` | `true` for everyone | ignored | not consulted |
 | in between, user **in** bucket | `rule.Enabled` | honoured | not consulted (first match wins) |
-| in between, user **outside** bucket | no match | — | evaluation continues |
+| in between, user **outside** bucket | no match | n/a | evaluation continues |
 
 `Percentage(0)` is therefore a kill switch: it wins over the flag's global `Enabled` and over every rule
 that follows it. If you want "nobody for now, but let the rest of the rules decide", omit the percentage
@@ -375,11 +375,11 @@ public class HttpFeatureFlagContextProvider(
 
 ### Evaluating against the ambient context: `IFeatureFlags`
 
-Registering a provider is only half the job — something has to *call* it. `IFeatureFlags` is that half:
+Registering a provider is only half the job: something has to *call* it. `IFeatureFlags` is that half:
 it pairs the store with the registered provider, so business code asks the question directly.
 
 ```csharp
-// Without it — the context plumbing shows up at every call site:
+// Without it, the context plumbing shows up at every call site:
 var context = await contextProvider.GetContextAsync(ct);
 var allowed = await store.IsEnabledAsync<EarlyCheckIn>(context, ct);
 
@@ -389,7 +389,7 @@ var allowed = await flags.IsEnabledAsync<EarlyCheckIn>(ct);
 
 `AddPragmaticFeatureFlags()` registers it (scoped, since a provider usually reads per-request state).
 No provider registered? Evaluation falls back to `FeatureFlagContext.Empty`: the global state and
-percentage rules still apply, targeting rules simply do not match — a conservative default rather than
+percentage rules still apply, targeting rules simply do not match: a conservative default rather than
 a failure.
 
 Use `IFeatureFlagStore` directly when you need to evaluate against a context that is *not* the ambient
@@ -428,13 +428,13 @@ public sealed record FeatureFlagChange(
 ```
 
 **In `InMemoryFeatureFlagStore`:** a change is emitted whenever `Define()` alters **any part** of an
-existing definition — `Enabled`, `Description`, the rule count, or a rule's type, `Enabled` or values.
+existing definition: `Enabled`, `Description`, the rule count, or a rule's type, `Enabled` or values.
 Defining a flag for the first time emits nothing.
 
 **In `ConfigurationFeatureFlagStore`:** only `Enabled` transitions are emitted (including a flag
 disappearing from configuration, reported as enabled → disabled).
 
-**Delivery:** changes are broadcast — each watcher has its own channel, so every concurrent watcher sees
+**Delivery:** changes are broadcast: each watcher has its own channel, so every concurrent watcher sees
 every change instead of competing for them. Both the pending buffer (used while nobody is watching) and
 each watcher's queue are bounded and drop the oldest entry when full, so a process that never watches does
 not accumulate changes indefinitely.

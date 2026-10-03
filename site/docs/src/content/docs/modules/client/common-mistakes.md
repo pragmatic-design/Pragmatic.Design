@@ -131,7 +131,7 @@ The generator looks for files ending in:
 
 The `PragmaticClientBoundaries` property filters endpoints by `operationId` prefix. If no endpoint
 matches, the generator emits **PRAG2302** naming the filter it used, and produces no output. Match the
-boundary name to the `operationId` prefix in the manifest — `"Booking.CreateGuest"` requires `"Booking"`.
+boundary name to the `operationId` prefix in the manifest: `"Booking.CreateGuest"` requires `"Booking"`.
 
 ## 7b. Ignoring PRAG2301: a client method typed as `object`
 

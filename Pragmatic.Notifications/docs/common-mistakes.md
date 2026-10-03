@@ -28,7 +28,7 @@ public async Task HandleAsync(ReservationConfirmed e, CancellationToken ct)
 ## 2. Using EnqueueAsync in Jobs
 
 ```csharp
-// WRONG: double-queuing — the job runner already handles retry/background
+// WRONG: double-queuing; the job runner already handles retry/background
 [Job]
 public sealed partial class ReminderJob(INotificationService svc) : IJob<ReminderParams>
 {
@@ -40,7 +40,7 @@ public sealed partial class ReminderJob(INotificationService svc) : IJob<Reminde
 ```
 
 ```csharp
-// CORRECT: use SendAsync — the job runner provides retry and scheduling
+// CORRECT: use SendAsync; the job runner provides retry and scheduling
 public async Task ExecuteAsync(ReminderParams p, JobContext ctx, CancellationToken ct)
 {
     await svc.SendAsync(new NotificationRequest { ... }, ct);
@@ -52,7 +52,7 @@ Jobs already execute in the background with retry policies (`[Retry]`). Using `E
 ## 3. Forgetting to Register a Channel
 
 ```csharp
-// WRONG: no channel registered — all notifications silently skipped
+// WRONG: no channel registered, so all notifications are silently skipped
 app.UseNotifications(n =>
 {
     // No AddSmtp(), AddWebhook(), or AddChannel<T>()
@@ -84,7 +84,7 @@ The pipeline validates that both `Subject` and `Body` are non-empty before any p
 ## 5. Not Checking NotificationResult
 
 ```csharp
-// WRONG: ignoring the result — silent failures
+// WRONG: ignoring the result (silent failures)
 await notificationService.SendAsync(request);
 ```
 
@@ -154,7 +154,7 @@ new NotificationContent
 {
     Subject = "Reservation Confirmed",
     Body = "Your reservation from Mar 15 to Mar 20 is confirmed.",
-    // HtmlBody = null — email will be plain text only
+    // HtmlBody = null: email will be plain text only
 }
 ```
 

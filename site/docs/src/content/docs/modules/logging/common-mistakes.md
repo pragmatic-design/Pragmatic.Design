@@ -148,7 +148,7 @@ pragmatic.AddFile("logs/app-{Date}.log", opts =>
 
 **Why:** The defaults bound the disk a log can take, but they are sized for development: ten-megabyte
 files, thirty-one of them. Retention counts files, not days, so size the two together for the volume
-the service writes and the history you need to keep. `MaxRetainedFiles = 0` keeps every file — the
+the service writes and the history you need to keep. `MaxRetainedFiles = 0` keeps every file: the
 setting that lets a log fill the disk.
 
 ---
@@ -212,7 +212,7 @@ pragmatic.Configure(opts =>
 });
 ```
 
-**Why:** With background processing, the default `OverflowStrategy` is `DropOldest`: when the queue fills, the oldest entries are discarded so the caller never blocks. That is the right trade-off for most web APIs, but a queue that is too small silently loses log entries under sustained load — size `MaxQueueSize` for your peak throughput. If you instead choose `Block`, request threads wait for queue space when it is full, which can cause timeouts and cascading failures under load — use it only in compliance-critical scenarios where every log entry must be persisted (audit logs, financial transactions).
+**Why:** With background processing, the default `OverflowStrategy` is `DropOldest`: when the queue fills, the oldest entries are discarded so the caller never blocks. That is the right trade-off for most web APIs, but a queue that is too small silently loses log entries under sustained load. Size `MaxQueueSize` for your peak throughput. If you instead choose `Block`, request threads wait for queue space when it is full, which can cause timeouts and cascading failures under load. Use it only in compliance-critical scenarios where every log entry must be persisted (audit logs, financial transactions).
 
 ---
 
@@ -244,7 +244,7 @@ pragmatic.AddFile("logs/app.log", config =>
     config.Privacy.RedactionMode = RedactionMode.Aggressive;
 });
 
-// No redaction for in-memory testing — the memory provider uses its own configuration
+// No redaction for in-memory testing; the memory provider uses its own configuration
 pragmatic.AddProvider(_ => new PragmaticMemoryProvider("Memory", PragmaticMemoryConfiguration.ForMemory()));
 ```
 

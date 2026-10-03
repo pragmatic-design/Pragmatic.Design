@@ -8,8 +8,8 @@ All attributes are in the namespace `Pragmatic.Validation.Attributes`. They targ
 
 1. **Null values pass** for all attributes except `[Required]`. Use `[Required]` to enforce non-null, then combine with other attributes for format/range checks.
 2. **Types must be `partial`** for the source generator to add the `Validate()` method (diagnostic `PRAG0200`).
-3. **Custom message keys** -- Every attribute has a `MessageKey` property to override the default localization key: `[Email(MessageKey = "custom.invalid_email")]`. With translations, name the key through its generated constant instead of repeating it: `[Email(MessageKey = TKeys.Validation.InvalidEmail)]` — the generator reads the key the constant holds, although it writes the constant itself. A `MessageKey` it cannot read is `PRAG0222`, not a silent fallback to the default key.
-4. **Multiple attributes** -- You can stack multiple attributes on the same property. They are all checked in order.
+3. **Custom message keys**: every attribute has a `MessageKey` property to override the default localization key: `[Email(MessageKey = "custom.invalid_email")]`. With translations, name the key through its generated constant instead of repeating it: `[Email(MessageKey = TKeys.Validation.InvalidEmail)]`. The generator reads the key the constant holds, although it writes the constant itself. A `MessageKey` it cannot read is `PRAG0222`, not a silent fallback to the default key.
+4. **Multiple attributes**: you can stack multiple attributes on the same property. They are all checked in order.
 
 ---
 
@@ -459,7 +459,7 @@ These attributes compare the decorated property against another property on the 
 
 The source generator emits direct, compile-time property access for the built-in comparison attributes
 (no reflection). Custom cross-property attributes read the sibling value through the generated
-`IPropertyValueProvider.GetPropertyValue(name)` (a `switch` over property names — also reflection-free).
+`IPropertyValueProvider.GetPropertyValue(name)` (a `switch` over property names, also reflection-free).
 
 **Diagnostic `PRAG0203`**: Emitted as an error when the referenced property does not exist on the type.
 **Diagnostic `PRAG0209`**: Emitted as a warning when the two properties have incompatible types.

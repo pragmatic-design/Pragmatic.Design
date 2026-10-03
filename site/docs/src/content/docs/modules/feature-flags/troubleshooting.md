@@ -88,7 +88,7 @@ The percentage rollout does not seem to match the expected distribution.
 
 1. **Which store are you using?** `InMemoryFeatureFlagStore` emits on any difference in the definition
    (`Enabled`, `Description`, rule count, or a rule's type/`Enabled`/values). `ConfigurationFeatureFlagStore`
-   emits **only** on `Enabled` transitions — a rules-only edit in `appsettings.json` produces no event.
+   emits **only** on `Enabled` transitions: a rules-only edit in `appsettings.json` produces no event.
 
 2. **Is the flag being defined for the first time?** The initial `Define()` does not emit a change (there is no "previous" state to compare against).
 

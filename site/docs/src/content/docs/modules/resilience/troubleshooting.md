@@ -228,7 +228,7 @@ No. `FallbackStrategy<TResult>` requires a typed factory delegate (`Func<Excepti
 
 ### What happens if I reference a policy name that does not exist?
 
-`GetPipeline("nonexistent")` returns `PassthroughPipeline.Instance` -- a no-op singleton that executes the operation directly with zero overhead. No exception: this is intentional to allow gradual adoption — annotate actions with `[ResiliencePolicy("name")]` before configuring the policy, and the action runs unprotected until it is configured. But not silent either: at startup the generated host logs one **Warning** per declared name that no configuration defines and no `Resilience:Default` covers, naming the policy and the actions that declare it (`UndefinedResiliencePolicies`). A policy registered fluently after the pipeline is configured is reported there, and then used.
+`GetPipeline("nonexistent")` returns `PassthroughPipeline.Instance`, a no-op singleton that executes the operation directly with zero overhead. No exception: this is intentional to allow gradual adoption. Annotate actions with `[ResiliencePolicy("name")]` before configuring the policy, and the action runs unprotected until it is configured. But not silent either: at startup the generated host logs one **Warning** per declared name that no configuration defines and no `Resilience:Default` covers, naming the policy and the actions that declare it (`UndefinedResiliencePolicies`). A policy registered fluently after the pipeline is configured is reported there, and then used.
 
 ### How do I test my resilience configuration?
 
