@@ -1,6 +1,6 @@
 ---
 title: How It Works
-description: The unified Pragmatic Source Generator: detection, transform, template, emit.
+description: "The unified Pragmatic Source Generator: detection, transform, template, emit."
 ---
 
 Pragmatic Design is built around a **unified** source generator, `Pragmatic.SourceGenerator`, **plus a few standalone generators** that live with the modules they serve. Every one of them is an `IIncrementalGenerator`, targets `netstandard2.0`, and ships as a NuGet analyzer reference (no runtime code is shipped by the generator itself).

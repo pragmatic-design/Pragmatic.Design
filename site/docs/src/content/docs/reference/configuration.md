@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Three-tier configuration model: topology, module strategy, business wiring.
+description: "Three-tier configuration model: topology, module strategy, business wiring."
 ---
 
 Pragmatic Design uses a **3-tier configuration model**. Each tier answers a different question and lives in a different place.

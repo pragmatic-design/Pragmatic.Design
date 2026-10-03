@@ -1,6 +1,6 @@
 ---
 title: Feature Catalog
-description: Every generator pipeline: its trigger, what it generates, and a short input→output sketch.
+description: "Every generator pipeline: its trigger, what it generates, and a short input→output sketch."
 ---
 
 This is the catalog of code-generating pipelines in Pragmatic Design: the **feature pipelines** inside the unified `Pragmatic.SourceGenerator` (31 feature folders, including four documentation generators), the inline **Manifest** generator, and the **standalone** generators that ship with their own modules.
