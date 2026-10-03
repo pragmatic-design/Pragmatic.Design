@@ -14,9 +14,15 @@ pushes to the feed). Solutions use the `.slnx` format, not `.sln`.
 One script defines both, and CI runs the same one:
 
 ```bash
-node scripts/check.mjs --tier all    # clean build + every suite — this is the gate
-node scripts/check.mjs --tier fast   # changed modules only, while you work
+node scripts/check.mjs --tier fast                    # changed modules only, while you work
+node scripts/check.mjs --tier full                    # the gate for a change: clean build, every ratchet, every hermetic suite
+node scripts/check.mjs --tier docker --only <Suite>   # a container suite your change touches
+node scripts/check.mjs --tier all                     # everything, container suites included: before a release
 ```
+
+⚠️ `--tier full` does not run the suites that need Docker. If your change adds or touches a test that
+lives in one of them (the reference applications, `Pragmatic.Messaging.Tests`, the EF Core suites),
+run that suite with `--tier docker --only <Suite>` too, or the change is not tested where it matters.
 
 **Do not substitute `dotnet build` or `dotnet test` across the solution.** They mislead in opposite
 directions: an incremental build reports success on sources that fail when compiled clean, and
@@ -57,6 +63,25 @@ To run one suite: `dotnet test <module>/tests/<project>/<project>.csproj --filte
 
 Each module is `Pragmatic.{Name}/` with `src/`, `tests/`, and its own `.slnx`.
 
+## Files you do not edit by hand
+
+These are copies of a source elsewhere in the repository. Change the source and run the command. The
+gate fails when the docs site, a skill example or a native binary has drifted from its source; the
+`.slnx` folders are not checked, so regenerate them yourself after adding or moving a document.
+
+| Copy | Source | Command |
+|---|---|---|
+| `site/docs/src/content/docs/modules/`, `…/guides/` | each module's `README.md` and `docs/`, and `docs/howto/` | `node site/scripts/sync-docs.mjs` |
+| `marketplace/…/skills/*/examples/` | the compiled, tested files listed in `scripts/skill-examples.json` | `node scripts/sync-skill-examples.mjs` |
+| the `/docs/` folders inside each `.slnx` | the markdown on disk: each module's README, CHANGELOG and `docs/`, and the repository's `docs/` | `node scripts/sync-slnx-docs.mjs` |
+| the native binaries under a module's `runtimes/` | `native/` (Rust) | `node scripts/refresh-native.mjs` |
+
+Generated C# under `obj/` is never edited either: change the template that writes it.
+
+A change under `marketplace/` (the agent skills) also raises the plugin's version, in
+`plugins/pragmatic-design/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` together:
+an installed copy of the skills updates only when that number moves.
+
 ## Conventions worth knowing before your first change
 
 - Attributes are generic: `[MapFrom<Order>]`, never `[MapFrom(typeof(Order))]`.
@@ -86,6 +111,18 @@ fail.
 signature, what a document actually says — run it. Read a symbol where it is defined the first time
 you touch it, not from memory. One occurrence is a hypothesis; look at a second before treating it
 as the convention.
+
+**Test the effect, where it happens.** A generated feature is proved by the host it ends up in (a
+request answered, a row written), not by a test that the generated file contains the right line, or a
+diagnostic that the attribute is well formed. Both show the shape; neither shows that anything calls
+it. A test that passes the first time it runs has proved nothing yet: take the fix out, and it must
+fail. A race is not tested by running both sides at once and hoping they collide; hold one side at
+the point the race needs (a relay that delays a frame, a transaction left open) so the window is open
+on every run.
+
+**Know what was red before you came.** When a suite fails, check whether it failed without your change
+(`git stash`) before investigating, so an old defect is not taken for the one you introduced, nor the
+other way round.
 
 **Fix the cause.** If the correct fix is larger than the change you set out to make, say so and
 propose it; do not quietly ship the workaround as though it were the repair. A mitigation described
