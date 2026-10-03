@@ -19,8 +19,8 @@ Do not use it on data that changes on every request or where strong consistency 
 ## Package
 
 ```xml
-<PackageReference Include="Pragmatic.Caching" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+<PackageReference Include="Pragmatic.Caching" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

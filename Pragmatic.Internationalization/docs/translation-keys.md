@@ -46,7 +46,7 @@ In your `.csproj`:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+  <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
     <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   </PackageReference>
 </ItemGroup>

@@ -19,9 +19,9 @@ For cross-boundary event reactions use `pragmatic-use-messaging`. Jobs and Messa
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Jobs" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Jobs.EFCore" Version="1.0.0-alpha.*" />     <!-- DB store + distributed lock -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+<PackageReference Include="Pragmatic.Jobs" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Jobs.EFCore" Version="1.0.0-alpha.1" />     <!-- DB store + distributed lock -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

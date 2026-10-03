@@ -59,9 +59,6 @@ that are not released yet.
 </configuration>
 ```
 
-> ⚠ If the feed ever served a stale stable `1.0.0` of a generator package, NuGet's `1.0.0-alpha.*`
-> float will silently pick that stable build. Keep the feed clean (the alpha packages only).
-
 ## 3. Boundary library — `MyApp.Sales.csproj`
 
 ```xml
@@ -72,19 +69,19 @@ that are not released yet.
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.*" />
+    <PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.1" />
     <!-- ⚠ required: [Endpoint] generates Microsoft.AspNetCore.* code INTO this assembly -->
-    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.*" />
+    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.1" />
     <!-- ⚠ required: entity infrastructure (IEntity.PersistenceId) is generated here, needs EFCore types -->
-    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
       <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -441,17 +438,17 @@ document the errors it returns.
     <ProjectReference Include="..\MyApp.Sales\MyApp.Sales.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.*" />
+    <PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.1" />
     <!-- ⚠ required: who calls. Users → this package; deliberately none → [AnonymousHost] instead.
          With neither, the build stops on PRAG1695. -->
-    <PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.*" />
-    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+    <PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.1" />
+    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
       <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

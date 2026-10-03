@@ -19,9 +19,9 @@ and humanizers. Missing translations are build warnings (PRAG1802).
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Internationalization" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.*" />  <!-- middleware -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+<PackageReference Include="Pragmatic.Internationalization" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.1" />  <!-- middleware -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets><PrivateAssets>all</PrivateAssets>
 </PackageReference>
 ```

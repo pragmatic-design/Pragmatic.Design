@@ -22,10 +22,10 @@ For HTTP APIs exposed from these mutations/queries: see `pragmatic-use-actions-e
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.*" />        <!-- EF runtime -->
-<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.*" />                <!-- schema diff -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+<PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.1" />        <!-- EF runtime -->
+<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.1" />                <!-- schema diff -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

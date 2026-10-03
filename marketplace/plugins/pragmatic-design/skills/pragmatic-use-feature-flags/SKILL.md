@@ -18,7 +18,7 @@ The same user/tenant always resolves the same way (stable bucketing) — no flap
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.FeatureFlags" Version="1.0.0-alpha.*" />
+<PackageReference Include="Pragmatic.FeatureFlags" Version="1.0.0-alpha.1" />
 ```
 
 ## Core pattern

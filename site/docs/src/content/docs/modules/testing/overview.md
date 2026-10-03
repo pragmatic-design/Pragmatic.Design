@@ -34,8 +34,8 @@ The test project references the app plus both Testing pieces:
 
 ```xml
 <ProjectReference Include="..\..\src\MyApp\MyApp.csproj" />
-<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Testing.SourceGenerator" Version="1.0.0-alpha.*" PrivateAssets="all" />
+<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Testing.SourceGenerator" Version="1.0.0-alpha.1" PrivateAssets="all" />
 ```
 
 (Inside this repository the same two are `ProjectReference`s, the generator with

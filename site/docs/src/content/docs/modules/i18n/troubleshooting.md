@@ -75,7 +75,7 @@ The `[TranslationKeys]` attribute is present but the generated `T` class is empt
 5. **Is the source generator referenced?** In your `.csproj`, the SG must be referenced as an analyzer:
 
    ```xml
-   <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+   <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
      <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
    </PackageReference>
    ```
