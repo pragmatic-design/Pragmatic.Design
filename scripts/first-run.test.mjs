@@ -5,7 +5,8 @@
  * `C:/Pragmatic/bagetter.nuget.config` — a file on the author's machine, outside the repository,
  * created by nothing. The consumer samples asked for `0.1.0-preview.*` while the script published
  * `1.0.0-alpha.0.*`, so they restored cleanly from nuget.org and proved nothing about the packages
- * they exist to prove. And the how-to described a `NuGet.Config` at the repo root that is not there.
+ * they exist to prove. And the how-to told the reader to add the feed to a root `NuGet.Config` that was
+ * not there; the root config that exists now pins nuget.org, and the feed stays with the samples.
  *
  * What is checked here is what can regress silently. A clean clone actually working is a walk, and
  * the walk is in the issue.
@@ -73,15 +74,20 @@ test('the consumer samples ask for the version the script publishes', () => {
   }
 });
 
-test('the how-to does not promise a NuGet.Config at the root', () => {
+test('the root config pins nuget.org and leaves the local feed to the samples', () => {
   const guide = readFileSync('docs/howto/local-nuget-server.md', 'utf-8');
-  const rootConfigExists = existsSync('NuGet.Config') || existsSync('nuget.config');
+  const root = ['nuget.config', 'NuGet.Config'].find(existsSync);
 
-  assert.equal(rootConfigExists, false,
-    'if one is ever added, this case is the wrong record and the guide has to change with it');
+  assert.ok(root, 'the root config keeps a machine feed out of this repository\'s restores');
+  const config = readFileSync(root, 'utf-8');
+  assert.ok(config.includes('https://api.nuget.org/v3/index.json'), `${root} must name nuget.org`);
+  assert.ok(!/localhost|bagetter/i.test(config.replace(/<!--[\s\S]*?-->/g, '')),
+    `${root} carries the local feed, which would change every restore here to serve the samples`);
 
+  assert.ok(!/no `NuGet\.Config` at the repo root/i.test(guide),
+    'the guide says there is no root config, and there is one');
   assert.ok(!/`NuGet\.Config` at the repo root \(the file already exists/.test(guide),
-    'the guide told the reader to edit a file that is not there');
+    'the guide told the reader to add the feed to the root config');
 });
 
 test('the samples carry the feed they are meant to read', () => {

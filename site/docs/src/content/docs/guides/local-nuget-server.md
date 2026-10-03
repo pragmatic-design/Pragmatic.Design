@@ -40,9 +40,10 @@ Open it in a browser to verify the UI loads.
 
 ## 2. The feed is already configured where it is consumed
 
-There is **no `NuGet.Config` at the repo root**, and there should not be: the repository builds from
-project references, so a root config would change how every project here restores in order to serve
-a feed only the consumer samples read.
+The `nuget.config` at the repo root does **not** carry this feed, and should not: it pins every package
+of the repository to nuget.org, so a feed configured on the machine is never read here. The repository
+builds from project references, so adding the local feed there would change how every project here
+restores in order to serve a feed only the consumer samples read.
 
 What exists is `examples/consumer-samples/NuGet.config`, scoped to exactly that: the local feed, plus
 package source mapping so `Pragmatic.*` comes from BaGetter and everything else from nuget.org.
