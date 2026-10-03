@@ -1,0 +1,8 @@
+# Advisories against site/pnpm-lock.yaml that have no fixed release to move to, each with the reason it
+# is accepted. Every entry expires, so it is looked at again rather than kept by habit; the list and how
+# it was checked are in docs/security/supply-chain.md.
+
+[[IgnoredVulns]]
+id = "GHSA-ch52-4w7c-c8xp"
+ignoreUntil = 2027-04-03
+reason = "http-cache-semantics has no fixed release; it comes in through Astro and concerns a shared HTTP cache's max-stale handling, while both sites are built to static files"

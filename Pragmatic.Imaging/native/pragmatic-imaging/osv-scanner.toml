@@ -1,0 +1,8 @@
+# Advisories against this crate's lockfile that have no fixed release to move to, each with the reason it
+# is accepted. Every entry expires, so it is looked at again rather than kept by habit; the list and how
+# it was checked are in docs/security/supply-chain.md.
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0436"
+ignoreUntil = 2027-04-03
+reason = "paste is unmaintained; a proc-macro used at compile time by rav1e 0.8.1, the latest, not code in the library"
