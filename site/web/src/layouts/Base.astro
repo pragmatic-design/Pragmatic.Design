@@ -41,6 +41,8 @@ const image = new URL("/og-image.jpg", Astro.site);
       rel="stylesheet"
     />
     <title>{title}</title>
+    <!-- Cloudflare Web Analytics: no cookies and no personal data, so no consent banner is needed. -->
+    <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "461a946190bb421ea15ad65f2924c2b4"}'></script>
   </head>
   <body class="min-h-screen bg-surface text-text">
     <slot />
