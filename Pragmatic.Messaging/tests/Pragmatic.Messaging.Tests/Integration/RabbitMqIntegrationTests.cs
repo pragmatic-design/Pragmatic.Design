@@ -227,6 +227,52 @@ public class RabbitMqIntegrationTests(RabbitMqContainerFixture broker) : IAsyncL
     }
 
     /// <summary>
+    ///     A publish that meets a subscribe to the same new exchange finds it declared on the broker,
+    ///     not only promised by the other caller.
+    /// </summary>
+    /// <remarks>
+    ///     The exchange used to be marked as declared before its declaration reached the broker. A
+    ///     publish in that window skipped its own declaration and published to an exchange that did not
+    ///     exist yet; the broker answers that by closing the channel, and the channel was the shared
+    ///     publish channel, so every publish and send after it failed.
+    ///     <para>
+    ///         The window is a round trip wide, and racing pairs land in it a few times in ten, so the
+    ///         test holds it open instead: the relay keeps the subscriber's declaration from the broker
+    ///         until the publish has been answered.
+    ///     </para>
+    /// </remarks>
+    [Fact]
+    public async Task APublishWhileASubscribeDeclaresTheSameNewExchange_LeavesThePublishChannelOpen()
+    {
+        if (!_brokerAvailable)
+            return;
+
+        var relay = AmqpFrameRelay.Start(broker.ConnectionString!);
+        await using var relayScope = relay.ConfigureAwait(true);
+        var transport = new RabbitMqTransport(
+            new RabbitMqOptions { ConnectionString = relay.ConnectionString, DurableQueues = false, PersistentMessages = false },
+            NullLogger<RabbitMqTransport>.Instance);
+        await using var transportScope = transport.ConfigureAwait(true);
+        await transport.ConnectAsync().ConfigureAwait(true);
+
+        var exchange = $"test-declaring-{Guid.NewGuid():N}";
+        relay.HoldFirstFrameMentioning(exchange);
+        var subscribing = transport.SubscribeAsync(exchange, $"{exchange}.q", (_, _, _) => Task.CompletedTask);
+        await relay.Held.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(true);
+
+        var published = await Record.ExceptionAsync(
+            () => transport.PublishAsync("meanwhile"u8.ToArray(), exchange, MessageContext.New())).ConfigureAwait(true);
+
+        await relay.ReleaseAsync().ConfigureAwait(true);
+        var subscription = await subscribing.ConfigureAwait(true);
+        await subscription.DisposeAsync().ConfigureAwait(true);
+
+        published.Should().BeNull("the exchange was not on the broker yet, so the publish had to declare it");
+        await transport.PublishAsync("after"u8.ToArray(), $"test-after-{Guid.NewGuid():N}", MessageContext.New())
+            .ConfigureAwait(true);
+    }
+
+    /// <summary>
     ///     The moment the host has started, a publish is accepted: the consumer service began
     ///     the connect in <c>StartAsync</c>, and the application still does not wait for the broker to start.
     /// </summary>

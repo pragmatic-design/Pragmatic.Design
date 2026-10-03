@@ -17,17 +17,20 @@ public sealed partial class RabbitMqTransport
 
     private async Task EnsureExchangeOnChannelAsync(IChannel channel, string exchangeName, CancellationToken ct)
     {
-        // TryAdd returns false when already present — skip the declare without TOCTOU.
-        if (!_declaredExchanges.TryAdd(exchangeName, true)) return;
+        if (_declaredExchanges.ContainsKey(exchangeName)) return;
 
-        // ExchangeDeclare is idempotent on RabbitMQ: a second declaration with identical
-        // parameters is a no-op, so a race that slips through is safe.
+        // Marked only once the broker has it. Marked before, a concurrent caller skipped its own
+        // declaration and used an exchange still in flight: the broker answers NOT_FOUND by closing the
+        // channel, and on the shared publish channel that fails every publish after it. Two callers that
+        // both declare are safe, since a declaration with identical parameters is a no-op.
         await channel.ExchangeDeclareAsync(
             exchangeName,
             options.ExchangeType,
             durable: true,
             autoDelete: false,
             cancellationToken: ct).ConfigureAwait(false);
+
+        _declaredExchanges.TryAdd(exchangeName, true);
     }
 
     private async Task EnsureQueueAsync(string queueName, CancellationToken ct)
@@ -95,8 +98,8 @@ public sealed partial class RabbitMqTransport
     private async Task EnsureDeadLetterTopologyAsync(IChannel channel, CancellationToken ct)
     {
         var dlx = options.DeadLetterExchange!;
-        // The TryAdd guard also covers the bound DLQ declared below (one-time topology setup).
-        if (!_declaredExchanges.TryAdd(dlx, true)) return;
+        // The mark also covers the bound DLQ declared below, and is set after all three, as for any exchange.
+        if (_declaredExchanges.ContainsKey(dlx)) return;
 
         await channel.ExchangeDeclareAsync(
             dlx, "fanout", durable: true, autoDelete: false, cancellationToken: ct).ConfigureAwait(false);
@@ -111,6 +114,8 @@ public sealed partial class RabbitMqTransport
         await channel.QueueDeclareAsync(
             deadLetterQueue, durable: true, exclusive: false, autoDelete: false, arguments: dlqArgs, cancellationToken: ct).ConfigureAwait(false);
         await channel.QueueBindAsync(deadLetterQueue, dlx, "", cancellationToken: ct).ConfigureAwait(false);
+
+        _declaredExchanges.TryAdd(dlx, true);
     }
 
     // =========================================================================
