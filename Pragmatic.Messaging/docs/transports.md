@@ -24,6 +24,13 @@ connect with I/O, so their consumer service begins the connect at startup withou
 issued meanwhile waits for it, failing only if the connect fails or `ConnectWaitTimeout`
 (default 30 s) passes.
 
+A connect that fails is retried in the background, after 1 s and then doubling up to 30 s, and
+the subscriptions are bound once it succeeds. The host keeps running throughout. A publish, send
+or subscribe issued between two attempts fails at once instead of waiting, and a request surfaces
+as `RequestReplyException`, the same as one nobody answered. RabbitMQ takes the first delay and an attempt limit from
+`ReconnectBaseDelayMs` and `MaxReconnectAttempts` (0, the default, retries until it connects).
+Running out of attempts is logged as an error, and the host still keeps running.
+
 ## RabbitMQ
 
 ```csharp

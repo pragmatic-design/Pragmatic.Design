@@ -14,10 +14,16 @@ public sealed class RabbitMqOptions
     /// <summary>Auto-reconnect on connection loss. Default: true.</summary>
     public bool AutoReconnect { get; set; } = true;
 
-    /// <summary>Initial delay in ms before reconnect attempt. Default: 1000.</summary>
+    /// <summary>
+    ///     Delay in ms before the second connect attempt when the first fails at start-up, doubling after each
+    ///     failure up to 30 seconds; also the client's recovery interval once connected. Default: 1000.
+    /// </summary>
     public int ReconnectBaseDelayMs { get; set; } = 1000;
 
-    /// <summary>Max reconnect attempts before giving up (0 = infinite). Default: 0.</summary>
+    /// <summary>
+    ///     Connect attempts at start-up before giving up, the first included (0 = until it connects). Giving
+    ///     up leaves the host running with the transport not connected, logged as an error. Default: 0.
+    /// </summary>
     public int MaxReconnectAttempts { get; set; }
 
     /// <summary>
