@@ -11,12 +11,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.38.5",
+    "@astrojs/starlight": "^0.42.5",
     "@pragmatic/shared": "workspace:*",
-    "astro": "^6.4.8",
+    "astro": "^7.3.5",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^7.0.2"
   }
 }

@@ -11,7 +11,7 @@ inside `UseMessaging(...)`. Publish is fan-out (topic/exchange), Send is point-t
 that is a construction-level guarantee.
 
 | | Channels | RabbitMQ | Kafka | Azure Service Bus | SQL (Postgres/SqlServer) |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | Scope | in-process | broker | broker (log) | broker (cloud/emulator) | database (no broker) |
 | Topology auto-created | n/a | ✅ exchange/queue/binding | ✅ AdminClient (`AutoCreateTopics`) | ✅ management API (graceful pass-through) | ✅ DDL idempotente (`AutoCreateSchema`) |
 | Failed handler | → `IDeadLetterStore` | nack → **DLX** (`pragmatic.dlx` default) | → **DLQ topic** (`{topic}.dlq` default) | abandon → redelivery → **native DLQ** | backoff → **`__TransportDeadLetters`** |
