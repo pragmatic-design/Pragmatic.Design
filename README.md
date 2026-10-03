@@ -1,11 +1,13 @@
 # Pragmatic.Design
 
 [![CI](https://github.com/pragmatic-design/Pragmatic.Design/actions/workflows/ci.yml/badge.svg)](https://github.com/pragmatic-design/Pragmatic.Design/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/vpre/Pragmatic.SourceGenerator?label=nuget&logo=nuget)](https://www.nuget.org/profiles/Pragmatic.Design)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512bd4)](https://dotnet.microsoft.com)
 [![License: MIT + PolyForm SB](https://img.shields.io/badge/license-MIT%20%2B%20PolyForm%20SB-blue.svg)](docs/LICENSING.md)
 [![Preview](https://img.shields.io/badge/status-1.0.0--alpha-ffe088)](docs/ROADMAP.md)
 
 **[Website](https://pragmaticdesign.net)** · **[Documentation](https://docs.pragmaticdesign.net)** ·
+**[Packages](https://www.nuget.org/profiles/Pragmatic.Design)** ·
 **[Agent skills](https://github.com/pragmatic-design/skills)**
 
 > *One generator to rule them all, one generator to find them,*
@@ -326,9 +328,16 @@ says where it stands.
 
 ## Getting started
 
-> **The packages are not on nuget.org yet.** Until they are, the alpha builds are consumed from a
-> local feed: [set one up](docs/howto/local-nuget-server.md) and `node scripts/publish-local.mjs`
-> packs the repository into it.
+The packages are on [nuget.org](https://www.nuget.org/profiles/Pragmatic.Design) as prereleases, so
+`dotnet add package` needs `--prerelease`:
+
+```bash
+dotnet add package Pragmatic.Composition.Host --prerelease
+dotnet add package Pragmatic.SourceGenerator --prerelease
+```
+
+To try changes that are not released yet, a clone can pack itself into a
+[local feed](docs/howto/local-nuget-server.md).
 
 Then pick your way in:
 

@@ -7,6 +7,10 @@ interface Props {
 }
 
 const { title, description = "The Foundry of Precision Code. Compile-time metaprogramming for .NET: describe your domain, and one source generator writes the application around it." } = Astro.props;
+
+// A link preview needs absolute URLs: it is fetched by another site, not resolved against this page.
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const image = new URL("/og-image.jpg", Astro.site);
 ---
 
 <!doctype html>
@@ -15,6 +19,17 @@ const { title, description = "The Foundry of Precision Code. Compile-time metapr
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pragmatic Design" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={image} />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

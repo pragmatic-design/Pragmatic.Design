@@ -149,9 +149,22 @@ manifest, but no smoke publishes it Native AOT yet.
 
 ## NuGet.config
 
+The packages are on nuget.org, so the solution names that one source and nothing else:
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+```
+
+Only to consume a build that is not released yet, add the local feed and map `Pragmatic.*` to it
+(see `../nuget-feed.md`):
+
+```xml
   <packageSources>
     <clear />
     <add key="local-bagetter" value="http://localhost:5555/v3/index.json" allowInsecureConnections="true" />
@@ -161,7 +174,6 @@ manifest, but no smoke publishes it Native AOT yet.
     <packageSource key="local-bagetter"><package pattern="Pragmatic.*" /></packageSource>
     <packageSource key="nuget.org"><package pattern="*" /></packageSource>
   </packageSourceMapping>
-</configuration>
 ```
 
 ## .gitignore

@@ -15,7 +15,7 @@ For external apps, add:
 
 If generated symbols are missing:
 
-1. Confirm the package restored from `local-bagetter`.
+1. Confirm the package restored, at the same version as the other `Pragmatic.*` packages (`dotnet list package`).
 2. Confirm the source generator package is referenced as an analyzer.
 3. Rebuild with `dotnet build`.
 4. Read PRAG diagnostics and fix the source pattern.

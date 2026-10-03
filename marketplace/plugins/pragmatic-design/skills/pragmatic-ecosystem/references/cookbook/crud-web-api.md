@@ -13,7 +13,7 @@ Build in order. Run `dotnet build` after each main step.
 ## 0. Prerequisites
 
 - .NET 10 SDK, local PostgreSQL (or `docker run -p 5432:5432 -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=myapp postgres:17`).
-- NuGet feed: see `../nuget-feed.md` if you are using a local BaGetter.
+- NuGet feed: the packages are on nuget.org as prereleases; see `../nuget-feed.md` only to consume unreleased builds from a local BaGetter.
 
 ## 1. Project layout
 
@@ -41,7 +41,8 @@ MyApp/
 
 ## 2. NuGet.config (repo root)
 
-Required only if you use a local BaGetter for Pragmatic preview packages.
+Not needed with the packages from nuget.org. Required only if you use a local BaGetter for builds
+that are not released yet.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
