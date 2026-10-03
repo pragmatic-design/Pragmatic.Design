@@ -20,7 +20,8 @@ public sealed partial class SqlConsumerService(
     IEnumerable<Pragmatic.Messaging.RequestReply.RequestSubscription> requestSubscriptions,
     ILogger<SqlConsumerService> logger,
     KillSwitchOptions? killSwitch = null,
-    IOptions<MessagingOptions>? messaging = null)
+    IOptions<MessagingOptions>? messaging = null,
+    ConnectRetry? retry = null)
     : BackgroundService
 {
     private readonly List<IAsyncDisposable> _subscriptions = [];
@@ -43,7 +44,10 @@ public sealed partial class SqlConsumerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _connecting.ConfigureAwait(false);
+        if (!await TransportConnectLoop.UntilConnectedAsync(
+                transport, _connecting, retry ?? ConnectRetry.Default, logger, stoppingToken).ConfigureAwait(false))
+            return;
+
         LogStarted();
 
         _subscriptions.AddRange(

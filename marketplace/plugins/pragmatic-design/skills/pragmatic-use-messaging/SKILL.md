@@ -205,7 +205,7 @@ redelivered copy deliberately keeps that id. `PublishMessageJob` releases that c
 republishing; a scheduler of your own has to. Without the release the message is neither retried nor
 dead-lettered.
 
-A publish right after startup is safe on every transport: Kafka and Service Bus connect before the host reports started, and RabbitMQ and SQL connect in the background while a publish issued meanwhile waits for them (`ConnectWaitTimeout`, default 30 s) — the application still starts with its broker down. Do not add a delay or a retry around the first publish.
+A publish right after startup is safe on every transport: Kafka and Service Bus connect before the host reports started, and RabbitMQ and SQL connect in the background while a publish issued meanwhile waits for them (`ConnectWaitTimeout`, default 30 s) — the application still starts with its broker down, and a connect that fails is retried in the background (RabbitMQ: `ReconnectBaseDelayMs`, `MaxReconnectAttempts`) while the host keeps running. Do not add a delay or a retry around the first publish.
 
 ### 6. Large payloads — claim check
 

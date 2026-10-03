@@ -21,7 +21,8 @@ public sealed partial class NamedBusConsumerService(
     IEnumerable<MessageSubscription> subscriptions,
     ILogger<NamedBusConsumerService> logger,
     KillSwitchOptions? killSwitch = null,
-    IOptions<MessagingOptions>? messaging = null)
+    IOptions<MessagingOptions>? messaging = null,
+    ConnectRetry? retry = null)
     : BackgroundService
 {
     private readonly List<IAsyncDisposable> _subscriptions = [];
@@ -43,7 +44,10 @@ public sealed partial class NamedBusConsumerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _connecting.ConfigureAwait(false);
+        if (!await TransportConnectLoop.UntilConnectedAsync(
+                transport, _connecting, retry ?? ConnectRetry.Default, logger, stoppingToken).ConfigureAwait(false))
+            return;
+
         LogStarted(busName, transport.Name);
 
         _subscriptions.AddRange(

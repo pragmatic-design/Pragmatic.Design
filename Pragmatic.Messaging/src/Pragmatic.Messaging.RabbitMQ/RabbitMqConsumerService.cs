@@ -20,7 +20,8 @@ public sealed partial class RabbitMqConsumerService(
     IEnumerable<Pragmatic.Messaging.RequestReply.RequestSubscription> requestSubscriptions,
     ILogger<RabbitMqConsumerService> logger,
     KillSwitchOptions? killSwitch = null,
-    IOptions<MessagingOptions>? messaging = null)
+    IOptions<MessagingOptions>? messaging = null,
+    RabbitMqOptions? options = null)
     : BackgroundService
 {
     private readonly List<IAsyncDisposable> _subscriptions = [];
@@ -43,7 +44,13 @@ public sealed partial class RabbitMqConsumerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _connecting.ConfigureAwait(false);
+        var retry = options is null
+            ? ConnectRetry.Default
+            : new ConnectRetry(TimeSpan.FromMilliseconds(options.ReconnectBaseDelayMs), options.MaxReconnectAttempts);
+        if (!await TransportConnectLoop.UntilConnectedAsync(transport, _connecting, retry, logger, stoppingToken)
+                .ConfigureAwait(false))
+            return;
+
         LogStarted();
 
         _subscriptions.AddRange(
