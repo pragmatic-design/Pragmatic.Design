@@ -40,7 +40,7 @@ The middleware runs early in the pipeline (before routing) so that the tenant co
 After resolution, the middleware enforces a **fail-closed claim guard** (`MultiTenancyOptions.EnforceTenantClaim`, default `true`):
 
 - If the request is **authenticated** AND the user carries a tenant claim (`MultiTenancyOptions.TenantClaimType`, default `tenant_id`), the tenant resolved by **any** strategy MUST equal the claim value.
-- On **mismatch**, the request is rejected with **HTTP 403** — neither the client-supplied value nor the claim is silently used (no fail-open).
+- On **mismatch**, the request is rejected with **HTTP 403**: neither the client-supplied value nor the claim is silently used (no fail-open).
 - When **no tenant claim is present** (anonymous / pre-auth), the resolved value is kept as-is.
 
 This makes the authenticated user's tenant claim **authoritative**: an authenticated user from tenant A cannot send `X-Tenant-Id: B` (or hit `/b/...`, or `b.app.com`) to read or write tenant B's data. The claim resolver trivially satisfies the guard. Set `EnforceTenantClaim = false` only if your identity tokens deliberately omit a tenant claim and you accept client-supplied tenants for authenticated requests.
@@ -58,17 +58,17 @@ A resolved tenant is only served if it is `Active` (`MultiTenancyOptions.Enforce
 
 Without it `TenantState` is written and never read. Suspending a tenant for non-payment, deactivating
 it under a GDPR request, or catching one still provisioning recorded a value and served the requests
-anyway — including the case `TenantMigrationOrchestrator` writes `Suspended` for, which is a tenant
+anyway, including the case `TenantMigrationOrchestrator` writes `Suspended` for, which is a tenant
 whose schema is in an indeterminate state.
 
 Set `EnforceTenantState = false` if administration endpoints have to stay reachable while addressed
-as the suspended tenant itself. Reactivating from a management context — a different tenant, or none
-— works either way.
+as the suspended tenant itself. Reactivating from a management context (a different tenant, or none)
+works either way.
 
 ### Unknown Tenant Guard
 
 `MultiTenancyOptions.RequireKnownTenant` rejects a resolved tenant the store does not contain, with
-**HTTP 404** — an unknown tenant is not a forbidden one, and answering `403` would confirm that the
+**HTTP 404**: an unknown tenant is not a forbidden one, and answering `403` would confirm that the
 id names something.
 
 **It is off by default, unlike every other guard here, and the reason is a fact about the framework
@@ -77,7 +77,7 @@ rather than a preference.** When multi-tenancy is detected the generated host re
 multi-tenant application until someone populated that store: "unknown" cannot mean anything while the
 default list is empty.
 
-Turn it on where the store really is the list of tenants that exist — and it is worth turning on.
+Turn it on where the store really is the list of tenants that exist, and it is worth turning on.
 `Header`, `Route` and `Subdomain` read the tenant straight out of the request, so without it an
 invented id becomes the request's tenant. Reads then filter on a tenant with no rows, which is not a
 leak; writes create rows under a tenant that does not exist, and nothing says so.
@@ -113,7 +113,7 @@ app.UseMultiTenancy(mt => mt.UseHeader("Tenant-Key")); // custom header name
 
 **Configuration**: `MultiTenancyOptions.TenantHeaderName` (default: `"X-Tenant-Id"`).
 
-**When to use**: API-to-API communication, development/testing, B2B APIs where the caller controls the header. For authenticated requests the resolved header value is validated against the user's `tenant_id` claim — see [Claim Guard](#claim-guard-cross-tenant-protection).
+**When to use**: API-to-API communication, development/testing, B2B APIs where the caller controls the header. For authenticated requests the resolved header value is validated against the user's `tenant_id` claim (see [Claim Guard](#claim-guard-cross-tenant-protection)).
 
 **Example request**:
 ```http
@@ -265,13 +265,13 @@ The endpoint       (ITenantContext available to it, to filters, and to services)
 
 The step orders are `RoutingStep` 50, `AuthenticationStep` 91, `TenantResolutionStep` 92. Routing
 runs *before* tenant resolution, and that order is what makes `TenantAgnosticEndpoint` below
-possible — an endpoint's metadata cannot be read before the route it belongs to has been matched.
+possible: an endpoint's metadata cannot be read before the route it belongs to has been matched.
 
 In Pragmatic.Design applications using `PragmaticApp.RunAsync`, the middleware is added automatically in the correct position. The SG-generated host wiring handles this.
 
 ## Routes That Belong to No Tenant
 
-With `RequireTenant` — the default — a request that resolves no tenant is refused with `400` before
+With `RequireTenant` (the default), a request that resolves no tenant is refused with `400` before
 any endpoint runs. That is right for the domain surface and wrong for what sits underneath it: a
 liveness probe sends no tenant header and has nowhere to get one, and the published OpenAPI document
 is what a caller fetches *before* being anyone.
@@ -288,13 +288,13 @@ compile-time contract (`MapPragmaticOpenApi`). An application marks anything of 
 about the process rather than about a tenant.
 
 ⚠️ **It relaxes the requirement, not the resolution.** A tenant supplied on one of these routes is
-still resolved, still checked against the caller's claim, and still published downstream — only its
+still resolved, still checked against the caller's claim, and still published downstream; only its
 absence stops being an error. The tenant *state* check is also skipped, because the state of one
 tenant is not a fact about a route that belongs to none: suspending a tenant must not take the
 liveness probe with it.
 
-⚠️ **A marker, not a list of paths.** Both framework routes are configurable — the health path through
-`HostHealthOptions`, the document's through `MapPragmaticOpenApi(pattern)` — so a default list of
+⚠️ **A marker, not a list of paths.** Both framework routes are configurable (the health path through
+`HostHealthOptions`, the document's through `MapPragmaticOpenApi(pattern)`), so a default list of
 strings would be right only for applications that changed nothing, and silently wrong for the rest.
 
 **Measured, not assumed:** before this existed, a host that had simply enabled the health endpoint

@@ -40,11 +40,11 @@ The SG cannot see its own output in the same Roslyn pass. So trait-generated act
 - **QueryModel** → `QueryFeature.Register(resourceQueries:)` → Apply() + ToSpecification()
 - **EndpointModel** → `EndpointsFeature.Register(programmaticEndpoints:)` → HTTP handlers
 
-This means trait actions get the **full pipeline**: DI, UnitOfWork, validation, activity tracing — identical to hand-written `[DomainAction]` classes.
+This means trait actions get the **full pipeline** (DI, UnitOfWork, validation, activity tracing), identical to hand-written `[DomainAction]` classes.
 
 ## Entity Architecture
 
-Each parent entity gets its own comment table — no shared polymorphic table:
+Each parent entity gets its own comment table (no shared polymorphic table):
 
 ```
 Reservations          ReservationComments
@@ -78,7 +78,7 @@ The self-FK uses `DeleteBehavior.Restrict` to prevent orphaned replies.
 
 When `RequireApproval = true`:
 - New comments start with `Status = PendingApproval`
-- **Reads return only `Visible` comments** — a pending comment is invisible until approved, and a
+- **Reads return only `Visible` comments**: a pending comment is invisible until approved, and a
   rejected or hidden one disappears again. That is the whole point of the option: without it,
   moderation would announce itself while showing everyone the unmoderated text.
 - A `Moderate{Entity}CommentAction` is generated, exposed as
@@ -88,7 +88,7 @@ When `RequireApproval = true`:
   reach: undeleting is not moderation.
 - A `ListPending{Entity}CommentsAction` is the moderation queue, exposed as
   `GET .../comments/pending` under the same permission: the pending comments, oldest first, paged. It
-  lifts only the named `Moderation` filter — tenant and soft delete stay — and applies the
+  lifts only the named `Moderation` filter (tenant and soft delete stay) and applies the
   internal-visibility rule itself, since it reads the table directly.
 
 ## ICommentPolicy Lifecycle

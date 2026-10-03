@@ -232,9 +232,9 @@ var combined = OrderSpecs.Active.And(mySpec);   // ✅ compiles and works
 ```
 
 A foreign `ISpecification<T>` (one that is not a `Specification<T>` subclass) is wrapped by reading
-its **`ToExpression()`** — that expression is what gets merged into the combined tree.
+its **`ToExpression()`**: that expression is what gets merged into the combined tree.
 
-**Wrong — a spec whose two members disagree:**
+**Wrong (a spec whose two members disagree):**
 
 ```csharp
 public sealed class VipSpec : ISpecification<Order>
@@ -249,14 +249,14 @@ spec.IsSatisfiedBy(order);   // uses ToExpression() (Total > 1000), NOT IsVip
 ```
 
 **Why:** the expression tree is the single source of truth. Once a spec is composed, the combined
-`IsSatisfiedBy` compiles the merged **expression** — the foreign spec's own `IsSatisfiedBy` is never
+`IsSatisfiedBy` compiles the merged **expression**; the foreign spec's own `IsSatisfiedBy` is never
 called. Two consequences:
 
 - Keep `IsSatisfiedBy` and `ToExpression()` describing the *same* rule. Subclassing
-  `Specification<T>` (or using `Spec<T>.Where`) guarantees this for free — you only write the expression.
+  `Specification<T>` (or using `Spec<T>.Where`) guarantees this for free: you only write the expression.
 - A foreign spec that implements only `IsSatisfiedBy` and throws from `ToExpression()` will fail at the
   point of composition (`.And(...)`/`.Or(...)` reads the expression eagerly), not later. If you truly
-  have an in-memory-only predicate, don't compose it — filter with `IEnumerable.Where(spec)` instead.
+  have an in-memory-only predicate, don't compose it; filter with `IEnumerable.Where(spec)` instead.
 
 ---
 

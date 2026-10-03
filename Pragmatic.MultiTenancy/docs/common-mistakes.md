@@ -355,7 +355,7 @@ The reference application carries a `TenantValidationPreProcessor` whose `!IsRes
 unreachable, because the middleware answers first. It reads as a safety net and protects nothing.
 
 If you want a different **status code** or a typed error body for the unresolved case, that is a
-reason to reach for a pre-processor — but set `RequireTenant = false` first, or the middleware will
+reason to reach for a pre-processor, but set `RequireTenant = false` first, or the middleware will
 answer before your processor is asked.
 
 **And the same applies where there is no request.** A message handler that opens with
@@ -368,14 +368,14 @@ if (string.IsNullOrEmpty(context.TenantId))
 is the pre-processor's mistake in a consumer. `RequireTenant` covers the write path too since
 `TenantInterceptor` throws `TenantNotResolvedException` when an `ITenantEntity` would be
 inserted or updated with no tenant resolved, so the message is nacked and dead-lettered instead of
-landing in the wrong database. The hand-written guard was written when that was *not* true — the read
+landing in the wrong database. The hand-written guard was written when that was *not* true: the read
 filter was fail-closed and the write path was not, so a row belonging to nobody was written onto the
 **shared** database without a complaint and was then invisible to the service's own reads. It is a
 monument to the same kind of sentence.
 
 What the framework still cannot do for you is **choose** the tenant when nobody sent one: a job or a
 CLI opens its own with `TenantScope.BeginScope(tenantId)`, and the scope has to be around the
-`SaveChangesAsync`, not only around the in-memory change — the connection is picked when the context
+`SaveChangesAsync`, not only around the in-memory change: the connection is picked when the context
 opens it, so one context cannot write for two organisations however the scopes are nested.
 
 ---

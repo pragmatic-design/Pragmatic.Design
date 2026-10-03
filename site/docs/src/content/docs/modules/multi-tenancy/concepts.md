@@ -599,22 +599,22 @@ did:
 
 - **the request**: `TenantResolutionMiddleware` refuses a request that resolves no tenant with `400`,
   unless the endpoint is a `TenantAgnosticEndpoint`;
-- **reads**: the generated query filter on an `ITenantEntity` is fail-closed — with no tenant resolved
+- **reads**: the generated query filter on an `ITenantEntity` is fail-closed, so with no tenant resolved
   a tenant query returns no rows rather than everybody's;
 - **writes**: `TenantInterceptor` throws `TenantNotResolvedException` when an `ITenantEntity` would be
   inserted or updated with no tenant resolved. This half arrived last: until then such a
   write happened, on the **shared** database and with an empty tenant column, and was invisible
-  afterwards to the application's own fail-closed reads — which is how a row belonging to nobody gets
+  afterwards to the application's own fail-closed reads, which is how a row belonging to nobody gets
   written without a complaint.
 
 The write half matters most where there is no request to refuse: a message handler, a job, a CLI. A
 consumer arrives with the tenant in a transport header and the consume scope restores it, so nothing
 in the handler mentions tenants; a job has to open one itself with `TenantScope.BeginScope(tenantId)`,
-**around the save** and not only around the in-memory change — the connection is chosen when the
+**around the save** and not only around the in-memory change: the connection is chosen when the
 context opens it, so one context cannot write for two organisations.
 
-An application that deliberately writes without a tenant — a seed, a CLI, background work with a
-system tenant — sets `RequireTenant = false`, which is what the option is for.
+An application that deliberately writes without a tenant (a seed, a CLI, background work with a
+system tenant) sets `RequireTenant = false`, which is what the option is for.
 
 ---
 

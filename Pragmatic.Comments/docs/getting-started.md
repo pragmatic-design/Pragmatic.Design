@@ -40,11 +40,11 @@ Build the project. The SG generates 20+ files automatically.
 ## Step 3: Verify Generated Output
 
 Check `obj/Debug/net10.0/generated/` for:
-- `ReservationComment.Entity.g.cs` — the comment entity
-- `Reservation.TraitNavigations.g.cs` — `Comments` collection on parent
-- `AddReservationCommentAction.Action.g.cs` — create action
-- `EntityConfig.ReservationComment.g.cs` — EF configuration
-- `ReservationCommentDto.Dto.g.cs` — read DTO with Projection
+- `ReservationComment.Entity.g.cs`: the comment entity
+- `Reservation.TraitNavigations.g.cs`: `Comments` collection on parent
+- `AddReservationCommentAction.Action.g.cs`: create action
+- `EntityConfig.ReservationComment.g.cs`: EF configuration
+- `ReservationCommentDto.Dto.g.cs`: read DTO with Projection
 - 5 endpoint handlers (POST/GET/PUT/DELETE)
 
 ## Step 4: Test via HTTP

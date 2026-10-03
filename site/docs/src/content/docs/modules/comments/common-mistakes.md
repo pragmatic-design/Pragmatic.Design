@@ -5,7 +5,7 @@ editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmati
 sidebar:
   order: 3
 ---
-### 1. Missing [Resource] — No Endpoints Generated
+### 1. Missing [Resource]: No Endpoints Generated
 
 **Wrong:**
 ```csharp
@@ -24,7 +24,7 @@ public partial class Reservation { ... }
 
 **Why:** The SG needs the resource segment to derive endpoint routes (`/api/{boundary}/{segment}/{id}/comments`). Without `[Resource]`, entity + config + actions are generated but no HTTP endpoints.
 
-### 2. Missing [Entity] — Nothing Generated
+### 2. Missing [Entity]: Nothing Generated
 
 **Wrong:**
 ```csharp

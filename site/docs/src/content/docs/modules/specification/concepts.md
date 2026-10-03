@@ -96,7 +96,7 @@ One definition. Four usages. Zero duplication.
 
 **Where the class goes.** `OrderSpecs` is the shape for this library used on its own. With
 Pragmatic.Persistence, every `[Entity]` already has a generated `static partial class
-{Entity}Specifications` in the entity's namespace — it holds `ById` (and `By{LogicKey}`) — so write the
+{Entity}Specifications` in the entity's namespace (it holds `ById`, and `By{LogicKey}`), so write the
 rules as the other half of that partial, `public static partial class OrderSpecifications`, next to the
 entity: one class per entity that every file already sees, instead of a second name and a `using` per
 caller. The generator turns each static member into reads either way (`repo.FindActiveAsync()`,
@@ -441,14 +441,14 @@ public class OrderQueryHandler(IReadRepository<Order> orders)
 An action or a mutation can name a declared specification as the source of the rows it needs, instead
 of injecting a repository: `[LoadEntity<Employee>(Specification = nameof(EmployeeSpecifications.ActiveWithNumber))]`
 or `[LoadEntities<T>(Specification = …)]`. The specification's parameters bind by name to the operation's
-properties, and the invoker reads the rows before the body runs — 404 for a single load that matches
+properties, and the invoker reads the rows before the body runs: 404 for a single load that matches
 nothing. Details in Pragmatic.Actions, *Troubleshooting* ("How do I load the rows a rule names").
 
 ### ComputedFilter
 
 The `[ComputedFilter]` attribute in Pragmatic.Persistence generates specifications automatically from entity properties. These generated specifications compose with hand-written ones using the same `And`, `Or`, `Not` operators.
 
-The other direction works too: a `[ComputedFilter]` or `[Projectable]` body can name a specification over a navigation — `Requests.Where(LeaveRequestSpecifications.Approved).Sum(r => r.Amount)` — and the generated expression hands the query the specification's `ToExpression()`, so the rule is written once. Its arguments cannot come from the row (PRAG0735). Details in Pragmatic.Persistence, *Projections and Query Views*.
+The other direction works too: a `[ComputedFilter]` or `[Projectable]` body can name a specification over a navigation (`Requests.Where(LeaveRequestSpecifications.Approved).Sum(r => r.Amount)`), and the generated expression hands the query the specification's `ToExpression()`, so the rule is written once. Its arguments cannot come from the row (PRAG0735). Details in Pragmatic.Persistence, *Projections and Query Views*.
 
 ---
 
