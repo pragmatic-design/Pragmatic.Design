@@ -151,7 +151,7 @@ services.UseAgentDiscovery();
 ```
 
 Any other store works the same way: implement `IDiscoveryBackend` and register it with
-`UseDiscoveryBackend<T>()` — see [Custom Backends](/modules/discovery/topology-validation/).
+`UseDiscoveryBackend<T>()`. See [Custom Backends](/modules/discovery/topology-validation/).
 
 When Host B registers, it validates against Host A's already-registered topology:
 

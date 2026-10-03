@@ -83,7 +83,7 @@ public sealed class BookingService(INotificationService notifications)
 
 ### User-Targeted (by ID)
 
-> **Requires a recipient resolver.** The built-in resolver only understands direct addresses — it has
+> **Requires a recipient resolver.** The built-in resolver only understands direct addresses: it has
 > no way of knowing where your users are stored. Targeting `User`, `Users`, `Role` or `Tenant` without
 > registering an `IRecipientResolver` resolves to zero recipients and the send **fails** with an
 > explanatory error. See [Resolving recipients](#resolving-recipients).
@@ -335,7 +335,7 @@ app.UseNotifications(n =>
 
 The built-in `DefaultRecipientResolver` handles only direct addresses: `Direct(email)`,
 `ToWebhook(url)` and a phone number. `User`, `Users`, `Role` and `Tenant` cannot be resolved by the
-library — it does not know where your users live — so they yield zero recipients and the send fails
+library (it does not know where your users live), so they yield zero recipients and the send fails
 with an error saying exactly that. Registering a resolver is what makes those forms work:
 
 ```csharp

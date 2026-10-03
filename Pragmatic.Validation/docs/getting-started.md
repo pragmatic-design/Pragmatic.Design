@@ -191,7 +191,7 @@ services.AddGeneratedValidators();
 
 ## Step 5: Use in a DomainAction
 
-A DomainAction is validated automatically by the pipeline's `ValidationFilter` — no attribute needed:
+A DomainAction is validated automatically by the pipeline's `ValidationFilter`, no attribute needed:
 
 ```csharp
 [DomainAction]

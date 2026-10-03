@@ -23,7 +23,7 @@ This should update `Name` but leave `Description` unchanged. But with a normal D
 public record UpdateProduct
 {
     public string? Name { get; init; }        // "New Name"
-    public string? Description { get; init; } // null — but does this mean "clear" or "not sent"?
+    public string? Description { get; init; } // null, but does this mean "clear" or "not sent"?
 }
 ```
 
@@ -88,18 +88,18 @@ The converter is registered automatically on SG-generated patch types via `[Json
 ### Value types and explicit `null`
 
 The table above assumes a reference type such as `string`, where "clear it" is a state the property can
-actually hold. For a **non-nullable value type** — `int`, `DateOnly`, an enum — there is no such state:
+actually hold. For a **non-nullable value type** (`int`, `DateOnly`, an enum) there is no such state:
 `Optional<int>.Null` carries `HasValue = true` with the value `default(int)`, i.e. `0`. Left alone, an
 incoming `null` would therefore *write zero* rather than leave the field untouched.
 
-The two converters resolve this differently — not by accident, but because they see different things.
+The two converters resolve this differently, not by accident, but because they see different things.
 The generated one reads the whole patch object, so it knows which properties were absent. The runtime one
 is registered per value: it is handed a token and cannot tell `{"quantity": null}` from `{}`, so "null" is
 the only signal it has.
 
 | Converter | `{ "quantity": null }` on `Optional<int>` | When it applies |
 |-----------|-------------------------------------------|-----------------|
-| SG-generated `{Type}JsonConverter` | treated as **undefined** — the field is left unchanged | any type marked `[GeneratePatch<T>]` (the normal case) |
+| SG-generated `{Type}JsonConverter` | treated as **undefined**: the field is left unchanged | any type marked `[GeneratePatch<T>]` (the normal case) |
 | Runtime `OptionalConverter<T>` | becomes `Optional.Null`, so `ApplyTo` writes `default(T)` | only when you register the converter by hand on a type the generator did not produce |
 
 Practical consequence: to make a value-type field optional *and* clearable, model it as
@@ -146,12 +146,12 @@ public partial record PatchProduct
 ### Property Exclusion
 
 The generator automatically excludes:
-- `Id`, `PersistenceId` — identity cannot change
-- `CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy` — managed by auditing
-- `IsDeleted`, `DeletedAt`, `DeletedBy` — managed by soft delete
-- `RowVersion` — managed by concurrency
-- Collection navigations — not patchable via simple PATCH
-- Reference navigations — use explicit FK properties instead
+- `Id`, `PersistenceId`: identity cannot change
+- `CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy`: managed by auditing
+- `IsDeleted`, `DeletedAt`, `DeletedBy`: managed by soft delete
+- `RowVersion`: managed by concurrency
+- Collection navigations: not patchable via simple PATCH
+- Reference navigations: use explicit FK properties instead
 
 ---
 
@@ -209,9 +209,9 @@ Content-Type: application/json
 
 When `ApplyTo()` calls the entity's `Set*()` methods, `IChangeTracking.ModifiedProperties` is updated automatically. This means:
 
-- **Selective validation** — only modified properties are validated
-- **Optimized persistence** — EF Core tracks only changed columns
-- **Audit trail** — `EntityPropertyChanged<T>` events fire only for actual changes
+- **Selective validation**: only modified properties are validated
+- **Optimized persistence**: EF Core tracks only changed columns
+- **Audit trail**: `EntityPropertyChanged<T>` events fire only for actual changes
 
 ---
 

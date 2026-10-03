@@ -107,7 +107,7 @@ Benchmarked against Serilog and NLog on .NET 10 (per call, null sinks for every 
 
 First in every category. The key is the **deferred pipeline**: when no feature needs a materialized
 entry (advanced filters, context enrichment, redaction), the typed log state flows straight to the
-sink — no `LogEntry`, no dictionaries, no eager rendering. Combined with `[LoggerMessage]` call sites
+sink: no `LogEntry`, no dictionaries, no eager rendering. Combined with `[LoggerMessage]` call sites
 (zero-boxing struct state), a log call is allocation-free end-to-end. Enabling redaction or enrichment
 transparently switches to the full materialized pipeline. See
 [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the full run and history.
@@ -194,7 +194,7 @@ Each provider implements `WriteLogCore` and handles the specific output format a
 
 For hot paths, use .NET's built-in `[LoggerMessage]` source generator
 (`Microsoft.Extensions.Logging`, shipped with the SDK). Pragmatic.Logging works entirely through the
-standard `ILogger` abstraction, so this is the recommended pattern — there is no proprietary attribute
+standard `ILogger` abstraction, so this is the recommended pattern: there is no proprietary attribute
 to learn.
 
 ```csharp
@@ -344,7 +344,7 @@ Context enrichment automatically attaches ambient information to every log entry
 ### Custom Providers
 
 Extend `ContextProviderBase` for domain-specific context. The provider lives as long as the context
-manager (a singleton), so what belongs to the request — the tenant — it reads on each call, not in its
+manager (a singleton), so what belongs to the request, the tenant, it reads on each call, not in its
 constructor:
 
 ```csharp

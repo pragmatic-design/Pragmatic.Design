@@ -93,9 +93,9 @@ public sealed class NotSameAsAttribute : ValidationAttribute
 
 When a type carries a custom attribute that overrides `IsValid(value, instance)`, the source generator
 detects it and implements `IPropertyValueProvider` on the generated partial type. Reading a sibling
-property is a `switch` over property names — **no reflection**. The cast to `IPropertyValueProvider`
+property is a `switch` over property names: **no reflection**. The cast to `IPropertyValueProvider`
 always succeeds for an SG-generated (partial) type; for a non-partial type, implement the interface
-yourself. (There is no `PropertyAccessorCache` type — that was a documentation error.)
+yourself. (There is no `PropertyAccessorCache` type; that was a documentation error.)
 
 ### Custom Message Keys
 

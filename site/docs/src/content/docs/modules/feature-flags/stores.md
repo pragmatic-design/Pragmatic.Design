@@ -56,8 +56,8 @@ The `InMemoryFeatureFlagStore` delegates to `FeatureFlagEvaluator` (internal), w
 
 ### Change Notification
 
-When `Define()` changes **any part** of an existing definition — `Enabled`, `Description`, the rule count,
-or a rule's type, `Enabled` or values (compared element-wise) — a `FeatureFlagChange` is emitted to
+When `Define()` changes **any part** of an existing definition (`Enabled`, `Description`, the rule count,
+or a rule's type, `Enabled` or values, compared element-wise), a `FeatureFlagChange` is emitted to
 `WatchAsync()` consumers. Defining a flag for the first time emits nothing: there is no previous state to
 transition from.
 
@@ -72,7 +72,7 @@ change rather than competing for them. Two buffers bound the memory this can hol
 | Pending (no watcher yet) | 64 | oldest change dropped |
 | Per watcher | 1024 | oldest change dropped for that watcher |
 
-Changes published while nobody is watching are delivered to the first watcher that arrives — a flag
+Changes published while nobody is watching are delivered to the first watcher that arrives: a flag
 defined during startup seeding is still observable by a watcher started afterwards.
 
 `Define()` throws `ArgumentException` if a rule carries a type the evaluation engine does not know: such a

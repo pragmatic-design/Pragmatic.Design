@@ -32,7 +32,7 @@ You expect topology conflicts but validation reports zero issues.
 
 ### Checklist
 
-1. **Are you using InMemory backend in a multi-host deployment?** InMemory is per-process. Each host validates against its own empty registry. Use a shared backend for cross-host validation — `UseAgentDiscovery()` from `Pragmatic.Agent.Discovery`, or your own `IDiscoveryBackend`.
+1. **Are you using InMemory backend in a multi-host deployment?** InMemory is per-process. Each host validates against its own empty registry. Use a shared backend for cross-host validation: `UseAgentDiscovery()` from `Pragmatic.Agent.Discovery`, or your own `IDiscoveryBackend`.
 
 2. **Is the other host registered before validation runs?** Validation compares the incoming host against already-registered hosts. If both hosts start simultaneously with InMemory backends, neither sees the other.
 

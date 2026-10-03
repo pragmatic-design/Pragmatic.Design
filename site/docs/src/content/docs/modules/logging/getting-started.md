@@ -62,7 +62,7 @@ pragmatic
     .AddProvider(_ => new PragmaticMemoryProvider("Memory", PragmaticMemoryConfiguration.ForMemory())); // For testing
 ```
 
-Each provider takes a `PragmaticProviderConfiguration` — directly, or through an action that edits the
+Each provider takes a `PragmaticProviderConfiguration`: directly, or through an action that edits the
 provider's defaults.
 
 ### File Provider Rolling

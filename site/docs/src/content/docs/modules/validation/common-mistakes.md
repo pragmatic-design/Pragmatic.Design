@@ -102,7 +102,7 @@ public partial class CreateReservation : DomainAction<Reservation>
 }
 ```
 
-**Why:** Declarative attributes are processed by the SG into generated `Validate()` code, and the action pipeline's `ValidationFilter` — registered by default — runs it before `Execute()` and short-circuits with a 422 response on failure. This separates validation from business logic, enables reuse across actions that share properties, and feeds into observability (metrics, traces, structured logs).
+**Why:** Declarative attributes are processed by the SG into generated `Validate()` code, and the action pipeline's `ValidationFilter`, registered by default, runs it before `Execute()` and short-circuits with a 422 response on failure. This separates validation from business logic, enables reuse across actions that share properties, and feeds into observability (metrics, traces, structured logs).
 
 ---
 
@@ -124,7 +124,7 @@ public partial class CreateGuest : DomainAction<Guest>
 silently changes something else. Validation is **on by default**: the `ValidationFilter` is registered
 with the actions pipeline and runs the generated sync `Validate()` for every action that has rules.
 Async validators run too when the compilation declares a `[Validator]` for the action or for a nested
-property. `[Validate]` replaces that inference with an explicit choice — sync and async, whether or not a
+property. `[Validate]` replaces that inference with an explicit choice: sync and async, whether or not a
 validator exists.
 
 **Right:**
@@ -138,7 +138,7 @@ public partial class CreateGuest : DomainAction<Guest>
 }
 ```
 
-**Why:** Reach for `[Validate]` only to override the default — `[Validate(AsyncOnly = true)]` to skip the
+**Why:** Reach for `[Validate]` only to override the default: `[Validate(AsyncOnly = true)]` to skip the
 sync rules, for instance. To switch validation off, use `[NoValidation]`.
 
 ---

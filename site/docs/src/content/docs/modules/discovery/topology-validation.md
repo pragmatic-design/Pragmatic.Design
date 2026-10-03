@@ -13,8 +13,8 @@ When multiple hosts deploy the same modules, inconsistencies can arise: overlapp
 
 When `ValidateOnStartup` is enabled (default), the `DiscoveryHostedService` performs two steps:
 
-1. **Register** — reads `[assembly: PragmaticMetadata(HostTopology, ...)]` from the current host and calls `IDiscoveryService.RegisterAsync()`.
-2. **Validate** — calls `ValidateAsync()` comparing the local topology against all registered hosts.
+1. **Register**: reads `[assembly: PragmaticMetadata(HostTopology, ...)]` from the current host and calls `IDiscoveryService.RegisterAsync()`.
+2. **Validate**: calls `ValidateAsync()` comparing the local topology against all registered hosts.
 
 ```csharp
 services.AddDiscovery(opts =>

@@ -250,7 +250,7 @@ var objectLevel = ValidationIssue.ForObject("validation.date_range_invalid");
 ```
 
 Message keys follow the `validation.{attribute}` convention. On the wire the `errors` extension carries
-the keys — what a client matches on, the same in every language — and, when the host localizes
+the keys (what a client matches on, the same in every language) and, when the host localizes
 ProblemDetails (`i18n.LocalizeProblemDetails()`), a `messages` extension beside it carries their words
 in the caller's language, one for one. Parameters enable interpolation: `"Name must be at least {min} characters"`.
 
@@ -281,9 +281,6 @@ builder.Services.AddPragmaticValidation(options =>
 {
     // Stop at the first error (default: false -- accumulate all errors)
     options.FailFast = true;
-
-    // Note: IncludePropertyPath is obsolete and has no effect — nested paths
-    // (e.g. "Items[0].ProductId") are always included.
 });
 ```
 
@@ -347,7 +344,7 @@ public sealed class DateRangeAttribute : ValidationAttribute
     public override bool IsValid(object? value, object instance)
     {
         if (value is not DateTime start) return true;
-        // The generated validator implements IPropertyValueProvider — reflection-free sibling access.
+        // The generated validator implements IPropertyValueProvider: reflection-free sibling access.
         var end = ((IPropertyValueProvider)instance).GetPropertyValue(EndProperty);
         return end is DateTime endDate && start < endDate;
     }
@@ -355,7 +352,7 @@ public sealed class DateRangeAttribute : ValidationAttribute
 ```
 
 When a type carries a custom attribute that overrides `IsValid(value, instance)`, the source generator
-implements `IPropertyValueProvider` on the generated partial type, so the cast above always succeeds —
+implements `IPropertyValueProvider` on the generated partial type, so the cast above always succeeds:
 no reflection, no `PropertyAccessorCache`.
 
 For the full custom validator guide, see [Custom Validators](custom-validators.md).
@@ -440,7 +437,7 @@ The SG generates `IAsyncValidatorBindings<User>` that `CompositeValidator<User>`
 
 ### Pragmatic.Actions
 
-A `DomainAction` is validated by the pipeline's `ValidationFilter` before `Execute()` by default — no
+A `DomainAction` is validated by the pipeline's `ValidationFilter` before `Execute()` by default: no
 attribute needed. `[Validate]` replaces the default with an explicit choice, `[NoValidation]` turns it off:
 
 ```csharp
