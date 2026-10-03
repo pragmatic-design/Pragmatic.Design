@@ -20,7 +20,7 @@ which the generator uses to compose per-boundary interfaces and registration.
 
 ## Medium Block
 
-A cross-cutting package that ships complete and is used as-is — include it,
+A cross-cutting package that ships complete and is used as-is: include it,
 configure it, use it. Examples: Comments, Tags, Attachments, Notes. A Medium Block
 contributes its entity/actions/endpoints to the host through the generator.
 
@@ -40,7 +40,7 @@ what can be declared.
 
 ## Trait
 
-An attribute on an entity that brings a whole slice with it — `[HasComments]`,
+An attribute on an entity that brings a whole slice with it, such as `[HasComments]`,
 `[HasTags]`, `[HasAttachments]`, `[HasNotes]`: a child entity, its actions and its endpoints,
 generated for that entity.
 
@@ -48,14 +48,14 @@ generated for that entity.
 
 Generated glue around a `DomainAction`: it resolves the action's dependencies from
 DI, applies the configured pipeline (e.g. permission checks, entity loading), and
-executes the action. Invokers are generated types — never hand-written.
+executes the action. Invokers are generated types, never hand-written.
 
 ## Source Generator (unified)
 
 The single `PragmaticSourceGenerator` that hosts most feature pipelines (Actions,
 Endpoints, Persistence, Validation, …). A few generators are standalone: `Result`,
 the ISO code tables of `Internationalization`, the CSV mapper of `Documents`, and the ones
-that read something other than your domain — `Client` (the API manifest) and the three of
+that read something other than your domain: `Client` (the API manifest) and the three of
 `Testing` (contract tests, mocks and comparers, run in the test project). See
 [Source Generator](/source-generator/how-it-works/).
 
@@ -68,18 +68,18 @@ See [Feature Detection](/source-generator/feature-detection/).
 ## Topology
 
 The compile-time wiring the generator infers from your code (boundaries, action
-assignments, entity configuration) — the first of the three configuration tiers.
+assignments, entity configuration): the first of the three configuration tiers.
 See [Architecture](/getting-started/architecture/).
 
 ## IPragmaticBuilder
 
 The infrastructural configuration surface (auth, storage, …) used in `Program.cs`
-to choose module strategies — the second configuration tier. The generator
+to choose module strategies: the second configuration tier. The generator
 registers defaults; you override them with `Use*()` methods.
 
 ## IStartupStep
 
-A business-wiring hook (services, filters, OpenAPI, HTTP pipeline) — the third
+A business-wiring hook (services, filters, OpenAPI, HTTP pipeline): the third
 configuration tier. Multiple steps run in `Order`.
 
 ## Result / Maybe

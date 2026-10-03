@@ -14,12 +14,12 @@ Files under `shared/` are linked into several projects and carry `// ReSharper d
 
 ### Size
 
-A file over 400 lines has more than one responsibility. Split it — into `partial` files by category when
-the responsibility is one, into separate types when it is not — by responsibility, never to hit the number.
+A file over 400 lines has more than one responsibility. Split it (into `partial` files by category when
+the responsibility is one, into separate types when it is not) by responsibility, never to hit the number.
 
 ### C# 14
 
-- New locks use `System.Threading.Lock`, never `object` + `lock` — except in generator code (below).
+- New locks use `System.Threading.Lock`, never `object` + `lock`, except in generator code (below).
 - A setter with a guard uses the `field` keyword, not a single-use backing field.
 - Collection expressions (`[]`, `[x, ..y]`) over `Array.Empty<T>()` and `new List<T> { }`, unless a
   concrete `List<T>` or `T[]` is part of a public contract.
@@ -36,7 +36,7 @@ surface the generator has to handle.
 
 In English. A comment says **why**: a constraint that is not obvious, a deviation from the idiomatic
 solution, an invariant the type system cannot express. It never restates the code, and never tells the
-history of a change — that is what commits are for. No commented-out code.
+history of a change: that is what commits are for. No commented-out code.
 
 ## Principles
 
@@ -55,7 +55,7 @@ from it. It does not emit a lookup that decides at run time:
 
 | Generated code that looks | Generated code that knows |
 |---|---|
-| `if (x is ISyncValidator v) v.Validate();` | `x.Validate();` — or nothing, when the type will not have one |
+| `if (x is ISyncValidator v) v.Validate();` | `x.Validate();`, or nothing when the type will not have one |
 | a speculative `GetService<IAsyncValidator<T>>()` | the call to the validator known to be registered |
 | `typeof(T).GetProperty(name)` | the generated accessor |
 
@@ -63,13 +63,13 @@ A branch that is never taken is indistinguishable from one that works. A generat
 sees that module only; the **host** sees every referenced assembly. So every generated feature has the
 same shape:
 
-1. **The module declares** — metadata, lists and assembly attributes that are true of it on its own.
-2. **The level above composes** — the host reads those declarations and generates the final pieces:
+1. **The module declares**: metadata, lists and assembly attributes that are true of it on its own.
+2. **The level above composes**: the host reads those declarations and generates the final pieces:
    registrations, dispatchers, checks.
 3. **What one generator needs from another passes through the pipeline**, never through a lookup that
    answers "no" because the other output does not exist yet.
 
-Recursive composition at run time — `[typeof(Child), ..Child.NestedOperations]` — is legitimate: the same
+Recursive composition at run time (`[typeof(Child), ..Child.NestedOperations]`) is legitimate: the same
 generator writes both in the same compilation.
 
 ### Reflection
@@ -81,7 +81,7 @@ opt-in paths (assembly scanning, the migrations driver lookup, the grid adapters
 reflective calls in runtime source and the number may only go down.
 
 New code does not add `GetProperty`, `GetMethods`, `MakeGenericType`, `Activator.CreateInstance` or
-`GetCustomAttributes`. Where reflection is unavoidable — discovering what was not named at compile time —
+`GetCustomAttributes`. Where reflection is unavoidable (discovering what was not named at compile time)
 it is annotated with `[RequiresUnreferencedCode]`/`[RequiresDynamicCode]`, so the requirement reaches the
 caller.
 
@@ -136,8 +136,8 @@ never a raw `ImmutableArray<T>`, whose equality is by reference and breaks cachi
 ### Configuration in three tiers
 
 Topology is decided at compile time by the generator; a module's strategy is chosen in `Program.cs`
-through `IPragmaticBuilder` (`PragmaticBuilder{Module}Extensions.Use{Module}()`); business wiring —
-services, filters, the HTTP pipeline — goes in `IStartupStep`s, ordered by `Order`.
+through `IPragmaticBuilder` (`PragmaticBuilder{Module}Extensions.Use{Module}()`); business wiring
+(services, filters, the HTTP pipeline) goes in `IStartupStep`s, ordered by `Order`.
 
 ## Modules
 
@@ -151,7 +151,7 @@ Pragmatic.{Module}/
 ```
 
 A new module also needs its `.slnx`, generator tests with the snapshot scrubber below, a README with a
-quick start, and — when its strategy is configurable — a `PragmaticBuilder{Module}Extensions` and a flag
+quick start, and, when its strategy is configurable, a `PragmaticBuilder{Module}Extensions` and a flag
 in `FeatureDetector`/`DetectedFeatures`.
 
 ### Layers

@@ -1,4 +1,4 @@
-# Threat model — the compliance stack
+# Threat model: the compliance stack
 
 > Scope: `Pragmatic.Cryptography`, `Pragmatic.Audit`, `Privacy`, `Incidents`, and the source-generator
 > feature that classifies personal data. Written alongside the implementation, so every mitigation below
@@ -27,7 +27,7 @@
 1. **Application ↔ database.** The database holds ciphertext and wrapped keys; it must not hold the keys
    that open them. Anyone with `SELECT` is inside this boundary.
 2. **Application ↔ key source.** The master ring and the lookup key come from configuration, an
-   environment variable, or a secret store — never from the database they protect.
+   environment variable, or a secret store, never from the database they protect.
 3. **Process memory.** Once the process holds a key, it holds it. Nothing here defends against an
    attacker at that level.
 4. **Instances of the same application.** They share a database and do *not* share caches, which is why
@@ -43,7 +43,7 @@ An operator, a backup, or a leaked dump. **Answered by** per-subject encryption
 (`ISubjectDataProtector`) with keys wrapped by a ring stored elsewhere. Verified end-to-end against
 PostgreSQL, including reading the column through raw SQL to confirm it holds ciphertext.
 
-**Not answered** for fields the application chose to leave unencrypted — a deliberate trade, because an
+**Not answered** for fields the application chose to leave unencrypted. That is a deliberate trade, because an
 encrypted column is neither indexable nor filterable.
 
 ### Recovering identities from the registry
@@ -56,7 +56,7 @@ cannot be attacked without that key.
 ### Moving ciphertext between records
 
 Lifting subject A's encrypted identity onto subject B's row. **Answered by** associated data binding
-every value to its own reference — a moved value fails authentication rather than decrypting into the
+every value to its own reference: a moved value fails authentication rather than decrypting into the
 wrong place. Tested in both the registry and the key store.
 
 ### Altering the audit trail
@@ -79,19 +79,19 @@ already exist and never allocates.
 
 A key still cached after its destruction, on this instance or another. **Answered structurally**: the
 cache holds key material and never subject status, and every read checks the status against the store
-first — so a stale cache on another instance cannot resurrect anything. Local eviction happens too, but
+first, so a stale cache on another instance cannot resurrect anything. Local eviction happens too, but
 is not what the guarantee rests on.
 
 ### Making an erasure look like an attack
 
 After crypto-shredding, every legitimate read of erased data fails to decrypt. Reporting that as a bad
-authentication tag would drown the real tampering signal in routine erasures — the more subjects are
+authentication tag would drown the real tampering signal in routine erasures: the more subjects are
 erased, the less the alarm means. **Answered by** the three-outcome result: `Success`,
 `KeyDestroyed`, `AuthenticationFailed`, decided by consulting the store *before* decrypting.
 
 ### Rebuilding a link an erasure removed
 
-Recognising a returning identity requires keeping something derived from it — which is still processing
+Recognising a returning identity requires keeping something derived from it, which is still processing
 their data. **Answered by** allocating a **new** reference: an erased identity is never recognised, and
 the old reference stays erased.
 
@@ -118,7 +118,7 @@ the old reference stays erased.
 Each of these is a thing the deployment must be true for, not something the code can check.
 
 1. The master ring and lookup key are stored outside the database they protect.
-2. Those keys are backed up somewhere the database backups are not — losing them destroys data that no
+2. Those keys are backed up somewhere the database backups are not: losing them destroys data that no
    longer exists in any other form.
 3. Somebody runs `VerifyAsync` on a schedule. An integrity chain nobody checks proves nothing.
 4. Database write access is limited to the application, or the trail's evidential value is limited to

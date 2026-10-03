@@ -1,9 +1,9 @@
 ---
 title: How It Works
-description: The unified Pragmatic Source Generator — detection, transform, template, emit.
+description: The unified Pragmatic Source Generator: detection, transform, template, emit.
 ---
 
-Pragmatic Design is built around a **unified** source generator — `Pragmatic.SourceGenerator` — **plus a few standalone generators** that live with the modules they serve. Every one of them is an `IIncrementalGenerator`, targets `netstandard2.0`, and ships as a NuGet analyzer reference (no runtime code is shipped by the generator itself).
+Pragmatic Design is built around a **unified** source generator, `Pragmatic.SourceGenerator`, **plus a few standalone generators** that live with the modules they serve. Every one of them is an `IIncrementalGenerator`, targets `netstandard2.0`, and ships as a NuGet analyzer reference (no runtime code is shipped by the generator itself).
 
 | Generator | Assembly | Role |
 |-----------|----------|------|
@@ -14,7 +14,7 @@ Pragmatic Design is built around a **unified** source generator — `Pragmatic.S
 | **Client** `PragmaticClientGenerator` | `Pragmatic.Client.SourceGenerator` | A typed HTTP client, from the API manifest rather than from your domain |
 | **Testing** `ContractTestGenerator`, `MockGenerator`, `ComparerGenerator` | `Pragmatic.Testing.*.SourceGenerator` | Contract tests, mocks and comparers, generated in the **test** project |
 
-These are **separate `[Generator]` assemblies** — not feature pipelines inside the unified generator. Client and Testing stay outside it because their input is not the module's compilation. The rest of this page describes the unified generator; see the [feature catalog](/source-generator/feature-catalog/) for the others.
+These are **separate `[Generator]` assemblies**, not feature pipelines inside the unified generator. Client and Testing stay outside it because their input is not the module's compilation. The rest of this page describes the unified generator; see the [feature catalog](/source-generator/feature-catalog/) for the others.
 
 At compile time the unified generator:
 
@@ -24,7 +24,7 @@ At compile time the unified generator:
 4. Hands the model to a **Template** (a subclass of `CSharpTemplate`) that emits C# source
 5. Adds the emitted source to the compilation with a stable **hint name**
 
-The generated wiring uses no runtime reflection or service discovery — it's emitted into your assembly at build time. (EF Core, where you use it, keeps its own runtime behaviour — the documented exception.)
+The generated wiring uses no runtime reflection or service discovery: it's emitted into your assembly at build time. (EF Core, where you use it, keeps its own runtime behaviour, the documented exception.)
 
 ## Pipeline
 
@@ -68,7 +68,7 @@ The generated wiring uses no runtime reflection or service discovery — it's em
 
 ### 1. `IIncrementalGenerator`, not `ISourceGenerator`
 
-The old API re-runs on every keystroke; the incremental API caches per-declaration state and only re-runs what changed. Pragmatic commits to incremental — every pipeline step ends with a **record** type (equatable by value) so the framework can skip unchanged inputs.
+The old API re-runs on every keystroke; the incremental API caches per-declaration state and only re-runs what changed. Pragmatic commits to incremental: every pipeline step ends with a **record** type (equatable by value) so the framework can skip unchanged inputs.
 
 ### 2. `ForAttributeWithMetadataName`, not `SyntaxProvider.CreateSyntaxProvider`
 
@@ -108,7 +108,7 @@ Pragmatic.SourceGenerator/
 
 > Resource · Traits · Migrations · Caching · Persistence (orchestrator → EntityCore, Repository, Query, Projection, Advanced, DbContext) · Identity · Actions · Patch · Redaction · Resilience · FeatureFlags · Documents · Validation · Mapping · Endpoints · Result · I18n · Read contracts · Roll-ups · Configuration · Messaging · Serialization · Temporal · Privacy · FastEnum · Jobs · Composition · Lifecycle events · ValueObject · Specification · Glossary (glossary, architecture, AsyncAPI, use-case catalogue)
 
-The order matters: a pipeline whose output another one needs is registered first, and the value passes through the pipeline rather than being looked up. The **Manifest** is not registered separately — it runs inline from `EndpointsFeature`. `Resource` and `Traits` feed their models into the `Actions`, `Endpoints` and `Persistence.Query` pipelines rather than emitting independently. `FastEnum`, `Jobs`, `ValueObject` and the glossary documents are registered **unconditionally** — their attributes live in lightweight packages.
+The order matters: a pipeline whose output another one needs is registered first, and the value passes through the pipeline rather than being looked up. The **Manifest** is not registered separately: it runs inline from `EndpointsFeature`. `Resource` and `Traits` feed their models into the `Actions`, `Endpoints` and `Persistence.Query` pipelines rather than emitting independently. `FastEnum`, `Jobs`, `ValueObject` and the glossary documents are registered **unconditionally**, because their attributes live in lightweight packages.
 
 Each feature is self-contained. Adding a new feature means:
 1. Add a flag in `DetectedFeatures`
@@ -153,14 +153,14 @@ Every template subclasses the shared `CSharpTemplate` (`shared/SourceGen/CSharpT
 ```csharp
 internal sealed class MyFeatureTemplate(MyModel model) : CSharpTemplate
 {
-    // file name + content — use VirtualFolderHints for the hint name
+    // file name + content; use VirtualFolderHints for the hint name
     public override Artifact RenderOutput()
         => new(VirtualFolderHints.ForType(model.TypeName, "MyFeature"), ToSourceText());
 
     // skip emission if the model is unusable
     protected override bool Validate() => model.IsValid;
 
-    // the actual rendering — AppendNamespace, Class(...), Method(...), etc.
+    // the actual rendering: AppendNamespace, Class(...), Method(...), etc.
     public override void RenderFile() { /* build the file */ }
 }
 ```
@@ -169,12 +169,12 @@ A few rules that keep the incremental cache correct:
 
 - **No symbols in models.** `Transforms` turn `ISymbol` into plain immutable records; never store `ISymbol`/`Compilation` on a model, or caching breaks (and you leak Roslyn objects).
 - **Use `EquatableArray<T>` for collections.** Plain `ImmutableArray<T>` is reference-equal, which defeats value-based incremental caching.
-- **Derive names with `NamingHelper.AppendSuffix`** (`shared/SourceGen/NamingHelper.cs`) instead of `$"{TypeName}Invoker"` — it dedupes the suffix so `CancelReservationMutation` + `MutationInvoker` doesn't become `…MutationMutationInvoker`.
-- **Always route hint names through `VirtualFolderHints`** — never hardcode `.g.cs` names — so files land in the right virtual folder and sort correctly.
+- **Derive names with `NamingHelper.AppendSuffix`** (`shared/SourceGen/NamingHelper.cs`) instead of `$"{TypeName}Invoker"`: it dedupes the suffix so `CancelReservationMutation` + `MutationInvoker` doesn't become `…MutationMutationInvoker`.
+- **Always route hint names through `VirtualFolderHints`**, never hardcoded `.g.cs` names, so files land in the right virtual folder and sort correctly.
 
 ## Reading more
 
-- [Feature catalog](/source-generator/feature-catalog/) — every pipeline, its trigger, and what it generates
-- [`Pragmatic.SourceGenerator/docs/feature-development.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/docs/feature-development.md) — how to add a new feature
-- [`shared/SourceGen/README.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/README.md) — `CSharpTemplate` API
-- [`shared/SourceGen/Testing/README.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/Testing/README.md) — how to write Verify-based tests for generator output
+- [Feature catalog](/source-generator/feature-catalog/): every pipeline, its trigger, and what it generates
+- [`Pragmatic.SourceGenerator/docs/feature-development.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/docs/feature-development.md): how to add a new feature
+- [`shared/SourceGen/README.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/README.md): `CSharpTemplate` API
+- [`shared/SourceGen/Testing/README.md`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/Testing/README.md): how to write Verify-based tests for generator output

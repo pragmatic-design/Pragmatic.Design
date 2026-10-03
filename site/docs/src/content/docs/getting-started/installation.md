@@ -24,7 +24,7 @@ The packages are on [nuget.org](https://www.nuget.org/profiles/Pragmatic.Design)
 The simplest starting point is a Web API with actions, endpoints, and EF Core persistence:
 
 ```bash
-# Composition host (required — ties everything together)
+# Composition host (required: ties everything together)
 dotnet add package Pragmatic.Composition.Host --prerelease
 
 # Domain actions + HTTP endpoints
@@ -41,7 +41,7 @@ dotnet add package Pragmatic.Validation --prerelease
 dotnet add package Pragmatic.SourceGenerator --prerelease
 ```
 
-Each NuGet carries its own analyzer/generator references. `Pragmatic.SourceGenerator` is the one unified generator — you add it once and it activates the features it detects in the compilation (see [Feature Detection](/source-generator/feature-detection/)).
+Each NuGet carries its own analyzer/generator references. `Pragmatic.SourceGenerator` is the one unified generator: you add it once and it activates the features it detects in the compilation (see [Feature Detection](/source-generator/feature-detection/)).
 
 ### 3. Boot the host
 
@@ -52,7 +52,7 @@ using Pragmatic.Composition.Hosting;
 
 await PragmaticApp.RunAsync(args, app =>
 {
-    // All Use*() calls are optional — each module ships a working default.
+    // All Use*() calls are optional: each module ships a working default.
     // Add strategy calls as you need specific behaviour.
 });
 ```
@@ -96,7 +96,7 @@ With `<ImplicitUsings>enable</ImplicitUsings>`, the default of the `dotnet new` 
 
 ## Package families
 
-Pragmatic ships 45 modules as more than 140 packages — a module is usually a core package plus its integrations. The families you likely need:
+Pragmatic ships 45 modules as more than 140 packages; a module is usually a core package plus its integrations. The families you likely need:
 
 | Family | Packages | When |
 |--------|----------|------|
@@ -114,7 +114,7 @@ See [the module catalogue in the sidebar](/) for the full list, each with its ow
 ## Central package management (recommended)
 
 For multi-project solutions, use `Directory.Packages.props` to pin versions once. Pin one exact
-version for every `Pragmatic.*` package — mixing versions is unsupported, and a floating range is
+version for every `Pragmatic.*` package. Mixing versions is unsupported, and a floating range is
 not something to rely on during the alpha (see [Versioning](/reference/versioning/)):
 
 ```xml
@@ -173,19 +173,19 @@ Read them. They are standard C#, formatted and commented. ⚠️ `obj/` keeps fi
 
 ## Troubleshooting
 
-**Nothing is generated after `dotnet build`.** You likely didn't reference `Pragmatic.SourceGenerator`. It is the analyzer package — without it, no generation runs. Verify with `dotnet list package | grep SourceGenerator`.
+**Nothing is generated after `dotnet build`.** You likely didn't reference `Pragmatic.SourceGenerator`. It is the analyzer package: without it, no generation runs. Verify with `dotnet list package | grep SourceGenerator`.
 
 **IDE doesn't see generated types.** The IDE caches analyzer output. In Rider: `File → Invalidate Caches / Clear Cache`. In VS: restart. A full `dotnet build` almost always fixes it.
 
 **`PRAG####` errors at build time.** The generator detected a misuse. See the [Diagnostics reference](/reference/diagnostics/) for the meaning and fix.
 
-**"Module A is active but I didn't add it."** Pragmatic meta-packages bring transitive dependencies. Check `dotnet list package --include-transitive`. Pragmatic modules only activate if a **marker type** is reachable — if you see generation you didn't ask for, a reference is pulling it in.
+**"Module A is active but I didn't add it."** Pragmatic meta-packages bring transitive dependencies. Check `dotnet list package --include-transitive`. Pragmatic modules only activate if a **marker type** is reachable: if you see generation you didn't ask for, a reference is pulling it in.
 
 ## Next steps
 
-- [Architecture](/getting-started/architecture/) — how the 3-tier model fits together
-- [Build with an agent](/getting-started/with-an-agent/) — the same path with Claude Code, Codex or another agent
+- [Architecture](/getting-started/architecture/): how the 3-tier model fits together
+- [Build with an agent](/getting-started/with-an-agent/): the same path with Claude Code, Codex or another agent
 - Pick a module from the sidebar and read its **Overview** / **Concepts**
-- [Showcase](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/examples/showcase) — full reference app composing 30+ modules
-- [The step-by-step recipe](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/marketplace/plugins/pragmatic-design/skills/pragmatic-ecosystem/references/cookbook/crud-web-api.md) — from an empty folder to a CRUD API on PostgreSQL, built and run against the packages
-- [Samples](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/) — every module has a runnable `samples/` project
+- [Showcase](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/examples/showcase): full reference app composing 30+ modules
+- [The step-by-step recipe](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/marketplace/plugins/pragmatic-design/skills/pragmatic-ecosystem/references/cookbook/crud-web-api.md): from an empty folder to a CRUD API on PostgreSQL, built and run against the packages
+- [Samples](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/): every module has a runnable `samples/` project

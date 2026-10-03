@@ -8,7 +8,7 @@
 
 ```
 Pragmatic.Design/
-├── Pragmatic.Abstractions/        # Shared interfaces (Layer 0) — zero deps
+├── Pragmatic.Abstractions/        # Shared interfaces (Layer 0), zero deps
 ├── Pragmatic.Result/              # Result<T,E> monad (Layer 0)
 ├── Pragmatic.Ensure/              # Guard clauses (Layer 0)
 ├── Pragmatic.Validation/          # Fluent validation (Layer 1)
@@ -103,7 +103,7 @@ Pragmatic.{Module}/
 │   ├── Pragmatic.{Module}/         # Runtime library (net10.0)
 │   ├── Pragmatic.{Module}.EFCore/  # EF Core integration (optional)
 │   ├── Pragmatic.{Module}.AspNetCore/ # ASP.NET integration (optional)
-│   └── Pragmatic.{Module}.SourceGenerator/ # Standalone SG (rare — most use unified SG)
+│   └── Pragmatic.{Module}.SourceGenerator/ # Standalone SG (rare: most use unified SG)
 ├── tests/
 │   └── Pragmatic.{Module}.Tests/
 │       ├── Unit/                   # Pure unit tests

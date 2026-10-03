@@ -19,18 +19,18 @@ A `dotnet build` produces a sizeable number of `IL*` warnings:
 
 | Warning | Meaning | Typical cause in Pragmatic |
 |---|---|---|
-| `IL2026` | `RequiresUnreferencedCode` — not trim-safe | `JsonSerializer` without a `JsonSerializerContext`; delegate mapping in SignalR endpoints |
-| `IL3050` | `RequiresDynamicCode` — not AOT-safe | reflection-based `JsonSerializer`; SignalR proxies |
+| `IL2026` | `RequiresUnreferencedCode`: not trim-safe | `JsonSerializer` without a `JsonSerializerContext`; delegate mapping in SignalR endpoints |
+| `IL3050` | `RequiresDynamicCode`: not AOT-safe | reflection-based `JsonSerializer`; SignalR proxies |
 | `IL2091/IL2087/IL2067/IL2090` | generic parameter/argument without a `DynamicallyAccessedMembers` annotation | `AddSingleton<,>`/`AddScoped<,>`/`ActivatorUtilities.CreateInstance` on unannotated generic types |
-| `NETSDK1210` | `IsAotCompatible` not supported for the TFM | analyzer/code-fixer projects (netstandard2.0) — **benign**: analyzers are never AOT-compiled |
+| `NETSDK1210` | `IsAotCompatible` not supported for the TFM | analyzer/code-fixer projects (netstandard2.0), **benign**: analyzers are never AOT-compiled |
 
 ## Affected modules
 
 The warnings are not uniform. The areas with reflection-dependent code today:
 
-- **`Pragmatic.Agent.Protocol`** — `JsonWireFormat` uses `JsonSerializer` without a source-gen context (`IL2026`/`IL3050`).
-- **`Pragmatic.Logging`** — `PragmaticWindowsEventLogProvider` serializes to JSON through reflection (`IL2026`/`IL3050`).
-- **`Pragmatic.Abstractions`, `Pragmatic.Storage`, `Pragmatic.Authorization`, `Pragmatic.Logging`** — DI extensions with unannotated generics (`IL2091` etc.) for `decorator`, `UseStorage<T>`, `AddPermissionProvider<T>`, `UseStorage` audit.
+- **`Pragmatic.Agent.Protocol`**: `JsonWireFormat` uses `JsonSerializer` without a source-gen context (`IL2026`/`IL3050`).
+- **`Pragmatic.Logging`**: `PragmaticWindowsEventLogProvider` serializes to JSON through reflection (`IL2026`/`IL3050`).
+- **`Pragmatic.Abstractions`, `Pragmatic.Storage`, `Pragmatic.Authorization`, `Pragmatic.Logging`**: DI extensions with unannotated generics (`IL2091` etc.) for `decorator`, `UseStorage<T>`, `AddPermissionProvider<T>`, `UseStorage` audit.
 
 The **SG-driven core** (Actions/Endpoints/Persistence/Result/Mapping/Validation) does not produce this class of warning: the generated code is static.
 
@@ -66,11 +66,11 @@ Opt-in per assembly, in one of two ways:
 
 These are **deferred** (the `PRAG2800` analyzer flags them; you can add them to a `[JsonSerializable]` context of your own, which STJ supports):
 
-- **`record`/`init`-only types that are `struct`s** — a boxed value type cannot be mutated in place through the accessors; use `class`/`record class`, or a context of your own.
-- **Record constructors with validation that throws on default values** — construction happens with `default!` arguments before STJ sets the properties, so a guard in the primary constructor (e.g. `Ensure.ThrowIfNull`) would fail. Cover these with a `[JsonSerializable]` context of your own.
-- **Raw returned entities, projections/FilterDtos, Patch DTOs** — they depend on resolving the Actions/boundary return type; phased.
+- **`record`/`init`-only types that are `struct`s**: a boxed value type cannot be mutated in place through the accessors; use `class`/`record class`, or a context of your own.
+- **Record constructors with validation that throws on default values**: construction happens with `default!` arguments before STJ sets the properties, so a guard in the primary constructor (e.g. `Ensure.ThrowIfNull`) would fail. Cover these with a `[JsonSerializable]` context of your own.
+- **Raw returned entities, projections/FilterDtos, Patch DTOs**: they depend on resolving the Actions/boundary return type; phased.
 
-Real end-to-end check: `examples/aot-smoke/Pragmatic.Aot.GeneratedContext` — a native publish with **0 IL warnings** that round-trips job params + DTOs with the reflection fallback disabled.
+Real end-to-end check: `examples/aot-smoke/Pragmatic.Aot.GeneratedContext`, a native publish with **0 IL warnings** that round-trips job params + DTOs with the reflection fallback disabled.
 
 ## What you can do today
 
@@ -82,8 +82,8 @@ Real end-to-end check: `examples/aot-smoke/Pragmatic.Aot.GeneratedContext` — a
 
 The framework is **reflection-free in the SG-driven core**; end-to-end AOT is not guaranteed because of a few peripheral paths:
 
-1. **`IL2091` and related warnings** — they come from the generic parameters of some DI extensions. They are not errors and do not affect the standard JIT build/run.
-2. **`IL2026`/`IL3050` from JSON** — solvable on boundary types by covering them with the **generated context** (`PragmaticGenerateJsonContext`, see above). They remain on paths not yet covered (e.g. `Agent.Protocol`, the Windows Event Log provider) and on the deferred types (record/init-only): provide a `[JsonSerializable]` context of your own (guided by `PRAG2800`) or isolate the path.
+1. **`IL2091` and related warnings**: they come from the generic parameters of some DI extensions. They are not errors and do not affect the standard JIT build/run.
+2. **`IL2026`/`IL3050` from JSON**: solvable on boundary types by covering them with the **generated context** (`PragmaticGenerateJsonContext`, see above). They remain on paths not yet covered (e.g. `Agent.Protocol`, the Windows Event Log provider) and on the deferred types (record/init-only): provide a `[JsonSerializable]` context of your own (guided by `PRAG2800`) or isolate the path.
 
 In short: **reflection-free in the core**; full AOT is reachable on the JSON boundaries with the generated context, not yet guaranteed for the peripheral JSON paths (`Agent.Protocol`) and for the deferred types.
 

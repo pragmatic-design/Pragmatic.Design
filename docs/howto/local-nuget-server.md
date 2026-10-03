@@ -72,7 +72,7 @@ node scripts/publish-local.mjs
 ```
 
 It does the whole thing: a **clean Release build** (a bare `dotnet pack` packs whatever is in `bin/`,
-which is how a package once shipped stale bits), the pack, the push, and clearing NuGet's HTTP cache —
+which is how a package once shipped stale bits), the pack, the push, and clearing NuGet's HTTP cache,
 without which a consumer restores the previous version from cache and verifies the wrong bits.
 
 The version is `1.0.0-alpha.0.N`: with no argument the script reads the feed for the highest `N` it has
@@ -84,7 +84,7 @@ its source from. Nothing outside the repository is needed.
 
 ## 4. Consume from a test project
 
-In any project under `examples/consumer-samples/` — where the feed is already configured:
+In any project under `examples/consumer-samples/`, where the feed is already configured:
 
 ```xml
 <ItemGroup>
@@ -93,7 +93,7 @@ In any project under `examples/consumer-samples/` — where the feed is already 
 ```
 
 ⚠️ The floating version must match what the script publishes. The three consumer samples ask for
-`1.0.0-alpha.0.*`, and a gate case holds that they and the script agree — they once asked for
+`1.0.0-alpha.0.*`, and a gate case holds that they and the script agree. They once asked for
 `0.1.0-preview.*`, which nothing had ever published, so they proved nothing while restoring cleanly
 from nuget.org.
 
@@ -115,7 +115,7 @@ height. To test a specific version:
 # Tag locally (not pushed to origin)
 git tag nuget-v0.1.0-preview.1
 
-# Pack again — packages now versioned 0.1.0-preview.1
+# Pack again: packages now versioned 0.1.0-preview.1
 dotnet pack Pragmatic.Design.slnx --configuration Release --output ./artifacts
 
 # Push to BaGetter
@@ -140,16 +140,16 @@ Then restart the container.
 
 ## Troubleshooting
 
-**"Package already exists"** — BaGetter rejects re-pushes of the exact same
+**"Package already exists".** BaGetter rejects re-pushes of the exact same
 version. Either bump (new commit ⇒ new MinVer height) or use
 `--skip-duplicate`.
 
-**NuGet.exe restore finds old version from cache** — clear the local cache:
+**NuGet.exe restore finds old version from cache.** Clear the local cache:
 
 ```bash
 dotnet nuget locals all --clear
 ```
 
-**Package missing README / LICENSE** — `Directory.Build.props` packs them
+**Package missing README / LICENSE.** `Directory.Build.props` packs them
 automatically. If a module lacks its own README, the repo-root README is
 used as fallback.

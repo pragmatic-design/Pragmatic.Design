@@ -7,7 +7,7 @@ sidebar:
 ---
 > Workarounds and best practices for working with Source Generators in the monorepo.
 
-## Source Generator — IntelliSense lag
+## Source Generator: IntelliSense lag
 
 The SG generates code at compile time. The IDE may not refresh IntelliSense immediately after a change to the attributes.
 
@@ -29,9 +29,9 @@ The SG generates code at compile time. The IDE may not refresh IntelliSense imme
                       ReferenceOutputAssembly="false" />
    ```
 
-2. **Check the trigger attribute** — the SG generates code only when it finds specific attributes (`[Entity]`, `[DomainAction]`, `[MessageHandler]`, etc.)
+2. **Check the trigger attribute**: the SG generates code only when it finds specific attributes (`[Entity]`, `[DomainAction]`, `[MessageHandler]`, etc.)
 
-3. **Check that the class is `partial`** — almost every SG requires partial classes
+3. **Check that the class is `partial`**: almost every SG requires partial classes
 
 4. **Check the build output**:
    ```bash
@@ -78,7 +78,7 @@ ls obj/Debug/net10.0/generated/Pragmatic.SourceGenerator/
 ## Performance tips
 
 ### Incremental build
-The SG uses `IIncrementalGenerator` — only the modified files are regenerated. But if you change a shared attribute, everything is regenerated.
+The SG uses `IIncrementalGenerator`: only the modified files are regenerated. But if you change a shared attribute, everything is regenerated.
 
 ```bash
 # Build only the current module (fast)
@@ -103,7 +103,7 @@ node scripts/check.mjs --tier all
 `dotnet test` on the solution starts the container suites concurrently and saturates Docker; the gate
 runs them one at a time after a clean build. See [TESTING.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/TESTING.md).
 
-## .editorconfig — naming rules
+## .editorconfig: naming rules
 
 The project uses `.editorconfig` with strict rules:
 
@@ -118,7 +118,7 @@ The project uses `.editorconfig` with strict rules:
 
 ## Hot Reload
 
-Hot reload **does not work** with Source Generators — changes to attributes or models require a rebuild. This is a Roslyn limitation, not a framework one.
+Hot reload **does not work** with Source Generators: changes to attributes or models require a rebuild. This is a Roslyn limitation, not a framework one.
 
 **Workaround**: for fast iteration on runtime code (not SG), hot reload works normally with `dotnet watch`.
 

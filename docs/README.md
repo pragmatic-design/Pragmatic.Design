@@ -4,7 +4,7 @@ Where to start, by what you need. When a document and the code disagree, the cod
 
 ## Start here
 
-1. The root [README](../README.md) — what the framework is and what it generates.
+1. The root [README](../README.md): what the framework is and what it generates.
 2. The `README.md` of the module you need, and its `docs/` folder.
 3. A guide under [`howto/`](howto/) for a concrete task.
 

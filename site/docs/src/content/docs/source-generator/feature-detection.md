@@ -3,7 +3,7 @@ title: Feature Detection
 description: How the generator detects which Pragmatic modules are referenced.
 ---
 
-The unified generator doesn't have a configuration file. Instead it asks the Roslyn compilation: *"is this marker type reachable?"*. If yes, the corresponding **feature** is activated for this build. If no, the generator stays silent — no stale code, no useless files.
+The unified generator doesn't have a configuration file. Instead it asks the Roslyn compilation: *"is this marker type reachable?"*. If yes, the corresponding **feature** is activated for this build. If no, the generator stays silent: no stale code, no useless files.
 
 This is the **composition-by-presence** principle in action: add a NuGet, the generator notices; remove it, the generated code disappears.
 
@@ -29,10 +29,10 @@ internal static class FeatureDetector
 }
 ```
 
-`Detect` runs once per compilation and returns an immutable `DetectedFeatures` record. The pipelines read the flags to decide what to emit. A marker is chosen as the type the generated code itself names — a probe for anything else could answer "yes" while the line the generator writes still would not compile. A few features (`FastEnum`, `Jobs`, `ValueObject`, the glossary documents) are registered unconditionally, because their attributes live in lightweight packages.
+`Detect` runs once per compilation and returns an immutable `DetectedFeatures` record. The pipelines read the flags to decide what to emit. A marker is chosen as the type the generated code itself names: a probe for anything else could answer "yes" while the line the generator writes still would not compile. A few features (`FastEnum`, `Jobs`, `ValueObject`, the glossary documents) are registered unconditionally, because their attributes live in lightweight packages.
 
 :::caution[Generic markers use backtick arity]
-Generic attributes resolve under their CLR metadata name, so `MapFromAttribute<TSource>` is detected as `` Pragmatic.Mapping.Attributes.MapFromAttribute`1 `` — note the `` `1 `` suffix and the `.Attributes` sub-namespace. Dropping either makes the lookup miss.
+Generic attributes resolve under their CLR metadata name, so `MapFromAttribute<TSource>` is detected as `` Pragmatic.Mapping.Attributes.MapFromAttribute`1 ``. Note the `` `1 `` suffix and the `.Attributes` sub-namespace: dropping either makes the lookup miss.
 :::
 
 ## The flags
@@ -101,14 +101,14 @@ Beyond the boolean flags, `FeatureDetector` resolves an `EfCoreProvider` enum so
 | `Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions` | `Sqlite` |
 | *(none of the above)* | `Generic` |
 
-PostgreSQL wins over SQL Server, which wins over SQLite — so a project referencing more than one provider resolves to the highest-priority match.
+PostgreSQL wins over SQL Server, which wins over SQLite, so a project referencing more than one provider resolves to the highest-priority match.
 
 ## Why a marker type instead of assembly name?
 
 Three reasons, in order of importance:
 
 1. **Meta-packages don't break detection.** If a `Pragmatic.Composition` meta-package pulls in `Pragmatic.Composition.Host` plus `Pragmatic.Actions`, detection by assembly name would produce duplicate triggers. Detection by **type** fires exactly once per real type, independent of how you got there.
-2. **Renames are decoupled.** If a module is ever renamed at the assembly level, the type-level marker can stay stable — detection keeps working until the real API moves.
+2. **Renames are decoupled.** If a module is ever renamed at the assembly level, the type-level marker can stay stable: detection keeps working until the real API moves.
 3. **Fast at compile time.** `GetTypeByMetadataName` is one of the cheapest Roslyn lookups. No reflection walk, no assembly enumeration.
 
 ## Cross-feature composition
@@ -131,7 +131,7 @@ public bool HasMyFeature { get; init; }
 ```
 
 ```csharp
-// Core/FeatureDetector.cs — inside the Detect(...) object initializer
+// Core/FeatureDetector.cs, inside the Detect(...) object initializer
 HasMyFeature = TypeExists(compilation, "Pragmatic.MyFeature.SomeMarkerType"),
 ```
 
@@ -142,5 +142,5 @@ The rest of the generator pipeline can then guard its work on `detected.HasMyFea
 If a feature is unexpectedly silent:
 
 1. With `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>`, open `obj/Debug/net10.0/generated/` and check whether any `_Infra.*.g.cs` was emitted for that feature. If missing, the flag was false.
-2. Verify the project references the module's package, directly or transitively — check the graph with `dotnet list package --include-transitive`.
+2. Verify the project references the module's package, directly or transitively. Check the graph with `dotnet list package --include-transitive`.
 3. Compare with the marker in the table above: the probe asks for that exact type.

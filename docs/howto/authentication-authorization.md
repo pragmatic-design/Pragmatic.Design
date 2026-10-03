@@ -1,4 +1,4 @@
-# Authentication & Authorization — How To
+# Authentication & Authorization: How To
 
 Practical entry point for common questions.
 
@@ -327,7 +327,7 @@ Important behavior:
 
 ### How do internal calls skip authorization?
 
-The SG-generated `I{Boundary}InternalActions` facade — the one a module injects to call its own operations — wraps invoker calls in `EnterInternalCall()`:
+The SG-generated `I{Boundary}InternalActions` facade (the one a module injects to call its own operations) wraps invoker calls in `EnterInternalCall()`:
 
 ```csharp
 // Generated in BoundaryInterfaceTemplate, for I{Boundary}InternalActions
@@ -338,7 +338,7 @@ public async Task<Result<...>> PlaceOrder(PlaceOrderAction action, CancellationT
 }
 ```
 
-The public `I{Boundary}Actions` facade does not: another module calling through it is held to the permission of the operation it invokes, unless the caller is already inside an internal call — an event handler, or an operation that declares `[AbsorbsChildPermissions]`.
+The public `I{Boundary}Actions` facade does not: another module calling through it is held to the permission of the operation it invokes, unless the caller is already inside an internal call, such as an event handler or an operation that declares `[AbsorbsChildPermissions]`.
 
 When `IsInternalCall == true`:
 - `PermissionAuthorizationFilter` (Order 200) skips
