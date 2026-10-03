@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Configuration.Extensions;
-using Pragmatic.Configuration.Providers;
 using Xunit;
 
 namespace Pragmatic.Configuration.Tests.Resolution;
@@ -33,32 +32,32 @@ public class ConfigurationChangeHandlerTests
         }
     }
 
-    private static (ServiceProvider Sp, Recorder Recorder) Build()
+    private static (ServiceProvider Sp, Recorder Recorder, SubscriptionSignallingStore Store) Build()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IConfigurationStore, InMemoryConfigurationStore>();
+        services.AddSingleton<SubscriptionSignallingStore>();
+        services.AddSingleton<IConfigurationStore>(sp => sp.GetRequiredService<SubscriptionSignallingStore>());
         services.AddSingleton<Recorder>();
         services.AddConfigurationChangeHandler<BookingOptions, BookingHandler>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         var sp = services.BuildServiceProvider();
-        return (sp, sp.GetRequiredService<Recorder>());
+        return (sp, sp.GetRequiredService<Recorder>(), sp.GetRequiredService<SubscriptionSignallingStore>());
     }
 
     [Fact]
     public async Task ChangeUnderOptionSection_InvokesTypedHandler()
     {
-        var (sp, recorder) = Build();
+        var (sp, recorder, store) = Build();
         await using (sp.ConfigureAwait(false))
         {
-            var store = sp.GetRequiredService<IConfigurationStore>();
             var dispatchers = sp.GetServices<IHostedService>().ToArray();
 
             using var cts = new CancellationTokenSource();
             foreach (var d in dispatchers)
                 await d.StartAsync(cts.Token);
 
-            await Task.Delay(200); // let the watch loop subscribe before we write
+            await store.Subscribed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
             await store.SetAsync("Booking:CancellationWindowHours", "48");
 
@@ -76,17 +75,17 @@ public class ConfigurationChangeHandlerTests
     [Fact]
     public async Task ChangeOutsideOptionSection_DoesNotInvokeHandler()
     {
-        var (sp, recorder) = Build();
+        var (sp, recorder, store) = Build();
         await using (sp.ConfigureAwait(false))
         {
-            var store = sp.GetRequiredService<IConfigurationStore>();
             var dispatchers = sp.GetServices<IHostedService>().ToArray();
 
             using var cts = new CancellationTokenSource();
             foreach (var d in dispatchers)
                 await d.StartAsync(cts.Token);
 
-            await Task.Delay(200);
+            // Subscribed first: a handler that stays silent must be ignoring the key, not missing the write.
+            await store.Subscribed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
             await store.SetAsync("Payment:ApiKey", "x");
 
