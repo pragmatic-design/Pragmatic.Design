@@ -8,7 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) 
 Pre-release versions (`-alpha.N`) may introduce breaking changes between versions.
 Stable releases (`1.0.0` and later) follow strict semver.
 
-## [1.0.0-alpha.1] - 2026-10-02
+## [1.0.0-alpha.1] - 2026-10-03
 
 ### Features
 
@@ -16,11 +16,15 @@ Stable releases (`1.0.0` and later) follow strict semver.
 
 ### Bug Fixes
 
+- **messaging**: Retry a failed connect instead of stopping the host (#30)
+- **messaging**: Report a request the transport failed to send unanswered (#29)
+- **messaging**: Mark a rabbitmq exchange declared once the broker has it (#26)
 - **examples**: Tag warehouse availability per product
 - **messaging**: Bind channel subscriptions before the host starts
 
 ### Documentation
 
+- Changelog for 1.0.0-alpha.1
 - Compile-time metaprogramming, in plain punctuation
 - One status section per module, in the roadmap's words
 - Send questions to discussions, with a support page
@@ -29,6 +33,7 @@ Stable releases (`1.0.0` and later) follow strict semver.
 
 ### Testing
 
+- **examples**: Carry the host's errors on the warehouse 503 assertion (#27)
 - **messaging**: Hold the sql connect instead of racing it
 - **jobs**: Run barrier contenders on their own threads
 
@@ -39,6 +44,8 @@ Stable releases (`1.0.0` and later) follow strict semver.
 
 ### CI/CD
 
+- **release**: Check out global.json before setting up the sdk (#25)
+- Keep the gate's failure record when a run is red (#24)
 - **release**: Attest the packages and attach the sbom
 - Pin every action to a commit and move off node 20
 - **codeql**: Grant the analysis read access to actions
