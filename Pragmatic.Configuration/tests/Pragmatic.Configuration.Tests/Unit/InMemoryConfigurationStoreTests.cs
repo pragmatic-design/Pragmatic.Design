@@ -130,29 +130,20 @@ public class InMemoryConfigurationStoreTests
     [Fact]
     public async Task WatchAsync_EmitsChanges()
     {
-        var changes = new List<ConfigurationChange>();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await using var changes = _store.WatchAsync("Booking:*", cts.Token).GetAsyncEnumerator(cts.Token);
 
-        var watchTask = Task.Run(async () =>
-        {
-            await foreach (var change in _store.WatchAsync("Booking:*", cts.Token))
-            {
-                changes.Add(change);
-                if (changes.Count >= 2) break;
-            }
-        }, cts.Token);
-
-        // Allow the watcher to subscribe before writing changes
-        await Task.Delay(50);
+        // The store registers the watcher synchronously on the first MoveNextAsync, so every write after
+        // this line is seen. Waiting a fixed time instead is a race the writes can lose.
+        var first = changes.MoveNextAsync();
 
         await _store.SetAsync("Booking:MaxGuests", "100");
-        await _store.SetAsync("Booking:HotelName", "Test");
         await _store.SetAsync("Payment:Key", "ignored"); // different prefix
+        await _store.SetAsync("Booking:HotelName", "Test");
 
-        try { await watchTask; } catch (OperationCanceledException) { }
-
-        changes.Should().HaveCount(2);
-        changes[0].Key.Should().Be("Booking:MaxGuests");
-        changes[1].Key.Should().Be("Booking:HotelName");
+        (await first).Should().BeTrue();
+        changes.Current.Key.Should().Be("Booking:MaxGuests");
+        (await changes.MoveNextAsync()).Should().BeTrue();
+        changes.Current.Key.Should().Be("Booking:HotelName");
     }
 }
