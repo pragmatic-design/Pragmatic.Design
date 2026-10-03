@@ -29,20 +29,20 @@ Checklist:
 - [ ] Check `_Infra.Persistence.SchemaMetadata.*.g.cs` includes the comment table
 - [ ] Run migrations after adding `[HasComments]`
 
-## 500 on POST — Column Does Not Exist
+## 500 on POST: Column Does Not Exist
 
 If you see `42703: column "X" does not exist`:
 - The migration may have been created before `[HasComments]` was added
 - Re-run migrations to pick up the new table schema
 - Check that `PersistenceId` column exists (the PK is named `PersistenceId` in the database, mapped from `Id` property)
 
-## 400 on POST — Bad Request
+## 400 on POST: Bad Request
 
 - Verify the request body matches the generated `{Action}Body` DTO
 - Check required fields: `Content` is always required for Add
 - For Update: send raw string body, not JSON object (single `[FromBody] string`)
 
-## 403 on Update — Forbidden
+## 403 on Update: Forbidden
 
 - **Without ICommentPolicy**: only the author (`AuthorId == currentUser.Id`) can edit
 - **With ICommentPolicy**: `CanEditAsync` returned false
@@ -53,7 +53,7 @@ If you see `42703: column "X" does not exist`:
 | ID | Severity | Description |
 |----|----------|-------------|
 | PRAG2600 | Error | `[HasComments]` requires `[Entity]` on the class |
-| PRAG2601 | Warning | `[HasComments]` without `[Resource]` — endpoints not generated |
+| PRAG2601 | Warning | `[HasComments]` without `[Resource]`: endpoints not generated |
 
 ## FAQ
 
@@ -61,7 +61,7 @@ If you see `42703: column "X" does not exist`:
 A: Yes. Each `[HasComments]` entity gets its own independent comment table and actions.
 
 **Q: Can I customize the generated entity?**
-A: The entity is `sealed partial` — you cannot add properties. Use the `Metadata` JSON field for custom data.
+A: The entity is `sealed partial`: you cannot add properties. Use the `Metadata` JSON field for custom data.
 
 **Q: How do I query comments with custom filters?**
 A: Use the generated `{Entity}CommentDto.Projection` in custom LINQ queries against the DbContext.

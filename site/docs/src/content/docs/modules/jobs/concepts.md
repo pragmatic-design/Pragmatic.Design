@@ -73,10 +73,10 @@ The source generator produces:
 
 | Generated File | Purpose |
 |---------------|---------|
-| `DailyReportJob.Invoker.g.cs` | Nested `Invoker` — DI resolution + timeout + telemetry |
-| `_Infra.Jobs.Registration.g.cs` | `AddDiscoveredJobs()` — DI registration, the assembly's `IJobTypeRegistrySource`, recurring provider |
+| `DailyReportJob.Invoker.g.cs` | Nested `Invoker`: DI resolution + timeout + telemetry |
+| `_Infra.Jobs.Registration.g.cs` | `AddDiscoveredJobs()`: DI registration, the assembly's `IJobTypeRegistrySource`, recurring provider |
 | `_Infra.Jobs.TypeRegistry.g.cs` | AOT-safe `switch` expression (no `Type.GetType`) |
-| `_Infra.Jobs.RecurringJobs.g.cs` | `PragmaticRecurringJobProvider` — the declared recurring definitions |
+| `_Infra.Jobs.RecurringJobs.g.cs` | `PragmaticRecurringJobProvider`: the declared recurring definitions |
 | `_Metadata.Jobs.g.cs` | Job metadata for host aggregation |
 
 ### What you gain
@@ -264,7 +264,7 @@ Use `JobContext` for:
 - **Logging**: Include `JobId`, `Attempt`, and `ScheduledAt` in log messages.
 - **Correlation**: Use `CorrelationId` to link related operations across job chains.
 - **Idempotency**: Use `JobId` to ensure at-most-once execution in external systems.
-- **Multi-tenancy**: see the section below — `TenantId` is the whole story, and for a declared
+- **Multi-tenancy**: see the section below. `TenantId` is the whole story, and for a declared
   recurring job it is empty.
 
 ---
@@ -272,7 +272,7 @@ Use `JobContext` for:
 ## Jobs in a multi-tenant application
 
 A job runs outside a request, so nothing resolves a tenant for it. Where entities are `ITenantEntity`
-the generated filter is fail-closed, which means a job that simply queries reads **zero rows** — not
+the generated filter is fail-closed, which means a job that simply queries reads **zero rows**: not
 an error, not an empty database: zero rows, and a job that reports success. A digest written that way
 tells every customer their queue is empty.
 
@@ -331,14 +331,14 @@ using (filters.UseMode(FilterMode.Background))   // IQueryFilterToggle
 }
 ```
 
-⚠️ This lifts the tenant rule at **both** levels — the Pragmatic filter and the EF Core named query
+⚠️ This lifts the tenant rule at **both** levels: the Pragmatic filter and the EF Core named query
 filter the generated `DbContext` installs. Lifting only the first would leave a background job that
 asked for it reading nothing.
 
 ### Do not enumerate `ITenantStore` expecting to find anything
 
 The generated host registers an empty `InMemoryTenantStore`, and header-based tenant resolution never
-writes to it — a tenant exists, as far as the store is concerned, only if the application put it
+writes to it: a tenant exists, as far as the store is concerned, only if the application put it
 there. A job that iterates the store to find its tenants will iterate nothing. Take the list from
 somewhere that actually has it: your own rows read in `FilterMode.Background`, or the table where
 your application records its customers.
@@ -358,7 +358,7 @@ Because the counter lives in the job row rather than in a worker's memory, an at
 
 `JobContext.Attempt` is zero-based: `0` on the first execution, `1` on the first retry.
 
-A job's own `[Retry(MaxAttempts = n)]` determines `JobInstance.MaxAttempts` at enqueue time. Jobs without `[Retry]` fall back to `JobsOptions.DefaultMaxRetries` (default `1` — a single execution, no retry).
+A job's own `[Retry(MaxAttempts = n)]` determines `JobInstance.MaxAttempts` at enqueue time. Jobs without `[Retry]` fall back to `JobsOptions.DefaultMaxRetries` (default `1`, a single execution, no retry).
 
 ### Backoff
 
@@ -395,7 +395,7 @@ public sealed partial class ProcessPaymentJob(IPaymentGateway gateway) : IJob<Pa
 }
 ```
 
-The value is captured onto `JobInstance.Priority` at enqueue time (from `IJobTypeRegistry.GetPriority`), so it is durable and sortable in the store. Default `0`; negative values push a job behind the default tier. Priority orders *what is already due* — it does not make a job run before its `ScheduledFor`.
+The value is captured onto `JobInstance.Priority` at enqueue time (from `IJobTypeRegistry.GetPriority`), so it is durable and sortable in the store. Default `0`; negative values push a job behind the default tier. Priority orders *what is already due*; it does not make a job run before its `ScheduledFor`.
 
 ### Per-type concurrency
 
@@ -410,18 +410,18 @@ public sealed partial class RebuildSearchIndexJob(ISearchIndexer indexer) : IJob
 }
 ```
 
-At most two `RebuildSearchIndexJob` instances run concurrently per host even with `WorkerCount = 8`; the rest of the pool stays free for other work. An instance picked up over the cap is **not** started — it stays `Pending` and is reconsidered on the next poll, without blocking a worker. The count is per host, so a three-host cluster runs up to six at once. Default `0` means only `WorkerCount` bounds the type.
+At most two `RebuildSearchIndexJob` instances run concurrently per host even with `WorkerCount = 8`; the rest of the pool stays free for other work. An instance picked up over the cap is **not** started: it stays `Pending` and is reconsidered on the next poll, without blocking a worker. The count is per host, so a three-host cluster runs up to six at once. Default `0` means only `WorkerCount` bounds the type.
 
 ### Misfire policy
 
-A recurring occurrence is *misfired* when the host is down (or saturated) and comes back more than `JobsOptions.MisfireThreshold` (default 1 minute) past the scheduled time. Below that threshold the run is treated as a normal, slightly-late execution — the threshold is what separates a real misfire from ordinary polling lag.
+A recurring occurrence is *misfired* when the host is down (or saturated) and comes back more than `JobsOptions.MisfireThreshold` (default 1 minute) past the scheduled time. Below that threshold the run is treated as a normal, slightly-late execution: the threshold is what separates a real misfire from ordinary polling lag.
 
 `Misfire` decides what happens to that missed occurrence:
 
 | `MisfirePolicy` | Behavior |
 |-----------------|----------|
 | `RunOnce` (default) | Enqueue the missed occurrence once, then resume from the next future occurrence. Intermediate missed occurrences are not replayed. |
-| `Skip` | Do not run any missed occurrence — advance straight to the next future occurrence. |
+| `Skip` | Do not run any missed occurrence; advance straight to the next future occurrence. |
 
 ```csharp
 // A 9am digest that must not fire at noon after an outage
@@ -467,7 +467,7 @@ await PragmaticApp.RunAsync(args, app =>
 
 ### Standalone (Without Composition)
 
-Outside Composition, call the generated `AddDiscoveredJobs()` yourself — without it the composite registry has no source, and every job fails with `Unknown job type: … No registry is registered`.
+Outside Composition, call the generated `AddDiscoveredJobs()` yourself: without it the composite registry has no source, and every job fails with `Unknown job type: … No registry is registered`.
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -563,7 +563,7 @@ partial class DailyReportJob
 Key details:
 - The method is **static**; dispatch goes through the generated registry, not a DI-resolved invoker instance.
 - The job itself is resolved from the scope the processor opened, so constructor dependencies come from DI.
-- `[Timeout]` generates the linked `CancellationTokenSource`. There is no retry loop here — retry is the store's job.
+- `[Timeout]` generates the linked `CancellationTokenSource`. There is no retry loop here: retry is the store's job.
 - The invoker records the span; outcome metrics and duration are recorded by `JobProcessorService`, which sees the real result.
 - For `IJob<T>`, the invoker deserializes `parametersJson` through the shared `PragmaticJsonOptions` seam before calling your `ExecuteAsync`.
 
@@ -717,7 +717,7 @@ var withParams = JobContinuation.Then<SendReminderJob, ReminderParams>(new Remin
 ```
 
 The factories are `static`, so they cannot resolve the host's JSON configuration themselves. Pass the
-registered `PragmaticJsonOptions` — resolve it from DI — whenever parameters are involved: the
+registered `PragmaticJsonOptions` (resolve it from DI) whenever parameters are involved: the
 overload without it falls back to `PragmaticJsonOptions.Default`, which does not carry the contexts
 added through `UseJson(...)` and does not honour `DisableReflectionFallback()`, so an AOT publish
 fails on it.

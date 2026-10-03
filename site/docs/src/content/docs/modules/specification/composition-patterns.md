@@ -11,7 +11,7 @@ Specifications shine when you compose simple predicates into complex queries. In
 
 ## Basic Composition
 
-### AND — Both conditions must match
+### AND: Both conditions must match
 
 ```csharp
 var activeProducts = new IsActiveSpec() & new InCategorySpec("Electronics");
@@ -20,13 +20,13 @@ var activeProducts = new IsActiveSpec() & new InCategorySpec("Electronics");
 var activeProducts = new IsActiveSpec().And(new InCategorySpec("Electronics"));
 ```
 
-### OR — Either condition matches
+### OR: Either condition matches
 
 ```csharp
 var urgentOrders = new IsOverdueSpec() | new IsPrioritySpec();
 ```
 
-### NOT — Negate a condition
+### NOT: Negate a condition
 
 ```csharp
 var excludeDeleted = !new IsDeletedSpec();
@@ -68,7 +68,7 @@ public Specification<Product> BuildFilter(ProductSearchRequest request)
 }
 ```
 
-`AndIf(false, ...)` returns the original specification unchanged — no expression tree modification. This is more efficient than building `if/else` chains.
+`AndIf(false, ...)` returns the original specification unchanged: no expression tree modification. This is more efficient than building `if/else` chains.
 
 ---
 
@@ -207,8 +207,8 @@ var targetOrders = recentOrders & highValue;
 ### Special Instances
 
 ```csharp
-Spec<Product>.True   // Matches everything — useful as starting point for conditional composition
-Spec<Product>.False  // Matches nothing — useful for access-denied scenarios
+Spec<Product>.True   // Matches everything; useful as starting point for conditional composition
+Spec<Product>.False  // Matches nothing; useful for access-denied scenarios
 ```
 
 ---
@@ -232,7 +232,7 @@ All extensions work on both `IQueryable<T>` (SQL) and `IEnumerable<T>` (in-memor
 
 ## Design Rules
 
-1. **Predicates only** — Specifications define WHERE clauses. Sorting, paging, and projection belong elsewhere.
-2. **Dual-path execution** — Every specification works both on `IQueryable` (translated to SQL) and `IEnumerable` (compiled to delegate).
-3. **Immutable** — Composition creates new instances; the original specifications are not modified.
-4. **Expression-safe** — Only use expressions that EF Core can translate to SQL. Avoid calling C# methods that have no SQL equivalent.
+1. **Predicates only**: specifications define WHERE clauses. Sorting, paging, and projection belong elsewhere.
+2. **Dual-path execution**: every specification works both on `IQueryable` (translated to SQL) and `IEnumerable` (compiled to delegate).
+3. **Immutable**: composition creates new instances; the original specifications are not modified.
+4. **Expression-safe**: only use expressions that EF Core can translate to SQL. Avoid calling C# methods that have no SQL equivalent.

@@ -19,7 +19,7 @@ public sealed class DailyReportJob(IReportService reports) : IJob
 
 **Compile result:** Error `PRAG2502` -- "Type 'DailyReportJob' is decorated with [Job]/[RecurringJob] but is not declared as partial, so no invoker is generated and the job never runs."
 
-The nested `Invoker` lives inside your job class, which the generator can only extend if it is `partial`. Without it the generator emits nothing for the job — no invoker, no registration — and `PRAG2502` says so on the declaration.
+The nested `Invoker` lives inside your job class, which the generator can only extend if it is `partial`. Without it the generator emits nothing for the job (no invoker, no registration), and `PRAG2502` says so on the declaration.
 
 **Right:**
 
@@ -546,7 +546,7 @@ await registrar.RegisterAsync(new RecurringJobDefinition
 ```
 
 **Why:** a job runs outside a request, so nothing resolves a tenant for it, and the generated filter
-on an `ITenantEntity` is fail-closed. The query does not throw and the job does not fail — it reads
+on an `ITenantEntity` is fail-closed. The query does not throw and the job does not fail: it reads
 **zero rows and reports success**, which is indistinguishable from a queue that is genuinely empty.
 `RecurringJobAttribute` has no `TenantId` and cannot be given one; `RecurringJobDefinition` does, and
 `IRecurringJobRegistrar` is how it gets set.
@@ -555,7 +555,7 @@ Returning early when the tenant is missing is deliberate: counting to zero produ
 that looks like good news, and nobody investigates good news.
 
 To work **across** tenants instead of within one, use `FilterMode.Background` through
-`IQueryFilterToggle` — it lifts the tenant rule at both levels and keeps soft-delete. And do not
+`IQueryFilterToggle`: it lifts the tenant rule at both levels and keeps soft-delete. And do not
 enumerate `ITenantStore` looking for the tenant list: the generated host registers an empty
 `InMemoryTenantStore` and header-based resolution never writes to it.
 

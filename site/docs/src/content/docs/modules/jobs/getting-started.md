@@ -68,7 +68,7 @@ Key points:
 - `IJob` is the parameterless interface. Use `IJob<T>` if the job needs input data.
 - `JobContext.ScheduledAt` gives you the scheduled execution time, not `DateTime.UtcNow`.
 - Primary constructor parameters are resolved from DI (the SG handles registration).
-- `[Retry(MaxAttempts = 2)]` means two executions in total — the first plus one retry.
+- `[Retry(MaxAttempts = 2)]` means two executions in total: the first plus one retry.
 
 ### Cron Expression Quick Reference
 
@@ -341,7 +341,7 @@ The SG validates at compile time:
 
 ---
 
-## Step 7: Tune Scheduling — Priority, Concurrency, Misfire
+## Step 7: Tune Scheduling (Priority, Concurrency, Misfire)
 
 Three properties on `[Job]` / `[RecurringJob]` control ordering and volume. All are optional and default to the "no special handling" behavior.
 
@@ -373,14 +373,14 @@ public sealed partial class RebuildSearchIndexJob(ISearchIndexer indexer) : IJob
 }
 ```
 
-With `WithWorkerCount(8)` at most two of these run concurrently on each host; the other workers stay free for other jobs. An instance over the cap is left `Pending` and reconsidered next poll — it never holds a worker idle.
+With `WithWorkerCount(8)` at most two of these run concurrently on each host; the other workers stay free for other jobs. An instance over the cap is left `Pending` and reconsidered next poll; it never holds a worker idle.
 
 ### Skip missed recurring occurrences
 
 If the host is down when a recurring job was due and comes back more than `JobsOptions.MisfireThreshold` (default 1 minute) late, `Misfire` decides what happens to the missed occurrence:
 
-- `MisfirePolicy.RunOnce` (default) — run the missed occurrence once, then resume from the next future occurrence.
-- `MisfirePolicy.Skip` — run nothing for the missed occurrence, jump straight to the next future one.
+- `MisfirePolicy.RunOnce` (default): run the missed occurrence once, then resume from the next future occurrence.
+- `MisfirePolicy.Skip`: run nothing for the missed occurrence, jump straight to the next future one.
 
 ```csharp
 // A 9am digest that must not fire at noon after an overnight outage

@@ -18,13 +18,13 @@ A multi-service Pragmatic deployment needs an edge:
 - route `/api/booking/*` to the booking hosts, `/api/billing/*` to billing
 - present a single public endpoint while services scale and move internally
 - fail fast (circuit-break) when a backend is unhealthy, without taking the whole edge down
-- support **tenant-aware routing** — different tenants to different backend pools
-- handle **maintenance mode** — bleed traffic from hosts before deploy
+- support **tenant-aware routing**: different tenants to different backend pools
+- handle **maintenance mode**: bleed traffic from hosts before deploy
 - offer standard edge features (compression, CORS, JWT auth, rate limiting)
 
 You can deploy nginx / Traefik / Envoy, and for many teams that's fine. But you pay:
 - a second configuration language (nginx.conf, Traefik labels) separate from your .NET code
-- no compile-time coupling to your topology — config drift is a real thing
+- no compile-time coupling to your topology; config drift is a real thing
 - limited access to your Pragmatic runtime types for custom middleware
 
 Pragmatic.Gateway is the .NET-native alternative: same process model as your app hosts, driven by the same `Pragmatic.Agent` operational state, extensible with the full ASP.NET middleware stack.
@@ -112,7 +112,7 @@ one route is skipped, because the gateway is already serving.
 
 ### 2. Dynamic from `Pragmatic.Agent`
 
-When `AgentSocketPath` is set, the gateway subscribes to `gateway/routes/*` and `gateway/clusters/*` keys in the Agent's KV store. When an operator updates a route via `pragmatic-agent config set gateway/routes/booking ...`, the gateway picks up the change within a gossip round (~seconds) and reconfigures YARP in-place — zero downtime.
+When `AgentSocketPath` is set, the gateway subscribes to `gateway/routes/*` and `gateway/clusters/*` keys in the Agent's KV store. When an operator updates a route via `pragmatic-agent config set gateway/routes/booking ...`, the gateway picks up the change within a gossip round (~seconds) and reconfigures YARP in-place: zero downtime.
 
 ### 3. Announced by the instances themselves
 
@@ -140,7 +140,7 @@ Every instance of a service announces the same route. Each writes its own key, s
 
 ---
 
-## Resilience — per-cluster, not global
+## Resilience: per-cluster, not global
 
 Each backend cluster gets its own resilience policy:
 
@@ -165,7 +165,7 @@ Each backend cluster gets its own resilience policy:
 
 Why per-cluster: if billing is unhealthy, booking should keep serving. A global circuit-breaker would trip for both.
 
-The policies are the same `Pragmatic.Resilience` primitives you use inside your app — configured via the same shapes, with the same failure counting semantics.
+The policies are the same `Pragmatic.Resilience` primitives you use inside your app, configured via the same shapes, with the same failure counting semantics.
 
 ---
 
@@ -212,7 +212,7 @@ Only the `booking` cluster returns 503; other clusters keep serving normally.
 
 ## Authentication and authorization
 
-The gateway itself handles JWT Bearer authentication — tokens are validated once at the edge rather than at every downstream service.
+The gateway itself handles JWT Bearer authentication: tokens are validated once at the edge rather than at every downstream service.
 
 ```json
 {
@@ -234,11 +234,11 @@ For fully public routes, set `AllowAnonymous` on the route.
 
 ## What the gateway does not do
 
-- **Global load balancing across regions** — use a cloud provider's global LB for that
-- **L4 TCP proxying** — HTTP/1.1, HTTP/2, HTTP/3 only
-- **TLS termination with cert-manager integration** — configure TLS via Kestrel as you would for any ASP.NET app
-- **WAF-style request inspection** — deploy a WAF upstream
-- **Service mesh sidecar** — this is an edge gateway, not a sidecar
+- **Global load balancing across regions**: use a cloud provider's global LB for that
+- **L4 TCP proxying**: HTTP/1.1, HTTP/2, HTTP/3 only
+- **TLS termination with cert-manager integration**: configure TLS via Kestrel as you would for any ASP.NET app
+- **WAF-style request inspection**: deploy a WAF upstream
+- **Service mesh sidecar**: this is an edge gateway, not a sidecar
 
 For those, keep your existing tooling (Cloudflare, Istio, Envoy) and point it at the Pragmatic.Gateway as an origin.
 
@@ -246,14 +246,14 @@ For those, keep your existing tooling (Cloudflare, Istio, Envoy) and point it at
 
 ## Relationship to other modules
 
-- [Pragmatic.Agent](/modules/agent/overview/) — optional but important: dynamic route source, maintenance state, tenant map
-- [Pragmatic.Resilience](/modules/resilience/overview/) — same policies used inside services are applied here
-- [Pragmatic.MultiTenancy](/modules/multi-tenancy/overview/) — tenant resolvers are shared between gateway and app hosts
+- [Pragmatic.Agent](/modules/agent/overview/), optional but important: dynamic route source, maintenance state, tenant map
+- [Pragmatic.Resilience](/modules/resilience/overview/): same policies used inside services are applied here
+- [Pragmatic.MultiTenancy](/modules/multi-tenancy/overview/): tenant resolvers are shared between gateway and app hosts
 
 ---
 
 ## Related
 
-- [getting-started.md](/modules/gateway/getting-started/) — minimal config, adding the first route
+- [getting-started.md](/modules/gateway/getting-started/): minimal config, adding the first route
 - [common-mistakes.md](/modules/gateway/common-mistakes/)
-- [troubleshooting.md](/modules/gateway/troubleshooting/) — route / Agent / forwarding issues
+- [troubleshooting.md](/modules/gateway/troubleshooting/): route / Agent / forwarding issues
