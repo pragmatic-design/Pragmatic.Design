@@ -34,6 +34,7 @@ pages are published on the documentation site.
 | Every `PRAG` diagnostic, generated from the descriptors | [`diagnostics.md`](diagnostics.md) |
 | How a change is verified, and how to read the gate | [`TESTING.md`](TESTING.md) |
 | Security: OWASP Top 10 coverage and the threat model | [`security/`](security/) |
+| Supply chain: where dependencies come from, what checks them, and why | [`security/supply-chain.md`](security/supply-chain.md) |
 | Licensing: which package is under which licence | [`LICENSING.md`](LICENSING.md) |
 | Status of the release, and what moves before 1.0 | [`ROADMAP.md`](ROADMAP.md) |
 
