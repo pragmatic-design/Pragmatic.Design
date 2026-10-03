@@ -27,7 +27,7 @@ are functional or preview, as their README says.
 
 ## Beyond this repository
 
-The framework provides the mechanisms for GDPR, NIS2 and CRA — encryption with crypto-shredding, an
+The framework provides the mechanisms for GDPR, NIS2 and CRA: encryption with crypto-shredding, an
 append-only audit trail, privacy classification with a generated record of processing, incident
 windows. It does not make an application compliant: legal basis, purpose and retention remain
 decisions of whoever operates it.

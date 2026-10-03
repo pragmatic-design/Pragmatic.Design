@@ -25,7 +25,7 @@ exact package versions and read the per-module `CHANGELOG.md` before upgrading.
 | C# language version | **14** (`latest`) | Primary constructors, `field`, extension members, collection expressions. |
 
 You need the **.NET 10 SDK** to build and the **.NET 10 runtime** to run. The
-generators target `netstandard2.0` only so they load in the compiler — this does
+generators target `netstandard2.0` only so they load in the compiler; this does
 not change your app's runtime requirement.
 
 ## Database providers
@@ -39,7 +39,7 @@ runtime from the active provider.
 - Versions are driven by **MinVer** from git tags (e.g. `nuget-v1.0.0-alpha.1`),
   so every package in a release shares one coherent version.
 - Pre-release builds carry an `-alpha.N` suffix. **Do not** rely on `*` floating
-  version ranges during the alpha — pin exact versions.
+  version ranges during the alpha: pin exact versions.
 - All Pragmatic.* packages are intended to be used at the **same version**; mixing
   versions across modules is unsupported.
 

@@ -3,7 +3,7 @@ title: Architecture
 description: The 3-tier configuration model, module layers, and composition rules.
 ---
 
-Pragmatic Design is a **composition of modules**. Each module is independently useful and works alone. Put them together and they compose — the unified Source Generator sees the combination and wires the cross-module glue.
+Pragmatic Design is a **composition of modules**. Each module is independently useful and works alone. Put them together and they compose: the unified Source Generator sees the combination and wires the cross-module glue.
 
 ## Tier pyramid
 
@@ -25,7 +25,7 @@ Pragmatic Design is a **composition of modules**. Each module is independently u
 
 ## Building block layers
 
-Inside the Building Block tier, modules are stratified — a module depends only on its own layer or below.
+Inside the Building Block tier, modules are stratified: a module depends only on its own layer or below.
 
 ```
 Layer 0 (Foundation)     Layer 1 (Capabilities)     Layer 2 (Integration)
@@ -45,16 +45,16 @@ Layer 0 (Foundation)     Layer 1 (Capabilities)     Layer 2 (Integration)
 
 Beside the layers:
 
-- **Supporting** — `Storage`, `FeatureFlags`, `Discovery`, `Patch`, `Client`.
-- **Compliance** — `Privacy`, `Audit`, `Redaction`, `Cryptography`, `Incidents`.
-- **Documents & media** — `Documents`, `Imaging`, `Email`, `Notifications`.
-- **Platform (preview)** — `Agent`, `Gateway`.
+- **Supporting**: `Storage`, `FeatureFlags`, `Discovery`, `Patch`, `Client`.
+- **Compliance**: `Privacy`, `Audit`, `Redaction`, `Cryptography`, `Incidents`.
+- **Documents & media**: `Documents`, `Imaging`, `Email`, `Notifications`.
+- **Platform (preview)**: `Agent`, `Gateway`.
 
 ## Composition by presence
 
 This is the core architectural insight: **adding a NuGet reference is the configuration**.
 
-When you add `Pragmatic.Persistence.EFCore` to your project, the Source Generator detects it (by looking for a marker type — see [Feature detection](/source-generator/feature-detection/)) and starts generating repositories, entity configurations and query filters for every `[Entity]` class in your code. Remove the package — the generated code disappears.
+When you add `Pragmatic.Persistence.EFCore` to your project, the Source Generator detects it (by looking for a marker type; see [Feature detection](/source-generator/feature-detection/)) and starts generating repositories, entity configurations and query filters for every `[Entity]` class in your code. Remove the package, and the generated code disappears.
 
 No feature flags. No configuration files. No `if` statements in startup. Your `.csproj` is the source of truth.
 
@@ -73,7 +73,7 @@ Topology (compile-time)   →   Module Strategy (Program.cs)   →   Business Wi
      SG auto-detect                IPragmaticBuilder                 IStartupStep
 ```
 
-### Tier 1 — Topology (Source Generator)
+### Tier 1: Topology (Source Generator)
 
 You **declare** the structure with attributes; the generator reads it.
 
@@ -95,7 +95,7 @@ public partial class CreateReservation : DomainAction<ReservationResult>
 
 No list to keep in sync. Move the file or rename the class, and the topology follows.
 
-### Tier 2 — Module Strategy (`IPragmaticBuilder`)
+### Tier 2: Module Strategy (`IPragmaticBuilder`)
 
 For modules with a **pluggable backend**, you pick it in `Program.cs`:
 
@@ -115,13 +115,13 @@ await PragmaticApp.RunAsync(args, app =>
 });
 ```
 
-A `Use*()` is a choice. Where a module has a sensible default — an in-memory store, an in-process transport, a passthrough cache — it applies without one; where none is safe, the host refuses to start and says what is missing.
+A `Use*()` is a choice. Where a module has a sensible default (an in-memory store, an in-process transport, a passthrough cache), it applies without one; where none is safe, the host refuses to start and says what is missing.
 
 See the [Configuration reference](/reference/configuration/) for the full list.
 
-### Tier 3 — Business Wiring (`IStartupStep`)
+### Tier 3: Business Wiring (`IStartupStep`)
 
-Anything specific to your service — domain services, custom middleware — goes in one or more `IStartupStep` implementations. The Source Generator discovers them, no registration needed:
+Anything specific to your service (domain services, custom middleware) goes in one or more `IStartupStep` implementations. The Source Generator discovers them, no registration needed:
 
 ```csharp
 public sealed class BookingStartup : IStartupStep
@@ -148,16 +148,16 @@ public sealed class BookingStartup : IStartupStep
 
 | Question | Answer |
 |----------|--------|
-| "Where does this action / entity belong?" | Topology — the namespace, or `[BelongsTo<TBoundary>]` |
-| "Which cache provider?" / "Which auth handler?" | Module Strategy — `app.UseXxx()` |
-| "I need a domain service registered" | Business Wiring — `IStartupStep.ConfigureServices` |
-| "I need custom middleware" | Business Wiring — `IStartupStep.ConfigurePipeline` |
-| "I need a handler for a domain event" | Nothing — declare `IDomainEventHandler<T>`, the generator discovers it |
+| "Where does this action / entity belong?" | Topology: the namespace, or `[BelongsTo<TBoundary>]` |
+| "Which cache provider?" / "Which auth handler?" | Module Strategy: `app.UseXxx()` |
+| "I need a domain service registered" | Business Wiring: `IStartupStep.ConfigureServices` |
+| "I need custom middleware" | Business Wiring: `IStartupStep.ConfigurePipeline` |
+| "I need a handler for a domain event" | Nothing: declare `IDomainEventHandler<T>`, the generator discovers it |
 | "Change how a module itself behaves" | Tier 2 if supported; otherwise open an issue |
 
 ## Reading further
 
-- [Configuration reference](/reference/configuration/) — every `Use*()` method listed
-- [How the Source Generator works](/source-generator/how-it-works/) — pipeline, transforms, templates
-- [Feature detection](/source-generator/feature-detection/) — the marker-type mechanism
+- [Configuration reference](/reference/configuration/): every `Use*()` method listed
+- [How the Source Generator works](/source-generator/how-it-works/): pipeline, transforms, templates
+- [Feature detection](/source-generator/feature-detection/): the marker-type mechanism
 - Pick a module from the sidebar and open its **Overview**

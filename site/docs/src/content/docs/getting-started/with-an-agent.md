@@ -5,7 +5,7 @@ description: Install the Pragmatic skills in Claude Code, Codex or any agent tha
 
 A coding agent can build a Pragmatic application from a description, and it does better than with most
 frameworks: a declaration is a dozen typed lines it can read, and a `PRAG` diagnostic is a loop it can
-close on its own. What it lacks is knowledge of the framework. The **Pragmatic skills** give it that — 35
+close on its own. What it lacks is knowledge of the framework. The **Pragmatic skills** give it that: 35
 folders, one per topic, that an agent loads when a task needs them: which packages to reference, how to
 lay out the solution, the attributes of each module, the traps, and how to verify the result.
 
@@ -51,7 +51,7 @@ skill name calls it explicitly; otherwise Codex picks a skill by its description
 
 Each skill is a folder with a `SKILL.md`, in the [Agent Skills](https://agentskills.io/specification)
 format, under `plugins/pragmatic-design/skills/` in the repository. Copy the folders where your agent
-looks for skills — for Codex without the plugin, `.agents/skills/` in the project or `~/.agents/skills/`
+looks for skills. For Codex without the plugin, `.agents/skills/` in the project or `~/.agents/skills/`
 for every project; for Claude Code without the plugin, `.claude/skills/` or `~/.claude/skills/`. For
 another agent, check where it loads skills from. The folders need no change, but copy them all: the
 module skills link to references kept in `pragmatic-ecosystem`.
@@ -66,8 +66,8 @@ The agent chooses skills by their description, so a plain request is enough. Thr
 | `pragmatic-architecture` | Deciding how to split an application before writing it |
 | `pragmatic-ecosystem` | The reference behind the others: packages, patterns, diagnostics, recipes |
 
-The rest are one per module — `pragmatic-use-persistence`, `pragmatic-use-actions-endpoints`,
-`pragmatic-use-identity`, and so on — and load when the task reaches that module.
+The rest are one per module (`pragmatic-use-persistence`, `pragmatic-use-actions-endpoints`,
+`pragmatic-use-identity`, and so on) and load when the task reaches that module.
 
 ## A first request
 
@@ -80,6 +80,6 @@ Ask it to show the generated code under `obj/` when you want to see what the dec
 
 ## Next steps
 
-- [Installation](/getting-started/installation/) — the same path, by hand
-- [Architecture](/getting-started/architecture/) — the model the agent follows
-- [Diagnostics](/reference/diagnostics/) — what each `PRAG` code means
+- [Installation](/getting-started/installation/): the same path, by hand
+- [Architecture](/getting-started/architecture/): the model the agent follows
+- [Diagnostics](/reference/diagnostics/): what each `PRAG` code means

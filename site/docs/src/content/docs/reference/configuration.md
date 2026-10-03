@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Three-tier configuration model — topology, module strategy, business wiring.
+description: "Three-tier configuration model: topology, module strategy, business wiring."
 ---
 
 Pragmatic Design uses a **3-tier configuration model**. Each tier answers a different question and lives in a different place.
@@ -16,9 +16,9 @@ Topology (compile-time)  →  Module Strategy (Program.cs)  →  Business Wiring
 | **Module Strategy** | `Program.cs` via `IPragmaticBuilder.Use*()` | Infrastructure choices: auth handler, storage backend, cache provider | Developer (explicit) |
 | **Business Wiring** | `IStartupStep` | Services, query filters, OpenAPI, feature-specific DI | Developer (explicit) |
 
-## Tier 1 — Topology (Source Generator)
+## Tier 1: Topology (Source Generator)
 
-You don't configure topology — you **declare** it with attributes, and the unified Source Generator detects it:
+You don't configure topology; you **declare** it with attributes, and the unified Source Generator detects it:
 
 ```csharp
 [Module] public sealed class BookingModule;
@@ -34,14 +34,14 @@ public partial class Reservation { ... }
 ```
 
 At compile time the generator emits:
-- module discovery (`PragmaticHost`) — who is registered, in what order
+- module discovery (`PragmaticHost`): who is registered, in what order
 - package loading (`[UsePackage<T>]` metadata fusion) and entity traits (`[HasComments]`, `[HasTags]`, …)
 - boundary/sub-boundary grouping for endpoints and actions
 - feature flags (`DetectedFeatures`) based on referenced assemblies
 
 Nothing to tweak in `Program.cs`. If the Source Generator got it wrong, the fix is in the attribute declaration or the referenced NuGet.
 
-## Tier 2 — Module Strategy (`IPragmaticBuilder`)
+## Tier 2: Module Strategy (`IPragmaticBuilder`)
 
 Modules that have a **strategy to pick** (auth scheme, storage backend, transport) expose a `Use*()` extension on the `IPragmaticBuilder`. You call them as statements inside the `PragmaticApp.RunAsync` callback (the parameter is the builder; it also exposes `Configuration` and `Environment`):
 
@@ -50,20 +50,20 @@ using Pragmatic.Composition.Hosting;
 
 await PragmaticApp.RunAsync(args, app =>
 {
-    // Authentication — config-driven (JWT in production)
+    // Authentication: config-driven (JWT in production)
     app.UseJwtAuthentication(jwt =>
     {
         jwt.SigningKey = app.Configuration["Jwt:Key"]!;
         jwt.Issuer = app.Configuration["Jwt:Issuer"];
     });
 
-    // Authorization — compose roles from module definitions
+    // Authorization: compose roles from module definitions
     app.UseAuthorization(authz => authz.MapRole<BookingManager>());
 
-    // Multi-tenancy — resolve the tenant from an HTTP header
+    // Multi-tenancy: resolve the tenant from an HTTP header
     app.UseMultiTenancy(mt => mt.UseHeader());
 
-    // Messaging — in-process Channels transport + auditing
+    // Messaging: in-process Channels transport + auditing
     app.UseMessaging(msg =>
     {
         msg.UseChannels();
@@ -76,7 +76,7 @@ await PragmaticApp.RunAsync(args, app =>
     // Declarative schema diff (replaces EF Core migrations)
     app.UsePragmaticMigrations();
 
-    // File storage — LocalDisk for dev; swap for Azure/S3 in prod
+    // File storage: LocalDisk for dev; swap for Azure/S3 in prod
     app.UseStorage(sp => new LocalDiskFileStorage(
         Path.Combine(app.Environment.ContentRootPath, "wwwroot"),
         sp.GetRequiredService<ILogger<LocalDiskFileStorage>>()));
@@ -111,23 +111,23 @@ These are the strategy extensions that ship today on `IPragmaticBuilder`:
 | `UseMcp` | Endpoints exposed as MCP tools | Endpoints.Mcp |
 | `UseHealthEndpoint` | The host health endpoint (on by default) | Composition.Host |
 | `UseMaintenanceMode` | Runtime maintenance toggle + admin panel | Composition.Host |
-| `UseAgent` | Local coordination daemon connection — backs `IControlPlane`, `IClusterLeadership`, config/flag/tenant stores | Agent.Client |
+| `UseAgent` | Local coordination daemon connection; backs `IControlPlane`, `IClusterLeadership`, config/flag/tenant stores | Agent.Client |
 
 Agent-backed service discovery is registered on the service collection, not the builder:
 `builder.Services.UseAgentDiscovery()` (Agent.Discovery).
 
 Default rule: **a `Use*()` is a choice, and where a module has a sensible default it applies without
-one** — in-memory stores, in-process transports, a passthrough cache. Where no default is safe, the
+one**: in-memory stores, in-process transports, a passthrough cache. Where no default is safe, the
 host refuses to start and says what is missing: an application whose endpoints require authorization
 needs an authentication method outside Development.
 
 :::note[Configured by presence, not a `Use*()`]
-Not every module exposes a strategy builder. **Caching, Resilience, and Feature Flags** activate by package presence and are tuned via `appsettings.json` and/or an `IStartupStep` (defaults apply automatically). A single uniform fluent surface (e.g. `UseIdentity(...)`/`UseCaching(...)` sub-builders chained together) is a **roadmap** direction, not the shipped shape — see the [Roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md). Today, prefer the per-module `Use*()` above or `IStartupStep` for the rest.
+Not every module exposes a strategy builder. **Caching, Resilience, and Feature Flags** activate by package presence and are tuned via `appsettings.json` and/or an `IStartupStep` (defaults apply automatically). A single uniform fluent surface (e.g. `UseIdentity(...)`/`UseCaching(...)` sub-builders chained together) is a **roadmap** direction, not the shipped shape; see the [Roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md). Today, prefer the per-module `Use*()` above or `IStartupStep` for the rest.
 :::
 
-## Tier 3 — Business Wiring (`IStartupStep`)
+## Tier 3: Business Wiring (`IStartupStep`)
 
-Business decisions that don't belong in a module strategy go in one or more `IStartupStep` implementations — classes the host discovers and runs in order.
+Business decisions that don't belong in a module strategy go in one or more `IStartupStep` implementations, classes the host discovers and runs in order.
 
 ```csharp
 public sealed class BookingStartup : IStartupStep
@@ -148,7 +148,7 @@ public sealed class BookingStartup : IStartupStep
 }
 ```
 
-`IStartupStep` is discovered automatically at compile time by the Source Generator — no manual registration. Both methods are optional; steps run in `Order` ascending (default: 0).
+`IStartupStep` is discovered automatically at compile time by the Source Generator, with no manual registration. Both methods are optional; steps run in `Order` ascending (default: 0).
 
 ### When to use which
 
@@ -157,10 +157,10 @@ public sealed class BookingStartup : IStartupStep
 | "Which auth scheme?" / "Which cache provider?" | Tier 2 (`IPragmaticBuilder.Use*()`) |
 | "Register a service the app needs" | Tier 3 (`IStartupStep.ConfigureServices`) |
 | "Customize the HTTP pipeline (custom middleware)" | Tier 3 (`IStartupStep.ConfigurePipeline`) |
-| "Add a domain event handler" | Implicit — the SG discovers `IDomainEventHandler<T>` automatically |
+| "Add a domain event handler" | Implicit: the SG discovers `IDomainEventHandler<T>` automatically |
 | "Change how a module itself behaves" | Tier 2 if supported, else ask / open issue |
 
-## `appsettings.json` — where does it fit?
+## `appsettings.json`: where does it fit?
 
 Configuration values (connection strings, feature flags, tenant URLs) live in `appsettings.json` as usual:
 
@@ -182,7 +182,7 @@ Each module documents its own keys on its page.
 ## Cheat sheet
 
 ```csharp
-// Program.cs — minimal Pragmatic app
+// Program.cs: minimal Pragmatic app
 using Pragmatic.Composition.Hosting;
 
 await PragmaticApp.RunAsync(args);
@@ -190,7 +190,7 @@ await PragmaticApp.RunAsync(args);
 ```
 
 ```csharp
-// Program.cs — production-shaped app
+// Program.cs: production-shaped app
 using Pragmatic.Composition.Hosting;
 
 await PragmaticApp.RunAsync(args, app =>

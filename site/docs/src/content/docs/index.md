@@ -1,6 +1,6 @@
 ---
 title: Pragmatic Design
-description: The Foundry of Precision Code — documentation home.
+description: The Foundry of Precision Code. Documentation home.
 slug: index
 head:
   - tag: meta

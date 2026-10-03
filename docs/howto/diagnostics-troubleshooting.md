@@ -31,21 +31,21 @@ These diagnostics appear:
 If you intentionally want to suppress a diagnostic, use any of these approaches:
 
 ```xml
-<!-- In .csproj — suppress globally -->
+<!-- In .csproj: suppress globally -->
 <PropertyGroup>
   <NoWarn>$(NoWarn);PRAG0303</NoWarn>
 </PropertyGroup>
 ```
 
 ```csharp
-// In code — suppress locally
+// In code: suppress locally
 #pragma warning disable PRAG0303
 public partial class MyDto { /* ... */ }
 #pragma warning restore PRAG0303
 ```
 
 ```ini
-# In .editorconfig — configure severity
+# In .editorconfig: configure severity
 [*.cs]
 dotnet_diagnostic.PRAG0303.severity = none
 ```
@@ -287,7 +287,7 @@ These run over **your** code, not over generated code.
 
 > Optional injection is `PRAG1452`, not `PRAG1647`. The composition generator emits `PRAG1647` for
 > the open-generic `[Inject]` warning above, so a `NoWarn` or `#pragma` on `PRAG1647` does not quiet
-> optional injection — it silences the warning telling you `[Inject]` members were ignored outright.
+> optional injection; it silences the warning telling you `[Inject]` members were ignored outright.
 
 ### Suppressors (PRAGS001--PRAGS004)
 
@@ -600,7 +600,7 @@ public enum OrderStatus
 
 **PRAG0621 -- Unreachable state**: the state has no `[TransitionFrom]` and is not the initial one.
 Watch for the form that causes it silently: `TransitionFromAttribute` takes an `object`, so
-`[TransitionFrom(nameof(Draft))]` compiles, and the generator ignores a string argument — it reads the
+`[TransitionFrom(nameof(Draft))]` compiles, and the generator ignores a string argument: it reads the
 value only when its type is the enum.
 
 **PRAG0622 -- Invalid transition source**: Ensure all `[TransitionFrom]` values match actual enum members.
@@ -754,7 +754,7 @@ boundary may carry `[EnableBatchProgress]`.
 
 #### PRAG1001 -- Duplicate permission name
 
-**What it means**: Two permission declarations resolve to the same value within the assembly — two
+**What it means**: Two permission declarations resolve to the same value within the assembly, for example two
 `[assembly: Permission]` lines, a line and a `[RequirePermission(..., Description = ...)]`, or a
 declaration equal to an entity's CRUD permission (`billing.invoice.read`).
 
@@ -766,7 +766,7 @@ declaration equal to an entity's CRUD permission (`billing.invoice.read`).
 **What it means**: the first segment of a declared permission is none of the assembly's boundaries, so its
 constant has no `{Boundary}Permissions` class to go into. An empty value is reported the same way.
 
-**How to fix**: `{boundary}.{resource}.{verb}` — `[assembly: Permission("billing.invoice.refund", "Refund a paid invoice")]`.
+**How to fix**: `{boundary}.{resource}.{verb}`, for example `[assembly: Permission("billing.invoice.refund", "Refund a paid invoice")]`.
 
 #### PRAG1005 -- A declared permission's constant would take a name already in use
 

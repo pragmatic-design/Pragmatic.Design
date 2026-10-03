@@ -102,7 +102,7 @@ docker compose -f examples/showcase/docker-compose.yml up -d
 ```
 
 This spins up PostgreSQL 17 on port **5433** (not the default 5432, to avoid conflicts). The hosts'
-`appsettings.json` already point at it — the password is the local container's, set in
+`appsettings.json` already point at it. The password is the local container's, set in
 `docker-compose.yml`, not a secret and not what a deployment uses:
 
 ```json

@@ -1,6 +1,6 @@
 ---
 title: Feature Catalog
-description: Every generator pipeline — its trigger, what it generates, and a short input→output sketch.
+description: "Every generator pipeline: its trigger, what it generates, and a short input→output sketch."
 ---
 
 This is the catalog of code-generating pipelines in Pragmatic Design: the **feature pipelines** inside the unified `Pragmatic.SourceGenerator` (31 feature folders, including four documentation generators), the inline **Manifest** generator, and the **standalone** generators that ship with their own modules.
@@ -8,10 +8,10 @@ This is the catalog of code-generating pipelines in Pragmatic Design: the **feat
 Each entry lists the **trigger** (the attribute or marker that activates it) and a short sketch of the generated output. Triggers are quoted from `FeatureDetector.cs` / `AttributeNames.cs`; where the exact output is large, it is summarised rather than reproduced.
 
 :::note
-Generation is gated on detection — a pipeline produces **zero output** unless its module is referenced. `FastEnum`, `Jobs` and `ValueObject` are the exceptions: they are registered unconditionally because their attributes live in lightweight packages. See [feature detection](/source-generator/feature-detection/).
+Generation is gated on detection: a pipeline produces **zero output** unless its module is referenced. `FastEnum`, `Jobs` and `ValueObject` are the exceptions: they are registered unconditionally because their attributes live in lightweight packages. See [feature detection](/source-generator/feature-detection/).
 :::
 
-## Unified generator — feature pipelines
+## Unified generator: feature pipelines
 
 ### Actions
 **Trigger:** `[DomainAction]` and `[Mutation]` (`Pragmatic.Actions.Attributes.*`) on a `partial` class.
@@ -47,7 +47,7 @@ Provider-specific SQL is selected via the detected `EfCoreProvider` (PostgreSQL 
 
 ### Validation
 **Trigger:** `[Validation]` / `[Validator]` (`Pragmatic.Validation.Attributes.*`).
-**Generates:** compiled validators and the validation pass invoked by the action invoker — no expression-tree or reflection cost at runtime.
+**Generates:** compiled validators and the validation pass invoked by the action invoker, with no expression-tree or reflection cost at runtime.
 
 ### Mapping
 **Trigger:** `` [MapFrom<TSource>] `` / `` [MapTo<T>] `` (`` Pragmatic.Mapping.Attributes.MapFromAttribute`1 ``).
@@ -77,7 +77,7 @@ public partial class UserDto { public string Name { get; set; } }
 
 ### Identity
 **Trigger:** `[PragmaticUser]` / `[ProfileProperty]` (`Pragmatic.Identity.*`); persistence variant via `HasIdentityPersistence`.
-**Generates:** `ToProfile()` + profile record, claim→entity user resolvers, and the permission registry from `[assembly: Permission]` and `IRole` — the constants themselves are the one `{Boundary}Permissions` class, beside the entity CRUD.
+**Generates:** `ToProfile()` + profile record, claim→entity user resolvers, and the permission registry from `[assembly: Permission]` and `IRole`. The constants themselves are the one `{Boundary}Permissions` class, beside the entity CRUD.
 
 ### Messaging
 **Trigger:** `[MessageHandler]` (`Pragmatic.Messaging.Attributes.MessageHandlerAttribute`) and related saga/outbox attributes.
@@ -93,11 +93,11 @@ public partial class UserDto { public string Name { get; set; } }
 
 ### Resource
 **Trigger:** `[Resource]` (`Pragmatic.Persistence.Entity.ResourceAttribute`) on an entity class.
-**Generates:** from a kebab-case route segment + `Capabilities` flags (`Create`/`Read`/`Update`/`Delete`/`List`/`Search`), the full CRUD surface — Create/Read/Update/Delete actions, List/Search query classes, the matching DTOs, and REST endpoints. The action/query/endpoint models are injected into the Actions/Query/Endpoints pipelines rather than emitted standalone. Diagnostics `PRAG2602-2605`.
+**Generates:** from a kebab-case route segment + `Capabilities` flags (`Create`/`Read`/`Update`/`Delete`/`List`/`Search`), the full CRUD surface: Create/Read/Update/Delete actions, List/Search query classes, the matching DTOs, and REST endpoints. The action/query/endpoint models are injected into the Actions/Query/Endpoints pipelines rather than emitted standalone. Diagnostics `PRAG2602-2605`.
 
 ### Traits
 **Trigger:** `[HasComments]`, `[HasTags]`, `[HasNotes]`, `[HasAttachments]` (`Pragmatic.Comments` / `Pragmatic.Tags` / `Pragmatic.Notes` / `Pragmatic.Attachments`) on an entity.
-**Generates:** a complete sub-feature per trait — the child entity (e.g. `OrderComment`), its EF `EntityConfig`, the parent navigation property, CRUD action classes, permission constants, a DTO, a paged list query, and (when a `[Resource]` is present) REST endpoints. Tags additionally generate a junction entity. Requires `HasPersistenceEFCore`; actions/endpoints require `HasActions`. Diagnostics `PRAG2600-2601`.
+**Generates:** a complete sub-feature per trait: the child entity (e.g. `OrderComment`), its EF `EntityConfig`, the parent navigation property, CRUD action classes, permission constants, a DTO, a paged list query, and (when a `[Resource]` is present) REST endpoints. Tags additionally generate a junction entity. Requires `HasPersistenceEFCore`; actions/endpoints require `HasActions`. Diagnostics `PRAG2600-2601`.
 
 ```csharp
 [Resource("comments")]
@@ -109,7 +109,7 @@ public partial class Article { ... }
 
 ### FastEnum *(registered unconditionally)*
 **Trigger:** `[FastEnum]` (`Pragmatic.FastEnumAttribute`) on an `enum`.
-**Generates:** a `{Enum}Extensions` static class with zero-reflection helpers — `ToStringFast()`, `IsDefined(value)` / `IsDefined(string)`, `TryParse(...)` (+ case-insensitive overload), `GetValues()`, `GetNames()`, `Count` — plus a separate AOT-safe `{Enum}JsonConverter` (serializes as the string name). Optional `GetDisplayName()` (from `[Display]`/`[Description]`) and, when I18n is referenced, `GetI18nKey()` / `GetLocalizedName()`.
+**Generates:** a `{Enum}Extensions` static class with zero-reflection helpers: `ToStringFast()`, `IsDefined(value)` / `IsDefined(string)`, `TryParse(...)` (+ case-insensitive overload), `GetValues()`, `GetNames()`, `Count`. It also generates a separate AOT-safe `{Enum}JsonConverter` (serializes as the string name). Optional `GetDisplayName()` (from `[Display]`/`[Description]`) and, when I18n is referenced, `GetI18nKey()` / `GetLocalizedName()`.
 
 ```csharp
 [FastEnum] public enum Status { Active, Archived }
@@ -123,7 +123,7 @@ public partial class Article { ... }
 
 ### ValueObject *(registered unconditionally)*
 **Trigger:** `[ValueObject]` (`Pragmatic.Persistence.Entity.ValueObjectAttribute`) on a `partial record`.
-**Generates:** factory methods into the record — `Create(...)` (calls the user's `Validate(...)`, returning the value object or a validation error) when a `Validate` method exists, and `CreateUnsafe(...)` (direct construction, for deserialization / trusted paths) when a constructor exists. Neither is emitted if the user already declared it. Diagnostics `PRAG2700-2702`.
+**Generates:** factory methods into the record: `Create(...)` (calls the user's `Validate(...)`, returning the value object or a validation error) when a `Validate` method exists, and `CreateUnsafe(...)` (direct construction, for deserialization / trusted paths) when a constructor exists. Neither is emitted if the user already declared it. Diagnostics `PRAG2700-2702`.
 
 ```csharp
 [ValueObject]
@@ -136,16 +136,16 @@ public partial record Email(string Value)
 ```
 
 ### Documentation generators *(registered unconditionally)*
-Four pipelines (in `Features/Glossary/`) emit living documentation as compile-time constants — surface them however you like (an endpoint, a build step), the same way the generated OpenAPI is served.
+Four pipelines (in `Features/Glossary/`) emit living documentation as compile-time constants; surface them however you like (an endpoint, a build step), the same way the generated OpenAPI is served.
 
 | Generator | Trigger | Output |
 |-----------|---------|--------|
-| **Glossary** | `[Entity]` types with XML-doc summaries | `PragmaticGlossary.Markdown` — ubiquitous-language glossary grouped by namespace |
-| **Architecture (C4)** | `[Include<TModule>]` / `[RemoteBoundary<TModule>]` on the host | `PragmaticArchitecture.C4ContainerDiagram` — a Mermaid container diagram (remote boundaries marked) |
-| **AsyncAPI** | types implementing `IDomainEvent` | `PragmaticAsyncApi.Json` — an AsyncAPI 3.0 document; one channel + message per event, with the payload schema |
-| **Use cases** | `[UseCase]` / `[Rule]` on an operation | `PragmaticUseCases.All` — typed `UseCaseDescriptor`s (id, title, rules, target, file, line) — plus `.Markdown` |
+| **Glossary** | `[Entity]` types with XML-doc summaries | `PragmaticGlossary.Markdown`: ubiquitous-language glossary grouped by namespace |
+| **Architecture (C4)** | `[Include<TModule>]` / `[RemoteBoundary<TModule>]` on the host | `PragmaticArchitecture.C4ContainerDiagram`: a Mermaid container diagram (remote boundaries marked) |
+| **AsyncAPI** | types implementing `IDomainEvent` | `PragmaticAsyncApi.Json`: an AsyncAPI 3.0 document; one channel + message per event, with the payload schema |
+| **Use cases** | `[UseCase]` / `[Rule]` on an operation | `PragmaticUseCases.All`: typed `UseCaseDescriptor`s (id, title, rules, target, file, line), plus `.Markdown` |
 
-The AsyncAPI document is the **event contract**: each message carries its payload properties (so it is snapshot-testable) and is tagged `x-pragmatic-public` (the two-level model — `IIntegrationEvent` / `[PublicEvent]`) and `x-pragmatic-obsolete` (`[ObsoleteEvent]`).
+The AsyncAPI document is the **event contract**: each message carries its payload properties (so it is snapshot-testable) and is tagged `x-pragmatic-public` (the two-level model: `IIntegrationEvent` / `[PublicEvent]`) and `x-pragmatic-obsolete` (`[ObsoleteEvent]`).
 
 ### Smaller pipelines
 
@@ -174,12 +174,12 @@ Each of these does one thing, usually publishing a fact about the assembly so th
 
 These are **separate `[Generator]` assemblies**, not feature pipelines inside the unified generator.
 
-### Result — `ResultSourceGenerator`
+### Result: `ResultSourceGenerator`
 *Assembly:* `Pragmatic.Result.SourceGenerator`.
 
-Runs only while compiling the `Pragmatic.Result` assembly itself. It emits the multi-error `Result` variants (2–8 error types) and the matching `VoidResult` variants — the `Match`/`Map`/`Bind` arity overloads the library ships.
+Runs only while compiling the `Pragmatic.Result` assembly itself. It emits the multi-error `Result` variants (2–8 error types) and the matching `VoidResult` variants: the `Match`/`Map`/`Bind` arity overloads the library ships.
 
-### Internationalization — Country / Currency / Language code generators
+### Internationalization: Country / Currency / Language code generators
 *Assembly:* `Pragmatic.Internationalization.SourceGenerator`.
 
 Three generators that emit static ISO code tables from embedded JSON resources. Each is gated by an **`AdditionalFiles` marker file** (empty file with a magic name):
@@ -190,25 +190,25 @@ Three generators that emit static ISO code tables from embedded JSON resources. 
 | `CurrencyCodeGenerator` | `.generate-currencies` | static `CurrencyCode` properties (ISO 4217) |
 | `LanguageCodeGenerator` | `.generate-languages` | static `LanguageCode` properties (ISO 639) |
 
-Without the marker file, the generator stays silent — so apps pay nothing unless they opt in.
+Without the marker file, the generator stays silent, so apps pay nothing unless they opt in.
 
-### CSV — `CsvSourceGenerator`
+### CSV: `CsvSourceGenerator`
 *Assembly:* `Pragmatic.Documents.Csv.Generator`.
 
-**Trigger:** `[CsvSerializable]` on a type. **Generates:** a nested `Csv` class with typed `Write`/`Read` methods — no reflection, AOT-safe.
+**Trigger:** `[CsvSerializable]` on a type. **Generates:** a nested `Csv` class with typed `Write`/`Read` methods, with no reflection and AOT-safe.
 
-### Client — `PragmaticClientGenerator`
+### Client: `PragmaticClientGenerator`
 *Assembly:* `Pragmatic.Client.SourceGenerator`.
 
-Reads the API manifest rather than your domain, and generates a typed HTTP client for it — one method per operation, typed errors included.
+Reads the API manifest rather than your domain, and generates a typed HTTP client for it: one method per operation, typed errors included.
 
-### Testing — contract tests, mocks, comparers
+### Testing: contract tests, mocks, comparers
 *Assemblies:* `Pragmatic.Testing.SourceGenerator`, `Pragmatic.Testing.Mocking.SourceGenerator`, `Pragmatic.Testing.Comparers.SourceGenerator`.
 
-These run in the **test** project. `ContractTestGenerator` writes a test per endpoint contract — authorization, CRUD, state transitions — from the endpoints it can see; `MockGenerator` writes a compiled mock for every `[assembly: GenerateMock<T>]` (no dynamic proxy, AOT-safe); `ComparerGenerator` writes a member-by-member `BeEquivalentTo` for every `[assembly: GenerateComparer<T>]`.
+These run in the **test** project. `ContractTestGenerator` writes a test per endpoint contract (authorization, CRUD, state transitions) from the endpoints it can see; `MockGenerator` writes a compiled mock for every `[assembly: GenerateMock<T>]` (no dynamic proxy, AOT-safe); `ComparerGenerator` writes a member-by-member `BeEquivalentTo` for every `[assembly: GenerateComparer<T>]`.
 
 ## See also
 
-- [How it works](/source-generator/how-it-works/) — the detect → transform → template → emit pipeline.
-- [Feature detection](/source-generator/feature-detection/) — marker types and the `DetectedFeatures` flags.
-- [Diagnostics](/reference/diagnostics/) — the full `PRAG` ID reference.
+- [How it works](/source-generator/how-it-works/): the detect → transform → template → emit pipeline.
+- [Feature detection](/source-generator/feature-detection/): marker types and the `DetectedFeatures` flags.
+- [Diagnostics](/reference/diagnostics/): the full `PRAG` ID reference.
