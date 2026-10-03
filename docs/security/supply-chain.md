@@ -23,12 +23,27 @@ builds; nothing else in the repository reads it.
 | `node scripts/check.mjs` (`supply-chain.mjs`) | NuGet, direct and transitive: a CycloneDX SBOM per shipped package and `dotnet list package --vulnerable` | every gate run; CI always scans, a local run reuses a clean scan for 12 hours while the graph is unchanged |
 | OpenSSF Scorecard (`scorecard.yml`) | every lockfile it can read, through OSV, plus workflow and repository settings | every push to `main` and weekly |
 | CodeQL (`codeql.yml`) | the C# sources and the workflows | every pull request, every push to `main`, weekly |
-| Dependabot (`.github/dependabot.yml`) | version updates for NuGet, npm and Actions, grouped, weekly | weekly |
+| Dependabot version updates (`.github/dependabot.yml`) | NuGet, npm and Actions, grouped | weekly |
+| Dependabot alerts (the dependency graph) | every ecosystem above, Cargo included, against the GitHub Advisory Database | when an advisory is published |
 | `node scripts/native-stamp.mjs check` | each committed native binary carries the hash of the Rust source it was built from | every gate run |
 
-**Gap.** Nothing in the gate scans the Rust crates or the npm packages, and Dependabot does not watch
-Cargo. Their advisories surface through Scorecard alone: 23 had accumulated in the native crates before
-it was added.
+**Gap.** Nothing in the gate scans the Rust crates or the npm packages, and Dependabot proposes no
+version updates for Cargo. Their advisories reach us as Dependabot alerts, for those with a GitHub
+advisory, and through Scorecard, which also reports RustSec notices such as "unmaintained". 23 had
+accumulated in the native crates before Scorecard was added, while the dependency graph was off.
+
+## Accepted advisories
+
+An advisory with no release to move to is recorded in an `osv-scanner.toml` next to its lockfile, with
+the reason, and an expiry date so it is looked at again. OpenSSF Scorecard and OSV-Scanner read them
+from there; a Dependabot alert for the same advisory is dismissed with the same reason.
+
+- `Pragmatic.Documents/native/pragmatic-pdf/osv-scanner.toml`: quick-xml, held below its fix by
+  citationberg and reached only through bibliographies, citations and highlighted code, which the
+  renderer cannot produce; and the unmaintained notices of crates Typst depends on.
+- `Pragmatic.Imaging/native/pragmatic-imaging/osv-scanner.toml`: paste, a compile-time macro.
+- `site/osv-scanner.toml`: http-cache-semantics, which matters to a shared HTTP cache, while both sites
+  are built to static files.
 
 ## Releases
 
