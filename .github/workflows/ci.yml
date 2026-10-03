@@ -24,6 +24,9 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
+permissions:
+  contents: read
+
 jobs:
   # Clean build with --warnaserror, plus every suite that needs no container.
   # Clean is not optional: an incremental build does not re-evaluate up-to-date projects, so

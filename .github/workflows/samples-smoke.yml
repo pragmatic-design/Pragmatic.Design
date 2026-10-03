@@ -17,6 +17,9 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_ENVIRONMENT: Development
 
+permissions:
+  contents: read
+
 # Runs a representative set of console samples end-to-end. Ensures samples are
 # not just compilable but executable as onboarding assets. WebApplication samples
 # (Endpoints, Result.AspNetCore) are not run here: they start a server and wait.

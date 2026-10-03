@@ -10,13 +10,15 @@ on:
       - 'nuget-v*'
 
 permissions:
-  contents: write   # creating a release, not pushing to a branch
+  contents: read
 
 jobs:
   release-notes:
     name: GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write   # creating a release, not pushing to a branch
 
     steps:
       - name: Checkout
