@@ -105,7 +105,7 @@ message after S/MIME has run invalidates both signatures.
 
 ## MIME generation
 
-`MimeWriter` is a public static class that generates RFC 2045/2046 compliant MIME from `EmailMessage` —
+`MimeWriter` is a public static class that generates RFC 2045/2046 compliant MIME from `EmailMessage`,
 public because a custom `IEmailTransport` needs to produce the wire format, and `DkimSigner` signs a
 rendered message. It handles the full multipart hierarchy:
 
@@ -129,7 +129,7 @@ Key behaviors:
   rendered once by each signing middleware and once by the transport, and a random boundary per call
   would mean every signature covered a document that was never sent.
 - **Inline images without an HTML body** are emitted as ordinary attachments rather than dropped.
-- **Line endings** are normalised to CRLF. SMTP dot-stuffing is *not* done here — it is a transport
+- **Line endings** are normalised to CRLF. SMTP dot-stuffing is *not* done here: it is a transport
   encoding (RFC 5321 §4.5.2) applied by `SmtpDotStuffing` over the whole DATA block, including its
   first line, and must not be part of what gets signed.
 
@@ -142,7 +142,7 @@ Key behaviors:
 | STARTTLS | default, typically port 587 | plaintext greeting, then `STARTTLS` upgrades the socket |
 | Implicit TLS (SMTPS) | automatic on port 465, or `UseImplicitTls = true` | handshake before the greeting |
 
-If encryption cannot be established the connection is refused rather than continuing in cleartext —
+If encryption cannot be established the connection is refused rather than continuing in cleartext:
 credentials must never travel over a plain socket.
 
 `TimeoutSeconds` applies to connect and to every read and write, with one deadline per response rather
@@ -193,11 +193,11 @@ Explicit override via `SmtpAuthMethod.Plain`, `SmtpAuthMethod.Login`, or `SmtpAu
 `Sign` takes the **rendered MIME message** and signs it as it will appear on the wire:
 
 1. Split it at the blank line; compute the body hash (`bh=`) over the body only, relaxed-canonicalized.
-2. Read the header values back **verbatim** from the rendered message — already RFC 2047 encoded where
-   needed — instead of reconstructing them from `EmailMessage`. Reconstruction breaks any message with
+2. Read the header values back **verbatim** from the rendered message (already RFC 2047 encoded where
+   needed) instead of reconstructing them from `EmailMessage`. Reconstruction breaks any message with
    an accented subject: the signature would cover `Città` while the wire carries `=?utf-8?B?...?=`.
 3. Declare in `h=` only the headers actually present, out of From, To, Cc, Subject, Date, Message-ID,
-   MIME-Version, Content-Type and Content-Transfer-Encoding — the content headers are included so the
+   MIME-Version, Content-Type and Content-Transfer-Encoding; the content headers are included so the
    signature also pins the structure of the message.
 4. Canonicalize those headers plus the DKIM-Signature template (with an empty `b=`) and sign with RSA.
 5. Append the base64 signature as `b=`.
@@ -209,13 +209,13 @@ Canonicalization follows RFC 6376 section 3.4:
 
 ### S/MIME signing
 
-`SmimeMiddleware` produces a `multipart/signed` per RFC 8551 §3.4.3 — the structure every mail client
+`SmimeMiddleware` produces a `multipart/signed` per RFC 8551 §3.4.3, the structure every mail client
 understands:
 
 ```
 multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256
   ├── the original content, in the clear (readable by clients without S/MIME)
-  └── application/pkcs7-signature (smime.p7s) — detached CMS signature
+  └── application/pkcs7-signature (smime.p7s): detached CMS signature
 ```
 
 1. Render the content part (content headers, blank line, body).

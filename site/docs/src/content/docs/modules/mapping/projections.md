@@ -197,7 +197,7 @@ What the nested initializer does with each member:
 ### A nested DTO over the same row
 
 A nested DTO does not have to follow a navigation. When its `[MapFrom<T>]` is the same entity as the
-parent's, and the source has no member of the property's name, it is built from the row itself — a group
+parent's, and the source has no member of the property's name, it is built from the row itself: a group
 of the row's own columns:
 
 ```csharp
@@ -233,7 +233,7 @@ entity, named after no navigation, is still PRAG0303.
 
 ## Navigation Flattening in Projections
 
-`[MapProperty]` with a navigation path works in projections. Expression Trees do not support the null-conditional operator (`?.`), so the generator rewrites a nullable navigation into an explicit null-check ternary — which EF Core translates to the correct `LEFT JOIN` null semantics in SQL.
+`[MapProperty]` with a navigation path works in projections. Expression Trees do not support the null-conditional operator (`?.`), so the generator rewrites a nullable navigation into an explicit null-check ternary, which EF Core translates to the correct `LEFT JOIN` null semantics in SQL.
 
 ```csharp
 [MapFrom<RoomType>]
@@ -258,7 +258,7 @@ entity => new RoomTypeSummaryDto
 }
 ```
 
-If the target property is a **value type** (e.g. `int PropertyStarRating`), the default is folded into the null branch the same way — `(entity.Property == null ? 0 : entity.Property.StarRating)` — so the expression type-checks and still translates to SQL. This translates to a `LEFT JOIN` on the `Property` table.
+If the target property is a **value type** (e.g. `int PropertyStarRating`), the default is folded into the null branch the same way (`(entity.Property == null ? 0 : entity.Property.StarRating)`), so the expression type-checks and still translates to SQL. This translates to a `LEFT JOIN` on the `Property` table.
 
 ## Auto-Defaults in Projections
 
@@ -302,17 +302,17 @@ With `Projection`, these navigations are resolved as SQL JOINs automatically.
 
 ## Limitations
 
-What SQL cannot compute is computed on the client after the read — the projection is the query's last
-step, where EF Core evaluates what it cannot translate — or excluded with a compile-time diagnostic:
+What SQL cannot compute is computed on the client after the read (the projection is the query's last
+step, where EF Core evaluates what it cannot translate) or excluded with a compile-time diagnostic:
 
 | Feature | In FromEntity | In Projection | Diagnostic |
 |---------|---------------|---------------|------------|
-| `[MapConverter<T>]` over a column | Yes | Yes — on the client after the read | -- |
-| `[MapProperty(Format = "...")]` over a column | Yes | Yes — on the client after the read | -- |
+| `[MapConverter<T>]` over a column | Yes | Yes, on the client after the read | -- |
+| `[MapProperty(Format = "...")]` over a column | Yes | Yes, on the client after the read | -- |
 | either, through a navigation that may be null | Yes | Excluded | PRAG0320 / PRAG0321 |
 | `CustomizeMapping()` | Yes | Ignored | PRAG0319 |
 | `BeforeMapping()` | Yes | Ignored | -- |
-| `[MapCondition]` gate, predicate with an expression body | Yes | Yes — `(predicate) ? mapping : default!` | -- |
+| `[MapCondition]` gate, predicate with an expression body | Yes | Yes: `(predicate) ? mapping : default!` | -- |
 | `[MapCondition]` gate, predicate with a block body | Yes | Mapped **unconditionally** | PRAG0332 |
 | `[MapDerived<,>]` dispatch | Yes (runtime type-switch) | Base shape only | PRAG0331 |
 | Circular references | Tracked | Not supported | -- |

@@ -26,7 +26,7 @@ Your `GetOrSetAsync` factory runs on every request -- the cache appears to have 
 
 5. **For distributed cache (L2):** Is the distributed cache backend (Redis, SQL Server) reachable? `HybridCache` falls back to L1-only when L2 is unavailable, but in multi-instance deployments each instance has its own L1.
 
-6. **Only in tests: is the clock pinned?** `HybridCache` takes its clock from the container's `TimeProvider` — the one `UseClock(testClock)` replaces — and treats an entry written *at or before* its tag's last invalidation as invalidated. With a frozen clock those two instants are equal, so after any invalidation of a tag (a write whose event carries `[InvalidatesCache]`, for instance) every entry written under that tag is born invalidated: the second read misses, in the whole suite and in a single test. Move the clock forward before a read that must hit — `clock.AdvanceSeconds(1)` — and only forward. Proven by `TagInvalidationUnderAPinnedClockTests`; the Temporal side is in Pragmatic.Temporal's testing guide, "Swapping the clock in DI".
+6. **Only in tests: is the clock pinned?** `HybridCache` takes its clock from the container's `TimeProvider` (the one `UseClock(testClock)` replaces) and treats an entry written *at or before* its tag's last invalidation as invalidated. With a frozen clock those two instants are equal, so after any invalidation of a tag (a write whose event carries `[InvalidatesCache]`, for instance) every entry written under that tag is born invalidated: the second read misses, in the whole suite and in a single test. Move the clock forward before a read that must hit (`clock.AdvanceSeconds(1)`), and only forward. Proven by `TagInvalidationUnderAPinnedClockTests`; the Temporal side is in Pragmatic.Temporal's testing guide, "Swapping the clock in DI".
 
 ---
 
@@ -46,7 +46,7 @@ A mutation changes data, but subsequent reads return the old cached value.
    // Cacheable tags
    Tags = ["product:{ProductId}"]
 
-   // InvalidatesCache tags — must use the same property name
+   // InvalidatesCache tags: must use the same property name
    [InvalidatesCache("product:{ProductId}")]   // Correct
    [InvalidatesCache("product:{Id}")]          // Wrong if property is "ProductId"
    ```

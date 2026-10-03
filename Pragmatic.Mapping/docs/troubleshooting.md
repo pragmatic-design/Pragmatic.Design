@@ -14,7 +14,7 @@ You added `[MapFrom<T>]` or `[MapTo<T>]` but no `FromEntity()`, `ToEntity()`, or
 
 2. **Is the analyzer present?** How you get it depends on how you consume Pragmatic.Mapping:
 
-   **NuGet consumers (normal case).** Add the package — the source generator is delivered as an analyzer with it, so no extra wiring is needed:
+   **NuGet consumers (normal case).** Add the package: the source generator is delivered as an analyzer with it, so no extra wiring is needed:
 
    ```bash
    dotnet add package Pragmatic.Mapping
@@ -96,7 +96,7 @@ The DTO has `[GenerateProjection]` but no `Projection` property appears.
 
 ## Type Conversion Errors
 
-When a source property type cannot be assigned to the target property type and no conversion path exists, the generator reports **PRAG0304** (`incompatible types`) on the DTO — a clear, actionable error rather than a cryptic compiler error buried in generated code.
+When a source property type cannot be assigned to the target property type and no conversion path exists, the generator reports **PRAG0304** (`incompatible types`) on the DTO: a clear, actionable error rather than a cryptic compiler error buried in generated code.
 
 ### Supported Automatic Conversions
 
@@ -107,7 +107,7 @@ The generator handles these conversions automatically:
 | To `string` | `int`, `long`, `decimal`, `bool`, `Guid`, `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `enum` |
 | From `string` | `int`, `long`, `decimal`, `bool`, `Guid`, `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `enum` |
 | Date conversions | `DateTime` to/from `DateOnly`, `DateTime` to `TimeOnly` |
-| Enum to enum | different enum types, mapped by member name (validated — PRAG0328) |
+| Enum to enum | different enum types, mapped by member name (validated by PRAG0328) |
 | Implicit widening | `int` to `long`, `int` to `decimal`, and every other C# implicit numeric conversion |
 
 **Numeric narrowing is not automatic.** A lossy pair such as `long` → `int` or `double` → `float` reports **PRAG0304** (it is not an implicit C# conversion). Widen the DTO property, or add a converter.
@@ -162,7 +162,7 @@ When the parent DTO has `[GenerateProjection]` and a nested DTO property, the ne
 
 ## Ambiguous Mapping
 
-A target property can match a source by more than one strategy — for example, a direct name match *and* a flattening convention, when the entity has both a `Status` property and a navigation `Status` with further properties.
+A target property can match a source by more than one strategy: for example, a direct name match *and* a flattening convention, when the entity has both a `Status` property and a navigation `Status` with further properties.
 
 The generator resolves the match deterministically by priority: an explicit `[MapProperty]` wins first, then a direct name match, then the flattening convention, then concatenation. When a direct name match *and* a flattening convention both apply, it emits **PRAG0323** (`ambiguous mapping`) so the choice is visible. If the automatically chosen source is not the one you want, make it explicit.
 
@@ -213,13 +213,13 @@ The complete set of diagnostics the generator emits. IDs 0301, 0308, 0311, 0312 
 
 | ID | Severity | Meaning |
 |----|----------|---------|
-| PRAG0313 | Info | Circular reference detected — instance tracking used (no action) |
+| PRAG0313 | Info | Circular reference detected; instance tracking used (no action) |
 | PRAG0321 | Info | Format string excluded from projection |
 | PRAG0322 | Info | Complex dictionary value not supported in projection |
-| PRAG0324 | Info | ID excluded from `ToEntity()` — add `[MapProperty]` to include |
+| PRAG0324 | Info | ID excluded from `ToEntity()`; add `[MapProperty]` to include |
 | PRAG0331 | Info | `[MapDerived]` not honored by projections (base shape only) |
 | PRAG0332 | Info | `[MapCondition]` with a block body gates `FromEntity` only; the projection maps unconditionally. Give the predicate an expression body to gate the projection too |
-| PRAG0325 | Hidden | Source property not mapped to the DTO (its data is dropped) — raise to Warning via `.editorconfig` for reverse-coverage checks |
+| PRAG0325 | Hidden | Source property not mapped to the DTO (its data is dropped); raise to Warning via `.editorconfig` for reverse-coverage checks |
 
 Check the **Error List** window in Visual Studio or the build output for diagnostic details and the affected source location.
 

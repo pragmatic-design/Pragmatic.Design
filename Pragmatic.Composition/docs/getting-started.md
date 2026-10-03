@@ -131,7 +131,7 @@ When a module depends on types from another module (e.g., Booking needs Catalog 
 public sealed class BookingModule;
 ```
 
-The host then includes both — it registers only what it declares, so hosting Booking without Catalog (or
+The host then includes both: it registers only what it declares, so hosting Booking without Catalog (or
 without `[RemoteBoundary<CatalogModule>]`, if Catalog runs elsewhere) is **PRAG1603**:
 
 ```csharp

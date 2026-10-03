@@ -15,7 +15,7 @@ public class ProductService(IDistributedCache cache, IProductRepository repo)
 {
     public async Task<ProductDto?> GetByIdAsync(int id, CancellationToken ct)
     {
-        var key = $"product:{id}";  // Magic string — no compile-time validation
+        var key = $"product:{id}";  // Magic string: no compile-time validation
         var cached = await cache.GetStringAsync(key, ct);
         if (cached is not null)
             return JsonSerializer.Deserialize<ProductDto>(cached);
@@ -170,7 +170,7 @@ public interface ICacheStack
         CacheEntryOptions? options = null, CancellationToken ct = default);
 
     // Get-or-set where the factory decides whether the result should be cached
-    // (CacheFactoryResult<T>.Cache(...) vs .DoNotCache(...)) — see "Conditional Caching" below
+    // (CacheFactoryResult<T>.Cache(...) vs .DoNotCache(...)); see "Conditional Caching" below
     ValueTask<T> GetOrSetAsync<T>(string key,
         Func<CancellationToken, ValueTask<CacheFactoryResult<T>>> factory,
         CacheEntryOptions? options = null, CancellationToken ct = default);
@@ -193,12 +193,12 @@ public interface ICacheStack
     ValueTask InvalidateByTagsAsync(IEnumerable<string> tags, CancellationToken ct = default);
 
     // Synonym for InvalidateByTagAsync, aligned with the Remove* naming family.
-    // Default interface method — delegates to InvalidateByTagAsync.
+    // Default interface method: delegates to InvalidateByTagAsync.
     ValueTask RemoveByTagAsync(string tag, CancellationToken ct = default)
         => InvalidateByTagAsync(tag, ct);
 
     // Atomic counter increment/decrement. Process-local atomicity only on the default
-    // HybridCacheStack (per-key semaphore) — NOT cross-instance atomic unless a backend
+    // HybridCacheStack (per-key semaphore), NOT cross-instance atomic unless a backend
     // with a native atomic increment (e.g. Redis INCR) overrides this method.
     ValueTask<long> IncrementAsync(string key, long delta,
         TimeSpan? ttl = null, CancellationToken ct = default);
@@ -230,7 +230,7 @@ The tiering is transparent. `GetOrSetAsync` checks L1 first, then L2, and only c
 
 ⚠️ **L2 shares the entries, not the invalidations.** Each instance keeps its own L1 copy for the entry's whole `Duration` (`LocalCacheExpiration` is set to it).
 
-- An invalidation — `RemoveAsync`, a tag, `[InvalidatesCache]` — clears the L1 of the instance that ran it, and the L2 entry.
+- An invalidation (`RemoveAsync`, a tag, `[InvalidatesCache]`) clears the L1 of the instance that ran it, and the L2 entry.
 - Every other instance goes on serving its own copy until it expires.
 
 That was measured with two hosts on one Redis. A host started afterwards read the new value from the database, while the host that already held the entry answered the old one.
@@ -251,7 +251,7 @@ How the broadcast works:
 
 What it does not guarantee:
 
-- **At most once.** Pub/sub keeps nothing, so an instance that misses a message is stale until its copy expires — what every instance was before.
+- **At most once.** Pub/sub keeps nothing, so an instance that misses a message is stale until its copy expires, which is what every instance was before.
 - **A failed publish is logged, not thrown.** The local invalidation has already happened.
 - **Only the decorated stack is broadcast.** A direct `HybridCache.RemoveAsync` is not.
 
@@ -284,7 +284,7 @@ public sealed class CacheEntryOptions
     public TimeSpan? Duration { get; init; }          // Absolute expiration
     public TimeSpan? SlidingDuration { get; init; }   // See "Sliding is not access-refreshed" below
     public ImmutableArray<string> Tags { get; init; }  // Tags for group invalidation
-    public CachePriority Priority { get; init; }       // Advisory only — see "CachePriority" below
+    public CachePriority Priority { get; init; }       // Advisory only; see "CachePriority" below
 
     public static CacheEntryOptions Default { get; }  // 5-minute absolute duration
     public static CacheEntryOptions WithDuration(TimeSpan d);
@@ -378,7 +378,7 @@ For `TenantId = 42`, the generated `GetCacheOptions()` expands the tags to `["pr
 Tag placeholders use the `{PropertyName}` syntax. The source generator validates at compile time that the referenced property exists on the type (diagnostic `PRAG1703` if not).
 
 ```csharp
-// Cacheable side — tags stored with the entry
+// Cacheable side: tags stored with the entry
 [Cacheable(Duration = "5m", Tags = ["users", "user:{UserId}", "tenant:{TenantId}"])]
 public partial class GetUserProfile
 {
@@ -386,7 +386,7 @@ public partial class GetUserProfile
     public required int TenantId { get; init; }
 }
 
-// Invalidation side — tags expanded and invalidated
+// Invalidation side: tags expanded and invalidated
 [InvalidatesCache("user:{UserId}")]
 public partial class UserProfileUpdated
 {
@@ -600,7 +600,7 @@ public static partial class GetProductByIdCacheKeys
 When tags contain placeholders (e.g., `"product:{ProductId}"`), `GetCacheOptions()` cannot use a static field because tags vary per instance. The generated code allocates a new `CacheEntryOptions` per call:
 
 ```csharp
-// When tags have placeholders — per-call allocation
+// When tags have placeholders: per-call allocation
 public CacheEntryOptions GetCacheOptions() => new()
 {
     Duration = TimeSpan.FromSeconds(300),
@@ -643,7 +643,7 @@ All generated files live under `obj/Debug/net10.0/generated/` and are visible in
 `AddPragmaticCaching` has three overloads:
 
 ```csharp
-// 1. Defaults only — no categories
+// 1. Defaults only: no categories
 services.AddPragmaticCaching();
 
 // 2. Configure global options
@@ -653,7 +653,7 @@ services.AddPragmaticCaching(options =>
     // There is no global key prefix: use per-category KeyPrefix via ForCategory<T>().
 });
 
-// 3. Full builder — global options + per-category routing
+// 3. Full builder: global options + per-category routing
 services.AddPragmaticCaching(cache =>
 {
     cache.WithDefaultOptions(o => o.DefaultDuration = TimeSpan.FromMinutes(10));
@@ -672,8 +672,8 @@ All overloads register `ICacheStack` as `HybridCacheStack` (singleton). The buil
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `DefaultDuration` | `TimeSpan` | 5 minutes | Fallback expiration `HybridCacheStack` applies when a cache entry's `CacheEntryOptions` specifies no `Duration`. Since `[Cacheable]` always sets a `Duration` (default `"5m"`), this mainly affects direct `ICacheStack` usage with no/partial options |
-| `EnableQueryCaching` | `bool` | `true` | Whether `[Cacheable]` queries are cached. `false` switches query caching off without changing registrations — the executor resolves no stack |
-| `EnableEventInvalidation` | `bool` | `true` | Whether `[InvalidatesCache]` declarations run after the operation commits — a mutation or an action alike. `false` skips them |
+| `EnableQueryCaching` | `bool` | `true` | Whether `[Cacheable]` queries are cached. `false` switches query caching off without changing registrations: the executor resolves no stack |
+| `EnableEventInvalidation` | `bool` | `true` | Whether `[InvalidatesCache]` declarations run after the operation commits, a mutation or an action alike. `false` skips them |
 
 ### SG Auto-Detection
 

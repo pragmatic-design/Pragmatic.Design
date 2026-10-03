@@ -8,7 +8,7 @@ sidebar:
 Complete reference for `Pragmatic.Ensure` (`ThrowIf*` / `Is*`) and `Pragmatic.Ensure.Result` (`Check.*`).
 
 All `ThrowIf*` methods capture the argument expression automatically via `[CallerArgumentExpression]`,
-so the `paramName` parameter (always the last, optional) is filled in by the compiler — you never pass it.
+so the `paramName` parameter (always the last, optional) is filled in by the compiler: you never pass it.
 
 ---
 
@@ -37,8 +37,8 @@ Ensure.ThrowIfAnyNull(a, b, c);                        // void; prefer the gener
 
 | Method | Throws on |
 |--------|-----------|
-| `ThrowIfNullOrEmpty` | `null`, `""` — returns the validated string |
-| `ThrowIfNullOrWhiteSpace` | `null`, `""`, `"   "` — returns the validated string |
+| `ThrowIfNullOrEmpty` | `null`, `""`; returns the validated string |
+| `ThrowIfNullOrWhiteSpace` | `null`, `""`, `"   "`; returns the validated string |
 
 ### Length (throw `ArgumentNullException` on null)
 
@@ -48,7 +48,7 @@ Ensure.ThrowIfShorterThan(name, 2);
 Ensure.ThrowIfLengthOutOfRange(name, 2, 100);
 ```
 
-All three call `ThrowIfNull` internally — a null value throws `ArgumentNullException`. (The `Is*`
+All three call `ThrowIfNull` internally: a null value throws `ArgumentNullException`. (The `Is*`
 counterpart `IsLengthInRange` is null-safe; the guard is not.)
 
 ### Content (throw `ArgumentNullException` on null, `Ordinal` comparison)
@@ -59,7 +59,7 @@ Ensure.ThrowIfStartsWith(value, "prefix");
 Ensure.ThrowIfEndsWith(value, "suffix");
 ```
 
-### Format (null-safe — a null value passes)
+### Format (null-safe: a null value passes)
 
 ```csharp
 Ensure.ThrowIfNotEmail(email);                 // System.Net.Mail.MailAddress parsing
@@ -83,7 +83,7 @@ Sign checks require `INumber<T>`; range/comparison checks require `IComparable<T
 Ensure.ThrowIfNegative(value);           // value < 0
 Ensure.ThrowIfNegativeOrZero(value);     // value <= 0
 Ensure.ThrowIfZero(value);               // value == 0
-Ensure.ThrowIfPositiveOrZero(value);     // value >= 0 (INumber.IsPositive — zero counts as positive)
+Ensure.ThrowIfPositiveOrZero(value);     // value >= 0 (INumber.IsPositive: zero counts as positive)
 Ensure.ThrowIfOutOfRange(value, 0, 100); // value outside [0, 100]
 Ensure.ThrowIfGreaterThan(value, max);   // value > max
 Ensure.ThrowIfLessThan(value, min);      // value < min
@@ -98,20 +98,20 @@ All numeric guards throw `ArgumentOutOfRangeException`.
 
 A single `IEnumerable<T>` overload serves every collection type (plus a more-specific `T[]` overload).
 It uses `TryGetNonEnumeratedCount`, which is O(1) for `ICollection<T>`, `IReadOnlyCollection<T>`, and
-arrays — so passing a concrete `List<T>`/`HashSet<T>` works and is never ambiguous.
+arrays, so passing a concrete `List<T>`/`HashSet<T>` works and is never ambiguous.
 
 | Method | Null behaviour | Empty behaviour |
 |--------|----------------|-----------------|
 | `ThrowIfEmpty` | Does **not** null-check (a null argument throws `NullReferenceException`) | `ArgumentException` |
 | `ThrowIfNullOrEmpty` | `ArgumentNullException` | `ArgumentException` |
-| `ThrowIfContainsDuplicate` | — | `ArgumentException` if a duplicate is found |
+| `ThrowIfContainsDuplicate` | n/a | `ArgumentException` if a duplicate is found |
 | `ThrowIfContainsNull` | `ArgumentNullException` | `ArgumentException` if any element is null |
 | `ThrowIfCountGreaterThan(max)` | `ArgumentNullException` | `ArgumentOutOfRangeException` if `Count > max` |
 | `ThrowIfCountLessThan(min)` | `ArgumentNullException` | `ArgumentOutOfRangeException` if `Count < min` |
 | `ThrowIfCountOutOfRange(min, max)` | `ArgumentNullException` | `ArgumentOutOfRangeException` if outside `[min, max]` |
 
 ```csharp
-Ensure.ThrowIfNullOrEmpty(items);        // null OR empty — the usual choice for a required collection
+Ensure.ThrowIfNullOrEmpty(items);        // null OR empty: the usual choice for a required collection
 Ensure.ThrowIfEmpty(items);              // empty only (guard null separately)
 Ensure.ThrowIfContainsNull(items);       // no null elements (reference types)
 Ensure.ThrowIfCountOutOfRange(items, 1, 10);
@@ -199,9 +199,9 @@ and `IsMatch`. All other null-aware `Is*` methods return **false** for null.
 
 ## Check Methods (`Pragmatic.Ensure.Result`)
 
-`Check.*` returns `VoidResult<TError>` (`where TError : IError`) instead of throwing — for domain
+`Check.*` returns `VoidResult<TError>` (`where TError : IError`) instead of throwing, for domain
 validation where failure is expected. Every method has two overloads: one taking the error directly,
-one taking a `Func<TError>` factory (invoked only on failure — lazy error construction).
+one taking a `Func<TError>` factory (invoked only on failure, for lazy error construction).
 
 ```bash
 dotnet add package Pragmatic.Ensure.Result
@@ -251,6 +251,6 @@ if (result.IsFailure)
     return result.Error;
 ```
 
-`Then` short-circuits at the first failure, and every link shares one `TError` — a `NotFoundError`
+`Then` short-circuits at the first failure, and every link shares one `TError`: a `NotFoundError`
 check and a `ValidationError` check do not chain. To collect *all* field errors at once, use
 `Pragmatic.Validation` instead of a `Check.*` chain.

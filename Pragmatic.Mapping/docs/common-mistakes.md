@@ -165,7 +165,7 @@ public partial class InvoiceDto
 
 A converter (`[MapConverter<T>]`) or a format (`[MapProperty(Format = "...")]`) over a value read
 straight off the row **is** carried by the projection: SQL cannot compute it, so the projection reads the
-source column and computes the member on the client in the last step of the read — the executor's
+source column and computes the member on the client in the last step of the read: the executor's
 top-level `Select`, where EF Core evaluates what it cannot translate. It equals what `FromEntity` gives.
 
 **Wrong:**
@@ -180,7 +180,7 @@ public partial class ReservationDto
 }
 ```
 
-**Compile result:** `PRAG0321` info (a format) or `PRAG0320` warning (a converter) — the member is left
+**Compile result:** `PRAG0321` info (a format) or `PRAG0320` warning (a converter). The member is left
 out of the projection and keeps its initialiser. The client step would dereference a navigation that may
 be null, and an expression tree cannot say `?.`.
 
@@ -241,7 +241,7 @@ public partial class AddressDto
 `CustomizeMapping()` runs inside `FromEntity` only: it is a C# method body over the whole entity, and the
 projection is an expression over the columns (`PRAG0319`). A member it sets keeps what the projection
 computed. Use a `[MapProperty]` with a `Format` or a `[MapConverter<T>]` for a value derived from one
-column — both are carried by the projection (see #5) — and keep `CustomizeMapping()` for the in-memory
+column (both are carried by the projection, see #5), and keep `CustomizeMapping()` for the in-memory
 mapping.
 
 ---

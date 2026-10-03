@@ -262,7 +262,7 @@ The generator resolves DTO properties to source properties using a priority-orde
 | 4 | Flattening convention | `AddressCity` matches `Address.City` |
 | 5 | Concatenation convention | `FullName` matches `FirstName` + `" "` + `LastName` |
 
-Beyond these, the attribute surface also covers conditional mapping (`[MapCondition]`), polymorphic mapping (`[MapDerived<,>]`), and class-level converters — see the [Attributes Reference](/modules/mapping/attributes-reference/).
+Beyond these, the attribute surface also covers conditional mapping (`[MapCondition]`), polymorphic mapping (`[MapDerived<,>]`), and class-level converters; see the [Attributes Reference](/modules/mapping/attributes-reference/).
 
 ### Direct name match
 
@@ -341,7 +341,7 @@ The generator detects type mismatches between source and target and applies conv
 | `string` | `int`, `decimal`, `bool`, `Guid`, `DateTime`, `DateTimeOffset` | `T.Parse(value, InvariantCulture)` |
 | `enum` | `string` | `.ToString()` |
 | `string` | `enum` | `Enum.Parse<T>(value)` (null source → default) |
-| `enum` | different `enum` | by-member-name switch (validated — PRAG0328) |
+| `enum` | different `enum` | by-member-name switch (validated by PRAG0328) |
 | `DateTime` | `DateOnly` | `DateOnly.FromDateTime(value)` |
 | `DateOnly` | `DateTime` | `value.ToDateTime(TimeOnly.MinValue)` |
 | `DateTime` | `TimeOnly` | `TimeOnly.FromDateTime(value)` |
@@ -376,7 +376,7 @@ public string CreatedDate { get; init; } = "";
 // Generated: entity.CreatedAt.ToString("yyyy-MM-dd")
 ```
 
-In a projection the format is computed on the client after the read — SQL cannot run `.ToString(format)`, so the projection reads the column and formats it in the last step of the query. Through a navigation that may be null it cannot, and the member is left out (PRAG0321 info).
+In a projection the format is computed on the client after the read: SQL cannot run `.ToString(format)`, so the projection reads the column and formats it in the last step of the query. Through a navigation that may be null it cannot, and the member is left out (PRAG0321 info).
 
 ---
 
@@ -414,7 +414,7 @@ public partial class InvoiceSummaryDto
 
 **Bidirectional:** `Convert` is used in `[MapFrom]` (entity to DTO). `ConvertBack` is used in `[MapTo]` (DTO to entity).
 
-**In a projection:** the converter runs on the client after the read, on the column the projection selected — the same `Convert` `FromEntity` calls. Through a navigation that may be null it cannot, and the member is left out with `default` (PRAG0320 warning).
+**In a projection:** the converter runs on the client after the read, on the column the projection selected, the same `Convert` `FromEntity` calls. Through a navigation that may be null it cannot, and the member is left out with `default` (PRAG0320 warning).
 
 See [Custom Converters Guide](/modules/mapping/custom-converters/) for the full reference.
 
@@ -504,8 +504,8 @@ Nullable-to-non-nullable mappings use `??` coalescing in projections (instead of
 
 ### Projection limitations
 
-What SQL cannot compute is either computed on the client after the read — the projection is the query's
-last step, where EF Core evaluates what it cannot translate — or left out with a compile-time diagnostic:
+What SQL cannot compute is either computed on the client after the read (the projection is the query's
+last step, where EF Core evaluates what it cannot translate) or left out with a compile-time diagnostic:
 
 | Feature | Diagnostic | Behavior in Projection |
 |---------|------------|----------------------|

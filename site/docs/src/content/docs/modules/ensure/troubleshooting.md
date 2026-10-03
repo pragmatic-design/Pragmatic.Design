@@ -20,7 +20,7 @@ The exception message shows the wrong parameter name (e.g., `(Parameter 'value')
    ```csharp
    var val = GetEmail();
    Ensure.ThrowIfNullOrWhiteSpace(val);
-   // Message: (Parameter 'val') — not the original source
+   // Message: (Parameter 'val'), not the original source
    ```
 
    Pass the expression directly for the best parameter name:
@@ -66,7 +66,7 @@ Format validation methods are **null-safe by design**. They return without throw
 - `ThrowIfNotMatch`
 
 > `ThrowIfLengthOutOfRange` (and `ThrowIfLongerThan`/`ThrowIfShorterThan`/`ThrowIfContains`/
-> `ThrowIfStartsWith`/`ThrowIfEndsWith`) are **not** null-safe — they throw `ArgumentNullException`
+> `ThrowIfStartsWith`/`ThrowIfEndsWith`) are **not** null-safe: they throw `ArgumentNullException`
 > on null. Only the `ThrowIfNot*` format guards silently pass a null.
 
 ### Fix
@@ -90,7 +90,7 @@ If the field is optional, the null-safe behavior is correct -- null means "no va
 
 The checks split in two on `null`:
 
-- `Check.Email`, `Check.Url` and `Check.Phone` **reject** `null` — they delegate to `Ensure.IsEmail`/`IsUrl`/`IsPhone`, which return `false` for it.
+- `Check.Email`, `Check.Url` and `Check.Phone` **reject** `null`: they delegate to `Ensure.IsEmail`/`IsUrl`/`IsPhone`, which return `false` for it.
 - `Check.Match`, `Check.LengthInRange`, `Check.DoesNotContain`, `Check.DoesNotStartWith` and `Check.DoesNotEndWith` **pass** `null` on purpose: they test the shape of a value that is there, and leave "is it required?" to a separate check.
 
 ### Fix
@@ -142,13 +142,13 @@ The `IEnumerable<T>` overload of `ThrowIfNullOrEmpty` calls `.Any()`, which enum
 Materialize the collection first, or use a more specific overload:
 
 ```csharp
-// Materialize first — a materialized collection reports its count in O(1)
+// Materialize first: a materialized collection reports its count in O(1)
 var items = query.ToList();
-Ensure.ThrowIfNullOrEmpty(items); // O(1) count via TryGetNonEnumeratedCount — no enumeration
+Ensure.ThrowIfNullOrEmpty(items); // O(1) count via TryGetNonEnumeratedCount, no enumeration
 ```
 
 The single `IEnumerable<T>` overload uses `TryGetNonEnumeratedCount`, which returns an O(1) count for
-any `ICollection<T>`/`IReadOnlyCollection<T>`/array (including `List<T>`) — only a genuinely lazy
+any `ICollection<T>`/`IReadOnlyCollection<T>`/array (including `List<T>`); only a genuinely lazy
 sequence triggers a single `MoveNext()`. Materializing the query first avoids executing it here.
 
 ---
@@ -222,7 +222,7 @@ If you need to collect **all** validation errors at once, use `Pragmatic.Validat
 For sequential validation where you want the first error:
 
 ```csharp
-// First failure stops the chain — this is correct behavior for Check
+// First failure stops the chain; this is correct behavior for Check
 var result = Check.NotNullOrWhiteSpace(dto.Name, nameError)
     .Then(() => Check.Email(dto.Email, emailError))
     .Then(() => Check.InRange(dto.Age, 18, 120, ageError));
