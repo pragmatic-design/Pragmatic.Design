@@ -103,32 +103,33 @@ manifest, but no smoke publishes it Native AOT yet.
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <!-- ⚠ required: CPM rejects floating versions (1.0.0-alpha.* / 10.0.*) without this (NU1011). -->
-    <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+    <!-- One exact version for every Pragmatic package: an alpha can change its API, and a float would
+         take the next one on the next restore. Upgrade by changing this line. -->
+    <PragmaticVersion>1.0.0-alpha.1</PragmaticVersion>
   </PropertyGroup>
 
   <ItemGroup><!-- Pragmatic.Design (1.0.0-alpha) -->
-    <PackageVersion Include="Pragmatic.Abstractions" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Result" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Ensure" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Validation" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Mapping" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Actions" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Endpoints" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Persistence" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Migrations" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.*" />
-    <PackageVersion Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*" />
+    <PackageVersion Include="Pragmatic.Abstractions" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Result" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Result.AspNetCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Ensure" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Validation" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Mapping" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Actions" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Endpoints" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Endpoints.AspNetCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Persistence" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Persistence.EFCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Composition.Host" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Migrations" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Internationalization.AspNetCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Identity.AspNetCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Endpoints.OpenApi" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.SourceGenerator" Version="$(PragmaticVersion)" />
   </ItemGroup>
 
   <ItemGroup><!-- EF provider — match Pragmatic's EF Core major (.NET 10 -> EF Core 10) -->
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.*" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup><!-- API reference UI over the OpenAPI document, Development only -->
@@ -149,9 +150,22 @@ manifest, but no smoke publishes it Native AOT yet.
 
 ## NuGet.config
 
+The packages are on nuget.org, so the solution names that one source and nothing else:
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+```
+
+Only to consume a build that is not released yet, add the local feed and map `Pragmatic.*` to it
+(see `../nuget-feed.md`):
+
+```xml
   <packageSources>
     <clear />
     <add key="local-bagetter" value="http://localhost:5555/v3/index.json" allowInsecureConnections="true" />
@@ -161,7 +175,6 @@ manifest, but no smoke publishes it Native AOT yet.
     <packageSource key="local-bagetter"><package pattern="Pragmatic.*" /></packageSource>
     <packageSource key="nuget.org"><package pattern="*" /></packageSource>
   </packageSourceMapping>
-</configuration>
 ```
 
 ## .gitignore

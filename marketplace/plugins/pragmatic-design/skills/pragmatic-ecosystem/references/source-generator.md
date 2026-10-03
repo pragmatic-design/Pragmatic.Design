@@ -7,7 +7,7 @@ This file is for agents that can inspect or modify the Pragmatic monorepo. Consu
 For external apps, add:
 
 ```xml
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.*">
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.1">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
@@ -15,7 +15,7 @@ For external apps, add:
 
 If generated symbols are missing:
 
-1. Confirm the package restored from `local-bagetter`.
+1. Confirm the package restored, at the same version as the other `Pragmatic.*` packages (`dotnet list package`).
 2. Confirm the source generator package is referenced as an analyzer.
 3. Rebuild with `dotnet build`.
 4. Read PRAG diagnostics and fix the source pattern.

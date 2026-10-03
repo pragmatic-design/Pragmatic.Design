@@ -16,8 +16,8 @@ delivery tracking? Use `pragmatic-use-notifications`, which delegates to this li
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Email" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Email.Testing" Version="1.0.0-alpha.*" />  <!-- test projects -->
+<PackageReference Include="Pragmatic.Email" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Email.Testing" Version="1.0.0-alpha.1" />  <!-- test projects -->
 ```
 
 ## Core pattern

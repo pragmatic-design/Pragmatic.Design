@@ -1,13 +1,13 @@
 ---
 name: pragmatic-new-app
-description: Use when the user asks to create or scaffold a new app from the Pragmatic.Design packages (local BaGetter or nuget.org) — Composition host, source generators, persistence, actions, endpoints, validation, verification.
+description: Use when the user asks to create or scaffold a new app from the Pragmatic.Design packages (nuget.org, or a local BaGetter feed for unreleased builds) — Composition host, source generators, persistence, actions, endpoints, validation, verification.
 argument-hint: "<app-name> [features]"
 shell: powershell
 ---
 
 # Pragmatic New App
 
-**Covers:** Create a new external consumer app using Pragmatic.Design NuGet packages from local BaGetter/nuget.org, with Composition host, source generators, persistence, actions, endpoints, validation, and verification.
+**Covers:** Create a new external consumer app using Pragmatic.Design NuGet packages from nuget.org (or a local BaGetter feed for unreleased builds), with Composition host, source generators, persistence, actions, endpoints, validation, and verification.
 
 Use this for an external consumer application that uses Pragmatic.Design packages without inspecting Pragmatic source code. Do not use it for creating a new internal `Pragmatic.*` library module.
 

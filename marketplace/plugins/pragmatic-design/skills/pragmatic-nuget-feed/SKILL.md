@@ -1,17 +1,17 @@
 ---
 name: pragmatic-nuget-feed
-description: Use when setting up the dockerized local NuGet feed (BaGetter) for Pragmatic.Design packages, or when restore or build fails with NU#### or feed and source errors.
+description: Use when a restore or build fails with NU#### or feed and source errors, or when consuming Pragmatic.Design builds that are not on nuget.org yet through a dockerized local NuGet feed (BaGetter).
 argument-hint: "[consumer-project-path]"
 shell: powershell
 ---
 
 # Pragmatic NuGet Feed
 
-**Covers:** Set up and troubleshoot a dockerized local NuGet feed for consuming Pragmatic.Design packages from BaGetter in external projects.
+**Covers:** Restore problems with the Pragmatic.Design packages, and a dockerized local NuGet feed (BaGetter) for consuming builds that are not released yet.
 
-Use this to make Pragmatic packages consumable by an agent or project that cannot rely on monorepo source access.
+The released packages are on nuget.org as prereleases: `dotnet add package Pragmatic.<Name> --prerelease`, with no `NuGet.config` and no feed to run. A local feed is needed only to consume a build from a clone of the repository before it is released.
 
-## Workflow
+## Workflow (local feed, unreleased builds)
 
 1. Read `../pragmatic-ecosystem/references/nuget-feed.md`.
 2. Start BaGetter with Docker.
@@ -26,6 +26,7 @@ The consumer project should not use `ProjectReference` to Pragmatic sources. It 
 
 ## Troubleshooting
 
+- "There are no stable versions available" from `dotnet add package`: every version is a prerelease, so add `--prerelease`. The same cause in a restore is `NU1103`, from a stable range such as `1.*`: name the version (`1.0.0-alpha.1`).
 - `NU1301` or feed unreachable: verify `docker ps` and `http://localhost:5555/v3/index.json`.
 - Package not found: pack and push from the monorepo, then restore again.
 - Old package behavior: `dotnet nuget locals all --clear`.

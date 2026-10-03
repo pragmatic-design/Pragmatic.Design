@@ -24,7 +24,7 @@ code for any policy in front of something that can fail for reasons other than t
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Resilience" Version="1.0.0-alpha.*" />
+<PackageReference Include="Pragmatic.Resilience" Version="1.0.0-alpha.1" />
 ```
 
 On the library that declares the policy. The host wires it because a `[ResiliencePolicy]` is

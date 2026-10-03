@@ -23,23 +23,13 @@ is the cheap way to prove the packaging is still clean before publishing.
 4. `dotnet run --project examples/consumer-samples/Pragmatic.Ensure.Consumer`
    (the repo-root `NuGet.config` already maps `Pragmatic.*` to `local-bagetter`).
 
-## Switching to nuget.org
+## Against the released packages
 
-When you publish preview packages to nuget.org, the consumer samples need
-**zero code changes**. Edit `NuGet.config` at the repo root:
-
-```xml
-<packageSourceMapping>
-  <packageSource key="nuget.org">
-    <package pattern="*" />
-    <package pattern="Pragmatic.*" />  <!-- resolves from nuget.org -->
-  </packageSource>
-</packageSourceMapping>
-```
-
-Or drop the `Pragmatic.*` override entirely and let nuget.org be the sole
-source. The `PackageReference` version ranges (`0.1.0-preview.*`) float
-forward automatically.
+The samples take local builds (`1.0.0-alpha.0.*`), because their job is to
+check a pack before it is published. To run them against what nuget.org
+already has instead, remove the `local-bagetter` source and its mapping from
+`NuGet.config` here, and set the `Pragmatic.*` versions to a released one
+(`1.0.0-alpha.1`). No code changes.
 
 ## Layout
 

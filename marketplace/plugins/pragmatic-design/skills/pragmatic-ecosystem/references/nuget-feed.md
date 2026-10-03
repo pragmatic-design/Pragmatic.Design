@@ -1,6 +1,8 @@
 # Dockerized Local NuGet Feed
 
-Use BaGetter to consume Pragmatic.Design packages from a real NuGet feed before public publishing.
+The released packages are on nuget.org as prereleases (`dotnet add package … --prerelease`), and an
+application that uses them needs none of this. Use BaGetter only to consume a build from a clone of
+the Pragmatic.Design repository that is not released yet.
 
 ## Start BaGetter
 

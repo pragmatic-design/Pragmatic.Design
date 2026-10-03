@@ -19,9 +19,7 @@ cd MyService
 
 ### 2. Add the Pragmatic NuGets you need
 
-:::caution[Not on nuget.org yet]
-Until the packages are published, the alpha builds are consumed from a local feed: [set one up](/guides/local-nuget-server/), and `node scripts/publish-local.mjs` in a clone of the repository packs everything into it. The commands below then work against that feed.
-:::
+The packages are on [nuget.org](https://www.nuget.org/profiles/Pragmatic.Design) as prereleases, so every `dotnet add package` below takes `--prerelease`. To try changes that are not released yet, a clone of the repository can pack itself into a [local feed](/guides/local-nuget-server/).
 
 The simplest starting point is a Web API with actions, endpoints, and EF Core persistence:
 
@@ -144,8 +142,11 @@ Then each `.csproj` references without versions:
   <PackageReference Include="Pragmatic.Composition.Host" />
   <PackageReference Include="Pragmatic.Actions" />
   ...
+  <PackageReference Include="Pragmatic.SourceGenerator" PrivateAssets="all" />
 </ItemGroup>
 ```
+
+Keep `PrivateAssets="all"` on the generator when you write the reference by hand: `dotnet add package` adds it for you, because the package is a development dependency. Without it the generator flows on to every project that references this one, and a test project referencing the host generates the host's registrations a second time (`CS0121`, an ambiguous `Add…DbContext`).
 
 ## Inspecting the generated code
 

@@ -36,6 +36,15 @@ export default defineConfig({
       },
       favicon: "/favicon.ico",
       head: [
+        // Cloudflare Web Analytics: no cookies and no personal data, so no consent banner is needed.
+        {
+          tag: "script",
+          attrs: {
+            type: "module",
+            src: "https://static.cloudflareinsights.com/beacon.min.js",
+            "data-cf-beacon": '{"token": "461a946190bb421ea15ad65f2924c2b4"}',
+          },
+        },
         {
           tag: "link",
           attrs: {

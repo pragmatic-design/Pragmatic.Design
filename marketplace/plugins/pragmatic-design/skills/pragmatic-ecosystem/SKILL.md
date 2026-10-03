@@ -1,19 +1,19 @@
 ---
 name: pragmatic-ecosystem
-description: Use when working on an app that consumes Pragmatic.Design without its source — the reference hub for NuGet packages, the local BaGetter feed, source generator setup, patterns, diagnostics and verification.
+description: Use when working on an app that consumes Pragmatic.Design without its source — the reference hub for NuGet packages from nuget.org (or a local feed for unreleased builds), source generator setup, patterns, diagnostics and verification.
 user-invocable: false
 ---
 
 # Pragmatic Ecosystem
 
-**Covers:** Consumer-facing Pragmatic.Design .NET context for agents that may not see Pragmatic sources: NuGet packages, local BaGetter feed, source generator analyzer setup, patterns, diagnostics, and verification.
+**Covers:** Consumer-facing Pragmatic.Design .NET context for agents that may not see Pragmatic sources: NuGet packages (nuget.org, or a local BaGetter feed for unreleased builds), source generator analyzer setup, patterns, diagnostics, and verification.
 
 Use this as the shared context layer for building applications with Pragmatic.Design packages, especially when the agent cannot inspect Pragmatic source code.
 
 ## Read First
 
 - For the blessed cross-module patterns, doctrine, and antipatterns, read [references/patterns-map.md](references/patterns-map.md).
-- For local dockerized NuGet setup, read [references/nuget-feed.md](references/nuget-feed.md).
+- For a local dockerized NuGet feed (only to consume builds that are not on nuget.org yet), read [references/nuget-feed.md](references/nuget-feed.md).
 - For consumer package selection and setup, read [references/packages.md](references/packages.md).
 - For source-generator architecture and paths, read [references/source-generator.md](references/source-generator.md).
 - For diagnostic ranges, read [references/diagnostics.md](references/diagnostics.md).
@@ -36,8 +36,8 @@ Dense attribute-first references — read the one matching the module in scope:
 - Build consumer projects from package contracts and examples, not monorepo internals.
 - Target `net10.0` and enable nullable/implicit usings unless the user's project says otherwise. With implicit usings the Pragmatic packages referenced directly bring their own namespaces: do not write those `using` lines (details in [references/packages.md](references/packages.md)).
 - Use NuGet `PackageReference`; avoid `ProjectReference` in external apps.
-- Add `Pragmatic.SourceGenerator` as an analyzer package when the selected Pragmatic package needs generated code and does not bring the analyzer transitively.
-- Use `NuGet.config` package source mapping so `Pragmatic.*` resolves from the local BaGetter feed.
+- Add `Pragmatic.SourceGenerator` as an analyzer package when the selected Pragmatic package needs generated code and does not bring the analyzer transitively. Keep `PrivateAssets="all"` on it (`dotnet add package` writes it), or a test project referencing the host generates the host a second time.
+- The packages are on nuget.org as prereleases: `dotnet add package … --prerelease`, no `NuGet.config` needed. Only to consume unreleased builds, map `Pragmatic.*` to a local feed with package source mapping.
 - Composition attributes (`[Module]`, `[Include<…>]`, `[PragmaticDatabase]`, `[NeedsStep<…>]`) are in `Pragmatic.Composition.Attributes`.
 - Identifiers (`Guid7`, `OpaqueId`, `ShortGuid`, `Slug`) are in the `Pragmatic.Persistence.Identifiers` namespace of the `Pragmatic.Persistence` package.
 - If source is unavailable, rely on package README/docs, generated compiler diagnostics, and consumer samples.
@@ -47,7 +47,7 @@ Dense attribute-first references — read the one matching the module in scope:
 
 Consumer app (building a line-of-business project):
 
-- Setting up local NuGet/BaGetter: use `pragmatic-nuget-feed`.
+- Setting up a local NuGet/BaGetter feed for unreleased builds, or a restore failing with NU####: use `pragmatic-nuget-feed`.
 - Creating a consumer app: use `pragmatic-new-app`.
 - Structuring a project into boundary libraries, modules, databases: use `pragmatic-architecture`.
 - Choosing packages/patterns without source access: use `pragmatic-choose-modules`.

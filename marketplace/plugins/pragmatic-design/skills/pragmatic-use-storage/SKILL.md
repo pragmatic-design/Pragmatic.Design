@@ -18,8 +18,8 @@ in `Program.cs`. Domain code never references a cloud SDK, so it runs and tests 
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Storage" Version="1.0.0-alpha.*" />
-<PackageReference Include="Pragmatic.Storage.Azure" Version="1.0.0-alpha.*" />   <!-- or .S3 / .GoogleCloud / .Sftp / .Ftp / .InMemory -->
+<PackageReference Include="Pragmatic.Storage" Version="1.0.0-alpha.1" />
+<PackageReference Include="Pragmatic.Storage.Azure" Version="1.0.0-alpha.1" />   <!-- or .S3 / .GoogleCloud / .Sftp / .Ftp / .InMemory -->
 ```
 
 Providers: **LocalDisk** (built-in, dev), **Azure** Blob, **S3** (AWS / Cloudflare R2 / MinIO / Wasabi / DO / B2), **GoogleCloud**, **Sftp**, **Ftp/FTPS**, and **InMemory** (`Pragmatic.Storage.InMemory`, for tests / local dev — `AddInMemoryStorage()`). Domain code is identical across all of them.

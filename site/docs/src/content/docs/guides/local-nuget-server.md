@@ -1,14 +1,15 @@
 ---
 title: "Local NuGet Server"
-description: "Before publishing Pragmatic.Design packages to a public registry, you'll want"
+description: "The released packages are on nuget.org, and an"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/local-nuget-server.md
 sidebar:
   order: 7
 ---
-Before publishing Pragmatic.Design packages to a public registry, you'll want
-to consume them from a real project. The cleanest path is a local NuGet server:
-packages are `dotnet pack`ed from the monorepo, pushed to the local server,
-and consumed from test projects exactly as they would be from nuget.org.
+The released packages are on [nuget.org](https://www.nuget.org/profiles/Pragmatic.Design), and an
+application that uses them needs none of this. This guide is for consuming a build that is not
+released yet, from a clone of the repository: before a release, or to try a change in a real project.
+The cleanest path is a local NuGet server: packages are `dotnet pack`ed from the monorepo, pushed to
+the local server, and consumed from test projects exactly as they would be from nuget.org.
 
 This guide covers [BaGetter](https://github.com/bagetter/BaGetter), a
 community-maintained fork of BaGet with current dependency updates.
