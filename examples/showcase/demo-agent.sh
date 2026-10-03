@@ -8,6 +8,14 @@ set -e
 BASE="http://localhost:5000"
 AGENT="dotnet run --no-build --project ../../Pragmatic.Agent/src/Pragmatic.Agent/Pragmatic.Agent.csproj --"
 
+# Prints a JSON response indented when python3 is there, as it came otherwise. The body is read once
+# and formatted from memory: nothing fetched is ever executed.
+show() {
+  local body
+  body=$(curl -s "$1")
+  python3 -m json.tool <<<"$body" 2>/dev/null || echo "$body"
+}
+
 echo "═══════════════════════════════════════════════════════════"
 echo "  Pragmatic Agent + Gateway — E2E Demo"
 echo "═══════════════════════════════════════════════════════════"
@@ -25,7 +33,7 @@ echo "Setting config via Agent CLI..."
 $AGENT config set WelcomeMessage "Hello from Agent KV!" --socket pragmatic-agent
 echo ""
 echo "Reading config via HTTP endpoint..."
-curl -s "$BASE/api/agent-demo/config/WelcomeMessage" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/config/WelcomeMessage"
+show "$BASE/api/agent-demo/config/WelcomeMessage"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
@@ -33,14 +41,14 @@ echo ""
 echo "═══ 2. TENANT-SCOPED CONFIG ═══"
 $AGENT config set MaxBookings 100 --tenant hotel-rome --socket pragmatic-agent
 echo ""
-curl -s "$BASE/api/agent-demo/config/MaxBookings/tenant/hotel-rome" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/config/MaxBookings/tenant/hotel-rome"
+show "$BASE/api/agent-demo/config/MaxBookings/tenant/hotel-rome"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
 echo ""
 echo "═══ 3. FEATURE FLAGS ═══"
 echo "Flag 'fancy-greeting' is initially disabled..."
-curl -s "$BASE/api/agent-demo/greeting" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/greeting"
+show "$BASE/api/agent-demo/greeting"
 echo ""
 
 echo "Enabling flag via Agent CLI..."
@@ -48,14 +56,14 @@ $AGENT flag set fancy-greeting true --socket pragmatic-agent
 echo ""
 
 echo "Now the greeting changes:"
-curl -s "$BASE/api/agent-demo/greeting" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/greeting"
+show "$BASE/api/agent-demo/greeting"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
 echo ""
 echo "═══ 4. DYNAMIC TENANT ═══"
 echo "Current tenants:"
-curl -s "$BASE/api/agent-demo/tenants" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/tenants"
+show "$BASE/api/agent-demo/tenants"
 echo ""
 
 echo "Adding new tenant 'hotel-milan' via Agent KV..."
@@ -63,13 +71,13 @@ $AGENT config set tenants/hotel-milan '{"TenantId":"hotel-milan","TenantName":"H
 echo ""
 
 echo "Tenants after add (no restart!):"
-curl -s "$BASE/api/agent-demo/tenants" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/tenants"
+show "$BASE/api/agent-demo/tenants"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
 echo ""
 echo "═══ 5. HEALTH VIA AGENT ═══"
-curl -s "$BASE/api/agent-demo/health" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/health"
+show "$BASE/api/agent-demo/health"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
@@ -80,7 +88,7 @@ $AGENT config set secret/db-password "SuperSecret2026!" --socket pragmatic-agent
 echo ""
 
 echo "Reading secret (shows last 4 chars only):"
-curl -s "$BASE/api/agent-demo/secret/db-password" | python3 -m json.tool 2>/dev/null || curl -s "$BASE/api/agent-demo/secret/db-password"
+show "$BASE/api/agent-demo/secret/db-password"
 echo ""
 
 # ─────────────────────────────────────────────────────────────────
