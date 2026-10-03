@@ -49,7 +49,8 @@ RabbitMQ in production (`msg.UseRabbitMq(...)`), outbox on (`msg.EnableOutbox(..
 with the change that raised it. Each service consumes on **its own queue** per event, so every service
 gets its copy; all instances of one service share it, so each message is handled once per service.
 Request/reply: the caller awaits with a timeout (`Messaging:RequestReplyTimeout`) and answers 503 when
-nobody replies. The tenant travels on the message and is restored in the consume scope; with
+nobody replies. A timeout, a responder that threw and a broker that cannot carry the request all arrive
+as `RequestReplyException`, so one catch is the whole "no answer" case. The tenant travels on the message and is restored in the consume scope; with
 `MultiTenancyOptions.RequireTenant` on, a handler that would write a tenant row with no tenant is
 refused instead of writing it onto the shared database.
 

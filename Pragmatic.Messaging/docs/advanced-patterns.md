@@ -42,8 +42,11 @@ roundtrip). When none is registered, the request goes **over the transport**:
   (deserialize → execute → serialize, zero reflection) that the transport consumer binds at
   startup.
 - Replies come back on a process-unique reply queue and are correlated by request id.
-- Responder exceptions and timeouts (default 30s) surface as `RequestReplyException` —
-  the caller fails fast instead of hanging.
+- Responder exceptions, timeouts (default 30s) and a transport that fails to carry the request
+  (broker unreachable, channel closed; the cause is the inner exception) surface as
+  `RequestReplyException` — the caller fails fast instead of hanging, and one catch covers
+  every way of not getting an answer. Serialization errors and the caller's own cancellation
+  are not wrapped.
 
 For cross-*service* calls over HTTP, `RemoteBoundary` (typed HTTP invokers) remains the
 recommended default — see [Composition](../../Pragmatic.Composition/README.md); transport

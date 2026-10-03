@@ -338,8 +338,16 @@ public sealed partial class TransportAwareMessageBus : IMessageBus
     /// <summary>
     ///     Distributed request/reply: send the request point-to-point to its convention queue
     ///     with reply-to/request-id headers, then await the correlated reply on the process's
-    ///     reply channel. Responder errors and timeouts surface as <see cref="RequestReplyException"/>.
+    ///     reply channel. Responder errors, timeouts and a transport that fails to carry the request
+    ///     surface as <see cref="RequestReplyException"/>.
     /// </summary>
+    /// <remarks>
+    ///     A transport failure while the request is being sent (the reply channel cannot be opened, the
+    ///     broker is unreachable, the channel is closed) is a request nobody answered, as a timeout is:
+    ///     the caller cannot know what the responder would have said. What fails on this side of the wire
+    ///     is not wrapped: serializing the request, deserializing the reply, a cancellation the caller
+    ///     asked for.
+    /// </remarks>
     private async Task<TResponse> RequestOverTransportAsync<TRequest, TResponse>(TRequest request, CancellationToken ct)
         where TRequest : notnull
         where TResponse : notnull
@@ -348,7 +356,16 @@ public sealed partial class TransportAwareMessageBus : IMessageBus
         var queue = RequestReplyConventions.QueueFor(typeof(TRequest));
         var payload = _serializer.Serialize(request, typeof(TRequest));
 
-        var replyTask = await _replyChannel!.RegisterAsync(requestId, ct).ConfigureAwait(false);
+        Task<(byte[] Payload, MessageContext Context)> replyTask;
+        try
+        {
+            replyTask = await _replyChannel!.RegisterAsync(requestId, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (!IsCallerCancellation(ex, ct))
+        {
+            throw NotSent(typeof(TRequest), queue, ex);
+        }
+
         try
         {
             var context = MessageContext.New() with
@@ -359,7 +376,15 @@ public sealed partial class TransportAwareMessageBus : IMessageBus
                     [TransportReplyChannel.RequestIdHeader] = requestId,
                 },
             };
-            await _transport.SendAsync(payload, queue, context, ct).ConfigureAwait(false);
+
+            try
+            {
+                await _transport.SendAsync(payload, queue, context, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!IsCallerCancellation(ex, ct))
+            {
+                throw NotSent(typeof(TRequest), queue, ex);
+            }
 
             var (responsePayload, responseContext) = await replyTask
                 .WaitAsync(_requestReplyTimeout, ct).ConfigureAwait(false);
@@ -383,6 +408,12 @@ public sealed partial class TransportAwareMessageBus : IMessageBus
             _replyChannel.Forget(requestId);
         }
     }
+
+    private static bool IsCallerCancellation(Exception ex, CancellationToken ct)
+        => ex is OperationCanceledException && ct.IsCancellationRequested;
+
+    private static RequestReplyException NotSent(Type requestType, string queue, Exception cause)
+        => new($"{requestType.Name} was not sent (queue: {queue}): the transport failed, so nobody answered it.", cause);
 
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "Publishing {MessageType} to topic {Topic} via {Transport} (id: {MessageId})")]
