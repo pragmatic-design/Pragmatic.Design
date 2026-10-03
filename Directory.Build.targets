@@ -165,6 +165,10 @@
        file it names — the rule site/scripts/sync-docs.mjs applies to the published site. A link to
        a file that does not exist even in the repository is left as written, so
        scripts/package-markdown-links.mjs names it instead of this step hiding it.
+       The package's README is the exception: nuget.org renders it on the package page and serves
+       none of the files beside it, so there a link to docs/getting-started.md, shipped or not, is
+       dead. In the README every relative link becomes a repository URL, which also resolves for a
+       reader of the extracted package.
        Links inside code are not links: fenced blocks and inline spans are copied untouched. -->
   <UsingTask TaskName="PreparePackageMarkdown"
              TaskFactory="RoslynCodeTaskFactory"
@@ -174,6 +178,7 @@
       <OutputDirectory ParameterType="System.String" Required="true" />
       <RepositoryRoot ParameterType="System.String" Required="true" />
       <RepositoryUrl ParameterType="System.String" Required="true" />
+      <ReadmePackagePath ParameterType="System.String" Required="false" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System" />
@@ -189,7 +194,9 @@
         var images = new[] { ".png", ".jpg", ".jpeg", ".gif", ".svg" };
         var shipped = new HashSet<string>(Files.Select(f => f.GetMetadata("FullPath")), StringComparer.OrdinalIgnoreCase);
 
-        Func<string, string, string> rewrite = (directory, target) =>
+        var readme = (ReadmePackagePath ?? "").Replace('\\', '/').TrimStart('/');
+
+        Func<string, string, bool, string> rewrite = (directory, target, everyLink) =>
         {
             if (Regex.IsMatch(target, "^[A-Za-z][A-Za-z0-9+.-]*:") || target.StartsWith("#") || target.StartsWith("/"))
                 return target;
@@ -199,7 +206,7 @@
             if (path.Length == 0)
                 return target;
             var full = Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(path))).TrimEnd('\\', '/');
-            if (shipped.Contains(full) || shipped.Any(s => s.StartsWith(full + separator, StringComparison.OrdinalIgnoreCase)))
+            if (!everyLink && (shipped.Contains(full) || shipped.Any(s => s.StartsWith(full + separator, StringComparison.OrdinalIgnoreCase))))
                 return target;
             if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
                 return target;
@@ -216,6 +223,8 @@
         {
             var source = file.GetMetadata("FullPath");
             var directory = Path.GetDirectoryName(source);
+            var isReadme = readme.Length > 0
+                && string.Equals(file.GetMetadata("PackagePath").Replace('\\', '/').TrimStart('/'), readme, StringComparison.OrdinalIgnoreCase);
             var lines = File.ReadAllText(source).Split('\n');
             string fence = null;
             for (var i = 0; i < lines.Length; i++)
@@ -234,7 +243,7 @@
                 }
                 lines[i] = link.Replace(lines[i], m => m.Groups[1].Success
                     ? m.Value
-                    : m.Groups[2].Value + rewrite(directory, m.Groups[3].Value) + m.Groups[4].Value);
+                    : m.Groups[2].Value + rewrite(directory, m.Groups[3].Value, isReadme) + m.Groups[4].Value);
             }
 
             // RecursiveDir carries '\' on Windows; on Linux that would be part of the file name.
@@ -257,7 +266,8 @@
     <PreparePackageMarkdown Files="@(PackageMarkdown)"
                             OutputDirectory="$(IntermediateOutputPath)package-markdown"
                             RepositoryRoot="$(PragmaticRoot)"
-                            RepositoryUrl="$(RepositoryUrl)" />
+                            RepositoryUrl="$(RepositoryUrl)"
+                            ReadmePackagePath="$(PackageReadmeFile)" />
     <ItemGroup>
       <None Include="@(PackageMarkdown->'$(IntermediateOutputPath)package-markdown/%(PackagePath)')"
             Pack="true"
