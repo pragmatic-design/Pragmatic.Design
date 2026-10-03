@@ -137,7 +137,7 @@ If the type truly has no differentiating parameters, remove the `[CacheKey(Exclu
 [Cacheable(Duration = "5m")]
 public partial class GetGlobalConfig
 {
-    // No properties = key is "GetGlobalConfig" — intentional singleton cache
+    // No properties = key is "GetGlobalConfig": intentional singleton cache
 }
 ```
 
@@ -206,21 +206,21 @@ public partial class GetMyOrders
 
 The generated key is `"GetMyOrders"` -- the same for all users. User A's orders are cached, and User B sees them.
 
-**Also wrong** — the value is a property, but the caller supplies it:
+**Also wrong**: the value is a property, but the caller supplies it:
 
 ```csharp
 [Cacheable(Duration = "5m")]
 public partial class GetMyOrders
 {
-    public required Guid UserId { get; init; }  // "set from ICurrentUser before caching" — by whom?
+    public required Guid UserId { get; init; }  // "set from ICurrentUser before caching": by whom?
 }
 ```
 
-The key is per user now, and so is the hole: any caller that sends another user's id — in the query
-string, or by building the query in process — reads that user's orders, and caches them under that
+The key is per user now, and so is the hole: any caller that sends another user's id (in the query
+string, or by building the query in process) reads that user's orders, and caches them under that
 user's key.
 
-**Right** — on a declared query, `[FromCurrentUser]`:
+**Right**: on a declared query, `[FromCurrentUser]`:
 
 ```csharp
 [Query<Order, OrderDto>]
@@ -230,16 +230,16 @@ public partial class GetMyOrders
     [FromCurrentUser]                              // ICurrentUser.Id; or a member of the [PragmaticUser] entity
     public string UserId { get; private set; } = "";
 }
-// Key: "GetMyOrders:UserId=abc-123" — unique per user, and the user is the caller
+// Key: "GetMyOrders:UserId=abc-123", unique per user, and the user is the caller
 ```
 
 The query's generated invoker fills `UserId` from the caller after validation and the permission
-check, before the executor builds the key. It is still a public property — so it is in the key and in
-the tag — and nobody else can write it: the setter is private (`PRAG0730` otherwise), and the property
+check, before the executor builds the key. It is still a public property, so it is in the key and in
+the tag, and nobody else can write it: the setter is private (`PRAG0730` otherwise), and the property
 is not a request parameter. The whole form:
 [Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller--fromcurrentuser).
 
-**Why:** The source generator builds the cache key from public properties declared on the type. If the differentiating value (user ID, tenant ID) is not a property on the cacheable type, it is not included in the key. Always include any value that changes the result as a property on the cacheable type — and when that value is who is asking, let the invoker write it rather than the caller.
+**Why:** The source generator builds the cache key from public properties declared on the type. If the differentiating value (user ID, tenant ID) is not a property on the cacheable type, it is not included in the key. Always include any value that changes the result as a property on the cacheable type, and when that value is who is asking, let the invoker write it rather than the caller.
 
 ---
 
@@ -341,7 +341,7 @@ public partial class SearchProducts
 
     public int Page { get; init; } = 1;
 }
-// Key: "MyApp.Catalog.SearchProducts:TenantId=1:Category=shoes:Page=1" — deterministic
+// Key: "MyApp.Catalog.SearchProducts:TenantId=1:Category=shoes:Page=1", deterministic
 ```
 
 **Why:** When two properties share the same `Order` value, their position in the cache key is non-deterministic. This can cause cache misses across builds or even across different compilation targets. Assign unique `Order` values to ensure deterministic key ordering. Properties without explicit `Order` use `int.MaxValue` and sort by declaration order.
@@ -451,7 +451,7 @@ public partial class ProductUpdated
 | Placeholder references non-existent property | `PRAG1703` compile error |
 | All properties excluded from key | `PRAG1751` warning, potential cache collisions |
 | Missing `AddHybridCache()` | `InvalidOperationException` at runtime |
-| No user-differentiating property | All users share the same cached result — use `[FromCurrentUser]` |
+| No user-differentiating property | All users share the same cached result; use `[FromCurrentUser]` |
 | Broadcast invalidation when targeted suffices | Unnecessary evictions in unrelated categories |
 | Assuming `Sliding = true` resets on access | It does not on `HybridCacheStack` -- it is a shorter, non-refreshed L1 absolute TTL |
 | Duplicate `[CacheKey(Order)]` values | `PRAG1750` warning, non-deterministic key ordering |

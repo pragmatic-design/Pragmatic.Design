@@ -282,14 +282,14 @@ public void SendEmail(string email)
 **Right:**
 
 ```csharp
-// Option A: Guard — if invalid email is a bug
+// Option A: Guard, if invalid email is a bug
 public void SendEmail(string email)
 {
     Ensure.ThrowIfNotEmail(email);
     _mailer.Send(email);
 }
 
-// Option B: Branch — if invalid email is expected
+// Option B: Branch, if invalid email is expected
 public void SendEmail(string? email)
 {
     if (!Ensure.IsEmail(email))
@@ -356,7 +356,7 @@ public VoidResult<ValidationError> ValidateItems(IReadOnlyList<OrderItem> items)
 ```csharp
 public Result<Order, ValidationError> CreateOrder(CreateOrderDto dto)
 {
-    // Mixed paradigms — half throws, half returns errors
+    // Mixed paradigms: half throws, half returns errors
     Ensure.ThrowIfNull(dto);                          // Throws
     Ensure.ThrowIfNullOrEmpty(dto.Items);             // Throws
 
@@ -405,7 +405,7 @@ public Result<Order, ValidationError> CreateOrder(CreateOrderDto dto)
 ```csharp
 public void Process(Guid orderId, IReadOnlyList<OrderItem>? items)
 {
-    Ensure.ThrowIfEmpty(orderId);  // Checks Guid.Empty — fine
+    Ensure.ThrowIfEmpty(orderId);  // Checks Guid.Empty, fine
     Ensure.ThrowIfEmpty(items!);   // Does NOT check null: a null 'items' throws NullReferenceException
 }
 ```

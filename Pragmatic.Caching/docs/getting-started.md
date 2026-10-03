@@ -280,7 +280,7 @@ builder.Services.AddPragmaticCaching(cache =>
 });
 ```
 
-**2. Automatic tenant partitioning on the `[Cacheable]` query path.** If you cache a `Persistence` query result through the standard `[Cacheable]` + `ICacheStack` pipeline, you do not need to do anything: `EfCoreQueryExecutor` already partitions the cache key by tenant, filter mode, and the current user — when a permission-based filter guards the entity, or a navigation filter rewrites a collection the query reads — before the key ever reaches `ICacheStack`. Cross-tenant cache bleed does not occur on that path.
+**2. Automatic tenant partitioning on the `[Cacheable]` query path.** If you cache a `Persistence` query result through the standard `[Cacheable]` + `ICacheStack` pipeline, you do not need to do anything: `EfCoreQueryExecutor` already partitions the cache key by tenant, filter mode, and the current user (when a permission-based filter guards the entity, or a navigation filter rewrites a collection the query reads) before the key ever reaches `ICacheStack`. Cross-tenant cache bleed does not occur on that path.
 
 For manual/imperative cache usage outside the query pipeline, use tag-based isolation with `{TenantId}` placeholders in tags:
 

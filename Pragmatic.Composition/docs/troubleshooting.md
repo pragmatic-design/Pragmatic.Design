@@ -14,7 +14,7 @@ Your application starts but a service resolution fails with `InvalidOperationExc
 
 2. **Does the class implement an interface?** The default behavior registers the service as its first interface. If the class has no interfaces, `PRAG1643` fires. Use `[Service(AsSelf = true)]` for concrete registration, or implement an interface.
 
-3. **Is `Pragmatic.Composition` referenced in the library project?** The SG only generates metadata when the package is referenced. Without it, `[Service]` does not resolve to the Pragmatic attribute at all and nothing is generated — silently.
+3. **Is `Pragmatic.Composition` referenced in the library project?** The SG only generates metadata when the package is referenced. Without it, `[Service]` does not resolve to the Pragmatic attribute at all and nothing is generated, silently.
 
 4. **Is the library project referenced by the host?** The host SG reads `[PragmaticMetadata]` from referenced assemblies. If the library is not referenced (directly or transitively), its services are not discovered.
 
@@ -183,14 +183,14 @@ All Composition diagnostics use the `PRAG16xx` range:
 | ID | Severity | Category | Description |
 |----|----------|----------|-------------|
 | PRAG1050 | Error | Package | Duplicate `[UsePackage<T>]` on module |
-| PRAG0449 | Error | Package | An imported operation needs a boundary-keyed service and the import named no boundary — use `[UsePackage<TPackage, TBoundary>]` |
+| PRAG0449 | Error | Package | An imported operation needs a boundary-keyed service and the import named no boundary; use `[UsePackage<TPackage, TBoundary>]` |
 | PRAG0450 | Error | Package | Two imports on one module name different boundaries |
 | PRAG1601 | Error | Topology | `[IncludeModule<T>]` names no known module |
 | PRAG1602 | Error | Topology | Circular dependency detected |
 | PRAG1603 | Error | Topology | A hosted module's dependency is neither included nor declared remote |
 | PRAG1607 | Warning | Database | Two database-bound modules resolve to the same name, so the 2-arity `[Include]` binding is ambiguous |
-| PRAG1608 | Warning | Database | Included module not discovered — its DbContext is **not** registered and will fail at runtime |
-| PRAG1609 | Warning | Database | Relational database without `ConfigKey` — the generated DbContext has no connection string |
+| PRAG1608 | Warning | Database | Included module not discovered: its DbContext is **not** registered and will fail at runtime |
+| PRAG1609 | Warning | Database | Relational database without `ConfigKey`: the generated DbContext has no connection string |
 | PRAG1610 | Error | Schema | Incompatible metadata schema version |
 | PRAG1611 | Warning | Schema | Newer metadata schema version than supported |
 | PRAG1612 | Info | Schema | Legacy metadata schema version (backward compat) |
@@ -203,7 +203,7 @@ All Composition diagnostics use the `PRAG16xx` range:
 | PRAG1643 | Warning | Service | No interface found for service |
 | PRAG1645 | Error | Service | Abstract class cannot be a service |
 | PRAG1646 | Warning | Service | Keyed services require .NET 8+ |
-| PRAG1647 | Warning | Service | `[Inject]` members on an open-generic service are ignored — use constructor parameters |
+| PRAG1647 | Warning | Service | `[Inject]` members on an open-generic service are ignored; use constructor parameters |
 | PRAG1651 | Warning | Database | Boundary has no database configured |
 | PRAG1652 | Error | Database | DbContext name collision across different databases |
 | PRAG1660 | Error | Decorator | Decorator must implement at least one interface |

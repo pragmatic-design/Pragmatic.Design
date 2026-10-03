@@ -265,7 +265,7 @@ services.AddPragmaticEmail(email => email
 services.AddSingleton<IEmailTransport>(new FileTransport("./emails"));
 ```
 
-Generated files: `20260331-143022-019a3e5b7c8d9e0f.eml` — open with Thunderbird or any `.eml` viewer.
+Generated files: `20260331-143022-019a3e5b7c8d9e0f.eml`. Open with Thunderbird or any `.eml` viewer.
 
 ## 10. CC, BCC, and Reply-To
 

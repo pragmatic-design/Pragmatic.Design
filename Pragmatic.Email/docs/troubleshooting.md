@@ -43,7 +43,7 @@ Available counters and histograms:
 **Check which transport is active.** If you didn't call `UseSmtp()`, the default `NullTransport` is registered. It always returns success without sending anything.
 
 ```csharp
-// This registers NullTransport by default — no actual email delivery
+// This registers NullTransport by default: no actual email delivery
 services.AddPragmaticEmail();
 ```
 
@@ -79,7 +79,7 @@ smtp.OAuth2Token = accessToken; // Fresh bearer token
 
 ### STARTTLS not upgrading
 
-If `UseSsl = true` (default) but the server doesn't advertise STARTTLS in its EHLO capabilities, the connection continues without TLS. This is by design — the library upgrades opportunistically.
+If `UseSsl = true` (default) but the server doesn't advertise STARTTLS in its EHLO capabilities, the connection continues without TLS. This is by design: the library upgrades opportunistically.
 
 If you need to enforce TLS:
 - Use port 465 (implicit TLS) instead of 587 (STARTTLS).
@@ -98,13 +98,13 @@ If timeouts persist, check:
 - DNS resolution for the SMTP hostname.
 - Whether the SMTP server is actually accepting connections.
 
-### Pool exhausted — sends are slow
+### Pool exhausted: sends are slow
 
 If you see long waits before `SMTP connection acquired`, the pool is saturated.
 
-1. Check `MaxConnections` — default is 5. Increase if your SMTP server allows it.
-2. Check `MaxMessagesPerConnection` — default is 100. If connections are recycled too often, increase it.
-3. Check `IdleTimeoutSeconds` — default is 30. If connections expire between bursts, increase it.
+1. Check `MaxConnections`: default is 5. Increase if your SMTP server allows it.
+2. Check `MaxMessagesPerConnection`: default is 100. If connections are recycled too often, increase it.
+3. Check `IdleTimeoutSeconds`: default is 30. If connections expire between bursts, increase it.
 
 ```csharp
 smtp.MaxConnections = 10;
@@ -152,7 +152,7 @@ If the file appears corrupted, check the MIME structure by opening it in a text 
 
 ### InMemoryTransport shows zero emails in tests
 
-1. Ensure `AddEmailTestHarness()` is called **after** `AddPragmaticEmail()` — it replaces the transport registration.
+1. Ensure `AddEmailTestHarness()` is called **after** `AddPragmaticEmail()`: it replaces the transport registration.
 2. Verify you're resolving `IEmailSender` from the same `ServiceProvider` that has the test harness.
 3. Check that the email `Build()` call doesn't throw (missing From, To, Subject, or body).
 

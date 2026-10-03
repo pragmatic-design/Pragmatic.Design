@@ -132,7 +132,7 @@ This means:
 ```csharp
 Ensure.ThrowIfNull(repository);
 // Exception message: "Value is null. (Parameter 'repository')"
-// The compiler fills in "repository" — no magic strings needed.
+// The compiler fills in "repository"; no magic strings needed.
 ```
 
 ### Null-state analysis integration
@@ -152,7 +152,7 @@ if (Ensure.IsNotNull(name))
 ```
 
 ```csharp
-// ThrowIfNull uses [NotNull] — after the call, the compiler
+// ThrowIfNull uses [NotNull]: after the call, the compiler
 // treats the value as non-null for the rest of the scope.
 Ensure.ThrowIfNull(name);
 Console.WriteLine(name.Length); // No nullable warning.
@@ -182,7 +182,7 @@ All other `ThrowIf*` methods return `void`. They are fire-and-forget guards:
 ```csharp
 public void SetDiscount(decimal percentage)
 {
-    Ensure.ThrowIfOutOfRange(percentage, 0m, 100m); // void — just validates
+    Ensure.ThrowIfOutOfRange(percentage, 0m, 100m); // void: just validates
     _discount = percentage;
 }
 ```
@@ -359,7 +359,7 @@ if (result.IsFailure)
 ```
 
 `ValidationError.For(propertyPath, messageKey, parameters)` carries a message **key**, resolved by the
-localization pipeline — not a sentence.
+localization pipeline, not a sentence.
 
 ### Lazy error construction
 
@@ -456,7 +456,7 @@ uses `Enumerable.TryGetNonEnumeratedCount`, which returns an O(1) count for any 
 |----------|-----------------------------|
 | `List<T>`, `HashSet<T>`, `Collection<T>`, `IReadOnlyCollection<T>`, `ICollection<T>` | O(1) `Count` via `TryGetNonEnumeratedCount` |
 | `T[]` | O(1) `Length` (dedicated overload) |
-| Lazy `IEnumerable<T>` (LINQ query) | Single `MoveNext()` — no full enumeration |
+| Lazy `IEnumerable<T>` (LINQ query) | Single `MoveNext()`, no full enumeration |
 
 A single overload avoids the ambiguity that per-interface overloads cause: a concrete `List<T>` (which
 implements both `ICollection<T>` and `IReadOnlyCollection<T>`) is never an ambiguous call.

@@ -27,7 +27,7 @@ services.AddPragmaticEmail(email => email
 ## 2. Not providing both TextBody and HtmlBody
 
 ```csharp
-// Problem: HTML-only email — some clients won't render it
+// Problem: HTML-only email; some clients won't render it
 var email = new EmailMessageBuilder()
     .From("noreply@hotel.com")
     .To("guest@example.com")
@@ -53,7 +53,7 @@ var email = new EmailMessageBuilder()
 ## 3. Ignoring EmailResult
 
 ```csharp
-// Problem: fire-and-forget — failures go unnoticed
+// Problem: fire-and-forget; failures go unnoticed
 await emailSender.SendAsync(email);
 ```
 
@@ -74,13 +74,13 @@ if (!result.Success)
 var builder = new EmailMessageBuilder();
 builder.From("noreply@hotel.com");
 builder.To("guest@example.com");
-// Forgot to call builder.Subject(...) — Build() will throw
+// Forgot to call builder.Subject(...), so Build() will throw
 var email = builder.Build();
 ```
 
 The builder validates at `Build()` time. Missing `From`, `To`, `Subject`, or both bodies throws `InvalidOperationException`.
 
-**Fix**: Use the fluent chain — it's harder to skip required fields.
+**Fix**: Use the fluent chain; it's harder to skip required fields.
 
 ```csharp
 var email = new EmailMessageBuilder()
@@ -126,7 +126,7 @@ Most SMTP servers throttle connections per IP. Exceeding the limit causes connec
 **Fix**: Start with the default (5) and tune based on your SMTP provider's limits. For SES, 10 is typically fine. For shared hosting SMTP, 2-3 is safer.
 
 ```csharp
-smtp.MaxConnections = 5; // Default — good for most use cases
+smtp.MaxConnections = 5; // Default, good for most use cases
 ```
 
 ## 7. Not resetting InMemoryTransport between tests
@@ -144,7 +144,7 @@ public async Task Test1()
 public async Task Test2()
 {
     await sender.SendAsync(email2);
-    transport.Sent.Should().HaveCount(1); // FAILS — count is 2!
+    transport.Sent.Should().HaveCount(1); // FAILS: count is 2!
 }
 ```
 
@@ -165,7 +165,7 @@ var transport = services.AddEmailTestHarness(); // Fresh instance per test
 .InlineImage("<logo>", logoBytes, "image/png")
 
 // Then in HTML:
-// <img src="cid:<logo>" />  — double brackets, won't display
+// <img src="cid:<logo>" />  (double brackets, won't display)
 ```
 
 The `InlineImage` method sets the Content-ID directly. The MIME writer adds `<>` around it in the header. Don't add them yourself.

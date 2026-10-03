@@ -190,7 +190,7 @@ When a domain module depends on types from another module (e.g., Booking needs C
 public sealed class BookingModule;
 ```
 
-This is a compile-time dependency declaration. It does not register services -- it tells the SG (and other developers) that Booking expects Catalog to be present. The host does not bring Catalog in on Booking's behalf: a host that hosts Booking must also `[Include<CatalogModule>]`, or declare it `[RemoteBoundary<CatalogModule>]` if it runs elsewhere — otherwise the build fails with **PRAG1603**.
+This is a compile-time dependency declaration. It does not register services; it tells the SG (and other developers) that Booking expects Catalog to be present. The host does not bring Catalog in on Booking's behalf: a host that hosts Booking must also `[Include<CatalogModule>]`, or declare it `[RemoteBoundary<CatalogModule>]` if it runs elsewhere. Otherwise the build fails with **PRAG1603**.
 
 ### Host-Level Topology
 
@@ -492,8 +492,8 @@ The rule of thumb: if it is an **infrastructure decision** (auth strategy, loggi
 
 ## The Health Endpoint
 
-The host publishes the aggregated health of the process — `IHostStatus` plus every registered
-`IHostHealthContributor` — at `/health`, **by default**.
+The host publishes the aggregated health of the process (`IHostStatus` plus every registered
+`IHostHealthContributor`) at `/health`, **by default**.
 
 ```csharp
 await PragmaticApp.RunAsync(args, app =>
@@ -505,24 +505,24 @@ await PragmaticApp.RunAsync(args, app =>
 
 It is on by default, and the trade is deliberate: mapping a route is an opinion about the host's route
 table, so an application that already owns `/health` has to move one of the two. That is a visible,
-one-line problem. The alternative — off by default — produces a health endpoint nobody turns on:
+one-line problem. The alternative, off by default, produces a health endpoint nobody turns on:
 contributors collected on every host and their verdict published on none, which is the failure you
 cannot see.
 
 The collision is handled rather than avoided. `HealthEndpointMapper` reads the route table before
 mapping, and when the path is already taken it steps aside and says so, leaving the application's own
 endpoint alone. Two endpoints on one route would otherwise be an `AmbiguousMatchException` thrown on
-the first request — for a health route, at the moment a probe asks, and the answer it gets is a `500`
+the first request: for a health route, at the moment a probe asks, and the answer it gets is a `500`
 that reads like the application is broken.
 
 `DisableHealthEndpoint()` exists so that "no health endpoint" can be a decision in the source rather
-than an omission: an application that simply never called `UseHealthEndpoint()` — which was every
-application here — left no way to tell the two apart. The contributors are still collected either
+than an omission: an application that simply never called `UseHealthEndpoint()` (which was every
+application here) left no way to tell the two apart. The contributors are still collected either
 way; what stops is the route.
 
 ⚠️ The endpoint is marked `TenantAgnosticEndpoint`, so a multi-tenant host does not refuse a probe for
 want of a tenant header. Without it, a host that enabled this endpoint answered `/health` with **400**
-and, with `X-Tenant-Id`, with **200** — measured, and enough to have a liveness probe restart the
+and, with `X-Tenant-Id`, with **200**: measured, and enough to have a liveness probe restart the
 application for ever.
 
 ## PragmaticApp.RunAsync
@@ -762,7 +762,7 @@ When a module uses a package, the SG:
 
 ### A package that needs a database
 
-A package declares no `[Boundary]` — that is what makes it a package — and `DbContext` and
+A package declares no `[Boundary]` (that is what makes it a package), and `DbContext` and
 `IUnitOfWork` are registered **keyed by boundary**. So an operation in a package that declares one of
 those gets an invoker asking for it **unkeyed**, and that constructor is compiled inside the package:
 whoever imports it cannot add the key afterwards.
@@ -779,7 +779,7 @@ The package writes into its own metadata which services it asks for without a ke
 module's generated registration answers that request from the named boundary's keyed instance. Neither
 side guesses: the package knows what it needs, the importer knows which boundary it has.
 
-- A package that touches no persistence — both of the packages this framework ships — is imported with
+- A package that touches no persistence (both of the packages this framework ships) is imported with
   `[UsePackage<TPackage>]` and names nothing.
 - A package that needs one and is imported without a boundary is **PRAG0449**, an error. The
   alternative is an application that starts and throws from the first request that reaches the

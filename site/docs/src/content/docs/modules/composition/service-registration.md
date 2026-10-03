@@ -163,7 +163,7 @@ Rules:
 - The return type of each method becomes the registered service type.
 - Method parameters are resolved from DI.
 - `FactoryAttribute.Lifetime` controls the lifetime of the created service (default: `Scoped`).
-- The host wires them through the generated `AddPragmaticServiceFactories()`: its own factories, and those a referenced boundary library declares — the library publishes them as metadata and the host aggregates them.
+- The host wires them through the generated `AddPragmaticServiceFactories()`: its own factories, and those a referenced boundary library declares (the library publishes them as metadata and the host aggregates them).
 
 ## [Inject] -- Property and Method Injection
 
@@ -221,7 +221,7 @@ public interface ITenantContext { /* ... */ }
 public interface IValidator<in T> { /* ... */ }
 ```
 
-A dependency on a type marked `[ProvidedByHost]` — by constructor, method or property — is not reported.
+A dependency on a type marked `[ProvidedByHost]` (by constructor, method or property) is not reported.
 The attribute is on the contract, not on the consumer: every module that depends on it is covered, and a
 dependency on anything else is still checked. If the host forgets the registration, resolving the
 consumer fails, as for any missing service.
@@ -233,11 +233,11 @@ with. Leave the argument out only when the answer genuinely depends on the host.
 **The gate counts the ones that do not.** `a contract a package registers says who registers it` runs
 in `--tier full` over every Pragmatic package's `src`: an interface this repository declares, that a
 package registers and whose file carries no `[ProvidedByHost]`, is in that count, and the count may
-fall and never rise. It is a population to triage rather than a bug list — a contract only the
-framework resolves is registered the same way — but a **new** one cannot arrive unnoticed.
+fall and never rise. It is a population to triage rather than a bug list (a contract only the
+framework resolves is registered the same way), but a **new** one cannot arrive unnoticed.
 
 **Where the framework's own contracts say it.** Every Pragmatic contract a `Use*` call registers carries
-this attribute, in the package that registers it — `IFileStorage`, `IEmailSender`, `IStringLocalizer`,
+this attribute, in the package that registers it: `IFileStorage`, `IEmailSender`, `IStringLocalizer`,
 `IClock`, `ICacheStack`, `ITenantContext`, `ITenantStore`, `ICurrentUser`, `IUnitOfWork`,
 `IRepository<T>`, `IQueryFilter<T>`, the action invokers, and the rest. The attribute lives on the
 contract rather than in a list of names inside the generator, because such a list is one that whoever
@@ -247,7 +247,7 @@ failure lands on the application that uses the package.
 ## A Contract Another Module Registers
 
 The same question, one floor over: a host composes several modules, and a `[Service]` of one may depend
-on a contract another one registers. Nothing is needed for this — each module's generated DI metadata
+on a contract another one registers. Nothing is needed for this: each module's generated DI metadata
 already says what it registers, and the validator reads it from the reference. That covers a sibling's
 `[Service]` classes and the `I{Module}Reads` interface a `[Published]` query generates, which is
 registered by the generated `Add{Module}Reads()` the host calls.

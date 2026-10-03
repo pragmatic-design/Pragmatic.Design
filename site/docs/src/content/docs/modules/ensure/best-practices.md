@@ -17,7 +17,7 @@ Guidelines for using Pragmatic.Ensure effectively.
 
 ## Rule 1: Guards Are for Programming Errors
 
-Use `ThrowIf*` methods for programming errors—situations that should never occur if the code is correct.
+Use `ThrowIf*` methods for programming errors: situations that should never occur if the code is correct.
 
 ```csharp
 // Good: Guards catch bugs early
@@ -53,7 +53,7 @@ public Result<User, NotFoundError> GetUser(int id)
 
 ## Rule 2: Guard at the Boundary
 
-Place guards at public API boundaries—constructors and public methods:
+Place guards at public API boundaries (constructors and public methods):
 
 ```csharp
 public class OrderService
@@ -77,7 +77,7 @@ public class OrderService
         return await CreateOrderInternal(request);
     }
 
-    // Private methods don't need guards—caller already validated
+    // Private methods don't need guards; caller already validated
     private async Task<Order> CreateOrderInternal(CreateOrderRequest request)
     {
         // ...
@@ -297,7 +297,7 @@ public class Order
 
     public decimal GetTotal()
     {
-        // Don't need to guard _items—we know it's never null
+        // Don't need to guard _items; we know it's never null
         return _items.Sum(i => i.Price);
     }
 }

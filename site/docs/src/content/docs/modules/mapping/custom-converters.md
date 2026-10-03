@@ -91,7 +91,7 @@ public string OrderTotal { get; init; } = "";
 
 ### Class-level converters
 
-`[MapConverter<T>]` can also be placed on the **DTO type**. It then applies to every convention-mapped scalar whose source→target types match the converter's `IValueConverter<TSource, TTarget>` signature — no need to repeat the attribute on each property. A property-level converter always wins over a class-level one.
+`[MapConverter<T>]` can also be placed on the **DTO type**. It then applies to every convention-mapped scalar whose source→target types match the converter's `IValueConverter<TSource, TTarget>` signature, with no need to repeat the attribute on each property. A property-level converter always wins over a class-level one.
 
 ```csharp
 [MapFrom<Order>]
@@ -104,7 +104,7 @@ public partial class OrderDto
 }
 ```
 
-Converter instances are cached once in a `static readonly` field per converter type — no per-call allocation, whether applied at the property or the class level.
+Converter instances are cached once in a `static readonly` field per converter type: no per-call allocation, whether applied at the property or the class level.
 
 ## Requirements
 
@@ -140,7 +140,7 @@ public partial class InvoiceDto
 ## In a Projection
 
 SQL cannot run a converter, so the projection selects the source column and runs the converter on the
-client after the read — the query's last step, where EF Core evaluates what it cannot translate. The value
+client after the read, the query's last step, where EF Core evaluates what it cannot translate. The value
 is the one `FromEntity` gives. The projection calls it through a generated static method
 (`ConvertAfterTheRead_{Property}`), because EF Core refuses a client projection that calls an instance
 method on a cached object.
@@ -218,7 +218,7 @@ public partial record UpdateOrderDto
 }
 ```
 
-This generates null-safe assignments — intermediate navigations are created (`??= new()`) when they have an accessible parameterless constructor, otherwise the assignment is null-guarded (skipped when the navigation is null). No `NullReferenceException`:
+This generates null-safe assignments: intermediate navigations are created (`??= new()`) when they have an accessible parameterless constructor, otherwise the assignment is null-guarded (skipped when the navigation is null). No `NullReferenceException`:
 
 ```csharp
 entity.Customer ??= new();

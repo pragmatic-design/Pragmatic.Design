@@ -63,7 +63,7 @@ dto.ApplyTo(existingUser);
 
 Generates `Expression<Func<TSource, TDto>> Projection` for EF Core `Select()` queries. Requires `[MapFrom<T>]` on the same type.
 
-Projections translate to SQL what SQL can compute. A converter (`[MapConverter]`) or a format string over a column is computed on the client after the read — the projection is the query's last step — and equals `FromEntity`; through a navigation that may be null it is excluded (PRAG0320/PRAG0321). `CustomizeMapping()` runs in `FromEntity` only (PRAG0319).
+Projections translate to SQL what SQL can compute. A converter (`[MapConverter]`) or a format string over a column is computed on the client after the read (the projection is the query's last step) and equals `FromEntity`; through a navigation that may be null it is excluded (PRAG0320/PRAG0321). `CustomizeMapping()` runs in `FromEntity` only (PRAG0319).
 
 **Usage:**
 
@@ -199,7 +199,7 @@ public class User
 
 ## `[MapCondition]`
 
-Maps a property only when a predicate returns `true`; otherwise the property keeps its type default. The predicate is a `static bool` method on the DTO that takes the source entity (validated at compile time — **PRAG0329** if missing or the wrong shape).
+Maps a property only when a predicate returns `true`; otherwise the property keeps its type default. The predicate is a `static bool` method on the DTO that takes the source entity (validated at compile time: **PRAG0329** if missing or the wrong shape).
 
 ```csharp
 [MapFrom<Property>]
@@ -221,7 +221,7 @@ property unconditionally, and **PRAG0332** (info) says so.
 
 ## `[MapDerived<TDerivedSource, TDerivedDto>]`
 
-Polymorphic mapping. Placed on the base DTO, it makes `FromEntity` type-switch on the runtime entity type and return the matching derived DTO. `AllowMultiple` — declare one per subtype (most-derived first).
+Polymorphic mapping. Placed on the base DTO, it makes `FromEntity` type-switch on the runtime entity type and return the matching derived DTO. `AllowMultiple`: declare one per subtype (most-derived first).
 
 ```csharp
 [MapFrom<Animal>]
@@ -235,7 +235,7 @@ public partial class DogDto : AnimalDto { public string Breed { get; init; } = "
 // AnimalDto.FromEntity(someDog) returns a DogDto instance.
 ```
 
-The contract is validated at compile time (**PRAG0330**): `TDerivedSource` must derive the `[MapFrom]` source and `TDerivedDto` must derive the base DTO. Dispatch is **runtime-only** — EF projections keep the base shape (**PRAG0331** info); query derived DTOs explicitly.
+The contract is validated at compile time (**PRAG0330**): `TDerivedSource` must derive the `[MapFrom]` source and `TDerivedDto` must derive the base DTO. Dispatch is **runtime-only**: EF projections keep the base shape (**PRAG0331** info); query derived DTOs explicitly.
 
 ## Class-level `[MapConverter<TConverter>]`
 
@@ -273,7 +273,7 @@ When the source is nullable and the target is not, the generator applies sensibl
 
 ### Type Conversions
 
-The generator detects type mismatches and applies conversions automatically: numeric/enum/Guid/bool/`DateTime`/`DateTimeOffset` to/from `string` (via `.ToString()` / `.Parse()`, always with `InvariantCulture`), `DateTime` to/from `DateOnly` and `TimeOnly`, enum→enum across different enum types (by member name, validated — PRAG0328), and implicit numeric widening (`int`→`long`, etc.). Numeric **narrowing** is not implicit and reports PRAG0304. See [Feature Matrix](/modules/mapping/feature-matrix/) for the full table.
+The generator detects type mismatches and applies conversions automatically: numeric/enum/Guid/bool/`DateTime`/`DateTimeOffset` to/from `string` (via `.ToString()` / `.Parse()`, always with `InvariantCulture`), `DateTime` to/from `DateOnly` and `TimeOnly`, enum→enum across different enum types (by member name, validated by PRAG0328), and implicit numeric widening (`int`→`long`, etc.). Numeric **narrowing** is not implicit and reports PRAG0304. See [Feature Matrix](/modules/mapping/feature-matrix/) for the full table.
 
 ### Collections and Nested DTOs
 
