@@ -175,7 +175,7 @@ for (const name of order) {
   const range = RANGES.find(([, , n]) => n === name);
   const span = range ? ` · range \`${pad(range[0])}\`–\`${pad(range[1])}\`` : "";
 
-  L.push(`### ${name} — ${items.length} in use${span}`, "");
+  L.push(`### ${name}: ${items.length} in use${span}`, "");
   L.push("| ID | Symbol | Severity | Title |", "|---|---|---|---|");
   for (const [id, rs] of items)
     for (const r of rs)
