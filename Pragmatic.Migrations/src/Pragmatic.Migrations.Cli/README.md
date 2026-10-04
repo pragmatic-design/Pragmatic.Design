@@ -1,6 +1,6 @@
 # pragmatic-migrate
 
-Interactive CLI for Pragmatic.Migrations — schema diff, preview, apply with rich terminal UX.
+Interactive CLI for Pragmatic.Migrations: schema diff, preview, apply with rich terminal UX.
 
 ## Install
 
@@ -21,7 +21,7 @@ pragmatic-migrate generate  # Generate a typed client (C# or TypeScript) from ma
 ```
 
 `apply` shows the diff, prices the data impact of each breaking change and asks before applying it,
-then hands execution to the same `MigrationRunner` the host uses at startup — so the CLI and a host
+then hands execution to the same `MigrationRunner` the host uses at startup, so the CLI and a host
 boot can never diverge. It applies **schema changes only**: `IDataMigration`s, migration hooks and
 seed providers live in the host's DI container and run when the host itself migrates.
 
@@ -58,7 +58,7 @@ pragmatic-migrate snapshot --assembly bin/Debug/net10.0/MyApp.dll --output schem
 | Flag | Description |
 |------|-------------|
 | `--assembly <path>` | Path to built host .dll containing SchemaVersion types |
-| `--project <path>` | Path to a .csproj — builds it and uses its output assembly |
+| `--project <path>` | Path to a .csproj; builds it and uses its output assembly |
 | `--config <path>` | Path to appsettings.json for connection strings |
 | `--connection <string>` | Override connection string for all databases |
 | `--database <name>` | Filter to specific database |
