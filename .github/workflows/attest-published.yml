@@ -1,0 +1,133 @@
+name: Attest Published Packages
+
+# The release attests the packages it builds, before the push. nuget.org then adds its repository
+# signature inside every .nupkg, so the file anyone downloads has another digest and the release's
+# attestation is not found for it. This workflow waits until nuget.org serves the release's packages,
+# checks that each one is the built package plus that signature and nothing else
+# (scripts/attest-published.mjs), and attests the files as served:
+# `gh attestation verify <downloaded>.nupkg --repo pragmatic-design/Pragmatic.Design` then finds them.
+#
+# It follows every successful Release run. For an earlier release, run it by hand with that Release
+# run's id, while the run's `nupkgs` artifact is still kept.
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release-run-id:
+        description: Id of the Release run whose packages to attest
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  attest:
+    name: Attest the packages nuget.org serves
+    # A Release runs on a tag push only; anything else is not a run to vouch for.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      actions: read          # the Release run's packages artifact
+      contents: read
+      id-token: write        # the Sigstore certificate that signs the attestation
+      attestations: write    # storing the attestation with the repository
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    env:
+      RUN_ID: ${{ github.event.workflow_run.id || inputs.release-run-id }}
+
+    steps:
+      - name: Checkout the script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      # The run named by hand must be a Release run, on a release tag: its tag names the GitHub Release.
+      - name: Which release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
+          workflow=$(jq -r .path <<<"$run")
+          tag=$(jq -r .head_branch <<<"$run")
+          case "$workflow" in
+            .github/workflows/release.yml*) ;;
+            *) echo "::error::run $RUN_ID is $workflow, not the Release"; exit 1 ;;
+          esac
+          case "$tag" in
+            nuget-v*) ;;
+            *) echo "::error::run $RUN_ID is for $tag, not a nuget-v* tag"; exit 1 ;;
+          esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Download the built packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nupkgs
+          path: ./built
+          run-id: ${{ env.RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Fetch them as nuget.org serves them, and compare
+        run: node scripts/attest-published.mjs --built ./built --out ./published --timeout-minutes 75
+
+      - name: Attest the served packages
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ./published/*.nupkg
+
+      - name: Keep the provenance bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: provenance-published
+          path: ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+
+  # Its own job, so the attesting job never holds a token that can write to the repository. The bundle
+  # replaces the one release.yml attached, which covers the files before nuget.org signed them.
+  attach:
+    name: Attach the provenance to the release
+    needs: attest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # uploading a release asset
+
+    steps:
+      - name: Download the provenance bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: provenance-published
+          path: ./provenance
+
+      - name: Attach
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.attest.outputs.tag }}
+        run: |
+          set -euo pipefail
+          bundles=(provenance/*)
+          if [ "${#bundles[@]}" -ne 1 ]; then
+            echo "::error::expected one provenance bundle, found ${#bundles[@]}"
+            exit 1
+          fi
+          provenance="provenance-${TAG#nuget-v}.intoto.jsonl"
+          cp "${bundles[0]}" "$provenance"
+          gh release upload "$TAG" "$provenance" --repo "$GITHUB_REPOSITORY" --clobber
+          echo "attached $provenance to $TAG"
