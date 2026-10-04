@@ -1,11 +1,11 @@
 ---
 name: pragmatic-use-notifications
-description: Use when the app sends email, webhook, Slack or SMS notifications through one API with routing, user preferences and delivery tracking — Pragmatic.Notifications. A single mail is pragmatic-use-email.
+description: Use when the app sends email, webhook, Slack or SMS notifications through one API with routing, user preferences and delivery tracking (Pragmatic.Notifications). A single mail is pragmatic-use-email.
 ---
 
 # Pragmatic Use Notifications
 
-**Covers:** Send notifications through one pipeline with Pragmatic.Notifications from NuGet — channel routing (email/webhook/Slack/SMS), user preferences, delivery tracking, background processing. Channels configured once in the host.
+**Covers:** Send notifications through one pipeline with Pragmatic.Notifications from NuGet: channel routing (email/webhook/Slack/SMS), user preferences, delivery tracking, background processing. Channels configured once in the host.
 
 `Pragmatic.Notifications` is one pipeline: send a notification, channel routing + user preferences +
 delivery tracking + background dispatch are handled for you. Add a channel without touching call sites.
@@ -31,7 +31,7 @@ package.
 ## Core pattern
 
 Inject `INotificationService` and send a `NotificationRequest`. There is no "notification type" to
-declare — the request carries audience, recipient and content:
+declare; the request carries audience, recipient and content:
 
 ```csharp
 await notifier.SendAsync(new NotificationRequest
@@ -75,7 +75,7 @@ var result = await notifier.EnqueueAsync(request, ct);
 |---|---|
 | `Success = true`, `Errors = null` | every delivery succeeded |
 | `Success = true`, `Errors` populated | partial: some channels failed, at least one worked |
-| `Success = false` | nothing was delivered — read `Errors` for the reason |
+| `Success = false` | nothing was delivered; read `Errors` for the reason |
 
 Zero deliveries is a **failure**, not a success: it means no channel was registered, or the recipient's
 preferences suppressed everything. Do not treat a send as fire-and-forget-and-ignore.
@@ -104,7 +104,7 @@ app.UseNotifications(n =>
 });
 ```
 
-`AddSmtp` takes the sender and the transport settings together — there is no overload without the
+`AddSmtp` takes the sender and the transport settings together; there is no overload without the
 transport.
 
 ### Durable tracking needs a boundary that holds the table
@@ -126,7 +126,7 @@ Without the attribute, the first send fails with `relation "__Notifications" doe
 ## Addressing a user, role or tenant
 
 `NotificationRecipient` offers `Direct`, `ToWebhook`, `User`, `Users`, `Role` and `Tenant`, but only the
-direct forms work out of the box — the library cannot know where your users live. `User`, `Users`,
+direct forms work out of the box: the library cannot know where your users live. `User`, `Users`,
 `Role` and `Tenant` resolve to nothing unless you register a resolver, and the send fails with an
 explanatory error:
 
@@ -155,14 +155,14 @@ The resolver is registered **scoped**, so it may depend on a DbContext or reposi
 Two things to get right when the notification is delivered in the background (`EnqueueAsync`):
 
 - the worker restores the tenant captured at enqueue time, so tenant-filtered queries work;
-- there is no acting user, so entities behind ownership/scope filters are invisible — read them under
+- there is no acting user, so entities behind ownership/scope filters are invisible; read them under
   `IQueryFilterToggle.UseMode(FilterMode.Admin)`, which keeps tenant isolation while bypassing
   per-user visibility.
 
 ## Channels that exist
 
 Provided: **e-mail (SMTP)**, **webhook**, **Slack** (incoming webhooks) and **SMS** (Twilio REST, no
-vendor SDK). `NotificationChannel` also declares `Push` and `InApp` — extension points with no
+vendor SDK). `NotificationChannel` also declares `Push` and `InApp`, extension points with no
 implementation, so selecting one without registering a provider makes the send fail. Add your own:
 
 ```csharp
@@ -185,7 +185,7 @@ app.UseNotifications(n => n.AddChannel<PushChannel>());
 
 `INotificationPreferenceProvider` returns per-recipient `NotificationPreferences`: `Enabled`,
 `DoNotDisturb`, `MutedCategories`, `PreferredChannel`. Suppression is enforced by the pipeline for
-every send — including when `ChannelOverride` pins a channel. `NotificationPriority.Critical` bypasses
+every send, including when `ChannelOverride` pins a channel. `NotificationPriority.Critical` bypasses
 do-not-disturb by contract; nothing bypasses `Enabled = false` or a muted category.
 
 Implement the provider (registered scoped) to store preferences in your own tables.
@@ -194,7 +194,7 @@ Implement the provider (registered scoped) to store preferences in your own tabl
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Showcase example application — code
-that compiles and that `Showcase.IntegrationTests` exercises — and kept identical to it by the gate: a
+Complete files in [`examples/`](examples/README.md), copied from the Showcase example application (code
+that compiles and that `Showcase.IntegrationTests` exercises) and kept identical to it by the gate: a
 notification enqueued from an event handler with its content from a template, the recipient resolver, the
 boundary that stores them, and the host's `UseNotifications`.

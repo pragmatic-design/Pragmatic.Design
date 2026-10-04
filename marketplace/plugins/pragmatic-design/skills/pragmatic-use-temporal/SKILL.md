@@ -1,15 +1,15 @@
 ---
 name: pragmatic-use-temporal
-description: Use when code reads the current time, stores or converts dates, counts working days, schedules with cron, or when PRAG0900-0904 or PRAG0690 fire — Pragmatic.Temporal, IClock, [FromClock], time zones, TestClock.
+description: Use when code reads the current time, stores or converts dates, counts working days, schedules with cron, or when PRAG0900-0904 or PRAG0690 fire (Pragmatic.Temporal, IClock, [FromClock], time zones, TestClock).
 ---
 
 # Pragmatic Use Temporal
 
-**Covers:** Handle time with Pragmatic.Temporal — IClock and [FromClock] instead of DateTime.Now, business and client time zones, LocalDate/ZonedDateTime/DateRange, business days and holidays, cron, DST, EF Core mapping, TestClock.
+**Covers:** Handle time with Pragmatic.Temporal: IClock and [FromClock] instead of DateTime.Now, business and client time zones, LocalDate/ZonedDateTime/DateRange, business days and holidays, cron, DST, EF Core mapping, TestClock.
 
 Two rules carry most of the module:
 
-1. **Store instants in UTC and convert at the edge** — model binding and serialization — never in a
+1. **Store instants in UTC and convert at the edge** (model binding and serialization), never in a
    handler.
 2. **Nothing reads the machine's clock.** "Now" comes from `IClock`, so a test can freeze it and a job
    and a request agree on what today is.
@@ -41,7 +41,7 @@ public partial class ExpireOverdueOrders : VoidDomainAction
 }
 ```
 
-`[FromClock]` takes `DateTimeOffset` (`UtcNow`) or `DateOnly` (`UtcToday`), `{ get; private set; }` —
+`[FromClock]` takes `DateTimeOffset` (`UtcNow`) or `DateOnly` (`UtcToday`), `{ get; private set; }`;
 otherwise **PRAG0734**. Elsewhere inject `IClock`: `UtcNow`, `Now`, `UtcToday`, `Today`, `TimeOfDay`,
 `GetTimeProvider()` for BCL APIs that take a `TimeProvider`. A host that binds `[FromClock]` without a
 clock registered is **PRAG1698** at build time.
@@ -64,14 +64,14 @@ Declare how a value crosses the wire; the generator writes the registration per 
 | `[KeepTimezone]` | in + out | the offset the caller sent is preserved |
 
 An explicit offset in the payload always wins. ⚠️ The attributes are read **per property, in the
-assembly that declares the type** — a DTO from a package that did not generate its own registration
+assembly that declares the type**: a DTO from a package that did not generate its own registration
 carries none. Full detail: `../pragmatic-ecosystem/references/api-surface/temporal.md`.
 
-## Types — pick by meaning
+## Types: pick by meaning
 
 | Type | Is | Use for |
 |---|---|---|
-| `DateTimeOffset` (UTC) | an instant | timestamps, "when it happened" — what the database stores |
+| `DateTimeOffset` (UTC) | an instant | timestamps, "when it happened", what the database stores |
 | `LocalDate` (≈ `DateOnly`) | a calendar day, no zone | birthdays, due dates, leave days |
 | `LocalTime` | a time of day | opening hours |
 | `LocalDateTime` | a wall-clock moment, no zone | what a person typed before you know their zone |
@@ -86,7 +86,7 @@ carries none. Full detail: `../pragmatic-ecosystem/references/api-surface/tempor
 which one you mean.
 
 ⚠️ A wall time that does not exist (spring-forward) or exists twice (fall-back) has to be resolved: be
-strict at input — refuse and ask — and forgiving in background work; `SetBeforeRomeSpringForward()` on
+strict at input (refuse and ask) and forgiving in background work; `SetBeforeRomeSpringForward()` on
 `TestClock` puts a test right before one.
 
 ## Business days
@@ -100,7 +100,7 @@ public sealed class PaymentTerms(ITemporalCalculator calendar, IClock clock)
 
 - `AddBusinessDays`, `CountBusinessDays`, `IsBusinessDay`, `IsHoliday`, `NextBusinessDay`,
   `PreviousBusinessDay`, period starts and ends.
-- ⚠️ **Without a country code only weekends count** — Christmas on a Thursday is a business day for
+- ⚠️ **Without a country code only weekends count**: Christmas on a Thursday is a business day for
   `IsBusinessDay(date)`.
 - ⚠️ `CountBusinessDays(from, to)` is `[from, to)`: the end is excluded.
 - `Next/PreviousBusinessDay` return a day strictly after/before, even when the day itself is one.
@@ -121,10 +121,10 @@ Reference `Pragmatic.Temporal.EFCore` and the generated `DbContext` registration
 `UsePragmaticTemporal()`: the temporal types get their columns (`LocalDate` → `date`, …) and stored
 `DateTimeOffset`s are normalised to UTC. A host that stores instants without it gets **PRAG0690**: add
 the package. When the wall-clock value really is the intent, say so in the boundary's database
-configuration — `UsePragmaticTemporal(t => t.NormalizeInstantsToUtc = false)` — which the generated call
+configuration (`UsePragmaticTemporal(t => t.NormalizeInstantsToUtc = false)`), which the generated call
 keeps.
 
-Querying by a local day: convert the day's bounds in the business zone to UTC and compare instants —
+Querying by a local day: convert the day's bounds in the business zone to UTC and compare instants;
 never compare a stored UTC instant with a local wall time.
 
 ## Testing
@@ -138,15 +138,15 @@ var calendar = new TemporalCalculator(new TestHolidayProvider().AddHoliday(2026,
 var context = TestTemporalContext.ForRome(now: instant);   // a request's zone, in a unit test
 ```
 
-`TestHolidayProvider.AddHoliday(year, month, day, countryCode)` — the last argument is the **country**.
+`TestHolidayProvider.AddHoliday(year, month, day, countryCode)`: the last argument is the **country**.
 Freeze the clock in every test that crosses midnight, a month end or a DST change. See
 `pragmatic-use-testing` for replacing `IClock` in the host under test.
 
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Time off, Showcase and Invoicing
-example applications — code that compiles and that `TimeOff.IntegrationTests`,
-`Showcase.IntegrationTests` and `Invoicing.IntegrationTests` exercise — and kept identical to it by the
+example applications (code that compiles and that `TimeOff.IntegrationTests`,
+`Showcase.IntegrationTests` and `Invoicing.IntegrationTests` exercise) and kept identical to it by the
 gate: a holiday provider and its wiring, business days counted, `[FromClock]`, `[FromBusinessTimezone]`,
 and `TestClock` in a test.
 

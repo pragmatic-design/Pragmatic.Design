@@ -1,11 +1,11 @@
 ---
 name: pragmatic-use-jobs
-description: Use when adding background or scheduled work — [Job], [RecurringJob] cron, retries, timeouts, continuations, distributed lock — with Pragmatic.Jobs.
+description: Use when adding background or scheduled work ([Job], [RecurringJob] cron, retries, timeouts, continuations, distributed lock) with Pragmatic.Jobs.
 ---
 
 # Pragmatic Use Jobs
 
-**Covers:** Background and recurring work with Pragmatic.Jobs from NuGet — [Job], [RecurringJob] cron, retry, timeout, continuation, distributed lock. Attribute-first pattern driven by the source generator.
+**Covers:** Background and recurring work with Pragmatic.Jobs from NuGet: [Job], [RecurringJob] cron, retry, timeout, continuation, distributed lock. Attribute-first pattern driven by the source generator.
 
 `Pragmatic.Jobs` executes work outside the request/response cycle: one-shot, delayed, or cron-based recurring jobs. The source generator produces each job's invoker (DI, retry, timeout) inline.
 
@@ -52,12 +52,12 @@ public sealed partial class NoShowDetectionJob(
 ```
 
 - The class implements `IJob`, is `partial`, and carries `[RecurringJob("cron")]`. The default `Id` is the kebab-case name (`NoShowDetectionJob` → `no-show-detection`); duplicates → **PRAG2503**.
-- **A job may carry several `[RecurringJob]`**: one job on two clocks, one `RecurringJobDefinition` each. Only the first may rely on the derived `Id`; the others name themselves or it is **PRAG2507** — a positional suffix would be a name nobody chose, on a persisted key an operator reads. `TimeZone` and `Misfire` belong to each schedule; `Priority` and `MaxConcurrency` describe the job and stay on it.
+- **A job may carry several `[RecurringJob]`**: one job on two clocks, one `RecurringJobDefinition` each. Only the first may rely on the derived `Id`; the others name themselves or it is **PRAG2507**: a positional suffix would be a name nobody chose, on a persisted key an operator reads. `TimeZone` and `Misfire` belong to each schedule; `Priority` and `MaxConcurrency` describe the job and stay on it.
   ```csharp
   [RecurringJob("0 2 * * *")]                        // id: no-show-detection
   [RecurringJob("0 6 * * 1", Id = "no-show-weekly")]  // the second names itself
   ```
-- **Inject through the primary constructor.** The generated invoker resolves the job from the DI container, so constructor parameters are supplied. Never declare a bare `private IFoo _foo = null!;` field — nothing assigns it and the job throws `NullReferenceException` on first use.
+- **Inject through the primary constructor.** The generated invoker resolves the job from the DI container, so constructor parameters are supplied. Never declare a bare `private IFoo _foo = null!;` field: nothing assigns it and the job throws `NullReferenceException` on first use.
 - `partial` is mandatory: the generator puts the invoker inside the class. Without it **PRAG2502** is an error and nothing is generated for the job.
 - `[Retry]` (`BackoffStrategy`: `Fixed | Exponential | ExponentialWithJitter`) sets the durable attempt budget; `[Timeout]` sets the per-execution deadline.
 - `MaxAttempts` is the **total number of executions, including the first**: `MaxAttempts = 2` means one retry.
@@ -72,9 +72,9 @@ Optional properties on `[Job]` / `[RecurringJob]`, all defaulting to no-special-
 [Job(MaxConcurrency = 2)]                                   // ≤ 2 of this type per host
 ```
 
-- **`Priority`** (default `0`) — when jobs are due together they are polled by `Priority` descending, then `ScheduledFor` ascending. Persisted on `JobInstance.Priority` (from `IJobTypeRegistry.GetPriority`), so ordering survives a restart. It orders what is *already due*; it does not pull a job ahead of its `ScheduledFor`.
-- **`MaxConcurrency`** (default `0` = unbounded) — caps instances of that job type running at once **per host**, independently of `WorkerCount`. An instance over the cap stays `Pending` and is reconsidered next poll — it never blocks a worker. Per host: a 3-host cluster with `MaxConcurrency = 2` runs up to 6.
-- **`Misfire`** on `[RecurringJob]` (`MisfirePolicy`, default `RunOnce`) — when the host was down and returns more than `JobsOptions.MisfireThreshold` (default 1 min) past a due occurrence: `RunOnce` runs the missed occurrence once then resumes; `Skip` advances straight to the next future occurrence. Within the threshold it counts as a normal slightly-late run.
+- **`Priority`** (default `0`): when jobs are due together they are polled by `Priority` descending, then `ScheduledFor` ascending. Persisted on `JobInstance.Priority` (from `IJobTypeRegistry.GetPriority`), so ordering survives a restart. It orders what is *already due*; it does not pull a job ahead of its `ScheduledFor`.
+- **`MaxConcurrency`** (default `0` = unbounded): caps instances of that job type running at once **per host**, independently of `WorkerCount`. An instance over the cap stays `Pending` and is reconsidered next poll; it never blocks a worker. Per host: a 3-host cluster with `MaxConcurrency = 2` runs up to 6.
+- **`Misfire`** on `[RecurringJob]` (`MisfirePolicy`, default `RunOnce`): when the host was down and returns more than `JobsOptions.MisfireThreshold` (default 1 min) past a due occurrence, `RunOnce` runs the missed occurrence once then resumes; `Skip` advances straight to the next future occurrence. Within the threshold it counts as a normal slightly-late run.
 
 ### 2. Parameterized job (one-shot / delayed)
 
@@ -110,7 +110,7 @@ A `[Timeout]` expiry marks the job failed and consumes an attempt. Jobs without 
 
 ### 4. Continuation
 
-`[Continuation<TNextJob>]` — note the type is `ContinuationAttribute<T>` — enqueues `TNextJob` after the current job completes successfully. `TNextJob` must implement `IJob`/`IJob<T>` (else **PRAG2505**); cycles A→B→A → **PRAG2506**.
+`[Continuation<TNextJob>]` (note the type is `ContinuationAttribute<T>`) enqueues `TNextJob` after the current job completes successfully. `TNextJob` must implement `IJob`/`IJob<T>` (else **PRAG2505**); cycles A→B→A → **PRAG2506**.
 
 ```csharp
 [Job]
@@ -171,7 +171,7 @@ tables. The boundary library that carries the attribute references
 `Pragmatic.Jobs.EFCore` (**PRAG2508** otherwise), exactly one boundary carries it (**PRAG2509**), and the
 host references it too, because the generated context names its two configurations.
 
-⚠️ **Writing `OnModelCreating` yourself is not the way in a Pragmatic host** — that method belongs to the
+⚠️ **Writing `OnModelCreating` yourself is not the way in a Pragmatic host**: that method belongs to the
 generated context. Outside one, on a hand-written `DbContext`, the two configurations are applied
 directly:
 
@@ -192,14 +192,14 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 ### 7. Retention
 
-`JobsOptions.RetentionDays` (default 30) and `PurgeBatchSize` (default 1000): terminal jobs older than the window are deleted periodically. `RetentionDays = 0` disables purging — note that job rows keep their serialized parameters, which often carry personal data, so disabling retention keeps that payload forever.
+`JobsOptions.RetentionDays` (default 30) and `PurgeBatchSize` (default 1000): terminal jobs older than the window are deleted periodically. `RetentionDays = 0` disables purging; note that job rows keep their serialized parameters, which often carry personal data, so disabling retention keeps that payload forever.
 
 ## Store and distributed work
 
 With `Pragmatic.Jobs.EFCore` the store uses a **lease-based distributed lock**: each job is leased by a single worker via an atomic conditional UPDATE, so multiple app instances run in parallel without executing the same job twice. The lease is renewed by heartbeat while the job runs, so a job longer than `LeaseTimeSeconds` is not picked up twice; completion and failure are fenced on the lease holder. On graceful shutdown the lease is released without consuming an attempt. The in-memory store does not provide these guarantees across processes.
 
 ⚠️ **Once per healthy run, not exactly once.** A worker that dies mid-job leaves the lease to expire
-(`LeaseTimeSeconds`, 300 by default), and the job runs **again** from the start on another worker — the
+(`LeaseTimeSeconds`, 300 by default), and the job runs **again** from the start on another worker; the
 crashed attempt counts, so a job that keeps killing its worker ends `Failed` instead of looping. Write
 jobs to be safe to repeat: check before acting, write with a key the database refuses twice, send
 through the outbox rather than directly.
@@ -215,7 +215,7 @@ The generator emits `PragmaticRecurringJobProvider : IRecurringJobProvider` with
 ## Multi-tenant applications
 
 ⚠️ **A job runs outside a request, so nothing resolves a tenant for it.** Where entities are
-`ITenantEntity` the generated filter is fail-closed: a job that simply queries reads **zero rows** —
+`ITenantEntity` the generated filter is fail-closed, so a job that simply queries reads **zero rows**:
 not an error, not an empty database, zero rows and a job reporting success. A nightly digest written
 that way tells every customer their queue is empty.
 
@@ -224,7 +224,7 @@ zone, a misfire policy, a priority and a concurrency cap. Each run is enqueued w
 `TenantId`, which for an attribute-declared job is null. The declared form is correct only for work
 that is genuinely tenant-independent.
 
-Within one tenant — register per tenant, and open a scope:
+Within one tenant, register per tenant, and open a scope:
 
 ```csharp
 // registration, once per tenant, through IRecurringJobRegistrar
@@ -249,7 +249,7 @@ public async Task ExecuteAsync(JobContext context, CancellationToken ct)
 from the request when there is one and falls back to the scope when there is not, and both the
 Pragmatic filter and the EF Core query filter read that same context.
 
-Across tenants — `FilterMode.Background` through `IQueryFilterToggle`; it lifts the tenant rule at
+Across tenants, `FilterMode.Background` through `IQueryFilterToggle`; it lifts the tenant rule at
 both levels and keeps soft-delete.
 
 ⚠️ **Reading across tenants does not let you write across them.** The lift is for the read; the write
@@ -258,7 +258,7 @@ belongs to one organisation, and `TenantInterceptor` throws `TenantNotResolvedEx
 on by default). Two mistakes follow from thinking of the sweep as one pass:
 
 - a `TenantScope` around the in-memory change and a `SaveChangesAsync` **after** the loop writes with
-  nothing resolved — a refusal;
+  nothing resolved: a refusal;
 - one context for several tenants cannot be fixed by nesting scopes: the connection is chosen when the
   context opens it.
 
@@ -273,7 +273,7 @@ foreach (var tenantId in overdue.Select(row => row.TenantId).Distinct())
 
     var owned = scope.ServiceProvider.GetRequiredService<IRepository<Case>>();
     var unitOfWork = scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(IntakeBoundary));
-    // read again (ordinary tenant-filtered read), change, then save — all in here
+    // read again (ordinary tenant-filtered read), change, then save, all in here
 }
 ```
 
@@ -283,7 +283,7 @@ nothing. Take the list from your own rows read in `Background` mode, or from whe
 records its customers.
 
 `TenantScope` is in the `Pragmatic.MultiTenancy` **namespace** and ships in `Pragmatic.Abstractions`,
-beside `ITenantEntity` and `ITenantStore` — so a domain library that has those has the scope too, and
+beside `ITenantEntity` and `ITenantStore`, so a domain library that has those has the scope too, and
 needs a `using`, not a package.
 
 ## What the SG generates
@@ -296,7 +296,7 @@ needs a `using`, not a package.
 | `[RecurringJob]` | `_Infra.Jobs.RecurringJobs.g.cs` | `PragmaticRecurringJobProvider` with the cron definitions |
 | aggregated | `_Metadata.Jobs.g.cs` | Host aggregation metadata |
 
-The background services (`JobProcessorService`, `RecurringJobSchedulerService`) are registered automatically by host aggregation when `UseJobs` is called. The registry they read is a composite over one source per assembly that declares a job — each module's, and any package that ships one — so jobs from several assemblies all run.
+The background services (`JobProcessorService`, `RecurringJobSchedulerService`) are registered automatically by host aggregation when `UseJobs` is called. The registry they read is a composite over one source per assembly that declares a job (each module's, and any package that ships one), so jobs from several assemblies all run.
 
 ## Common diagnostics
 
@@ -314,17 +314,17 @@ The background services (`JobProcessorService`, `RecurringJobSchedulerService`) 
 
 ## Troubleshooting
 
-**A job fails with `Unknown job type: …`** — no registry knows it. The message says how many were asked; "No registry is registered" means, outside Composition, that `AddDiscoveredJobs()` is missing, or that a package shipping the job registers its own and was not asked to.
+**A job fails with `Unknown job type: …`.** No registry knows it. The message says how many were asked; "No registry is registered" means, outside Composition, that `AddDiscoveredJobs()` is missing, or that a package shipping the job registers its own and was not asked to.
 
-**Recurring job does not start** — is `UseJobs` called in `Program.cs`? Does the cron parse (check startup warnings, not the build)? Does the `__RecurringJobs` row have a `NextExecutionAt`, and is it enabled?
+**Recurring job does not start.** Is `UseJobs` called in `Program.cs`? Does the cron parse (check startup warnings, not the build)? Does the `__RecurringJobs` row have a `NextExecutionAt`, and is it enabled?
 
-**Recurring job ignores my new cron expression** — persisted state wins; update or delete the `__RecurringJobs` row.
+**Recurring job ignores my new cron expression.** Persisted state wins; update or delete the `__RecurringJobs` row.
 
-**Job executed multiple times in a cluster** — you are using the in-memory store: switch to `UseEfCore()` + `UseEfCorePersistence()` for distributed leasing.
+**Job executed multiple times in a cluster.** You are using the in-memory store: switch to `UseEfCore()` + `UseEfCorePersistence()` for distributed leasing.
 
-**Job does not survive a restart** — in-memory store; `Pragmatic.Jobs.EFCore` is required.
+**Job does not survive a restart.** In-memory store; `Pragmatic.Jobs.EFCore` is required.
 
-**`NullReferenceException` on a dependency** — the job declares a `= null!` field instead of injecting through the primary constructor.
+**`NullReferenceException` on a dependency.** The job declares a `= null!` field instead of injecting through the primary constructor.
 
 ## Build verification
 
@@ -336,8 +336,8 @@ dotnet test path\to\App.Tests --no-restore -v minimal
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Invoicing and Warehouse example
-applications — code that compiles and that `Invoicing.IntegrationTests` and `Warehouse.IntegrationTests`
-exercise — and kept identical to it by the gate: a recurring job that fans out one tenant at a time, the
+applications (code that compiles and that `Invoicing.IntegrationTests` and `Warehouse.IntegrationTests`
+exercise) and kept identical to it by the gate: a recurring job that fans out one tenant at a time, the
 boundary that holds the job store's tables, the host's `UseJobs`, a parameterized job scheduled for a
 moment from inside the transaction that needs it, and a test that drives the work on a day the clock
 chooses.

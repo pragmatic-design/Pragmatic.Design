@@ -1,13 +1,13 @@
 ---
 name: pragmatic-use-testing
-description: Use when writing or wiring tests for a Pragmatic app, mocking a boundary or IClock, or when a generated contract test fails or is missing — Pragmatic.Testing, contract tests, WebApplicationFactory, Testcontainers.
+description: Use when writing or wiring tests for a Pragmatic app, mocking a boundary or IClock, or when a generated contract test fails or is missing (Pragmatic.Testing, contract tests, WebApplicationFactory, Testcontainers).
 ---
 
 # Pragmatic Use Testing
 
-**Covers:** Test a Pragmatic app with Pragmatic.Testing — generated contract tests (authorization, CRUD, tenant isolation, transitions), a typed Api client, the real host under WebApplicationFactory with Testcontainers, test identities, assertions, generated mocks, clock/bus/mail/log harnesses.
+**Covers:** Test a Pragmatic app with Pragmatic.Testing: generated contract tests (authorization, CRUD, tenant isolation, transitions), a typed Api client, the real host under WebApplicationFactory with Testcontainers, test identities, assertions, generated mocks, clock/bus/mail/log harnesses.
 
-A Pragmatic application already declares what it promises — endpoints, permissions, entities, state
+A Pragmatic application already declares what it promises: endpoints, permissions, entities, state
 machines. `Pragmatic.Testing` turns those declarations into tests, and the modules ship harnesses for
 the parts a test has to control (time, the bus, mail). Write by hand only what a declaration cannot
 say: the business rule.
@@ -16,9 +16,9 @@ say: the business rule.
 
 | Project | What it tests | Runs |
 |---|---|---|
-| `{App}.Tests` (unit) | Domain rules, handlers, services — with generated mocks | milliseconds, no container |
+| `{App}.Tests` (unit) | Domain rules, handlers, services, with generated mocks | milliseconds, no container |
 | `{App}.IntegrationTests` | The real host over HTTP against a real database; generated contract tests live here | Testcontainers (Docker) |
-| optional restart suite | Data that survives a process restart, migrations on an existing database | the built host as its own process — see `../pragmatic-ecosystem/references/cookbook/restart-and-persistence-tests.md` |
+| optional restart suite | Data that survives a process restart, migrations on an existing database | the built host as its own process; see `../pragmatic-ecosystem/references/cookbook/restart-and-persistence-tests.md` |
 
 Keep them apart: a unit suite that needs Docker stops being run.
 
@@ -45,7 +45,7 @@ Module harnesses, only where used: `Pragmatic.Temporal.Testing` (`TestClock`),
 ## The host under test
 
 The generated host is the application: test **it**, not a host rebuilt for tests. Override only what
-the test must own — the connection string, a clock, a transport:
+the test must own (the connection string, a clock, a transport):
 
 ```csharp
 public sealed class AppFactory(string connectionString) : WebApplicationFactory<Program>
@@ -66,8 +66,8 @@ public sealed class AppFactory(string connectionString) : WebApplicationFactory<
 }
 ```
 
-⚠️ **A setting that decides which services get registered — an identity scheme, a provider, a
-transport — goes through `UseSetting`, not `ConfigureAppConfiguration`.** The host's startup callback
+⚠️ **A setting that decides which services get registered (an identity scheme, a provider, a
+transport) goes through `UseSetting`, not `ConfigureAppConfiguration`.** The host's startup callback
 reads configuration before `ConfigureAppConfiguration` values exist; a lambda that runs later (a
 connection string read inside `AddDbContext`) sees both. With the wrong channel the host silently keeps
 its default and the suite can stay green for the wrong reason.
@@ -85,7 +85,7 @@ request.AsUser("auditor-1", tenantId: "acme", userName: "Auditor", "billing.invo
 var response = await client.SendAsync(request);
 ```
 
-⚠️ `AsUser` on a request always writes the permission header — empty when you pass none — so a caller
+⚠️ `AsUser` on a request always writes the permission header (empty when you pass none), so a caller
 with no permission stays without one even when the shared client carries `X-User-Permissions: *`. A
 denial test on the shared client passes nothing and proves nothing.
 
@@ -95,7 +95,7 @@ with both on, the suite is green whichever of the two works.
 ## Generated contract tests
 
 With `Pragmatic.Testing.SourceGenerator` referenced, every `[Endpoint]` the app exposes arrives with
-its tests — you write one fixture:
+its tests; you write one fixture:
 
 ```csharp
 public sealed class ContractAppFixture : IAsyncLifetime
@@ -131,7 +131,7 @@ What you get, per boundary: **authorization** (without the permission → reject
 forbidden), **CRUD** (create, validation, tenant isolation), **state transitions** (legal → 2xx,
 illegal → 409, for operations declaring `[TransitionsTo<TState>]`), and a typed client.
 
-- An operation with **no `[RequirePermission]`** gets no authorization contract — nothing refuses it.
+- An operation with **no `[RequirePermission]`** gets no authorization contract: nothing refuses it.
   Read `ContractCoverage.Operations` and pin `ContractCoverage.Uncovered` in a test of your own: the
   generated suite reports what it wrote, never what it skipped.
 - An endpoint whose body is still `throw Behavior.Pending()` is skipped until implemented.
@@ -139,7 +139,7 @@ illegal → 409, for operations declaring `[TransitionsTo<TState>]`), and a type
   boundary with no client is then an error, not a fallback.
 - Each transition gets **both** answers: the one its initial state gives, and the opposite one from a
   state reached by walking the entity's other declared transitions (`PRAG2363` when none reaches it). An
-  entity nothing creates over HTTP — raised by an event, written by a message handler — is brought into
+  entity nothing creates over HTTP (raised by an event, written by a message handler) is brought into
   its initial state by `PragmaticContractHost.ArrangeFor = async (entity, client) => …` returning its id;
   without it the contract fails naming what to set. Nothing is skipped.
 - `ShouldBeRejected()` accepts any 4xx; assert `ShouldHaveStatus(HttpStatusCode.Forbidden)` when the
@@ -159,15 +159,15 @@ guest.LastName.Should().Be("Lovelace");
 ```
 
 Routes and verbs come from the app's generated `ApiRoutes`: renaming a route breaks the test at build.
-Assert on the response the way a client would see it — `ShouldBeOk()`, `ShouldBeCreated()`,
+Assert on the response the way a client would see it (`ShouldBeOk()`, `ShouldBeCreated()`,
 `ShouldBeNoContent()`, `ShouldBeBadRequest()`, `ShouldBeUnprocessable()`, `ShouldBeNotFound()`,
-`ShouldBeConflict()`, `ShouldBeForbidden()`, `ShouldHaveStatus(code)` — and read the body.
+`ShouldBeConflict()`, `ShouldBeForbidden()`, `ShouldHaveStatus(code)`) and read the body.
 `ShouldNotBeForbidden()` also passes a 500; `ShouldIdentifyTheCreatedAsync()` reads the id a 201
 points at.
 
 ## Assertions
 
-`Pragmatic.Testing.Assertions` is the framework's own `.Should()` library — no FluentAssertions:
+`Pragmatic.Testing.Assertions` is the framework's own `.Should()` library, with no FluentAssertions:
 `Be`, `BeEquivalentTo`, `Contain`, `HaveCount`, `BeEmpty`, `Throw<T>()` / `ThrowAsync<T>()`,
 `BeCloseTo`, ordering, type checks. For a DTO without value equality declare a comparer, so a
 failure names the member that differs:
@@ -209,7 +209,7 @@ reservations.Cancel.DidNotReceive();
 | Messaging | `services.AddMessagingTestHarness()` records only; `AddDispatchingTestHarness()` also runs the handlers | `HasPublished<T>(predicate)`, `PublishedOf<T>()`, `ConsumedOf<T>()`, `FaultedOf<T>()`, `Reset()` |
 | Mail | `services.AddEmailTestHarness()` → `InMemoryTransport` | `HasSentTo(address)`, `Sent`, `SentWhere(predicate)` |
 | Notifications | `services.AddNotificationTestHarness()` | `Sent`, `SentWhere(predicate)` |
-| Logs | `var logs = new CapturedLogs(); builder.ConfigureLogging(l => l.AddProvider(logs));` | `logs.PropertyOf("Message", "Property")` — the structured property, not the text; `Clear()` between tests on a shared fixture |
+| Logs | `var logs = new CapturedLogs(); builder.ConfigureLogging(l => l.AddProvider(logs));` | `logs.PropertyOf("Message", "Property")`: the structured property, not the text; `Clear()` between tests on a shared fixture |
 | Culture | `TestI18N.WithCultureAsync(CultureCode.Italian, async () => …)` | the translated/formatted value |
 
 ⚠️ Drive a background job or a scheduled pass through the unit it calls, with the instant as an
@@ -227,13 +227,13 @@ on another; set the culture explicitly (headers, `TestI18N`), never rely on the 
   attribute, the registration, the rule: exactly the tests that should go red must go red.
 - **No `Skip` without a reason that names what is missing**, and a skipped test is unknown, not green.
 - **Assert the effect, not the call**: the row in the database, the message on the bus, the line in
-  the log with its property — not that a method ran.
+  the log with its property, not that a method ran.
 
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Invoicing and Showcase example
-applications — test code that compiles and runs as part of `Invoicing.IntegrationTests` and
-`Showcase.Tests` — and kept identical to it by the gate: the host under test, the database
+applications (test code that compiles and runs as part of `Invoicing.IntegrationTests` and
+`Showcase.Tests`) and kept identical to it by the gate: the host under test, the database
 fixture, the fixture of the generated contract tests and the test that pins what they emit, a
 hand-written test with the clock and the mailbox, and the generated mocks in a unit test.
 

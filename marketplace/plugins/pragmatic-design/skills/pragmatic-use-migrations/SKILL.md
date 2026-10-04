@@ -1,11 +1,11 @@
 ---
 name: pragmatic-use-migrations
-description: Use when the schema must follow the entities, a change is breaking, or data needs a backfill — Pragmatic.Migrations, no migration files, data migrations, snapshots, DB-per-tenant, the pragmatic-migrate CLI.
+description: Use when the schema must follow the entities, a change is breaking, or data needs a backfill (Pragmatic.Migrations, no migration files, data migrations, snapshots, DB-per-tenant, the pragmatic-migrate CLI).
 ---
 
 # Pragmatic Use Migrations
 
-**Covers:** Declarative schema migrations with Pragmatic.Migrations, no migration files — the runner diffs the schema generated from the entities against the database and applies it in one transaction, blocking data loss unless forced; data migrations, snapshots, DB-per-tenant, the pragmatic-migrate CLI.
+**Covers:** Declarative schema migrations with Pragmatic.Migrations, no migration files: the runner diffs the schema generated from the entities against the database and applies it in one transaction, blocking data loss unless forced; data migrations, snapshots, DB-per-tenant, the pragmatic-migrate CLI.
 
 `Pragmatic.Migrations` replaces EF Core Migrations. There are **no migration files** and no
 design-time tools: the source generator emits the desired schema from your `[Entity]` types at
@@ -37,7 +37,7 @@ await PragmaticApp.RunAsync(args, builder =>
 ```
 
 That is the whole setup. Every database in the topology is migrated at startup, before the app
-serves traffic. **A failed migration aborts startup** — the host never runs on a stale schema.
+serves traffic. **A failed migration aborts startup**: the host never runs on a stale schema.
 
 ## Configuration
 
@@ -65,14 +65,14 @@ it unless you opt in with `Force()`:
 - `SET NOT NULL` (fails if any row holds NULL)
 - a primary-key change
 - `ADD COLUMN` that is NOT NULL with no default
-- a narrowing type change — smaller capacity in the same family (`varchar(256)`→`varchar(50)`), or a
+- a narrowing type change: smaller capacity in the same family (`varchar(256)`→`varchar(50)`), or a
   change of family altogether (`varchar(50)`→`int`)
 
 The result carries `FailedChangeIndex`, `FailedChangeSql` and actionable `Suggestions`. The intended
 workflow is: `DryRun()` → review → `Force()` for a controlled deploy. Never `Force()`
 unconditionally in production.
 
-## Data migrations — backfilling data
+## Data migrations: backfilling data
 
 `IDataMigration` runs **exactly once per database**, tracked by name in `__PragmaticDataMigrations`,
 in its own transaction after the schema phase. It runs even when the schema did not change.
@@ -87,7 +87,7 @@ public sealed class BackfillStatus : IDataMigration
     public async Task MigrateAsync(DbConnection connection, DbTransaction transaction, CancellationToken ct = default)
     {
         var cmd = connection.CreateCommand();
-        cmd.Transaction = transaction;                 // REQUIRED — atomic with the tracking record
+        cmd.Transaction = transaction;                 // REQUIRED: atomic with the tracking record
         cmd.CommandText = """UPDATE "Orders" SET "Status" = 'pending' WHERE "Status" IS NULL""";
         await cmd.ExecuteNonQueryAsync(ct);
     }
@@ -104,7 +104,7 @@ Two neighbours, easy to confuse:
 | `IMigrationSeedProvider` | Idempotent reference data (`ON CONFLICT DO NOTHING`). Runs after every migration that applied changes. |
 | `IMigrationHook` | Logic tied to one specific change, inside the migration transaction (`BeforeChangeAsync` can skip it; `AfterChangeAsync` populates a column right after it is added). |
 
-## Schema snapshot — reviewing schema changes in a PR
+## Schema snapshot: reviewing schema changes in a PR
 
 Commit a generated JSON snapshot so schema changes show up in code review and branch conflicts
 become ordinary merge conflicts.
@@ -140,7 +140,7 @@ Add `--audit-table <name>` when the host renamed the audit table with `UseAuditT
 not build the host's DI container, so it has to be told.
 
 `apply` shows the diff, prices the data impact of each breaking change and asks before applying it,
-then delegates to the same runner the host uses. It applies **schema changes only** — data
+then delegates to the same runner the host uses. It applies **schema changes only**: data
 migrations, hooks and seed providers live in the host's DI container.
 
 Flags: `--assembly` / `--project` (builds it), `--connection`, `--config`, `--database`,
@@ -149,7 +149,7 @@ Flags: `--assembly` / `--project` (builds it), `--connection`, `--config`, `--da
 ## Multiple instances
 
 Only one instance migrates. `DatabaseLeaderElection` claims a row in `__PragmaticLock`; the others
-wait, then **verify the schema** before reporting success — a leader that crashed without migrating
+wait, then **verify the schema** before reporting success: a leader that crashed without migrating
 does not let the followers boot on a stale database. If leader election itself fails, an instance
 defaults to **not leader** (never assumes leadership: that would be split-brain). No extra
 infrastructure. SQLite skips it entirely.
@@ -163,44 +163,44 @@ migrated at startup, right after the host's own database. A tenant failure abort
 
 ## Sharing a database with another system
 
-By default a table present in the database but absent from your entities is proposed for `DROP` — a
+By default a table present in the database but absent from your entities is proposed for `DROP`, a
 breaking change, so startup blocks rather than deleting anything. Either name the foreign tables
 (`m.ExcludeTable("LegacyAudit")`) or opt out wholesale (`m.ManageDeclaredTablesOnly()`). The
 trade-off of the latter: renaming an entity leaves the old table behind.
 
 ## Gotchas
 
-- **`SchemaVersion.Hash` is derived, not supplied** — and it IS comparable across sides: both the
+- **`SchemaVersion.Hash` is derived, not supplied**, and it IS comparable across sides: both the
   generated schema and an introspected one are hashed by the same canonical function, which
   normalises types and defaults the way the diff does. `current.Hash == MyDbSchema.Current.Hash`
   means the database is up to date; that is what the runner's fast path and
   `pragmatic-migrate status` rely on.
 - **The audit table is a record, not an input.** What gets applied comes from diffing the entities
-  against the live database. Losing `__PragmaticSchema` costs history, not correctness — but losing
+  against the live database. Losing `__PragmaticSchema` costs history, not correctness, but losing
   `__PragmaticDataMigrations` makes every `IDataMigration` run again.
 - **A rename needs a hint.** Put `[RenamedFrom("FirstName")]` (`Pragmatic.Persistence.Entity`) on the
-  renamed property and the migration emits `RENAME COLUMN`; without it a rename is a drop plus an add
-  — and the drop is breaking. The attribute is for properties only: renaming an **entity** is a new
+  renamed property and the migration emits `RENAME COLUMN`; without it a rename is a drop plus an add,
+  and the drop is breaking. The attribute is for properties only: renaming an **entity** is a new
   table and a dropped one.
 - **No down migrations.** Rolling back means deploying the previous model.
 - **SQLite rebuilds tables.** Nullability, default, type and FK changes are applied by recreating the
   table (rename → recreate → copy → drop), inside the migration transaction. Handled for you; just
-  do not call `GenerateChangeScript` yourself for those changes — it throws, by design, rather than
+  do not call `GenerateChangeScript` yourself for those changes; it throws, by design, rather than
   returning SQL that looks applied but is not.
 - **PostgreSQL introspects every non-system schema.** In a multi-schema database, expect tables you
   did not declare to show up in the diff.
 
 ## Related
 
-- `pragmatic-use-persistence` — the `[Entity]` model the desired schema is generated from
-- `pragmatic-use-multitenancy` — DB-per-tenant setup
+- `pragmatic-use-persistence`: the `[Entity]` model the desired schema is generated from
+- `pragmatic-use-multitenancy`: DB-per-tenant setup
 - Module docs: `Pragmatic.Migrations/docs/` (concepts, getting-started, common-mistakes, troubleshooting)
 
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Warehouse and Showcase example
-applications — code that compiles and that `Warehouse.IntegrationTests` and `Showcase.IntegrationTests`
-exercise — and kept identical to it by the gate: a service's host migrating at start, its database
+applications (code that compiles and that `Warehouse.IntegrationTests` and `Showcase.IntegrationTests`
+exercise) and kept identical to it by the gate: a service's host migrating at start, its database
 marker, the schema snapshot and its project setting, and the runner refusing a breaking change, running a
 data migration once and leaving a foreign table alone.
 

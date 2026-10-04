@@ -1,18 +1,18 @@
 ---
 name: pragmatic-use-resilience
-description: Use when calls to external systems (HTTP, databases, queues) need retries, timeouts, circuit breaking or rate limiting — Pragmatic.Resilience, [ResiliencePolicy] on actions and handlers, named pipelines, no Polly.
+description: Use when calls to external systems (HTTP, databases, queues) need retries, timeouts, circuit breaking or rate limiting (Pragmatic.Resilience, [ResiliencePolicy] on actions and handlers, named pipelines, no Polly).
 ---
 
 # Pragmatic Use Resilience
 
-**Covers:** Resilience with Pragmatic.Resilience, no Polly — a named [ResiliencePolicy] on an action or mutation gets retry, circuit breaker, timeout, hedging, rate limiter and bulkhead from configuration; any call can run through a named pipeline. Exceptions retry, Result failures pass through.
+**Covers:** Resilience with Pragmatic.Resilience, no Polly: a named [ResiliencePolicy] on an action or mutation gets retry, circuit breaker, timeout, hedging, rate limiter and bulkhead from configuration; any call can run through a named pipeline. Exceptions retry, Result failures pass through.
 
 Declare a **policy name**; the generator composes the pipeline. It distinguishes exceptions
-(retry/break) from `Result` failures (validation, not-found) — the latter pass through unchanged, so
+(retry/break) from `Result` failures (validation, not-found); the latter pass through unchanged, so
 you never retry a business error. No Polly dependency.
 
 ⚠️ **"Exception" means every exception.** With no `ShouldRetry` the retry strategy retries anything
-thrown — a `NullReferenceException` from a bug included, three more times, with back-off. Narrow it in
+thrown (a `NullReferenceException` from a bug included) three more times, with back-off. Narrow it in
 code for any policy in front of something that can fail for reasons other than the network (see
 *Defining the policy*).
 
@@ -28,7 +28,7 @@ code for any policy in front of something that can fail for reasons other than t
 ```
 
 On the library that declares the policy. The host wires it because a `[ResiliencePolicy]` is
-declared, not because the package is referenced — it needs no reference of its own.
+declared, not because the package is referenced; it needs no reference of its own.
 
 ## Core pattern
 
@@ -50,12 +50,12 @@ public partial class ChargeCustomerAction : DomainAction<PaymentResult>
 
 `[ResiliencePolicy]` works on a `[DomainAction]` and on a `[Mutation]`. On a mutation the pipeline wraps
 the **whole** invocation, save included, and every retry starts from a unit of work that has forgotten
-the failed attempt and reads the row again — so nothing the first attempt tracked is written twice.
+the failed attempt and reads the row again, so nothing the first attempt tracked is written twice.
 ⚠️ Only where the mutation owns its commit: nested in an operation that holds the same unit of work it
 stages its writes and runs once, and the retry belongs to the operation that saves. ⚠️ A retry re-runs
 the body: an effect outside the database (an HTTP call, a message sent directly) happens again. When the pipeline gives up it does
-not throw: the invoker returns a typed failure — `RetryExhaustedError`, `CircuitBrokenError`,
-`TimeoutError`, `BulkheadRejectedError`, `RateLimitRejectedError`, `HedgingExhaustedError` — so an
+not throw: the invoker returns a typed failure (`RetryExhaustedError`, `CircuitBrokenError`,
+`TimeoutError`, `BulkheadRejectedError`, `RateLimitRejectedError`, `HedgingExhaustedError`), so an
 endpoint answers 503, 504 or 429 without a `catch`. An empty name is **PRAG0420**.
 
 ## Defining the policy
@@ -78,7 +78,7 @@ definition usually lives in `appsettings.json`:
 }
 ```
 
-In code, from an `IStartupStep` — the only place a predicate can be set, since configuration cannot
+In code, from an `IStartupStep`, the only place a predicate can be set, since configuration cannot
 carry a delegate:
 
 ```csharp
@@ -89,7 +89,7 @@ services.AddResiliencePolicy("payment-gateway", o =>
 });
 ```
 
-| Strategy | Options (default) | Order — outermost first |
+| Strategy | Options (default) | Order (outermost first) |
 |---|---|---|
 | Fallback | builder only (below) | 1 |
 | RateLimiter | `MaxRequests` (100) per `Window` (1 min) | 2 |
@@ -97,7 +97,7 @@ services.AddResiliencePolicy("payment-gateway", o =>
 | Hedging | `MaxAttempts` (2), `Delay` (2 s) | 4 |
 | Bulkhead | `MaxConcurrency` (10), `MaxQueuedActions` (0), `QueueTimeout` | 5 |
 | CircuitBreaker | `FailureThreshold` (5), `BreakDuration` (30 s), `ShouldHandle` | 6 |
-| Retry | `MaxRetries` (3), `BaseDelay` (200 ms), `BackoffType` `Constant` \| `Linear` \| `Exponential`, `MaxDelay` (30 s), `UseJitter` (true), `ShouldRetry` | 7 — innermost |
+| Retry | `MaxRetries` (3), `BaseDelay` (200 ms), `BackoffType` `Constant` \| `Linear` \| `Exponential`, `MaxDelay` (30 s), `UseJitter` (true), `ShouldRetry` | 7, innermost |
 
 The order is fixed, whatever order you configure in. Consequences worth knowing:
 
@@ -106,20 +106,20 @@ The order is fixed, whatever order you configure in. Consequences worth knowing:
   ignores the token runs to its end. `Pessimistic` returns on time and leaves the call running in the
   background.
 - ⚠️ **Hedging runs the body again, in parallel**, when the first attempt is slow. Only for reads and
-  idempotent calls — on a write it is a duplicate.
+  idempotent calls; on a write it is a duplicate.
 - ⚠️ **A circuit is keyed by the operation, not by the policy.** Two actions sharing `payment-gateway`
   have two circuits: the gateway failing under one does not open the other's. And the state lives in
   the process (`InMemoryCircuitBreakerStateStore`, the only shipped `ICircuitBreakerStateStore`): each
   instance learns about the outage on its own.
 
 **Fallback** takes a typed delegate, so it is not an option: register it on the registry with the
-fluent builder — `IResiliencePipelineRegistry.AddPolicy(name, b => b.AddRetry(…).AddFallback<T>(ct => …))`,
+fluent builder: `IResiliencePipelineRegistry.AddPolicy(name, b => b.AddRetry(…).AddFallback<T>(ct => …))`,
 or `AddFallback((ex, ct) => …)` for a void operation (it runs compensating work, it cannot supply a
 value). A typed fallback only intercepts executions of that exact result type.
 
 ## Outside an operation: run a call through a pipeline
 
-A service, a handler, a job step — anything that is not an action or a mutation — asks for the
+A service, a handler, a job step (anything that is not an action or a mutation) asks for the
 pipeline by name and gets a `Result` back instead of a resilience exception:
 
 ```csharp
@@ -133,10 +133,10 @@ public sealed class ExchangeRateClient(HttpClient http, IResiliencePipelineProvi
 
 `ExecuteAsResultAsync` (`Pragmatic.Resilience.Bridge`) maps the six give-up exceptions to the typed
 errors above; any other exception still propagates. ⚠️ `GetPipeline` resolves a name nothing defines
-to `Default`, and without one to a passthrough — the same silent no-op as an undefined
+to `Default`, and without one to a passthrough: the same silent no-op as an undefined
 `[ResiliencePolicy]`, without the start-up warning.
 ⚠️ The circuit key there is the result type's name (`Rate`) unless you call `ExecuteAsync` with a
-`ResilienceContext { OperationName = …, OperationKey = … }` of your own — set a key per downstream
+`ResilienceContext { OperationName = …, OperationKey = … }` of your own; set a key per downstream
 dependency.
 
 Outside a Pragmatic host, register the provider with `services.AddPragmaticResilience(configuration)`
@@ -155,20 +155,20 @@ owner should.
 The same package ships three per-class attributes, and they are **not** an inline form of a policy.
 They are read by the engine that owns the class: on a `[Job]`/`[RecurringJob]` a retry is a durable
 reschedule (`pragmatic-use-jobs`), on a `[MessageHandler]` a redelivery (`pragmatic-use-messaging`).
-They carry no defaults — a property you leave out is decided by that engine. `[CircuitBreaker]` is read
+They carry no defaults: a property you leave out is decided by that engine. `[CircuitBreaker]` is read
 on a `[MessageHandler]` only. ⚠️ On a `[DomainAction]`, a `[Mutation]` or any other class nothing reads
 them, and the generator says so with **PRAG0464** (Warning): use `[ResiliencePolicy]` there.
 
 ⚠️ **A name nothing defines is a pipeline that does nothing.** A policy missing from configuration falls
-back to `Resilience:Default`, and without a default to a passthrough — no exception. A typo in the
+back to `Resilience:Default`, and without a default to a passthrough, with no exception. A typo in the
 attribute, or a section that did not make it into production settings, leaves the call unprotected
 while everything looks declared; the generated host logs one **Warning** per such name at startup,
 naming the policy and the actions that declare it. Read the startup log, and define `Default`.
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Showcase example application — code
-that compiles and that `Showcase.IntegrationTests` and `Showcase.Tests` exercise — and kept identical to
+Complete files in [`examples/`](examples/README.md), copied from the Showcase example application (code
+that compiles and that `Showcase.IntegrationTests` and `Showcase.Tests` exercise) and kept identical to
 it by the gate: a `[ResiliencePolicy]` on an action, `[Retry]` and `[CircuitBreaker]` on a message
 handler, and the test that proves the breaker opens.
 

@@ -1,11 +1,11 @@
 ---
 name: pragmatic-use-logging
-description: Use when configuring logging providers (app.UseLogging), adding structured high-performance logging with [LoggerMessage], or naming Activity traces — Pragmatic.Logging.
+description: Use when configuring logging providers (app.UseLogging), adding structured high-performance logging with [LoggerMessage], or naming Activity traces; Pragmatic.Logging.
 ---
 
 # Pragmatic Use Logging
 
-**Covers:** Logging and observability in a Pragmatic.Design app — provider configuration with Pragmatic.Logging (app.UseLogging), high-performance logging with [LoggerMessage], Activity naming.
+**Covers:** Logging and observability in a Pragmatic.Design app: provider configuration with Pragmatic.Logging (app.UseLogging), high-performance logging with [LoggerMessage], Activity naming.
 
 `Pragmatic.Logging` provides logging providers (rich console, file, JSON/NDJSON, enrichment, redaction, audit). Unlike caching or jobs it is **not auto-wired**: the host must configure it explicitly with `app.UseLogging`.
 
@@ -61,7 +61,7 @@ There is one builder, `Pragmatic.Logging.Extensions.PragmaticLoggingBuilder`: st
 
 Optional HTTP middleware: `app.UsePragmaticLogging()` adds correlation ID and request-context enrichment; `app.UsePragmaticBaggage()` propagates W3C Baggage.
 
-## Logging in code — use `[LoggerMessage]`
+## Logging in code: use `[LoggerMessage]`
 
 For logs in domain code use the **standard .NET** `[LoggerMessage]` source generator (`Microsoft.Extensions.Logging`), which produces allocation-free logs at compile-time:
 
@@ -81,13 +81,13 @@ public sealed partial class OrderService(ILogger<OrderService> logger)
 
 Never use interpolated logging (`logger.LogInformation($"...")`): it allocates and loses structure. `[LoggerMessage]` is the mandatory pattern.
 
-> `Pragmatic.Logging` works entirely through the standard `ILogger` — there is no proprietary logging-method attribute. Use Microsoft's `[LoggerMessage]` for source-generated hot-path logging.
+> `Pragmatic.Logging` works entirely through the standard `ILogger`; there is no proprietary logging-method attribute. Use Microsoft's `[LoggerMessage]` for source-generated hot-path logging.
 
 ## Observability
 
 - **Activity / tracing**: name Activities `{Module}.{Operation}` (e.g. `Sales.PlaceOrder`). Pragmatic modules already expose an `ActivitySource` and OpenTelemetry metrics; configure an OTel exporter in the host to collect them.
 - **Levels**: `Debug`/`Trace` for development detail, `Information` for business events, `Warning`/`Error` for problems. Set `MinimumLevel` per provider.
-- **Correlation**: with `app.UsePragmaticLogging()` every log within a request carries the same correlation ID — essential for production debugging.
+- **Correlation**: with `app.UsePragmaticLogging()` every log within a request carries the same correlation ID, which is essential for production debugging.
 
 ## What must not reach the log
 
@@ -97,22 +97,22 @@ Two mechanisms, governed differently on purpose:
 |---|---|---|
 | What | members marked `[NotLogged]` (`Pragmatic`, in Abstractions) or `[PersonalData]` | e-mail, IBAN, card and account numbers, national ids, CVV, bearer tokens, `password=`… |
 | How | the generator emits a redaction map per type; `RedactingLoggerFactory` masks those members in every provider | pattern matching on the text (`Pragmatic.Redaction.PersonalDataRedactor`, and the logging pipeline's own set) |
-| Switch | none — wired by the generated host whenever a map exists, in every environment | `EnableDataRedaction(…)` / the compliance presets on the logging builder |
+| Switch | none: wired by the generated host whenever a map exists, in every environment | `EnableDataRedaction(…)` / the compliance presets on the logging builder |
 | Guarantee | exact, for what is declared | a floor: it cannot recognise a name, an address, or a sentence about someone's health |
 
 ⚠️ **Declared redaction acts on a structured argument whose type carries the declaration.** Logging an
 `Order` whose `CustomerEmail` is `[NotLogged]` masks it; logging `order.CustomerEmail` as a `string`
-parameter does not — a string has no declared type, and only the patterns stand between it and the
+parameter does not: a string has no declared type, and only the patterns stand between it and the
 file. Log identifiers, not values: `LogOrderConfirmed(order.Id)`, never the e-mail. Scopes
 (`BeginScope`) are not redacted.
 
-Free text (a note, a description) is not personal data to classify — it is text that may contain some:
+Free text (a note, a description) is not personal data to classify; it is text that may contain some:
 mark it `[NotLogged]` (`pragmatic-use-privacy`).
 
 ## Context on every line
 
 Correlation id, HTTP request data, machine and process come from built-in context providers. Add your
-own — the tenant, the plan — by extending `ContextProviderBase`, and read request state **when the line is
+own (the tenant, the plan) by extending `ContextProviderBase`, and read request state **when the line is
 written**, not in the constructor: the context manager is a singleton, so a provider that captured
 `ITenantContext` would stamp the first tenant it saw on every line for the life of the process.
 
@@ -128,11 +128,11 @@ public sealed class TenantLogContext(IHttpContextAccessor http) : ContextProvide
 app.UseLogging(log => log.ConfigureContext(ctx => ctx.AddProvider<TenantLogContext>()));
 ```
 
-Lower `Priority` wins when two providers supply the same key. ⚠️ Outside an HTTP request — a message
-handler, a job — there is no `HttpContext`: the line carries no tenant from this provider, which is what
+Lower `Priority` wins when two providers supply the same key. ⚠️ Outside an HTTP request (a message
+handler, a job) there is no `HttpContext`: the line carries no tenant from this provider, which is what
 `IsAvailable` reports.
 
-## Asserting on it — `CapturedLogs`
+## Asserting on it: `CapturedLogs`
 
 A log line nobody asserts on is a line that can stop naming the right thing without anyone noticing.
 `Pragmatic.Testing` carries an `ILoggerProvider` for exactly this:
@@ -149,12 +149,12 @@ logs.Clear();                                          // a fixture shared acros
 ⚠️ **Assert on the structured property, not the sentence.** The whole value of `[LoggerMessage]` is
 the named fields; a test matching rendered text stays green while the property carrying the meaning
 disappears. `PropertyOf` therefore requires the line to *have* the property, not merely to contain
-the words — matching text alone picks up neighbours (an invoker's own "Action WriteStoryAction
+the words; matching text alone picks up neighbours (an invoker's own "Action WriteStoryAction
 succeeded" contains `Story`) and returns null, which reads exactly like "it was never logged".
 
-Worth asserting on, in order of how often the answer matters: **who acted** — under delegation
+Worth asserting on, in order of how often the answer matters: **who acted** (under delegation
 `ICurrentUser.Id` is the subject and `Delegation.ActorId` is the actor, and a line with only one of
-them cannot answer "who did this"; the **tenant**; and the identifier of the thing that changed.
+them cannot answer "who did this"); the **tenant**; and the identifier of the thing that changed.
 
 ## What to enable / what to avoid
 
@@ -175,8 +175,8 @@ dotnet run --project src\App.Host       # verify that logs appear with the forma
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Showcase, Invoicing and Time off
-example applications — code that compiles and that `TimeOff.IntegrationTests`,
-`Invoicing.IntegrationTests` and `Showcase.IntegrationTests` exercise — and kept identical to it by the
+example applications (code that compiles and that `TimeOff.IntegrationTests`,
+`Invoicing.IntegrationTests` and `Showcase.IntegrationTests` exercise) and kept identical to it by the
 gate: the host's `UseLogging`, `[LoggerMessage]` in code, `[NotLogged]` on a secret, and a test that
 asserts the declared redaction through the application's own logger factory.
 
