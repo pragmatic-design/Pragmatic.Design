@@ -1,9 +1,9 @@
 # Roadmap
 
 Pragmatic.Design is in **1.0.0-alpha**: every package is built, tested and usable, and the public
-surface can still change before 1.0. Until the packages are on nuget.org they are consumed from a local
-feed ([`howto/local-nuget-server.md`](howto/local-nuget-server.md)). Each module's `README.md` states
-where that module stands.
+surface can still change before 1.0. The packages are on nuget.org as prereleases; a local feed
+([`howto/local-nuget-server.md`](howto/local-nuget-server.md)) is only for consuming a build of this
+repository before it is released. Each module's `README.md` states where that module stands.
 
 ## What the status words mean
 

@@ -69,6 +69,12 @@ export default defineConfig({
             href: "/site.webmanifest",
           },
         },
+        // Starlight writes og:title, og:description and twitter:card; the image a link preview shows is
+        // the website's, by absolute URL, since the preview is fetched by another site.
+        { tag: "meta", attrs: { property: "og:image", content: "https://pragmaticdesign.net/og-image.jpg" } },
+        { tag: "meta", attrs: { property: "og:image:width", content: "1280" } },
+        { tag: "meta", attrs: { property: "og:image:height", content: "640" } },
+        { tag: "meta", attrs: { name: "twitter:image", content: "https://pragmaticdesign.net/og-image.jpg" } },
         {
           tag: "script",
           content: `
