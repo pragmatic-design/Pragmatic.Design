@@ -17,7 +17,7 @@ The PDF renderer is native-backed. The native binary ships in the NuGet under `r
 
 1. **Verify the RID is supported.** The package ships `win-x64`, `linux-x64` and `osx-arm64`. For other platforms, open an issue.
 2. **Check your publish output.** For self-contained deployments the native binary must be next to the app (`dotnet publish -r win-x64 --self-contained`).
-3. **Check Docker images.** Pragmatic.Documents.Pdf needs a base image with glibc on Linux — `alpine` (musl) is not supported today.
+3. **Check Docker images.** Pragmatic.Documents.Pdf needs a base image with glibc on Linux; `alpine` (musl) is not supported today.
 
 ### `PdfRenderException`: "No fonts found on this machine"
 
@@ -39,7 +39,7 @@ See *Styles and fonts* in [pdf-rendering.md](/modules/documents/pdf-rendering/).
 ### The PDF uses another font than the one you set
 
 The engine takes fonts from the machine that renders. A `FontFamily` that is not installed there
-falls back to the default list — Noto Sans, Segoe UI, Helvetica, Arial, Liberation Sans, DejaVu Sans —
+falls back to the default list (Noto Sans, Segoe UI, Helvetica, Arial, Liberation Sans, DejaVu Sans),
 so the PDF comes out in a font that looks close but is not the one you named. Install the family where
 the PDF is produced (the build agent or the container, not only your machine). `PdfResources` carries
 images only, and `PdfRenderOptions.CustomFonts` is not wired into the engine yet. See *Styles and
@@ -49,7 +49,7 @@ fonts* in [pdf-rendering.md](/modules/documents/pdf-rendering/).
 
 - Images are embedded as the bytes you pass in `PdfResources`. Compress them before adding them if
   they are larger than necessary.
-- The fonts the engine uses are embedded as subsets — only the glyphs the document needs.
+- The fonts the engine uses are embedded as subsets: only the glyphs the document needs.
 
 ---
 
@@ -82,7 +82,7 @@ Or pass a `DocxTheme` to customise the built-in style definitions.
 
 ### Hyperlinks work but aren't coloured
 
-The default hyperlink style in DOCX is defined by the template (`styles.xml`). The renderer emits the hyperlink correctly — if it shows up as black text, the consuming template has overridden the Hyperlink style.
+The default hyperlink style in DOCX is defined by the template (`styles.xml`). The renderer emits the hyperlink correctly; if it shows up as black text, the consuming template has overridden the Hyperlink style.
 
 ---
 
@@ -95,7 +95,7 @@ The default hyperlink style in DOCX is defined by the template (`styles.xml`). T
 
 ### Freeze / merge not respected
 
-- `Freeze(rows, columns)` must be called **before** any rows — the freeze configuration is per-sheet metadata, not per-row.
+- `Freeze(rows, columns)` must be called **before** any rows: the freeze configuration is per-sheet metadata, not per-row.
 - `Merge("A1", "C1")` coordinates must be valid cell references; malformed references throw an `ArgumentException` at render time.
 
 ### Opened XLSX has lost formatting applied in Excel
@@ -112,7 +112,7 @@ The writer quotes cells that contain the delimiter, `"`, or newline. If you're s
 
 ```
 "hello, world","regular"    ✅ quoted correctly
-hello, world,regular         ❌ malformed — shouldn't happen from CsvWriter
+hello, world,regular         ❌ malformed: shouldn't happen from CsvWriter
 ```
 
 If `CsvWriter` produced unquoted output, file an issue with the input.
@@ -143,7 +143,7 @@ var options = new CsvOptions { WriteByteOrderMark = true };
 ### Outlook (desktop) renders the email with the wrong width
 
 - Ensure `Width` is set (`new EmailBuilder().Width(600)`); Outlook respects the MSO-conditional wrapper table the renderer emits.
-- Don't replace the output's wrapper table by post-processing the HTML — it's load-bearing for Outlook.
+- Don't replace the output's wrapper table by post-processing the HTML: it's load-bearing for Outlook.
 
 ### Preheader shows up in the visible body
 
@@ -198,7 +198,7 @@ Intentional: missing properties render as `null`. Use `| default:"..."` for fall
 
 ### Pipe not found
 
-`PipeRegistry.Default` has 5 core pipes (`uppercase`, `lowercase`, `trim`, `default`, `number`) — and
+`PipeRegistry.Default` has 5 core pipes (`uppercase`, `lowercase`, `trim`, `default`, `number`), and
 the message lists them, so read it rather than this page. `currency`, `date` and `percent` come from
 the I18N package (translation is the `t:` expression, not a pipe):
 
@@ -215,7 +215,7 @@ var pipes = PipeRegistry.Default.WithI18N().With(new TruncatePipe());
 ### Currency/date format looks wrong
 
 Pipes honour the data context's culture. If you did not set one, it is `CultureInfo.InvariantCulture`
-— not the server's culture.
+and not the server's culture.
 
 ```csharp
 var data = new TemplateDataContext()
@@ -235,14 +235,14 @@ You probably installed `Pragmatic.Documents.Model` + a renderer but also took a 
 
 The renderers are deterministic given the same input. If byte-for-byte comparison fails, check:
 - Embedded **creation date** metadata (set a fixed `DateTime` via the builder's metadata API when snapshot-testing)
-- Image compression — if you load an image from disk, ensure the bytes haven't changed between runs
-- For PDF, the fonts installed where it renders — two machines with different fonts produce different
+- Image compression: if you load an image from disk, ensure the bytes haven't changed between runs
+- For PDF, the fonts installed where it renders: two machines with different fonts produce different
   PDFs (see *Styles and fonts* in [pdf-rendering.md](/modules/documents/pdf-rendering/))
 
 ---
 
 ## Still stuck?
 
-- Check the corresponding `samples/` project — it's a minimal, runnable demonstration
+- Check the corresponding `samples/` project: it's a minimal, runnable demonstration
 - Inspect the generated `obj/Generated/` folder if your issue might be source-generator related
-- Open an issue with a reproducer — include the model (serialise with `DocumentSerializer.Serialize`) and the exact renderer / options used
+- Open an issue with a reproducer: include the model (serialise with `DocumentSerializer.Serialize`) and the exact renderer / options used

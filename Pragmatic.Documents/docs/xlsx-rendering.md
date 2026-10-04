@@ -83,7 +83,7 @@ For per-cell control:
     new Cell { Formula = "=B2*1.22", Style = CellStyle.Currency })
 ```
 
-**Value vs Formula.** If a `Cell` sets both `Formula` and `Value`, the **formula wins** — the cell becomes a
+**Value vs Formula.** If a `Cell` sets both `Formula` and `Value`, the **formula wins**: the cell becomes a
 formula cell and `Value` is written as its cached result (what a viewer shows until it recalculates). A
 `DateTime`/`DateTimeOffset` value with no explicit `CellStyle.NumberFormat` is given a default date format
 automatically, so it shows as a date rather than a raw serial number. A value of an unsupported CLR type
@@ -133,11 +133,11 @@ var header = new CellStyle
 
 Pre-defined styles:
 
-- `CellStyle.Currency` — currency number format
-- `CellStyle.Numeric(pattern)` — custom number format
-- `CellStyle.Date` — ISO date
-- `CellStyle.Percent` — percentage
-- `CellStyle.Header` — bold + centred
+- `CellStyle.Currency`: currency number format
+- `CellStyle.Numeric(pattern)`: custom number format
+- `CellStyle.Date`: ISO date
+- `CellStyle.Percent`: percentage
+- `CellStyle.Header`: bold + centred
 
 ---
 
@@ -167,7 +167,7 @@ foreach (var sheet in book.Sheets)
 }
 ```
 
-The reader returns the same `SpreadsheetModel` type you'd build manually — roundtrips are preserved for the features the model supports (formulas, merged cells, column widths, freeze panes).
+The reader returns the same `SpreadsheetModel` type you'd build manually; roundtrips are preserved for the features the model supports (formulas, merged cells, column widths, freeze panes).
 
 **Limits of the reader**: complex Excel features that don't have model equivalents (pivot tables, conditional formatting, charts, macros) are dropped on read. If you need those features round-tripped, don't use this library.
 
@@ -189,14 +189,14 @@ var model = new SpreadsheetModel { Sheets = { sheet } };
 await XlsxRenderer.RenderToStreamAsync(fs, model, ct);
 ```
 
-For truly streaming output (constant memory regardless of row count), the current renderer is not the right fit — it writes the OOXML package in one pass. File an issue if you need a streaming XLSX writer.
+For truly streaming output (constant memory regardless of row count), the current renderer is not the right fit: it writes the OOXML package in one pass. File an issue if you need a streaming XLSX writer.
 
 ---
 
 ## Limitations
 
 - No pivot tables, charts, or conditional formatting.
-- No macros (`.xlsm`) — read/write `.xlsx` only.
+- No macros (`.xlsm`): read/write `.xlsx` only.
 - Formulas are pass-through: the renderer does not evaluate them. Use Excel or a formula engine if you need computed values at render time.
 - Images in cells are not supported (they'd need a floating-image pass; currently out of scope).
 
@@ -204,5 +204,5 @@ For truly streaming output (constant memory regardless of row count), the curren
 
 ## Related
 
-- [csv-io.md](csv-io.md) — same model, CSV output
-- [`Pragmatic.Documents.Xlsx.Samples`](../samples/Pragmatic.Documents.Xlsx.Samples/README.md) — runnable scenarios (basic, multiple sheets, formulas, styled)
+- [csv-io.md](csv-io.md): same model, CSV output
+- [`Pragmatic.Documents.Xlsx.Samples`](../samples/Pragmatic.Documents.Xlsx.Samples/README.md): runnable scenarios (basic, multiple sheets, formulas, styled)
