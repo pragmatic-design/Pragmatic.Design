@@ -17,7 +17,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 ## By range
 
-### Result — 2 in use · range `PRAG0001`–`PRAG0099`
+### Result: 2 in use · range `PRAG0001`–`PRAG0099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -26,7 +26,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0003`.
 
-### Ensure — 1 in use · range `PRAG0100`–`PRAG0199`
+### Ensure: 1 in use · range `PRAG0100`–`PRAG0199`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -34,7 +34,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0101`.
 
-### Validation — 12 in use · range `PRAG0200`–`PRAG0299`
+### Validation: 12 in use · range `PRAG0200`–`PRAG0299`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -55,7 +55,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0224`.
 
-### Mapping — 35 in use · range `PRAG0300`–`PRAG0399`
+### Mapping: 35 in use · range `PRAG0300`–`PRAG0399`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -99,7 +99,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0342`.
 
-### Actions — 67 in use · range `PRAG0400`–`PRAG0499`
+### Actions: 67 in use · range `PRAG0400`–`PRAG0499`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -175,7 +175,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0469`.
 
-### Endpoints — 36 in use · range `PRAG0500`–`PRAG0599`
+### Endpoints: 36 in use · range `PRAG0500`–`PRAG0599`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -220,7 +220,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0555`.
 
-### Persistence.EFCore — 44 in use · range `PRAG0600`–`PRAG0699`
+### Persistence.EFCore: 44 in use · range `PRAG0600`–`PRAG0699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -273,7 +273,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0691`.
 
-### Persistence.Query — 42 in use · range `PRAG0700`–`PRAG0799`
+### Persistence.Query: 42 in use · range `PRAG0700`–`PRAG0799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -322,7 +322,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0743`.
 
-### Messaging — 19 in use · range `PRAG0800`–`PRAG0899`
+### Messaging: 19 in use · range `PRAG0800`–`PRAG0899`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -350,7 +350,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0838`.
 
-### Temporal — 6 in use · range `PRAG0900`–`PRAG0999`
+### Temporal: 6 in use · range `PRAG0900`–`PRAG0999`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -363,7 +363,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0906`.
 
-### Identity / Authorization — 16 in use · range `PRAG1000`–`PRAG1099`
+### Identity / Authorization: 16 in use · range `PRAG1000`–`PRAG1099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -388,7 +388,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1051`.
 
-### Persistence.Ownership — 2 in use · range `PRAG1100`–`PRAG1199`
+### Persistence.Ownership: 2 in use · range `PRAG1100`–`PRAG1199`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -399,7 +399,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1105`.
 
-### DependencyInjection — 3 in use · range `PRAG1400`–`PRAG1499`
+### DependencyInjection: 3 in use · range `PRAG1400`–`PRAG1499`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -409,7 +409,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1453`.
 
-### Composition — 44 in use · range `PRAG1600`–`PRAG1699`
+### Composition: 44 in use · range `PRAG1600`–`PRAG1699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -462,7 +462,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *Range exhausted.*
 
-### Caching — 8 in use · range `PRAG1700`–`PRAG1799`
+### Caching: 8 in use · range `PRAG1700`–`PRAG1799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -479,7 +479,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1752`.
 
-### Internationalization — 6 in use · range `PRAG1800`–`PRAG1899`
+### Internationalization: 6 in use · range `PRAG1800`–`PRAG1899`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -492,7 +492,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1806`.
 
-### Documents — 1 in use · range `PRAG1900`–`PRAG1999`
+### Documents: 1 in use · range `PRAG1900`–`PRAG1999`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -500,7 +500,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1901`.
 
-### Configuration — 4 in use · range `PRAG2000`–`PRAG2099`
+### Configuration: 4 in use · range `PRAG2000`–`PRAG2099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -513,7 +513,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2051`.
 
-### Notifications — 1 in use · range `PRAG2100`–`PRAG2149`
+### Notifications: 1 in use · range `PRAG2100`–`PRAG2149`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -521,7 +521,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2101`.
 
-### Patch — 7 in use · range `PRAG2200`–`PRAG2249`
+### Patch: 7 in use · range `PRAG2200`–`PRAG2249`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -535,7 +535,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2207`.
 
-### Client — 5 in use · range `PRAG2300`–`PRAG2349`
+### Client: 5 in use · range `PRAG2300`–`PRAG2349`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -547,7 +547,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2305`.
 
-### Testing — 6 in use · range `PRAG2350`–`PRAG2399`
+### Testing: 6 in use · range `PRAG2350`–`PRAG2399`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -562,7 +562,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2364`.
 
-### Jobs — 10 in use · range `PRAG2500`–`PRAG2549`
+### Jobs: 10 in use · range `PRAG2500`–`PRAG2549`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -579,7 +579,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2510`.
 
-### Traits + Resource — 14 in use · range `PRAG2600`–`PRAG2699`
+### Traits + Resource: 14 in use · range `PRAG2600`–`PRAG2699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -602,7 +602,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2652`.
 
-### ValueObject — 2 in use · range `PRAG2700`–`PRAG2749`
+### ValueObject: 2 in use · range `PRAG2700`–`PRAG2749`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -611,7 +611,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2702`.
 
-### Lifecycle — 4 in use · range `PRAG2750`–`PRAG2799`
+### Lifecycle: 4 in use · range `PRAG2750`–`PRAG2799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -622,7 +622,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2754`.
 
-### Serialization / AOT — 1 in use · range `PRAG2800`–`PRAG2899`
+### Serialization / AOT: 1 in use · range `PRAG2800`–`PRAG2899`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -630,7 +630,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2801`.
 
-### Privacy — 13 in use · range `PRAG2900`–`PRAG2999`
+### Privacy: 13 in use · range `PRAG2900`–`PRAG2999`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -652,7 +652,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2914`.
 
-### Generator infrastructure — 2 in use · range `PRAG9000`–`PRAG9099`
+### Generator infrastructure: 2 in use · range `PRAG9000`–`PRAG9099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
