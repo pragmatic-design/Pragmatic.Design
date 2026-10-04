@@ -195,8 +195,11 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
         if (_disposed)
             return true; // swallow, same as WriteLog
 
+        // Declared redaction needs the state's values before anything renders them, which the
+        // deferred path would hand to the sink untouched.
         if (!SupportsDeferredWrite ||
             _dataRedactor != null ||
+            DeclaredRedactor is { IsEmpty: false } ||
             _configuration.IncludeContextEnrichment ||
             _configuration.Filters.Filters.Count > 0)
         {

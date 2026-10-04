@@ -37,7 +37,23 @@ internal sealed class PragmaticLogger(string categoryName, PragmaticLoggerProvid
         if (_provider.TryWriteDeferred(logLevel, eventId, state, exception, formatter, _categoryName))
             return;
 
-        var message = formatter(state, exception);
+        // Declared redaction reaches the message as well as the properties. The caller's formatter
+        // closes over the original state, so a value whose type declared members has to be masked
+        // here, before the text is rendered: masking only LogEntry.Properties afterwards left the
+        // member in clear in every line a provider wrote.
+        if (_provider.DeclaredRedactor is { IsEmpty: false } redactor
+            && state is IReadOnlyList<KeyValuePair<string, object?>> values
+            && redactor.RedactState(values) is { } redacted)
+        {
+            WriteEntry(logLevel, eventId, redacted, exception, redacted.ToString()!);
+            return;
+        }
+
+        WriteEntry(logLevel, eventId, state, exception, formatter(state, exception));
+    }
+
+    private void WriteEntry<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, string message)
+    {
         if (string.IsNullOrEmpty(message) && exception == null)
             return;
 

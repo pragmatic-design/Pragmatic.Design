@@ -32,18 +32,15 @@ public class RedactionOverheadBenchmarks
         _plain = Logger(redactor: null);
         _redacting = Logger(new DeclaredRedactor([new CustomerRedactionMap()]));
 
-        // The row is only worth timing if the redactor actually masks: check the property it measures.
-        // ⚠️ The property, not the whole entry: the rendered message still carries the member in clear
-        // (#77), and that is a defect of the pipeline, not of what this row times.
+        // The row is only worth timing if the redactor actually masks: the member must be gone from the
+        // whole entry, message and properties both.
         var sink = new EventConsumer { Capture = true };
         var probe = Logger(new DeclaredRedactor([new CustomerRedactionMap()]), sink);
         probe.LogInformation("Registered {Customer}", _customer);
-        var consumed = sink.TakeLast();
-        var property = consumed?.Properties.SingleOrDefault(p => p.StartsWith("Customer=", StringComparison.Ordinal));
-        if (property is null
-            || property.Contains("jane@example.com", StringComparison.Ordinal)
-            || !property.Contains(PersonalDataPatterns.Mask, StringComparison.Ordinal))
-            throw new InvalidOperationException($"The redacting logger did not mask the declared member: {consumed?.ToString() ?? "(nothing reached the sink)"}");
+        var consumed = sink.TakeLast()?.ToString() ?? "(nothing reached the sink)";
+        if (consumed.Contains("jane@example.com", StringComparison.Ordinal)
+            || !consumed.Contains(PersonalDataPatterns.Mask, StringComparison.Ordinal))
+            throw new InvalidOperationException($"The redacting logger did not mask the declared member: {consumed}");
     }
 
     [GlobalCleanup]

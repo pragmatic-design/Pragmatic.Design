@@ -115,9 +115,11 @@ provider with the production preset, without a redactor and with one.
 | With declared redaction | 1,453.5 ns | 1.94× slower | 3.34 KB |
 
 Declared redaction serializes the value, parses it, masks the paths and serializes again, which is what
-the 1.94× is. ⚠️ It masks the structured property only: the rendered message still carries the member
-in clear ([#77](https://github.com/pragmatic-design/Pragmatic.Design/issues/77)), so this row times the
-redaction that exists, not the redaction the entry needs.
+the 1.94× is. ⚠️ This row was measured before
+[#77](https://github.com/pragmatic-design/Pragmatic.Design/issues/77) was fixed. At that point the
+pipeline masked the structured property after the message had been rendered with the member in clear.
+Since the fix, the value is masked once, before rendering, and the message is rendered from the masked
+values. The path is different and has not been re-measured.
 
 ## Formatting internals: `ZeroAllocationBenchmark`
 

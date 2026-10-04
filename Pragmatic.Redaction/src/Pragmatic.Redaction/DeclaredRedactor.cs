@@ -76,6 +76,54 @@ public sealed class DeclaredRedactor(IEnumerable<IRedactionMap> maps)
     }
 
     /// <summary>
+    ///     A log entry's structured state with every value whose type declared members masked, or null
+    ///     when no value declared anything.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The returned list renders the message from the masked values (its <c>ToString()</c>), and
+    ///         that rendering is the message to write. The caller's formatter closes over the original
+    ///         state, so calling it would put the clear value back into the text while the structured
+    ///         property beside it was masked.
+    ///     </para>
+    ///     <para>
+    ///         Null, not the original list, when nothing changed: the common entry declares nothing,
+    ///         allocates nothing, and keeps the message its own formatter renders.
+    ///     </para>
+    /// </remarks>
+    public IReadOnlyList<KeyValuePair<string, object?>>? RedactState(IReadOnlyList<KeyValuePair<string, object?>> values)
+    {
+        if (IsEmpty)
+            return null;
+
+        KeyValuePair<string, object?>[]? masked = null;
+
+        for (var i = 0; i < values.Count; i++)
+        {
+            var original = values[i].Value;
+            var redacted = RedactValue(original);
+
+            if (ReferenceEquals(redacted, original))
+                continue;
+
+            // Copy on first difference.
+            masked ??= ToArray(values);
+            masked[i] = new KeyValuePair<string, object?>(values[i].Key, redacted);
+        }
+
+        return masked is null ? null : new RedactedLogValues(masked);
+    }
+
+    private static KeyValuePair<string, object?>[] ToArray(IReadOnlyList<KeyValuePair<string, object?>> values)
+    {
+        var copy = new KeyValuePair<string, object?>[values.Count];
+        for (var i = 0; i < values.Count; i++)
+            copy[i] = values[i];
+
+        return copy;
+    }
+
+    /// <summary>
     ///     Serializes <paramref name="value" /> with every declared member replaced by
     ///     <see cref="PersonalDataPatterns.Mask" />.
     /// </summary>
