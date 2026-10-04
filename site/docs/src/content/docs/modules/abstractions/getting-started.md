@@ -228,7 +228,7 @@ await PragmaticApp.RunAsync(args, app =>
     // Multi-tenancy (provides ITenantContext)
     app.UseMultiTenancy(mt => mt.UseHeader());
 
-    // Storage (provides IFileStorage). Environment is IHostEnvironment, so ContentRootPath —
+    // Storage (provides IFileStorage). Environment is IHostEnvironment, so ContentRootPath;
     // WebRootPath lives on IWebHostEnvironment, which the builder deliberately does not expose.
     app.UseStorage(sp => new LocalDiskFileStorage(
         Path.Combine(app.Environment.ContentRootPath, "uploads"),
@@ -281,7 +281,7 @@ public async Task CreateReservation_SetsCreatedBy()
 services.AddSingleton<IFeatureFlagStore, InMemoryFeatureFlagStore>();
 services.AddSingleton<IConfigurationStore, InMemoryConfigurationStore>();
 
-// Production: real backends. Registered through their own extension, not by naming the type —
+// Production: real backends. Registered through their own extension, not by naming the type:
 // the implementations are internal, which is what lets them change without a breaking release.
 services.AddSingleton<IFeatureFlagStore, ConfigurationFeatureFlagStore>();
 services.AddAzureAppConfigurationStore(o => o.Endpoint = "https://…");

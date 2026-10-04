@@ -1,5 +1,5 @@
 ---
-title: "Persistence, repositories — reading and committing"
+title: "Persistence, repositories: reading and committing"
 description: "> **Scope**: the repository contracts, which live in two packages."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Abstractions/docs/how-it-works/persistence-repository.md
 sidebar:
@@ -12,15 +12,15 @@ sidebar:
 > `Pragmatic.Persistence/src/Pragmatic.Persistence/Repository/`.
 >
 > ⚠️ Both halves share the namespace `Pragmatic.Persistence.Repository`, not the assembly, so one
-> `using` covers them. The repositories cannot live in Abstractions because `RunAsync` — running a
-> declared `[Query]` through the repository — answers with `PagedResult<T>`, which reaches
+> `using` covers them. The repositories cannot live in Abstractions because `RunAsync` (running a
+> declared `[Query]` through the repository) answers with `PagedResult<T>`, which reaches
 > `Pragmatic.Result` through `QueryError`, and `Pragmatic.Result` references
 > `Pragmatic.Abstractions`. An interface declared there could not name the type its own signature
 > returns.
 >
 > **Not covered here**: the entity contracts these repositories move around are
 > [their own document](/modules/abstractions/how-it-works-persistence-entity/). `ISpecification<T>`, used by four of the read
-> methods, is declared in `Specification/` — the `Specification<T>` base class you derive from lives
+> methods, is declared in `Specification/`; the `Specification<T>` base class you derive from lives
 > in the `Pragmatic.Specification` package.
 
 For the member-by-member catalogue, see
@@ -32,14 +32,14 @@ fit together.
 `IReadRepository` is queries. `IRepository` adds writes. `IUnitOfWork` commits. They are separate so
 a signature says what a collaborator is allowed to do: a pricing service that takes
 `IReadRepository<Room>` has no write method to call. That is a strong signal, not an
-airtight one — `Query()` returns `IQueryable<TEntity>`, and EF Core's `ExecuteDeleteAsync` and
+airtight one: `Query()` returns `IQueryable<TEntity>`, and EF Core's `ExecuteDeleteAsync` and
 `ExecuteUpdateAsync` are extension methods on it. Writing through a read repository costs the caller
 a `using Microsoft.EntityFrameworkCore`, which is the same tell the `Query()` section below calls the
 marker of having left the domain layer. The invariant is convention made visible by the signatures,
 not something the type system enforces.
 
-You do not implement any of them. The source generator emits one concrete repository per entity — a
-`Repository` class nested in the entity's partial, so `Property.Repository` — base list
+You do not implement any of them. The source generator emits one concrete repository per entity, a
+`Repository` class nested in the entity's partial, so `Property.Repository`, with base list
 `IRepository<TEntity>`, with the specification methods, `Query()`, and the filter plumbing
 already wired, and registers it three times:
 
@@ -50,8 +50,8 @@ services.AddScoped<IReadRepository<Property>>(sp => sp.GetRequiredService<Proper
 ```
 
 One instance, three doors. Alongside these three the same method also registers the boundary's `DbContext` keyed by
-the boundary marker type — the same keying the next section describes for `IUnitOfWork`.
-`Pragmatic.Persistence.EFCore` contributes the `DbContext`, the interceptors and `EfCoreUnitOfWork` —
+the boundary marker type, the same keying the next section describes for `IUnitOfWork`.
+`Pragmatic.Persistence.EFCore` contributes the `DbContext`, the interceptors and `EfCoreUnitOfWork`;
 it does not contain the repositories themselves.
 
 ## `IUnitOfWork` is a keyed service
@@ -69,7 +69,7 @@ There is no non-keyed registration anywhere. So:
 
 - generated invokers receive it as
   `[FromKeyedServices(typeof(CatalogBoundary))] IUnitOfWork unitOfWork`;
-- hand-written code asks for `sp.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary))` —
+- hand-written code asks for `sp.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary))`,
   which is what the Showcase endpoints that batch several entities do;
 - **a plain `IUnitOfWork uow` constructor parameter does not resolve.**
 
@@ -78,11 +78,11 @@ boundaries has two of them, and an unkeyed registration could only ever be wrong
 
 For a single logical operation on one aggregate you do not need it at all: the generated repository
 exposes `SaveChangesAsync`. That method is on the nested generated type, not on `IRepository`, so the
-shortcut requires depending on `Property.Repository`; a caller holding the interface — as
-`PatchAmenityEndpoint` does — resolves the keyed unit of work even for a one-entity save. Reach for
+shortcut requires depending on `Property.Repository`; a caller holding the interface (as
+`PatchAmenityEndpoint` does) resolves the keyed unit of work even for a one-entity save. Reach for
 the unit of work when the operation spans repositories, and
 for `ExecuteInTransactionAsync` (in `Pragmatic.Persistence`, `UnitOfWorkExtensions`) when it should
-succeed or fail as a whole — it wraps the work in a transaction and returns a `Result`, which is why
+succeed or fail as a whole: it wraps the work in a transaction and returns a `Result`, which is why
 it lives one package up: `Pragmatic.Abstractions` does not depend on `Pragmatic.Result`.
 
 ## Default interface members, and what they are for
@@ -104,7 +104,7 @@ ambient EF Core transaction.
 
 ## Specifications go through the filters
 
-All four specification methods — `FindAsync`, `CountAsync`, `ExistsAsync`, `FirstOrDefaultAsync` —
+All four specification methods (`FindAsync`, `CountAsync`, `ExistsAsync`, `FirstOrDefaultAsync`)
 take `ISpecification<TEntity>`, and the generated repository composes them the same way:
 
 ```csharp
@@ -118,12 +118,12 @@ to see.
 ## `Query()`, and where it belongs
 
 `Query()` returns `IQueryable<TEntity>` and, by construction, leaks the EF Core query provider
-through the abstraction — that is the price of composing projections, `Include`s and
+through the abstraction; that is the price of composing projections, `Include`s and
 provider-specific operators at the call site. The contract's own documentation asks you to keep
 those callers in the infrastructure layer.
 
 There is a second reason to know where the boundary is. The generated repository also has a
-`Query(QueryStrategy)` overload — `Projection`, `Entity`, `Filtered`, `Raw` — that is **not** on the
+`Query(QueryStrategy)` overload (`Projection`, `Entity`, `Filtered`, `Raw`) that is **not** on the
 interface. `Query()` is `Query(Filtered)`; code that needs any other strategy depends on the concrete
 generated repository type, and that dependency is the marker that you have left the domain layer.
 `QueryStrategy` is not the filter-mode enum: `Admin` belongs to `FilterMode`, a different one.
@@ -134,7 +134,7 @@ generated repository type, and that dependency is the marker that you have left 
 `RollbackAsync`, a `TransactionId`, and both dispose patterns. `TransactionState` is the enum
 `State` reports.
 
-The implementations live entirely inside `Pragmatic.Persistence.EFCore` — `EfCoreTransaction`
+The implementations live entirely inside `Pragmatic.Persistence.EFCore`: `EfCoreTransaction`
 implements one, `EfCoreUnitOfWork` produces it and maintains the other. Consumption does not:
 `UnitOfWorkExtensions.ExecuteInTransactionAsync`, one package up in `Pragmatic.Persistence`, begins
 the transaction and commits or rolls it back in each of its three overloads. A non-EF `IUnitOfWork`
@@ -146,15 +146,15 @@ touch.
 
 Named here, described where they live:
 
-- **`Pragmatic.Persistence.EFCore`** — `EfCoreUnitOfWork` and `EfCoreTransaction`, the
+- **`Pragmatic.Persistence.EFCore`**: `EfCoreUnitOfWork` and `EfCoreTransaction`, the
   implementations behind every contract on this page, plus the `DbContext` and interceptors.
-- **`Pragmatic.Persistence`** — `UnitOfWorkExtensions.ExecuteInTransactionAsync<T, TError>`, the
+- **`Pragmatic.Persistence`**: `UnitOfWorkExtensions.ExecuteInTransactionAsync<T, TError>`, the
   `Result`-returning transactional helper; and `Query/` where `QueryStrategy` and the filter modes
   are defined.
-- **`Pragmatic.Actions`** — the generated invokers take the keyed `IUnitOfWork` and override
+- **`Pragmatic.Actions`**: the generated invokers take the keyed `IUnitOfWork` and override
   `SaveChangesAsync`; `MutationInvoker` uses `Query()` (with `IgnoreQueryFilters` where the
   lifecycle demands it) to load the entity it is about to change.
-- **`Pragmatic.Specification`** — the `Specification<T>` base class and its combinators; the
+- **`Pragmatic.Specification`**: the `Specification<T>` base class and its combinators; the
   interface the repository speaks is `ISpecification<T>` in `Pragmatic.Abstractions`.
-- **`Pragmatic.Endpoints`** — endpoints are the layer where `IReadRepository` and `Query()` are
+- **`Pragmatic.Endpoints`**: endpoints are the layer where `IReadRepository` and `Query()` are
   meant to meet, and the Showcase endpoints are the worked examples.

@@ -1,16 +1,16 @@
 ---
-title: "Http — what a request may bring in, and where a request may go out"
-description: "> **Scope**: `src/Pragmatic.Abstractions/Http/` — 3 files."
+title: "Http: what a request may bring in, and where a request may go out"
+description: "> **Scope**: `src/Pragmatic.Abstractions/Http/`, 3 files."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Abstractions/docs/how-it-works/http.md
 sidebar:
   order: 14
 ---
-> **Scope**: `src/Pragmatic.Abstractions/Http/` — 3 files.
+> **Scope**: `src/Pragmatic.Abstractions/Http/`, 3 files.
 > `MaxBodySizeMetadata` · `OutboundUrlGuard` · `OutboundUrlVerdict`
 >
 > **Not covered here**: the `[MaxBodySize]` attribute that feeds the metadata lives in
 > `Pragmatic.Endpoints`, and the pipeline step that enforces it lives in
-> `Pragmatic.Composition.Host` — both are named below, neither is opened here.
+> `Pragmatic.Composition.Host`; both are named below, neither is opened here.
 
 For the member-by-member catalogue, see [interfaces](/modules/abstractions/interfaces/#24-http). This document is
 about how the pieces fit together.
@@ -22,7 +22,7 @@ not control. Inbound: a body whose size the caller chooses. Outbound: a destinat
 someone else supplied. Neither half depends on the other; they share a folder because they share
 the reason for existing.
 
-Both types are plain data or pure functions with no ASP.NET dependency — which is what lets them
+Both types are plain data or pure functions with no ASP.NET dependency, which is what lets them
 sit in Abstractions at all, and lets the enforcement live in the host where the pipeline is.
 
 | Type | Namespace |
@@ -30,20 +30,20 @@ sit in Abstractions at all, and lets the enforcement live in the host where the 
 | `MaxBodySizeMetadata` | `Pragmatic.Http` |
 | `OutboundUrlGuard`, `OutboundUrlVerdict` | `Pragmatic.Abstractions.Http` |
 
-## `MaxBodySizeMetadata` — a limit that travels with the endpoint
+## `MaxBodySizeMetadata`: a limit that travels with the endpoint
 
 A `sealed record MaxBodySizeMetadata(long MaxBytes)`, and nothing else. Its value is entirely in
 where it is attached and when it is read.
 
 The chain has three links, in three assemblies:
 
-1. **You write** `[MaxBodySize(bytes)]` — `Pragmatic.Endpoints/Attributes/MaxBodySizeAttribute.cs`.
+1. **You write** `[MaxBodySize(bytes)]` (`Pragmatic.Endpoints/Attributes/MaxBodySizeAttribute.cs`).
 2. **The generator emits a call**, not a type: one line of the form
    `{builder}.WithMetadata(new global::Pragmatic.Http.MaxBodySizeMetadata({bytes}L));` in each of
-   the four endpoint handler templates —
+   the four endpoint handler templates:
    `EndpointHandlerTemplate.Configuration.cs`, `MutationHandlerTemplate.Configuration.cs`,
    `QueryHandlerTemplate.Configuration.cs`, `DomainActionHandlerTemplate.Configuration.cs`.
-3. **The host reads it** — `Pragmatic.Composition.Host/Steps/RequestLimitsStep.cs`, through
+3. **The host reads it** in `Pragmatic.Composition.Host/Steps/RequestLimitsStep.cs`, through
    `Metadata.GetMetadata<MaxBodySizeMetadata>()`.
 
 ### Why endpoint metadata rather than configuration
@@ -64,18 +64,18 @@ been consumed yet, or the limit has already been paid for in bandwidth and memor
 
 The endpoint value is not the only source: the step falls back to
 `Pragmatic:RequestLimits:MaxBodySizeBytes` from configuration, so an application can set a global
-default and let `[MaxBodySize]` override it per operation. It is a default and not a ceiling — an
+default and let `[MaxBodySize]` override it per operation. It is a default and not a ceiling: an
 endpoint that declares a larger value gets the larger value. With neither present, no limit is
 applied and the server's own default stands.
 
 Inside the middleware there are two enforcement paths, because a client can be wrong in two ways. A
-declared `Content-Length` above the limit is answered with 413 before `next()` is ever called — which
+declared `Content-Length` above the limit is answered with 413 before `next()` is ever called, which
 also means the limit holds on test servers, whose transport does not necessarily honour the body-size
 feature. Then, where the transport exposes `IHttpMaxRequestBodySizeFeature` as writable, the step
 sets it, so a request that understates or omits its length is cut off by the server as the bytes
 actually arrive.
 
-## `OutboundUrlGuard` — refusing a destination inside your own network
+## `OutboundUrlGuard`: refusing a destination inside your own network
 
 A static class with two entry points and an enum of verdicts, for the case where an application
 fetches, posts to, or subscribes a URL that a user, a tenant, or an externally-edited configuration
@@ -91,7 +91,7 @@ only protection was the assumption that nothing could reach it.
 | Member | What it does |
 |---|---|
 | `Inspect(string?, bool allowHttp = false)` | Parses, then defers to the `Uri` overload. |
-| `Inspect(Uri?, bool allowHttp = false)` | Scheme, embedded credentials, and — only if the host is a **literal address** — the address ranges. A DNS name is not resolved here. |
+| `Inspect(Uri?, bool allowHttp = false)` | Scheme, embedded credentials, and (only if the host is a **literal address**) the address ranges. A DNS name is not resolved here. |
 | `InspectResolvedAsync(Uri?, bool, CancellationToken)` | Everything the synchronous overload does, then resolves the host and checks every address it answers with. |
 
 The synchronous overload is therefore a check on the *shape* of a URL; the address check for a named
@@ -126,12 +126,12 @@ by hand because the BCL exposes no property for it.
 
 The remarks on `OutboundUrlGuard` say it plainly, and repeating it here is the point rather than a
 caveat: **this cannot close SSRF on its own.** Checking a name means resolving it, and the
-resolution that decides the connection is the one the HTTP stack performs a moment later — a name
+resolution that decides the connection is the one the HTTP stack performs a moment later: a name
 can answer publicly here and privately there (DNS rebinding). This removes the easy cases. A
 deployment that must actually hold uses an egress proxy or a network policy, where the decision is
 made at connect time.
 
-Where the set of legitimate hosts *is* known — `hooks.slack.com`, a fixed partner API — an allowlist
+Where the set of legitimate hosts *is* known (`hooks.slack.com`, a fixed partner API), an allowlist
 is strictly stronger and should be preferred. The guard is the fallback for when no such list can be
 written.
 
@@ -139,10 +139,10 @@ written.
 
 Named here, described where they live:
 
-- **`Pragmatic.Endpoints` → `MaxBodySizeAttribute`** — the authoring surface. The attribute and the
+- **`Pragmatic.Endpoints` → `MaxBodySizeAttribute`**: the authoring surface. The attribute and the
   metadata record are deliberately in different packages: the attribute belongs with endpoints, the
   metadata with the ASP.NET-free abstractions both the generator and the host can reference.
-- **`Pragmatic.Composition.Host` → `RequestLimitsStep`** — the startup step, `Order = 55`, that turns
+- **`Pragmatic.Composition.Host` → `RequestLimitsStep`**: the startup step, `Order = 55`, that turns
   the metadata into a 413 or a server-side body limit.
-- **`Pragmatic.SourceGenerator` → `Features/Endpoints/Templates/`** — the four handler templates that
+- **`Pragmatic.SourceGenerator` → `Features/Endpoints/Templates/`**: the four handler templates that
   emit the `WithMetadata` call.

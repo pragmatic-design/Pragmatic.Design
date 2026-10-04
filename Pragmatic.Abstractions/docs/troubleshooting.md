@@ -189,8 +189,8 @@ covered by a source-generated `JsonSerializerContext`, and this one isn't.
 
 **Solution:** either add `[assembly: PragmaticGenerateJsonContext]` to the module (the generator
 emits a context covering your boundary types automatically), or apply the analyzer's code-fix,
-which adds the missing `[JsonSerializable(typeof(...))]` to your context. Only as a last resort —
-and never for native AOT — leave the reflection fallback enabled.
+which adds the missing `[JsonSerializable(typeof(...))]` to your context. Only as a last resort (and
+never for native AOT) leave the reflection fallback enabled.
 
 ## FAQ
 
@@ -236,7 +236,7 @@ So that domain modules can use the decorator pattern (`services.Decorate<TServic
 
 ### How do I find which module implements a specific interface?
 
-[interfaces.md](interfaces.md) names the implementation next to each contract, with full member signatures — `ICurrentUser`, for one, is implemented by `ClaimsPrincipalUserAccessor` in `Pragmatic.Identity.AspNetCore`. The README is a summary by area and has no per-interface sections.
+[interfaces.md](interfaces.md) names the implementation next to each contract, with full member signatures; `ICurrentUser`, for one, is implemented by `ClaimsPrincipalUserAccessor` in `Pragmatic.Identity.AspNetCore`. The README is a summary by area and has no per-interface sections.
 
 ---
 

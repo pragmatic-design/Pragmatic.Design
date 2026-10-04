@@ -86,13 +86,13 @@ These Microsoft packages are stable, widely-used .NET abstractions with no runti
 
 `Pragmatic.Specification` is not among them, and the direction is worth being explicit about:
 `ISpecification<T>` is declared **here**, and `Pragmatic.Specification` supplies the `Specification<T>`
-base class that implements it. `IReadRepository` takes the contract, never the base class — which is
+base class that implements it. `IReadRepository` takes the contract, never the base class, which is
 what keeps a repository usable without the specification package.
 
 ### What this enables
 
 1. **No circular dependencies.** `Persistence` and `Identity` both reference Abstractions, not each other.
-2. **Framework independence.** Domain modules depend on `ICurrentUser`, not `ClaimsPrincipal`. The ASP.NET Core adapter lives in `Pragmatic.Identity.AspNetCore`, and a module that never needs it never references it — which is the property that matters. It is not host-only in practice: the Showcase boundary libraries take it too, and so do `Identity.Local.Jwt` and `Identity.Oidc`.
+2. **Framework independence.** Domain modules depend on `ICurrentUser`, not `ClaimsPrincipal`. The ASP.NET Core adapter lives in `Pragmatic.Identity.AspNetCore`, and a module that never needs it never references it, which is the property that matters. It is not host-only in practice: the Showcase boundary libraries take it too, and so do `Identity.Local.Jwt` and `Identity.Oidc`.
 3. **Single interface per concept.** One `ICurrentUser`, one `IClock`, one `IRepository`. Every module consumes the same contract. One DI registration satisfies all consumers.
 4. **Lightweight referencing.** A console app, test harness, or background worker can reference Abstractions without pulling ASP.NET Core or EF Core.
 
@@ -100,15 +100,15 @@ what keeps a repository usable without the specification package.
 
 ## Area Map
 
-Abstractions is organized in 26 areas. This is the orientation map — for member-level
+Abstractions is organized in 26 areas. This is the orientation map; for member-level
 signatures, usage snippets and caveats of EVERY type, see [interfaces.md](interfaces.md)
 (section numbers below).
 
 | Area | What it gives you | Key types | Catalog |
 |---|---|---|---|
 | Result | Error contract for the Result pattern | `IError` | §1 |
-| Persistence — Entities | Entity capabilities the SG implements for you | `IEntity`, `IAuditable`, `ISoftDelete`, `ICreatable`, `IOwnedEntity`/`IScopedEntity`, `IChangeTracking` | §2 |
-| Persistence — Repositories | Data access without EF coupling | `IUnitOfWork`, `ITransaction` here; `IRepository`, `IReadRepository` in `Pragmatic.Persistence` | §3 |
+| Persistence: Entities | Entity capabilities the SG implements for you | `IEntity`, `IAuditable`, `ISoftDelete`, `ICreatable`, `IOwnedEntity`/`IScopedEntity`, `IChangeTracking` | §2 |
+| Persistence: Repositories | Data access without EF coupling | `IUnitOfWork`, `ITransaction` here; `IRepository`, `IReadRepository` in `Pragmatic.Persistence` | §3 |
 | Identity | Who is calling | `ICurrentUser`, `IAuthenticationContext`, `IUserProfile`, `[PragmaticUser]` | §4 |
 | Authorization | What they may do (types and generated constants, not strings) | `IUserAuthorization`, `[assembly: Permission]`, `IRole`/`IGroup`, `[RequirePermission]`, `IResourceAuthorizer`, `IUserScopeResolver` | §5 |
 | Events | Two-tier domain/integration events | `IDomainEvent`, `IIntegrationEvent`/`[PublicEvent]`, `IDomainEventHandler`, `IRaisesLifecycleEvents` | §6 |
@@ -217,7 +217,7 @@ Each role, group, and feature flag is a **type**, not a string. This enables:
 - SG-generated registries and constants.
 
 A permission is the exception, and on purpose: it is one line, `[assembly: Permission("billing.invoice.refund",
-"…")]`, and what the code names is the `const` the generator writes for it — `BillingPermissions.Invoice.Refund`.
+"…")]`, and what the code names is the `const` the generator writes for it: `BillingPermissions.Invoice.Refund`.
 A type per permission would cost a class for a name, a description and a category.
 
 The generic attribute convention follows: `[RequirePolicy<TPolicy>]` rather than `[RequirePolicy(typeof(TPolicy))]`.
@@ -266,7 +266,7 @@ When a consumer writes `using Pragmatic.Identity;`, they get the same namespace 
 
 ### Module runtime packages
 
-Module runtime packages take a `<ProjectReference>` on Abstractions — 31 projects under `src/` declare
+Module runtime packages take a `<ProjectReference>` on Abstractions; 31 projects under `src/` declare
 one. This gives them access to all shared contracts:
 
 ```xml
@@ -275,7 +275,7 @@ one. This gives them access to all shared contracts:
 ```
 
 Not every module declares it: `Pragmatic.Actions`, for one, receives it transitively. Which is the
-point — the contracts arrive either way, and a module only names the reference when it is the one
+point: the contracts arrive either way, and a module only names the reference when it is the one
 that needs them.
 
 ### Host projects
@@ -301,7 +301,7 @@ user.IsAuthenticated.Returns(true);
 ```
 
 The mock is generated, not a runtime proxy: no reflection, and it works under Native AOT. The
-repository ships no mocking library — `Pragmatic.Testing.Mocking.SourceGenerator` produces the type
+repository ships no mocking library: `Pragmatic.Testing.Mocking.SourceGenerator` produces the type
 from the interface, so what a test doubles is checked by the compiler.
 
 ---
@@ -340,14 +340,14 @@ A type belongs in `Pragmatic.Abstractions` if it meets **all** of these criteria
 | `IClock` | Used by Temporal (`SystemClock`, `TestClock`), Jobs (scheduling), Identity (authentication actions), and the trait actions the SG emits |
 | `IError` | Used by Result, Actions, Endpoints, and the Source Generator |
 | `[Service]` attribute | Used by the SG at compile time and by any module registering services |
-| `ITenantContext` | Used by Persistence (tenant filter), Configuration (tenant overrides), MultiTenancy, and every module that must restore the tenant on a background path — Events, Jobs, Messaging, Notifications |
+| `ITenantContext` | Used by Persistence (tenant filter), Configuration (tenant overrides), MultiTenancy, and every module that must restore the tenant on a background path: Events, Jobs, Messaging, Notifications |
 | Telemetry tag constants | Used by every module that instruments with OpenTelemetry |
 
 ### Types that DO NOT belong
 
 | Type | Where It Belongs | Why |
 |---|---|---|
-| `AuditingInterceptor` | `Pragmatic.Persistence.EFCore` | EF Core implementation detail — the repositories themselves are generated per entity, there is no shared base type to place |
+| `AuditingInterceptor` | `Pragmatic.Persistence.EFCore` | EF Core implementation detail; the repositories themselves are generated per entity, there is no shared base type to place |
 | `MutationInvoker<TMutation, TEntity>` | `Pragmatic.Actions` | Actions runtime logic |
 | `ClaimsPrincipalUserAccessor` | `Pragmatic.Identity.AspNetCore` | Depends on ASP.NET Core's `ClaimsPrincipal` |
 | `InMemoryEventDispatcher` | `Pragmatic.Events` | Implementation of `IDomainEventDispatcher` |
@@ -379,7 +379,7 @@ Because every module in the ecosystem depends on Abstractions:
 - **New interfaces** are additive (non-breaking). Modules only consume the interfaces they need.
 - **New members on existing interfaces** should use default interface implementations when possible.
 - **No deprecation before v1.** A replaced API is removed in the same change that introduces its
-  successor, with every caller updated — `[Obsolete]` protects consumers that do not exist yet.
+  successor, with every caller updated; `[Obsolete]` protects consumers that do not exist yet.
 
 The package follows the same version as the Pragmatic.Design ecosystem. All packages are versioned together.
 

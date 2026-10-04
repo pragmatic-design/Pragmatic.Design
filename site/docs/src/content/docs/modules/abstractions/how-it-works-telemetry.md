@@ -1,11 +1,11 @@
 ---
-title: "Telemetry — one vocabulary, and nothing to pay when nobody listens"
-description: "> **Scope**: `src/Pragmatic.Abstractions/Telemetry/` — 11 files."
+title: "Telemetry: one vocabulary, and nothing to pay when nobody listens"
+description: "> **Scope**: `src/Pragmatic.Abstractions/Telemetry/`, 11 files."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Abstractions/docs/how-it-works/telemetry.md
 sidebar:
   order: 23
 ---
-> **Scope**: `src/Pragmatic.Abstractions/Telemetry/` — 11 files.
+> **Scope**: `src/Pragmatic.Abstractions/Telemetry/`, 11 files.
 > `ActivityHelper` · `TelemetryOptions` · and the nine convention classes under
 > `Telemetry/Conventions/`: `ActionTags` · `CacheTags` · `DbTags` · `ErrorTags` · `EventTags` ·
 > `I18NTags` · `JobTags` · `MessagingTags` · `ResilienceTags`.
@@ -24,10 +24,10 @@ BCL type that OpenTelemetry consumes directly. What Abstractions owns is the two
 when every module invents them separately: **what a tag is called**, and **what an instrumented
 call costs when no exporter is attached**.
 
-Everything here is `const string`, four extension members, and `TelemetryOptions` — the one type
+Everything here is `const string`, four extension members, and `TelemetryOptions`, the one type
 with state, holding what the host configures. There is no interface to implement.
 
-## `ActivityHelper` — the null guard belongs in the helper
+## `ActivityHelper`: the null guard belongs in the helper
 
 `Activity.Current` is `null` whenever no listener is subscribed, which in a normal test run or a
 production process with tracing disabled means *always*. Written by hand, every instrumented call
@@ -41,7 +41,7 @@ if (activity is not null)
 }
 ```
 
-The four members — `RecordException`, `SetSuccess`, `SetFailure`, `AddNamedEvent` — are extension
+The four members (`RecordException`, `SetSuccess`, `SetFailure`, `AddNamedEvent`) are extension
 members on `Activity?`, and each opens with a null guard before touching anything. The guard is the
 first statement, so no tag collection is built and then discarded when there is no activity. Each
 returns the activity, so calls chain.
@@ -51,7 +51,7 @@ One caveat on `AddNamedEvent`: its tags are a `params` array, and the caller mat
 activity is listening; passing none does not.
 
 The guard is what lets a call site stay a single statement instead of an `if`. `RecordException` is
-what an exception path looks like across the framework — Actions (`ActionInvokerBase`,
+what an exception path looks like across the framework: Actions (`ActionInvokerBase`,
 `MutationInvoker`), Events (`InMemoryEventDispatcher`), Messaging (`InMemoryMessageBus`),
 Persistence.EFCore (`BulkExecutor`, `EfCoreQueryExecutor`, `EfCoreUnitOfWork`) and Resilience
 (`ResiliencePipeline`) all call it, and all eleven call sites write `activity?.RecordException(ex)`.
@@ -61,7 +61,7 @@ where a future call site drops the `?.`.
 
 `RecordException` follows the OpenTelemetry exception convention: it attaches an `ActivityEvent`
 named `exception` carrying the error type, the message and the stack trace, taking those tag names
-from `ErrorTags`. That makes `ErrorTags` the one convention class Abstractions consumes itself —
+from `ErrorTags`. That makes `ErrorTags` the one convention class Abstractions consumes itself;
 the other eight are vocabulary for the modules.
 
 ## The convention classes
@@ -85,7 +85,7 @@ culture middleware), `ResilienceTags` in Resilience (`ResiliencePipeline`), and 
 `ActivityHelper`.
 
 When you instrument your own spans alongside the framework, reference these constants rather than
-retyping the strings — a tag that differs by one character does not correlate with the framework's
+retyping the strings: a tag that differs by one character does not correlate with the framework's
 own spans, and nothing at compile time will tell you.
 
 ## `TelemetryOptions` and the startup gate
@@ -94,7 +94,7 @@ own spans, and nothing at compile time will tell you.
 and consumed by `PragmaticTelemetry.AddPragmaticTelemetry` in `Pragmatic.Composition.Host`.
 
 **`SamplingRatio` validates in its setter**, throwing `ArgumentOutOfRangeException` outside the
-inclusive range `[0.0, 1.0]`. That is not defensive decoration — it is where the value arrives from
+inclusive range `[0.0, 1.0]`. That is not defensive decoration: it is where the value arrives from
 configuration. The generated entry point binds the `Telemetry` section of your configuration
 straight onto the instance:
 
@@ -105,7 +105,7 @@ PragmaticTelemetry.AddPragmaticTelemetry(services, options, isDevelopment);
 
 So `"SamplingRatio": 1.5` in `appsettings.json` fails at startup, with the offending value in the
 message, instead of quietly clamping and leaving you to wonder why trace volume does not match the
-number you wrote. The default is `0.1` — one trace in ten.
+number you wrote. The default is `0.1`, one trace in ten.
 
 **In Development, sampling is not applied at all.** `PragmaticTelemetry` installs the
 ratio-based sampler only when the environment is not Development *and* the ratio is below 1.0.
@@ -114,7 +114,7 @@ during debugging is a wasted afternoon.
 
 ## What the generator does
 
-Nothing per type — there is no telemetry attribute, no model, no template. Telemetry is not a
+Nothing per type: there is no telemetry attribute, no model, no template. Telemetry is not a
 detected feature either: `FeatureDetector` has no flag for it, because the wiring is unconditional.
 The composition entry template (`PragmaticEntryTemplate.RenderTelemetrySetup`) emits the two lines
 shown above into every generated entry point. Telemetry is always wired; what it *does* is decided
@@ -124,11 +124,11 @@ by `TelemetryOptions`, at runtime, from configuration.
 
 Named here, described where they live:
 
-- **`Pragmatic.Composition.Host` → `PragmaticTelemetry`** — the only consumer of
+- **`Pragmatic.Composition.Host` → `PragmaticTelemetry`**: the only consumer of
   `TelemetryOptions`; turns it into OpenTelemetry tracing, metrics and exporter registrations.
-- **`Pragmatic.Composition.Host` → `PragmaticOptions`** — exposes `Telemetry` as the bindable
+- **`Pragmatic.Composition.Host` → `PragmaticOptions`**: exposes `Telemetry` as the bindable
   section of the host options.
-- **`Pragmatic.SourceGenerator` → `PragmaticEntryTemplate`** — emits the configuration bind and the
+- **`Pragmatic.SourceGenerator` → `PragmaticEntryTemplate`**: emits the configuration bind and the
   `AddPragmaticTelemetry` call into the generated entry point.
-- **`System.Diagnostics.Activity`** (BCL) — the type everything here extends. Pragmatic adds no
+- **`System.Diagnostics.Activity`** (BCL): the type everything here extends. Pragmatic adds no
   tracing abstraction of its own on top of it.
