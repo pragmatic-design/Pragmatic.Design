@@ -18,7 +18,7 @@ Patterns that look reasonable but fight the module's design.
 var pipe = ImagePipeline.Load(bytes);
 pipe.Resize(400, 400);
 var webp = pipe.Encode(ImageFormat.WebP);
-// pipe never disposed — leaks until GC
+// pipe never disposed: leaks until GC
 
 // ✅
 using var pipe = ImagePipeline.Load(bytes);
@@ -121,11 +121,11 @@ Pragmatic.Imaging does not preserve EXIF through re-encoding. If you need it, us
 
 `quality` applies to **JPEG only**.
 
-- **PNG / BMP / TIFF / GIF** are lossless or paletted — `quality` is ignored.
-- **WebP** encodes lossless and **AVIF** uses the library default — `quality` is ignored (an `image` 0.25 limitation).
+- **PNG / BMP / TIFF / GIF** are lossless or paletted: `quality` is ignored.
+- **WebP** encodes lossless and **AVIF** uses the library default: `quality` is ignored (an `image` 0.25 limitation).
 
 ```csharp
-pipe.Encode(ImageFormat.Png, quality: 50);    // quality ignored — normal PNG
+pipe.Encode(ImageFormat.Png, quality: 50);    // quality ignored, normal PNG
 pipe.Encode(ImageFormat.Jpeg, quality: 75);   // quality honoured
 ```
 
@@ -155,7 +155,7 @@ The native buffer is released only on `Dispose` (i.e. at the end of the `using`)
 ```csharp
 using var fs = File.OpenRead("photo.jpg");
 using var pipe = ImagePipeline.Load(fs);
-// fs is now at EOF — re-reading needs fs.Position = 0
+// fs is now at EOF: re-reading needs fs.Position = 0
 ```
 
 If you need to inspect first, call `ImageInfo.FromStream` (it reads only the header), then rewind before `Load`.
@@ -178,7 +178,7 @@ Pass `allowUpscale: true` to enlarge, or enforce a minimum with `Resize`.
 
 ## 11. Expecting QR codes to embed logos or custom colours
 
-`QrCode.GeneratePng` produces a black/white QR with configurable module size and margin — no colour, no logo, no ECC tuning. For richer output, use a dedicated library.
+`QrCode.GeneratePng` produces a black/white QR with configurable module size and margin: no colour, no logo, no ECC tuning. For richer output, use a dedicated library.
 
 ---
 
@@ -190,11 +190,11 @@ The native binary is built against glibc; Alpine uses musl. The app fails at the
 
 ## 13. Expecting cancellation to interrupt a native call
 
-The native functions run to completion once invoked — there's no cancellation cooperation on the Rust side. `CancellationToken` is checked **between** operations (before/after each native call), not during one. For long batches, use `ImageBatch` with `maxConcurrency` to cap work in flight.
+The native functions run to completion once invoked: there's no cancellation cooperation on the Rust side. `CancellationToken` is checked **between** operations (before/after each native call), not during one. For long batches, use `ImageBatch` with `maxConcurrency` to cap work in flight.
 
 ---
 
 ## Related
 
-- [troubleshooting.md](/modules/imaging/troubleshooting/) — runtime errors
-- [concepts.md](/modules/imaging/concepts/) — why the API is shaped this way
+- [troubleshooting.md](/modules/imaging/troubleshooting/): runtime errors
+- [concepts.md](/modules/imaging/concepts/): why the API is shaped this way

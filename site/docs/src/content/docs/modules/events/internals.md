@@ -42,12 +42,12 @@ DispatchAsync<TEvent>(@event)
   7. If failures > 0, log Warning with failure count
 ```
 
-### Untyped Batch Dispatch — SG typed dispatch tables
+### Untyped Batch Dispatch: SG typed dispatch tables
 
 When `DispatchAsync(IEnumerable<IDomainEvent>)` is called (typically by the EF Core interceptor), the dispatcher iterates events and bridges each to the typed path **without reflection**, using source-generated dispatch tables.
 
 For every assembly that has `[EventHandler]` handlers, the Composition generator emits a
-`GeneratedEventDispatchTable : ITypedEventDispatchTable` — an event→`DispatchAsync<TEvent>` switch built with compile-time pattern matching:
+`GeneratedEventDispatchTable : ITypedEventDispatchTable`, an event→`DispatchAsync<TEvent>` switch built with compile-time pattern matching:
 
 ```csharp
 // Generated (per module): _Infra.Events.DispatchTable.g.cs
@@ -86,7 +86,7 @@ var handlers = _serviceProvider.GetServices<IDomainEventHandler<TEvent>>()
     .ToList();
 ```
 
-Within the same `Order` value, execution follows DI registration order. `AddPragmaticEventHandlers()` registers in a deterministic order (sorted by full type name), so the sequence is stable across builds — but it is invisible at the handler. Give handlers distinct `Order` values whenever the sequence actually matters.
+Within the same `Order` value, execution follows DI registration order. `AddPragmaticEventHandlers()` registers in a deterministic order (sorted by full type name), so the sequence is stable across builds, but it is invisible at the handler. Give handlers distinct `Order` values whenever the sequence actually matters.
 
 ## Error Handling
 
@@ -153,7 +153,7 @@ If `ICallContext` is not registered (e.g., `Pragmatic.Actions` is not referenced
 
 ### LifecycleEventsInterceptor
 
-The only interceptor this package registers, and it **raises**; it does not dispatch. It hooks `SavingChanges` / `SavingChangesAsync`, while the change-tracking state still says whether a row is being added, updated or deleted, maps that state to an `EntityLifecycle`, and calls `RaiseLifecycleEvents` on every tracked `IRaisesLifecycleEvents` — the interface the generator implements on a `[Raises<T>]` entity.
+The only interceptor this package registers, and it **raises**; it does not dispatch. It hooks `SavingChanges` / `SavingChangesAsync`, while the change-tracking state still says whether a row is being added, updated or deleted, maps that state to an `EntityLifecycle`, and calls `RaiseLifecycleEvents` on every tracked `IRaisesLifecycleEvents`, the interface the generator implements on a `[Raises<T>]` entity.
 
 A soft delete arrives as a `Modified` entry whose `IsDeleted` flag flips to `true`; it maps to `Deleted`, not `Updated`. The **transition** is what counts: a flag already `true` and merely written again is an update, or the `Deleted` event would be re-raised on every save.
 
@@ -163,7 +163,7 @@ It is stateless and holds nothing, which is only possible because dispatch is so
 
 An interceptor that dispatched in `SavedChangesAsync` would need a DI scope of its own, to avoid a captive dependency on the scoped dispatcher. Two things would be wrong with it, and the second is the one that matters:
 
-- **Ordering.** It would run inside `SaveChanges`, which under an explicit transaction is before the commit. A handler could act on a write that then rolled back. The interceptor could only log a warning — `BatchContext` lives in a package it cannot see.
+- **Ordering.** It would run inside `SaveChanges`, which under an explicit transaction is before the commit. A handler could act on a write that then rolled back. The interceptor could only log a warning: `BatchContext` lives in a package it cannot see.
 - **Scope.** A fresh scope resolves a fresh tenant context, and nothing resolves a tenant in it. Every fail-closed query filter then hides the rows the handler is called to act on: it runs, finds nothing, writes nothing, and reports success. A dispatch that silently does nothing is worse than one that does not happen.
 
 ### Dispatch Flow
@@ -173,7 +173,7 @@ Dispatch belongs to whoever performed the write, and all three do it in the scop
 ```
 IUnitOfWork.SaveChangesAsync()
   1. LifecycleEventsInterceptor raises the declared events (SavingChanges)
-  2. The database commits — a failed save stops here, nothing is taken
+  2. The database commits: a failed save stops here, nothing is taken
   3. Take the events off every tracked IHasDomainEvents entity (taking clears them)
   4. A batch owns this commit?
        yes -> batch.DeferEvent(each), flushed after the commit and outside the claim
@@ -187,11 +187,11 @@ IUnitOfWork.SaveChangesAsync()
 | Composition, `[Transactional]`, hand-opened batch | `DeferredEventFlush`, after the batch commits |
 | A repository write, or any plain `IUnitOfWork.SaveChangesAsync` | `EfCoreUnitOfWork` itself |
 
-The generated repository's `SaveChangesAsync` goes through the boundary's `IUnitOfWork` — the same instance an invoker holds, resolved from the same keyed registration — so a write made by hand behaves like the same write made by a mutation.
+The generated repository's `SaveChangesAsync` goes through the boundary's `IUnitOfWork` (the same instance an invoker holds, resolved from the same keyed registration), so a write made by hand behaves like the same write made by a mutation.
 
 ### Why take after the save, and only on success?
 
-Taking is what clears them, so there is no window where an event is both pending on the entity and already handed over — which is what keeps a retried `SaveChangesAsync` from dispatching twice.
+Taking is what clears them, so there is no window where an event is both pending on the entity and already handed over, which is what keeps a retried `SaveChangesAsync` from dispatching twice.
 
 **After** the save, because the lifecycle interceptor raises during `SavingChanges`: collecting first would find an empty list every time. **Only on success**, because a save that failed wrote nothing, and announcing a write that did not happen is worse than not announcing one that did. The refused entity keeps its events, so a retry can still announce the write if it lands.
 
@@ -206,33 +206,33 @@ public static DbContextOptionsBuilder UseDomainEvents(this DbContextOptionsBuild
 }
 ```
 
-No service provider parameter: the interceptor has no dependencies. On a source-generated boundary `DbContext` this is wired for you, and the generated registration hands `EfCoreUnitOfWork` an optional `IDomainEventDispatcher` (`GetService`, not `GetRequiredService` — an application with no domain events registers none, and that must not stop a unit of work from being built).
+No service provider parameter: the interceptor has no dependencies. On a source-generated boundary `DbContext` this is wired for you, and the generated registration hands `EfCoreUnitOfWork` an optional `IDomainEventDispatcher` (`GetService`, not `GetRequiredService`: an application with no domain events registers none, and that must not stop a unit of work from being built).
 
 **Order matters where the outbox is involved.** The lifecycle interceptor must be registered *before* the outbox capture interceptors: they read the entity's events during `SavingChanges` too, and anything raised after them never reaches the outbox. EF Core invokes interceptors in registration order.
 
 ## Transactional Outbox
 
-The transactional outbox lives in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`) — it is **not** part of `Pragmatic.Messaging`. It has two moving parts.
+The transactional outbox lives in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`); it is **not** part of `Pragmatic.Messaging`. It has two moving parts.
 
 ### EventOutboxInterceptor (capture)
 
-A `SaveChangesInterceptor` that hooks `SavingChanges` / `SavingChangesAsync` — i.e. it runs **before** the commit. For every tracked `IHasDomainEvents` entity it serializes each domain event into an `EventOutboxEntry` and `context.Add`s it, so the outbox rows enlist in the **same transaction** as the entity change. It then calls `ClearDomainEvents()` on the entity, so the post-commit hand-over finds nothing left to take (the two combine safely: the outbox wins, and the event is delivered once). It captures the ambient `Activity.Current?.Id` (`TraceParent`) and the ambient tenant (`TenantId`) onto each row at write time.
+A `SaveChangesInterceptor` that hooks `SavingChanges` / `SavingChangesAsync`, i.e. it runs **before** the commit. For every tracked `IHasDomainEvents` entity it serializes each domain event into an `EventOutboxEntry` and `context.Add`s it, so the outbox rows enlist in the **same transaction** as the entity change. It then calls `ClearDomainEvents()` on the entity, so the post-commit hand-over finds nothing left to take (the two combine safely: the outbox wins, and the event is delivered once). It captures the ambient `Activity.Current?.Id` (`TraceParent`) and the ambient tenant (`TenantId`) onto each row at write time.
 
-The table is `__EventOutbox`, mapped by `EventOutboxEntryConfiguration` (applied via `modelBuilder.AddEventOutbox()`). Timestamps are stored as UTC ticks (`long`) so ordering/eligibility predicates translate on every provider including SQLite; the payload column is unbounded (mapped to each provider's large-string type — PostgreSQL `text`, SQL Server `nvarchar(max)`, SQLite `TEXT`).
+The table is `__EventOutbox`, mapped by `EventOutboxEntryConfiguration` (applied via `modelBuilder.AddEventOutbox()`). Timestamps are stored as UTC ticks (`long`) so ordering/eligibility predicates translate on every provider including SQLite; the payload column is unbounded (mapped to each provider's large-string type: PostgreSQL `text`, SQL Server `nvarchar(max)`, SQLite `TEXT`).
 
 ### EventOutboxDeliveryService&lt;TContext&gt; (delivery)
 
 A `BackgroundService` that polls on `PollingInterval`. Each pass:
 
-1. Selects up to `BatchSize` **eligible** candidate ids — `ProcessedAt == null`, `Attempts < MaxAttempts`, and either unclaimed or with an **expired** claim (`ClaimedUntil < now`).
-2. **Atomically claims** them with a compare-and-swap `ExecuteUpdate` that stamps a unique per-poll token into `ClaimedBy` and a lease into `ClaimedUntil`. Only rows this worker won are then loaded and processed — this is what stops multiple replicas from each delivering the same entry. A claim lease (5 minutes) means a crashed worker's rows become re-grabbable rather than stuck.
+1. Selects up to `BatchSize` **eligible** candidate ids: `ProcessedAt == null`, `Attempts < MaxAttempts`, and either unclaimed or with an **expired** claim (`ClaimedUntil < now`).
+2. **Atomically claims** them with a compare-and-swap `ExecuteUpdate` that stamps a unique per-poll token into `ClaimedBy` and a lease into `ClaimedUntil`. Only rows this worker won are then loaded and processed: this is what stops multiple replicas from each delivering the same entry. A claim lease (5 minutes) means a crashed worker's rows become re-grabbable rather than stuck.
 3. For each claimed row: resolves the CLR type via the **fail-closed** `IEventOutboxTypeResolver`, deserializes the JSON payload, restores the originating trace (`StartActivity` parented to `TraceParent`) and tenant (`SetTenant(entry.TenantId)`), then dispatches through `IDomainEventDispatcher`. On success it sets `ProcessedAt`; on exception it increments `Attempts`, records `LastError`, and releases the claim so the row is retried on a later poll (within `MaxAttempts`).
 
 ### Guarantees and edges
 
 - **At-least-once.** A crash between dispatch and the `ProcessedAt` write re-delivers the event on the next poll. Handlers must be idempotent (`IDomainEvent.EventId` is the natural dedup key).
-- **Poison messages.** After `MaxAttempts`, a row is no longer eligible — it stays un-processed with its `LastError` populated. There is no separate dead-letter table.
-- **Fail-closed type resolution.** `EventOutboxTypeResolver` is built from an allowlist derived from the registered `IDomainEventHandler<T>` service descriptors (`AddEventOutbox` scans the `IServiceCollection`). A stored `EventType` string that is not in the allowlist resolves to `null` and the row is rejected (attempt counted) — there is no `Type.GetType` on an arbitrary DB string, so the payload cannot be used to load an unexpected type (no deserialization gadget surface).
+- **Poison messages.** After `MaxAttempts`, a row is no longer eligible: it stays un-processed with its `LastError` populated. There is no separate dead-letter table.
+- **Fail-closed type resolution.** `EventOutboxTypeResolver` is built from an allowlist derived from the registered `IDomainEventHandler<T>` service descriptors (`AddEventOutbox` scans the `IServiceCollection`). A stored `EventType` string that is not in the allowlist resolves to `null` and the row is rejected (attempt counted); there is no `Type.GetType` on an arbitrary DB string, so the payload cannot be used to load an unexpected type (no deserialization gadget surface).
 - **`AddEventOutbox<TContext>()` is idempotent.** The delivery `IHostedService` is registered via `TryAddEnumerable`, so calling it twice does not spin up duplicate delivery loops.
 
 ### EventOutboxOptions
@@ -320,7 +320,7 @@ public sealed class RoomTypeRateChangedHandler
 | `IDomainEventHandler<T>` | Scoped | `AddDomainEventHandler<THandler, TEvent>()` |
 | `LifecycleEventsInterceptor` | Singleton (implicit) | Created once per `DbContextOptions` by `UseDomainEvents()` |
 
-The dispatcher is scoped because it resolves handlers from the current scope — and dispatch happens in the scope that asked for the write, which is what gives a handler the tenant and the user of the request. The interceptor is effectively singleton because it is attached to `DbContextOptions`; it holds nothing, which it can afford to do only because it never dispatches.
+The dispatcher is scoped because it resolves handlers from the current scope, and dispatch happens in the scope that asked for the write, which is what gives a handler the tenant and the user of the request. The interceptor is effectively singleton because it is attached to `DbContextOptions`; it holds nothing, which it can afford to do only because it never dispatches.
 
 ## Thread Safety
 

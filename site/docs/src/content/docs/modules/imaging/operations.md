@@ -13,7 +13,7 @@ Complete catalogue of transformations and filters on `ImagePipeline`, plus the s
 
 ### `Resize(width, height, filter)`
 
-Resize to exact dimensions. Does **not** preserve aspect ratio — if the ratio differs from the source, the image is stretched. `filter` defaults to `ResizeFilter.Lanczos3`.
+Resize to exact dimensions. Does **not** preserve aspect ratio: if the ratio differs from the source, the image is stretched. `filter` defaults to `ResizeFilter.Lanczos3`.
 
 ```csharp
 pipe.Resize(800, 600, ResizeFilter.Lanczos3);
@@ -33,7 +33,7 @@ Passing `0` for either dimension throws `ArgumentException`.
 
 ### `Thumbnail(maxWidth, maxHeight, filter, allowUpscale)`
 
-Fit the image inside the bounding box while **preserving aspect ratio**. At most one dimension hits the bound; the other is smaller. By default it never upscales — a source already smaller than the box is returned at its original size. Pass `allowUpscale: true` to enlarge small sources up to the box.
+Fit the image inside the bounding box while **preserving aspect ratio**. At most one dimension hits the bound; the other is smaller. By default it never upscales: a source already smaller than the box is returned at its original size. Pass `allowUpscale: true` to enlarge small sources up to the box.
 
 ```csharp
 pipe.Thumbnail(400, 400);                              // 800×600 → 400×300
@@ -53,7 +53,7 @@ A zero dimension, or a region extending past the image bounds, throws `ArgumentE
 
 ### `Rotate(degrees)`
 
-Rotate by 90, 180, or 270 degrees (positive = clockwise). Arbitrary angles are **not supported** — the native layer only does lossless quarter-turn rotations.
+Rotate by 90, 180, or 270 degrees (positive = clockwise). Arbitrary angles are **not supported**: the native layer only does lossless quarter-turn rotations.
 
 ```csharp
 pipe.Rotate(90);    // landscape → portrait
@@ -77,7 +77,7 @@ pipe.FlipVertical();     // top-bottom mirror
 
 ### `Grayscale()`
 
-Convert to luminance (ITU-R BT.601). The pixel layout stays RGBA — pixels just have R=G=B; the alpha channel is preserved.
+Convert to luminance (ITU-R BT.601). The pixel layout stays RGBA (pixels just have R=G=B); the alpha channel is preserved.
 
 ```csharp
 pipe.Grayscale();
@@ -134,7 +134,7 @@ pipe.EncodeTo(output, ImageFormat.WebP);
 
 `quality` applies to **JPEG only**. WebP encodes lossless, AVIF uses the library default, and lossless/paletted formats ignore it. Supported output formats: PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF.
 
-Encoding **does not** dispose the pipeline — encode multiple times or keep transforming. The async variants `EncodeAsync` / `EncodeToStreamAsync` offload to the thread pool.
+Encoding **does not** dispose the pipeline: encode multiple times or keep transforming. The async variants `EncodeAsync` / `EncodeToStreamAsync` offload to the thread pool.
 
 ---
 
@@ -148,7 +148,7 @@ Parse the header to read dimensions and format without a full decode.
 public readonly record struct ImageInfo(uint Width, uint Height, ImageFormat Format);
 ```
 
-`FromStream` reads at most `maxBytes` (default 64 KB) — enough for any header — and does **not** drain the stream. Use it to validate uploads before committing to a full `ImagePipeline.Load`; rewind the stream (`stream.Position = 0`) before loading.
+`FromStream` reads at most `maxBytes` (default 64 KB), enough for any header, and does **not** drain the stream. Use it to validate uploads before committing to a full `ImagePipeline.Load`; rewind the stream (`stream.Position = 0`) before loading.
 
 ---
 
@@ -160,7 +160,7 @@ Generate a PNG-encoded QR code as `byte[]`, or write it to a stream. `GeneratePn
 
 | Parameter | Default | Meaning |
 |-----------|---------|---------|
-| `text` | — | Payload — URL, text, any UTF-8 string (non-empty) |
+| `text` | n/a | Payload: URL, text, any UTF-8 string (non-empty) |
 | `moduleSize` | `10` | Pixels per QR module (1–1000) |
 | `margin` | `2` | Quiet-zone size in modules (≤100) |
 
@@ -169,7 +169,7 @@ byte[] qr = QrCode.GeneratePng("https://pragmaticdesign.net");
 QrCode.GeneratePng("payload", output: fileStream, moduleSize: 8, margin: 2);
 ```
 
-Error-correction level is fixed at Medium. Output is always PNG, black on white — no colour, logo, or ECC tuning. For richer QR output, use a dedicated library.
+Error-correction level is fixed at Medium. Output is always PNG, black on white: no colour, logo, or ECC tuning. For richer QR output, use a dedicated library.
 
 ---
 
@@ -196,7 +196,7 @@ Operations apply in order. Ordering matters: `Crop → Resize` keeps the crop, t
 
 ---
 
-## One-liner helpers — `ImageConverter`
+## One-liner helpers: `ImageConverter`
 
 Static wrappers that open a pipeline, do one operation, encode, and return `byte[]`. Each has a sync and an `…Async` (thread-pool-offloaded, cancellable) form.
 
@@ -209,11 +209,11 @@ byte[] clean = ImageConverter.StripExif(bytes);   // re-encode to drop metadata
 byte[] thumb2 = await ImageConverter.ThumbnailAsync(bytes, 400, 400, ct: ct);
 ```
 
-`StripExif(image, quality = 95, options)` removes metadata by decoding and re-encoding in the original format (lossy for JPEG — use high quality). Every method takes an optional `ImagingOptions`.
+`StripExif(image, quality = 95, options)` removes metadata by decoding and re-encoding in the original format (lossy for JPEG, so use high quality). Every method takes an optional `ImagingOptions`.
 
 ---
 
-## Batch processing — `ImageBatch`
+## Batch processing: `ImageBatch`
 
 `ImageBatch` is **static**; there is no instance to construct. Inputs are `IReadOnlyList<byte[]>`.
 
@@ -231,7 +231,7 @@ byte[][] custom = await ImageBatch.ProcessAsync(images, data =>
 
 `maxConcurrency: 0` defaults to `Environment.ProcessorCount / 2`. A `SemaphoreSlim` caps how many pipelines are alive at once, so you don't exhaust native memory.
 
-**Failure semantics.** Each item runs independently. A failed item is wrapped in `ImageBatchItemException`, which carries the input `Index`. Because the result is awaited via `Task.WhenAll`, awaiting the batch **re-throws the first** failed item's `ImageBatchItemException`. If you need every failure, don't rely on the throw — process items in smaller batches, or wrap your per-item operation to capture its own result/error.
+**Failure semantics.** Each item runs independently. A failed item is wrapped in `ImageBatchItemException`, which carries the input `Index`. Because the result is awaited via `Task.WhenAll`, awaiting the batch **re-throws the first** failed item's `ImageBatchItemException`. If you need every failure, don't rely on the throw: process items in smaller batches, or wrap your per-item operation to capture its own result/error.
 
 ---
 
@@ -240,7 +240,7 @@ byte[][] custom = await ImageBatch.ProcessAsync(images, data =>
 - Arbitrary-angle rotation
 - Text overlay / drawing
 - Colour-space conversion (sRGB assumed throughout)
-- Animation frames (GIF / APNG / animated WebP — first frame only)
+- Animation frames (GIF / APNG / animated WebP: first frame only)
 - EXIF-preserving operations (EXIF is stripped on re-encode)
 - WebP/AVIF lossy quality control (upstream `image` 0.25 limitation)
 - Floating-point / HDR pixel formats
@@ -251,5 +251,5 @@ For any of the above, use ImageSharp or a dedicated tool.
 
 ## Related
 
-- [concepts.md](/modules/imaging/concepts/) — pipeline lifecycle, thread safety, error model
-- [native-deployment.md](/modules/imaging/native-deployment/) — deploying the native binary
+- [concepts.md](/modules/imaging/concepts/): pipeline lifecycle, thread safety, error model
+- [native-deployment.md](/modules/imaging/native-deployment/): deploying the native binary

@@ -127,7 +127,7 @@ The EF Core interceptor works with any entity that implements `IHasDomainEvents`
 When you need to raise an event **on a persistence lifecycle transition** (created / updated / deleted)
 and the event's data comes straight from the entity, you can skip the hand-written `RaiseEvent()` call.
 Declare it with `[Raises<TEvent>(on: ...)]` (from `Pragmatic.Authoring`) on an entity that derives from
-`DomainEventSource` — the source generator wires the raise, and the `LifecycleEventsInterceptor` fires it
+`DomainEventSource`: the source generator wires the raise, and the `LifecycleEventsInterceptor` fires it
 at the right moment, filling the event constructor from entity members that match **by name**.
 
 ```csharp
@@ -136,7 +136,7 @@ using Pragmatic.Events;
 
 [Entity]
 [Raises<OrderPlaced>]                                 // On = EntityLifecycle.Created (the default)
-[Raises<OrderCancelled>(EntityLifecycle.Deleted)]     // stackable — one attribute per event
+[Raises<OrderCancelled>(EntityLifecycle.Deleted)]     // stackable: one attribute per event
 public partial class Order : DomainEventSource, IEntity
 {
     public Guid CustomerId { get; private set; }
@@ -145,7 +145,7 @@ public partial class Order : DomainEventSource, IEntity
 }
 ```
 
-When the entity is inserted, `OrderPlaced` is raised and dispatched automatically after the commit — no
+When the entity is inserted, `OrderPlaced` is raised and dispatched automatically after the commit, with no
 handler-side or entity-side code beyond the attribute. (A soft delete is treated as `Deleted`, not
 `Updated`.)
 
@@ -155,17 +155,17 @@ handler-side or entity-side code beyond the attribute. (A soft delete is treated
   transition, filling the constructor from matching entity members (no custom body).
 - On a **mutation or action class** the generator wires the raise as well, so do not raise the event in
   the body too or it goes out twice; `On` is ignored there.
-- On an **entity's method** it generates nothing, and the build refuses it — see **PRAG2753**. The
+- On an **entity's method** it generates nothing, and the build refuses it (see **PRAG2753**). The
   attribute on a mutation is read from the **class**; there is no method the generator wires.
 - `On` defaults to `EntityLifecycle.Created`.
 
 **Diagnostics:**
 
-- **PRAG2750** — an entity with `[Raises<T>]` must derive from `DomainEventSource` (otherwise the
+- **PRAG2750**: an entity with `[Raises<T>]` must derive from `DomainEventSource` (otherwise the
   generated events cannot be raised).
-- **PRAG2751** — an event constructor parameter that matches no entity member is passed `default`
+- **PRAG2751**: an event constructor parameter that matches no entity member is passed `default`
   (warning); rename the parameter to match, or raise the event from a domain method instead.
-- **PRAG2753** — `[Raises<T>]` on an **entity's method**: nothing generates that raise. Declare it on
+- **PRAG2753**: `[Raises<T>]` on an **entity's method**, where nothing generates that raise. Declare it on
   the entity class, use `[RaisesEvent<T>]` on the state machine's target member, or call
   `RaiseEvent(...)` in the body.
 
@@ -219,7 +219,7 @@ builder.Services.AddDomainEventHandler<ReservationConfirmedHandler, ReservationC
 ```
 
 > Option A also registers the in-memory dispatcher (via `TryAdd`), so an application that wants an
-> outbox instead registers its own first and wins. Option B does not — call
+> outbox instead registers its own first and wins. Option B does not: call
 > `AddInMemoryDomainEvents()` yourself alongside it, or the handlers sit in DI with nothing to call
 > them.
 
@@ -233,18 +233,18 @@ using Pragmatic.Events.EFCore;
 services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
-    options.UseDomainEvents();  // LifecycleEventsInterceptor — raises [Raises<T>], nothing more
+    options.UseDomainEvents();  // LifecycleEventsInterceptor: raises [Raises<T>], nothing more
 });
 ```
 
-The interceptor **raises**; it does not dispatch. After `SaveChangesAsync()` commits, the events are taken off the tracked `IHasDomainEvents` entities and dispatched by whoever performed the write — the generated invoker of a mutation or action, the batch of a composition, or `EfCoreUnitOfWork` itself for a plain save. All three run in the scope that asked for the write, so a handler sees the tenant and the user of the request. No manual dispatch code needed.
+The interceptor **raises**; it does not dispatch. After `SaveChangesAsync()` commits, the events are taken off the tracked `IHasDomainEvents` entities and dispatched by whoever performed the write: the generated invoker of a mutation or action, the batch of a composition, or `EfCoreUnitOfWork` itself for a plain save. All three run in the scope that asked for the write, so a handler sees the tenant and the user of the request. No manual dispatch code needed.
 
 ## Transactional Outbox (at-least-once delivery)
 
-Dispatch above happens *after* the commit — but if the process dies in that window, the events
+Dispatch above happens *after* the commit, but if the process dies in that window, the events
 are lost. When you need them to survive a crash (or to fan out reliably across replicas), turn on the
 **transactional outbox**. It ships in `Pragmatic.Events.EFCore` (namespace
-`Pragmatic.Events.EFCore.Outbox`) — you do **not** need `Pragmatic.Messaging`.
+`Pragmatic.Events.EFCore.Outbox`); you do **not** need `Pragmatic.Messaging`.
 
 The outbox writes each event into an `__EventOutbox` table **in the same transaction** as the entity
 change, and a background service delivers them. Wiring is three steps:
@@ -288,11 +288,11 @@ services.AddEventOutbox<AppDbContext>(o =>
 What you get and what to keep in mind:
 
 - **At-least-once delivery.** An event can be dispatched more than once (crash between dispatch and
-  mark-processed). **Write idempotent handlers** — `IDomainEvent.EventId` is a natural dedup key, which is
+  mark-processed). **Write idempotent handlers**: `IDomainEvent.EventId` is a natural dedup key, which is
   another reason to inherit from `DomainEvent`.
 - **Multi-replica safe.** Rows are claimed atomically (`ClaimedBy`/`ClaimedUntil`), so two workers never
   deliver the same entry.
-- **Poison messages.** After `MaxAttempts` the row is abandoned — no dead-letter table; inspect its
+- **Poison messages.** After `MaxAttempts` the row is abandoned: no dead-letter table; inspect its
   `LastError` column.
 - **Trace + tenant propagation.** The W3C trace context and the originating tenant are restored across the
   async delivery boundary.

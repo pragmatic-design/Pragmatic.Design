@@ -1,4 +1,4 @@
-# Troubleshooting — Pragmatic.Migrations
+# Troubleshooting: Pragmatic.Migrations
 
 FAQ, common errors, leader election issues, and recovery procedures.
 
@@ -36,7 +36,7 @@ Not to migrate. Unlike EF Core (`dotnet ef migrations add`) there are no design-
 migration files: the SG generates the schema metadata at compile time and the runner applies it at
 startup.
 
-There *is* an optional CLI — `dotnet tool install -g Pragmatic.Migrations.Cli` — for the jobs that
+There *is* an optional CLI, `dotnet tool install -g Pragmatic.Migrations.Cli`, for the jobs that
 happen outside the host: `status` and `script` for a DBA review, `apply` for a deploy step,
 `snapshot` for the committed schema artifact, `history` to read the audit table. `apply` delegates
 to the same runner the host uses, so it cannot drift from startup behaviour; it applies schema
@@ -78,7 +78,7 @@ Technically yes, but it is not recommended. Both systems would compete for schem
 
 ### Error: "Breaking changes detected (N). Use Force=true to apply."
 
-**Cause**: The diff engine found changes that may cause data loss (DROP TABLE, DROP COLUMN, SET NOT NULL, narrowing type changes). At host startup this aborts startup — the host throws `InvalidOperationException` and does not boot.
+**Cause**: The diff engine found changes that may cause data loss (DROP TABLE, DROP COLUMN, SET NOT NULL, narrowing type changes). At host startup this aborts startup: the host throws `InvalidOperationException` and does not boot.
 
 **Fix**: Inspect the changes first:
 
@@ -170,7 +170,7 @@ through `GetRebuildTableName`. Seeing this means something bypassed that path.
 restates the entire column definition and treats an omitted NULL/NOT NULL as NULL, so applying it
 blindly would silently drop a NOT NULL constraint. The generator refuses instead of guessing.
 
-**Fix**: the diff engine always supplies it — this only appears when a change is hand-built. Pass the
+**Fix**: the diff engine always supplies it; this only appears when a change is hand-built. Pass the
 target nullability.
 
 ---
@@ -179,12 +179,12 @@ target nullability.
 
 **Cause**: with `<PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>` the build runs `snapshot` after
 every build. Windows refuses to overwrite a file while another process holds a memory-mapped view of it
-— a git client hashing the working tree, an IDE indexer, a scanner — and those typically open the file
+(a git client hashing the working tree, an IDE indexer, a scanner), and those typically open the file
 right after the previous build rewrote it. The snapshot is written **only when its content changes**, so
 a build that regenerates the same schema touches nothing and cannot hit this; the message appears only
 for a real schema change that coincides with such a reader.
 
-**Fix**: build again — the reader has let go by then. Under `-warnaserror` the failure is an error, by
+**Fix**: build again; the reader has let go by then. Under `-warnaserror` the failure is an error, by
 design: a snapshot that did not follow a schema change is exactly what the committed `schema/` folder
 exists to catch.
 
@@ -236,7 +236,7 @@ WHERE LockName = 'migration';
 ```
 
 After the lock is released, followers proceed within one polling interval (`LeaderPollInterval`,
-2 seconds by default, plus jitter). Each one then verifies the schema before reporting success — if
+2 seconds by default, plus jitter). Each one then verifies the schema before reporting success: if
 the leader crashed without migrating, the follower fails with
 `Migration leader finished but the schema is still N change(s) behind` instead of starting on a
 half-migrated database.
@@ -252,7 +252,7 @@ table). `FallbackLeaderElection` then reports **not leader**: assuming leadershi
 error would let every instance migrate at once (split-brain), so the safe answer is to wait.
 
 **Consequence**: this instance does not migrate. It waits for whoever genuinely holds the lock, then
-checks the schema — and if nobody migrated, it fails rather than starting on a stale database:
+checks the schema, and if nobody migrated, it fails rather than starting on a stale database:
 `Migration leader finished but the schema is still N change(s) behind`.
 
 **Fix**: investigate why `DatabaseLeaderElection` failed. Common causes:
@@ -289,7 +289,7 @@ If the database was modified outside the migration pipeline:
 After restoring a backup:
 
 1. Run with `DryRun()` to see what the runner intends to do. The decision comes from comparing the
-   entities against the live database — never from the audit table — so a restored database that
+   entities against the live database, never from the audit table, so a restored database that
    already matches produces an empty diff.
 2. If the backup predates the current model, let the migration apply the difference.
 3. Make sure `__PragmaticDataMigrations` came back with the backup. That table *is* an input: without

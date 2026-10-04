@@ -196,7 +196,7 @@ public interface IDomainEvent
 
 Events are immutable records that carry all the data downstream consumers need. The event is the contract between boundaries -- handlers should never need to query back into the originating boundary.
 
-`EventId` is a unique per-instance identity used for deduplication, idempotent dispatch, and tracing. It is a **default interface member** returning `Guid.Empty`, so events that predate it keep compiling. When you need it — dedup across at-least-once outbox delivery, correlation in traces — inherit from `DomainEvent`, which assigns `Guid.NewGuid()` per instance. If you implement `IDomainEvent` by hand and do not set `EventId`, it stays `Guid.Empty` and dedup based on it is a no-op — prefer inheriting from `DomainEvent`.
+`EventId` is a unique per-instance identity used for deduplication, idempotent dispatch, and tracing. It is a **default interface member** returning `Guid.Empty`, so events that predate it keep compiling. When you need it (dedup across at-least-once outbox delivery, correlation in traces), inherit from `DomainEvent`, which assigns `Guid.NewGuid()` per instance. If you implement `IDomainEvent` by hand and do not set `EventId`, it stays `Guid.Empty` and dedup based on it is a no-op; prefer inheriting from `DomainEvent`.
 
 ### DomainEvent base record
 
@@ -252,10 +252,10 @@ public sealed record ReservationConfirmed(
 ## Integration events (the two-level model)
 
 Domain events (`IDomainEvent`) are **internal** to a boundary. Other boundaries should not consume them
-directly — that recreates the coupling events exist to remove. The second level is the **integration
+directly: that recreates the coupling events exist to remove. The second level is the **integration
 event**: a public, self-contained, denormalized fact that *is* the cross-boundary contract.
 
-Mark an event public by implementing `IIntegrationEvent` or applying `[PublicEvent]` (equivalent — the
+Mark an event public by implementing `IIntegrationEvent` or applying `[PublicEvent]` (equivalent; the
 contract is owned by the publishing boundary):
 
 ```csharp
@@ -265,12 +265,12 @@ public sealed record ReservationConfirmed(Guid ReservationId, Guid GuestId, Date
 ```
 
 Public events surface in the generated **AsyncAPI** document (`PragmaticAsyncApi.Json`) tagged
-`x-pragmatic-public: true`, with their payload schema — so the AsyncAPI is a real, snapshot-testable
+`x-pragmatic-public: true`, with their payload schema, so the AsyncAPI is a real, snapshot-testable
 contract. Treat a public event as a stable API: evolve it **additively**.
 
 ### Evolving events
 
-Pragmatic events are **transient** (state-based, dispatched via the outbox — not a persisted event
+Pragmatic events are **transient** (state-based, dispatched via the outbox, not a persisted event
 stream), so version *upcasting* does not apply. Detect breaking changes by snapshotting the generated
 AsyncAPI; to phase an event out, mark it `[ObsoleteEvent(removeBy: "…")]` (surfaced as
 `x-pragmatic-obsolete`) and remove it once consumers have migrated.
@@ -420,7 +420,7 @@ The EF Core interceptor scans for `IHasDomainEvents` (not `DomainEventSource`), 
 
 ### Lifecycle events via `[Raises<T>]`
 
-Instead of calling `RaiseEvent()` by hand, an entity that derives from `DomainEventSource` can **declare** the events its lifecycle raises with `[Raises<TEvent>(on: ...)]` (from `Pragmatic.Authoring`). The source generator wires the raise, and the `LifecycleEventsInterceptor` fires the event at the matching transition — filling the event's constructor from entity members that match by name, with no custom body. The full dev walk-through is in [Getting Started](/modules/events/getting-started/#lifecycle-domain-events).
+Instead of calling `RaiseEvent()` by hand, an entity that derives from `DomainEventSource` can **declare** the events its lifecycle raises with `[Raises<TEvent>(on: ...)]` (from `Pragmatic.Authoring`). The source generator wires the raise, and the `LifecycleEventsInterceptor` fires the event at the matching transition, filling the event's constructor from entity members that match by name, with no custom body. The full dev walk-through is in [Getting Started](/modules/events/getting-started/#lifecycle-domain-events).
 
 ```csharp
 [Entity]
@@ -429,7 +429,7 @@ Instead of calling `RaiseEvent()` by hand, an entity that derives from `DomainEv
 public partial class Order : DomainEventSource, IEntity { /* ... */ }
 ```
 
-Diagnostics: **PRAG2750** — an entity carrying `[Raises<T>]` must derive from `DomainEventSource`; **PRAG2751** — an event constructor parameter that matches no entity member is passed `default` (warning); **PRAG2753** — the attribute on an entity's **method** generates nothing and is refused (declare it on the class, use `[RaisesEvent<T>]` on the state machine's target member, or `RaiseEvent(...)` in the body).
+Diagnostics: **PRAG2750**, an entity carrying `[Raises<T>]` must derive from `DomainEventSource`; **PRAG2751**, an event constructor parameter that matches no entity member is passed `default` (warning); **PRAG2753**, the attribute on an entity's **method** generates nothing and is refused (declare it on the class, use `[RaisesEvent<T>]` on the state machine's target member, or `RaiseEvent(...)` in the body).
 
 ---
 
@@ -446,7 +446,7 @@ Two dispatch paths:
 | `DispatchAsync<TEvent>(event)` | Typed -- resolves `IDomainEventHandler<TEvent>` directly |
 | `DispatchAsync(IEnumerable<IDomainEvent>)` | Batch (untyped) -- used by the EF Core interceptor when event types are mixed |
 
-The batch path bridges each event to the typed path through the SG-generated typed dispatch tables (`ITypedEventDispatchTable`, one per composed module) — a compile-time event→`DispatchAsync<TEvent>` switch, no reflection. The dispatcher probes each registered table in order; the first that recognises the concrete type routes it. Only when no table covers the type (no module referenced the generator, or the event has no handler) does it fall back to a `dynamic` (DLR, not reflection) dispatch. See [Internals](/modules/events/internals/) for the full mechanism.
+The batch path bridges each event to the typed path through the SG-generated typed dispatch tables (`ITypedEventDispatchTable`, one per composed module): a compile-time event→`DispatchAsync<TEvent>` switch, no reflection. The dispatcher probes each registered table in order; the first that recognises the concrete type routes it. Only when no table covers the type (no module referenced the generator, or the event has no handler) does it fall back to a `dynamic` (DLR, not reflection) dispatch. See [Internals](/modules/events/internals/) for the full mechanism.
 
 ### Continue-on-failure strategy
 
@@ -488,7 +488,7 @@ If you need transactional guarantees across multiple handlers:
 
 The `Pragmatic.Events.EFCore` package provides automatic event dispatch after `SaveChangesAsync()`. No manual dispatch calls needed.
 
-### LifecycleEventsInterceptor — raising, not dispatching
+### LifecycleEventsInterceptor: raising, not dispatching
 
 The one interceptor in this package **raises** the events an entity declares with `[Raises<TEvent>(on: ...)]`, during `SavingChanges`, while the change-tracking state still says whether the row is being added, updated or deleted. It stops there: nothing is dispatched from inside a save.
 
@@ -551,7 +551,7 @@ services.AddPragmaticEventHandlers();
 services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
-    options.UseDomainEvents();  // LifecycleEventsInterceptor — raising only
+    options.UseDomainEvents();  // LifecycleEventsInterceptor: raising only
 });
 ```
 
@@ -749,7 +749,7 @@ var handlers = _serviceProvider.GetServices<IDomainEventHandler<TEvent>>()
 | 0 (default) | Normal business reactions | `InvoiceHandler` |
 | Positive (e.g., 100) | Low-priority, non-critical | `NotificationHandler` |
 
-Within the same `Order` value, execution follows DI registration order. The SG-generated `AddPragmaticEventHandlers()` registers handlers in a deterministic order (sorted by full type name), so the sequence is stable across builds; register by hand if you need a different one. Give handlers distinct `Order` values whenever the sequence actually matters — relying on registration order makes the contract invisible at the handler.
+Within the same `Order` value, execution follows DI registration order. The SG-generated `AddPragmaticEventHandlers()` registers handlers in a deterministic order (sorted by full type name), so the sequence is stable across builds; register by hand if you need a different one. Give handlers distinct `Order` values whenever the sequence actually matters: relying on registration order makes the contract invisible at the handler.
 
 ---
 
@@ -761,7 +761,7 @@ Within the same `Order` value, execution follows DI registration order. The SG-g
 | `IDomainEventHandler<T>` | Scoped | `AddDomainEventHandler<THandler, TEvent>()` |
 | `LifecycleEventsInterceptor` | Singleton (implicit) | Created once per `DbContextOptions` by `UseDomainEvents()` |
 
-The dispatcher is **scoped** because it resolves handlers from the current DI scope, and dispatch happens in the scope that asked for the write — so a handler sees the tenant and the user of the request that caused it. The interceptor is effectively singleton because it is attached to `DbContextOptions`; it is stateless and holds nothing, which is possible only because it raises and never dispatches.
+The dispatcher is **scoped** because it resolves handlers from the current DI scope, and dispatch happens in the scope that asked for the write, so a handler sees the tenant and the user of the request that caused it. The interceptor is effectively singleton because it is attached to `DbContextOptions`; it is stateless and holds nothing, which is possible only because it raises and never dispatches.
 
 ---
 
@@ -821,11 +821,11 @@ public static class EventsRegistrationExtensions
 }
 ```
 
-The same generator emits, per assembly with handlers, a `GeneratedEventDispatchTable : ITypedEventDispatchTable` — a typed event→`DispatchAsync<TEvent>` switch registered additively by `AddPragmaticEventHandlers()`. This is the AOT-safe mechanism the untyped/batch path uses to avoid reflection; see [Internals](/modules/events/internals/).
+The same generator emits, per assembly with handlers, a `GeneratedEventDispatchTable : ITypedEventDispatchTable`: a typed event→`DispatchAsync<TEvent>` switch registered additively by `AddPragmaticEventHandlers()`. This is the AOT-safe mechanism the untyped/batch path uses to avoid reflection; see [Internals](/modules/events/internals/).
 
 ### Lifecycle SG: `[Raises<T>]`
 
-An entity that derives from `DomainEventSource` can declare `[Raises<TEvent>(on: ...)]`. The generator wires the raise so the event fires automatically at the given lifecycle transition — no handler body. See the lifecycle section in [Getting Started](/modules/events/getting-started/).
+An entity that derives from `DomainEventSource` can declare `[Raises<TEvent>(on: ...)]`. The generator wires the raise so the event fires automatically at the given lifecycle transition, with no handler body. See the lifecycle section in [Getting Started](/modules/events/getting-started/).
 
 ### Persistence SG: EntityPropertyChanged
 
@@ -851,7 +851,7 @@ Two ways to register handlers, and one of them also brings the dispatcher:
 using Pragmatic.Events.Extensions;
 
 // A. SG-generated (recommended). Registers every [EventHandler] in the assembly, plus the
-//    in-memory dispatcher via TryAdd — so an application that wants an outbox registers its
+//    in-memory dispatcher via TryAdd, so an application that wants an outbox registers its
 //    own dispatcher first and wins.
 services.AddPragmaticEventHandlers();
 
@@ -892,27 +892,27 @@ Event handlers run as internal calls (`ICallContext.EnterInternalCall()`). This 
 
 ### Messaging
 
-`Pragmatic.Messaging` adds a message broker transport (Channels, RabbitMQ), sagas, and cross-service delivery. It reuses the same `IDomainEvent` records and `IDomainEventHandler<T>` interface. The **transactional outbox itself does not belong to Messaging** — it ships in `Pragmatic.Events.EFCore` (see below).
+`Pragmatic.Messaging` adds a message broker transport (Channels, RabbitMQ), sagas, and cross-service delivery. It reuses the same `IDomainEvent` records and `IDomainEventHandler<T>` interface. The **transactional outbox itself does not belong to Messaging**: it ships in `Pragmatic.Events.EFCore` (see below).
 
 ---
 
 ## Transactional Outbox
 
-The `InMemoryEventDispatcher` is synchronous and in-process: it dispatches *after* the commit, but between the commit and the dispatch the process can die and the events are lost. The **transactional outbox** closes that gap, and it is **included** in the `Pragmatic.Events.EFCore` package (namespace `Pragmatic.Events.EFCore.Outbox`) — you do not need `Pragmatic.Messaging` for it.
+The `InMemoryEventDispatcher` is synchronous and in-process: it dispatches *after* the commit, but between the commit and the dispatch the process can die and the events are lost. The **transactional outbox** closes that gap, and it is **included** in the `Pragmatic.Events.EFCore` package (namespace `Pragmatic.Events.EFCore.Outbox`); you do not need `Pragmatic.Messaging` for it.
 
 ### What it does
 
-- The `EventOutboxInterceptor` captures the domain events **before** the commit (`SavingChanges`) and writes them into the `__EventOutbox` table **in the same transaction** as the entity change. The event can never be lost relative to a committed change, and a rolled-back change never emits an event. It then clears the events from the entity — so the post-commit hand-over finds nothing left to take, and the two are safe to combine: the outbox wins and the event is delivered once.
+- The `EventOutboxInterceptor` captures the domain events **before** the commit (`SavingChanges`) and writes them into the `__EventOutbox` table **in the same transaction** as the entity change. The event can never be lost relative to a committed change, and a rolled-back change never emits an event. It then clears the events from the entity, so the post-commit hand-over finds nothing left to take, and the two are safe to combine: the outbox wins and the event is delivered once.
 - The `EventOutboxDeliveryService<TContext>` is a `BackgroundService` that polls the table, **atomically claims** rows (columns `ClaimedBy`/`ClaimedUntil`, a compare-and-swap via `ExecuteUpdate`) so multiple replicas do not deliver the same entry twice, dispatches each event through `IDomainEventDispatcher`, and marks it `ProcessedAt`.
 
 ### Delivery semantics
 
-- **At-least-once.** An event may be dispatched more than once if the process crashes between dispatch and the mark-processed write. **Handlers must be idempotent** — this is where `IDomainEvent.EventId` earns its keep as a dedup key.
-- **Poison messages.** After `MaxAttempts` failed attempts a row is abandoned (left un-processed, no longer retried). There is no separate dead-letter table — inspect the row's `LastError` column.
-- **Fail-closed type resolution.** Only event types that have a registered handler are deserializable — the resolver builds an allowlist from the registered `IDomainEventHandler<T>` services. There is no `Type.GetType` on an arbitrary string from the database, so a tampered `EventType` value cannot load an unexpected type (no gadget-chain surface).
+- **At-least-once.** An event may be dispatched more than once if the process crashes between dispatch and the mark-processed write. **Handlers must be idempotent**: this is where `IDomainEvent.EventId` earns its keep as a dedup key.
+- **Poison messages.** After `MaxAttempts` failed attempts a row is abandoned (left un-processed, no longer retried). There is no separate dead-letter table; inspect the row's `LastError` column.
+- **Fail-closed type resolution.** Only event types that have a registered handler are deserializable: the resolver builds an allowlist from the registered `IDomainEventHandler<T>` services. There is no `Type.GetType` on an arbitrary string from the database, so a tampered `EventType` value cannot load an unexpected type (no gadget-chain surface).
 - **Context propagation.** The W3C trace context (`TraceParent`) and the originating tenant (`TenantId`) are captured at write time and restored across the async delivery boundary, so handler work shows under the request that raised the event and tenant-scoped queries resolve the correct filter.
 
-### Options — `EventOutboxOptions`
+### Options: `EventOutboxOptions`
 
 | Option | Default | Constraint |
 |--------|---------|-----------|
@@ -922,7 +922,7 @@ The `InMemoryEventDispatcher` is synchronous and in-process: it dispatches *afte
 
 ### Enabling the outbox
 
-On a **source-generated** boundary DbContext, mark the boundary `[EnableEventOutbox]` — the generator maps `__EventOutbox`, adds the interceptor, registers the delivery service, and includes the table in the schema metadata. The boundary project must reference `Pragmatic.Events.EFCore` (otherwise the generator emits **PRAG2752** rather than silently doing nothing). On a **hand-written** DbContext, use the three-step manual wiring (see the outbox Quick Start in [Getting Started](/modules/events/getting-started/)). Two boundaries that share one physical database share a single `__EventOutbox` table; the atomic claim keeps delivery safe.
+On a **source-generated** boundary DbContext, mark the boundary `[EnableEventOutbox]`: the generator maps `__EventOutbox`, adds the interceptor, registers the delivery service, and includes the table in the schema metadata. The boundary project must reference `Pragmatic.Events.EFCore` (otherwise the generator emits **PRAG2752** rather than silently doing nothing). On a **hand-written** DbContext, use the three-step manual wiring (see the outbox Quick Start in [Getting Started](/modules/events/getting-started/)). Two boundaries that share one physical database share a single `__EventOutbox` table; the atomic claim keeps delivery safe.
 
 ---
 

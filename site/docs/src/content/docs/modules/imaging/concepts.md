@@ -13,17 +13,17 @@ sidebar:
 
 Server-side image processing in .NET typically means:
 
-- **ImageSharp / SkiaSharp** — capable, but larger dependency surface and non-trivial AOT / trimming story
-- **System.Drawing.Common** — dead end on non-Windows, no modern format support
-- **Call out to ImageMagick / FFmpeg** — works but adds a spawned-process failure domain
+- **ImageSharp / SkiaSharp**: capable, but larger dependency surface and non-trivial AOT / trimming story
+- **System.Drawing.Common**: dead end on non-Windows, no modern format support
+- **Call out to ImageMagick / FFmpeg**: works but adds a spawned-process failure domain
 
 Pragmatic.Imaging takes a different shape: a small, purposeful API over a Rust core that handles decoding, encoding, and transformation for the formats servers actually care about.
 
 ## The approach
 
-- **Rust core** — a native library compiled from the `image` crate plus a thin FFI wrapper. Decoding, encoding, and transformations happen native-side.
-- **.NET binding** — a small managed API that owns the native buffer, exposes a fluent pipeline, and maps errors to `ImagingException`.
-- **Controlled native memory** — decoded pixels live in native memory; the binding deals in pointers and lengths and copies to managed arrays only when it has to.
+- **Rust core**: a native library compiled from the `image` crate plus a thin FFI wrapper. Decoding, encoding, and transformations happen native-side.
+- **.NET binding**: a small managed API that owns the native buffer, exposes a fluent pipeline, and maps errors to `ImagingException`.
+- **Controlled native memory**: decoded pixels live in native memory; the binding deals in pointers and lengths and copies to managed arrays only when it has to.
 
 ```
     ┌────────────────────────────────────────────┐
@@ -63,15 +63,15 @@ var png = pipeline
     .Encode(ImageFormat.Png);
 ```
 
-Each method returns the same `ImagePipeline` instance — it's an **in-place builder**, not an immutable chain. You have one native buffer for the image, and every operation replaces it with the transformed result. This keeps native memory use predictable.
+Each method returns the same `ImagePipeline` instance: it's an **in-place builder**, not an immutable chain. You have one native buffer for the image, and every operation replaces it with the transformed result. This keeps native memory use predictable.
 
-`Encode`/`EncodeTo` **do not** dispose the pipeline: you can encode the same pipeline state to several formats, or keep transforming afterwards. The native buffer is released only when you dispose the pipeline (via `using`) — forgetting to dispose leaks native memory until the finaliser runs, so always use `using` or `await using`.
+`Encode`/`EncodeTo` **do not** dispose the pipeline: you can encode the same pipeline state to several formats, or keep transforming afterwards. The native buffer is released only when you dispose the pipeline (via `using`); forgetting to dispose leaks native memory until the finaliser runs, so always use `using` or `await using`.
 
 ```csharp
 using var pipe = ImagePipeline.Load(bytes);
 pipe.Thumbnail(400, 400);
 var webp = pipe.Encode(ImageFormat.WebP);   // WebP copy
-var png  = pipe.Encode(ImageFormat.Png);    // …and a PNG copy — pipe still valid
+var png  = pipe.Encode(ImageFormat.Png);    // …and a PNG copy; pipe still valid
 ```
 
 ---
@@ -84,9 +84,9 @@ PNG, JPEG, WebP, AVIF, GIF (first frame for static), BMP, TIFF.
 
 ### Encoders (write)
 
-PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF — all decodable formats can also be encoded.
+PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF: all decodable formats can also be encoded.
 
-The `quality` argument (1–100) applies to **JPEG only**. WebP encodes lossless and AVIF uses the native library default — for both, `quality` is ignored (a limitation of `image` 0.25, which does not expose lossy quality control for these). PNG/BMP/TIFF/GIF are lossless or paletted and ignore `quality` too.
+The `quality` argument (1–100) applies to **JPEG only**. WebP encodes lossless and AVIF uses the native library default: for both, `quality` is ignored (a limitation of `image` 0.25, which does not expose lossy quality control for these). PNG/BMP/TIFF/GIF are lossless or paletted and ignore `quality` too.
 
 ---
 
@@ -108,7 +108,7 @@ using var pipe = ImagePipeline.Load(fileStream);    // reads the whole stream (b
 
 ### Inspecting without decoding
 
-When you only need dimensions and format, use `ImageInfo` — it parses the header instead of decoding the whole image.
+When you only need dimensions and format, use `ImageInfo`: it parses the header instead of decoding the whole image.
 
 ```csharp
 ImageInfo info = ImageInfo.FromBytes(bytes);
@@ -146,7 +146,7 @@ using var pipe = ImagePipeline.Load(bytes, options);
 | `MaxWidth` / `MaxHeight` | Per-dimension pixel caps (`0` = unlimited) | `0` |
 | `AllowedFormats` | Fail-closed format allow-list (`null` = any) | `null` |
 
-Three presets are provided: `ImagingOptions.Default`, `ImagingOptions.Strict` (20 MB / 25 MP, for user uploads), `ImagingOptions.Relaxed` (500 MB / 500 MP, for trusted batch work). The presets leave `MaxWidth`/`MaxHeight`/`AllowedFormats` unset — add them for untrusted input.
+Three presets are provided: `ImagingOptions.Default`, `ImagingOptions.Strict` (20 MB / 25 MP, for user uploads), `ImagingOptions.Relaxed` (500 MB / 500 MP, for trusted batch work). The presets leave `MaxWidth`/`MaxHeight`/`AllowedFormats` unset; add them for untrusted input.
 
 Violations throw `ImagingException` with a specific `Reason` (see the error model below).
 
@@ -178,14 +178,14 @@ byte[][] thumbs = await ImageBatch.ThumbnailsAsync(
     maxConcurrency: 4);   // 0 → Environment.ProcessorCount / 2
 ```
 
-`ThumbnailsAsync` / `ConvertAsync` cover the common cases; `ProcessAsync(images, operation, maxConcurrency, ct)` runs an arbitrary `Func<ReadOnlyMemory<byte>, byte[]>` per input. A single failed item surfaces as `ImageBatchItemException` (carrying the input `Index`) — see [operations.md](/modules/imaging/operations/#batch-processing) for the exact failure semantics.
+`ThumbnailsAsync` / `ConvertAsync` cover the common cases; `ProcessAsync(images, operation, maxConcurrency, ct)` runs an arbitrary `Func<ReadOnlyMemory<byte>, byte[]>` per input. A single failed item surfaces as `ImageBatchItemException` (carrying the input `Index`); see [operations.md](/modules/imaging/operations/#batch-processing-imagebatch) for the exact failure semantics.
 
 ---
 
 ## Thread safety
 
-- `ImagePipeline` — **not thread-safe**. One pipeline per thread/task.
-- `ImageInfo.FromBytes`, `QrCode.GeneratePng`, `ImageConverter.*`, `ImageBatch.*` — safe to call concurrently (each opens its own pipeline).
+- `ImagePipeline`: **not thread-safe**. One pipeline per thread/task.
+- `ImageInfo.FromBytes`, `QrCode.GeneratePng`, `ImageConverter.*`, `ImageBatch.*`: safe to call concurrently (each opens its own pipeline).
 
 Sharing one `ImagePipeline` across threads corrupts its native state. The binding does not synchronise for you.
 
@@ -208,7 +208,7 @@ catch (ImagingException ex) when (ex.Reason == ImagingError.MaxMegapixelsExceede
 
 `ImagingError` values: `NativeError`, `DecodeFailed`, `EncodeFailed`, `UnsupportedFormat`, `InputTooLarge`, `MaxWidthExceeded`, `MaxHeightExceeded`, `MaxMegapixelsExceeded`, `FormatNotAllowed`.
 
-**Argument-shape mistakes throw `ArgumentException`, not `ImagingException`** — a zero `Resize` dimension, an out-of-bounds `Crop`, a `Rotate` that isn't 90/180/270, an empty QR string. Those are programming errors, distinct from runtime imaging failures.
+**Argument-shape mistakes throw `ArgumentException`, not `ImagingException`**: a zero `Resize` dimension, an out-of-bounds `Crop`, a `Rotate` that isn't 90/180/270, an empty QR string. Those are programming errors, distinct from runtime imaging failures.
 
 ---
 
@@ -222,6 +222,6 @@ See [native-deployment.md](/modules/imaging/native-deployment/) for platform cov
 
 ## Related
 
-- [getting-started.md](/modules/imaging/getting-started/) — minimal tutorials
-- [operations.md](/modules/imaging/operations/) — full reference of transform / filter methods
-- [native-deployment.md](/modules/imaging/native-deployment/) — platform matrix and deployment notes
+- [getting-started.md](/modules/imaging/getting-started/): minimal tutorials
+- [operations.md](/modules/imaging/operations/): full reference of transform / filter methods
+- [native-deployment.md](/modules/imaging/native-deployment/): platform matrix and deployment notes

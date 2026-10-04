@@ -1,5 +1,5 @@
 ---
-title: "Common Mistakes — Pragmatic.Migrations"
+title: "Common Mistakes: Pragmatic.Migrations"
 description: "Nine pitfalls that developers hit when using declarative schema migrations, and how to avoid each one."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Migrations/docs/common-mistakes.md
 sidebar:
@@ -37,7 +37,7 @@ await PragmaticApp.RunAsync(args, builder =>
 
 **Symptom**: `InvalidOperationException: No IConnectionFactory registered for provider 'PostgreSql'. Ensure the provider's NuGet package is referenced and registered (e.g. via UseProvider)…`
 
-**Cause**: A provider is only wired up when its driver is actually loadable. If the provider package is not referenced in the host project, that provider is not registered at all — and resolving it fails with the message above, naming the provider it could not find.
+**Cause**: A provider is only wired up when its driver is actually loadable. If the provider package is not referenced in the host project, that provider is not registered at all, and resolving it fails with the message above, naming the provider it could not find.
 
 ```xml
 <!-- Wrong: provider only in module project, not in host -->
@@ -50,7 +50,7 @@ await PragmaticApp.RunAsync(args, builder =>
 
 **Rule**: The **host** project must reference the database provider NuGet package, not just the module projects. The SG detects the provider from your EF Core reference and sets `SchemaVersion.ProviderName`, but the runtime needs the actual connection type.
 
-To skip the driver-probing entirely — and the reflection it uses — hand the runner a factory:
+To skip the driver-probing entirely (and the reflection it uses), hand the runner a factory:
 
 ```csharp
 builder.UsePragmaticMigrations(m =>
@@ -63,7 +63,7 @@ builder.UsePragmaticMigrations(m =>
 
 **Symptom**: Migration returns `Success = false` with message: `Breaking changes detected (2). Use Force=true to apply.`
 
-**Cause**: By default, the runner blocks any change marked `IsBreaking = true`. This includes DROP TABLE, DROP COLUMN, and SET NOT NULL. At host startup the blocked migration **aborts startup** — the host fails to boot rather than run on a stale schema.
+**Cause**: By default, the runner blocks any change marked `IsBreaking = true`. This includes DROP TABLE, DROP COLUMN, and SET NOT NULL. At host startup the blocked migration **aborts startup**: the host fails to boot rather than run on a stale schema.
 
 ```csharp
 // This blocks breaking changes
@@ -113,7 +113,7 @@ Check the logs for unexpected changes like:
 
 1. Remove the manual changes from the database to match the desired schema
 2. Add the manual columns/indexes to your `[Entity]` definitions so the SG includes them in the desired schema
-3. If the object is genuinely owned by another system, a DBA, or a database extension, exclude it: `m.ExcludeTable("name")` — the diff engine then ignores it entirely. When the whole database is shared, `m.ManageDeclaredTablesOnly()` is the blanket version: nothing this host did not declare is ever proposed for deletion
+3. If the object is genuinely owned by another system, a DBA, or a database extension, exclude it: `m.ExcludeTable("name")`; the diff engine then ignores it entirely. When the whole database is shared, `m.ManageDeclaredTablesOnly()` is the blanket version: nothing this host did not declare is ever proposed for deletion
 
 **Rule**: Never modify schema managed by Pragmatic.Migrations by hand. Managed schema changes flow from `[Entity]` attributes; anything owned elsewhere should be declared with `ExcludeTable`.
 
@@ -155,7 +155,7 @@ Suggestions:
 
 - Custom `IMigrationLeaderElection` that always returns `true`
 - Running migrations from a script outside the host process
-- Testing with `AlwaysLeaderElection` leaking into production (SQLite always uses it — a single-file database has nothing to coordinate)
+- Testing with `AlwaysLeaderElection` leaking into production (SQLite always uses it: a single-file database has nothing to coordinate)
 
 **Rule**: In production with multiple instances, always use the default `DatabaseLeaderElection`. It requires zero external infrastructure.
 
@@ -185,13 +185,13 @@ m.OnlyDatabase<ShowcaseAppDatabase>();
 
 **Cause**: The `__PragmaticSchema` audit table was excluded from the backup, or the backup predates the last migration. The runner has no record of previous migrations and treats the schema as if it needs updating.
 
-**Fix**: nothing, usually — and this is worth being precise about, because the audit table is a
+**Fix**: nothing, usually, and this is worth being precise about, because the audit table is a
 *record*, not an input. The runner decides what to do by comparing the desired schema against the
 live database, never against the audit history: restoring a backup without `__PragmaticSchema` costs
 you the history, not correctness. A restored database that already matches the entities produces an
 empty diff and no changes.
 
-What the restore *can* cost you is the record of which `IDataMigration`s already ran — that one IS
+What the restore *can* cost you is the record of which `IDataMigration`s already ran: that one IS
 an input:
 
 1. Restore the backup, including `__PragmaticDataMigrations`.
@@ -203,7 +203,7 @@ INSERT INTO "__PragmaticDataMigrations" ("Name", "DurationMs") VALUES ('2026-05_
 ```
 
 **Best practice**: include `__PragmaticSchema` (audit history) and `__PragmaticDataMigrations`
-(run-once tracking) in backups. `__PragmaticLock` holds no durable state — it is recreated on demand.
+(run-once tracking) in backups. `__PragmaticLock` holds no durable state: it is recreated on demand.
 
 ---
 
@@ -215,7 +215,7 @@ INSERT INTO "__PragmaticDataMigrations" ("Name", "DurationMs") VALUES ('2026-05_
 hand-written `__PragmaticSchema` row carries a hash that never matches anything.
 
 **Cause**: the hash is **derived**, not supplied. It is the canonical identity of the schema,
-computed from the tables themselves — which is exactly what makes the compile-time schema and an
+computed from the tables themselves, which is exactly what makes the compile-time schema and an
 introspected one comparable.
 
 **What to do instead**: compare hashes freely, they mean something.

@@ -102,7 +102,7 @@ info: Pragmatic.Migrations.Runner.MigrationRunner
       [default] Migration complete: 3 changes applied in 47ms
 ```
 
-Per-change lines (`Applying 1/3: CREATE TABLE "Reservations"`) are logged at `Debug` — see
+Per-change lines (`Applying 1/3: CREATE TABLE "Reservations"`) are logged at `Debug`; see
 [Troubleshooting](./troubleshooting.md) for the log-level snippet.
 
 ---
@@ -227,10 +227,10 @@ Register it in DI and the runner will invoke it after successful migration.
 
 ### Data Migrations vs Seeding
 
-`IMigrationSeedProvider` runs after **every** successful migration — use it for
+`IMigrationSeedProvider` runs after **every** successful migration: use it for
 idempotent reference data (`ON CONFLICT DO NOTHING`). For a **one-time** data
-transformation — backfilling a new column, converting values, moving data between
-tables — implement `IDataMigration` instead: it runs exactly once per database, tracked
+transformation (backfilling a new column, converting values, moving data between
+tables), implement `IDataMigration` instead: it runs exactly once per database, tracked
 by name in `__PragmaticDataMigrations`, inside its own transaction.
 
 ```csharp
@@ -241,7 +241,7 @@ public sealed class BackfillOrderStatus : IDataMigration
     public async Task MigrateAsync(DbConnection connection, DbTransaction transaction, CancellationToken ct)
     {
         var cmd = connection.CreateCommand();
-        cmd.Transaction = transaction;  // required — atomic with the tracking record
+        cmd.Transaction = transaction;  // required: atomic with the tracking record
         cmd.CommandText = "UPDATE \"Orders\" SET \"Status\" = 'pending' WHERE \"Status\" IS NULL";
         await cmd.ExecuteNonQueryAsync(ct);
     }
@@ -267,7 +267,7 @@ No additional configuration is needed -- leader election uses the same database 
 
 ## Step 11: Sharing the Database With Another System
 
-By default a table that exists in the database but not in your entities is proposed for `DROP` — a
+By default a table that exists in the database but not in your entities is proposed for `DROP`, a
 breaking change, so startup is blocked rather than data deleted. If another application (or a DBA)
 owns tables in the same database, tell the runner:
 
@@ -288,7 +288,7 @@ table survives and has to be dropped by hand.
 ## Step 12: The CLI (optional)
 
 The host migrates itself at startup; nothing else is required. When you want to inspect or apply
-migrations outside the host — a DBA review, a deploy step, a CI gate — install the tool:
+migrations outside the host (a DBA review, a deploy step, a CI gate), install the tool:
 
 ```bash
 dotnet tool install -g Pragmatic.Migrations.Cli
@@ -321,7 +321,7 @@ await PragmaticApp.RunAsync(args, builder =>
     });
 
     // Optional: enable the Pragmatic Agent for distributed coordination.
-    // Migration leader election does NOT need it — DatabaseLeaderElection
+    // Migration leader election does NOT need it: DatabaseLeaderElection
     // (the __PragmaticLock table) already serializes migrations across instances.
     builder.UseAgent();
 });
