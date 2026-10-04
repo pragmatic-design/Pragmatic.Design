@@ -31,28 +31,8 @@ internal sealed class RedactingLogger : ILogger
     {
         // Only a structured state can be masked member by member. A plain string state carries no
         // declared type, so there is nothing to look up and nothing to mask.
-        if (state is not IReadOnlyList<KeyValuePair<string, object?>> values)
-        {
-            _inner.Log(logLevel, eventId, state, exception, formatter);
-            return;
-        }
-
-        KeyValuePair<string, object?>[]? masked = null;
-
-        for (var i = 0; i < values.Count; i++)
-        {
-            var original = values[i].Value;
-            var redacted = _redactor.RedactValue(original);
-
-            if (ReferenceEquals(redacted, original))
-                continue;
-
-            // Copy on first difference: the common entry declares nothing and allocates nothing.
-            masked ??= ToArray(values);
-            masked[i] = new KeyValuePair<string, object?>(values[i].Key, redacted);
-        }
-
-        if (masked is null)
+        if (state is not IReadOnlyList<KeyValuePair<string, object?>> values
+            || _redactor.RedactState(values) is not { } redacted)
         {
             _inner.Log(logLevel, eventId, state, exception, formatter);
             return;
@@ -60,16 +40,6 @@ internal sealed class RedactingLogger : ILogger
 
         // The original formatter closes over the ORIGINAL state, so using it here would restore the
         // unmasked value in the message text. Render from the masked values instead.
-        var redactedState = new RedactedLogValues(masked);
-        _inner.Log(logLevel, eventId, redactedState, exception, static (s, _) => s.ToString());
-    }
-
-    private static KeyValuePair<string, object?>[] ToArray(IReadOnlyList<KeyValuePair<string, object?>> values)
-    {
-        var copy = new KeyValuePair<string, object?>[values.Count];
-        for (var i = 0; i < values.Count; i++)
-            copy[i] = values[i];
-
-        return copy;
+        _inner.Log(logLevel, eventId, redacted, exception, static (s, _) => s.ToString()!);
     }
 }

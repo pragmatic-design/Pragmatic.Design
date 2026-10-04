@@ -15,6 +15,13 @@ namespace Pragmatic.Logging.Tests.Privacy;
 ///         provider leaks and nobody notices.
 ///     </para>
 /// </summary>
+/// <remarks>
+///     ⚠️ These entries are built by hand, with the template as the message, so the value never reaches
+///     the text and the message is not what they test. They cover the properties path, which an entry
+///     takes however it was produced. The message is covered through a real logger in
+///     <see cref="DeclaredRedactionReachesTheMessageTests" />; until those existed, a message carrying
+///     the member in clear passed every test here.
+/// </remarks>
 public class DeclaredRedactionReachesEveryProviderTests
 {
     private sealed record Payload(string Reference, string ApiKey);

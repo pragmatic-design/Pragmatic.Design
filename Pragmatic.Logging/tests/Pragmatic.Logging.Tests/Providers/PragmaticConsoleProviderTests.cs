@@ -278,4 +278,50 @@ public class PragmaticConsoleProviderTests
             Console.SetOut(originalOut);
         }
     }
+
+    /// <summary>
+    ///     A member a type declared must not be logged stays out of the console line: the message is
+    ///     rendered from the masked value, not by the caller's formatter.
+    /// </summary>
+    /// <remarks>In this class because it redirects <see cref="Console.Out" />, as the tests above do.</remarks>
+    [Fact]
+    public void LogMessage_WithADeclaredMember_WritesItMasked()
+    {
+        var config = PragmaticConsoleConfiguration.ForAdvancedConsole();
+        using var provider = new PragmaticConsoleProvider("TestConsole", config)
+        {
+            DeclaredRedactor = new Pragmatic.Redaction.DeclaredRedactor([new CredentialsMap()]),
+        };
+        var logger = provider.CreateLogger("Test.Category");
+
+        using var consoleCapture = new StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(consoleCapture);
+
+        try
+        {
+            logger.LogInformation("Signed in with {Credentials}", new Credentials("jane", "hunter2"));
+
+            var output = consoleCapture.ToString();
+            output.Should().NotContain("hunter2");
+            output.Should().Contain(Pragmatic.Redaction.PersonalDataPatterns.Mask).And.Contain("jane");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    private sealed record Credentials(string User, string Password);
+
+    private sealed class CredentialsMap : Pragmatic.Serialization.IRedactionMap
+    {
+        public bool TryGetRedactedMembers(Type type, out IReadOnlyList<Pragmatic.Serialization.RedactedMember> members)
+        {
+            members = type == typeof(Credentials)
+                ? [new Pragmatic.Serialization.RedactedMember(nameof(Credentials.Password), Pragmatic.Serialization.RedactionReason.NotLogged)]
+                : [];
+            return members.Count > 0;
+        }
+    }
 }

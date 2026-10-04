@@ -11,9 +11,10 @@ namespace Pragmatic.Redaction;
 /// <remarks>
 ///     Rendering here rather than reusing the original formatter is the whole point. The formatter
 ///     closes over the ORIGINAL state, so calling it would put the unmasked value back into the
-///     message text while the structured property beside it was masked — which is what
-///     <c>PragmaticLoggerProviderBase</c> does today: it redacts <c>LogEntry.Properties</c> and leaves
-///     <c>LogEntry.Message</c>, already produced by <c>formatter(state, exception)</c>, untouched.
+///     message text while the structured property beside it was masked. Both loggers that redact go
+///     through here (<see cref="DeclaredRedactor.RedactState" />): <c>RedactingLogger</c>, and
+///     Pragmatic.Logging's own logger, which used to mask <c>LogEntry.Properties</c> after the message
+///     was already rendered and so wrote the member in clear.
 /// </remarks>
 internal sealed class RedactedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
 {
