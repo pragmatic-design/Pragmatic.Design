@@ -19,9 +19,9 @@ Before we start, an important distinction:
 | **Handler** | `IDomainEventHandler<T>` | `IMessageHandler<T>` |
 | **Use when** | Side effects within same boundary | Communication between boundaries/services |
 
-**The bridge**: The SG generates a `MessageHandlerEventAdapter<T>` that lets domain events (from `Pragmatic.Events`) also reach message handlers. This is optional — you can use messaging standalone.
+**The bridge**: The SG generates a `MessageHandlerEventAdapter<T>` that lets domain events (from `Pragmatic.Events`) also reach message handlers. This is optional: you can use messaging standalone.
 
-This tutorial covers **Pragmatic.Messaging** — the cross-boundary, async messaging system.
+This tutorial covers **Pragmatic.Messaging**, the cross-boundary, async messaging system.
 
 ## Step 1: Define a Message
 
@@ -66,10 +66,10 @@ public sealed partial class InvoiceApprovalHandler(
 ```
 
 Key points:
-- `[MessageHandler]` — SG discovers and generates a pipeline wrapper
-- `[Retry]` — generates a retry loop with exponential backoff + jitter (inline, no Polly)
-- `partial` — required for SG to add `[LoggerMessage]` stubs
-- `IMessageHandler<T>` — the contract. `T` is your message type.
+- `[MessageHandler]`: SG discovers and generates a pipeline wrapper
+- `[Retry]`: generates a retry loop with exponential backoff + jitter (inline, no Polly)
+- `partial`: required for SG to add `[LoggerMessage]` stubs
+- `IMessageHandler<T>`: the contract. `T` is your message type.
 
 ## Step 3: Publish a Message
 
@@ -112,7 +112,7 @@ await PragmaticApp.RunAsync(args, app =>
 });
 ```
 
-The SG auto-registers handlers — no manual DI needed.
+The SG auto-registers handlers: no manual DI needed.
 
 ## Step 5: Build and Verify
 
@@ -125,7 +125,7 @@ Check generated files in `obj/Debug/net10.0/generated/`:
 | File | Content |
 |------|---------|
 | `InvoiceApprovalHandler.Pipeline.g.cs` | Retry loop (3 attempts, exponential+jitter) + telemetry |
-| `_Infra.Messaging.Registration.g.cs` | `AddPragmaticMessageHandlers()` — auto-registers all handlers |
+| `_Infra.Messaging.Registration.g.cs` | `AddPragmaticMessageHandlers()`: auto-registers all handlers |
 | `_Infra.Messaging.TypeRegistry.g.cs` | AOT-safe `switch` for message deserialization |
 
 ## What Happens at Runtime
@@ -156,7 +156,7 @@ This bridge is automatic when both Events and Messaging are referenced. No confi
 
 ## Next Steps
 
-- [Concepts](concepts.md) — architecture, pipeline diagram, transport model
-- [Common Mistakes](common-mistakes.md) — top 10 pitfalls
-- [Troubleshooting](troubleshooting.md) — checklists, diagnostics, FAQ
+- [Concepts](concepts.md): architecture, pipeline diagram, transport model
+- [Common Mistakes](common-mistakes.md): top 10 pitfalls
+- [Troubleshooting](troubleshooting.md): checklists, diagnostics, FAQ
 - **Showcase**: `examples/showcase/src/Showcase.Billing/Events/Handlers/` for real-world patterns

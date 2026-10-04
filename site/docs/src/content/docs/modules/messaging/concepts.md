@@ -12,7 +12,7 @@ sidebar:
 Without a messaging framework, cross-boundary communication requires manual plumbing:
 
 ```csharp
-// Without Pragmatic.Messaging — manual event dispatch, no retry, no outbox
+// Without Pragmatic.Messaging: manual event dispatch, no retry, no outbox
 public class ReservationService
 {
     public async Task ConfirmReservation(Guid id)
@@ -21,7 +21,7 @@ public class ReservationService
         reservation.Status = ReservationStatus.Confirmed;
         await _repo.SaveAsync(reservation);
 
-        // Manual event dispatch — no retry, no outbox, no audit
+        // Manual event dispatch: no retry, no outbox, no audit
         try
         {
             var @event = new ReservationConfirmed(id, reservation.GuestId, ...);
@@ -42,7 +42,7 @@ Problems: no retry, no dead letter, no idempotency, no audit trail, no outbox (e
 ## The Solution
 
 ```csharp
-// With Pragmatic.Messaging — attribute-driven, SG-generated pipeline
+// With Pragmatic.Messaging: attribute-driven, SG-generated pipeline
 [MessageHandler]
 [Retry(MaxAttempts = 3, Strategy = BackoffStrategy.ExponentialWithJitter)]
 public sealed partial class ReservationConfirmedHandler(
@@ -114,13 +114,13 @@ For each `[MessageHandler]` class, the SG generates `{Handler}_Pipeline.g.cs`:
                  └── GetBusName() → named bus
 
                  SubscriptionName.For(subscriber, message, bus)
-                 └── → {module}.{message-kebab} — the queue a consumer binds
+                 └── → {module}.{message-kebab}: the queue a consumer binds
 ```
 
 ⚠️ **A subscription's name is not the router's job**, and that is the one thing to understand here: the
 router maps *types* to addresses, and a subscription needs to say **who is listening**. The two queues
 `intake.verification-requested` and `verify.verification-requested` are the same event read by two
-services, each getting its own copy — which is what a topic is for. A name like
+services, each getting its own copy, which is what a topic is for. A name like
 `{transport}-{messageType}` says nothing of the subscriber: the two services would share one queue, and
 each request would reach one of them. The subscriber is the **module**, not the handler: one subscription per message type serves
 every handler of it in the process. Override it with `MessagingBuilder.SubscribeAs(...)` when the
@@ -156,7 +156,7 @@ deployment's identity is not the module's.
 ### With Pragmatic.Composition (recommended)
 
 ```csharp
-// Program.cs — transport + features
+// Program.cs: transport + features
 await PragmaticApp.RunAsync(args, app =>
 {
     app.UseMessaging(msg =>
@@ -171,7 +171,7 @@ await PragmaticApp.RunAsync(args, app =>
 });
 ```
 
-The SG auto-registers handlers, type registry, routing — no manual DI needed.
+The SG auto-registers handlers, type registry, routing: no manual DI needed.
 
 ### Without Composition (standalone)
 

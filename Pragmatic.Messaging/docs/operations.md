@@ -17,7 +17,7 @@ msg.EnableDashboard(o =>
 
 Auth mirrors the maintenance panel: with a key configured, every request must carry
 `X-Messaging-Key` (compared constant-time). You can issue **multiple labelled keys** via
-`ApiKeys` (`label → key`) alongside (or instead of) the single `ApiKey` — any accepted key
+`ApiKeys` (`label → key`) alongside (or instead of) the single `ApiKey`; any accepted key
 authenticates, and the matching label is logged on replay/delete so an operation is
 attributable. Rotate one key without touching the others.
 
@@ -28,7 +28,7 @@ blocks, defeating a drive-by cross-site POST to `localhost`. In keyed mode the
 `X-Messaging-Key` header already forces that preflight. All routes are excluded from OpenAPI.
 
 The `status` counter and the `outbox` list are **read-only**: they use the outbox source's
-`InspectPendingAsync`/`PeekPendingAsync`, which never lease rows — so an open, auto-refreshing
+`InspectPendingAsync`/`PeekPendingAsync`, which never lease rows, so an open, auto-refreshing
 dashboard cannot starve the delivery pump (the delivery worker's `GetPendingAsync` claims a
 5-minute lease; the dashboard must not).
 
@@ -46,7 +46,7 @@ dashboard cannot starve the delivery pump (the delivery worker's `GetPendingAsyn
 ### Replay semantics
 
 Replay resolves the payload back to a typed message via the SG-generated
-`IMessageTypeRegistry` (an AOT-safe switch per module assembly — no reflection) and
+`IMessageTypeRegistry` (an AOT-safe switch per module assembly, no reflection) and
 publishes through the ACTIVE transport with the ORIGINAL MessageId: idempotency stores
 never marked the id as processed (the dispatch failed), so dedup does not swallow the
 replay, while handlers that already succeeded on a fan-out still dedupe correctly.
@@ -54,22 +54,22 @@ A type not in any registry returns 422 and the dead letter stays.
 
 Replay is **at-least-once**: it re-publishes and then removes the dead letter in two steps,
 not one transaction, so a crash between them can leave the message both re-published and
-still in the store — a second replay would publish it again. Enable consumer idempotency
+still in the store, and a second replay would publish it again. Enable consumer idempotency
 (`EnableIdempotency`) so the preserved MessageId lets a duplicate be deduped.
 
 ### Tenant isolation & the dashboard
 
 In a multi-tenant host, messaging propagates the tenant end to end: the bus stamps the
 ambient tenant onto every published message, and the consumer restores it before handlers
-run (background delivery has no ambient tenant otherwise). Saga rows are tenant-owned —
+run (background delivery has no ambient tenant otherwise). Saga rows are tenant-owned:
 stamped on create, filtered on read by a fail-closed EF query filter, and keyed on the
 tenant in the active-saga unique index so two tenants can run the same
-`(SagaType, CorrelationId)` — and claim-check blobs are stored under a per-tenant path and
+`(SagaType, CorrelationId)`; and claim-check blobs are stored under a per-tenant path and
 rejected on retrieve if the reference's tenant does not match the caller.
 
 **The dashboard is an operator/admin surface and is deliberately cross-tenant**: it reports
 sagas, dead letters, outbox and audit across all tenants (its background reads bypass the
-tenant filter). Protect it with `ApiKey` (or loopback) — it is not a per-tenant view and
+tenant filter). Protect it with `ApiKey` (or loopback): it is not a per-tenant view and
 must not be exposed to tenant users.
 
 ## Counters
