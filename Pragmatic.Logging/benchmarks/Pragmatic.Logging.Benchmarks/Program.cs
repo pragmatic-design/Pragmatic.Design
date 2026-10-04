@@ -10,7 +10,7 @@ namespace Pragmatic.Logging.Benchmarks;
 
 /// <summary>
 /// Shared config used by benchmark classes that don't need a custom ManualConfig.
-/// Produces HTML + Markdown reports alongside the default CSV/JSON artifacts.
+/// Adds the default-style Markdown report to the HTML, GitHub Markdown and CSV the default config writes.
 /// </summary>
 public class DefaultExportConfig : ManualConfig
 {
@@ -18,7 +18,7 @@ public class DefaultExportConfig : ManualConfig
     {
         AddJob(Job.Default);
         AddColumnProvider(DefaultColumnProviders.Instance);
-        AddExporter(HtmlExporter.Default);
+        // HTML, GitHub Markdown and CSV come from the default config BenchmarkDotNet merges in.
         AddExporter(MarkdownExporter.Default);
         WithSummaryStyle(SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend));
         WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest));
@@ -56,11 +56,25 @@ public class Program
                 BenchmarkRunner.Run<LoggingBenchmarks>();
                 break;
 
+            case "verify":
+                // The equivalence check alone, without timing anything: every sink must consume the
+                // same event. Throws, and exits non-zero, when one does not.
+                var comparison = new LoggingBenchmarks();
+                comparison.Setup();
+                comparison.Cleanup();
+                Console.WriteLine("✅ Every sink consumed the same event in every scenario.");
+                break;
+
             case "quick":
                 // Pass-through to BenchmarkDotNet's CLI parsing for filtered iteration runs,
                 // e.g.: dotnet run -c Release -- quick --anyCategories Simple
                 Console.WriteLine("⏱️ Filtered logging comparison (args pass-through)");
                 BenchmarkRunner.Run<LoggingBenchmarks>(null, args[1..]);
+                break;
+
+            case "redaction":
+                Console.WriteLine("🔒 Declared redaction overhead (Pragmatic only)");
+                BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>(null, args[1..]);
                 break;
 
             case "expression":
@@ -81,13 +95,16 @@ public class Program
 
             case "all":
                 Console.WriteLine("🚀 Complete benchmark suite");
-                Console.WriteLine("\n1/3 - Logging Library Comparison");
+                Console.WriteLine("\n1/4 - Logging Library Comparison");
                 BenchmarkRunner.Run<LoggingBenchmarks>();
 
-                Console.WriteLine("\n2/3 - Expression DSL Performance");
+                Console.WriteLine("\n2/4 - Declared Redaction Overhead");
+                BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>();
+
+                Console.WriteLine("\n3/4 - Expression DSL Performance");
                 BenchmarkRunner.Run<ExpressionDslBenchmarks>();
 
-                Console.WriteLine("\n3/3 - Zero Allocation Tests");
+                Console.WriteLine("\n4/4 - Zero Allocation Tests");
                 BenchmarkRunner.Run<ZeroAllocationBenchmark>();
                 BenchmarkRunner.Run<AllocationComparisonBenchmark>();
                 break;

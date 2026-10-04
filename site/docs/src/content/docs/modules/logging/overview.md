@@ -10,10 +10,10 @@ Feature-rich structured logging for the Pragmatic.Design ecosystem: extends .NET
 privacy-aware redaction, an audit trail, context enrichment, an expression filter DSL, and multiple
 providers.
 
-> **Performance:** first in every benchmarked category against Serilog and NLog, with Microsoft's
-> `[LoggerMessage]` call sites a log call is **allocation-free end-to-end** (33.6 ns / 0 B vs ~295 ns /
-> 712–1032 B). The pipeline defers all materialization to the sink; enabling
-> redaction/enrichment/filters routes calls through the full pipeline. See [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md).
+> **Performance:** with every library writing into a sink that renders and reads the event, Pragmatic
+> is ahead of Serilog and NLog on simple, `[LoggerMessage]`, structured and high-volume calls, behind
+> both with the production preset's context enrichment, and behind ZLogger everywhere. See
+> [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the run, the machine and the reports.
 
 ## The Problem
 

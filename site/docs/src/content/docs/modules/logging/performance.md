@@ -381,4 +381,16 @@ var config = new PerformanceConfiguration
 
 ## Benchmark Guidance
 
-The `PragmaticNullProvider` with its benchmark presets (`ForBenchmarking`, `ForStructuredBenchmarking`, `ForContextBenchmarking`, `ForBatchingBenchmarking`, `ForProductionBenchmarking`) provides controlled environments for measuring the overhead of each feature in isolation. Pair these with the BenchmarkDotNet harnesses in `benchmarks/Pragmatic.Logging.Benchmarks/` to quantify the impact of enabling or disabling zero-allocation formatting, batching, context enrichment, or privacy redaction on your specific workload.
+The harnesses live in `benchmarks/Pragmatic.Logging.Benchmarks/`, and the latest run, with its machine,
+command and reports, is in [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md).
+
+**Measure a sink that does the work.** `PragmaticNullProvider` takes the deferred path and never renders
+the message or reads the state, so it measures how cheaply a call can be skipped, not what logging costs.
+The library comparison uses a sink per library that renders the message and reads every property, and
+checks before timing that all of them consumed the same event (`dotnet run -c Release -- verify`).
+
+The presets on `PragmaticNullConfiguration` (`ForBenchmarking`, `ForStructuredBenchmarking`,
+`ForContextBenchmarking`, `ForBatchingBenchmarking`, `ForProductionBenchmarking`) are still the
+configurations to compare: pass one to a provider that writes, and the difference between two runs is the
+cost of the feature the preset turns on. Declared redaction is measured that way, on its own
+(`dotnet run -c Release -- redaction`): in the last run it took a call from 749 ns to 1,454 ns.

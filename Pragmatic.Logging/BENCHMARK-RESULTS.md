@@ -1,175 +1,212 @@
-# Pragmatic.Logging — Benchmark Results
+# Pragmatic.Logging: Benchmark Results
 
-> Runtime: .NET 10 | BenchmarkDotNet (DefaultJob, null sinks for every library)
-> Full HTML/CSV reports: `BenchmarkDotNet.Artifacts/results/`
+Every number on this page comes from one run, on 2026-10-04, of:
 
-## LoggingBenchmarks — Library Comparison (vs Serilog, NLog)
+```bash
+cd Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks
+dotnet run -c Release -- all
+```
 
-All libraries write through their real pipeline into a null sink (pure pipeline cost, no I/O).
-Per call unless noted; lower is better. **Pragmatic ranks first in every category.**
+| | |
+|---|---|
+| Machine | AMD Ryzen 9 9950X (16 cores), 126 GiB RAM, Windows 11 (10.0.26200) |
+| Runtime | .NET 10.0.12, SDK 10.0.303, X64 RyuJIT AVX-512 |
+| Harness | BenchmarkDotNet 0.14.0, default job, `[MemoryDiagnoser]` |
 
-### Source-generated call sites (`[LoggerMessage]` — the recommended hot-path pattern)
+The reports that run wrote are committed in [`benchmarks/reports/`](benchmarks/reports/), one per suite. A
+number here that does not appear there is a mistake. The run reported no `MinIterationTime`, baseline or
+multimodal-distribution warning.
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| **Pragmatic** | **33.6 ns** | **0 B** ✅ |
-| Serilog | 294.6 ns | 712 B |
-| NLog | 297.6 ns | 1,032 B |
+## Library comparison: `LoggingBenchmarks`
 
-> With Microsoft's `[LoggerMessage]` source generator at the call site (zero-boxing struct state)
-> and Pragmatic's deferred pipeline, a log call is **allocation-free end-to-end** and ~8.8× faster
-> than both Serilog and NLog.
+Pragmatic, Serilog, NLog and ZLogger, each called through `Microsoft.Extensions.Logging` and each writing
+into a sink that **consumes** the event. The sink renders the message into a reused buffer and reads
+every structured property, scope property and the exception (`Comparison/EventConsumer.cs`).
 
-### Simple logging (`logger.LogInformation(template, args)`)
+Before anything is timed, `GlobalSetup` runs every scenario once per library and stops the run unless the
+four sinks produced the same message, the same property set and the same exception. Taking the work out
+of any one sink makes it fail. That was checked once per sink when the check was written.
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| NullLogger *(baseline)* | 27.6 ns | 64 B |
-| **Pragmatic** | **44.0 ns** | **64 B** ✅ |
-| NLog | 170.8 ns | 488 B |
-| Serilog | 202.3 ns | 440 B |
+Pragmatic is the baseline of every category. Per call; lower is better.
 
-> The 64 B is the call's own `params` array — identical to the do-nothing `NullLogger` baseline.
-> The Pragmatic pipeline itself adds **zero allocations** and ~16 ns.
+### Simple: `logger.LogInformation(template, int, string)`
 
-### Structured logging (with a `BeginScope` per call)
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 167.6 ns | 1.28× faster | 216 B |
+| **Pragmatic** | **214.3 ns** | baseline | **592 B** |
+| NLog | 228.4 ns | 1.07× slower | 760 B |
+| Serilog | 263.9 ns | 1.23× slower | 528 B |
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| **Pragmatic** | **117.2 ns** | **328 B** ✅ |
-| NLog | 292.5 ns | 696 B |
-| Serilog | 670.8 ns | 2,016 B |
-| Pragmatic (production preset: redaction + full pipeline) | 941.1 ns | 1,624 B |
+### Source-generated call site (`[LoggerMessage]`)
 
-### Exception logging
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 155.2 ns | 1.31× faster | 192 B |
+| **Pragmatic** | **203.9 ns** | baseline | **544 B** |
+| Serilog | 321.6 ns | 1.58× slower | 800 B |
+| NLog | 384.0 ns | 1.88× slower | 1,416 B |
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| **Pragmatic** | **51.0 ns** | **64 B** ✅ |
-| NLog | 229.4 ns | 504 B |
-| Serilog | 233.9 ns | 440 B |
+### Structured: a scope with four properties, a call with two
 
-### High volume (1,000 calls per op)
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 404.8 ns | 1.24× faster | 520 B |
+| **Pragmatic** | **501.7 ns** | baseline | **1,176 B** |
+| NLog | 675.4 ns | 1.35× slower | 1,328 B |
+| Serilog | 839.6 ns | 1.67× slower | 1,912 B |
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| **Pragmatic** | **46.4 µs** | **64 KB** ✅ |
-| NLog | 193.7 µs | 487 KB |
-| Serilog | 210.1 µs | 440 KB |
+### Exception
 
-### Where the numbers come from
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 172.1 ns | 1.37× faster | 232 B |
+| **Pragmatic** | **235.5 ns** | baseline | **608 B** |
+| NLog | 244.8 ns | 1.04× slower | 776 B |
+| Serilog | 279.8 ns | 1.19× slower | 528 B |
 
-- **Deferred pipeline**: when no pipeline feature needs a materialized entry (no advanced filters,
-  no context enrichment, no redaction), the typed log state flows straight to the sink — no
-  `LogEntry`, no dictionaries, no eager message rendering. Enabling any pipeline feature routes the call
-  through the full pipeline — the "production preset" rows above measure that path, redaction
-  included. Ambient scopes remain readable by the sink during the deferred call.
-- **Lazy everything**: `LogEntry` allocates its dictionaries only if someone writes to them; scope
-  capture is allocation-free when no scope is active; provider metrics use a fixed ring buffer.
-- **`[LoggerMessage]` call sites** (Microsoft's source generator, the pattern Pragmatic recommends)
-  add zero-boxing struct state on top — reaching 0 B end-to-end.
+### High volume: the simple call 1,000 times, reported per call
 
----
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 167.1 ns | 1.27× faster | 215 B |
+| **Pragmatic** | **211.5 ns** | baseline | **591 B** |
+| NLog | 225.2 ns | 1.07× slower | 759 B |
+| Serilog | 256.7 ns | 1.21× slower | 518 B |
 
-## ZeroAllocationBenchmark — Formatting Internals
+### Production: two request-context properties and the structured scope
+
+Each library adds the two context properties through its own mechanism: Pragmatic's `LogContextScope`,
+Serilog's `LogContext`, NLog's `ScopeContext`. ZLogger has no ambient context of its own, so for it the
+two properties are a second MEL scope. Pragmatic runs its production preset, with context enrichment on.
+
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger | 536.0 ns | 2.57× faster | 832 B |
+| NLog | 1,023.2 ns | 1.35× faster | 2,872 B |
+| Serilog | 1,054.5 ns | 1.31× faster | 3,000 B |
+| **Pragmatic** | **1,376.2 ns** | baseline | **4,112 B** |
+
+### What the comparison says
+
+- **ZLogger is faster than Pragmatic in every category and allocates 2.26× to 4.94× less.** Its UTF-8
+  pipeline is the reference for what a logger on `Microsoft.Extensions.Logging` reaches.
+- **Pragmatic is ahead of Serilog and NLog on the plain paths** (simple, source-generated, structured,
+  high volume), by 1.07× to 1.88×.
+- **Pragmatic is the slowest in the production scenario**, 1.31× to 2.57× behind the others, and allocates
+  the most (4,112 B). Context enrichment and the production preset are where its per-call costs are.
+- **No library is allocation-free here.** Rendering and reading the event costs something everywhere.
+  Pragmatic allocates more than ZLogger in every category. Against Serilog it allocates more on the
+  simple, exception and high-volume calls (591–608 B against 518–528 B), and less on the
+  source-generated and structured ones.
+- ZLogger's row is, if anything, pessimistic: the sink reads its property values with
+  `GetParameterValue(int)`, which boxes value types. Its typed and JSON accessors would avoid that, but
+  the sink does not know the types any more than the other three do.
+
+## Declared redaction overhead: `RedactionOverheadBenchmarks`
+
+Pragmatic only, because no other library in the comparison masks the members a type declares. The same
+call (`Registered {Customer}`, a record whose `Email` is declared) goes through the same consuming
+provider with the production preset, without a redactor and with one.
 
 | Method | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| **ZeroAllocMessageFormatterTryFormat** | **57.56 ns** | **1.47x faster** ✅ | **0 B** |
-| **LogMessageTryFormat** | **59.53 ns** | **1.42x faster** ✅ | 344 B ⚠️ |
-| StandardStringInterpolation *(baseline)* | 84.33 ns | 1.00 | 240 B |
-| ZeroAllocMessageFormatterFormat | 84.23 ns | 1.00x | 176 B |
-| LogMessageToString | 88.01 ns | 1.04x slower | 288 B |
-| StandardStringFormat | 107.29 ns | 1.27x slower | 296 B |
-| StructuredLoggingWithILogger | 193.13 ns | 2.29x slower | 904 B |
-| MessageFormatter.Format *(reflection-based)* | 266.14 ns | 3.16x slower | 616 B |
+| Without redaction | 749.0 ns | baseline | 2.58 KB |
+| With declared redaction | 1,453.5 ns | 1.94× slower | 3.34 KB |
 
-### Key findings
+Declared redaction serializes the value, parses it, masks the paths and serializes again, which is what
+the 1.94× is. ⚠️ It masks the structured property only: the rendered message still carries the member
+in clear ([#77](https://github.com/pragmatic-design/Pragmatic.Design/issues/77)), so this row times the
+redaction that exists, not the redaction the entry needs.
 
-- `ZeroAllocMessageFormatter.TryFormat` (caller-provided `Span<char>` buffer): **0 B heap**.
-  `LogMessage.TryFormat` allocates ~344 B — prefer `ZeroAllocMessageFormatter` on the hot path.
-- `TryFormat` is faster than baseline string interpolation.
-- The string-returning `Format` overload shaves allocations to 176 B but matches baseline speed — prefer `TryFormat`.
-- The reflection path (`MessageFormatter`) and `ILogger.BeginScope`-based structured logging are
-  slower and allocate more than the zero-alloc path — use the zero-alloc formatter on hot paths.
-
-
----
-
-## AllocationComparisonBenchmark — Bulk Formatting (1000 messages)
+## Formatting internals: `ZeroAllocationBenchmark`
 
 | Method | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| **ZeroAllocFormattingWithStackBuffer** | **123.0 µs** | **1.32x faster** ✅ | **117 KB** |
-| StandardFormatting *(baseline, reflection)* | 162.2 µs | 1.00 | 391 KB |
-| ZeroAllocFormatting | 245.5 µs | 1.51x slower | 600 KB |
+| `ZeroAllocMessageFormatter.TryFormat` | 60.14 ns | 1.11× faster | 0 B |
+| String interpolation *(baseline)* | 66.46 ns | baseline | 240 B |
+| `ZeroAllocMessageFormatter.Format` | 81.11 ns | 1.22× slower | 176 B |
+| `string.Format` | 84.90 ns | 1.28× slower | 296 B |
+| `LogMessage.ToString` | 85.32 ns | 1.29× slower | 344 B |
+| `LogMessage.TryFormat` | 88.14 ns | 1.33× slower | 344 B |
+| `MessageFormatter.Format` (reflection-based) | 111.71 ns | 1.68× slower | 528 B |
+| Structured logging through `ILogger` | 179.74 ns | 2.71× slower | 904 B |
 
-> Stack-buffer TryFormat path is **24% faster** and allocates **3.3× less** than reflection-based formatting for 1000 messages.
+- `ZeroAllocMessageFormatter.TryFormat`, into a caller-provided span, is the only path with 0 B.
+- `LogMessage.TryFormat` is slower than the baseline and allocates 344 B, despite its name. Prefer
+  `ZeroAllocMessageFormatter.TryFormat` on a hot path.
 
----
-
-## ExpressionDslBenchmarks — Filter DSL Performance
-
-### Single Filter Evaluation
+## Bulk formatting, 1,000 messages: `AllocationComparisonBenchmark`
 
 | Method | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| SimpleLevel_Evaluation *(baseline)* | 93.54 ns | 1.00 | **0 B** ✅ |
-| ComplexBusinessLogic_Evaluation | 117.16 ns | 1.25x slower | **0 B** ✅ |
-| SecurityAuditing_Evaluation | 124.86 ns | 1.33x slower | **0 B** ✅ |
-| EnterpriseCompliance_Evaluation | 140.57 ns | 1.50x slower | **0 B** ✅ |
-| PerformanceMonitoring_Evaluation | 185.11 ns | 1.98x slower | **0 B** ✅ |
+| `ZeroAllocFormatting` | 69.92 µs | 1.30× faster | 257.81 KB |
+| Standard formatting *(baseline)* | 91.04 µs | baseline | 390.63 KB |
+| `ZeroAllocFormattingWithStackBuffer` | 102.02 µs | 1.12× slower | 117.19 KB |
 
-> Expression DSL cache lookups: **0 B per evaluation**.
+The stack-buffer path allocates the least, 3.33× less than the baseline, and is the slowest of the three.
 
-### Batch Evaluation (5 log entries)
+## Filter DSL: `ExpressionDslBenchmarks`
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| SimpleLevel_BatchEvaluation | 529.68 ns | **0 B** ✅ |
-| ComplexBusinessLogic_BatchEvaluation | 669.20 ns | **0 B** ✅ |
-| EnterpriseCompliance_BatchEvaluation | 742.45 ns | **0 B** ✅ |
-| AllFilters_BatchEvaluation (5×5) | 3,381.87 ns | **0 B** ✅ |
+### Single evaluation
 
-### Property-Based Filtering
+| Method | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| Simple level *(baseline)* | 71.57 ns | baseline | 400 B |
+| Security auditing | 97.87 ns | 1.37× slower | 400 B |
+| Complex business logic | 98.32 ns | 1.37× slower | 400 B |
+| Enterprise compliance | 119.83 ns | 1.67× slower | 400 B |
+| Performance monitoring | 154.34 ns | 2.16× slower | 400 B |
 
-| Method | Mean | Allocated |
-|---|---:|---:|
-| PropertyValue_Evaluation | 166.55 ns | **0 B** ✅ |
-| StructuredProperties_Evaluation | 166.88 ns | **0 B** ✅ |
-| NumericProperties_Evaluation | 180.73 ns | **0 B** ✅ |
-| PropertyExists_Evaluation | 198.85 ns | **0 B** ✅ |
+### Batch: 5 log entries
 
-### High Volume (10,000 iterations)
+| Method | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| Simple level *(baseline)* | 381.81 ns | baseline | 2,000 B |
+| Complex business logic | 520.94 ns | 1.37× slower | 2,000 B |
+| Enterprise compliance | 613.51 ns | 1.61× slower | 2,000 B |
+| All five filters (5 × 5) | 2,938.82 ns | 7.70× slower | 10,000 B |
 
-| Method | Mean | Throughput |
-|---|---:|---:|
-| HighVolume_SimpleFilter | 1.04 ms | ~9.7M evals/s |
-| HighVolume_ComplexFilter | 1.22 ms | ~8.2M evals/s |
-| HighVolume_MixedFilters | 1.31 ms | ~7.7M evals/s |
+### Property-based filtering
 
-### Key findings
+| Method | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| Property exists *(baseline)* | 89.10 ns | baseline | 480 B |
+| Property value | 87.84 ns | 1.01× faster | 480 B |
+| Has structured properties | 87.57 ns | 1.02× faster | 504 B |
+| Numeric properties | 102.99 ns | 1.16× slower | 496 B |
 
-- Simple level filters: **~94 ns** per evaluation — suitable for hot paths.
-- Complex multi-condition business logic: **~117–185 ns** — acceptable for per-request filtering.
-- Property-based filters: **~167–199 ns** — uniform cost regardless of property type.
-- High-volume throughput: **7.7–9.7 million evaluations/second**.
-- **All evaluation paths: 0 B heap allocation**.
+### High volume: 10,000 evaluations per operation
 
----
+| Method | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| Simple filter *(baseline)* | 751.28 µs | baseline | 4,000,000 B |
+| Complex filter | 976.73 µs | 1.30× slower | 4,000,000 B |
+| Mixed filters | 1,040.10 µs | 1.39× slower | 4,000,000 B |
 
-## Running benchmarks
+### Cache
+
+| Method | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| One expression, 1,001 evaluations *(baseline)* | 71.48 µs | baseline | 400,400 B |
+| Five expressions, 5,005 evaluations | 588.65 µs | 8.24× slower | 2,002,000 B |
+
+**Every evaluation allocates 400 B**, whatever the filter: 2,000 B for a batch of five, 4,000,000 B for
+10,000. An earlier version of this page said "0 B per evaluation"; that was not what any recorded run
+measured.
+
+## Running the benchmarks
 
 ```bash
 cd Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks
 
-# All suites (generates HTML + Markdown in BenchmarkDotNet.Artifacts/results/)
-dotnet run -c Release -- all
-
-# Individual suites
-dotnet run -c Release -- logging    # vs Serilog/NLog comparison
-dotnet run -c Release -- expression # Expression DSL performance
-dotnet run -c Release -- zero       # Zero allocation formatting
+dotnet run -c Release -- all         # every suite, as above
+dotnet run -c Release -- logging     # the library comparison
+dotnet run -c Release -- verify      # the comparison's equivalence check alone, nothing timed
+dotnet run -c Release -- redaction   # declared redaction overhead
+dotnet run -c Release -- expression  # filter DSL
+dotnet run -c Release -- zero        # formatting internals and bulk formatting
 ```
 
-Full HTML reports: `BenchmarkDotNet.Artifacts/results/*.html`
+Reports land in `BenchmarkDotNet.Artifacts/results/`. To update this page, run `all`, copy the
+`*-report-github.md` files into `benchmarks/reports/`, and take every number from them.

@@ -152,6 +152,8 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="Serilog" Version="4.2.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.1" />
+    <!-- Benchmark comparison only (Pragmatic.Logging.Benchmarks): the zero-allocation reference. -->
+    <PackageVersion Include="ZLogger" Version="2.5.10" />
   </ItemGroup>
 
   <!-- ══════════════════════════════════════════════════════
