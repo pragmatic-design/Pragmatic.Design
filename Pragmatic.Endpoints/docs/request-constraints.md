@@ -16,7 +16,7 @@ public partial class CreateBookingNoteEndpoint : Endpoint<string> { ... }
 - Endpoint metadata wins over the global default.
 - Non-positive limits are a compile error (**PRAG0517**).
 - Enforced both through `IHttpMaxRequestBodySizeFeature` (Kestrel) and an explicit
-  `Content-Length` check — so it also holds on test servers.
+  `Content-Length` check, so it also holds on test servers.
 
 ## Antiforgery
 
@@ -33,7 +33,7 @@ public partial class SubmitFeedbackFormEndpoint : Endpoint<string>
 ```
 
 With Pragmatic Composition the antiforgery services and middleware are wired automatically
-(`AntiforgeryStep`, Order 80 — after auth, the token is user-bound). In library mode call
+(`AntiforgeryStep`, Order 80, after auth: the token is user-bound). In library mode call
 `AddAntiforgery()` + `UseAntiforgery()` yourself. Requests without a valid token → **400**.
 
 ## OpenAPI request/response examples
@@ -54,6 +54,6 @@ public partial class CreateGuestMutation : Mutation<Guest> { ... }
 ## HEAD and OPTIONS
 
 `HttpVerb.Head` / `HttpVerb.Options` map via `MapMethods`. HEAD responses must not carry a
-body (RFC 9110): declare a `VoidEndpoint` — a HEAD endpoint with a response type warns
+body (RFC 9110): declare a `VoidEndpoint`. A HEAD endpoint with a response type warns
 (**PRAG0514**) and the generated handler suppresses the body. OPTIONS gets no special
 treatment (CORS preflight stays with the CORS middleware).

@@ -10,7 +10,7 @@ Mutations are structured entity operations that follow a strict pipeline: valida
 ## What you write, and what the generator writes
 
 Everything below shows generated code, and it is worth saying once what that means: **you write the
-class, and nothing else.** A mutation is a declaration — a name, a mode, some input properties — and the
+class, and nothing else.** A mutation is a declaration (a name, a mode, some input properties), and the
 seven files the generator answers with are the ones a hand-written version would have had to contain.
 
 For `CreateAmenityMutation` in the reference application, a class of eight lines:
@@ -18,26 +18,26 @@ For `CreateAmenityMutation` in the reference application, a class of eight lines
 | Generated | What it is | Trigger |
 |---|---|---|
 | `.MutationInvoker.g.cs` | the `Invoker`: dependency injection, load-or-create, apply, validate, persist, events | `[Mutation]` |
-| `.ApplyToEntity.g.cs` | `ApplyToEntity(entity)` — one `entity.SetX(this.X)` per matching property | a property whose name matches a settable member |
+| `.ApplyToEntity.g.cs` | `ApplyToEntity(entity)`: one `entity.SetX(this.X)` per matching property | a property whose name matches a settable member |
 | `.Validator.g.cs` | `ISyncValidator` on the mutation itself, built from the annotations on its inputs | `[Required]`, `[MaxLength]`, … |
-| `.RequestBody.g.cs` | `{Mutation}Body`, the record the endpoint binds — only what the caller may send | `[Endpoint]` |
+| `.RequestBody.g.cs` | `{Mutation}Body`, the record the endpoint binds: only what the caller may send | `[Endpoint]` |
 | `{Mutation}Body.Validator.g.cs` | the same validation, on the body | `[Endpoint]` + annotations |
 | `.Endpoint.g.cs` | the `RequestDelegate`, its binding, its status codes and its authorization | `[Endpoint]` |
 | `.CacheInvalidator.g.cs` | `InvalidateAsync`, called after the commit | `[InvalidatesCache]` |
 
-So the question the examples invite — *wouldn't the original code have been better?* — is the wrong
+So the question the examples invite (*wouldn't the original code have been better?*) is the wrong
 comparison. The original code is the eight lines. The generated files are what you do **not** write, and
 the reason to read them here is to know what the declaration commits you to: which pipeline stages run,
 in which order, and what the endpoint will accept and answer.
 
 Two consequences worth carrying into the rest of the page:
 
-- **Every artefact has a trigger.** No `[Endpoint]`, no body, no endpoint, no binding — the mutation is
+- **Every artefact has a trigger.** No `[Endpoint]`, no body, no endpoint, no binding: the mutation is
   invoked in process and nothing about HTTP exists. Adding the attribute later adds four files and
   changes nothing you wrote.
 - **The generator owns those members.** Writing `ApplyToEntity` or a setter by hand duplicates a member
   it emits, and the build fails with `CS0111` rather than silently preferring one. Override
-  `ApplyAsync` instead — it is the extension point, and auto-mapping still runs first.
+  `ApplyAsync` instead: it is the extension point, and auto-mapping still runs first.
 
 Inspect them whenever the behaviour surprises you: `EmitCompilerGeneratedFiles` puts every one of these
 on disk under `obj/`, and they are ordinary C# with the trigger named in the header comment.
@@ -315,7 +315,7 @@ public bool KeywordsWithinLimit() => Keywords.Count <= 20;
 ```
 
 If one returns `false`, the pipeline short-circuits **before persist** with an `InvariantViolationError`
-(`Code = "INVARIANT_VIOLATION"`, HTTP 422) — a typed `Result` failure, not a thrown exception. The
+(`Code = "INVARIANT_VIOLATION"`, HTTP 422): a typed `Result` failure, not a thrown exception. The
 source generator discovers `[Invariant]` methods (public/internal, parameterless, inherited) and
 generates the `CheckInvariants` override the pipeline calls.
 
@@ -323,7 +323,7 @@ generates the `CheckInvariants` override the pipeline calls.
 base, with `{key}.title` and `{key}.detail` in the translation files, and `Message` as the answer where
 the key has no translation. It is a string and not a `TKeys` constant, because a base is a nested type
 in that class and those two suffixes are its members. A rule that names no key reports
-`error.invariant.violation`, which every invariant in the application shares — one text that cannot say
+`error.invariant.violation`, which every invariant in the application shares: one text that cannot say
 which rule refused.
 
 ### 6. Persist
@@ -335,7 +335,7 @@ which rule refused.
 
 **Deferred**: a mutation nested inside an invoker that already owns its unit of work does not save. The entity is accumulated and its events deferred; the owner commits once and then flushes them. Ownership is by unit of work identity, so a step in another boundary is unaffected and commits itself.
 
-Two things put a mutation in that position: an outer invoker of the same boundary — an action, a `[CompositeAction]` — or a `BatchContext` opened by hand over that unit of work. ⚠️ In the second case **you** save: `BatchContext` performs no commit of its own. See `[CommitStrategy]` to choose otherwise.
+Two things put a mutation in that position: an outer invoker of the same boundary (an action, a `[CompositeAction]`) or a `BatchContext` opened by hand over that unit of work. ⚠️ In the second case **you** save: `BatchContext` performs no commit of its own. See `[CommitStrategy]` to choose otherwise.
 
 ### 7. Dispatch Domain Events
 
@@ -349,7 +349,7 @@ If the mutation implements `ICacheInvalidator`, `InvalidateAsync()` is called wi
 
 ## Raising Domain Events (`[Raises<T>]`)
 
-Declare the domain events an operation produces with `[Raises<TEvent>]`. The generator builds the event instance for you — matching the event constructor's parameters **by name** against the mutation's inputs and the entity's members — and the pipeline dispatches it **after a successful commit** (step 7). The entity needs no `RaiseEvent` call: the behavior lives on the operation.
+Declare the domain events an operation produces with `[Raises<TEvent>]`. The generator builds the event instance for you, matching the event constructor's parameters **by name** against the mutation's inputs and the entity's members, and the pipeline dispatches it **after a successful commit** (step 7). The entity needs no `RaiseEvent` call: the behavior lives on the operation.
 
 ```csharp
 [Mutation(Mode = MutationMode.Update)]
@@ -402,7 +402,7 @@ returns in process, and what its endpoint answers with.
 | `LogicalKey` | `{Mutation}.LogicalKey`, a generated record with one property per `[LogicKey]` part | the same record, under the parts' wire names |
 
 ⚠️ Left unset, the endpoint never answers with the entity. The entity is the persistence
-shape — every column the server owns, loaded only as far as the mutation writes — so it goes on the
+shape (every column the server owns, loaded only as far as the mutation writes), so it goes on the
 wire only when you ask for it by writing `ReturnType = MutationReturnType.Entity`.
 
 ```csharp
@@ -459,7 +459,7 @@ This ensures the in-memory entity stays consistent even if the database write fa
 
 For entities with `[SoftDelete(Cascade = true)]`, the generated invoker overrides `CompensateSoftDeleteCascade()` to restore cascade targets as well.
 
-Soft-delete is applied automatically when the target entity implements `ISoftDelete`. You can also force it explicitly on the mutation with `[Mutation(Mode = MutationMode.Delete, SoftDelete = true)]` — useful to make the intent unambiguous at the operation site.
+Soft-delete is applied automatically when the target entity implements `ISoftDelete`. You can also force it explicitly on the mutation with `[Mutation(Mode = MutationMode.Delete, SoftDelete = true)]`: useful to make the intent unambiguous at the operation site.
 
 ---
 
@@ -489,9 +489,9 @@ public partial class CreateAmenityPairAction : VoidDomainAction
 
 The generator emits a nested `CompositeInvoker`, injects one invoker per step, and overrides the
 action's `ExecuteActionAsync` to call it. `Execute` is generated too, and it throws
-`NotSupportedException` — the steps *are* the body, and nothing ever calls it. Do not write one.
+`NotSupportedException`: the steps *are* the body, and nothing ever calls it. Do not write one.
 
-A step can be a mutation, a `DomainAction<T>` or a `VoidDomainAction` — anything with an invoker in
+A step can be a mutation, a `DomainAction<T>` or a `VoidDomainAction`: anything with an invoker in
 the same boundary.
 
 ### Reaching it from the frontend
@@ -521,18 +521,18 @@ Content-Type: application/json
 ```
 
 The nested step type is registered in the generated `JsonSerializerContext` alongside the body, so the
-path is AOT-safe — no reflection fallback involved.
+path is AOT-safe: no reflection fallback involved.
 
 ⚠️ The body nests the **mutation type**, not the `{Mutation}Body` its own endpoint uses. Anything the
 mutation exposes as a public settable property is therefore on the wire here, including what
-`{Mutation}Body` would have left out — the implicit `Id` a `MutationMode.Update` step carries, for one.
+`{Mutation}Body` would have left out: the implicit `Id` a `MutationMode.Update` step carries, for one.
 Prefer create-shaped steps, or a step whose writable surface is exactly what the caller may send.
 
 ### The permission is the composite's, and only the composite's
 
 ⚠️⚠️ **This is the one that bites.** The steps run as *internal calls*: the composite claims the
 authorization boundary, and each step's own `[RequirePermission]` is deliberately **not** re-checked.
-So a composite exposed with `[Endpoint]` and **no** `[RequirePermission]` runs its steps unchecked —
+So a composite exposed with `[Endpoint]` and **no** `[RequirePermission]` runs its steps unchecked:
 an authenticated caller holding no permissions at all gets `204` and the rows are created, even though
 each step's own endpoint would have refused them `403`.
 
@@ -545,12 +545,12 @@ public. Before it existed nothing caught this:
 ### What it does not do
 
 ⚠️ **A collection of mutations is not a set of steps.** Steps are read one property at a time, and a
-property whose type is not itself a mutation or an action — `List<CreateAmenityMutation>`, an array,
-anything wrapping them — is skipped, with no diagnostic (`PRAG0427` fires only when there are *zero*
+property whose type is not itself a mutation or an action (`List<CreateAmenityMutation>`, an array,
+anything wrapping them) is skipped, with no diagnostic (`PRAG0427` fires only when there are *zero*
 steps). The composite compiles, runs the properties it did recognise, and ignores the collection.
 
 So `[CompositeAction]` composes a **fixed, named** set of writes, decided at compile time. For the
-other shape — a nested DTO whose collections carry a variable number of children — the mechanism is
+other shape (a nested DTO whose collections carry a variable number of children) the mechanism is
 `[PartOf<TParent>]` with a `CollectionStrategy` on the parent's mutation, which writes the children
 alongside the parent.
 
@@ -577,7 +577,7 @@ failed.IsSuccessStatusCode.Should().BeFalse();
 (await SearchAmenitiesByNameAsync(prefix)).GetArrayLength().Should().Be(0);
 ```
 
-Invoking the composite **in process** — `IVoidDomainActionInvoker<T>` out of a bare DI scope — needs a
+Invoking the composite **in process** (`IVoidDomainActionInvoker<T>` out of a bare DI scope) needs a
 principal on `IHttpContextAccessor`, because that is where `ICurrentUser` reads from. Without one, a
 permissioned composite fails for a reason that has nothing to do with what the test is about. The
 worked version is `StepsCompositeActionTests` in the reference application.

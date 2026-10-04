@@ -110,7 +110,7 @@ Evaluates `[RequirePolicy<T>]` attributes where `T` extends `ResourcePolicy`.
 
 **Behavior**:
 1. Skips if `ActionCallContext.IsInternalCall` is true
-2. Looks up the policy in the source-generated `IPolicyRegistry` (zero reflection — no attribute scan at runtime)
+2. Looks up the policy in the source-generated `IPolicyRegistry` (zero reflection: no attribute scan at runtime)
 3. Instantiates it through the generated factory delegate (`static () => new TPolicy()`, no `Activator.CreateInstance`)
 4. Calls `policy.Evaluate(currentUser)`
 5. Returns `ForbiddenError` if evaluation fails

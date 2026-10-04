@@ -28,7 +28,7 @@ public partial class FeedEndpoint : StreamingEndpoint<FeedItemDto, NotFoundError
 }
 ```
 
-## Error semantics — first-item peek
+## Error semantics: first-item peek
 
 - A failure yielded **first** becomes a normal HTTP error response (ProblemDetails with the
   error's status code): the stream never opens. Use it for not-found/precondition checks.
@@ -39,7 +39,7 @@ public partial class FeedEndpoint : StreamingEndpoint<FeedItemDto, NotFoundError
 
 ## Streaming domain actions
 
-`StreamingDomainAction<TItem>` streams through the Actions pipeline — validation and
+`StreamingDomainAction<TItem>` streams through the Actions pipeline: validation and
 authorization filters run **before** the stream opens (a short-circuit becomes a normal
 HTTP error). Streaming actions are read-oriented: SaveChanges/`[Raises]` run when the
 stream is handed over, not when it finishes.
@@ -59,7 +59,7 @@ public partial class ScanAvailabilityAction : StreamingDomainAction<SlotDto>
 - **Pull-based backpressure**: the next item is requested only after the previous one has
   been flushed to the transport (the awaited flush *is* the backpressure). A bounded
   `Channel<T>` (`channel.Reader.ReadAllAsync(ct)`) gives producer-side backpressure for free.
-- The `ct` is the request-aborted token — enumeration stops when the client disconnects.
+- The `ct` is the request-aborted token: enumeration stops when the client disconnects.
 - Consume from browsers with `EventSource` (GET) or `fetch` + stream reader; from .NET with
   `System.Net.ServerSentEvents.SseParser`.
 
@@ -67,11 +67,11 @@ public partial class ScanAvailabilityAction : StreamingDomainAction<SlotDto>
 
 | Diagnostic | Rule |
 |------------|------|
-| PRAG0520 (E) | `[ResponseCache]` on streaming — SSE is not cacheable |
+| PRAG0520 (E) | `[ResponseCache]` on streaming: SSE is not cacheable |
 | PRAG0521 (E) | Verb must be GET (EventSource-compatible) or POST |
-| PRAG0522 (E) | `[HttpStatus]`/`[CreatedAt]` — success is always 200 |
+| PRAG0522 (E) | `[HttpStatus]`/`[CreatedAt]`: success is always 200 |
 | PRAG0523 (W) | Versioned handler methods not supported (default version only) |
-| PRAG0524 (E) | `[PostProcessor]` — there is no final result to observe |
+| PRAG0524 (E) | `[PostProcessor]`: there is no final result to observe |
 
 Not in scope (documented limits): `Last-Event-ID`/resume, custom per-item event names,
 streaming Mutation/Query. Exclude `text/event-stream` from response compression (it buffers).

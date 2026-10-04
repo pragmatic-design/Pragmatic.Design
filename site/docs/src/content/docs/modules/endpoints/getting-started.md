@@ -168,14 +168,14 @@ This generates:
 
 ### Two documents, and which one to publish
 
-- **The compile-time document** — at `/openapi/v1.json`. It is written by the generator from the
+- **The compile-time document**, at `/openapi/v1.json`. It is written by the generator from the
   manifest, so it carries what only the generator knows: every declared error with its status,
   permissions, examples, idempotency headers. It describes the generated endpoints and nothing else.
   A Composition host that references `Pragmatic.Endpoints.OpenApi` publishes it **in Development**
-  without being asked — with Scalar over it at `/scalar` when `Scalar.AspNetCore` is referenced — and
+  without being asked (with Scalar over it at `/scalar` when `Scalar.AspNetCore` is referenced), and
   in every environment after `app.UseApiDocumentation()`; Scalar stays in Development. Outside a
   Composition host, `app.MapPragmaticOpenApi()` maps it; a host that maps it itself keeps its route.
-- **ASP.NET's runtime document** — `services.AddOpenApi()` and `app.MapOpenApi()`, the one Scalar,
+- **ASP.NET's runtime document**: `services.AddOpenApi()` and `app.MapOpenApi()`, the one Scalar,
   Swagger UI and client generators plug into. It describes the generated endpoints **and** the ones the
   application maps by hand, side by side. Add `services.AddPragmaticOpenApi()` to enrich its
   operations with the manifest's errors and permissions.
@@ -183,7 +183,7 @@ This generates:
 The enrichment reads the manifests registered when the application loads. Each assembly that declares
 endpoints registers its own, and a Composition host registers every module's at once as well; a module
 seen both ways is read once. The assembly with the endpoints needs nothing beyond `Pragmatic.Endpoints`
-for this — only the project that calls `AddPragmaticOpenApi()` references `Pragmatic.Endpoints.OpenApi`.
+for this; only the project that calls `AddPragmaticOpenApi()` references `Pragmatic.Endpoints.OpenApi`.
 
 A generated endpoint is mapped as a `RequestDelegate`, so that it survives an AOT publish, and ASP.NET's
 API explorer skips a handler it cannot see. The generated registration adds a description provider

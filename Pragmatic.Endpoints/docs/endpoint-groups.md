@@ -10,7 +10,7 @@ Endpoint groups solve this by letting you declare shared configuration once and 
 
 ## Declaring a group, and joining it
 
-A group is a class carrying `[EndpointGroup("prefix")]`. An endpoint joins it with `[EndpointGroup<TGroup>]` — the same attribute, with one type argument.
+A group is a class carrying `[EndpointGroup("prefix")]`. An endpoint joins it with `[EndpointGroup<TGroup>]`: the same attribute, with one type argument.
 
 ```csharp
 [EndpointGroup("/api/v1/orders", Tag = "Orders")]
@@ -139,7 +139,7 @@ services.AddPragmaticEndpoints(options =>
 
 **The key is the group class name without its `Group` suffix**: `OrdersGroup` is configured as `"Orders"`, `ProductsApiGroup` as `"ProductsApi"`. A class not ending in `Group` is configured by its simple class name.
 
-**A group can have an empty prefix**, `[EndpointGroup("")]`, when it exists only to share configuration: it still gets its own `MapGroup("")` — route-neutral — and its `ConfigureGroup` options apply to its endpoints like any other group's.
+**A group can have an empty prefix**, `[EndpointGroup("")]`, when it exists only to share configuration: it still gets its own `MapGroup("")` (route-neutral) and its `ConfigureGroup` options apply to its endpoints like any other group's.
 
 ### EndpointGroupOptions Properties
 
@@ -149,7 +149,7 @@ services.AddPragmaticEndpoints(options =>
 | `Tags` | `List<string>` | `[]` | OpenAPI tags |
 | `RequireAuthorization` | `bool` | `false` | Whether authorization is required |
 | `AuthorizationPolicy` | `string?` | `null` | Named authorization policy |
-| `RequiredPermissions` | `List<string>` | `[]` | Permissions required for all endpoints of the group (AND logic). Enforced as a `PragmaticPermissionRequirement` in the group's policy — the same requirement an operation's `[RequirePermission]` emits, so the permissions are in the endpoint's metadata, the 403 names them, and roles and wildcards expand through `IPermissionChecker`. |
+| `RequiredPermissions` | `List<string>` | `[]` | Permissions required for all endpoints of the group (AND logic). Enforced as a `PragmaticPermissionRequirement` in the group's policy, the same requirement an operation's `[RequirePermission]` emits, so the permissions are in the endpoint's metadata, the 403 names them, and roles and wildcards expand through `IPermissionChecker`. |
 | `Version` | `string?` | `null` | API version |
 | `RateLimitPolicy` | `string?` | `null` | Named rate limit policy |
 | `ResponseCacheDuration` | `int?` | `null` | Default cache duration in seconds |
@@ -182,7 +182,7 @@ The `Version` property on `[EndpointGroup]` applies API version metadata to all 
 public sealed class ProductsV2Group;
 ```
 
-This is metadata only: it attaches `ApiVersionAttribute` metadata to the group's `MapGroup()` route builder. Versioned handlers are a different mechanism — `HandleAsyncV{n}` methods on an endpoint, `ExecuteV{n}` on an action — and need `Asp.Versioning.Http`.
+This is metadata only: it attaches `ApiVersionAttribute` metadata to the group's `MapGroup()` route builder. Versioned handlers are a different mechanism (`HandleAsyncV{n}` methods on an endpoint, `ExecuteV{n}` on an action) and need `Asp.Versioning.Http`.
 
 ---
 
@@ -263,7 +263,7 @@ The generated `MapPragmaticEndpoints()` creates `MapGroup` calls for `OrdersGrou
 ## Notes
 
 - **Group class is a marker**: the class with `[EndpointGroup]` is a type marker. The SG reads the attribute, not the class body.
-- **Route prefix is required**: `RoutePrefix` is a constructor parameter of `[EndpointGroup]`, so it cannot be omitted — and an empty one gets no `ConfigureGroup` options (see above).
+- **Route prefix is required**: `RoutePrefix` is a constructor parameter of `[EndpointGroup]`, so it cannot be omitted; an empty one is allowed and still gets its `ConfigureGroup` options (see above).
 - **Tags**: a group's `Tag` is the default OpenAPI tag of its endpoints. An endpoint adds its own with `[ApiTags(...)]`.
 - **Alphabetical ordering**: within each group, endpoints are sorted by route in the generated registration code, so the output is deterministic across builds.
 - **Global prefix stacking**: the global `PragmaticEndpointsOptions.RoutePrefix`, the group prefix and the endpoint route all stack. With `options.RoutePrefix = "/api"`, group prefix `/v1/orders`, and endpoint route `/{id}`, the final route is `/api/v1/orders/{id}`.

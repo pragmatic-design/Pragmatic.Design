@@ -225,7 +225,7 @@ public partial class CreateUser : DomainAction<Guid>
 ### Async Validation
 
 For an async check (e.g., uniqueness against the database), write an `IAsyncValidator<CreateUser>` marked
-`[Validator]`. The generator registers it and — because it now exists in the compilation — makes the
+`[Validator]`. The generator registers it and, because it now exists in the compilation, makes the
 pipeline run it after the sync rules. No attribute on the action:
 
 ```csharp
@@ -239,7 +239,7 @@ public sealed class UniqueEmail(IUserDirectory directory) : IAsyncValidator<Crea
 }
 ```
 
-`[Validate]` exists to override that inference explicitly — `[Validate(AsyncOnly = true)]` to skip the
+`[Validate]` exists to override that inference explicitly: `[Validate(AsyncOnly = true)]` to skip the
 sync rules, for instance.
 
 ### Mutation Validation

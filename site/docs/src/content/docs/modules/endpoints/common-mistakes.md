@@ -94,7 +94,7 @@ public partial class GetGuestReservationEndpoint : Endpoint<ReservationDto, NotF
 ## 3. Leaving Form Fields Unmarked Next to a File
 
 ⚠️ **This is not a mistake, though it looks like one.** An operation that carries a file is `multipart/form-data`, so there is
-no JSON body for an unmarked property to arrive in — the generator binds every scalar from the form,
+no JSON body for an unmarked property to arrive in: the generator binds every scalar from the form,
 marked or not, under its property name. The two declarations below are equivalent; the second is
 explicit, which is why the framework's own examples write it. What a form field genuinely cannot carry
 is a nested object, and that is reported as `PRAG0552`.
@@ -135,7 +135,7 @@ public partial class UploadInvoiceAttachmentEndpoint : Endpoint<AttachmentDto>
 }
 ```
 
-**Why:** An endpoint is either JSON body or multipart form, not both — and the file decides. The SG
+**Why:** An endpoint is either JSON body or multipart form, not both, and the file decides. The SG
 generates no body DTO for a multipart operation (whether or not every property is marked), binds the
 scalars from the form, emits `DisableAntiforgery()` automatically, and reports `PRAG0552` for a
 property a form field cannot carry.
@@ -279,7 +279,7 @@ public partial class GetMyOrdersEndpoint : Endpoint<OrderDto[]>
 }
 ```
 
-**Runtime result:** nothing is cached, for anybody who is signed in — and nothing says so.
+**Runtime result:** nothing is cached, for anybody who is signed in, and nothing says so.
 
 The shared form generates an ASP.NET `CacheOutput` policy, and ASP.NET's default output-cache policy
 refuses to cache a request whose user is authenticated. Adding `VaryByHeaders = ["Authorization"]` does
@@ -288,16 +288,16 @@ not change that: the refusal comes before the vary rules. Measured through the g
 the cache the second time, the same request made by a signed-in user runs the body every time, and a
 second user never receives the first user's answer.
 
-So the endpoint must be one anonymous callers reach — on a route that requires authentication the build
+So the endpoint must be one anonymous callers reach: on a route that requires authentication the build
 warns (`PRAG0554`). The output cache itself the generated host adds when a module declares a shared
 `[ResponseCache]`; a host built by hand calls `app.UseOutputCache()`.
 
 **Right:**
 
-- A read whose answer is the same for everybody and reachable anonymously — a public catalogue, an
+- A read whose answer is the same for everybody and reachable anonymously, a public catalogue, an
   availability search: keep `Location.Any` and `[AllowAnonymous]`
   (`services.UseOutputCacheFromPragmaticCaching()` to share the Pragmatic cache backend).
-- A signed-in user's own data: let the browser keep it — the response carries `Cache-Control: private`
+- A signed-in user's own data: let the browser keep it. The response carries `Cache-Control: private`
   and nothing shared ever holds it:
 
 ```csharp
@@ -472,7 +472,7 @@ public partial class CreateGuestEndpoint : Endpoint<GuestDto>
 }
 ```
 
-**Compile result:** Works, but the `[FromBody]` attributes are redundant. The SG already treats all properties that are not `[FromRoute]`, `[FromQuery]`, `[FromHeader]`, `[FromForm]`, or `[FromClaim]` as body properties — unless the operation carries a file, in which case there is no JSON body at all and they come from the form (entry 3).
+**Compile result:** Works, but the `[FromBody]` attributes are redundant. The SG already treats all properties that are not `[FromRoute]`, `[FromQuery]`, `[FromHeader]`, `[FromForm]`, or `[FromClaim]` as body properties, unless the operation carries a file, in which case there is no JSON body at all and they come from the form (entry 3).
 
 **Right:**
 

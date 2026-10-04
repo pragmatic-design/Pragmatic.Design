@@ -44,7 +44,7 @@ Your endpoint class compiles, but every request returns 404.
 
 ### If Using Groups
 
-- Does the `[EndpointGroup]` class exist? It cannot be `static` — it is named as a type argument, and a static class is refused there (CS0718).
+- Does the `[EndpointGroup]` class exist? It cannot be `static`: it is named as a type argument, and a static class is refused there (CS0718).
 - Is the membership declared on the endpoint? It is the same attribute with one type argument, pointing at a class decorated with `[EndpointGroup]`:
 
   ```csharp
@@ -101,8 +101,8 @@ The `[PreProcessor<T>]` attribute is present, but the processor logic never exec
 
 2. **DI registration is generated.** `TryAddScoped<TProcessor>` is emitted by the generator, in the
    assembly's `AddPragmaticEndpoints()` and in the Composition host's `RegisterAllEndpoints()`; there
-   is nothing to write. The one type it cannot register is one the container cannot build — abstract,
-   or without a public constructor — and `PRAG0534` reports that at compile time.
+   is nothing to write. The one type it cannot register is one the container cannot build (abstract,
+   or without a public constructor), and `PRAG0534` reports that at compile time.
 
 3. **Verify the interface.** The processor must implement `IEndpointPreProcessor` or `IEndpointPreProcessor<TEndpoint>`. If neither is implemented, the attribute does not compile (`CS0311`).
 
@@ -232,7 +232,7 @@ The build fails with PRAG05xx diagnostics from the source generator.
 | ID | Severity | Cause | Fix |
 |----|----------|-------|-----|
 | PRAG0500 | Error | Class is not `partial` | Add `partial` keyword to the class declaration |
-| PRAG0501 | Error | Not a recognised shape | Inherit from `Endpoint<T>`, `VoidEndpoint`, `StreamingEndpoint<T>`, `DomainAction<T>`, `VoidDomainAction`, `StreamingDomainAction<T>` or `Mutation<T>`, or carry `[Query<TEntity, TResult>]` — the message lists them |
+| PRAG0501 | Error | Not a recognised shape | Inherit from `Endpoint<T>`, `VoidEndpoint`, `StreamingEndpoint<T>`, `DomainAction<T>`, `VoidDomainAction`, `StreamingDomainAction<T>` or `Mutation<T>`, or carry `[Query<TEntity, TResult>]`; the message lists them |
 | PRAG0502 | Error | Route not specified | Add a route pattern to the `[Endpoint]` attribute: `[Endpoint(HttpVerb.Post, "/orders")]` |
 | PRAG0503 | Error | More than 6 error types | Reduce the generic error type parameters to 6 or fewer |
 | PRAG0504 | Warning | Route parameter has no matching property | Add a public property matching the route parameter name, or fix the spelling |
@@ -246,7 +246,7 @@ The build fails with PRAG05xx diagnostics from the source generator.
 | PRAG0535 | Error | `[ReturnsDto<T>]` beside `ReturnType = Id` or `LogicalKey` | The key answers, and the DTO applies only to a mutation that returns the entity: remove one of the two |
 | PRAG0536 | Error | An optional header, query, claim or cookie value on an `init` property with a non-constant initializer | The generated endpoint repeats the default in the object initializer: make it a constant, or give the property a `set` accessor |
 | PRAG0537 | Warning | An error declares `[HttpStatus(n)]` and its own `StatusCode` answers another | Make the two agree: the attribute is what the contract documents, `StatusCode` is what the caller receives |
-| PRAG0538 | Info | A published type declares `TenantId`, `OwnerId`, `AccessScopes`, `RowVersion` or `PersistenceId`, which no response carries | Rename the member or drop it from the shape the endpoint answers with — a client generated from the contract would read a silent default |
+| PRAG0538 | Info | A published type declares `TenantId`, `OwnerId`, `AccessScopes`, `RowVersion` or `PersistenceId`, which no response carries | Rename the member or drop it from the shape the endpoint answers with: a client generated from the contract would read a silent default |
 | PRAG0515 | Error | Autocomplete entity missing key | Add an `Id` property or `[Key]` attribute to the entity |
 | PRAG0516 | Error | Invalid `[MaxFileSize]` limit | Use a positive byte limit (a value ≤ 0 would reject every upload) |
 | PRAG0550 | Error | `[Autocomplete]` on non-string | Move `[Autocomplete]` to a `string` property |
@@ -330,11 +330,11 @@ setting that bounds how deeply a request body may nest. The compile-time documen
 
 **Cause:** a host that registers neither `HostOpenApiDocument` nor `HostManifest` falls back to
 process-wide statics. The compile-time document static (`PragmaticOpenApiRegistry`) is written by a
-`[ModuleInitializer]` where last writer wins — so the host loaded second answers for both. The runtime
+`[ModuleInitializer]` where last writer wins, so the host loaded second answers for both. The runtime
 document's enrichment falls back to the **manifest** registry, which accumulates instead: two hosts do
 not lose a manifest, they share both, so the endpoint lookup spans the process. That one is subtler,
 because the enrichment is driven by the document's own operations and another host's entries are never
-reached by a route this host does not serve — but `requiresAuthentication`, which decides whether the
+reached by a route this host does not serve, but `requiresAuthentication`, which decides whether the
 document declares security schemes at all, is computed over the whole lookup.
 
 **Fix:** a generated host registers `HostOpenApiDocument` and `HostManifest` in **its own**

@@ -106,7 +106,7 @@ Large boundaries are split into sub-groups for better interface segregation. Nor
 decides: an operation in `Booking.Reservations.Mutations` lands in the `Reservations` group without
 anyone writing anything, and **PRAG0413** says so on the operation that produced it.
 
-`[SubBoundary]` is how an operation overrides that — it goes **on the operation**, which is what the
+`[SubBoundary]` is how an operation overrides that: it goes **on the operation**, which is what the
 generator reads:
 
 ```csharp
@@ -115,8 +115,8 @@ generator reads:
 public partial class ConfirmReservationMutation : Mutation<Reservation> { /* ... */ }
 ```
 
-⚠️ The attribute goes on an operation. On a marker class of its own — `public class
-ReservationSubBoundary { }` — it is on something that is not an operation, and nothing reads it there.
+⚠️ The attribute goes on an operation. On a marker class of its own (`public class
+ReservationSubBoundary { }`) it is on something that is not an operation, and nothing reads it there.
 
 `Name` wins over the namespace and is not reported as inferred. A name that is empty, or the
 boundary's own, is **PRAG0416**: the first would fall back to the namespace and make the declaration a
@@ -171,7 +171,7 @@ var reservations = await _reservations.Query()
 
 Reading across boundaries is a join. Writing across them is not: each boundary owns a `DbContext`, and
 `DomainActionInvoker` saves it once, at the end, only when the action succeeded. Call another
-boundary's actions from inside yours and there are two saves, the inner one first — so a failure after
+boundary's actions from inside yours and there are two saves, the inner one first, so a failure after
 that point leaves the inner writes committed, with nothing to roll them back.
 
 Measured on a real application: a deliberate failure left five rows in the callee's table, pointing at
@@ -188,7 +188,7 @@ PRAG0424: 'WriteStoryAction' writes in more than one boundary within one invocat
 Four ways out, in order of preference:
 
 1. **Move the work into one boundary.** If the two writes are one fact, they belong to one owner.
-2. **Make the inner step undo itself** — the only option that repairs rather than accepts:
+2. **Make the inner step undo itself**, the only option that repairs rather than accepts:
 
    ```csharp
    [DomainAction]
@@ -213,7 +213,7 @@ Four ways out, in order of preference:
    **Best effort, in-request, and that is the whole guarantee.** A crash between the inner commit and
    the compensation leaves the work committed: nothing here is durable and nothing is retried. That is
    where a saga starts. A compensator that itself fails is logged at `Error` and reported to the caller
-   as `COMPENSATION_FAILED`, carrying both the original error and the undo's — the response says the
+   as `COMPENSATION_FAILED`, carrying both the original error and the undo's: the response says the
    system is inconsistent rather than only that the operation failed.
 
    Each facade method whose action declares an undo is marked `[CompensableStep]`, and PRAG0424 goes
@@ -221,7 +221,7 @@ Four ways out, in order of preference:
    to compensate the operations it never touches.
 
    `PRAG0425` is an error when the declared compensator does not implement
-   `ICompensates<TReturn>` (or `ICompensatesVoid`) for that action — otherwise the declaration would
+   `ICompensates<TReturn>` (or `ICompensatesVoid`) for that action; otherwise the declaration would
    silence PRAG0424 while undoing nothing.
 
 3. **Make the caller tolerate the leftovers**, and say so:
@@ -234,7 +234,7 @@ Four ways out, in order of preference:
 
    The reason is required. A decision without one is indistinguishable from silencing the warning,
    which is the thing the diagnostic exists to prevent.
-4. **Use a saga** when the leftovers are unacceptable and the work genuinely spans boundaries —
+4. **Use a saga** when the leftovers are unacceptable and the work genuinely spans boundaries:
    durable state, retries, and compensation that survives a crash.
 
 The warning fires on *more than one* commit scope, not on any cross-boundary call: an action that
@@ -243,8 +243,8 @@ writes nothing itself and calls a single other boundary is atomic, and stays qui
 **Known blind spot.** The marker the diagnostic reads (`[BoundaryActions<TBoundary>]`) is emitted onto
 the generated facade, and a facade generated in the compilation being analysed is invisible to the
 generator that produced it. Two boundaries declared in the *same assembly* are therefore not detected.
-Every topology the framework produces puts a boundary in its own assembly — calling a facade means
-referencing the assembly carrying it — but a same-assembly pair slips through.
+Every topology the framework produces puts a boundary in its own assembly (calling a facade means
+referencing the assembly carrying it), but a same-assembly pair slips through.
 
 ---
 
@@ -330,7 +330,7 @@ module it includes, so a wrong graph fails the build.
 
 - A module depends on another with `[IncludeModule<TModule>]`. A dependency that names no known module is
   **PRAG1601**; a cycle is **PRAG1602**.
-- A host registers exactly what it declares — `[Include<T>]`, `[RemoteBoundary<T>]`, its own modules — and
+- A host registers exactly what it declares (`[Include<T>]`, `[RemoteBoundary<T>]`, its own modules) and
   does not follow a module's dependencies. A hosted module whose dependency the host neither includes nor
   declares remote is **PRAG1603**, an error on the host: include it, or declare it remote.
 - A boundary that reads another boundary's entities declares `[ReadAccess<T>]`, checked against the
@@ -338,9 +338,9 @@ module it includes, so a wrong graph fails the build.
 
 A boundary is registered **once**: a second `AddBoundary<T>(…)` for the same `T` throws
 `InvalidOperationException` naming it. Accepted, it would leave the first configuration in force and ignore
-the second — a `UseRemote` meant to replace a `UseLocal` that did nothing.
+the second: a `UseRemote` meant to replace a `UseLocal` that did nothing.
 
-`services.GetAllBoundaryConfigurations()` lists what is registered — type, mode, remote URL — for
+`services.GetAllBoundaryConfigurations()` lists what is registered (type, mode, remote URL) for
 diagnostics.
 
 > A dependency the host does not host is PRAG1603, checked by the host's generator at compile time;
@@ -376,7 +376,7 @@ public async Task<Result<Guid, IError>> CreateReservation(
 }
 ```
 
-The public `I{Boundary}Actions` does not. It is the contract another module injects, and a call through it enforces the permission of the operation it invokes — unless the caller is already inside an internal call: an event handler, or an operation that declares `[AbsorbsChildPermissions]`.
+The public `I{Boundary}Actions` does not. It is the contract another module injects, and a call through it enforces the permission of the operation it invokes, unless the caller is already inside an internal call: an event handler, or an operation that declares `[AbsorbsChildPermissions]`.
 
 While `IsInternalCall` is true:
 - `PermissionAuthorizationFilter` skips permission checks

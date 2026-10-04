@@ -29,7 +29,7 @@ public partial class GetUserEndpoint : Endpoint<UserDto>
 ## Standard Error Types
 
 `Pragmatic.Result.Http` provides standard error types with automatic HTTP status mapping; `ValidationError`
-comes from `Pragmatic.Validation`. None has a public positional constructor — build them with their
+comes from `Pragmatic.Validation`. None has a public positional constructor: build them with their
 factories:
 
 | Error Type | HTTP Status | Use Case | Build with |
@@ -163,12 +163,12 @@ manifest) at compile time, from what it can read:
 
 1. a `StatusCode` written as a **literal** (`=> 422`, `{ get; } = 422`) on the error or on one of its
    bases **declared in the same project**;
-2. otherwise the first type in the error's base chain — the error included — named like a framework HTTP
+2. otherwise the first type in the error's base chain (the error included) named like a framework HTTP
    error: `record WorksiteClosedError : BusinessRuleError` is documented **422** because its base is;
 3. otherwise 400.
 
 ⚠️ A base in **another project** is read by name only, never by its syntax: the build sees that project
-as a DLL, where a property's value cannot be read, and the IDE — which sees it as source — must write the
+as a DLL, where a property's value cannot be read, and the IDE (which sees it as source) must write the
 same contract. So `record UserGone : Shared.GoneError` with `GoneError.StatusCode => 410` in a referenced
 project is documented 400: declare the literal on the error itself (`public override int StatusCode =>
 410;`) when its base lives elsewhere. What the endpoint *answers* at run time is always the instance's
@@ -194,7 +194,7 @@ Errors are automatically converted to RFC 7807 ProblemDetails, and served as `ap
 
 ### Customizing Error Response
 
-The response is built from the error alone — `StatusCode`, `Code`, `Title`, `Description` and the
+The response is built from the error alone: `StatusCode`, `Code`, `Title`, `Description` and the
 properties `WriteExtensions` writes. There is no per-error hook for headers or for a hand-built
 `ProblemDetails`: to change what the client sees, change the error type.
 
@@ -222,15 +222,15 @@ public partial class DeleteUserEndpoint : VoidEndpoint<NotFoundError>
 }
 ```
 
-The bare `VoidEndpoint` returns a `VoidResult`, which carries no error at all — use it only for an
+The bare `VoidEndpoint` returns a `VoidResult`, which carries no error at all; use it only for an
 operation that cannot fail in a way the client should see.
 
 ## Error Mapping
 
 The generated handler matches the result: a success becomes the response body, an error goes through
 `error.ToResult(httpContext)` (`Pragmatic.Endpoints.Extensions.ErrorExtensions`). That builds the
-ProblemDetails described above — localized through the request's `IErrorMessageResolver`, if one is
-registered — and writes it as `application/problem+json` with the error's `StatusCode`, through a typed
+ProblemDetails described above (localized through the request's `IErrorMessageResolver`, if one is
+registered) and writes it as `application/problem+json` with the error's `StatusCode`, through a typed
 JSON context rather than an `object`, so the error path stays AOT-safe.
 
 ## Exception Handling
@@ -286,7 +286,7 @@ public partial class CreateUser : DomainAction<UserId, ValidationError>
 }
 ```
 
-Validation errors return **422** — the request was understood, the rules refuse it — with the issues
+Validation errors return **422** (the request was understood, the rules refuse it) with the issues
 keyed by camel-cased property path. `errors` carries the message **keys**, stable across languages;
 `messages`, aligned one for one, carries them resolved in the caller's language when a resolver knows them:
 
