@@ -1,15 +1,15 @@
 ---
 name: pragmatic-use-traits
-description: Use when an entity needs comments, tags, attachments or notes — [HasComments], [HasTags], [HasAttachments], [HasNotes] generate the child entity, actions, endpoints and permissions instead of hand-writing them.
+description: Use when an entity needs comments, tags, attachments or notes; [HasComments], [HasTags], [HasAttachments], [HasNotes] generate the child entity, actions, endpoints and permissions instead of hand-writing them.
 ---
 
 # Pragmatic Use Traits (Medium Blocks)
 
-**Covers:** Add comments, tags, attachments or notes to any entity with one attribute — [HasComments], [HasTags], [HasAttachments], [HasNotes]; the generator emits the child entity, EF config, actions, endpoints, DTOs and permissions.
+**Covers:** Add comments, tags, attachments or notes to any entity with one attribute ([HasComments], [HasTags], [HasAttachments], [HasNotes]); the generator emits the child entity, EF config, actions, endpoints, DTOs and permissions.
 
 Medium Blocks add a complete capability to an entity from a single attribute. The source generator
 produces the child entity, EF configuration (FK/indexes/soft-delete), CRUD + moderation actions with
-invokers, a paged list query, DTO with projection, HTTP endpoints, and permission constants — 20+ files
+invokers, a paged list query, DTO with projection, HTTP endpoints, and permission constants: 20+ files
 you don't write.
 
 ## When to use
@@ -25,7 +25,7 @@ you don't write.
 <PackageReference Include="Pragmatic.Notes" Version="1.0.0-alpha.1" />
 ```
 
-The SG detects the attributes automatically — no extra DI wiring.
+The SG detects the attributes automatically, with no extra DI wiring.
 
 ## Core pattern
 
@@ -45,7 +45,7 @@ using Pragmatic.Attachments;
 public partial class Reservation : IEntity { /* ... */ }
 ```
 
-Generated endpoints — Comments (Notes are the same five routes with `notes` in place of `comments`):
+Generated endpoints for Comments (Notes are the same five routes with `notes` in place of `comments`):
 
 ```
 POST   /api/booking/reservations/{id}/comments                  → add
@@ -57,7 +57,7 @@ PUT    /api/booking/reservations/{id}/comments/{cid}/moderation → moderate    
 GET    /api/booking/reservations/{id}/comments/pending          → queue       (RequireApproval only)
 ```
 
-Tags are **not** analogous — there is no update and no get-one, and the delete key is the tag id:
+Tags are **not** analogous: there is no update and no get-one, and the delete key is the tag id:
 
 ```
 POST   /api/booking/reservations/{id}/tags          → add (body is a bare JSON string)
@@ -76,10 +76,10 @@ DELETE /api/booking/reservations/{id}/attachments/{aid}         → soft-delete 
 
 Both GETs need the same `…attachments.read` permission, both filter on the parent id in the route as
 well as the attachment id (so a foreign attachment id is a 404, not a download), and the metadata DTO
-does **not** expose `StorageUri` — use `/content`.
+does **not** expose `StorageUri`; use `/content`.
 
 Delete is a soft delete and never removes the blob. `PurgeDeletedAfterDays = N` (default `0` = off)
-generates a `[RecurringJob]` — schedule via `PurgeCron`, default `"0 3 * * *"` — that deletes the blob
+generates a `[RecurringJob]` (schedule via `PurgeCron`, default `"0 3 * * *"`) that deletes the blob
 first and the row second, skipping (and retrying next run) any blob it cannot reach. It needs
 `Pragmatic.Jobs` referenced.
 
@@ -91,7 +91,7 @@ reports **PRAG2651**.
 A generated boundary interface (e.g. `IBookingReservationCommentsActions`, named
 `I{Boundary}{SubBoundary}Actions`) lets you call the same operations in-process.
 
-Every generated route enforces its own permission — a caller without it gets 403, so grant them
+Every generated route enforces its own permission: a caller without it gets 403, so grant them
 explicitly. `[HasComments]` and `[HasTags]` accept an optional `ICommentPolicy<TId>` /
 `ITagPolicy<TId>` registered with a plain `AddScoped`: the hooks run inside the generated actions,
 and a `CommentRejectedError` returned from one surfaces as 422 with its reason.
@@ -100,7 +100,7 @@ Editing or deleting a comment or note requires being its author, or holding the 
 permission. Uploads refuse extensions a browser executes (`.html`, `.svg`, `.js`, …) unless
 `AllowedExtensions` names them explicitly.
 `[HasAttachments]` integrates with `pragmatic-use-storage` for the file bytes. Permissions follow the
-`{boundary}.{resource}.comments.{action}` convention — grant them via `pragmatic-use-authorization`.
+`{boundary}.{resource}.comments.{action}` convention; grant them via `pragmatic-use-authorization`.
 
 ## Options, per trait
 
@@ -115,7 +115,7 @@ Every trait also takes `SubBoundary`, the name of its group on the boundary inte
 | | `RequireApproval` (false) | new comments start `PendingApproval`; a query filter hides everything not `Visible` |
 | | `SupportInternalNotes` (false) | adds `Visibility` (`Public` / `Internal`) to the add body and the DTO |
 | `[HasNotes]` | `MaxLength` (4000), `AllowEditing`, `EditWindowMinutes` | staff notes: no threading, no moderation |
-| `[HasTags]` | `MaxPerEntity` (50; 0 = unlimited) | enforced in a serializable transaction — the loser of a race for the last slot gets 409, retry it |
+| `[HasTags]` | `MaxPerEntity` (50; 0 = unlimited) | enforced in a serializable transaction: the loser of a race for the last slot gets 409, retry it |
 | | `AllowCustom` (true) | `false` = curated taxonomy: an unknown value is a 404, never created |
 | | `CaseSensitive` (false) | "Urgent" and "urgent" are one tag unless true |
 | | `Scope` (the parent type name) | set the same value on several entities to share one vocabulary |
@@ -126,15 +126,15 @@ Every trait also takes `SubBoundary`, the name of its group on the boundary inte
 
 **Moderation hides pending comments from readers**: the list returns only `Visible` ones. The moderator
 has the queue, `GET …/comments/pending` (`ListPending{Entity}CommentsAction`, `moderate` permission,
-oldest first, `page`/`pageSize`), which lifts only the named `Moderation` filter — tenant and soft delete
-stay — and hides a pending `Internal` note from a moderator without `view-internal`.
+oldest first, `page`/`pageSize`), which lifts only the named `Moderation` filter (tenant and soft delete
+stay) and hides a pending `Internal` note from a moderator without `view-internal`.
 
 **`SupportInternalNotes` is enforced by one permission**, generated as
 `{Entity}CommentPermissions.ViewInternal` (`{boundary}.{entity}.comments.view-internal`). Without it a
 caller does not see comments marked `Internal` in the list (a generated row filter), gets `404` reading one
 by id, and gets `403` adding one. Grant it to staff; `comments.read` alone is the public thread. ⚠️ A
-caller must also be able to see the **parent** — a thread of a row one cannot see is empty whatever the
-visibility — so test the internal case with a reader who sees the parent, or the test passes on the
+caller must also be able to see the **parent** (a thread of a row one cannot see is empty whatever the
+visibility), so test the internal case with a reader who sees the parent, or the test passes on the
 parent's filter instead.
 
 ⚠️ **A curated taxonomy has no endpoint to create it.** With `AllowCustom = false` the tags are seeded
@@ -147,8 +147,8 @@ last link, so a typo does not stay in the vocabulary.
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Showcase example application — code
-that compiles and that `Showcase.IntegrationTests` exercises — and kept identical to it by the gate:
+Complete files in [`examples/`](examples/README.md), copied from the Showcase example application (code
+that compiles and that `Showcase.IntegrationTests` exercises) and kept identical to it by the gate:
 comments, tags and attachments with purge and thumbnails on one entity, and notes, moderated comments and
 a tag limit on another.
 

@@ -1,6 +1,6 @@
 ---
 name: pragmatic-use-persistence
-description: Use when modeling entities, repositories, queries and filters, projections, patches, identifiers or the DbContext — Pragmatic.Persistence and its EF Core provider, attribute-first. Schema changes are pragmatic-use-migrations.
+description: Use when modeling entities, repositories, queries and filters, projections, patches, identifiers or the DbContext (Pragmatic.Persistence and its EF Core provider, attribute-first). Schema changes are pragmatic-use-migrations.
 ---
 
 # Pragmatic Use Persistence
@@ -38,7 +38,7 @@ Identifiers (`Guid7`, `OpaqueId`, `ShortGuid`, `Slug`) are in `Pragmatic.Persist
 Dense reference with all signatures: **`../pragmatic-ecosystem/references/api-surface/persistence.md`**.
 Full diagnostics: **`../pragmatic-ecosystem/references/diagnostics.md`** (ranges PRAG0600-0699 + PRAG1100-1109).
 Complete E2E setup (csproj, Program.cs, entity, mutation, query, endpoint): **`../pragmatic-ecosystem/references/cookbook/crud-web-api.md`**.
-Modelling the domain itself — namespaces, `IEntity`, relations, cross-boundary contracts, and the
+Modelling the domain itself, covering namespaces, `IEntity`, relations, cross-boundary contracts, and the
 members the generator already writes: **`../pragmatic-ecosystem/references/cookbook/domain-model.md`**.
 
 ## Mental model
@@ -69,7 +69,7 @@ A domain library is a **boundary**. Mark it with two empty classes:
 [Module(Name = "MyApp.Sales")] public sealed class SalesModule;   // Pragmatic.Composition.Attributes
 ```
 
-All code under `MyApp.Sales.*` belongs to the `Sales` boundary. Sub-folders (`Orders/`, `Customers/`) create sub-boundaries inferred from the namespace — the SG uses these to generate separate action interfaces.
+All code under `MyApp.Sales.*` belongs to the `Sales` boundary. Sub-folders (`Orders/`, `Customers/`) create sub-boundaries inferred from the namespace; the SG uses these to generate separate action interfaces.
 
 ### 2. Entity
 
@@ -92,16 +92,16 @@ public partial class Order
 ```
 
 The SG generates:
-- `Order.Create(orderNumber, customerId, total)` — factory; `new Order()` triggers **PRAG0680**.
-- `Order.PersistenceId` — a `Guid` key is assigned at construction with `Guid.CreateVersion7()` — and
+- `Order.Create(orderNumber, customerId, total)`: factory; `new Order()` triggers **PRAG0680**.
+- `Order.PersistenceId`, a `Guid` key assigned at construction with `Guid.CreateVersion7()`, and
   `Order.Id`, a read-only alias for it. **Equality is not generated**: an entity is a class and compares
   by reference. Compare `PersistenceId`, or write the members yourself.
-- **`SetOrderNumber(...)`, `SetTotal(...)` — one setter per `private set` property**, in `*.Setters.g.cs`. Writing them by hand duplicates a member the generator owns and the build fails with **CS0111**; add a domain method only when it does more than assign.
+- **`SetOrderNumber(...)`, `SetTotal(...)`, one setter per `private set` property**, in `*.Setters.g.cs`. Writing them by hand duplicates a member the generator owns and the build fails with **CS0111**; add a domain method only when it does more than assign.
 - Audit + SoftDelete properties populated by interceptors on `SaveChanges`.
-- `Order.Expr.IsHighValue` — `Expression<Func<Order,bool>>` usable in `.Select`/`.Where`.
+- `Order.Expr.IsHighValue`: `Expression<Func<Order,bool>>` usable in `.Select`/`.Where`.
 
 ⚠️ **Two `[LogicKey]` properties make one composite key**, and their order decides the index's leading
-column — the only one it can be searched by alone — and the parameters of
+column (the only one it can be searched by alone) and the parameters of
 `GetByCodeAndSeasonAsync(code, season)`. Say it with `[LogicKey(Order = n)]`, lower first; unset keeps
 declaration order, so nothing existing moves. Unset means `0`, so setting it on one part of two puts
 the **other** first. Without it, moving a property up or down in the class is a schema change *and* a
@@ -117,7 +117,7 @@ public sealed class AppDatabase : PragmaticDatabase;
 ```
 
 ⚠ The database marker alone is **not** enough. The Host must also declare a `[Module]` topology class
-that maps each module to a database via `[Include<TModule, TDatabase>]` — otherwise the host reports
+that maps each module to a database via `[Include<TModule, TDatabase>]`; otherwise the host reports
 *"No databases configured"* and the DbContext / `IUnitOfWork` are never registered (startup DI failure):
 
 ```csharp
@@ -133,7 +133,7 @@ Also add the EF provider matching Pragmatic's EF Core major (`.NET 10 → EF Cor
 The SG then generates the DbContext and registers it. Multiple databases? Declare multiple
 `PragmaticDatabase` markers and route modules to each via `[Include<,>]`.
 
-> Entities must live in the `{Boundary}.Entities` namespace — the SG derives the host database root
+> Entities must live in the `{Boundary}.Entities` namespace: the SG derives the host database root
 > namespace from it; a feature-folder namespace breaks the generated migration/schema types.
 
 There is no hand-written DbContext to fall back on. To add to the model of the generated one, implement its partial hook in a `partial` part of the context, in the host (the generated `{Boundary}DbContext` lives in `{Boundary}.Entities`):
@@ -149,7 +149,7 @@ public partial class SalesDbContext
 }
 ```
 
-⚠️ The hook changes the model **EF holds in memory**, not the database: `Pragmatic.Migrations` builds the schema from the generated schema, which reads the declarations, not this method. A value conversion or a query-side setting belongs here; an index, a column or a table added here is not migrated — a unique index is declared with `[Unique]`, a table with an `[Entity]`. The migration context (`{Database}MigrationDbContext`) has its own hook and is not affected by this one.
+⚠️ The hook changes the model **EF holds in memory**, not the database: `Pragmatic.Migrations` builds the schema from the generated schema, which reads the declarations, not this method. A value conversion or a query-side setting belongs here; an index, a column or a table added here is not migrated: a unique index is declared with `[Unique]`, a table with an `[Entity]`. The migration context (`{Database}MigrationDbContext`) has its own hook and is not affected by this one.
 
 ### 4. Migrations
 
@@ -174,11 +174,11 @@ Generated automatically. Inject it into mutations/handlers:
 ```csharp
 public sealed class CompleteOrder(
     Order.Repository orders,                                          // concrete: GetByOrderNumberAsync
-    [FromKeyedServices(typeof(SalesBoundary))] IUnitOfWork uow)       // keyed — unkeyed does not resolve
+    [FromKeyedServices(typeof(SalesBoundary))] IUnitOfWork uow)       // keyed; unkeyed does not resolve
 {
     public async Task<Result<Order, NotFoundError>> Handle(string code, CancellationToken ct)
     {
-        var order = await orders.GetByOrderNumberAsync(code, ct);   // from [LogicKey] — concrete repo only
+        var order = await orders.GetByOrderNumberAsync(code, ct);   // from [LogicKey], concrete repo only
         if (order is null) return NotFoundError.Create("Order", code);   // Pragmatic.Result.Http
         order.MarkPaid();
         await uow.SaveChangesAsync(ct);
@@ -189,7 +189,7 @@ public sealed class CompleteOrder(
 
 ⚠️ Two resolution details the compiler will not catch. `GetByOrderNumberAsync` is on the **concrete**
 `Order.Repository`, so injecting `IRepository<Order>` does not compile against it. And
-`IUnitOfWork` is registered **keyed by the boundary marker** — inject it unkeyed and the container
+`IUnitOfWork` is registered **keyed by the boundary marker**; inject it unkeyed and the container
 throws at resolution, not at build.
 
 `IRepository<T>` exposes `Add/AddRange/Update/Remove/RemoveRange` plus the read side
@@ -198,17 +198,17 @@ throws at resolution, not at build.
 ⚠️ **A rule with a name goes in a `Specification<T>` property**, not restated as filters: the generator
 applies any such property whole, in `Apply` and in `ToSpecification`, and `[BindSpecification]` marks the
 input it reads (**PRAG0709** if there is no specification to feed). ⚠️ `[Query]` on a class that is not
-`partial` generates nothing — **PRAG0712**.
+`partial` generates nothing: **PRAG0712**.
 
 ⚠️ **A query property becomes a filter when it carries `[Filter]`, or is `required`, or is
-`[FromCurrentUser]`, or is nullable.** A property that is none of these would be read and dropped —
+`[FromCurrentUser]`, or is nullable.** A property that is none of these would be read and dropped:
 `Apply` untouched, `ToSpecification` returning `Spec.True`, so a `Single = true` query would answer 200
 with whichever row came first. That is **`PRAG0707`**, an error. ⚠️ **`[GenerateHierarchy]`** has the
 same shape: the parent is found by name (`ParentId` or `{Type}ParentId`), and anything else is
 **`PRAG0708`**.
 
 A filter or sort on the entity's generated `Id` targets `PersistenceId` on its own (the alias is
-unmapped, and a `Where` on it would not translate), exactly as an update mutation's `Id` does — so a
+unmapped, and a `Where` on it would not translate), exactly as an update mutation's `Id` does, so a
 get-by-id is `public required Guid Id { get; init; }` and nothing else. An explicit `MapTo` still wins,
 and an `Id` you declared yourself as a column stays a column.
 
@@ -222,10 +222,10 @@ finding them and concluding they do not exist.
 | `GetByIdAsync(id, includes)`, `GetBy{LogicKey}Async`, the bulk methods, `SaveChangesAsync` | the **concrete** `{Entity}.Repository` | inject the nested type, not `IRepository<T>` |
 | `{Entity}Specifications.ById(...)` and one per key | a static class | `repo.FindAsync(OrderSpecifications.ByCode(code), ct)` |
 | `ById(this IQueryable<T>, …)`, `Active()`, `ActiveAt(date)`, `WithIncludesFor{Dto}()` | `IQueryable<T>` | `repo.Query().Active().ActiveAt(when)` |
-| `IncludeHistory(IQueryFilterToggle)` — a scope that lifts the temporal filter | the **entity type**, static | `using (UserRole.IncludeHistory(filters)) { … repo.Query() … }` |
+| `IncludeHistory(IQueryFilterToggle)`: a scope that lifts the temporal filter | the **entity type**, static | `using (UserRole.IncludeHistory(filters)) { … repo.Query() … }` |
 
 ⚠️ **They are not on the repository, and that is deliberate.** `Query()` returns the `IQueryable<T>` the
-extensions compose on, so one member carries all of them — and the same extension works on a filtered
+extensions compose on, so one member carries all of them, and the same extension works on a filtered
 set, a projection, or a queryable you assembled yourself. Mirroring each one onto the repository would
 double a surface that already has 25 members and give one operation two spellings, which is how the two
 drift.
@@ -242,7 +242,7 @@ var current = await _roles.Query()
 var byCode = await _orders.FindAsync(OrderSpecifications.ByCode("ORD-1"), ct);
 ```
 
-⚠️ **`GetBy{LogicKey}Async` is NOT on the interface** — it, the `includes` overload of `GetByIdAsync`,
+⚠️ **`GetBy{LogicKey}Async` is NOT on the interface**: it, the `includes` overload of `GetByIdAsync`,
 the bulk methods and `SaveChangesAsync` live on the concrete nested `{Entity}.Repository`. Inject that
 type when you need them. Commit is via `IUnitOfWork` (the generated invoker does it for
 mutations/actions), which also carries `Detach`, `State`, `SavepointAsync` and
@@ -252,16 +252,16 @@ mutations/actions), which also carries `Detach`, `State`, `SavepointAsync` and
 
 **Four forms, shortest first.** They are not a matter of taste: each is the shortest thing that
 holds its case, and the next one exists for what the previous cannot express. Go up a rung only when
-the one below does not reach — and a surviving `Query()` says in a comment why.
+the one below does not reach, and a surviving `Query()` says in a comment why.
 
 | Form | Use it when |
 |---|---|
 | `[Query]` on a **specification** | the rule is already written as a predicate; publish it |
 | `[Query]` on a **class** | the read composes: several filters, a sort, a page, a projection |
 | `repository.RunAsync(query, ct)` | reuse **that same** declared query inside an operation that already holds the repository |
-| `repository.Query()` | what none of them covers — compose the `IQueryable` by hand |
+| `repository.Query()` | what none of them covers: compose the `IQueryable` by hand |
 
-**Rung 3 — run a declared query where you already are.**
+**Rung 3: run a declared query where you already are.**
 
 ```csharp
 var page = await _properties.RunAsync(
@@ -284,7 +284,7 @@ Choose `RunAsync` to reuse a read; choose the facade to invoke an operation.
 rows afterwards with `GetByIdAsync` goes through the repository's ordinary filters and may not find
 it. Declare the same `[WithoutFilter<T>]` on the operation when it has to act on what it read.
 
-**Rung 1 — publish a rule you already wrote.** `[Query]` sits on a **static** member returning
+**Rung 1: publish a rule you already wrote.** `[Query]` sits on a **static** member returning
 `Specification<TEntity>`, and derives `{Member}Query` beside it. The member's parameters become the
 query's inputs; the specification itself is not touched, so it still composes with `&`:
 
@@ -300,10 +300,10 @@ public static partial class OrderSpecifications      // the other half of the en
 ```
 
 ⚠️ The derived name is `{Member}Query` **in the container's namespace**, so two specifications with
-the same member name in one namespace would derive one type twice — **PRAG0726**, an error. Rename
+the same member name in one namespace would derive one type twice: **PRAG0726**, an error. Rename
 one, or move it to a namespace of its own.
 
-**Rung 2 — the class, when the read composes.**
+**Rung 2: the class, when the read composes.**
 
 ```csharp
 [Query<Order, OrderSummary>(Paged = true)]
@@ -319,11 +319,11 @@ public partial class SearchOrdersQuery
 }
 ```
 
-**`Paged = true` writes the paging surface** — `Page = 1`, `PageSize = 20`. Write them by hand only
+**`Paged = true` writes the paging surface**: `Page = 1`, `PageSize = 20`. Write them by hand only
 to change the defaults; declaring both is **PRAG0727**, because the generated half cannot add a member
 the author already wrote.
 
-Generates `Apply(IQueryable<Order>)` with conditional filters, sort, paging, and `Projection: Expression<Func<Order,OrderSummary>>` (auto-generated if fields match; otherwise add `[MapFrom<Order>]` on `OrderSummary` — see `pragmatic-use-foundation`).
+Generates `Apply(IQueryable<Order>)` with conditional filters, sort, paging, and `Projection: Expression<Func<Order,OrderSummary>>` (auto-generated if fields match; otherwise add `[MapFrom<Order>]` on `OrderSummary`; see `pragmatic-use-foundation`).
 
 `[Filter(IgnoreCase = true)]` compares without case, on string properties only.
 
@@ -333,10 +333,10 @@ endpoint keeps the initializer where the query string omits the parameter, and p
 framework's `1`/`20` only for a query that declares neither.
 
 ⚠️ Consequence worth stating: with a default, a caller can no longer ask for "no filter" by omitting the
-parameter — that is what declaring one means. Leave the property without an initializer if omitting it
+parameter: that is what declaring one means. Leave the property without an initializer if omitting it
 should mean *everything*.
 
-**Reading exactly one row — `Single = true`.** A get-by-id is a query with one filter and no paging,
+**Reading exactly one row: `Single = true`.** A get-by-id is a query with one filter and no paging,
 so say that instead of hand-writing an endpoint with a repository and a `NotFoundError`:
 
 ```csharp
@@ -348,14 +348,14 @@ public partial class GetOrderQuery
 }
 ```
 
-The endpoint returns the DTO itself rather than a list, and answers **404** when nothing matches —
+The endpoint returns the DTO itself rather than a list, and answers **404** when nothing matches:
 the executor takes the first row (`FirstOrDefault`, not `Single`), so a filter that is not unique is
 not an error. Without `Single` the same query returns a list, and an empty result is a 200 with `[]`.
 
 `Id` needs no `MapTo`: a filter on the entity's generated `Id` targets `PersistenceId`, the column
 behind it, in single and list queries alike (`List<Guid>? Id` filters the key with `In`).
 
-**Reading by the caller — `[FromCurrentUser]`.** "My balances", "my profile": the filter is who is
+**Reading by the caller: `[FromCurrentUser]`.** "My balances", "my profile": the filter is who is
 asking, so it must not be an input the caller sends. Mark the property and let the query's invoker
 fill it:
 
@@ -377,15 +377,15 @@ public partial class GetMyBalancesQuery
   referenced), read through its generated `{User}Resolver`, which the invoker constructs itself.
 - The invoker writes it **after validation and the permission check, before the read**: not signed in
   → 401, no user entity → 404.
-- `{ get; private set; }` — **PRAG0730** otherwise. It is never a query-string, route or body
+- `{ get; private set; }` (**PRAG0730** otherwise). It is never a query-string, route or body
   parameter, never in OpenAPI, never an argument of the boundary member; it **is** in the `[Cacheable]`
-  key. A bound property is a filter, always applied and matched with `==` — no `[Filter]` needed.
+  key. A bound property is a filter, always applied and matched with `==`; no `[Filter]` needed.
 - **PRAG0731** when it cannot be generated: unknown member, different type, `nameof` over another type,
   no `[PragmaticUser]`/resolver, member-less form on a non-`string`.
 - ⚠️ Do not inject `ICurrentUser` into a query instead: the answer must be a function of the
   properties, or the cache key, the serialized query and the contract cannot see what changed it.
 
-**Reading by the clock — `[FromClock]`, with a `[ComputedFilter]` method.** "Who is away today": the
+**Reading by the clock: `[FromClock]`, with a `[ComputedFilter]` method.** "Who is away today": the
 date must come from the application's clock, not from the caller and not from the database. Put the
 rule on the entity as a method that takes the day, and let the invoker fill the day:
 
@@ -414,19 +414,19 @@ public Specification<Employee>? WhoIsAwayToday => AwayToday switch
 - A rule that is already a specification is **named, not repeated**, in a `[ComputedFilter]` or
   `[Projectable]` body: `LeaveRequests.Any(LeaveRequestSpecifications.Covering(day))`,
   `Requests.Where(LeaveRequestSpecifications.Approved).Sum(r => r.Amount)`. The query receives the
-  specification's expression (composed, parameterized). ⚠️ Its arguments cannot come from the row — a
+  specification's expression (composed, parameterized). ⚠️ Its arguments cannot come from the row; a
   column, a lambda parameter of the body: **PRAG0735**.
 - ⚠️ Not `DateTime.UtcNow` in a `[ComputedFilter]` property: the database evaluates it with its own clock,
   and a clock the host or a test injects never reaches it.
 - `[FromClock]` is no filter and no parameter (query string, route, OpenAPI, boundary); it is in the
   `[Cacheable]` key. The invoker needs an `IClock` registered (Temporal does it).
-- Both attributes work on a `[DomainAction]` and a `[Mutation]` too, with the same rules — the decision
-  stamped with `Now`, the withdrawal refused from `Today` — instead of an injected `IClock` or
+- Both attributes work on a `[DomainAction]` and a `[Mutation]` too, with the same rules (the decision
+  stamped with `Now`, the withdrawal refused from `Today`) instead of an injected `IClock` or
   `ICurrentUser`: see `pragmatic-use-actions-endpoints` → *What does not go in `Execute`*.
 - **PRAG0733**: a `[ComputedFilter]` the generator cannot write. **PRAG0734**: a `[FromClock]` on a type
   the clock does not give, or with a setter anyone else reaches.
 
-**Counting instead of listing — a query whose result is a view.** A `GROUP BY` answers with rows that
+**Counting instead of listing: a query whose result is a view.** A `GROUP BY` answers with rows that
 are not rows of the entity, so it is declared on the **result type** and the query stays a query:
 
 ```csharp
@@ -460,7 +460,7 @@ other query gets. Paged, the page is a page of **groups** and the total is the n
 - `Expression` on `[Sum]`/`[Avg]`/`[Min]`/`[Max]` is written against the entity. `"Quantity * UnitPrice"`
   reads both members from the row, and a `[Projectable]` member is summed as its body.
 
-⚠️ A `[QueryView]` on its own generates only a `Build(IQueryable<T>)` — no route, no entry in the
+⚠️ A `[QueryView]` on its own generates only a `Build(IQueryable<T>)`, with no route and no entry in the
 published contract. Naming it as a query's result is what gives an aggregate an HTTP surface.
 
 ### 7. GridFilter (runtime operator selection)
@@ -514,7 +514,7 @@ public partial class Order
 {
     public OrderStatus Status { get; private set; }
 }
-// Usage — it never throws: the illegal transition comes back as a failed Result
+// Usage: it never throws; the illegal transition comes back as a failed Result
 VoidResult<IError> moved = order.TransitionTo(OrderStatus.Paid);
 if (moved.IsFailure) { /* ConflictError, status 409, naming both states */ }
 
@@ -534,16 +534,16 @@ public partial class PrivateNote { ... }
 public partial class TeamDoc { ... }
 ```
 
-Admin bypass: permission `{boundary}.{entity-kebab}.view-all` — the entity segment is the type name in
+Admin bypass: permission `{boundary}.{entity-kebab}.view-all`; the entity segment is the type name in
 **kebab-case**, so `PrivateNote` → `sales.private-note.view-all`. Spelled any other way it never
 matches, and the bypass silently does not apply.
 
 The filters reach a collection of these rows wherever a query through the repository or the executor
-reads it — an `Include`, `x.Notes.Any(…)`, `x.Notes.Count`, a projection or an aggregate — and a cached
+reads it (an `Include`, `x.Notes.Any(…)`, `x.Notes.Count`, a projection or an aggregate), and a cached
 answer that read one is cached per caller. A direct `DbSet` read is outside that pipeline.
 
 An inserted row with no scopes is stamped with its creator's, `user:{id}`, by `ScopeInterceptor` at
-`SaveChanges` — the same shape `[HasOwner]` uses. A row that already carries scopes keeps them, an
+`SaveChanges`, the same shape `[HasOwner]` uses. A row that already carries scopes keeps them, an
 update is never re-stamped, and with no current user nothing is stamped.
 
 Beyond that, scopes are granted through the generated `GrantScope(string)`, which is `internal`: only
@@ -560,17 +560,17 @@ For more complex scope rules: `DataScopeRule<T>` registered with `services.AddDa
 public partial class Order { ... }
 ```
 
-Multiple relations to the same type? `WithNavigation("UniqueName")` disambiguates them — without it
+Multiple relations to the same type? `WithNavigation("UniqueName")` disambiguates them; without it
 **PRAG0612** (warning), and two navigations with one name are **PRAG0615**.
-Cross-boundary? FK only, no navigation — and nothing reports it, so plan for it.
+Cross-boundary? FK only, no navigation, and nothing reports it, so plan for it.
 
 ### 12. Declarations on the entity that generate more than a column
 
 Five attributes that carry their weight and are easy to miss.
 
-**`[Invariant]` — a rule about the whole aggregate.** A parameterless instance method returning
+**`[Invariant]`: a rule about the whole aggregate.** A parameterless instance method returning
 `bool` and **at least `internal`**. It runs after the operation's body and *before* persist; a `false`
-rejects the operation with `InvariantViolationError` (HTTP 422). Which operations, exactly, is below —
+rejects the operation with `InvariantViolationError` (HTTP 422). Which operations, exactly, is below:
 it is not every write.
 
 ```csharp
@@ -580,8 +580,8 @@ internal bool KeywordsWithinLimit() => Keywords.Count <= 20;
 
 ⚠️ **`private` does not work, and writing a rule nobody calls from outside as `private` is the natural
 mistake.** The invoker is a generated class beside the entity, so it can only call what the entity lets
-its assembly call. Five conditions have to hold — parameterless, instance, returns `bool`, at least
-`internal`, a name no other invariant of the entity uses — and failing any of them is **PRAG0463**, an
+its assembly call. Five conditions have to hold (parameterless, instance, returns `bool`, at least
+`internal`, a name no other invariant of the entity uses), and failing any of them is **PRAG0463**, an
 error that names which condition failed.
 
 Use it for what must hold about the *whole* entity. Property attributes validate a field in
@@ -590,7 +590,7 @@ isolation; this validates the aggregate, and it is the last gate before the writ
 **`MessageKey` is how the refusal reaches the caller in their language.** It is an error key's base, as
 every other error's is, so the translation files carry `error.too_many_keywords.title` (the sentence)
 and `.detail` (what it explains); the `Message` above is what a host with no translation for the key
-answers. Write it as a string, not as a `TKeys` constant — a base is a nested type in that class,
+answers. Write it as a string, not as a `TKeys` constant: a base is a nested type in that class,
 whose members are those two suffixes.
 
 Without it the refusal reports `error.invariant.violation`, which **every** invariant in the
@@ -598,11 +598,11 @@ application shares: translating it means giving up which rule refused, so an app
 sending the English sentence to a caller who asked for another language.
 
 **A `[PartOf]` child carries its own**, and the aggregate's invoker checks them after it has merged
-it — which is the only write path a child has, so it is the only place they could be checked. Put the
+it, which is the only write path a child has, so it is the only place they could be checked. Put the
 rule about a line on the line.
 
 **Which operations check it.** A `[Mutation]` checks every rule of the aggregate it writes. A
-`[DomainAction]` that loaded the aggregate with `[LoadEntity]` checks the rules it **can answer** —
+`[DomainAction]` that loaded the aggregate with `[LoadEntity]` checks the rules it **can answer**:
 those whose body reads no navigation outside that action's `Include` list.
 
 ⚠️ That qualification is a measurement, not caution. An action includes what its own body needs, so a
@@ -616,18 +616,18 @@ invariant, and neither does an action that changes the aggregate without loading
 `[LoadEntity]`. A rule that must hold everywhere is enforced by the entity's own method, which every
 caller goes through.
 
-**`[Audited]` on the entity** — records who changed what and when, without a line of your code: with
+**`[Audited]` on the entity** records who changed what and when, without a line of your code: with
 `Pragmatic.Audit.EFCore` referenced, the host registers `AuditDbContext` and `AddAuditTrail()` on the
 entity's database, whose migration creates the trail's tables.
 
-**`[GenerateHierarchy]` on a self-referencing entity** — generates `GetDescendants` /
+**`[GenerateHierarchy]` on a self-referencing entity** generates `GetDescendants` /
 `GetAncestors` as recursive CTEs, so a tree query is one call and one round trip instead of a loop.
 
-**`[Published]` on a boundary's query** — declares it a read contract another boundary may consume,
+**`[Published]` on a boundary's query** declares it a read contract another boundary may consume,
 and generates that contract. `ContractName` renames it. Without it, a cross-boundary read has no
 declared shape.
 
-**`[SearchAcross("Name", "Code", "Email")]` on a query or grid-filter property** — one search box,
+**`[SearchAcross("Name", "Code", "Email")]` on a query or grid-filter property**: one search box,
 several columns, joined by `||`:
 
 ```csharp
@@ -635,11 +635,11 @@ several columns, joined by `||`:
 public string? Search { get; init; }
 ```
 
-`IgnoreCase = true` lowers both sides — without it PostgreSQL compares as written, so "rossi" does not
+`IgnoreCase = true` lowers both sides; without it PostgreSQL compares as written, so "rossi" does not
 find "Rossi". On a property that is not a `string` it is **PRAG0703**.
 
 And on a filter property, **`[ComplexFilter]`** receives a whole filter object as JSON in one query
-parameter — the property's type must be a `[FilterDto<TEntity>]`, and the generated `Apply()` delegates
+parameter: the property's type must be a `[FilterDto<TEntity>]`, and the generated `Apply()` delegates
 to that DTO's own `ApplyFilter`. It is how a rich client sends a nested AND/OR structure, not an escape
 hatch to arbitrary code.
 
@@ -647,7 +647,7 @@ hatch to arbitrary code.
 
 | Helper | Example | When |
 |---|---|---|
-| `Guid7.New()` | `[Entity]` default | PK on Postgres/SQLite — timestamp + random, sortable |
+| `Guid7.New()` | `[Entity]` default | PK on Postgres/SQLite: timestamp + random, sortable |
 | `Guid7.NewForSqlServer()` | same but byte-shuffled | PK on SQL Server (clustered index) |
 | `ShortGuid.Encode(g)` | URL `/orders/abc123XYZ_-22ch` | Public URLs |
 | `OpaqueId.Encode(seq)` | URL `/u/Hk29zP` on int auto-increment | Masking sequential IDs |
@@ -656,7 +656,7 @@ hatch to arbitrary code.
 ## The clock a read and a write evaluate against
 
 Every generated repository takes an optional `TimeProvider` and uses it for two things: the audit
-columns where the entity has them, and `FilterContext.Now` — the instant a temporal filter evaluates
+columns where the entity has them, and `FilterContext.Now`, the instant a temporal filter evaluates
 against.
 
 ```csharp
@@ -666,19 +666,19 @@ services.AddSingleton<TimeProvider>(pinned);
 ```
 
 ⚠️ **`FilterContext.Now` is `required` on purpose.** A default of `UtcNow` would let any read that
-forgot it consult the wall clock silently — it could not fail and it could not be pinned. Required, "as
+forgot it consult the wall clock silently: it could not fail and it could not be pinned. Required, "as
 of when" is something a caller states.
 
 ⚠️ **Pinning it is what makes a temporal assertion a measurement.** Without it, every test asserting a
-recorded time is a range — `BeCloseTo(UtcNow, 1 minute)` — which passes on a stamp taken from anywhere.
+recorded time is a range (`BeCloseTo(UtcNow, 1 minute)`), which passes on a stamp taken from anywhere.
 With it, the assertion is an equality, and moving the clock by a known amount is how you tell two
 writes apart. Note the second part: with a frozen clock two writes moments apart carry the **same**
 instant, so a test that distinguished them by "the column moved" needs `Advance` between them.
 
 ## When the database refuses
 
-A unique index, a foreign key, a null or length constraint are rules **the application declared** —
-`[LogicKey]`, a relation, `[Required]` — and the database is only where they are enforced. Violating
+A unique index, a foreign key, a null or length constraint are rules **the application declared**
+(`[LogicKey]`, a relation, `[Required]`), and the database is only where they are enforced. Violating
 one does not surface as a provider exception:
 
 ```
@@ -687,7 +687,7 @@ POST /api/workspaces/members   →  409, {"title": "...", "status": 409}
 
 The unit of work classifies the provider's exception and throws a
 `PersistenceRuleViolationException` carrying an `IError`; the host's exception mapping renders it with
-that error's status. An operation that wants to react — an import saying which row was refused —
+that error's status. An operation that wants to react (an import saying which row was refused)
 catches it and reads `.Error`:
 
 ```csharp
@@ -701,11 +701,11 @@ The base `Pragmatic.Result.EFCore` carries a provider-agnostic heuristic; adding
 `Pragmatic.Result.EFCore.<Provider>` replaces it with the provider's own error codes.
 
 **A delete a relation refuses is a conflict that says what holds the row.** Deleting a row that a
-restricting relation still points at — `OnDelete = Restrict`, or a required reference left at its
-default — answers `DbInUseError`: **409**, code `ENTITY_IN_USE`, with `entityType` (what was being
+restricting relation still points at (`OnDelete = Restrict`, or a required reference left at its
+default) answers `DbInUseError`: **409**, code `ENTITY_IN_USE`, with `entityType` (what was being
 deleted) and `usedBy` (what references it) in the problem body. The names come from the model: the
 violated constraint's foreign key, or the one relation into that type when the provider does not name the
-constraint. Nothing needs checking by hand before the delete — the declared rule answers. A write that
+constraint. Nothing needs checking by hand before the delete: the declared rule answers. A write that
 names a *missing* row is still `DB_CONSTRAINT` (400): there the request is wrong.
 
 ```
@@ -717,14 +717,14 @@ A Delete mutation exposed with `[Endpoint]` answers **204 and no body** unless i
 public property the entity has.
 
 This holds for a repository write too, not only for a mutation: the generated repository's
-`SaveChangesAsync` goes through the boundary's unit of work — the same instance an invoker holds — so
+`SaveChangesAsync` goes through the boundary's unit of work (the same instance an invoker holds), so
 it classifies, hands over the entity's domain events, and records the save the same way. A concurrency
 conflict is the one thing not reframed: it stays a `DbUpdateConcurrencyException`, because a stale row
 is two writers meeting rather than a rule the schema enforces, and a concurrency-aware entity's
 repository answers it with `ConcurrencyError`.
 
 ⚠️ **A failed save leaves its entity tracked, and the next save retries it.** That is a change tracker,
-not a defect — but it means one refused row would make every later commit of the same request fail for
+not a defect, but it means one refused row would make every later commit of the same request fail for
 the old reason. `IUnitOfWork.Detach(entity)` stops tracking it, and the mutation pipeline calls it on
 every save path. Reach for it yourself only when you save through the unit of work directly: without
 it, `[CommitStrategy(CommitMode.PerStep)]` cannot keep what came before the failure, which is the whole
@@ -750,7 +750,7 @@ of what it promises.
 | **PRAG0734** | Error | A `[FromClock]` binding that cannot be generated | `DateOnly` or `DateTimeOffset`, `{ get; private set; }` |
 | **PRAG1100** | Error | `[HasOwner]` not `partial` | Add `partial` |
 
-When the build produces multiple diagnostics, fix Error ones first — cascading Warnings often disappear.
+When the build produces multiple diagnostics, fix Error ones first; cascading Warnings often disappear.
 
 ## Troubleshooting
 
@@ -765,7 +765,7 @@ When the build produces multiple diagnostics, fix Error ones first — cascading
 - Is the entity in a namespace captured by `[Module(Name=...)]` or an inferred sub-boundary?
 
 **Generic attribute not detected by the SG**
-- An attribute that takes a type takes it as a generic argument — `[BelongsTo<SalesBoundary>]`, never
+- An attribute that takes a type takes it as a generic argument (`[BelongsTo<SalesBoundary>]`), never
   `typeof`; the typeof form produces no match. `[Entity]` takes none: the key is always a `Guid`.
 
 **Cross-boundary relation does not generate navigation**
@@ -773,7 +773,7 @@ When the build produces multiple diagnostics, fix Error ones first — cascading
 
 **Soft-deleted records not visible even to admins**
 - ⚠️ `repo.Query().IgnoreQueryFilters()` does **not** reveal them. That removes EF Core's own named
-  filter — the safety net for querying the `DbSet` directly — while the Pragmatic soft-delete filter is
+  filter (the safety net for querying the `DbSet` directly), while the Pragmatic soft-delete filter is
   a `Where` the repository applies on top.
 - The ways that work: `filterToggle.Disable<{Entity}.SoftDeleteFilter>()`,
   `filterToggle.UseMode(FilterMode.Raw)`, or `repo.Query(QueryStrategy.Raw)`.
@@ -789,7 +789,7 @@ ls obj\Debug\net10.0\generated\Pragmatic.SourceGenerator   # inspect SG output
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application — code
-that compiles and that `Invoicing.IntegrationTests` exercises — and kept identical to it by the gate: an
+Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application (code
+that compiles and that `Invoicing.IntegrationTests` exercises) and kept identical to it by the gate: an
 aggregate and its child, the state machine, soft delete, uniqueness and a generated code, a declarative
 paged query, an aggregate query over a view, and specifications.

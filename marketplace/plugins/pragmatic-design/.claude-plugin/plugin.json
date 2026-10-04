@@ -1,6 +1,6 @@
 {
   "name": "pragmatic-design",
-  "version": "0.11.25",
+  "version": "0.11.26",
   "description": "Skills for building line-of-business applications with the Pragmatic.Design NuGet packages on .NET 10: full solution scaffolding, architecture and module selection, persistence, actions and endpoints, authorization, messaging and domain events, jobs, caching, logging, i18n, multi-tenancy, storage, documents, imaging, notifications, resilience, feature flags, configuration, and entity traits.",
   "author": {
     "name": "Alessandro Saiani"
