@@ -17,7 +17,7 @@ Before the patterns, the mechanism, because it changes what "a migration" is her
 
 `Pragmatic.Migrations` has **no migration files and no EF Core migrations**. The source generator emits
 the desired schema from your `[Entity]` declarations; at startup the runtime introspects the database,
-diffs the two, and executes ordered, idempotent, provider-specific SQL inside one transaction — if a
+diffs the two, and executes ordered, idempotent, provider-specific SQL inside one transaction: if a
 change fails, the whole run rolls back.
 
 ```csharp
@@ -27,7 +27,7 @@ await PragmaticApp.RunAsync(args, builder => builder.UsePragmaticMigrations());
 Three consequences for everything below:
 
 - **You never author the `AddColumn` calls.** The snippets in this guide describe *what the diff will
-  do*, written in EF migration syntax because it reads clearly — not code for you to write.
+  do*, written in EF migration syntax because it reads clearly, not code for you to write.
 - **A two-release rollout is staged in the attributes**, not in migration files: release 1 adds the
   attribute whose columns are additive, release 2 tightens.
 - **Backfill is yours.** The diff creates and alters structure; it does not populate rows. A backfill
@@ -80,7 +80,7 @@ Release 1:
 2. Keep existing rows visible by default.
 3. Deploy and verify that reads and writes still behave correctly.
 
-What the diff will add — again, you do not write this:
+What the diff will add (again, you do not write this):
 
 ```csharp
 migrationBuilder.AddColumn<bool>(

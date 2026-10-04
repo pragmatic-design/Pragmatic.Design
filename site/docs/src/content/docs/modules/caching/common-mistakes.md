@@ -242,7 +242,7 @@ The query's generated invoker fills `UserId` from the caller after validation an
 check, before the executor builds the key. It is still a public property, so it is in the key and in
 the tag, and nobody else can write it: the setter is private (`PRAG0730` otherwise), and the property
 is not a request parameter. The whole form:
-[Filtering by the caller](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller--fromcurrentuser).
+[Filtering by the caller](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 **Why:** The source generator builds the cache key from public properties declared on the type. If the differentiating value (user ID, tenant ID) is not a property on the cacheable type, it is not included in the key. Always include any value that changes the result as a property on the cacheable type, and when that value is who is asking, let the invoker write it rather than the caller.
 

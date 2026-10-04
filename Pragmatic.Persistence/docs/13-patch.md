@@ -1,10 +1,10 @@
 # Patch (Partial Updates)
 
-> Track which properties were explicitly set and apply only those — for true HTTP PATCH semantics.
+> Track which properties were explicitly set and apply only those, for true HTTP PATCH semantics.
 
 ## The Problem
 
-`Mutation<TEntity>` + `[Mutation]` uses nullable properties to represent partial updates: if a property is `null`, it's not changed. But this approach has a limitation — you can't distinguish between "the client didn't send this field" and "the client sent `null` to clear this field".
+`Mutation<TEntity>` + `[Mutation]` uses nullable properties to represent partial updates: if a property is `null`, it's not changed. But this approach has a limitation: you can't distinguish between "the client didn't send this field" and "the client sent `null` to clear this field".
 
 Consider updating a user profile:
 
@@ -16,7 +16,7 @@ Consider updating a user profile:
 { "firstName": "Jane" }
 ```
 
-With nullable properties alone, both cases look identical — `MiddleName` is `null`.
+With nullable properties alone, both cases look identical: `MiddleName` is `null`.
 
 ## The Solution: `[Patch<TEntity>]`
 
@@ -59,14 +59,14 @@ public partial class UpdateUserProfilePatch
 |---------|-----------------|-------------|
 | Tracks which properties are set | No (uses null check) | Yes (via `_setProperties`) |
 | Can set property to null | No (null = "skip") | Yes (null is a valid value) |
-| Collection strategy | Derives `Sync` — what is not sent is removed | Derives `AddOnly` — nothing is removed |
+| Collection strategy | Derives `Sync`: what is not sent is removed | Derives `AddOnly`: nothing is removed |
 | Modes (Create/Update/Delete) | Yes | No (always Update) |
 | MutationInvoker pipeline | Yes | No (manual apply) |
 
 **When to use which:**
 
-- **`Mutation<TEntity>` + `[Mutation]`** — Most cases. Handles the full lifecycle (create, update, delete, restore) with generated invoker pipeline.
-- **`[Patch<T>]`** — When you need true PATCH semantics: distinguish "not sent" from "sent as null". Typically for public APIs.
+- **`Mutation<TEntity>` + `[Mutation]`**: Most cases. Handles the full lifecycle (create, update, delete, restore) with generated invoker pipeline.
+- **`[Patch<T>]`**: when you need true PATCH semantics, to distinguish "not sent" from "sent as null". Typically for public APIs.
 
 ## Collection Strategies
 
@@ -93,7 +93,7 @@ public partial class PatchLineItem
 ### Strategies
 
 You do not declare one. A patch is a *partial* representation, so a collection it carries derives
-`AddOnly`: what is there is updated, what is new is added, and nothing is removed — a child the caller
+`AddOnly`: what is there is updated, what is new is added, and nothing is removed; a child the caller
 did not mention is a child the caller said nothing about.
 
 Elements are matched by the element DTO's `Id`, or failing that by the child entity's `[LogicKey]`.
@@ -108,15 +108,15 @@ public List<OrderLineDto>? Lines { get; init; }
 
 | `CollectionStrategy` | Behaviour |
 |---|---|
-| `AddOnly` | Update by key, add what is new, remove nothing — the derived default here |
+| `AddOnly` | Update by key, add what is new, remove nothing (the derived default here) |
 | `Sync` | Also removes what was not sent |
-| `Replace` | Discard every child and rebuild — new rows, new identities |
+| `Replace` | Discard every child and rebuild: new rows, new identities |
 | `Ignore` | Leave the collection alone |
 
 ## Usage with JSON Deserialization
 
-The generator emits a `System.Text.Json` converter next to `ApplyPatch` — `{Type}.PatchJsonConverter`,
-declared on the type with `[JsonConverter]` — that calls `MarkSet()` for every property the body names.
+The generator emits a `System.Text.Json` converter next to `ApplyPatch` (`{Type}.PatchJsonConverter`,
+declared on the type with `[JsonConverter]`) that calls `MarkSet()` for every property the body names.
 A property sent as `null` is marked and cleared; a property the body does not mention is not marked and
 keeps whatever the entity has. Nothing to register: the attribute is honoured by whatever options read
 the body, including the endpoint pipeline.
@@ -143,7 +143,7 @@ app.MapPatch("/users/{id}", async (
 ```
 
 ⚠️ **A patch built in code, not read from JSON, marks nothing.** With `_setProperties` empty
-`ApplyPatch` falls back to a null check — the `[Mutation]` semantics — so call `MarkSet()` yourself
+`ApplyPatch` falls back to a null check (the `[Mutation]` semantics), so call `MarkSet()` yourself
 for the properties you mean to write, `null` included. Property names are matched as declared and in
 camelCase; `[JsonPropertyName]` is not read.
 

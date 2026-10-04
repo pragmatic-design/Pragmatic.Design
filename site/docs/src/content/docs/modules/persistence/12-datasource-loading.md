@@ -1,13 +1,13 @@
 ---
 title: "Query Strategy and Loading Profiles"
-description: "> Control how the repository executes a query — from full entity tracking to raw projections."
+description: "> Control how the repository executes a query, from full entity tracking to raw projections."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/12-datasource-loading.md
 sidebar:
   order: 13
 ---
-> Control how the repository executes a query — from full entity tracking to raw projections.
+> Control how the repository executes a query, from full entity tracking to raw projections.
 
-## `[QueryStrategy]` — Loading Strategy
+## `[QueryStrategy]`: Loading Strategy
 
 ### The Problem
 
@@ -23,7 +23,7 @@ A read that does not say so loads the way every other read loads, and the identi
 [Endpoint(HttpVerb.Get, "/orders")]
 public partial class GetOrderList
 {
-    // Read untracked — the rows are never written back
+    // Read untracked: the rows are never written back
 }
 ```
 
@@ -33,10 +33,10 @@ public partial class GetOrderList
 |----------|----------|---------|----------|
 | `Projection` | No | Applied | Read-only lists, DTOs, API responses |
 | `Entity` | Yes | Applied | Reads whose rows are handed to business logic |
-| `Filtered` | Yes | Applied | Same as `Entity` — the repository renders both branches identically |
+| `Filtered` | Yes | Applied | Same as `Entity`: the repository renders both branches identically |
 | `Raw` | No | None | Admin dashboards, data exports, migrations |
 
-**Default behavior**: without `[QueryStrategy]` a read is tracked and filtered — the same as `Entity` and `Filtered`. There is no inference from the operation type: nothing looks at whether the query projects, and declaring nothing is not the same as declaring `Projection`.
+**Default behavior**: without `[QueryStrategy]` a read is tracked and filtered, the same as `Entity` and `Filtered`. There is no inference from the operation type: nothing looks at whether the query projects, and declaring nothing is not the same as declaring `Projection`.
 
 ⚠️ **`Raw` drops every automatic filter**, tenant isolation and soft delete included. It belongs to an export or an admin panel, not to a route a tenant calls.
 
@@ -49,7 +49,7 @@ The strategy is applied where the source of the read is built, so the two caller
 
 Calling the repository by hand, you pass the strategy yourself: `repository.Query(QueryStrategy.Raw)`.
 
-**Nothing reads it on a mutation**, and there is no way it could: a write loads its row tracked — it has to, to save it — and the filters a write lifts are declared with `[FilterMode]` or `[WithoutFilter<T>]`, one at a time rather than all at once.
+**Nothing reads it on a mutation**, and there is no way it could: a write loads its row tracked (it has to, to save it), and the filters a write lifts are declared with `[FilterMode]` or `[WithoutFilter<T>]`, one at a time rather than all at once.
 
 ### When to Override
 
@@ -63,7 +63,7 @@ public partial class GetAllOrdersAdmin { }
 
 ---
 
-## `[LoadWith<T>]` — Loading Profiles
+## `[LoadWith<T>]`: Loading Profiles
 
 ### The Problem
 
@@ -84,18 +84,18 @@ public partial class GetOrderAggregate
 }
 ```
 
-**The query answers with the entity, and that is not incidental.** Includes only have something to do when the entity itself comes back: a query that projects to a DTO names the navigations it reaches inside the projection, and the database turns them into JOINs. On a projecting query the profile is generated and nothing applies it — see [Eager Loading](/modules/persistence/20-eager-loading/) for what fills a DTO's navigations instead.
+**The query answers with the entity, and that is not incidental.** Includes only have something to do when the entity itself comes back: a query that projects to a DTO names the navigations it reaches inside the projection, and the database turns them into JOINs. On a projecting query the profile is generated and nothing applies it; see [Eager Loading](/modules/persistence/20-eager-loading/) for what fills a DTO's navigations instead.
 
 ### Where it is read
 
 The profile publishes its paths twice, from one model:
 
-- `IncludePaths` — the strings `IQueryExecutor` applies. An entity-shaped query carrying `[LoadWith<T>]` composes this into its own `IncludePaths`, beside any `[EagerLoad]` paths and the response DTO's `RequiredNavigations`. This is the generated caller.
-- `ApplyIncludes()` — the typed `Include()` / `ThenInclude()` chain, for composing a queryable by hand: `db.Set<Order>().ApplyIncludes()`.
+- `IncludePaths`: the strings `IQueryExecutor` applies. An entity-shaped query carrying `[LoadWith<T>]` composes this into its own `IncludePaths`, beside any `[EagerLoad]` paths and the response DTO's `RequiredNavigations`. This is the generated caller.
+- `ApplyIncludes()`: the typed `Include()` / `ThenInclude()` chain, for composing a queryable by hand, as in `db.Set<Order>().ApplyIncludes()`.
 
 What enters the paths is **only** what the EF configuration mapped as a navigation, read with the same rule the entity configuration uses. A collection of scalars is a JSON column and a `[ValueObject]` is flattened into the owner's columns; `Include` over either is refused by EF Core before it reads a row, and no `MaxDepth` avoids them.
 
-Nor does the path walk back. Past depth 1, the inverse navigation returning to the type the path arrived from is skipped: EF Core refuses an include that walks back up the include tree, and the fix-up populates it anyway. Only the immediate parent — a self-relation at the root, `Include(e => e.Parent)` on a tree node, is a legitimate first hop.
+Nor does the path walk back. Past depth 1, the inverse navigation returning to the type the path arrived from is skipped: EF Core refuses an include that walks back up the include tree, and the fix-up populates it anyway. Only the immediate parent (a self-relation at the root, `Include(e => e.Parent)` on a tree node) is a legitimate first hop.
 
 ### Properties
 
@@ -104,7 +104,7 @@ Nor does the path walk back. Past depth 1, the inverse navigation returning to t
 | `MaxDepth` | `int` | `1` | How deep to include navigations (0 = none) |
 | `SplitQuery` | `bool` | auto | Split queries for collections. **Left unset it is decided for you**: two or more collection navigations turn it on |
 
-`MaxDepth` means *every* navigation of the entity down to that depth — the ones you wrote and the ones
+`MaxDepth` means *every* navigation of the entity down to that depth: the ones you wrote and the ones
 `[Relation.*]` declares alike. It is not "the ones the DTO reads": for that, and for a query that
 projects, see [Eager Loading](/modules/persistence/20-eager-loading/), where a DTO's `RequiredNavigations` are derived
 from its own shape.
@@ -126,7 +126,7 @@ The source generator reads all `[Relation.*]` attributes on the entity and its r
 
 ### When to Use `SplitQuery`
 
-EF Core joins all navigations into a single SQL query by default. With collection navigations, this causes cartesian explosion — every row in the parent is repeated for every row in each child collection.
+EF Core joins all navigations into a single SQL query by default. With collection navigations, this causes cartesian explosion: every row in the parent is repeated for every row in each child collection.
 
 ```csharp
 // Without SplitQuery: one big JOIN
@@ -156,13 +156,13 @@ The attributes control orthogonal concerns:
 
 They compose in a fixed order during query execution:
 
-1. **Strategy** — `AsNoTracking()` applied (if Projection or Raw)
-2. **Filters** — Query filters applied or skipped (based on strategy)
-3. **Includes** — `Include()` / `ThenInclude()` calls generated from `[LoadWith]`
-4. **Where** — Filter properties from the query class
-5. **OrderBy** — Sort properties from the query class
-6. **Projection** — `Select()` to the result DTO type
-7. **Paging** — `Skip()` / `Take()` if pagination properties exist
+1. **Strategy**: `AsNoTracking()` applied (if Projection or Raw)
+2. **Filters**: Query filters applied or skipped (based on strategy)
+3. **Includes**: `Include()` / `ThenInclude()` calls generated from `[LoadWith]`
+4. **Where**: Filter properties from the query class
+5. **OrderBy**: Sort properties from the query class
+6. **Projection**: `Select()` to the result DTO type
+7. **Paging**: `Skip()` / `Take()` if pagination properties exist
 
 ### Full Example
 
@@ -185,20 +185,20 @@ public partial class GetOrderSummaries
 
 The generated code:
 
-1. `AsNoTracking()` — Projection strategy, no tracking overhead
-2. `.Where(o => o.Status == status)` — only when `Status` is not null
-3. `.OrderByDescending(o => o.CreatedAt)` — default descending
-4. `.Select(o => new OrderSummaryDto { ... })` — projection
-5. `.Skip((page - 1) * pageSize).Take(pageSize)` — pagination
+1. `AsNoTracking()`: Projection strategy, no tracking overhead
+2. `.Where(o => o.Status == status)`: only when `Status` is not null
+3. `.OrderByDescending(o => o.CreatedAt)`: default descending
+4. `.Select(o => new OrderSummaryDto { ... })`: projection
+5. `.Skip((page - 1) * pageSize).Take(pageSize)`: pagination
 
-No includes: this query projects. `[LoadWith]` on it would generate a profile that nothing applies — the projection is what reaches the navigations.
+No includes: this query projects. `[LoadWith]` on it would generate a profile that nothing applies; the projection is what reaches the navigations.
 
 ### Without Any Attributes
 
 If you don't use `[QueryStrategy]` or `[LoadWith]`, the defaults apply:
 
 ```csharp
-// Minimal query — tracked and filtered, and NO includes at all: [LoadWith] is a trigger,
+// Minimal query, tracked and filtered, and NO includes at all: [LoadWith] is a trigger,
 // so without it no profile is generated. A projection resolves what it needs in SQL.
 [Query<Order, OrderDto>]
 public partial class GetOrders { }

@@ -62,7 +62,7 @@ public sealed class AppHostModule;
 ```
 
 That pairing *is* the topology. Two modules on one database share a connection; two databases mean two,
-and the generator emits accordingly — the number of `DbContext` types it produces follows from this
+and the generator emits accordingly: the number of `DbContext` types it produces follows from this
 declaration and from nothing else.
 
 ### 3. What the generator emits
@@ -75,7 +75,7 @@ One `DbContext` per boundary, marked `[PragmaticDbContext("{boundary}")]`, plus:
 - keyed `DbContext` and keyed `IUnitOfWork` registrations
 - a migration DbContext where migrations are used
 
-The generated host registers each of them — `AddSalesDbContext(...)`, `AddBillingDbContext(...)` —
+The generated host registers each of them (`AddSalesDbContext(...)`, `AddBillingDbContext(...)`),
 building the options from the database's `ConfigKey`; `AddAllPragmaticDbContexts(o => …)` is the same
 set behind one call, for a project wiring it by hand.
 
@@ -148,7 +148,7 @@ cannot be static.
 
 ⚠️ **Nothing generated consumes it.** The generated `Add{Boundary}DbContext(Action<DbContextOptionsBuilder>)`
 passes your callback straight to `AddDbContext`, and never asks the container for a provider. Registering
-one changes nothing on its own — you have to read it in the callback yourself:
+one changes nothing on its own; you have to read it in the callback yourself:
 
 ```csharp
 builder.Services.AddSalesDbContext(options =>
@@ -159,8 +159,8 @@ builder.Services.AddSalesDbContext(options =>
 });
 ```
 
-The interface is the shape to implement against — `TenantConnectionStringProvider` in
-`Pragmatic.MultiTenancy.Persistence` is the ready-made one — not a hook the generator calls.
+The interface is the shape to implement against (`TenantConnectionStringProvider` in
+`Pragmatic.MultiTenancy.Persistence` is the ready-made one), not a hook the generator calls.
 
 Typical pattern:
 

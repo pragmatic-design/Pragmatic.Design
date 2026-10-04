@@ -228,7 +228,7 @@ its constructor, so it does not ask DI for it), resolve the caller's entity afte
 permission check, and write that member into the property before the read. No entity is 404, no
 caller is 401. The member form needs the `[PragmaticUser]` entity in the same compilation as the query,
 and this package referenced; otherwise `PRAG0731` says why. The whole form:
-[Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller--fromcurrentuser).
+[Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 ## Setup
 

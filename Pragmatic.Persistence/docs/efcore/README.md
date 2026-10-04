@@ -26,7 +26,7 @@ The source generator reads each boundary's entities and produces `OnModelCreatin
 `IEntityTypeConfiguration<T>` calls, `DbSet` properties, interceptor registration, and an
 `Add{Boundary}DbContext()` extension method for DI.
 
-Inside a Pragmatic host that is all of it — the generated host registers the DbContexts, the
+Inside a Pragmatic host that is all of it: the generated host registers the DbContexts, the
 repositories and the query filters before your `IStartupStep` runs. Wiring it by hand, outside a host,
 the three calls are:
 

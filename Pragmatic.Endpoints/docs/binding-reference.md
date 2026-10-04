@@ -220,7 +220,7 @@ that names it matches nothing and is reported by `PRAG0504` — and the value is
 operation's invoker (a query's, an action's or a mutation's), the one pipeline every caller goes through. A caller who is not authenticated gets 401; an
 authenticated one with no user entity gets 404. Use it for "my …" reads; the form and its diagnostics
 (`PRAG0730`, `PRAG0731`) are in
-[Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller--fromcurrentuser).
+[Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 ## Default Values
 

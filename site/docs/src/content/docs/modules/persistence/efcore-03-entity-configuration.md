@@ -7,7 +7,7 @@ sidebar:
 ---
 ## The Problem
 
-EF Core needs to know how to map your entities to the database: which property is the primary key, which properties need indexes, how relationships are configured, what the column types should be. Without configuration, EF Core guesses — and sometimes guesses wrong.
+EF Core needs to know how to map your entities to the database: which property is the primary key, which properties need indexes, how relationships are configured, what the column types should be. Without configuration, EF Core guesses, and sometimes guesses wrong.
 
 Writing `IEntityTypeConfiguration<T>` for each entity is repetitive: every entity needs a primary key on `PersistenceId`, every `[LogicKey]` property needs a unique index, every `[SoftDelete]` entity needs a query filter.
 
@@ -48,7 +48,7 @@ internal sealed class OrderEntityConfig : IEntityTypeConfiguration<Order>
 Three things that are **not** in there:
 
 - **The concurrency token.** `[ConcurrencyAware]` produces a *shadow* property, declared in the
-  generated DbContext and shaped by the provider — there is no `e.RowVersion` to configure.
+  generated DbContext and shaped by the provider; there is no `e.RowVersion` to configure.
 - **The audit fields.** `[Auditable]` adds the four properties to the entity; nothing configures them
   here, so they take EF's conventions.
 - **The filtered unique index.** On a `[SoftDelete]` entity the logic-key index has to exclude deleted
@@ -73,29 +73,29 @@ The SG applies these rules when generating property configuration:
 For each `[Relation.*]` attribute on the entity class, the SG generates the corresponding Fluent API calls:
 
 ```csharp
-// [Relation.OneToMany<LineItem>] on Order — declared by the parent, so Cascade
+// [Relation.OneToMany<LineItem>] on Order: declared by the parent, so Cascade
 builder.HasMany(e => e.LineItems)
     .WithOne(e => e.Order)
     .OnDelete(DeleteBehavior.Cascade);
 
-// [Relation.ManyToOne<Customer>] on Order — declared by the child, so Restrict
+// [Relation.ManyToOne<Customer>] on Order: declared by the child, so Restrict
 builder.HasOne(e => e.Customer)
     .WithMany()
     .HasForeignKey(e => e.CustomerId)
     .IsRequired()
     .OnDelete(DeleteBehavior.Restrict);
 
-// [Relation.OneToOne<RelationSide>] — the principal holds the FK
+// [Relation.OneToOne<RelationSide>]: the principal holds the FK
 builder.HasOne(e => e.RelationSide)
     .WithOne()
     .HasForeignKey<Order>(e => e.RelationSideId)
     .OnDelete(DeleteBehavior.Restrict);
 ```
 
-The navigation names come from the **target type**, pluralised for collections — `LineItems`, not any
+The navigation names come from the **target type**, pluralised for collections: `LineItems`, not any
 property you wrote. `.WithNavigation("Items")` on the relation renames it.
 
-The delete behaviour depends on **which side declares the relation**: `[Relation.OneToMany]` on the parent gives `Cascade`, `[Relation.ManyToOne]` on the child gives `Restrict`, and an inverse the generator derives on its own gets `NoAction`. See [Relationships](/modules/persistence/04-relationships/#delete-behavior) — the default is not the cautious one.
+The delete behaviour depends on **which side declares the relation**: `[Relation.OneToMany]` on the parent gives `Cascade`, `[Relation.ManyToOne]` on the child gives `Restrict`, and an inverse the generator derives on its own gets `NoAction`. See [Relationships](/modules/persistence/04-relationships/#delete-behavior): the default is not the cautious one.
 
 ## Two Levels of Query Filters
 
@@ -120,7 +120,7 @@ query = query.Where(filter);
 
 This is Pragmatic's filter pipeline. It supports runtime toggle (`IQueryFilterToggle`), filter modes, and navigation-level filtering.
 
-**Why both?** The EF Core filter provides a safety net — even if code bypasses the repository and queries the `DbSet` directly, soft-deleted records are still excluded. The Pragmatic filter pipeline adds runtime configurability (disable, modes, navigation filtering).
+**Why both?** The EF Core filter provides a safety net: even if code bypasses the repository and queries the `DbSet` directly, soft-deleted records are still excluded. The Pragmatic filter pipeline adds runtime configurability (disable, modes, navigation filtering).
 
 ## Inheritance Configuration
 

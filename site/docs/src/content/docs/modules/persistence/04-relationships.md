@@ -7,7 +7,7 @@ sidebar:
 ---
 ## The Problem
 
-Entities don't exist in isolation. An Order has LineItems. A Reservation belongs to a Guest. In a traditional EF Core project, you write navigation properties, foreign key properties, and Fluent API configuration for each relationship — all manually.
+Entities don't exist in isolation. An Order has LineItems. A Reservation belongs to a Guest. In a traditional EF Core project, you write navigation properties, foreign key properties, and Fluent API configuration for each relationship, all manually.
 
 For a project with 50 entities and 80 relationships, this means hundreds of lines of configuration code that all follows the same pattern.
 
@@ -54,7 +54,7 @@ builder.HasOne(e => e.Customer)
     .OnDelete(DeleteBehavior.Restrict);
 ```
 
-> **The collection is named after the target type, pluralised** — `LineItem` becomes `LineItems`, and
+> **The collection is named after the target type, pluralised**: `LineItem` becomes `LineItems`, and
 > that is the name you write in `Include(o => o.LineItems)`. The rule is regular: `Category` becomes
 > `Categories`, `Child` becomes `Childs`. Name it yourself with
 > `[Relation.OneToMany<LineItem>.WithNavigation("Lines")]` when the derived name reads badly.
@@ -76,7 +76,7 @@ public partial class Order { /* ... */ }
 What gets generated:
 - On `Order`: `public ICollection<LineItem> LineItems { get; set; }`
 - On `LineItem`: `public Guid OrderId { get; private set; }` (FK back to parent)
-- EF Core config: `HasMany` / `WithOne` / `OnDelete(Cascade)` — see [Delete Behavior](#delete-behavior)
+- EF Core config: `HasMany` / `WithOne` / `OnDelete(Cascade)`; see [Delete Behavior](#delete-behavior)
 
 ### Many-to-One
 
@@ -95,7 +95,7 @@ What gets generated:
 
 ### When to use OneToMany vs ManyToOne
 
-You can declare the relationship from **either side**. The foreign key is the same either way — but
+You can declare the relationship from **either side**. The foreign key is the same either way, but
 the **delete behaviour is not**, so the choice is not purely stylistic. See
 [Delete Behavior](#delete-behavior).
 
@@ -129,12 +129,12 @@ What gets generated:
 - On `Order`: `public ICollection<Tag> Tags { get; set; }`
 - EF Core config: `builder.HasMany(e => e.Tags).WithMany().UsingEntity<OrderTag>();`
 
-When it carries nothing, the one-argument form is enough — `[Relation.ManyToMany<Tag>]` — and the join
+When it carries nothing, the one-argument form is enough (`[Relation.ManyToMany<Tag>]`), and the join
 table is created for you; name it with `.WithNavigation("Tags", JoinTable = "OrderTags")`.
 
 ---
 
-## `.WithNavigation(...)` — naming and configuring one relation
+## `.WithNavigation(...)`: naming and configuring one relation
 
 The bare form derives everything by convention. `.WithNavigation("Name")` takes it over, and carries
 the options that have nowhere else to live:
@@ -156,7 +156,7 @@ public partial class Order { /* ... */ }
 | `JoinTable` | `ManyToMany` | Names the auto-generated join table |
 
 **Two relations to the same type need it.** Both would otherwise derive the same navigation name from
-the target type, collide, and the generator would keep only the first — which is **PRAG0612**.
+the target type, collide, and the generator would keep only the first, which is **PRAG0612**.
 
 ⚠️ `Required = true` pointing at a `[SoftDelete]` entity is the subtlest trap in the model: EF turns a
 required navigation into an `INNER JOIN`, so soft-deleting the target hides this row too. That is
@@ -176,7 +176,7 @@ by hand: a property typed as a navigation, or a `{Entity}Id` scalar, is **PRAG06
 [Relation.ManyToOne<Guest>]
 public partial class Invoice
 {
-    // ReservationId, GuestId, Reservation and Guest are generated — nothing to write here.
+    // ReservationId, GuestId, Reservation and Guest are generated: nothing to write here.
 }
 ```
 
@@ -184,7 +184,7 @@ The other generators do not need the members in source: `[MapFrom]` DTOs, `[Gene
 `[TemporalRelation]`, `[CascadeOn]`, `[Lookup]` and raised events all predict the generated key
 from the declared relation, through the same naming rule the generator emits with
 (`RelationForeignKeyNaming`). ⚠️ Declare the relation; do not hand-write the key beside it. A foreign
-key property on its own reaches nothing — no navigation, no cascade, no constraint in the schema — and
+key property on its own reaches nothing (no navigation, no cascade, no constraint in the schema), and
 nothing reports it, because a plain property is a legitimate thing to declare.
 
 ---
@@ -202,7 +202,7 @@ public partial class Invoice : IEntity { /* ... */ }
 ```
 
 **Always**: the FK property (`ReservationId`) is generated and stored in the database. You can query by
-FK. No FK constraint is emitted — the referenced table belongs to the other boundary.
+FK. No FK constraint is emitted: the referenced table belongs to the other boundary.
 
 **With `[ReadAccess<Reservation>]` on `BillingBoundary`**: the navigation `Reservation` is generated
 too. The attribute adds a read-only `DbSet<Reservation>` to Billing's DbContext, so EF maps the
@@ -227,10 +227,10 @@ default is not the cautious one:
 | Declared as | On the `HasOne` side | On the `HasMany` side |
 |---|---|---|
 | `[Relation.OneToMany<Child>]` on the parent | `Cascade` | `Cascade` |
-| `[Relation.ManyToOne<Parent>]` on the child | `Restrict` | — |
-| `[Relation.OneToOne<T>]` | `Restrict` | — |
+| `[Relation.ManyToOne<Parent>]` on the child | `Restrict` | n/a |
+| `[Relation.OneToOne<T>]` | `Restrict` | n/a |
 | `[Relation.ManyToMany<T>]` | `Cascade` | `Cascade` |
-| an inverse collection the generator derives on its own | — | `NoAction` |
+| an inverse collection the generator derives on its own | n/a | `NoAction` |
 
 So a parent that declares `[Relation.OneToMany<LineItem>]` gets:
 
@@ -258,14 +258,14 @@ means the same refusal from the constraint itself.
 
 A one-to-many declared **from the parent** is the shape of an aggregate: the children have no life
 outside it, and leaving them behind would leave rows nothing can reach. Declared **from the child**
-(`[Relation.ManyToOne<Parent>]`) the relationship reads the other way — the child references something
-that exists on its own — so the default protects the parent instead.
+(`[Relation.ManyToOne<Parent>]`) the relationship reads the other way: the child references something
+that exists on its own, so the default protects the parent instead.
 
 The consequence to keep in mind: the two directions of *the same* relationship are not interchangeable
 in this one respect. Which side you write it on changes what a delete does.
 
 ## Related guides
 
-- [Entity System](/modules/persistence/02-entity-system/) — attributes on the entity itself
-- [Eager Loading](/modules/persistence/20-eager-loading/) — which navigations a query loads, and who decides
-- [Boundaries](/modules/persistence/17-boundaries/) — why a relation across a boundary has no navigation
+- [Entity System](/modules/persistence/02-entity-system/): attributes on the entity itself
+- [Eager Loading](/modules/persistence/20-eager-loading/): which navigations a query loads, and who decides
+- [Boundaries](/modules/persistence/17-boundaries/): why a relation across a boundary has no navigation

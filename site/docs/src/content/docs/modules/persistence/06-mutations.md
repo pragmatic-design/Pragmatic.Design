@@ -10,7 +10,7 @@ sidebar:
 Updating an entity from a DTO is surprisingly tricky. Consider a typical scenario:
 
 ```csharp
-// The naive approach — manual property mapping
+// The naive approach: manual property mapping
 public async Task UpdateOrder(Guid id, UpdateOrderRequest request, CancellationToken ct)
 {
     var order = await repo.GetByIdAsync(id, ct);
@@ -66,7 +66,7 @@ Each property on the mutation DTO is nullable (`decimal?`, `OrderStatus?`). This
 - **`null`** = "don't change this property" (skip it)
 - **A value** = "update this property to this value"
 
-This gives you **partial updates** — you only send the fields you want to change. This is the same concept as PATCH in REST APIs.
+This gives you **partial updates**: you only send the fields you want to change. This is the same concept as PATCH in REST APIs.
 
 ## Usage
 
@@ -76,7 +76,7 @@ public async Task UpdateOrder(Guid id, UpdateOrderDto dto, CancellationToken ct)
     var order = await repo.GetByIdAsync(id, ct);
     if (order is null) return NotFound();
 
-    dto.ApplyToEntity(order);           // One line — all mapping is generated
+    dto.ApplyToEntity(order);           // One line: all mapping is generated
     await uow.SaveChangesAsync(ct);
 }
 ```
@@ -91,7 +91,7 @@ so when they do not.
 `[PartOf<TParent>]` on the child entity. It is fail-closed: without it the collection is not written
 and you get **PRAG0436**.
 
-The marker is required because no relation metadata separates a line item from a room type — both are
+The marker is required because no relation metadata separates a line item from a room type: both are
 declared `[Relation.OneToMany]`, and one of them has permissions, validation and events of its own. A
 parent that wrote it anyway would be a way around all three.
 
@@ -106,7 +106,7 @@ Addressing a `[PartOf]` entity with a mutation of its own is **PRAG0438**.
 ### 2. The property is named after the navigation it writes
 
 `[Relation.OneToMany<OrderLine>]` on `Order` produces the navigation `OrderLines`, so the mutation
-property is `OrderLines`. A name that matches no navigation is **PRAG0439** — without that diagnostic
+property is `OrderLines`. A name that matches no navigation is **PRAG0439**; without that diagnostic
 the child would be dropped in silence and the endpoint would answer 200 having written nothing.
 
 ### 3. The elements can be matched against what is already there
@@ -143,7 +143,7 @@ public required List<OrderLineDto> OrderLines { get; init; }
 |---|---|
 | `Sync` | Match by key: update what is there, add what is new, **remove what was not sent** |
 | `AddOnly` | Match by key: update what is there, add what is new, remove nothing |
-| `Replace` | Discard every child and rebuild from what was sent — new rows, new identities |
+| `Replace` | Discard every child and rebuild from what was sent: new rows, new identities |
 | `Ignore` | Do not write this collection at all |
 
 `Replace` is the one to be careful with: the rows are new, so the identity, the audit columns and
@@ -170,12 +170,12 @@ and add everything a second time.
 
 ### Removing a `[SoftDelete]` child
 
-It is flagged, not deleted — the same as any other delete of that entity.
+It is flagged, not deleted, as with any other delete of that entity.
 
 This used not to hold. Soft delete lived only in the generated repository, and a child taken out of a
 collection never reached it: EF saw an orphan of a required relationship and removed the row, so an
 entity whose `[SoftDelete]` promised recoverability lost one. It is now enforced at save time, where
-every path converges — the repository, a mutation, this merge, a hand-written `context.Remove`.
+every path converges: the repository, a mutation, this merge, a hand-written `context.Remove`.
 
 Two things follow from that:
 
@@ -200,7 +200,7 @@ production.
 
 Mutations can operate in different modes depending on the use case:
 
-`[Mutation]` is **not** `AllowMultiple` — one per class. And `Mode` is optional: left unset it is
+`[Mutation]` is **not** `AllowMultiple`; it is one per class. And `Mode` is optional: left unset it is
 inferred from the class name, so `CreateOrder` is a Create and `UpdateOrder` an Update.
 
 ```csharp
@@ -213,22 +213,22 @@ public partial class ReopenOrder : Mutation<Order> { /* ... */ }
 
 | Mode | Generated Behavior |
 |------|-------------------|
-| `Create` | `new TEntity()`, applies properties, saves. **Not** the `Create()` factory — there is no factory lookup |
+| `Create` | `new TEntity()`, applies properties, saves. **Not** the `Create()` factory: there is no factory lookup |
 | `Update` | Loads by `Id`, calls `ApplyToEntity()`, saves |
 | `CreateOrUpdate` | Decides at runtime: `Id` set and found → update, otherwise create |
-| `Delete` | Loads by `Id` and removes it — a flag rather than a row when the entity is `[SoftDelete]` |
+| `Delete` | Loads by `Id` and removes it, a flag rather than a row when the entity is `[SoftDelete]` |
 | `Restore` | Loads with the soft-delete filter off, resets `IsDeleted` / `DeletedAt` / `DeletedBy`, saves |
 
-`[Mutation]` also carries `ReturnType` (`Id` — the default — `LogicalKey`, or `Entity`) and
+`[Mutation]` also carries `ReturnType` (`Id` by default, `LogicalKey`, or `Entity`) and
 `SoftDelete`, which only means anything on a `Delete`.
 
 `Internal` has three states rather than two, and the useful one is leaving it unset: an operation with
 an `[Endpoint]` is surface, so it lands on the boundary's public interface, and one without is a step,
-so it lands on the internal one. Write `Internal = false` for the case the inference cannot see — an
-operation with no HTTP surface that other modules are meant to call — and `Internal = true` to keep one
+so it lands on the internal one. Write `Internal = false` for the case the inference cannot see (an
+operation with no HTTP surface that other modules are meant to call), and `Internal = true` to keep one
 off the public interface despite its endpoint.
 
-For `[SoftDelete]` entities, `MutationMode.Delete` automatically performs a soft-delete — you don't need to specify this explicitly.
+For `[SoftDelete]` entities, `MutationMode.Delete` automatically performs a soft-delete; you don't need to specify this explicitly.
 
 ## Nested Mutations
 
@@ -262,7 +262,7 @@ public void ApplyToEntity(Order target)
 
 ## Generated MutationInvoker
 
-Every valid mutation gets one — `[Endpoint]` is not a condition, it only decides whether the invoker
+Every valid mutation gets one: `[Endpoint]` is not a condition, it only decides whether the invoker
 is also reachable over HTTP.
 
 ```csharp
@@ -290,6 +290,6 @@ public partial class CreateOrderDto : Mutation<Order>
 }
 ```
 
-In `MutationMode.Create` mark `required` whatever the entity cannot be without — the invoker
+In `MutationMode.Create` mark `required` whatever the entity cannot be without: the invoker
 constructs it with `new TEntity()` and then applies the properties, so nothing else enforces them. In
 `MutationMode.Update` the properties are nullable, because there `null` means "leave it alone".

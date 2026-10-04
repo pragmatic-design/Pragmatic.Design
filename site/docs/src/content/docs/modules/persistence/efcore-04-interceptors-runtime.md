@@ -12,7 +12,7 @@ Several fields on your entities need to be set automatically when saving to the 
 - **Audit timestamps**: `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy` must be stamped
 - **Tenant ID**: Multi-tenant entities need `TenantId` set from the current request context
 
-Doing this manually in every `Create()` call or service method is error-prone — forget one, and you have bad data.
+Doing this manually in every `Create()` call or service method is error-prone: forget one, and you have bad data.
 
 ## The Solution: Interceptors
 
@@ -35,10 +35,10 @@ carries EF's temporary key until the insert completes. For `string` keys the cal
 
 > **Why UUID v7.** A v4 GUID is random, so every insert lands at a random position in a clustered
 > index and splits pages. A v7 embeds a millisecond timestamp in its first 48 bits, so new values sort
-> after old ones and inserts append — the behaviour of an auto-increment key, without giving up global
+> after old ones and inserts append: the behaviour of an auto-increment key, without giving up global
 > uniqueness.
 
-⚠️ **SQL Server orders GUIDs differently** — it compares the last six bytes first, so a v7 does not
+⚠️ **SQL Server orders GUIDs differently**: it compares the last six bytes first, so a v7 does not
 sort in insert order there. `Guid7.NewForSqlServer()` produces a byte-shuffled value that does, and
 **the generated entity does not use it**: the constructor emits `Guid.CreateVersion7()` whatever the
 provider is. Applying it would need the entity to know which database it will land in, and with more
@@ -64,7 +64,7 @@ new AuditingInterceptor(TimeProvider.System, currentUser)
 
 - **`TimeProvider`**: Abstraction over `DateTimeOffset.UtcNow`. Use `TimeProvider.System` in production. In tests, inject a fake `TimeProvider` for deterministic timestamps.
 - **`ICurrentUser`**: Optional. If null, the `*By` fields remain null. When registered,
-  `CreatedBy`/`UpdatedBy` is set from `ICurrentUser.Id` — the property is `Id`, and it is an **empty
+  `CreatedBy`/`UpdatedBy` is set from `ICurrentUser.Id`; the property is `Id`, and it is an **empty
   string** for an anonymous user, not null.
 
 ---
@@ -132,11 +132,11 @@ declare:
 |---|---|
 | Any `[Auditable]` | `AuditingInterceptor` |
 | Any `ITenantEntity` | `TenantInterceptor` |
-| Any `[SoftDelete]` | `SoftDeleteInterceptor` — turns a delete into a flag at save time, on every path |
+| Any `[SoftDelete]` | `SoftDeleteInterceptor`, which turns a delete into a flag at save time, on every path |
 | Any `[HasOwner]` | `OwnershipInterceptor` |
-| Any `[Audited]` | `AuditLogInterceptor` — the append-only `__AuditLog` row, in the same transaction |
-| Any `[RollUp<T>]` | `RollUpInterceptor` — keeps the parent's stored aggregate current |
+| Any `[Audited]` | `AuditLogInterceptor`: the append-only `__AuditLog` row, in the same transaction |
+| Any `[RollUp<T>]` | `RollUpInterceptor`, which keeps the parent's stored aggregate current |
 
-There is no ID interceptor: the entity assigns its own `PersistenceId` — see *Where the ID comes from*.
+There is no ID interceptor: the entity assigns its own `PersistenceId` (see *Where the ID comes from*).
 
 You do not register these manually unless you want to change their behaviour.
