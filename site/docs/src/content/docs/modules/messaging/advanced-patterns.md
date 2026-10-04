@@ -11,7 +11,7 @@ buses, scheduled (future) delivery, and message auditing.
 
 ## Request/Reply
 
-Point-to-point request with a typed response (queue semantics — single consumer).
+Point-to-point request with a typed response (queue semantics: single consumer).
 
 ### Define a handler
 
@@ -49,12 +49,12 @@ roundtrip). When none is registered, the request goes **over the transport**:
 - Replies come back on a process-unique reply queue and are correlated by request id.
 - Responder exceptions, timeouts (default 30s) and a transport that fails to carry the request
   (broker unreachable, channel closed; the cause is the inner exception) surface as
-  `RequestReplyException` — the caller fails fast instead of hanging, and one catch covers
+  `RequestReplyException`: the caller fails fast instead of hanging, and one catch covers
   every way of not getting an answer. Serialization errors and the caller's own cancellation
   are not wrapped.
 
 For cross-*service* calls over HTTP, `RemoteBoundary` (typed HTTP invokers) remains the
-recommended default — see [Composition](/modules/composition/overview/); transport
+recommended default (see [Composition](/modules/composition/overview/)); transport
 request/reply fits broker-only topologies.
 
 ## Multi-Bus (isolated transports)
@@ -101,7 +101,7 @@ await bus.PublishAsync(evt, MessageContext.New() with
 Two `IMessageScheduler` implementations:
 
 - **Jobs bridge** (`Pragmatic.Messaging.Jobs`, any transport): persisted in the Jobs store,
-  delivered by the job runner — restart-safe scheduling AND cancellation.
+  delivered by the job runner: restart-safe scheduling AND cancellation.
 - **Azure Service Bus native** (registered automatically by `UseAzureServiceBus`): the broker
   holds the message (`ScheduleMessageAsync`), no database polling. With
   `EnableEfCorePersistence()` the cancel tokens are persisted in `__ScheduleHandles`
@@ -111,7 +111,7 @@ Two `IMessageScheduler` implementations:
   restart-safe scheduling AND cancellation with no extra setup.
 
 ```csharp
-msg.EnableScheduledMessages();  // Jobs bridge — requires Pragmatic.Messaging.Jobs
+msg.EnableScheduledMessages();  // Jobs bridge: requires Pragmatic.Messaging.Jobs
 ```
 
 This registers `IMessageScheduler`:
@@ -143,14 +143,14 @@ Record lifecycle events (Published / Handled / Failed / DeadLettered) for every 
 msg.EnableAuditing();          // no options: see below
 ```
 
-Messaging is a producer on the framework's shared trail, not the owner of one — register the trail
+Messaging is a producer on the framework's shared trail, not the owner of one: register the trail
 itself with `AddAuditTrail()` from `Pragmatic.Audit.EFCore`, once for the whole application. A Pragmatic
 host with an `[Audited]` entity already does, on that entity's database.
 
 **There is no payload option, and no `[NotLogged]` redaction here.** There is no payload field:
 storing the serialized message is what put personal data in the old trail, and it is the reason the
 shared one exists. Retention belongs to the trail as well (`AuditRetentionService`), which discards
-whole sealed segments — deleting individual entries would change a segment's hash and make retention
+whole sealed segments: deleting individual entries would change a segment's hash and make retention
 indistinguishable from tampering. See [Pragmatic.Audit](/modules/audit/overview/).
 
 `AuditMiddleware` (Order -100) wraps every handler and records duration, handler name, correlation ID,
@@ -166,7 +166,7 @@ var entries = await auditStore.QueryAsync(new AuditQuery
 ```
 
 `AuditQuery` filters on `TenantId`, `MessageType`, `Direction`, `From`/`To`, with `Limit`/`Offset`.
-Correlation ID is *captured* on every entry but is not a filter — narrow by type and time window.
+Correlation ID is *captured* on every entry but is not a filter; narrow by type and time window.
 
 | Store | Package | Use case |
 |-------|---------|----------|
@@ -176,8 +176,8 @@ Correlation ID is *captured* on every entry but is not a filter — narrow by ty
 ## Claim check (large payloads)
 
 `EnableClaimCheck()` (package `Pragmatic.Messaging.ClaimCheck`) offloads payloads above a
-threshold to `IFileStorage` and puts only a reference on the wire — transparent on both
-sides. Details: [Reliability](/modules/messaging/reliability/#claim-check--large-payloads).
+threshold to `IFileStorage` and puts only a reference on the wire, transparent on both
+sides. Details: [Reliability](/modules/messaging/reliability/#claim-check-large-payloads).
 
 ## Operational dashboard
 

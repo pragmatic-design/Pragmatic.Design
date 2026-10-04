@@ -35,9 +35,9 @@ sidebar:
 
 ## Circuit Breaker Always Open
 
-- [ ] Check `FailureThreshold` — lower values trip faster
+- [ ] Check `FailureThreshold`: lower values trip faster
 - [ ] `BreakDurationSeconds` controls how long the circuit stays open
-- [ ] Circuit state is per-handler-type (static) — resets on success
+- [ ] Circuit state is per-handler-type (static); resets on success
 - [ ] After `BreakDurationSeconds`, next call is "half-open" (if it succeeds, circuit closes)
 
 ## Saga Not Progressing
@@ -77,7 +77,7 @@ sidebar:
 | PRAG0813 | Error | `[Saga<T>]` where T is not enum | Use enum type parameter |
 | PRAG0814 | Error | Saga without `[SagaStart]` | Add `[SagaStart]` to entry method |
 | PRAG0820 | Error | Saga event has neither `ICorrelatedMessage` nor `[CorrelationKey]` | Correlate the event so it can reach a saga instance |
-| PRAG0821 | Warning | Several `[CorrelationKey]` properties | Keep one — the first ordinal wins |
+| PRAG0821 | Warning | Several `[CorrelationKey]` properties | Keep one; the first ordinal wins |
 
 ### Routing and Event Diagnostics
 
@@ -90,13 +90,13 @@ sidebar:
 ### Outbox, Saga Persistence and Batch Diagnostics
 
 Each of these fires when a boundary opts into an EF-backed capability whose package is missing. The
-build succeeds and the attribute does nothing — which is exactly why the diagnostic exists.
+build succeeds and the attribute does nothing, which is exactly why the diagnostic exists.
 
 | ID | Severity | Message | Fix |
 |----|----------|---------|-----|
-| PRAG0831 | Warning | `[EnableOutbox]` without `Pragmatic.Messaging.EFCore` — no outbox table, no delivery pump | Add the NuGet reference |
-| PRAG0832 | Warning | `[EnableSagaPersistence]` without `Pragmatic.Messaging.EFCore` — saga tables not mapped | Add the NuGet reference |
-| PRAG0833 | Warning | `[EnableOutbox]` and `[EnableEventOutbox]` on one boundary — both clear the same events, one silently wins | Keep exactly one |
+| PRAG0831 | Warning | `[EnableOutbox]` without `Pragmatic.Messaging.EFCore`: no outbox table, no delivery pump | Add the NuGet reference |
+| PRAG0832 | Warning | `[EnableSagaPersistence]` without `Pragmatic.Messaging.EFCore`: saga tables not mapped | Add the NuGet reference |
+| PRAG0833 | Warning | `[EnableOutbox]` and `[EnableEventOutbox]` on one boundary: both clear the same events, one silently wins | Keep exactly one |
 | PRAG0834 | Warning | `[EnableBatchProgress]` on more than one boundary | Only one may host `__BatchProgress` |
 | PRAG0835 | Warning | `[EnableBatchProgress]` without `Pragmatic.Messaging.Batch` | Add the NuGet reference |
 

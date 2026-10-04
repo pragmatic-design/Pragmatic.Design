@@ -1,11 +1,11 @@
 ---
 title: "Common Mistakes"
-description: "> The top 10 mistakes when using Pragmatic.Messaging — and how to fix them."
+description: "> The top 10 mistakes when using Pragmatic.Messaging, and how to fix them."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Messaging/docs/common-mistakes.md
 sidebar:
   order: 9
 ---
-> The top 10 mistakes when using Pragmatic.Messaging — and how to fix them.
+> The top 10 mistakes when using Pragmatic.Messaging, and how to fix them.
 
 ### 1. Forgetting `partial` on the Handler
 
@@ -27,7 +27,7 @@ public sealed partial class OrderCreatedHandler : IMessageHandler<OrderCreated>
 }
 ```
 
-**Why:** The SG generates a partial declaration of the handler to host the nested `Pipeline` class and its `[LoggerMessage]` methods. Without `partial` the generator emits nothing for the handler — no pipeline, no registration — and **PRAG0801** says so as an error on your declaration.
+**Why:** The SG generates a partial declaration of the handler to host the nested `Pipeline` class and its `[LoggerMessage]` methods. Without `partial` the generator emits nothing for the handler (no pipeline, no registration), and **PRAG0801** says so as an error on your declaration.
 
 ---
 
@@ -60,7 +60,7 @@ public sealed partial class InvoicePaidHandler : IMessageHandler<InvoicePaid>
 **Wrong:**
 ```csharp
 [MessageHandler]
-[Retry(MaxAttempts = 0)]  // No retry at all — but why use the attribute?
+[Retry(MaxAttempts = 0)]  // No retry at all; but why use the attribute?
 public sealed partial class PaymentHandler : IMessageHandler<ProcessPayment> { ... }
 ```
 
@@ -142,7 +142,7 @@ public partial class BookingBoundary;
 
 **Why:** the attribute is read off the **boundary marker** (`MessagingOutboxBoundaryReader`), and the
 generator maps `__OutboxMessages` into that boundary's generated DbContext and adds the capture
-interceptor. Anywhere else it is silently inert — nothing generated, nothing said. ⚠️ It does not go on
+interceptor. Anywhere else it is silently inert: nothing generated, nothing said. ⚠️ It does not go on
 the DbContext: a boundary whose DbContext the generator writes has no class of yours to decorate. A boundary marked `[EnableOutbox]` without a `Pragmatic.Messaging.EFCore` reference *is*
 caught, as `PRAG0831`.
 
@@ -166,11 +166,11 @@ public sealed class WhenAnOrderIsPlaced : IDomainEventHandler<OrderPlaced> { ...
 public sealed class WhenAnOrderIsPlaced : IMessageHandler<OrderPlaced> { ... }
 ```
 
-**Why:** `OutboxInterceptor` takes the entity's domain events **during** the save — it has to, or one
-event would be both an outbox row and an in-process dispatch — and `EfCoreUnitOfWork` dispatches
+**Why:** `OutboxInterceptor` takes the entity's domain events **during** the save (it has to, or one
+event would be both an outbox row and an in-process dispatch), and `EfCoreUnitOfWork` dispatches
 *after* the commit, which is equally deliberate: an event announcing a write that failed is worse than
 one never sent. By then there are none, so the handler is registered and never called: no log, no dead
-letter, nothing. ⚠️ The dangerous path is the upgrade — adding `[EnableOutbox]` to a boundary with
+letter, nothing. ⚠️ The dangerous path is the upgrade: adding `[EnableOutbox]` to a boundary with
 working `[EventHandler]`s would silence every one of them, with a green build and a green suite, so
 the build reports **PRAG0837** and names `[MessageHandler]`.
 
@@ -253,7 +253,7 @@ await _messageBus.PublishAsync(new ReservationConfirmed(...));
 
 **Right:**
 ```csharp
-// Entity raises domain event — outbox ensures atomicity
+// Entity raises domain event; outbox ensures atomicity
 reservation.RaiseDomainEvent(new ReservationConfirmed(...));
 await _repo.SaveAsync(reservation);
 // OutboxInterceptor persists event in same TX → guaranteed delivery
@@ -270,8 +270,8 @@ await _repo.SaveAsync(reservation);
 app.UseMessaging(msg =>
 {
     msg.UseRabbitMq(rmq => { rmq.ConnectionString = "..."; });
-    msg.EnableIdempotency();   // InMemoryIdempotencyStore — lost on restart!
-    msg.EnableSagas();         // InMemorySagaRepository — lost on restart!
+    msg.EnableIdempotency();   // InMemoryIdempotencyStore: lost on restart!
+    msg.EnableSagas();         // InMemorySagaRepository: lost on restart!
 });
 ```
 
@@ -284,7 +284,7 @@ app.UseMessaging(msg =>
     msg.EnableIdempotency();
     msg.EnableBatchProcessing();     // dispatcher + progress tracking
     // For an EF-backed batch progress table, mark a [Boundary] with [EnableBatchProgress]
-    // (the generator maps __BatchProgress and registers the EF store) — see the batch guide.
+    // (the generator maps __BatchProgress and registers the EF store); see the batch guide.
     // Implement IIdempotencyStore backed by Redis/DB for production dedup
 });
 
@@ -323,10 +323,10 @@ public sealed partial class ReservationConfirmedHandler(
 {
     public async Task HandleAsync(ReservationConfirmed @event, MessageContext context, CancellationToken ct)
     {
-        // Use boundary interface — works in monolith AND distributed
+        // Use boundary interface: works in monolith AND distributed
         await billing.CreateDraftInvoice(@event.ReservationId, @event.GuestId, ...);
     }
 }
 ```
 
-**Why:** The event should contain all data the handler needs. If you access another boundary's DbContext directly, you break the boundary isolation — the code won't work when you switch to distributed deployment with `BoundaryMode.Remote`.
+**Why:** The event should contain all data the handler needs. If you access another boundary's DbContext directly, you break the boundary isolation: the code won't work when you switch to distributed deployment with `BoundaryMode.Remote`.

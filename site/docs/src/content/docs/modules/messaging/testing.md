@@ -5,7 +5,7 @@ editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmati
 sidebar:
   order: 7
 ---
-## MessageBusTestHarness — two modes
+## MessageBusTestHarness: two modes
 
 **Record-only** (default): replaces `IMessageBus`, records everything, dispatches nothing.
 
@@ -19,7 +19,7 @@ harness.SentOf<ChargeCard>().Should().ContainSingle();   // point-to-point track
 ```
 
 **Dispatching**: additionally delivers to the registered `IMessageHandler<T>` implementations
-and tracks per-handler outcomes. Handler failures are **recorded, not rethrown** — assert on
+and tracks per-handler outcomes. Handler failures are **recorded, not rethrown**: assert on
 `Faulted` instead of catching:
 
 ```csharp
@@ -44,7 +44,7 @@ untyped dispatch routes through the SG dispatch tables (AOT-parity with producti
 | Consumed (per handler) | `Consumed`, `ConsumedOf<T>()`, `HasConsumed<T>(…)` |
 | Faulted (per handler) | `Faulted`, `FaultedOf<T>()`, `HasFaulted<T>()` |
 
-## Broker integration tests — Testcontainers
+## Broker integration tests: Testcontainers
 
 The Messaging test suite runs its RabbitMQ/Kafka/Azure Service Bus integration tests against
 real brokers started by Testcontainers (collection fixtures), so the transport paths execute
@@ -68,5 +68,5 @@ public class MyBrokerTests(RabbitMqContainerFixture broker) { ... }
 - **"Did my code publish the right message?"** → record-only harness.
 - **Handler wiring + fan-out + failures** → dispatching harness.
 - **Retry/redelivery/circuit breaker** → construct the SG-generated `Handler.Pipeline`
-  directly (see `ReliabilityPipelineSample`) — the pipeline is real generated code.
+  directly (see `ReliabilityPipelineSample`); the pipeline is real generated code.
 - **Transport semantics (DLQ, ordering, redelivery)** → Testcontainers fixtures.
