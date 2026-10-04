@@ -166,10 +166,10 @@ Marks a property as filterable. Controls which operators the UI can use.
 |----------|------|---------|-------------|
 | `Operators` | `FilterOps` | `FilterOps.All` | Which operators are allowed (flags enum) |
 | `MapTo` | `string?` | `null` | Target entity property path (if different from property name) |
-| `Handler` | `Type?` | `null` | ⚠️ **Read and discarded** — the handler is never called, and saying so is **PRAG0703**. Express the logic as a `[ComputedFilter]` on the entity |
+| `Handler` | `Type?` | `null` | ⚠️ **Read and discarded**: the handler is never called, and saying so is **PRAG0703**. Express the logic as a `[ComputedFilter]` on the entity |
 | `HandlerArgs` | `string?` | `null` | ⚠️ Same: parsed, never used |
 
-### `[SearchAcross]` — one box, several columns
+### `[SearchAcross]`: one box, several columns
 
 On a `[GridFilter<T>]` property, `[SearchAcross]` expands one input into an OR across the named
 columns:
@@ -180,8 +180,8 @@ public string? Search { get; set; }
 ```
 
 `IgnoreCase = true` lowers both sides; without it the comparison is the provider's, which on PostgreSQL
-is case-sensitive. The same attribute on a `[Query<T, R>]` property searches the same way — see
-[the query system](09-query-system.md#searching-several-columns--searchacross).
+is case-sensitive. The same attribute on a `[Query<T, R>]` property searches the same way; see
+[the query system](09-query-system.md#searching-several-columns-searchacross).
 
 ### `FilterOps` Flags Enum
 
@@ -359,16 +359,16 @@ public record GroupClause(string Field, SortDirection? SortDirection = null);
 | `GreaterOrEqual` | `property >= value` |
 | `LessThan` | `property < value` |
 | `LessOrEqual` | `property <= value` |
-| `In` | ⚠️ Not generated on the grid path — see below |
-| `Between` | ⚠️ Not generated anywhere — see below |
+| `In` | ⚠️ Not generated on the grid path; see below |
+| `Between` | ⚠️ Not generated anywhere; see below |
 
 ⚠️ **A clause the generated code does not handle is dropped, not refused.** The `switch` ends in
-`_ => query`, so an `In` or `Between` clause arriving from a grid returns the query **unrestricted** —
+`_ => query`, so an `In` or `Between` clause arriving from a grid returns the query **unrestricted**:
 more rows than the caller asked for, with no error. What each path really covers:
 
 | Path | Operators generated |
 |---|---|
-| `[Query]` / `[FilterDto]` | everything in the table except `Between` — and `Between` there degrades to `==` rather than being dropped |
+| `[Query]` / `[FilterDto]` | everything in the table except `Between`, and `Between` there degrades to `==` rather than being dropped |
 | `[GridFilter<T>]`, `[GenerateGridBridge]` | `Equals`, `NotEquals` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons on comparable types. Not `In`, not `Between` |
 
 `FilterLogic` controls how clauses combine: `And` (all must match) or `Or` (any must match).
@@ -378,7 +378,7 @@ more rows than the caller asked for, with no error. What each path really covers
 Two different attributes produce the two halves of this step, and they are worth keeping apart.
 
 **`[GridAdapter<TEntity>]`** generates the framework entry points as static methods **on the adapter
-class itself** — one per framework asked for by `Framework`:
+class itself**, one per framework asked for by `Framework`:
 
 ```csharp
 // Generated: {Namespace}.OrderGridAdapter.GridAdapter.g.cs
@@ -389,13 +389,13 @@ public partial class OrderGridAdapter
 }
 ```
 
-**`[GenerateGridBridge]`**, on the **entity**, generates the canonical bridge — the typed `switch` on
+**`[GenerateGridBridge]`**, on the **entity**, generates the canonical bridge: the typed `switch` on
 field name, with no reflection at all. It names **only the properties that declare `[Filterable]`**,
 because the field name comes from the client: a list of what is forbidden covers whatever somebody
 remembered to put in it, and sorting or filtering on a column makes it talk without reading it.
 `[GridExclude("Name")]` on the entity takes back one of the declared ones; a property that declares
-nothing was never in the bridge. The framework's reserved columns — credentials, `OwnerId`,
-`TenantId`, `AccessScopes`, `PersistenceId`, `RowVersion` — are withheld **even when declared**.
+nothing was never in the bridge. The framework's reserved columns (credentials, `OwnerId`,
+`TenantId`, `AccessScopes`, `PersistenceId`, `RowVersion`) are withheld **even when declared**.
 
 ```csharp
 [Entity]
@@ -423,7 +423,7 @@ public static class OrderGridFilterBridge
 ```
 
 The two compose: an adapter turns the framework's JSON into a `GridFilterRequest`, the bridge turns
-that into LINQ. Neither needs the other — the bridge alone is enough for a UI that already speaks the
+that into LINQ. Neither needs the other: the bridge alone is enough for a UI that already speaks the
 canonical format.
 
 ### The canonical request as a declared read
@@ -454,10 +454,10 @@ public IQueryable<Order> Apply(IQueryable<Order> query)
 
 Three things the compiler will tell you about:
 
-- the entity must carry `[GenerateGridBridge]`, or there is no bridge to call — `PRAG0723`;
+- the entity must carry `[GenerateGridBridge]`, or there is no bridge to call (`PRAG0723`);
 - the request carries its own `Page`/`PageSize` and the bridge applies them, so a query that also
-  declares paging pages twice — `PRAG0724`;
-- a request object cannot travel in a query string, so the route needs a verb with a body — on `GET`
+  declares paging pages twice (`PRAG0724`);
+- a request object cannot travel in a query string, so the route needs a verb with a body; on `GET`
   it is `PRAG0532`.
 
 The fields the request may name are the bridge's, unchanged: `[Filterable]` and nothing else. Going
@@ -482,7 +482,7 @@ var query = builder.Build(repository.Query(), filterProvider);
 
 ⚠️ `QueryBuilder.Build()` applies **filters, sorting and paging, and nothing else**. `AsNoTracking()`
 and `AsSplitQuery()` set a flag that no code reads: call them and the query still tracks. Ask the
-repository for an untracked source instead — `repository.Query(QueryStrategy.Projection)` — or call
+repository for an untracked source instead (`repository.Query(QueryStrategy.Projection)`) or call
 `.AsNoTracking()` on the `IQueryable` that comes out of `Build`. Pass the `IQueryFilterProvider` too:
 without it `Build` applies no global filter at all.
 

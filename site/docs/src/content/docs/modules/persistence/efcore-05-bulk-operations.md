@@ -43,7 +43,7 @@ public Task<int> UpsertAsync(
     CancellationToken ct = default);
 ```
 
-These methods are generated onto the concrete repository — on **every** entity, not only some — so
+These methods are generated onto the concrete repository (on **every** entity, not only some), so
 inject that type when you need them. There is no separate `IBulkOperations<TEntity>` service to
 resolve. The filter parameter is `ISpecification<TEntity>`; `Spec<T>.Where(...)` returns a
 `Specification<T>`, which implements it.

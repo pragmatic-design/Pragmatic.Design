@@ -56,7 +56,7 @@ public interface IReadRepository<TEntity>
 
 `RunAsync` is the reuse of a read that is already declared: the same `[Query]` its own HTTP route
 answers with, filters, sort and `[WithoutFilter<T>]` included, run from inside an operation that
-already holds the repository. The `DbContext` never appears in the calling code, which is the point —
+already holds the repository. The `DbContext` never appears in the calling code, which is the point:
 a read declared once is a read used everywhere, instead of LINQ written twice for one shape.
 
 The source is the repository's **set**, not `Query()`: `Query()` has already applied the filters, and
@@ -67,7 +67,7 @@ force rather than repeating them. It is invisible on an ordinary query and shows
 ⚠️ **No operation pipeline runs on this path**, deliberately: the caller is inside a `[DomainAction]`
 that already has its own validation, permission and transaction. The path *with* the pipeline is the
 query's own invoker, which an operation reaches with `[LoadFrom<TQuery>]` on a property of the query's
-answer — its inputs bound by name from the operation, its permission asked of the caller, its failure the
+answer: its inputs bound by name from the operation, its permission asked of the caller, its failure the
 operation's. Choose `RunAsync` to reuse a read inside the operation's own authorization; choose
 `[LoadFrom]` to run the query as the query.
 
@@ -76,7 +76,7 @@ inside an internal call: the query's permission is not asked. That is right betw
 trusts, and wrong as the way an operation reads data on its caller's behalf.
 
 ⚠️ It answers `IReadOnlyList<TResult>`, and C# forbids a user-defined conversion whose source is an
-interface — so it does not convert implicitly to `Result<IReadOnlyList<T>, IError>` the way a `List<T>`
+interface, so it does not convert implicitly to `Result<IReadOnlyList<T>, IError>` the way a `List<T>`
 does. `Result<…>.Success(rows)` is the form.
 
 ### 2. Generated concrete repository
@@ -87,9 +87,9 @@ The analyzer generates a concrete repository class per entity. Beyond the interf
 |---|---|
 | `Set` (the `DbSet<T>`), `Context` (`internal`) | always |
 | `GetByIdAsync(id, includes, ct)` | always |
-| `Query(QueryStrategy strategy)` — `Projection`, `Entity`, `Filtered`, `Raw` | always |
+| `Query(QueryStrategy strategy)`: `Projection`, `Entity`, `Filtered`, `Raw` | always |
 | `BulkInsertAsync`, `BulkUpsertAsync`, `BulkUpdateAsync`, `BulkDeleteAsync`, `UpsertAsync` | always |
-| `SaveChangesAsync(ct)` | always — but the return type is `Result<int, ConcurrencyError>` on a `[ConcurrencyAware]` entity and `Task<int>` on any other |
+| `SaveChangesAsync(ct)` | always, but the return type is `Result<int, ConcurrencyError>` on a `[ConcurrencyAware]` entity and `Task<int>` on any other |
 | `GetBy{LogicKey}Async(...)`, or `GetBy{A}And{B}Async(...)` for a composite one | only with `[LogicKey]` |
 
 Those methods are available on the generated concrete repository type, not on `IRepository<TEntity>`.
@@ -242,7 +242,7 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
 
 ⚠️ **`Detach` matters more than it looks.** A change tracker keeps what it was given whether the save
 succeeded or not, so after a failure the entity is still pending and the *next* save tries to write it
-again — an import committing row by row cannot report one bad row and carry on. The mutation pipeline
+again: an import committing row by row cannot report one bad row and carry on. The mutation pipeline
 calls it on every save path; reach for it yourself when you save through the unit of work directly.
 
 Transactions are represented by `ITransaction`, not plain `IAsyncDisposable`.
@@ -268,7 +268,7 @@ catch
 `Host.Services.g.cs` is where they are: DbContexts, repositories, query filters, domain actions,
 endpoints and startup steps are all registered before your `IStartupStep` runs.
 
-Two are the exception, and stay yours to call from an `IStartupStep` — nothing calls them for you, and
+Two are the exception, and stay yours to call from an `IStartupStep`: nothing calls them for you, and
 the feature silently does nothing if you forget:
 
 ```csharp
@@ -276,7 +276,7 @@ services.AddShowcaseLookupCaches();      // [Lookup]   → _Infra.Persistence.Lo
 services.AddShowcaseCascadeHandlers();   // [CascadeOn] → _Infra.Persistence.CascadeHandlers.g.cs
 ```
 
-Outside a Pragmatic host — a test project, a console app — the same extensions are what you wire by
+Outside a Pragmatic host (a test project, a console app) the same extensions are what you wire by
 hand:
 
 | Extension | Emitted in | Note |
@@ -287,7 +287,7 @@ hand:
 
 Important:
 
-- repositories are registered `Scoped` and unkeyed — the concrete `Order.Repository`, and
+- repositories are registered `Scoped` and unkeyed: the concrete `Order.Repository`, and
   `IRepository<Order>` / `IReadRepository<Order>` resolving to the same instance
 - `IUnitOfWork` is registered keyed by boundary
 - logic-key helpers live on the generated repository class, not on the interface

@@ -16,30 +16,30 @@ EF Core is a capable ORM. But every project that uses it accumulates the same bo
 ### A typical entity: manual everything
 
 ```csharp
-// Entity — you write every property, every interface, every factory
+// Entity: you write every property, every interface, every factory
 public class Order : IEntity, IAuditable, ISoftDelete
 {
     public Guid Id { get; set; }
     public string OrderNumber { get; private set; } = "";
     public decimal Total { get; private set; }
 
-    // Audit fields — repeated on every auditable entity
+    // Audit fields: repeated on every auditable entity
     public DateTimeOffset CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
 
-    // Soft-delete fields — repeated on every soft-deletable entity
+    // Soft-delete fields: repeated on every soft-deletable entity
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public string? DeletedBy { get; set; }
 
-    // Navigation properties — manual FK + nav
+    // Navigation properties: manual FK + nav
     public Guid CustomerId { get; private set; }
     public Customer? Customer { get; set; }
     public ICollection<LineItem> Items { get; } = [];
 
-    // Factory method — hand-written
+    // Factory method: hand-written
     public static Order Create(string orderNumber, decimal total, Guid customerId)
     {
         return new Order
@@ -52,7 +52,7 @@ public class Order : IEntity, IAuditable, ISoftDelete
         };
     }
 
-    // Setters — hand-written per property
+    // Setters: hand-written per property
     public void SetTotal(decimal value) => Total = value;
     public void SetOrderNumber(string value) => OrderNumber = value;
 
@@ -60,7 +60,7 @@ public class Order : IEntity, IAuditable, ISoftDelete
 ```
 
 ```csharp
-// Repository — every entity gets one
+// Repository: every entity gets one
 public class OrderRepository : IRepository<Order>
 {
     private readonly AppDbContext _db;
@@ -77,14 +77,14 @@ public class OrderRepository : IRepository<Order>
     public void Remove(Order entity) => _db.Orders.Remove(entity);
     public void Update(Order entity) => _db.Entry(entity).State = EntityState.Modified;
 
-    // Logic key lookup — hand-written
+    // Logic key lookup: hand-written
     public Task<Order?> GetByOrderNumberAsync(string number, CancellationToken ct)
         => _db.Orders.FirstOrDefaultAsync(o => o.OrderNumber == number, ct);
 }
 ```
 
 ```csharp
-// EF Core configuration — per entity
+// EF Core configuration: per entity
 public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
@@ -100,7 +100,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 ```
 
 ```csharp
-// Query — manual filter/sort/page
+// Query: manual filter/sort/page
 public async Task<PagedResult<OrderDto>> SearchOrders(
     string? customerName, OrderStatus? status,
     SortDirection? dateSort, int page = 1, int pageSize = 20)
@@ -127,7 +127,7 @@ public async Task<PagedResult<OrderDto>> SearchOrders(
 ```
 
 ```csharp
-// DI registration — per entity, per boundary
+// DI registration: per entity, per boundary
 services.AddScoped<IRepository<Order>, OrderRepository>();
 services.AddScoped<IRepository<LineItem>, LineItemRepository>();
 services.AddScoped<IRepository<Customer>, CustomerRepository>();
@@ -256,7 +256,7 @@ The class must be `partial` because the SG emits additional members in a separat
 
 ### The key
 
-The key is a `Guid`, always — a version 7 value, time-ordered and index-friendly, assigned at
+The key is a `Guid`, always: a version 7 value, time-ordered and index-friendly, assigned at
 construction without a database round-trip. There is no type argument to pick. An identifier that
 comes from elsewhere is an ordinary property with its own uniqueness (`[LogicKey]`,
 `[Unique(nameof(...))]`); see [02-entity-system.md](/modules/persistence/02-entity-system/).
@@ -274,7 +274,7 @@ From `[Entity]` alone, the SG produces:
 
 ⚠️ **Equality is not generated.** An entity is a class and compares by reference: two instances loaded
 from the same row through different contexts are not equal, and `Contains`/`Distinct` over entities do
-not do what the id would suggest. Compare `PersistenceId`, or write the members yourself — nothing in
+not do what the id would suggest. Compare `PersistenceId`, or write the members yourself; nothing in
 the generated code will collide with them.
 
 ### Entity Traits
@@ -286,7 +286,7 @@ Traits are attributes that add cross-cutting fields and behavior to entities. Ea
 | `[Auditable]` | `IAuditable` | `CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy` | `AuditingInterceptor` sets values on save |
 | `[SoftDelete]` | `ISoftDelete` | `IsDeleted`, `DeletedAt`, `DeletedBy` | `Remove()` sets fields instead of DELETE. Query filter hides deleted rows. |
 | `[SoftDelete(Cascade = true)]` | `ISoftDelete` | Same as above | Soft-deleting parent cascades to children |
-| `[ConcurrencyAware]` | — | **none** | The token is an EF Core *shadow property*, declared in the generated DbContext and shaped by the provider (`byte[]` rowversion on SQL Server, `uint` mapped to `xmin` on PostgreSQL). The generated repository's `SaveChangesAsync` then returns `Result<int, ConcurrencyError>` instead of `Task<int>`. |
+| `[ConcurrencyAware]` | n/a | **none** | The token is an EF Core *shadow property*, declared in the generated DbContext and shaped by the provider (`byte[]` rowversion on SQL Server, `uint` mapped to `xmin` on PostgreSQL). The generated repository's `SaveChangesAsync` then returns `Result<int, ConcurrencyError>` instead of `Task<int>`. |
 
 Traits compose freely. An entity can have all of them:
 
@@ -311,12 +311,12 @@ Pragmatic separates the technical identifier (`PersistenceId`) from human-facing
 public partial class Product
 {
     [LogicKey]
-    public string Sku { get; private set; } = "";  // Business key — unique index generated
+    public string Sku { get; private set; } = "";  // Business key: unique index generated
     public string Name { get; private set; } = "";
 }
 ```
 
-`[LogicKey]` generates a unique index in EF Core configuration and a `GetBySkuAsync()` method on the concrete repository. `[GeneratedValue("ORD-{YYYY}{MM}-{SEQ:5}")]` generates formatted business keys with date and sequence placeholders — under a create mutation only, and with the gaps a database sequence leaves. Both limits are spelled out in [Entity System](/modules/persistence/02-entity-system/#generatedvalue).
+`[LogicKey]` generates a unique index in EF Core configuration and a `GetBySkuAsync()` method on the concrete repository. `[GeneratedValue("ORD-{YYYY}{MM}-{SEQ:5}")]` generates formatted business keys with date and sequence placeholders, under a create mutation only, and with the gaps a database sequence leaves. Both limits are spelled out in [Entity System](/modules/persistence/02-entity-system/#generatedvalue).
 
 ### State Machines
 
@@ -348,12 +348,12 @@ public partial class Order
 ```
 
 ⚠️ **The argument must be the enum value, not its name.** `TransitionFromAttribute` takes an `object`,
-so `[TransitionFrom(nameof(Draft))]` compiles — and the generator ignores it, because it reads the
+so `[TransitionFrom(nameof(Draft))]` compiles, and the generator ignores it, because it reads the
 argument only when its type is the enum. The state then has no incoming transition at all, which
 surfaces as **PRAG0621** rather than as the transition you thought you declared.
 
-The SG generates `TransitionTo(target)` returning `VoidResult<IError>` — a refusal is a
-`Pragmatic.Result.Http.ConflictError`, status 409, naming both states — plus `CanTransitionTo(target)`
+The SG generates `TransitionTo(target)` returning `VoidResult<IError>` (a refusal is a
+`Pragmatic.Result.Http.ConflictError`, status 409, naming both states), plus `CanTransitionTo(target)`
 and `AllowedTransitions()`. Invalid transitions never throw. Full guide:
 [State Machine](/modules/persistence/19-state-machine/).
 
@@ -375,7 +375,7 @@ All relationships are declared via `[Relation.*]` attributes on the entity class
 // One-to-one
 [Relation.OneToOne<UserProfile>]
 
-// Many-to-many with explicit join entity — a second type argument, never a typeof
+// Many-to-many with explicit join entity: a second type argument, never a typeof
 [Relation.ManyToMany<Tag, OrderTag>]
 
 // Explicit navigation names
@@ -385,10 +385,10 @@ All relationships are declared via `[Relation.*]` attributes on the entity class
 ### What Gets Generated
 
 For `[Relation.OneToMany<LineItem>]` on `Order`:
-- On `Order`: `public ICollection<LineItem> LineItems { get; set; }` — named after the **target type**,
+- On `Order`: `public ICollection<LineItem> LineItems { get; set; }`, named after the **target type**,
   pluralised, not after any property you wrote. `.WithNavigation("Items")` renames it
 - On `LineItem`: `public Guid OrderId { get; private set; }` (FK) and `internal void SetOrderId(...)`
-- EF Core config: `HasMany` / `WithOne` / `OnDelete(Cascade)` — see below, the default is not the
+- EF Core config: `HasMany` / `WithOne` / `OnDelete(Cascade)`; see below, the default is not the
   cautious one
 
 ### Cross-Boundary Relationships
@@ -399,7 +399,7 @@ Nothing flags a cross-boundary relation at compile time: the FK is generated and
 
 ### Delete Behavior
 
-The delete behaviour follows **which side declares the relation**: `[Relation.OneToMany]` on the parent gives `Cascade`, `[Relation.ManyToOne]` on the child gives `Restrict`. See [Relationships](/modules/persistence/04-relationships/#delete-behavior) — the default is not the cautious one, and `[SoftDelete]` does not change the foreign key.
+The delete behaviour follows **which side declares the relation**: `[Relation.OneToMany]` on the parent gives `Cascade`, `[Relation.ManyToOne]` on the child gives `Restrict`. See [Relationships](/modules/persistence/04-relationships/#delete-behavior): the default is not the cautious one, and `[SoftDelete]` does not change the foreign key.
 
 ---
 
@@ -447,7 +447,7 @@ public sealed class AppHostModule;
 ```
 
 You never write a `DbContext`: the generator emits one per boundary from that pairing, and the
-generated host registers each of them — `AddCatalogDbContext(...)`, `AddBillingDbContext(...)` — with
+generated host registers each of them (`AddCatalogDbContext(...)`, `AddBillingDbContext(...)`) with
 the options built from the database's `ConfigKey`. `AddAllPragmaticDbContexts(o => …)` is the same set
 behind one call, for a project that wires them by hand.
 
@@ -538,10 +538,10 @@ public partial class Order
             Guid id, Func<IQueryable<Order>, IQueryable<Order>> includes,
             CancellationToken ct = default);
 
-        // Strategy overload — Projection, Entity, Filtered, Raw
+        // Strategy overload: Projection, Entity, Filtered, Raw
         public IQueryable<Order> Query(QueryStrategy strategy);
 
-        // Bulk operations — on every entity, not only some
+        // Bulk operations: on every entity, not only some
         public Task<int> BulkInsertAsync(IReadOnlyList<Order> entities,
                                          BulkInsertOptions? options = null, CancellationToken ct = default);
         public Task<int> BulkUpsertAsync(IReadOnlyList<Order> entities,
@@ -613,7 +613,7 @@ public partial class SearchOrders
 The SG generates:
 - `IPagedQuery<Order, OrderDto>` implementation
 - `Apply(IQueryable<Order>)` with WHERE + ORDER BY
-- a `Projection` that comes from **`[GenerateProjection]`** on the DTO — `[MapFrom<Order>]` alone gives
+- a `Projection` that comes from **`[GenerateProjection]`** on the DTO; `[MapFrom<Order>]` alone gives
   `FromEntity` and `Selector`, and a query whose DTO lacks `[GenerateProjection]` is **PRAG0704**
 
 ### Filter Operators
@@ -629,7 +629,7 @@ The SG generates:
 | `In` | `IN (values)` | Multi-select (statuses, categories) |
 
 ⚠️ `FilterOperator.Between` is declared and no generator renders it, so declaring it is **PRAG0701**,
-an error — see [Query System](/modules/persistence/09-query-system/#available-operators). Express a range with two
+an error; see [Query System](/modules/persistence/09-query-system/#available-operators). Express a range with two
 properties sharing one `MapTo`.
 
 ### Filter DTOs
@@ -724,7 +724,7 @@ Mutations are operations that modify a single entity through the MutationInvoker
 
 | Mode | Behavior |
 |------|----------|
-| `Create` | `new TEntity()` — **not** the generated `Create()` factory — then computed defaults, `OnCreating`, the mapped properties, and the save |
+| `Create` | `new TEntity()` (**not** the generated `Create()` factory), then computed defaults, `OnCreating`, the mapped properties, and the save |
 | `Update` | Loads entity by ID, applies non-null properties (partial update), saves |
 | `Delete` | Loads entity, marks deleted (soft-delete if `[SoftDelete]`), saves |
 | `Restore` | Loads bypassing all filters, resets `IsDeleted`/`DeletedAt`/`DeletedBy`, saves |
@@ -765,8 +765,8 @@ L1 is fast and prevents unnecessary database work. L2 catches violations that on
 
 ### Writing an aggregate's children
 
-A mutation can carry its aggregate's children. The child has to declare `[PartOf<TParent>]` — fail-closed,
-because no relation metadata separates a line item from a room type — the mutation property has to be
+A mutation can carry its aggregate's children. The child has to declare `[PartOf<TParent>]` (fail-closed,
+because no relation metadata separates a line item from a room type), the mutation property has to be
 named after the navigation it writes, and the elements have to be matchable by `Id` or by the child's
 `[LogicKey]`. Each of the three has a diagnostic when it does not hold: **PRAG0436**, **PRAG0439**,
 **PRAG0333**.
@@ -776,9 +776,9 @@ updates, anything else is a full one so a child that was not sent is a child you
 
 | `CollectionStrategy` | Behaviour |
 |---|---|
-| `Sync` | Match by key: update, add, **remove what was not sent** — the default for a mutation |
-| `AddOnly` | Match by key: update and add, remove nothing — the default under `[Patch]` |
-| `Replace` | Discard every child and rebuild — new rows, new identities |
+| `Sync` | Match by key: update, add, **remove what was not sent**; the default for a mutation |
+| `AddOnly` | Match by key: update and add, remove nothing; the default under `[Patch]` |
+| `Replace` | Discard every child and rebuild: new rows, new identities |
 | `Ignore` | Leave the collection alone |
 
 ```csharp
@@ -805,7 +805,7 @@ different namespaces cannot produce the same file name:
 
 | Generated File | Content | Condition |
 |----------------|---------|-----------|
-| `{Ns}.{Entity}.Traits.g.cs` | `PersistenceId`, `Id`, **and** the `[Auditable]` / `[SoftDelete]` properties — one file for all of them | Always |
+| `{Ns}.{Entity}.Traits.g.cs` | `PersistenceId`, `Id`, **and** the `[Auditable]` / `[SoftDelete]` properties: one file for all of them | Always |
 | `{Ns}.{Entity}.Create.g.cs` | Static `Create(...)` factory | Non-abstract entities |
 | `{Ns}.{Entity}.Setters.g.cs` | `internal Set{Property}(...)` with change tracking | Has `private set` properties |
 | `{Ns}.{Entity}.Specs.g.cs` | `{Entity}Specifications.ById(...)` and `By{LogicKey}(...)` | Always |
@@ -815,7 +815,7 @@ different namespaces cannot produce the same file name:
 | `{Ns}.{Entity}.TenantFilter.g.cs` | Nested `{Entity}.TenantFilter` | Implements `ITenantEntity` |
 | `{Ns}.{Entity}.StateMachine.g.cs` | `TransitionTo()`, `CanTransitionTo()`, `AllowedTransitions()` | `[StateMachine<TEnum>]` |
 | `{Ns}.{Entity}.Projectable.g.cs` | The nested `{Entity}.Expr` class of expressions | `[Projectable]` |
-| `{Ns}.{Entity}.ComputedFilter.g.cs` | `{Entity}ComputedFilters` — `{Prop}Spec` fields and `Where{Prop}()` | `[ComputedFilter]` |
+| `{Ns}.{Entity}.ComputedFilter.g.cs` | `{Entity}ComputedFilters`: `{Prop}Spec` fields and `Where{Prop}()` | `[ComputedFilter]` |
 | `EntityConfig.{Ns}.{Entity}.g.cs` | EF Core `IEntityTypeConfiguration` (host-level) | Has `[BelongsTo]` + EFCore ref |
 | `_Infra.Persistence.RepositoryRegistration.g.cs` and friends | DI registration: repositories, DbContexts, query filters, filter map | Once per assembly |
 | `DbContext.{Boundary}.g.cs` | Boundary DbContext with DbSets | Per boundary |
@@ -907,7 +907,7 @@ transaction:
 await PragmaticApp.RunAsync(args, builder => builder.UsePragmaticMigrations());
 ```
 
-The migration context is **per database**, not per boundary — boundaries sharing a connection share
+The migration context is **per database**, not per boundary: boundaries sharing a connection share
 the schema. See the [migrations guide](/modules/migrations/overview/).
 
 ---
@@ -924,7 +924,7 @@ When a class inherits `Mutation<TEntity>` and has `[Mutation]` + `[Endpoint]`, t
 
 `[Query<T, R>]` + `[Endpoint]` generates a complete search API endpoint. `[Mutation]` + `[Endpoint]`
 generates CRUD endpoints. The binding is **generated, not ASP.NET's**: the endpoint is a
-`RequestDelegate` that reads each parameter and parses it, which is what makes it AOT-safe — and why a
+`RequestDelegate` that reads each parameter and parses it, which is what makes it AOT-safe, and why a
 malformed value comes back as a 400 naming the parameter.
 
 ### Mapping

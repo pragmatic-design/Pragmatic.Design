@@ -39,7 +39,7 @@ In EF Core, navigation filtering is also applied through the filter-map pipeline
 ## Which one to write
 
 Four interfaces, and the choice is not a matter of taste: each changes how the filter composes with the
-others, or when it is skipped. Picking the wrong one is silent — the filter runs, and hides or reveals
+others, or when it is skipped. Picking the wrong one is silent: the filter runs, and hides or reveals
 rows you did not mean.
 
 | You want | Implement | What that buys |
@@ -49,7 +49,7 @@ rows you did not mean.
 | A rule that *widens* what is visible | `IScopeVisibilityFilter` | **OR**ed with the other visibility contributions, then ANDed with the restrictive ones |
 | To mark a filter as the tenant one | `ITenantFilter` | the provider recognises it by type rather than by name |
 
-### `IQueryFilter<T>` — the restrictive default
+### `IQueryFilter<T>`: the restrictive default
 
 Everything that removes rows and has no exception: soft delete, an archived flag, a status the
 application never shows.
@@ -65,7 +65,7 @@ public sealed class NotArchivedFilter : IQueryFilter<Order>
 Composed with **AND**. Two restrictive filters both apply, and adding one can only ever return fewer
 rows.
 
-### `IPermissionBasedFilter<T>` — restrictive, with a way out
+### `IPermissionBasedFilter<T>`: restrictive, with a way out
 
 The same thing plus a `BypassPermission`: the rule holds for everyone except the holders of that
 permission. Reach for it whenever the sentence contains "unless".
@@ -87,19 +87,19 @@ public sealed class OwnTeamOnlyFilter(ICurrentUser user) : IPermissionBasedFilte
 Three things follow from the interface, and only the first is obvious:
 
 - a caller holding `orders.view_all` reads unfiltered;
-- the trusted modes — `Admin`, `Background`, `Raw` — skip it, which is what lets a job read
+- the trusted modes (`Admin`, `Background`, `Raw`) skip it, which is what lets a job read
   without a user;
 - ⚠️ its **presence** is what makes an anonymous read fail closed. `FailClosedWhenAnonymous` looks for a
   permission-based filter on the entity; an entity whose only guard is a plain `IQueryFilter<T>` that
-  reads `ICurrentUser` does **not** fail closed — it evaluates the expression against an empty user and
+  reads `ICurrentUser` does **not** fail closed: it evaluates the expression against an empty user and
   returns whatever that happens to match. If the rule depends on who is asking, say so with this
   interface rather than by reading the user inside a restrictive one.
 
-### `IScopeVisibilityFilter` — additive
+### `IScopeVisibilityFilter`: additive
 
 The one that exists because AND is the wrong operator. Ownership, materialised access scopes and
 computed scope rules each say a row **is** visible; a row reachable through any of them should come
-back, and ANDing them means a row must satisfy all three — which hides everything reachable through only
+back, and ANDing them means a row must satisfy all three, which hides everything reachable through only
 one.
 
 It is a marker, not a second `GetFilter`, so it goes **beside** one of the two above. That is what the
@@ -114,16 +114,16 @@ public sealed class ScopedDataFilter(IUserScopeResolver scopes, ICurrentUser use
 The provider ORs every visibility filter together first, then ANDs the result with the restrictive
 group.
 
-### `ITenantFilter` — a marker the provider looks for
+### `ITenantFilter`: a marker the provider looks for
 
 You rarely write one: an entity that is `ITenantEntity` gets a generated `TenantFilter` carrying it. It
-exists so the provider can recognise the tenant filter by **type** rather than by name — a class of your
+exists so the provider can recognise the tenant filter by **type** rather than by name: a class of your
 own called `TenantFilter` is not one, and this interface is what says so.
 
 ### Two dials that are not about which interface
 
-`Priority` (lower first) decides the order of the AND terms. It does not change the result — a
-conjunction is commutative — but it is what you read in the log, so keep the numbers meaningful. What
+`Priority` (lower first) decides the order of the AND terms. It does not change the result (a
+conjunction is commutative), but it is what you read in the log, so keep the numbers meaningful. What
 the generator emits, measured:
 
 | Filter | Priority | Interfaces |
@@ -149,7 +149,7 @@ coming back null.
 every module it discovers, from the persistence metadata, before your `IStartupStep` runs.
 
 The extension it calls is `Add{Prefix}QueryFilters()`, in `_Infra.Persistence.QueryFilters.g.cs`, where
-`{Prefix}` is the identifier derived from the common namespace of the entities — `AddGeneratedQueryFilters()`
+`{Prefix}` is the identifier derived from the common namespace of the entities; it is `AddGeneratedQueryFilters()`
 when they share no prefix. Call it yourself only outside a host, next to the rest of the wiring:
 
 ```csharp
@@ -159,7 +159,7 @@ builder.Services.AddMyAppQueryFilters();
 ```
 
 ⚠️ Repositories resolve perfectly well without that last line, and read **unfiltered**: no soft-delete,
-no tenant, no ownership. Nothing fails, the rows simply are not restricted — which is why the host
+no tenant, no ownership. Nothing fails, the rows simply are not restricted, which is why the host
 stopped leaving the call to the application.
 
 ## Auto-generated filters
@@ -253,13 +253,13 @@ The modes are **ordered**, and each one skips everything the one before it skips
 
 | Mode | Value | Skips |
 |------|---|---|
-| `Normal` | 0 | nothing — every filter applies |
+| `Normal` | 0 | nothing: every filter applies |
 | `Admin` | 1 | visibility and permission-based filters |
 | `Background` | 3 | the above, plus the tenant filter |
 | `Raw` | 4 | everything, soft-delete included |
 
-⚠️ **Soft-delete survives every mode except `Raw`.** `Admin` does not reveal deleted rows — a common
-assumption, and a wrong one. To read them, disable that one filter or go to `Raw`.
+⚠️ **Soft-delete survives every mode except `Raw`.** `Admin` does not reveal deleted rows; the common
+assumption that it does is wrong. To read them, disable that one filter or go to `Raw`.
 
 For novice teams, use `Raw` sparingly. It is the sharpest tool in the box.
 
@@ -308,7 +308,7 @@ That is how the same filter infrastructure can support:
 When a filter depends on the current user's permissions, implement `IPermissionBasedFilter<T>`.
 
 Beyond `GetFilter()` and `Priority`, `IQueryFilter<T>` carries three members that decide **where** a
-filter applies — all with defaults, so you override only what you mean to change:
+filter applies, all with defaults, so you override only what you mean to change:
 
 | Member | Default | What it decides |
 |---|---|---|
@@ -321,17 +321,17 @@ filter applies — all with defaults, so you override only what you mean to chan
 `Default` and `All`.
 
 A collection navigation is filtered according to **where the query reads it**, decided by the operator
-that reaches it — and whatever is nested inside that operator's lambda takes the same position:
+that reaches it, and whatever is nested inside that operator's lambda takes the same position:
 
 | Flag | Where |
 |---|---|
-| `Collections` | an `Include` / `ThenInclude` — the collection loaded with its entity |
+| `Collections` | an `Include` / `ThenInclude`: the collection loaded with its entity |
 | `Subqueries` | every operator that is not a projection: `Where`, `OrderBy`, `Any`, `All`, `Count`… |
-| `Projections` | `Select`, `SelectMany`, `GroupBy`, a join's result — aggregates included |
+| `Projections` | `Select`, `SelectMany`, `GroupBy`, a join's result, aggregates included |
 | `Joins` | the set a declared `[Join<T>]` reads, filtered before it is joined |
 
 The default holds all four, because a row read through a predicate, a projection or a join is the same
-row the filter withholds at the root. Take one out to leave that position alone —
+row the filter withholds at the root. Take one out to leave that position alone:
 `FilterScope.Default & ~FilterScope.Projections` filters an `Include` and a `Where` and not a `Select`.
 ⚠️ Required references are not in the default, and references of either kind are not visited yet:
 `OptionalReferences` and `RequiredReferences` change nothing today. The soft-delete, tenant and validity
@@ -351,7 +351,7 @@ public sealed class TeamOrdersFilter(ICurrentUser user) : IPermissionBasedFilter
 
     public Expression<Func<Order, bool>> GetFilter()
     {
-        // Claims maps a name to a LIST of values — a claim can legitimately appear more than once
+        // Claims maps a name to a LIST of values: a claim can legitimately appear more than once
         var teamId = user.Claims.TryGetValue("team_id", out var values) ? values[0] : "";
         return order => order.TeamId == teamId;
     }
@@ -364,12 +364,12 @@ public sealed class TeamOrdersFilter(ICurrentUser user) : IPermissionBasedFilter
 
 `DefaultQueryFilterProvider` checks, *before* it looks at any individual filter: is the caller
 unauthenticated, does this entity have at least one permission-based filter, and is the mode not an
-elevated one? If all three hold it returns `_ => false` — a filter that matches no row — rather than
+elevated one? If all three hold it returns `_ => false` (a filter that matches no row) rather than
 dropping the permission filter and answering with everything. The option is
 `QueryFilterOptions.FailClosedWhenAnonymous`, and it defaults to `true`.
 
 ```csharp
-// Fail open instead — an [AllowAnonymous] endpoint that intentionally
+// Fail open instead: an [AllowAnonymous] endpoint that intentionally
 // exposes a permission-filtered entity is the case it exists for
 services.AddSingleton(new QueryFilterOptions { FailClosedWhenAnonymous = false });
 ```
@@ -382,7 +382,7 @@ The two remaining rules are per filter, and they run after that check:
 - the user holds `BypassPermission` → that filter is skipped for them;
 - there is no user at all *and* fail-closed is off → permission filters are skipped.
 
-Register custom filters in DI as `IQueryFilter` — the provider takes them as an
+Register custom filters in DI as `IQueryFilter`: the provider takes them as an
 `IEnumerable<IQueryFilter>`, so the non-generic interface is the registration:
 
 ```csharp
@@ -412,7 +412,7 @@ public partial class Order : IEntity, ITenantEntity
 }
 ```
 
-Two filters are generated from that declaration — `Order.SoftDeleteFilter` (priority 100) and
+Two filters are generated from that declaration, `Order.SoftDeleteFilter` (priority 100) and
 `Order.TenantFilter` (200). The third is yours:
 
 ```csharp
@@ -435,19 +435,19 @@ services.AddScoped<IQueryFilter, TeamOrdersFilter>();
 
 ### What the provider does, in order
 
-A read through the generated repository — `orders.FindAsync(spec, ct)` — goes through these steps
+A read through the generated repository (`orders.FindAsync(spec, ct)`) goes through these steps
 before your specification is even applied:
 
 1. **Build the `FilterContext`** from the tenant context, the current user, the clock and the toggle:
    `Mode`, `DisabledFilters`, `TenantId`, `UserId`, `Now`.
-2. **Raw?** `Mode == FilterMode.Raw` returns `null` immediately — no filter, not even soft-delete.
+2. **Raw?** `Mode == FilterMode.Raw` returns `null` immediately: no filter, not even soft-delete.
 3. **Fail closed?** Anonymous, a permission-based filter exists for `Order`, mode below `Admin` →
    `_ => false`. The query runs and returns nothing.
 4. **Select the filters for `Order`**, ordered by `Priority`, dropping each one that is disabled by the
    toggle, named in `DisabledFilters` (by entity type *or* by filter type), skipped by the mode, or
    bypassed by the user's permission.
-5. **Compose them.** Restrictive filters are ANDed. Scope-visibility filters — the ones implementing
-   `IScopeVisibilityFilter`: ownership, scoped data, computed scope rules — are **ORed with each
+5. **Compose them.** Restrictive filters are ANDed. Scope-visibility filters (the ones implementing
+   `IScopeVisibilityFilter`: ownership, scoped data, computed scope rules) are **ORed with each
    other** first, because they are additive: a row is visible if it matches *any* of them. The two
    groups are then ANDed together.
 6. **Apply**: `query.Where(combined)`.
@@ -471,12 +471,12 @@ you will see in the log.
 
 | What you write | What happens to `TeamOrdersFilter` | And to the others |
 |---|---|---|
-| nothing — an ordinary read | applies | apply |
+| nothing (an ordinary read) | applies | apply |
 | the user has `orders.view_all` | skipped | apply |
 | `toggle.Disable<TeamOrdersFilter>()` | skipped | apply |
-| `toggle.UseMode(FilterMode.Admin)` | skipped — it is permission-based | soft-delete and tenant still apply |
+| `toggle.UseMode(FilterMode.Admin)` | skipped: it is permission-based | soft-delete and tenant still apply |
 | `toggle.UseMode(FilterMode.Raw)` | skipped | **none apply**, deleted rows included |
-| no authenticated user | **the query returns nothing** | irrelevant — nothing is composed |
+| no authenticated user | **the query returns nothing** | irrelevant: nothing is composed |
 
 ### Testing it
 
@@ -545,7 +545,7 @@ A common novice question is:
 
 "If I include child collections, do filters still apply there?"
 
-Yes, for collections — wherever the query reads them, as far as the filter's `Scope` says (see the
+Yes, for collections, wherever the query reads them, as far as the filter's `Scope` says (see the
 table above; the default says everywhere). A collection navigation is filtered in an
 `Include`/`ThenInclude` (as EF's filtered include), in a predicate (`o.Items.Any(…)`,
 `o.Items.Count > 0`), and inside a projection or an aggregate, which the executor filters after composing
@@ -575,7 +575,7 @@ This is handled by the generated filter map plus `FilterMapComposer` in the EF C
 ### Forgetting to register generated query filters
 
 Only possible outside a Pragmatic host, since the host makes the call itself. When it does happen the
-repository resolves and reads **unfiltered** — deleted rows come back, tenants see each other. Nothing
+repository resolves and reads **unfiltered**: deleted rows come back, tenants see each other. Nothing
 throws, which is what makes it worth checking for.
 
 ### Disabling filters too broadly

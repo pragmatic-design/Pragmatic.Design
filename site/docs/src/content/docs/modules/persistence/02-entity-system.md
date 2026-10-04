@@ -49,7 +49,7 @@ What this means:
 **Declare `IEntity` yourself.** It is the one interface the generator never adds: it writes the
 *members* that satisfy it, and the repository it generates implements `IRepository<Order>`,
 whose constraint is `where TEntity : class, IEntity`. Leave the interface out and that constraint
-fails — a CS0311 in generated code you did not write. The trait interfaces are the opposite:
+fails with a CS0311 in generated code you did not write. The trait interfaces are the opposite:
 `IAuditable`, `ISoftDelete` and `IAuditedEntity` are added to the base list for you, unless you already
 declared them.
 
@@ -111,7 +111,7 @@ public partial class Order
 The generated part, verbatim in shape:
 
 ```csharp
-// Sales.Order.Traits.g.cs — note: no base list, that half is yours
+// Sales.Order.Traits.g.cs (note: no base list, that half is yours)
 public partial class Order
 {
     // IEntity
@@ -128,10 +128,10 @@ depends on the attributes on the entity and on whether EF Core generation is act
 
 There is no ID type to choose: `PersistenceId` is a `Guid`, a version 7 value assigned at
 construction. `[Entity]` takes no type argument, because every other answer is worse in the same
-ways — a natural key spreads into every foreign key, a string key scatters the primary index, and on
+ways: a natural key spreads into every foreign key, a string key scatters the primary index, and on
 a tenant entity a domain-assigned key collides between tenants.
 
-An identifier that comes from elsewhere — a code from a system being replaced, a country's `"IT"` —
+An identifier that comes from elsewhere (a code from a system being replaced, a country's `"IT"`)
 is an ordinary property with its own uniqueness (`[LogicKey]`, or `[Unique(nameof(LegacyCode))]`),
 where it can be queried and corrected without touching a foreign key.
 
@@ -229,7 +229,7 @@ public partial class Product
 
 What it gives you:
 
-1. A unique index in the generated EF Core configuration — **partial** when the entity is
+1. A unique index in the generated EF Core configuration, **partial** when the entity is
    `[SoftDelete]`, so a deleted row does not stop you re-using the same SKU.
 2. A generated lookup on the concrete repository class: `GetBySkuAsync(sku, ct)`.
 
@@ -245,13 +245,13 @@ Two `[LogicKey]` properties make **one composite key**, and the lookup names bot
 
 Position is not cosmetic. It decides two things:
 
-- the columns of the unique index, so which one is the **leading column** — the only one the index can
+- the columns of the unique index, so which one is the **leading column**, the only one the index can
   be searched by on its own;
 - the parameters of the generated lookup, so `GetByCodeAndSeasonAsync(code, season)` and not the other
   way round.
 
 **By default the order is the order you declare the properties in.** Say it explicitly when the
-positions carry meaning — which, with two strings, they always do:
+positions carry meaning, which, with two strings, they always do:
 
 ```csharp
 [LogicKey(Order = 1)] public string CountryCode { get; private set; } = "";
@@ -265,7 +265,7 @@ before `Order` existed generates exactly what it generated before, and adding `O
 a migration only if you actually change the sequence.
 
 ⚠️ `Order` is unset on *both* parts or on neither. Unset means `0`, so
-`[LogicKey(Order = 1)]` on one property of two puts the **other** one first — the opposite of what it
+`[LogicKey(Order = 1)]` on one property of two puts the **other** one first, the opposite of what it
 looks like.
 
 ⚠️ Without `Order`, moving one of the two properties up or down in the class is a schema change *and*
@@ -273,12 +273,12 @@ a signature change. The build stays green and every caller passing the arguments
 passes them swapped. This is the reason to write the positions down.
 
 ⚠️ Adding a second `[LogicKey]` to an entity that already has one changes the unique index from one
-column to two — a migration that drops the old index.
+column to two: a migration that drops the old index.
 
 ### A key that includes a foreign key
 
 A relation's key is a generated member, so no attribute can sit on it. When a part of the domain key
-is a foreign key — a membership identified by (workspace, external id) — declare the whole key on the
+is a foreign key, as in a membership identified by (workspace, external id), declare the whole key on the
 **class**, naming the parts in order:
 
 ```csharp
@@ -327,13 +327,13 @@ public partial class Order
 }
 ```
 
-The placeholders are these seven, and no others — anything else in the string is a literal:
+The placeholders are these seven, and no others; anything else in the string is a literal:
 
 | Token | Value | Cost |
 |---|---|---|
 | `{YYYY}`, `{YY}` | year, 4 or 2 digits | from `LifecycleContext.Now`, not `DateTime.Now` |
 | `{MM}`, `{DD}` | month, day, 2 digits | same |
-| `{RANDOM:N}` | `N` alphanumeric characters | `Random.Shared` — **not** cryptographic, do not use it as a secret |
+| `{RANDOM:N}` | `N` alphanumeric characters | `Random.Shared`: **not** cryptographic, do not use it as a secret |
 | `{GUID:N}` | the first `N` characters of a dashless GUID (clamped at 32) | none |
 | `{SEQ:N}` | a database sequence value, zero-padded to `N` | a round trip: the generator becomes async and takes the boundary's `DbContext` |
 
@@ -344,21 +344,21 @@ Do not use it just to make IDs look nicer. A business key should exist because t
 ### Two limits, before you reach for it
 
 **It runs only under a create mutation.** The generator is invoked from the mutation invoker, and
-only when the mutation is `MutationMode.Create`. An entity built any other way — a domain action
-calling `Entity.Create()`, a seeder, a bulk insert — gets the property's default and no warning.
+only when the mutation is `MutationMode.Create`. An entity built any other way (a domain action
+calling `Entity.Create()`, a seeder, a bulk insert) gets the property's default and no warning.
 The attribute is written on the entity, next to `[Auditable]` and `[SoftDelete]`, which do hold on
 every path; this one does not, and the difference is not visible at the declaration.
 
 **A sequence is unique, not gapless.** A create that draws a number and then fails has spent it, and
-nothing gives it back — that is what a database sequence is, on every provider. For a reference
-people quote in a meeting it is the right trade. For a number that must be consecutive by law —
-invoices in most of Europe — it is not, and Pragmatic has no mechanism for that: it needs a counter
+nothing gives it back: that is what a database sequence is, on every provider. For a reference
+people quote in a meeting it is the right trade. For a number that must be consecutive by law
+(invoices in most of Europe) it is not, and Pragmatic has no mechanism for that: it needs a counter
 committed in the same transaction as the row, with the contention that implies. The example above
 is deliberately not an invoice.
 
 ## `[PartOf<TParent>]`
 
-`[PartOf<TParent>]` declares that an entity has no life of its own — it is part of its parent's
+`[PartOf<TParent>]` declares that an entity has no life of its own: it is part of its parent's
 aggregate, and it is written through the parent.
 
 ```csharp
@@ -377,12 +377,12 @@ so at build time rather than writing a row past the permissions, validation and 
 operations would have applied.
 
 The relation cannot answer this on its own. `Invoice` declares `[Relation.OneToMany<LineItem>]` and
-`Property` declares `[Relation.OneToMany<RoomType>]` — the same metadata — yet a line item exists only
+`Property` declares `[Relation.OneToMany<RoomType>]` (the same metadata), yet a line item exists only
 inside its invoice, while a room type has its own mutations, endpoints and permissions. Which of the
 two a relation is, is a fact about the domain, and this is where you state it.
 
 It follows that a `[PartOf<T>]` entity cannot also carry a `[Resource]` or a `Mutation<T>` of its own:
-that is a contradiction between two declarations, and it is reported as one — **PRAG2611** for the
+that is a contradiction between two declarations, and it is reported as one: **PRAG2611** for the
 resource, **PRAG0438** for the mutation.
 
 ## Relations belong in attributes
@@ -434,7 +434,7 @@ Two factories come out of that, each under its own condition:
 | Generated | When | Shape |
 |---|---|---|
 | `Create(...)` | the type declares a **`private static Validate`** method and you have not written `Create` yourself | mirrors `Validate`'s parameters and return type, and delegates straight to it |
-| `CreateUnsafe(...)` | the type has a constructor and you have not written `CreateUnsafe` yourself | calls that constructor, skipping validation — deserialization and trusted paths only |
+| `CreateUnsafe(...)` | the type has a constructor and you have not written `CreateUnsafe` yourself | calls that constructor, skipping validation; deserialization and trusted paths only |
 
 The type must be `partial` (**PRAG2700**) and, for `Create`, must have that `Validate` method
 (**PRAG2701**). A `record` is the usual shape but nothing requires it.

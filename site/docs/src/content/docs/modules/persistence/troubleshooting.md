@@ -41,11 +41,11 @@ You inject `IRepository<Order>` but get `InvalidOperationException` at runtime: 
 
 ### Checklist
 
-1. **Are you inside a Pragmatic host?** If so this should not happen — the generated host calls
+1. **Are you inside a Pragmatic host?** If so this should not happen: the generated host calls
    `RegisterAllRepositories()` itself. Check that `PragmaticApp.RunAsync()` is what starts the app.
 
 2. **Outside a host, did you call the registration?** It is
-   `services.AddPragmaticPersistenceRepositories<BillingDbContext>()` — one generic method per
+   `services.AddPragmaticPersistenceRepositories<BillingDbContext>()`, one generic method per
    DbContext, not a per-boundary `Add{Boundary}Repositories()`. That name does not exist.
 
 3. **Did you register the DbContext first?** `AddBillingDbContext(options => …)`, or
@@ -115,7 +115,7 @@ You added `[SoftDelete]` to an entity, but soft-deleted rows still appear in que
 reads the generated schema and applies a declarative diff at startup: no migration files, no
 `Add-Migration`. See the [migrations guide](/modules/migrations/overview/).
 
-**Wrong migration context.** The migration context is **per database, not per boundary** — boundaries
+**Wrong migration context.** The migration context is **per database, not per boundary**: boundaries
 sharing a connection share the schema, so they share the context that describes it. It is named after
 the database (`SalesDatabaseMigrationDbContext`), or plain `MigrationDbContext` when no per-database
 topology is declared.
@@ -188,14 +188,14 @@ error.
 
 ### Checklist
 
-1. **Is `[ConcurrencyAware]` on the entity?** It declares a `RowVersion` **shadow property** — nothing
-   is added to your entity — configured as a concurrency token in the generated DbContext, and
+1. **Is `[ConcurrencyAware]` on the entity?** It declares a `RowVersion` **shadow property** (nothing
+   is added to your entity), configured as a concurrency token in the generated DbContext, and
    provider-specific: a native `rowversion` on SQL Server, the `xmin` system column on PostgreSQL.
 
 2. **Are you loading stale data?** If you load an entity, hold it for a long time (e.g., across an HTTP request-response cycle), and then save, another request may have modified it. Reload the entity before saving, or implement retry logic.
 
 3. **Where it surfaces depends on how you save.** Through the generated repository it is a `Result`,
-   not an exception — on a `[ConcurrencyAware]` entity `SaveChangesAsync` returns
+   not an exception: on a `[ConcurrencyAware]` entity `SaveChangesAsync` returns
    `Result<int, ConcurrencyError>` (`Code = "CONCURRENCY_CONFLICT"`, status 409):
 
    ```csharp
@@ -222,16 +222,16 @@ Data from other tenants appears in query results.
 1. **Does the entity implement `ITenantEntity`?** The SG generates a tenant filter only for entities with a `TenantId` property that implements `ITenantEntity`.
 
 2. **Is `ITenantContext` registered and populated?** That is the interface the generated filter takes
-   in its constructor — `Pragmatic.MultiTenancy.ITenantContext`, not `IMultiTenancyContext`. Unregistered,
+   in its constructor: `Pragmatic.MultiTenancy.ITenantContext`, not `IMultiTenancyContext`. Unregistered,
    the filter cannot even be constructed; returning `null`, it has nothing to compare against.
 
-3. **Is `FilterMode` at `Background` or above?** `Background` and `Raw` skip tenant filtering —
+3. **Is `FilterMode` at `Background` or above?** `Background` and `Raw` skip tenant filtering;
    `Normal`, `Admin` and `Elevated` do not. A background job in `Background` mode sees every tenant's
    data, which is the point of the mode and the risk of it.
 
 4. **Are you querying the DbContext directly?** The Pragmatic tenant filter runs through `IQueryFilterProvider`. Direct `dbContext.Set<T>()` queries bypass it. Ensure EF Core global query filters are configured as a safety net.
 
-5. **Check the generated TenantFilter file.** Look for `{Namespace}.{Entity}.TenantFilter.g.cs` in the SG output — the filter is a class nested in the entity, `{Entity}.TenantFilter`.
+5. **Check the generated TenantFilter file.** Look for `{Namespace}.{Entity}.TenantFilter.g.cs` in the SG output; the filter is a class nested in the entity, `{Entity}.TenantFilter`.
 
 ---
 
@@ -255,7 +255,7 @@ Data from other tenants appears in query results.
 | PRAG0651 | Warning | Property type may need value converter | Add EF Core value converter or use provider-native type |
 | PRAG0701 | Error | `FilterOperator.Between`, which no generator renders | Two properties over one column: `GreaterOrEqual` + `LessOrEqual`, same `MapTo` |
 | PRAG0702 | Error | `[CascadeOn<TSource>]` without the `{Source}Id` foreign key | Add the FK, or declare the relation |
-| PRAG0703 | Warning | An attribute argument nothing consumes | Remove it — the message names what does work |
+| PRAG0703 | Warning | An attribute argument nothing consumes | Remove it; the message names what does work |
 | PRAG0704 | Error | The query's result type has no `Projection` | `[GenerateProjection]` beside `[MapFrom<TEntity>]` on the DTO |
 | PRAG0705 | Warning | A required navigation points at a `[SoftDelete]` entity | `Required = false`, or drop `[SoftDelete]`, or `IgnoreQueryFilters()` |
 | PRAG0706 | Warning | `[ReadAccess]` crosses a database | Read through that boundary's operations |

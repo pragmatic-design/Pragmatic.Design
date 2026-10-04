@@ -78,7 +78,7 @@ Why this setup is a good default:
 
 Auditing and some filters depend on `ICurrentUser`, so tests should provide a predictable implementation.
 
-This is the one the persistence suite itself uses — eight members, and the two that carry the weight
+This is the one the persistence suite itself uses: eight members, and the two that carry the weight
 are delegated to null objects rather than reimplemented:
 
 ```csharp
@@ -109,7 +109,7 @@ internal sealed class FakeCurrentUser : ICurrentUser
 }
 ```
 
-Note what is **not** on the interface: there is no `Roles`, and no `HasPermission` — permissions live
+Note what is **not** on the interface: there is no `Roles`, and no `HasPermission`; permissions live
 behind `Authorization`, an `IUserAuthorization`, and a claim maps to a *list* of values rather than one.
 `Pragmatic.Testing` can also generate the double for you with `[assembly: GenerateMock<ICurrentUser>]`,
 which is the better route when the test needs to assert calls rather than just supply an identity.
@@ -224,9 +224,9 @@ If you instantiate the generated repository manually, you are responsible for su
 generated DI normally wires. The two that are **not** optional are the first two:
 
 - the boundary's `DbContext`
-- the boundary's `IUnitOfWork` — the same instance an invoker would hold, since every save goes through it
+- the boundary's `IUnitOfWork`, the same instance an invoker would hold, since every save goes through it
 - optional `IQueryFilterProvider`, `FilterMapComposer`, `ITenantContext`, `IQueryFilterToggle`
-- optional `IEnumerable<RollUpRule>` — how the repository knows whether a bulk delete has to keep a
+- optional `IEnumerable<RollUpRule>`: how the repository knows whether a bulk delete has to keep a
   parent aggregate current
 - optional `TimeProvider` and `ICurrentUser`, present only on `[Auditable]` / `[SoftDelete]` entities
 
@@ -275,7 +275,7 @@ InMemory is fast, but it does not behave like a relational provider. It can hide
 ### Forgetting query-filter registration
 
 If you call `AddPragmaticPersistenceRepositories<SalesDbContext>()` but not
-`AddMyAppQueryFilters()`, the reads still work and come back **unfiltered** — which is not how
+`AddMyAppQueryFilters()`, the reads still work and come back **unfiltered**, which is not how
 production behaves, since there the generated host makes that call for you.
 
 ### Injecting `IUnitOfWork` without the boundary key

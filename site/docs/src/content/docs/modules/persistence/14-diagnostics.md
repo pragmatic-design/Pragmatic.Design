@@ -43,19 +43,19 @@ Before looking at the individual code:
 | `PRAG0614` | Error | The inverse navigation has the wrong type | Point it at the navigation that is a `{this entity}` |
 | `PRAG0615` | Error | Two relations would generate the same navigation name | Rename one with `.WithNavigation("...")` |
 | `PRAG0620` | Warning | A state machine has no `[InitialState]` | Mark one enum value with `[InitialState]` |
-| `PRAG0621` | Warning | A state has no incoming transition and is not initial — it is unreachable | Add a `[TransitionFrom(...)]`, or mark it `[InitialState]` |
+| `PRAG0621` | Warning | A state has no incoming transition and is not initial: it is unreachable | Add a `[TransitionFrom(...)]`, or mark it `[InitialState]` |
 | `PRAG0622` | Error | `[TransitionFrom(...)]` names a value that is not in the enum | Use a real enum member |
-| `PRAG0623` | Error | The state machine governs a property the entity does not have | `[StateMachine<T>(Property = nameof(YourProperty))]` — it defaults to `Status` |
+| `PRAG0623` | Error | The state machine governs a property the entity does not have | `[StateMachine<T>(Property = nameof(YourProperty))]`; it defaults to `Status` |
 | `PRAG0624` | Error | A trait's properties are declared by hand, but only some of them | Declare them all, or delete the ones you wrote |
 | `PRAG0651` | Warning | A property type may need an EF Core value converter | Add a converter or map to a provider-friendly type |
-| `PRAG0701` | Error | `[Filter(Operator = FilterOperator.Between)]` — no generator renders it | Two properties over one column: `GreaterOrEqual` + `LessOrEqual`, same `MapTo` |
+| `PRAG0701` | Error | `[Filter(Operator = FilterOperator.Between)]`: no generator renders it | Two properties over one column: `GreaterOrEqual` + `LessOrEqual`, same `MapTo` |
 | `PRAG0702` | Error | `[CascadeOn<TSource>]` on an entity with no `{Source}Id` foreign key | Add the FK, or declare `[Relation.ManyToOne<TSource>]` so it is generated |
-| `PRAG0703` | Warning | An attribute argument that is parsed and consumed by nothing — the `[Join]` key-join arguments, `Type`, `Alias` | Remove it, or use the shape the message names |
+| `PRAG0703` | Warning | An attribute argument that is parsed and consumed by nothing: the `[Join]` key-join arguments, `Type`, `Alias` | Remove it, or use the shape the message names |
 | `PRAG0704` | Error | A `[Query<T, R>]` whose `R` has no `[GenerateProjection]` | Add it beside `[MapFrom<T>]` on the result type |
 | `PRAG0707` | Error | A query input that generates **no filter**: neither `[Filter]`, nor `required`, nor nullable. The value the caller sends is read and dropped, and a `Single = true` query answers 200 with whichever row comes first | Write `required T` for an input always supplied, or `T?` for an optional one |
-| `PRAG0708` | Error | `[GenerateHierarchy]` on an entity with no self-referencing parent key. The parent is found by name — `ParentId` or `{Type}ParentId` — and nothing else matches | Rename the property, or add one. A parent of a different type is not this attribute |
-| `PRAG0709` | Error | A `[BindSpecification]` input on a query that declares no `Specification<T>` property — the attribute claims a reader that does not exist | Write the specification the input builds, or drop the attribute and let the property be a filter |
-| `PRAG0705` | Warning | A **required** navigation points at a `[SoftDelete]` entity | See below — the subtlest trap in the model |
+| `PRAG0708` | Error | `[GenerateHierarchy]` on an entity with no self-referencing parent key. The parent is found by name (`ParentId` or `{Type}ParentId`) and nothing else matches | Rename the property, or add one. A parent of a different type is not this attribute |
+| `PRAG0709` | Error | A `[BindSpecification]` input on a query that declares no `Specification<T>` property: the attribute claims a reader that does not exist | Write the specification the input builds, or drop the attribute and let the property be a filter |
+| `PRAG0705` | Warning | A **required** navigation points at a `[SoftDelete]` entity | See below: the subtlest trap in the model |
 | `PRAG0706` | Warning | `[ReadAccess]` names an entity owned by a boundary on another database | Read it through that boundary's operations |
 | `PRAG0710` | Warning | A DTO looks like it references a navigation, but the name does not match the entity graph | Align the DTO property name or load the data explicitly |
 | `PRAG0711` | Warning | `[LoadWith]` asks for include depth greater than 3 | Reduce depth or move to projection |
@@ -75,8 +75,8 @@ the "make class partial" fix in the IDE.
 | `PRAG0680` | Warning | An entity is built with `new` instead of the generated factory | `Entity.Create(...)` |
 | `PRAG0681` | Warning | An entity is produced via `default` | `Entity.Create(...)` |
 | `PRAG0682` | Warning | An entity is produced via `Activator.CreateInstance` | `Entity.Create(...)` |
-| `PRAG0683` | Warning | An entity declares a behavior method — entities are anemic | Move the state change into a mutation or domain action |
-| `PRAG0684` | Warning | Non-constant SQL in `FromSqlRaw`/`ExecuteSqlRaw` — a SQL injection hole | Use interpolated `FromSql`/`ExecuteSql`, or pass parameters |
+| `PRAG0683` | Warning | An entity declares a behavior method; entities are anemic | Move the state change into a mutation or domain action |
+| `PRAG0684` | Warning | Non-constant SQL in `FromSqlRaw`/`ExecuteSqlRaw`: a SQL injection hole | Use interpolated `FromSql`/`ExecuteSql`, or pass parameters |
 | `PRAG0685` | Info | An aggregate owns many child collections | Split it, or reference other aggregates by id |
 | `PRAG0686` | Warning | A type injects another boundary's `DbContext` | Call that boundary's actions/queries, or react to its events |
 | `PRAG0687` | Warning | `ExecuteDelete` on a `[SoftDelete]` entity | It goes straight to SQL and is never intercepted, so the row is gone. Use `Remove()`, or `SoftDeleteScope.Suspend()` if you mean it |
@@ -120,7 +120,7 @@ Pragmatic wants one unambiguous relationship model. If you write a manual entity
 - a leftover property from an older manual mapping
 - incomplete and missing its inverse side
 
-Mixing the two styles is a modelling choice, not an error, and no diagnostic forbids it — an entity may
+Mixing the two styles is a modelling choice, not an error, and no diagnostic forbids it: an entity may
 legitimately declare a plain navigation and let EF Core's conventions map it. What **is** reported is a
 relation that cannot work: `PRAG0612` when several relations to the same entity would collide on one
 derived name, `PRAG0613` / `PRAG0614` when an `Inverse` does not resolve or resolves to the wrong type,
@@ -168,7 +168,7 @@ Why this trap is hard to spot:
 - the bug appears only after some real data is soft-deleted
 - the missing children look like "query randomness"
 
-Mitigations — the diagnostic names all three:
+Mitigations (the diagnostic names all three):
 
 1. `Required = false` on the `[Relation.*]` attribute: EF emits a `LEFT JOIN` and the dependent
    survives with a null reference.

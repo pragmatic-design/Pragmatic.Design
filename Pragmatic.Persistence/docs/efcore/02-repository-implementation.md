@@ -47,7 +47,7 @@ public partial class Order
 ```
 
 Two things follow from that constructor. **Both** the context and the unit of work are keyed on the
-boundary, and on the same key — so the repository saves through the very instance an invoker holds,
+boundary, and on the same key, so the repository saves through the very instance an invoker holds,
 rather than a second one over the same context. And every collaborator after them is optional: a
 container missing the filter services builds the repository happily and reads unfiltered.
 
@@ -56,7 +56,7 @@ container missing the filter services builds the repository happily and reads un
 The generated repository registration method shape is:
 
 ```csharp
-// _Infra.Persistence.RepositoryRegistration.g.cs — one generic method for the whole assembly
+// _Infra.Persistence.RepositoryRegistration.g.cs: one generic method for the whole assembly
 public static IServiceCollection AddPragmaticPersistenceRepositories<TDbContext>(
     this IServiceCollection services) where TDbContext : DbContext
 {

@@ -128,7 +128,7 @@ public sealed class AppHostModule;
 ```
 
 **Why:** the SG generates entity configurations and repositories in the module assembly, but the
-topology is a host decision — which modules share a connection is not something a module can know. The
+topology is a host decision: which modules share a connection is not something a module can know. The
 `DbContext` types are generated from that pairing, one per boundary, and registered by the generated
 `AddAllPragmaticDbContexts()`. You never write a `DbContext` class, and there is nothing to mark
 `partial`.
@@ -155,11 +155,11 @@ var order = Order.Create("ORD-001", 150m);
 orders.Add(order);
 ```
 
-**Why — and what is *not* the reason:** the id is fine either way on a `Guid` key. The generated trait
+**Why, and what is *not* the reason:** the id is fine either way on a `Guid` key. The generated trait
 initialises `PersistenceId = Guid.CreateVersion7()` in the property initialiser, so `new Order()` gets a
 valid v7 id too. What `new` skips is everything else the factory states: the **required** properties
 become the caller's job to remember, and nothing marks the entity as new. On an `int` or `string` key
-neither form assigns anything — the database does, or you do.
+neither form assigns anything: the database does, or you do.
 
 ---
 
@@ -167,12 +167,12 @@ neither form assigns anything — the database does, or you do.
 
 **Wrong:**
 
-This one is now **only possible outside a Pragmatic host** — the generated host calls every module's
+This one is now **only possible outside a Pragmatic host**: the generated host calls every module's
 filter registration itself. Wiring persistence by hand, in a test project or a console app, it is
 still on you:
 
 ```csharp
-// Wrong — the filters are generated and never registered
+// Wrong: the filters are generated and never registered
 services.AddBillingDbContext(o => o.UseNpgsql(connection));
 services.AddPragmaticPersistenceRepositories<BillingDbContext>();
 
@@ -183,13 +183,13 @@ services.AddMyAppQueryFilters();
 ```
 
 **Runtime result of the wrong one:** repositories resolve, queries execute, and every read is
-**unfiltered** — soft-deleted rows come back, tenants see each other. Nothing throws, which is what
+**unfiltered**: soft-deleted rows come back, tenants see each other. Nothing throws, which is what
 makes it worth checking for.
 
 **Why:** the filter classes (`Order.SoftDeleteFilter` and friends) are generated but not registered by
 themselves. `IQueryFilterProvider.GetCombinedFilter<T>()` returns nothing when nothing is registered,
 and a `Where` that was never added cannot fail. The method is `Add{Prefix}QueryFilters()`, where
-`{Prefix}` comes from the entities' common namespace — `AddGeneratedQueryFilters()` when they share
+`{Prefix}` comes from the entities' common namespace; it is `AddGeneratedQueryFilters()` when they share
 none.
 
 There are two more that stay yours to call even **inside** a host, because the host does not call
@@ -233,7 +233,7 @@ public partial class Invoice { /* ... */ }
 ```
 
 **Compile result:** it does not compile. There is no non-generic `BelongsToAttribute` and no
-non-generic `Relation.ManyToOne` — the generic form is the only one there is.
+non-generic `Relation.ManyToOne`: the generic form is the only one there is.
 
 **Right:**
 
@@ -314,8 +314,8 @@ public partial class CreateOrderMutation : Mutation<Order>
 ```
 
 **Why:** in `MutationMode.Create` mark `required` whatever the entity cannot be without. The keyword
-travels to the generated body DTO — `public required string OrderNumber { get; init; }` on a
-`partial record` — so a request that omits the field fails deserialization, and the endpoint answers
+travels to the generated body DTO (`public required string OrderNumber { get; init; }` on a
+`partial record`), so a request that omits the field fails deserialization, and the endpoint answers
 **400 naming `body`** instead of writing an entity with an empty string in it. In `MutationMode.Update`
 the properties are nullable, because there `null` means "leave it alone".
 
@@ -356,8 +356,8 @@ public partial class ConfirmOrderMutation : Mutation<Order>
 }
 ```
 
-The move is the state machine's to refuse: the generated invoker performs it and answers 409 — the
-`ConflictError` naming both states — when the order is not pending, and the endpoint documents that 409.
+The move is the state machine's to refuse: the generated invoker performs it and answers 409 (the
+`ConflictError` naming both states) when the order is not pending, and the endpoint documents that 409.
 A refusal of your own belongs in the body as a returned error, never a throw
 ([State Machine](/modules/persistence/19-state-machine/#usage-in-an-operation-transitionsto) for when the invoker moves the
 entity relative to it).
@@ -413,7 +413,7 @@ using (filterToggle.UseMode(FilterMode.Admin))
 }
 ```
 
-**Why:** the modes are ordered and cumulative — `Normal`, `Admin`, `Elevated`, `Background`, `Raw` —
+**Why:** the modes are ordered and cumulative (`Normal`, `Admin`, `Elevated`, `Background`, `Raw`),
 and each skips everything the one before it skips. Use the narrowest scope that satisfies your requirement. `FilterMode.Raw` is for migrations, data repair scripts, and support tooling -- not for regular business logic. If a screen always needs raw data, that is often a modeling smell.
 
 ---
@@ -426,7 +426,7 @@ and each skips everything the one before it skips. Use the narrowest scope that 
 | Missing `[BelongsTo]` | No repository/DbContext generated, DI resolution failure |
 | Manual navigation property | Silent: two conflicting models, resolved by EF Core inference |
 | No `[PragmaticDatabase]`, or no `[Include<TModule, TDatabase>]` | DbContext not registered, `InvalidOperationException` at startup |
-| `new Entity()` instead of `Create()` | `PRAG0680` warning with a code fix — the id is fine, the required properties are not |
+| `new Entity()` instead of `Create()` | `PRAG0680` warning with a code fix: the id is fine, the required properties are not |
 | Missing `AddMyAppQueryFilters()` | Deleted/tenant rows visible, no filter enforcement |
 | Cross-boundary `Include()` | Compile error or `InvalidOperationException` |
 | `typeof()` in attribute | Compile error or lost type safety |

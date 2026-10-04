@@ -1,6 +1,6 @@
 # The Query Pipeline
 
-> From HTTP request to SQL and back — every step, every decision point, every extension hook.
+> From HTTP request to SQL and back: every step, every decision point, every extension hook.
 
 This document explains how a query flows through the Pragmatic stack. Understanding the pipeline helps you make informed decisions about performance, caching, filtering, and projection.
 
@@ -16,7 +16,7 @@ HTTP GET /api/reservations/search?Status=Confirmed&Page=2
 │  1. Endpoint Handler (source-generated)         │
 │     • 401 if unauthenticated, 403 by policy      │
 │     • Generated binding, per parameter           │
-│       — a malformed value is a 400 naming it     │
+│       (a malformed value is a 400 naming it)     │
 │     • Claim binding from HttpContext.User        │
 │     • IResourceAuthorizer<TQuery> → 403          │
 │     • ISyncValidator on the query                │
@@ -27,7 +27,7 @@ HTTP GET /api/reservations/search?Status=Confirmed&Page=2
 │  1b. The query's Invoker (source-generated)     │
 │     • Validation, then the permission           │
 │     • [FromCurrentUser] properties filled from  │
-│       the caller — 401 / 404 when it cannot     │
+│       the caller (401 / 404 when it cannot)     │
 └───────────────────┬─────────────────────────────┘
                     │
                     ▼
@@ -123,14 +123,14 @@ public partial class SearchReservationsQuery
     public static IEndpointConventionBuilder MapEndpoint(IEndpointRouteBuilder endpoints)
         => endpoints.MapGet("/api/reservations/search", (RequestDelegate)(async httpContext =>
         {
-            // 1. authentication — before anything is read
+            // 1. authentication, before anything is read
             var user = httpContext.RequestServices.GetService<ICurrentUser>();
             if (user is null || !user.IsAuthenticated) { httpContext.Response.StatusCode = 401; return; }
 
             // 2. the endpoint's policy
             if (!__policy.Evaluate(user)) { httpContext.Response.StatusCode = 403; return; }
 
-            // 3. services, from the request scope — the DbContext keyed on the boundary
+            // 3. services, from the request scope: the DbContext keyed on the boundary
             var executor  = httpContext.RequestServices.GetRequiredService<IQueryExecutor>();
             var dbContext = httpContext.RequestServices
                 .GetRequiredKeyedService<DbContext>(typeof(BookingBoundary));
@@ -164,16 +164,16 @@ public partial class SearchReservationsQuery
 
 - **It is a `RequestDelegate`, not a minimal-API handler with parameters.** ASP.NET's own binding never
   runs: the generator writes the binding, and that is what makes the endpoint AOT-safe. The practical
-  consequence is that endpoint **filters see no bound arguments** — there are none to see.
+  consequence is that endpoint **filters see no bound arguments**: there are none to see.
 - **A malformed value is a 400 that names the parameter**, from `BindingFailure.WriteAsync`, before the
   query object exists.
-- **DbContext is keyed by boundary** — `[BelongsTo<BookingBoundary>]` on the entity decides the key, and
+- **DbContext is keyed by boundary**: `[BelongsTo<BookingBoundary>]` on the entity decides the key, and
   it is resolved from the request scope rather than injected.
 - **Four gates, in this order**: authentication (401), the endpoint's `ResourcePolicy` (403),
   `IResourceAuthorizer<TQuery>` when one is registered (403), then validation.
-- **Claim binding** — properties marked `[FromClaim("sub")]` are bound from `HttpContext.User`, in the
+- **Claim binding**: properties marked `[FromClaim("sub")]` are bound from `HttpContext.User`, in the
   same generated block as the query parameters.
-- **A `[FromCurrentUser]` property is not bound here at all** — not from the query string, not from the
+- **A `[FromCurrentUser]` property is not bound here at all**: not from the query string, not from the
   route. The invoker fills it (next step).
 
 ---
@@ -184,9 +184,9 @@ Every declared query gets a nested `Invoker` (`{Namespace}.{Query}.QueryInvoker.
 way to run it: the generated handler calls it, and so does the query's member on the boundary interface,
 in process. It derives from `QueryInvoker<TQuery>`, which runs, in order:
 
-1. **validation** — the query's `ISyncValidator`, when it has one;
-2. **the permission** — what `[RequirePermission]` declares, written into the invoker as a literal;
-3. **the read** — a lambda the generator writes, which starts by filling the `[FromCurrentUser]`
+1. **validation**: the query's `ISyncValidator`, when it has one;
+2. **the permission**: what `[RequirePermission]` declares, written into the invoker as a literal;
+3. **the read**: a lambda the generator writes, which starts by filling the `[FromCurrentUser]`
    properties and then hands the query to `IQueryExecutor`.
 
 ```csharp
@@ -217,13 +217,13 @@ in process. It derives from `QueryInvoker<TQuery>`, which runs, in order:
 - **The resolver is constructed, not resolved from DI.** Nothing depends on it being registered.
 
 Declaring the binding, its two forms, and `PRAG0730`/`PRAG0731`:
-[Filtering by the caller](09-query-system.md#filtering-by-the-caller--fromcurrentuser).
+[Filtering by the caller](09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 ---
 
 ## Step 2: IQueryExecutor
 
-The runtime component that orchestrates execution. It is **not** query-specific — one instance handles all queries.
+The runtime component that orchestrates execution. It is **not** query-specific: one instance handles all queries.
 
 ```csharp
 public interface IQueryExecutor
@@ -252,7 +252,7 @@ public interface IQueryExecutor
         IQueryable<TEntity> source,
         CancellationToken ct = default) where TEntity : class where TResult : class;
 
-    // At most one row — NotFoundError when there is none. First, not Single.
+    // At most one row: NotFoundError when there is none. First, not Single.
     Task<Result<TEntity>> ExecuteSingleAsync<TEntity>(
         IQuery<TEntity> query,
         IQueryable<TEntity> source,
@@ -277,18 +277,18 @@ The EF Core implementation. It adds:
 | Caching | `ICacheStack` for queries implementing `ICacheable` |
 | Error mapping | EF Core exceptions → typed `QueryError` |
 
-Constructor — you rarely instantiate this yourself; it is registered by the generated DI code:
+You rarely instantiate this constructor yourself; it is registered by the generated DI code:
 
 ```csharp
 var executor = new EfCoreQueryExecutor(
-    filterProvider,       // IQueryFilterProvider? — root filters
-    filterMapComposer,    // FilterMapComposer?    — navigation filters
-    filterToggle,         // IQueryFilterToggle?   — disabled state
-    cacheStack,           // ICacheStack?          — caching for ICacheable queries
+    filterProvider,       // IQueryFilterProvider? (root filters)
+    filterMapComposer,    // FilterMapComposer?    (navigation filters)
+    filterToggle,         // IQueryFilterToggle?   (disabled state)
+    cacheStack,           // ICacheStack?          (caching for ICacheable queries)
     logger,               // ILogger?
-    tenantContext,        // ITenantContext?       — also prefixes every cache key with "t:{tenant}:"
+    tenantContext,        // ITenantContext?       (also prefixes every cache key with "t:{tenant}:")
     currentUser,          // ICurrentUser?
-    cacheStackResolver    // ICacheStackResolver?  — picks the stack named by ICacheable.CacheCategory
+    cacheStackResolver    // ICacheStackResolver?  (picks the stack named by ICacheable.CacheCategory)
 );
 ```
 
@@ -337,13 +337,13 @@ private IQueryable<TEntity> PrepareSource<TEntity>(
 
 | Hint | Default | Effect |
 |------|---------|--------|
-| `NoTracking` | `true` | Entities are not tracked — best for read-only queries |
-| `SplitQuery` | `false` | Single SQL query — set to `true` with multiple collection navigations |
-| `IgnoreGlobalFilters` | `false` | EF Core global query filters apply — set to `true` for admin views |
+| `NoTracking` | `true` | Entities are not tracked: best for read-only queries |
+| `SplitQuery` | `false` | Single SQL query; set to `true` with multiple collection navigations |
+| `IgnoreGlobalFilters` | `false` | EF Core global query filters apply; set to `true` for admin views |
 
 Most queries do not implement `IQueryHints` at all, and the `else` branch above is why that is safe:
 a query with no hints is untracked, exactly as if it had declared the default. Implement the interface
-when you need the opposite — tracked entities, or a split query.
+when you need the opposite: tracked entities, or a split query.
 
 ⚠️ `IgnoreGlobalFilters` calls EF Core's `IgnoreQueryFilters()`, which removes **EF's own** named
 filters. The Pragmatic filters are a `Where` composed on top and are not affected by it: to drop those,
@@ -392,13 +392,13 @@ Which filters actually apply depends on `FilterMode`:
 | **Background** (3) | Yes | No | No | No | No |
 | **Raw** (4) | No | No | No | No | No |
 
-The modes are ordered and cumulative — `FilterContext` reads them as `Mode >= Admin`, `Mode >= Elevated`,
+The modes are ordered and cumulative: `FilterContext` reads them as `Mode >= Admin`, `Mode >= Elevated`,
 `Mode >= Background`. `Raw` is the only one that reaches soft-delete, and it does so by leaving the
 filter map empty rather than by a flag of its own.
 
 ### Phase 4c: Navigation Filters
 
-After root filters, `FilterMapComposer` builds a `FilterMap` — a dictionary of `Type → Expression`. Then `PragmaticQueryFilterVisitor` walks the expression tree and injects `.Where()` into collection navigations:
+After root filters, `FilterMapComposer` builds a `FilterMap`, a dictionary of `Type → Expression`. Then `PragmaticQueryFilterVisitor` walks the expression tree and injects `.Where()` into collection navigations:
 
 ```csharp
 // Before visitor:
@@ -409,30 +409,30 @@ query.Include(o => o.Items.Where(i => !i.IsDeleted))
 ```
 
 The visitor is smart:
-- **Detects already-filtered navigations** — if you wrote `Include(o => o.Items.Where(...))`, the visitor won't double-filter.
-- **Handles ThenInclude chains** — `Include(o => o.Items).ThenInclude(i => i.Tags)` — filters both `Items` and `Tags` if both have registered filters.
-- **Respects IQueryFilterToggle** — if you disabled `LineItem.SoftDeleteFilter`, the visitor skips it.
+- **Detects already-filtered navigations**: if you wrote `Include(o => o.Items.Where(...))`, the visitor won't double-filter.
+- **Handles ThenInclude chains**: `Include(o => o.Items).ThenInclude(i => i.Tags)` filters both `Items` and `Tags` if both have registered filters.
+- **Respects IQueryFilterToggle**: if you disabled `LineItem.SoftDeleteFilter`, the visitor skips it.
 
 ---
 
 ## Step 5: query.Apply()
 
-This is YOUR code — the source-generated `Apply()` method. It adds `WHERE` and `ORDER BY` clauses based on the query's `[Filter]` and `[Sort]` properties.
+This is YOUR code: the source-generated `Apply()` method. It adds `WHERE` and `ORDER BY` clauses based on the query's `[Filter]` and `[Sort]` properties.
 
 ```csharp
 // ═══ Generated for SearchReservationsQuery ═══
 public IQueryable<Reservation> Apply(IQueryable<Reservation> query)
 {
-    // Required filters — always applied
+    // Required filters: always applied
     // (none in this example)
 
-    // Optional filters — applied when non-null
+    // Optional filters: applied when non-null
     if (GuestId is not null)
         query = query.Where(e => e.GuestId == GuestId);
     if (Status is not null)
         query = query.Where(e => e.Status == Status);
 
-    // Sort — default descending
+    // Sort: default descending
     var checkInDir = CheckInSort ?? SortDirection.Descending;
     query = checkInDir == SortDirection.Ascending
         ? query.OrderBy(e => e.CheckIn)
@@ -442,7 +442,7 @@ public IQueryable<Reservation> Apply(IQueryable<Reservation> query)
 }
 ```
 
-The `Apply()` method is a **pure IQueryable transform** — it adds LINQ operators but does not execute anything. The executor calls it after global filters, so your `WHERE` conditions compose with soft-delete/tenant filters via `AND`.
+The `Apply()` method is a **pure IQueryable transform**: it adds LINQ operators but does not execute anything. The executor calls it after global filters, so your `WHERE` conditions compose with soft-delete/tenant filters via `AND`.
 
 ### Order of Operations
 
@@ -461,7 +461,7 @@ WHERE
 ORDER BY CheckIn DESC
 ```
 
-All three filter sources are composed into a single expression tree before EF Core translates it to SQL — there is no in-memory filtering.
+All three filter sources are composed into a single expression tree before EF Core translates it to SQL; there is no in-memory filtering.
 
 ---
 
@@ -484,7 +484,7 @@ var items = await source
 ### Projection
 
 If the query implements `IQuery<TEntity, TResult>`, the `Projection` expression is applied via
-`Select()`. It is generated by **`[GenerateProjection]`** on the DTO — `[MapFrom<TEntity>]` on its own
+`Select()`. It is generated by **`[GenerateProjection]`** on the DTO; `[MapFrom<TEntity>]` on its own
 produces `FromEntity` and `Selector`, which run in memory, and no `Projection` at all:
 
 ```csharp
@@ -507,7 +507,7 @@ public static readonly Expression<Func<Reservation, ReservationSummaryDto>> From
     };
 ```
 
-Projections are translated to SQL `SELECT` — only the columns needed by the DTO are fetched from the database. This is significantly more efficient than loading full entities and mapping in memory.
+Projections are translated to SQL `SELECT`: only the columns needed by the DTO are fetched from the database. This is significantly more efficient than loading full entities and mapping in memory.
 
 ### Caching
 
@@ -525,7 +525,7 @@ public partial class GetPopularProperties
 // SG generates: GetCacheOptions() → CacheEntryOptions with 5 min duration + tags
 ```
 
-The cache stores the `PagedResult<T>` — both the items and the total count. On cache hit, no SQL is executed.
+The cache stores the `PagedResult<T>`, both the items and the total count. On cache hit, no SQL is executed.
 
 ---
 
@@ -568,7 +568,7 @@ if (result.IsFailure)
 
 ## Without an Endpoint
 
-You can use the query pipeline without endpoints — for service methods, background jobs, or tests:
+You can use the query pipeline without endpoints, for service methods, background jobs, or tests:
 
 ```csharp
 public class ReservationService(
@@ -593,9 +593,9 @@ public class ReservationService(
 
 The pipeline (filters, projection, paging) works the same way regardless of whether the query comes from an HTTP endpoint or a service method.
 
-⚠️ Calling the executor directly skips the invoker: no validation, no permission — and no
+⚠️ Calling the executor directly skips the invoker: no validation, no permission, and no
 `[FromCurrentUser]` binding. A bound property is always applied, so a query run this way filters on the
-property's default — `Guid.Empty`, `""` — never on the caller, and never on nobody. From another module,
+property's default (`Guid.Empty`, `""`), never on the caller, and never on nobody. From another module,
 call the query's member on the boundary interface, which goes through the invoker.
 
 ---
@@ -620,7 +620,7 @@ IQuery<TEntity>                          ← Base: has Apply()
 | `[Query<Order>]` + `Page`/`PageSize` | `IPagedQuery<Order>` |
 | `[Query<Order, OrderDto>]` + `Page`/`PageSize` | `IPagedQuery<Order, OrderDto>` |
 
-`IIncludableQuery` and `IQueryHints` are mixed in alongside the base — they don't change the base interface choice:
+`IIncludableQuery` and `IQueryHints` are mixed in alongside the base; they don't change the base interface choice:
 
 ```csharp
 // SG generates: IPagedQuery<Order, OrderDto>, IQueryHints, IIncludableQuery<Order>
@@ -647,7 +647,7 @@ public partial class GetOrders : IQueryHints, IIncludableQuery<Order>
 - Skip change tracking entirely (`AsNoTracking` is the default)
 - Avoid materializing navigation properties you don't need
 
-Use `[Query<T>]` (without projection) only when you need full entities — typically for mutations or when the caller needs to modify and save the entity.
+Use `[Query<T>]` (without projection) only when you need full entities, typically for mutations or when the caller needs to modify and save the entity.
 
 ### When to Use SplitQuery
 
@@ -666,7 +666,7 @@ public partial class GetOrderDetail : IQueryHints
 
 ### Filter Performance
 
-All filters — root, navigation, and query — are composed into the expression tree before EF Core translates to SQL. There is **no in-memory filtering**. The database does all the work.
+All filters (root, navigation, and query) are composed into the expression tree before EF Core translates to SQL. There is **no in-memory filtering**. The database does all the work.
 
 For complex filter combinations, check the generated SQL with EF Core logging:
 
@@ -716,7 +716,7 @@ public class InstrumentedQueryExecutor(
 domain actions; the query handler template does not read them.
 
 ```csharp
-// works — an Endpoint<T> class
+// works: an Endpoint<T> class
 [Endpoint(HttpVerb.Get, "api/v1/reservations/search")]
 [PreProcessor<AuthorizationProcessor>]
 [PostProcessor<AuditLogProcessor>]
@@ -730,9 +730,9 @@ For a query endpoint, the hooks that do run are the ones the generated delegate 
 
 ## Related Guides
 
-- [Query System](09-query-system.md) — Declaring queries, filters, sorts, joins
-- [Grid Filtering](10-grid-filtering.md) — Dynamic grid framework integration
-- [Query Filters](07-query-filters.md) — Soft-delete, tenant, permission filters
-- [Projections and Views](11-projections-views.md) — Computed expressions and aggregations
-- [Data Sources](12-datasource-loading.md) — Loading strategies and profiles
-- [Filter Pipeline](efcore/06-filter-pipeline.md) — Navigation filter internals
+- [Query System](09-query-system.md): Declaring queries, filters, sorts, joins
+- [Grid Filtering](10-grid-filtering.md): Dynamic grid framework integration
+- [Query Filters](07-query-filters.md): Soft-delete, tenant, permission filters
+- [Projections and Views](11-projections-views.md): Computed expressions and aggregations
+- [Data Sources](12-datasource-loading.md): Loading strategies and profiles
+- [Filter Pipeline](efcore/06-filter-pipeline.md): Navigation filter internals

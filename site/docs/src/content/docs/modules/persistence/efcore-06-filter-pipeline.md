@@ -1,13 +1,13 @@
 ---
 title: "Filter Pipeline"
-description: "Query filters (see Query Filters) handle **root-level** filtering — when you query `repo.Query()`, soft-deleted records are automatically excluded."
+description: "Query filters (see Query Filters) handle **root-level** filtering: when you query `repo.Query()`, soft-deleted records are automatically excluded."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/06-filter-pipeline.md
 sidebar:
   order: 27
 ---
 ## The Problem
 
-Query filters (see [Query Filters](/modules/persistence/07-query-filters/)) handle **root-level** filtering — when you query `repo.Query()`, soft-deleted records are automatically excluded.
+Query filters (see [Query Filters](/modules/persistence/07-query-filters/)) handle **root-level** filtering: when you query `repo.Query()`, soft-deleted records are automatically excluded.
 
 But what about **navigation properties**? Consider:
 
@@ -17,7 +17,7 @@ var order = await repo.GetByIdAsync(orderId,
     ct);
 ```
 
-If `LineItem` has `[SoftDelete]`, should `order.Items` include soft-deleted line items? No — but EF Core's `Include()` loads **all** related records. You'd need to write:
+If `LineItem` has `[SoftDelete]`, should `order.Items` include soft-deleted line items? No, but EF Core's `Include()` loads **all** related records. You'd need to write:
 
 ```csharp
 q.Include(o => o.Items.Where(i => !i.IsDeleted))
@@ -75,8 +75,8 @@ public static class FilterMapRegistry
 ```
 
 The registry is generated from your entity attributes: every `[SoftDelete]` entity contributes a
-soft-delete entry, every `[TemporalRelation]` a temporal one. The `FilterMap` itself is **immutable** —
-built from a dictionary in the constructor, with no `Add` — which is what lets the stateless part be
+soft-delete entry, every `[TemporalRelation]` a temporal one. The `FilterMap` itself is **immutable**:
+built from a dictionary in the constructor, with no `Add`, which is what lets the stateless part be
 allocated once and reused across requests.
 
 ### Step 2: FilterMapComposer
@@ -93,7 +93,7 @@ var composer = new FilterMapComposer(
 
 | Source | Origin | When Used |
 |--------|--------|-----------|
-| Static filters | `FilterMapRegistry` (generated) | Always — soft-delete, temporal |
+| Static filters | `FilterMapRegistry` (generated) | Always: soft-delete, temporal |
 | Visibility filters | `IVisibilityFilterProvider` (custom) | When you implement row-level security |
 | Disabled filters | `IQueryFilterToggle` | Checked to skip disabled filters |
 
@@ -110,7 +110,7 @@ What it does:
    directly, and anything else gets `.ToList()`
 5. Detects and skips already-filtered navigations (prevents double-filtering)
 
-The executor runs it once over the final query — after a projection or an aggregate is composed — so a
+The executor runs it once over the final query, after a projection or an aggregate is composed, so a
 collection read inside a `Select` is filtered like one read by `Include`.
 
 ### Step 4: Integration with Repository
@@ -137,14 +137,14 @@ The `EfCoreQueryExecutor` provides the same filter integration for custom querie
 
 ```csharp
 var executor = new EfCoreQueryExecutor(
-    filterProvider,       // IQueryFilterProvider? — root filters
-    filterMapComposer,    // FilterMapComposer?    — navigation filters
-    filterToggle,         // IQueryFilterToggle?   — disabled state
-    cacheStack,           // ICacheStack?          — caching for ICacheable queries
+    filterProvider,       // IQueryFilterProvider? (root filters)
+    filterMapComposer,    // FilterMapComposer?    (navigation filters)
+    filterToggle,         // IQueryFilterToggle?   (disabled state)
+    cacheStack,           // ICacheStack?          (caching for ICacheable queries)
     logger,               // ILogger?
-    tenantContext,        // ITenantContext?       — also prefixes cache keys with "t:{tenant}:"
+    tenantContext,        // ITenantContext?       (also prefixes cache keys with "t:{tenant}:")
     currentUser,          // ICurrentUser?
-    cacheStackResolver    // ICacheStackResolver?  — the stack named by ICacheable.CacheCategory
+    cacheStackResolver    // ICacheStackResolver?  (the stack named by ICacheable.CacheCategory)
 );
 
 var pagedResult = await executor.ExecuteAsync(myPagedQuery, db.Orders, ct);
@@ -167,7 +167,7 @@ var pagedResult = await executor.ExecuteAsync(myPagedQuery, db.Orders, ct);
 The entire pipeline respects `IQueryFilterToggle`:
 
 ```csharp
-// Disable soft-delete filter — affects BOTH root queries AND navigation filtering
+// Disable soft-delete filter: affects BOTH root queries AND navigation filtering
 using (filterToggle.Disable<LineItem.SoftDeleteFilter>())
 {
     var order = await repo.GetByIdAsync(orderId,

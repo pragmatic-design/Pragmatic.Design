@@ -1,13 +1,13 @@
 # Query System
 
-> Declarative queries, filter DTOs, and paged results — all source-generated from attributes.
+> Declarative queries, filter DTOs, and paged results, all source-generated from attributes.
 
 ## The Problem
 
-Querying data in a typical .NET application involves writing repetitive `IQueryable` chains: filter by this, sort by that, include these navigations, project to this DTO, page the results. For 30 entities, you write 30 nearly identical query classes — each with the same pattern of `Where`, `OrderBy`, `Select`, `Skip`, `Take`.
+Querying data in a typical .NET application involves writing repetitive `IQueryable` chains: filter by this, sort by that, include these navigations, project to this DTO, page the results. For 30 entities, you write 30 nearly identical query classes, each with the same pattern of `Where`, `OrderBy`, `Select`, `Skip`, `Take`.
 
 ```csharp
-// The typical approach — manual query building
+// The typical approach: manual query building
 public async Task<PagedResult<OrderDto>> SearchOrders(
     string? customerName, OrderStatus? status, DateTimeOffset? fromDate,
     SortDirection? orderDateSort, int page = 1, int pageSize = 20)
@@ -41,7 +41,7 @@ For every query endpoint, you repeat the same null-check-then-filter pattern. Fo
 
 ## The Solution: Declarative Queries
 
-A **query** is a class that declares what to filter, sort, and project — the source generator produces the `Apply()` method and the interface implementation.
+A **query** is a class that declares what to filter, sort, and project; the source generator produces the `Apply()` method and the interface implementation.
 
 ```csharp
 // ═══ What YOU write ═══
@@ -108,12 +108,12 @@ should:
 
 | Declaration | What is generated |
 |---|---|
-| `public required Guid CustomerId { get; init; }` | **always applied** — `query.Where(e => e.CustomerId == this.CustomerId)` |
-| `public OrderStatus? Status { get; init; }` | applied when it has a value — guarded by `is not null` |
-| `[Filter] public Guid CustomerId { get; init; }` | applied when it is **not `default`** — guarded by `!= default` |
-| `[FromCurrentUser(nameof(Customer.Id))] public Guid CustomerId { get; private set; }` | **always applied**, and filled from the caller — see [Filtering by the caller](#filtering-by-the-caller--fromcurrentuser) |
-| `[SearchAcross("Name", "Email", IgnoreCase = true)] public string? Search { get; init; }` | applied when it has a value, against **each** column named, joined by `\|\|` — see [Searching several columns](#searching-several-columns--searchacross) |
-| `[FromClock] public DateOnly Today { get; private set; }` | **no filter**: filled from the clock for a specification to read — see [Reading the clock](#reading-the-clock--fromclock) |
+| `public required Guid CustomerId { get; init; }` | **always applied**: `query.Where(e => e.CustomerId == this.CustomerId)` |
+| `public OrderStatus? Status { get; init; }` | applied when it has a value, guarded by `is not null` |
+| `[Filter] public Guid CustomerId { get; init; }` | applied when it is **not `default`**, guarded by `!= default` |
+| `[FromCurrentUser(nameof(Customer.Id))] public Guid CustomerId { get; private set; }` | **always applied**, and filled from the caller; see [Filtering by the caller](#filtering-by-the-caller-fromcurrentuser) |
+| `[SearchAcross("Name", "Email", IgnoreCase = true)] public string? Search { get; init; }` | applied when it has a value, against **each** column named, joined by `\|\|`; see [Searching several columns](#searching-several-columns-searchacross) |
+| `[FromClock] public DateOnly Today { get; private set; }` | **no filter**: filled from the clock for a specification to read; see [Reading the clock](#reading-the-clock-fromclock) |
 | `public Guid CustomerId { get; init; }` | ⚠️ **nothing** |
 
 The rule behind the table: a property is a filter when it carries `[Filter]`, **or** it is `required`,
@@ -121,16 +121,16 @@ The rule behind the table: a property is a filter when it carries `[Filter]`, **
 
 ⚠️ **A property that is none of the three produces no filter and no diagnostic.** `Apply` returns the
 query untouched, `ToSpecification` returns `Spec.True`, and a `Single = true` query written that way
-answers `200` with whichever row comes first. It is the form you reach for on a route id —
-`GET /orders/{id}` with `public Guid Id { get; init; }` — because the id *is* mandatory, and it is the
+answers `200` with whichever row comes first. It is the form you reach for on a route id
+(`GET /orders/{id}` with `public Guid Id { get; init; }`) because the id *is* mandatory, and it is the
 one that does nothing.
 
 ⚠️ Prefer `required` over `[Filter]` on a mandatory scalar. The `[Filter]` form is guarded by
-`!= default`, so `Guid.Empty` — or `0`, or `DateTime.MinValue` — means "do not filter" rather than
+`!= default`, so `Guid.Empty` (or `0`, or `DateTime.MinValue`) means "do not filter" rather than
 "look for this value". On a route id that turns a malformed request into a full scan.
 
 ⚠️ **Do not filter on the entity's `Id`.** It is a read-only alias the traits generator writes beside
-`PersistenceId`, and it is **not mapped**: projecting it works — every generated DTO does — but a
+`PersistenceId`, and it is **not mapped**: projecting it works (every generated DTO does), but a
 `Where` on it fails to translate at runtime, with an EF message about an unmapped member. The column is
 `PersistenceId`:
 
@@ -144,8 +144,8 @@ translation error never appears; making the property `required` is what surfaces
 
 ### Reusing a rule instead of restating it
 
-A filter names a column and a comparison. A **rule** is a sentence with meaning — "confirmed, and of the
-kind the slot expects" — and restating it in every query is how one of them ends up saying something
+A filter names a column and a comparison. A **rule** is a sentence with meaning ("confirmed, and of the
+kind the slot expects"), and restating it in every query is how one of them ends up saying something
 slightly different. Write it once as a `Specification<TEntity>` and let the query compose it:
 
 ```csharp
@@ -166,13 +166,13 @@ public partial class SuggestTermsQuery
 Two moving parts, and each says one thing:
 
 - **The specification is recognised by its type.** Any property of type `Specification<TEntity>` is
-  applied whole — in `Apply()` and in `ToSpecification()`, so the query answers the same through the
+  applied whole, in `Apply()` and in `ToSpecification()`, so the query answers the same through the
   runner and through the repository. `null` is skipped, so a rule that only sometimes applies simply
-  answers null when it does not. A rule that reads no input is written `static` — the analyzers ask
-  for it (CA1822) — and is applied the same way:
+  answers null when it does not. A rule that reads no input is written `static` (the analyzers ask
+  for it, CA1822) and is applied the same way:
   `public static Specification<LeaveRequest> Approved => Spec<LeaveRequest>.Where(r => r.Status == LeaveRequestStatus.Approved);`
-- **`[BindSpecification]` marks the input it reads.** A specification cannot be bound from a request —
-  there is no way to deserialize a predicate — so what crosses the wire is the value the rule is built
+- **`[BindSpecification]` marks the input it reads.** A specification cannot be bound from a request:
+  there is no way to deserialize a predicate, so what crosses the wire is the value the rule is built
   from. The attribute says that value is an *input*, not a filter: without it a nullable property would
   generate a `Where` **and** feed the specification, applying the same rule twice, and a plain
   non-nullable one would be `PRAG0707`.
@@ -183,8 +183,8 @@ specification when the predicate has a name worth writing down and more than one
 
 ### The other direction: a specification that becomes the query
 
-A specification can carry `[Query]` itself. The generator derives a query type from it — the rule
-becomes the query's `Rule` property, and the specification's parameters become the query's inputs —
+A specification can carry `[Query]` itself. The generator derives a query type from it (the rule
+becomes the query's `Rule` property, and the specification's parameters become the query's inputs),
 and `[Endpoint]` beside it gives that derived query a route.
 
 ```csharp
@@ -199,19 +199,19 @@ public static partial class ReservationSpecifications   // the entity's generate
 ```
 
 - **The specification is not modified.** A new type holds the paging, the route and the projection, and
-  holds the rule as a property — adding `Page`/`PageSize` to a predicate would destroy what makes it
+  holds the rule as a property; adding `Page`/`PageSize` to a predicate would destroy what makes it
   composable.
 - **The route is opt-in on top of the query.** A rule that declares no `[Endpoint]` stays executable
   in-process and publishes nothing; deriving a path from the member's name would put a URL nobody chose
   into the contract. `[Endpoint]` on a member nothing derives from is `PRAG0525`.
 - **The permission may be a generated constant.** It cannot bind while the compilation is being
-  analysed, so it travels as a path and is resolved against the permission catalog — the same route the
+  analysed, so it travels as a path and is resolved against the permission catalog, the same route the
   attribute takes on a hand-written operation.
 
 Where a hand-written query reaches the same rows by declaring a filter, the two agree: one rule, two
 ways of reading it.
 
-**Composition is AND**, like every other contribution — each is its own `Where`. An alternative belongs
+**Composition is AND**, like every other contribution: each is its own `Where`. An alternative belongs
 *inside* one property, where the reader can see it:
 
 ```csharp
@@ -224,11 +224,11 @@ is still ANDed with the rest.
 ⚠️ `PRAG0709` checks the half of the claim that can be checked: a query with a `[BindSpecification]`
 input and no `Specification<T>` property at all is an error. Marking an input and then never writing the
 specification would leave the value read and dropped **with a declaration standing over it saying
-otherwise** — quieter than the silence the attribute exists to lift.
+otherwise**, quieter than the silence the attribute exists to lift.
 
 ### Required filters
 
-Properties marked `required` are always applied — they cannot be null:
+Properties marked `required` are always applied, since they cannot be null:
 
 ```csharp
 [Query<Order, OrderDto>]
@@ -257,7 +257,7 @@ public IQueryable<Order> Apply(IQueryable<Order> query)
 }
 ```
 
-### Filtering by the caller — `[FromCurrentUser]`
+### Filtering by the caller: `[FromCurrentUser]`
 
 "My orders", "my balances", "my profile": a read whose filter is **who is asking**. As a public input it
 would be a value the caller sends, so a caller could send someone else's. `[FromCurrentUser]` (in
@@ -284,7 +284,7 @@ Two forms:
 | `[FromCurrentUser]` | `ICurrentUser.Id` | `string` |
 | `[FromCurrentUser(nameof(Employee.Id))]` | that member of the application's `[PragmaticUser]` entity, read through its generated `{User}Resolver` | the member's type |
 
-- **The invoker fills it, after validation and the permission check, before the read** — see
+- **The invoker fills it, after validation and the permission check, before the read**; see
   [the query pipeline](15-query-pipeline.md). A caller who is not authenticated gets `UnauthorizedError`
   (401); an authenticated caller with no user entity gets `NotFoundError` (404).
 - **It is not a parameter anywhere.** Not a query-string or route parameter, not in the OpenAPI document,
@@ -295,12 +295,12 @@ Two forms:
   callers never share an entry.
 - **It is a filter, always applied and matched exactly.** No `[Filter]` is needed (`[Filter(MapTo = …)]`
   still names another column), it is never skipped at its default, and a `string` is compared with `==`
-  — a `Contains` on an id would read the rows of every caller whose id contains yours. `[BindSpecification]`
+  (a `Contains` on an id would read the rows of every caller whose id contains yours). `[BindSpecification]`
   hands it to a specification instead, as for any other input.
 - **The invoker constructs the resolver.** The generator writes `{User}Resolver` in the same compilation
   and knows its constructor (`IReadRepository<TUser>`, `ICurrentUser`), so nothing depends on it being
   registered. The member form therefore needs the `[PragmaticUser]` entity in the same compilation as
-  the query, and `Pragmatic.Identity.Persistence` referenced — which is what generates the resolver.
+  the query, and `Pragmatic.Identity.Persistence` referenced, which is what generates the resolver.
 - **Scope: `[Query]`.** An action composes and can inject `ICurrentUser`; a mutation's target id is
   generated, and binding it is a separate design.
 
@@ -308,15 +308,15 @@ Two diagnostics hold the form:
 
 | Id | When |
 |---|---|
-| `PRAG0730` | the property can be set by its caller — a `public`, `internal` or `init` setter. The invoker overwrites it, so it reads as an input and is not one |
+| `PRAG0730` | the property can be set by its caller: a `public`, `internal` or `init` setter. The invoker overwrites it, so it reads as an input and is not one |
 | `PRAG0731` | the binding cannot be generated: the member does not exist on the user entity, its type differs from the property's, `nameof` names a member of another type, there is no `[PragmaticUser]` entity (or its resolver is not generated) in this compilation, or the member-less form is on a property that is not a `string` |
 
 ⚠️ **Why not inject `ICurrentUser` into the query.** A query's answer must be a function of its
 properties: `[Cacheable]` builds the key from them, the remote boundary serializes them, and the
-contract is read off them. A service that changes the answer is an input none of those can see — the
+contract is read off them. A service that changes the answer is an input none of those can see: the
 `GetMyOrders` case in `Pragmatic.Caching/docs/common-mistakes.md` §6, where every user shares one key.
 
-### Searching several columns — `[SearchAcross]`
+### Searching several columns: `[SearchAcross]`
 
 One search box, several columns: the value is looked for in each column named, and a row matches when
 any of them contains it.
@@ -333,17 +333,17 @@ public string? Search { get; init; }
 ```
 
 - **`IgnoreCase`** lowers both sides, the shape `[Filter(IgnoreCase = true)]` uses. Without it the
-  comparison is the provider's — on PostgreSQL case-sensitive — and a column lowered cannot use an
+  comparison is the provider's (on PostgreSQL case-sensitive), and a column lowered cannot use an
   ordinary index on it.
 - The property is text: `[SearchAcross]` on anything else is `PRAG0703`. The same attribute on a
   `[GridFilter<T>]` searches the same way, `IgnoreCase` included.
 
-### Reading the clock — `[FromClock]`
+### Reading the clock: `[FromClock]`
 
 "Who is away today", "what is overdue now": a read whose value is the date. Taken from the caller,
 anyone could choose which day is today; written as `DateTime.UtcNow` inside a rule, it is the database's
 clock, not the application's. `[FromClock]` (in `Pragmatic.Temporal.Clock`, from
-`Pragmatic.Abstractions`) makes it a property the generated invoker fills from the registered `IClock` —
+`Pragmatic.Abstractions`) makes it a property the generated invoker fills from the registered `IClock`,
 the one the mutations that decide and withdraw read, through the same attribute:
 
 ```csharp
@@ -366,9 +366,9 @@ public Specification<Employee>? WhoIsAwayToday => AwayToday switch
   clock. Temporal registers one.
 - **It is not a parameter and not a filter.** Not in the query string, the route, OpenAPI or the
   boundary interface; a specification of the query reads it. It is still a property, so it is part of
-  the `[Cacheable]` key — yesterday's answer is not today's.
+  the `[Cacheable]` key: yesterday's answer is not today's.
 - `PRAG0734`: a type the clock does not give (anything but `DateOnly` and `DateTimeOffset`), or a setter
-  another caller can reach — it is `{ get; private set; }`.
+  another caller can reach; it is `{ get; private set; }`.
 - **Not only on a query.** `[FromClock]` and `[FromCurrentUser]` mean the same on a `[DomainAction]` and a
   `[Mutation]`: the invoker writes them after validation and authorization, before `Execute`/`ApplyAsync`
   and the `[LoadEntity]` preload, and the diagnostics are the same. On a mutation the value is also
@@ -404,7 +404,7 @@ public class OrderService(IQueryExecutor executor, IRepository<Order> orders)
 }
 ```
 
-When combined with an `[Endpoint]` attribute, the query is executed automatically by the endpoint pipeline — you don't need to write the service method at all:
+When combined with an `[Endpoint]` attribute, the query is executed automatically by the endpoint pipeline; you don't need to write the service method at all:
 
 ```csharp
 // This is a fully functional API endpoint. No service class needed.
@@ -426,16 +426,16 @@ public partial class SearchReservationsQuery
 }
 ```
 
-## `[Filter]` — Filter Properties
+## `[Filter]`: Filter Properties
 
 The `[Filter]` attribute marks a property as a filter condition. When the property value is null, the filter is skipped. When it has a value, the corresponding `Where` clause is added.
 
 ```csharp
-// Basic filter — Equals operator (default for non-strings)
+// Basic filter: Equals operator (default for non-strings)
 [Filter]
 public OrderStatus? Status { get; init; }
 
-// String filter — Contains operator (default for strings)
+// String filter: Contains operator (default for strings)
 [Filter]
 public string? Name { get; init; }
 
@@ -443,7 +443,7 @@ public string? Name { get; init; }
 [Filter(Operator = FilterOperator.GreaterOrEqual, MapTo = "CreatedAt")]
 public DateTimeOffset? FromDate { get; init; }
 
-// Collection-based filter — IN operator
+// Collection-based filter: IN operator
 [Filter(Operator = FilterOperator.In)]
 public List<OrderStatus>? Statuses { get; init; }
 
@@ -481,7 +481,7 @@ public string? CustomerName { get; init; }
 
 ⚠️ **`FilterOperator.Between` is declared and not implemented, and using it is a build error**
 (**PRAG0701**). No renderer has a branch for it: without the error the filter would fall back to `==`
-and compare for equality without saying so, or — on the collection a range needs — produce a generated
+and compare for equality without saying so, or (on the collection a range needs) produce a generated
 file that does not compile. Express a range as two properties over one column:
 
 ```csharp
@@ -495,7 +495,7 @@ public decimal? MaxTotal { get; init; }
 ⚠️ **The same fallback catches a mismatched operator.** `Contains`, `StartsWith` and `EndsWith` are
 rendered only when the property is a `string`, and `In` only when it is a collection; anywhere else the
 switch ends in `==`. A `[Filter(Operator = FilterOperator.Contains)]` on an `int?` therefore compiles,
-runs, and filters by equality — check the operator against the property's type, because nothing else
+runs, and filters by equality; check the operator against the property's type, because nothing else
 will.
 
 ## Filtering on a joined entity
@@ -518,10 +518,10 @@ public partial class GetOrdersByCustomerName
 }
 ```
 
-`Operator`, `IgnoreCase` and the rest behave exactly as on a root-level filter — the path only decides
+`Operator`, `IgnoreCase` and the rest behave exactly as on a root-level filter; the path only decides
 what the comparison is applied to.
 
-## `[FilterGroup]` — Grouped Filter Logic
+## `[FilterGroup]`: Grouped Filter Logic
 
 By default, all filters are combined with AND logic. When you need OR logic between a set of filters, group them using `[FilterGroup]`:
 
@@ -551,7 +551,7 @@ public partial class ProductTextSearch
 }
 ```
 
-⚠️ **`[FilterGroup]` is read inside a `[FilterDto<T>]`, not on a `[Query]`** — on a query it is
+⚠️ **`[FilterGroup]` is read inside a `[FilterDto<T>]`, not on a `[Query]`**; on a query it is
 **PRAG0703**. The example above is therefore wrong as written: the attribute is ignored, the property
 name is used as an entity column, and the generated file does not compile. The shape that works nests one filter DTO
 inside another:
@@ -573,7 +573,7 @@ AND, giving `WHERE (IsActive = @p0) AND (Name LIKE '%@p1%' OR Description LIKE '
 
 On a **query**, the attribute that carries a whole filter object is `[ComplexFilter]`, below.
 
-## `[ComplexFilter]` — JSON Complex Filters
+## `[ComplexFilter]`: JSON Complex Filters
 
 For rich client UIs that need to send structured filter objects, use `[ComplexFilter]`. The property value is deserialized from a JSON query parameter:
 
@@ -616,16 +616,16 @@ if (Location is not null)
 
 The JSON deserialization is handled by `JsonQueryConverter<T>`, which is wired automatically for `[ComplexFilter]` properties.
 
-## `[Sort]` — Sorting
+## `[Sort]`: Sorting
 
-The `[Sort]` attribute declares sortable fields. The property type is `SortDirection?` — null means "don't sort by this field":
+The `[Sort]` attribute declares sortable fields. The property type is `SortDirection?`, and null means "don't sort by this field":
 
 ```csharp
-// Dynamic sort — user chooses direction, no sorting if null
+// Dynamic sort: user chooses direction, no sorting if null
 [Sort]
 public SortDirection? CustomerNameSort { get; init; }
 
-// Default sort — always applied (Descending), user can override
+// Default sort: always applied (Descending), user can override
 [Sort(DefaultDirection = SortDirection.Descending)]
 public SortDirection? CreatedAtSort { get; init; }
 
@@ -633,7 +633,7 @@ public SortDirection? CreatedAtSort { get; init; }
 [Sort(MapTo = "CreatedAt")]
 public SortDirection? DateSort { get; init; }
 
-// Multi-sort — Priority controls the order (lower = applied first)
+// Multi-sort: Priority controls the order (lower = applied first)
 [Sort(Priority = 0, DefaultDirection = SortDirection.Ascending)]       // Primary: Name Ascending
 public SortDirection? NameSort { get; init; }
 
@@ -651,17 +651,17 @@ public SortDirection? DateSort { get; init; }
 
 The SG derives the entity property name from the query property name by removing the "Sort" suffix: `CustomerNameSort` maps to `CustomerName`, `CreatedAtSort` maps to `CreatedAt`. Use `MapTo` to override this convention.
 
-## `[Join<TTarget>]` — Declaring Joins
+## `[Join<TTarget>]`: Declaring Joins
 
 `[Join<T>]` has **two forms**, and `ForeignKey` is what decides which one you are writing.
 
 **Reach for it only when nothing else answers.** `[Filter(MapTo = "Customer.Name")]` already filters
-across a navigation and `[GenerateProjection]` already flattens across one — both become a JOIN in
+across a navigation and `[GenerateProjection]` already flattens across one; both become a JOIN in
 the SQL EF emits, with no `[Join]` anywhere. What a declared join adds is the two cases they cannot
 reach: an entity related **by key with no navigation between the two**, and an **outer** join whose
 unmatched rows have to survive.
 
-### Form 1 — `Via`: a navigation to load
+### Form 1: `Via`, a navigation to load
 
 ```csharp
 [Query<Order, OrderSummaryDto>]
@@ -674,16 +674,16 @@ public partial class GetOrderWithDetails
 }
 ```
 
-The path joins the query's `IncludePaths`, which the executor applies before `Apply` runs — so this
+The path joins the query's `IncludePaths`, which the executor applies before `Apply` runs, so this
 says exactly what `[EagerLoad("Customer")]` says, with a type argument that documents the target.
 Like an include, it does nothing on a query that projects: EF Core drops includes once the query no
 longer returns the entity.
 
-### Form 2 — `ForeignKey`/`TargetKey`: an entity no navigation reaches
+### Form 2: `ForeignKey`/`TargetKey`, an entity no navigation reaches
 
 ```csharp
 // Order carries CustomerId and no navigation: Include cannot express this at all.
-// ⚠️ Customer must be in this boundary's model — its own entity, or one the boundary declares
+// ⚠️ Customer must be in this boundary's model: its own entity, or one the boundary declares
 //    [ReadAccess<Customer>] to. Anything else is PRAG0742, at the declaration.
 [Query<Order, OrderRowDto>]
 [Join<Customer>(ForeignKey = "CustomerId", TargetKey = "Id", Type = JoinType.Left)]
@@ -700,29 +700,29 @@ public sealed class OrderRowDto
 }
 ```
 
-The joined entity's columns cannot travel in a `Projection` — that is one entity in and one result
-out — so a key join generates **`Aggregate`** instead: the filtered set in, the projected set out.
+The joined entity's columns cannot travel in a `Projection` (that is one entity in and one result
+out), so a key join generates **`Aggregate`** instead: the filtered set in, the projected set out.
 The target's `IQueryable` arrives from the executor through `IJoiningQuery.BindJoinSources`, which
 reads the entity's own `IReadRepository<T>`, so a joined set carries the same tenant, soft-delete and
 global filters as a direct read.
 
 **How a result property finds its source**, in this order: the entity first (`Reference` is the
 order's even if the customer has one too), then each join in declaration order, and within a join the
-**prefixed** name before the bare one — `CustomerName` → `Customer.Name`. A name neither side answers
+**prefixed** name before the bare one: `CustomerName` → `Customer.Name`. A name neither side answers
 is **PRAG0740**, at your declaration instead of a `CS0117` inside a generated file.
 
 ### Join Properties
 
 | Property | Type | What it does |
 |----------|------|---|
-| `Via` | `string?` | The navigation to load, resolved against the entity segment by segment — a name that is not a navigation is **PRAG0737**. The path joins `IncludePaths`. |
-| `ForeignKey` + `TargetKey` | `string?`, `string` | The key join. `ForeignKey` is read on the query's entity, `TargetKey` on the joined type (default `"Id"`); a name that resolves on neither is **PRAG0739**. Declaring one on a query whose result **is** the entity is **PRAG0738**: the joined columns would have nowhere to go. ⚠️ The target has to be in the query boundary's own model — its entity, or one the boundary declares `[ReadAccess<T>]` to — because EF Core composes a join only inside one `DbContext` instance and a host builds one per boundary. Anything else is **PRAG0742**. |
-| `Type` | `JoinType` | `Inner` (the default), `Left` — `GroupJoin` + `DefaultIfEmpty`, so the row with no match survives and its joined fields take the type's default — and `Cross`. `Right` and `Full` are **PRAG0741**: EF Core has no LINQ spelling for a FULL OUTER JOIN, and the step receives the root set already filtered, sorted and paged, so rows the root's filters never selected cannot be added back. ⚠️ On a `Via` join `Type` still says nothing — an include has no join type — and that is **PRAG0703**. |
+| `Via` | `string?` | The navigation to load, resolved against the entity segment by segment; a name that is not a navigation is **PRAG0737**. The path joins `IncludePaths`. |
+| `ForeignKey` + `TargetKey` | `string?`, `string` | The key join. `ForeignKey` is read on the query's entity, `TargetKey` on the joined type (default `"Id"`); a name that resolves on neither is **PRAG0739**. Declaring one on a query whose result **is** the entity is **PRAG0738**: the joined columns would have nowhere to go. ⚠️ The target has to be in the query boundary's own model (its entity, or one the boundary declares `[ReadAccess<T>]` to), because EF Core composes a join only inside one `DbContext` instance and a host builds one per boundary. Anything else is **PRAG0742**. |
+| `Type` | `JoinType` | `Inner` (the default), `Left` (`GroupJoin` + `DefaultIfEmpty`, so the row with no match survives and its joined fields take the type's default) and `Cross`. `Right` and `Full` are **PRAG0741**: EF Core has no LINQ spelling for a FULL OUTER JOIN, and the step receives the root set already filtered, sorted and paged, so rows the root's filters never selected cannot be added back. ⚠️ On a `Via` join `Type` still says nothing (an include has no join type), and that is **PRAG0703**. |
 | `Alias` | `string?` | The prefix that addresses this join's columns in the result, so two joins to the same type are told apart: `Alias = "Biller"` makes `BillerName` read `Customer.Name` from that one. ⚠️ On a `Via` join it says nothing, which is **PRAG0703**. |
 
-## `[FilterDto<TEntity>]` — Standalone Filter DTOs
+## `[FilterDto<TEntity>]`: Standalone Filter DTOs
 
-When you need reusable filter logic without a full query — for example, to share the same filter across multiple queries or to use it directly in service methods — use `[FilterDto<T>]`:
+When you need reusable filter logic without a full query (for example, to share the same filter across multiple queries or to use it directly in service methods), use `[FilterDto<T>]`:
 
 ```csharp
 [FilterDto<Order>]
@@ -761,7 +761,7 @@ var filter = new OrderFilter { Status = OrderStatus.Pending };
 var pending = await db.Orders.ApplyFilter(filter).ToListAsync(ct);
 ```
 
-Filter DTOs are also the building block for `[FilterGroup]` and `[ComplexFilter]` — the nested DTO must be a `[FilterDto<T>]`.
+Filter DTOs are also the building block for `[FilterGroup]` and `[ComplexFilter]`: the nested DTO must be a `[FilterDto<T>]`.
 
 ## Query Interfaces
 
@@ -776,7 +776,7 @@ The query system is built on a small interface hierarchy. The SG picks the right
 | `IIncludableQuery<TEntity>` | Declares eager-loading paths via `IncludePaths` |
 | `IQueryHints` | Execution hints: `NoTracking`, `SplitQuery`, `IgnoreGlobalFilters` |
 
-Every generated query also gets a `ToSpecification()` returning `Specification<TEntity>` — the same
+Every generated query also gets a `ToSpecification()` returning `Specification<TEntity>`: the same
 filters as a specification, for the repository methods that take one (`FindAsync`, `CountAsync`,
 `ExistsAsync`) rather than the executor. It carries the `Where`, not the sort, the paging or the
 projection.
@@ -792,7 +792,7 @@ projection.
 
 ### Combining Mixin Interfaces
 
-`IIncludableQuery<T>` and `IQueryHints` are mixin interfaces — you implement them alongside the base query:
+`IIncludableQuery<T>` and `IQueryHints` are mixin interfaces, which you implement alongside the base query:
 
 ```csharp
 [Query<Order, OrderDto>]
@@ -810,7 +810,7 @@ public partial class GetOrders : IQueryHints
 }
 ```
 
-`IQueryHints` uses default interface members — you only override what you need:
+`IQueryHints` uses default interface members, so you only override what you need:
 
 | Hint | Default | Description |
 |------|---------|-------------|
@@ -876,18 +876,18 @@ public interface IQueryExecutor
 
 Four shapes, and the one to know is the last: `ExecuteSingleAsync` reads **First, not Single**. The
 query owns the filter and the ordering, so a query that matches two rows returns the first rather than
-throwing — "the most recent one" is a legitimate shape, and a query meant to match one and matching two
+throwing: "the most recent one" is a legitimate shape, and a query meant to match one and matching two
 is a bug in the query.
 
 The EF Core implementation (`EfCoreQueryExecutor`) automatically:
 
-1. **Applies query hints** — `AsNoTracking()`, `AsSplitQuery()` based on `IQueryHints`
-2. **Applies global filters** — soft-delete, tenant, temporal via `IQueryFilterProvider` (see [Query Filters](07-query-filters.md))
-3. **Applies navigation filters** — via `FilterMapComposer` + `PragmaticQueryFilterVisitor`
-4. **Calls `Apply()`** — your generated filter/sort pipeline
-5. **Handles projection** — applies the `Projection` expression via `Select()`
-6. **Counts total items** — a separate `CountAsync()` for paging metadata
-7. **Pages the results** — `Skip()` + `Take()` from `IPagedQuery`
+1. **Applies query hints**: `AsNoTracking()`, `AsSplitQuery()` based on `IQueryHints`
+2. **Applies global filters**: soft-delete, tenant, temporal via `IQueryFilterProvider` (see [Query Filters](07-query-filters.md))
+3. **Applies navigation filters**: via `FilterMapComposer` + `PragmaticQueryFilterVisitor`
+4. **Calls `Apply()`**: your generated filter/sort pipeline
+5. **Handles projection**: applies the `Projection` expression via `Select()`
+6. **Counts total items**: a separate `CountAsync()` for paging metadata
+7. **Pages the results**: `Skip()` + `Take()` from `IPagedQuery`
 
 The result is a `PagedResult<T>` that follows the Result pattern:
 
@@ -928,13 +928,13 @@ The paged result carries both the data and paging metadata:
 ## How It All Fits Together
 
 > The route is not the only door. The same three steps run when another operation invokes the query
-> in process — and the way to do that is the boundary it belongs to:
+> in process, and the way to do that is the boundary it belongs to:
 > `booking.Reservations.SearchReservations(status, page, pageSize, ct)`, with the overload that takes
 > the query object beside it. That member goes through the invoker, so a caller in another module gets
 > the validation and the permission the route gets.
 >
 > Before the invoker existed, both lived in the generated HTTP handler and nowhere else, and reading
-> from code took three pieces — build the query, get a source, pick an executor overload — which is why
+> from code took three pieces (build the query, get a source, pick an executor overload), which is why
 > no application did it.
 
 Here is the full flow from HTTP request to response:

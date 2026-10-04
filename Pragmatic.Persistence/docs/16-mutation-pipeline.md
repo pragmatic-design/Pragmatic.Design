@@ -1,6 +1,6 @@
 # The Mutation Pipeline
 
-> From HTTP request to entity change and back — every step, every validation layer, every hook.
+> From HTTP request to entity change and back: every step, every validation layer, every hook.
 
 Mutations are how entities change state in Pragmatic. This document explains the complete pipeline: how a mutation DTO flows through validation, entity loading, application, persistence, event dispatch, and cache invalidation.
 
@@ -15,7 +15,7 @@ HTTP POST /api/v1/invoices
 ┌──────────────────────────────────────────────────┐
 │  1. Endpoint Handler (source-generated)          │
 │     • Read the body into {Mutation}Body           │
-│       — a JsonException is a 400 naming "body"    │
+│       (a JsonException is a 400 naming "body")    │
 │     • Claim binding from HttpContext.User         │
 │     • Build the mutation from body + route + claims│
 │     • Pre-processors, when declared               │
@@ -45,7 +45,7 @@ HTTP POST /api/v1/invoices
 │     │ 5b. [Invariant] methods                │   │
 │     │ 5c. Temporal constraints (on create)   │   │
 │     │ 5d. IEntityLifecycle.OnSaving          │   │
-│     │ 6.  Persist — and on create, presets    │   │
+│     │ 6.  Persist, and on create, presets     │   │
 │     │ 7+8 Events + cache, after the commit    │   │
 │     └────────────────────────────────────────┘   │
 └───────────────────┬──────────────────────────────┘
@@ -70,7 +70,7 @@ In Pragmatic, a **mutation** is a specialized kind of **action**. Both share the
 | **DomainAction** | Custom business logic with explicit `Execute()` | `DomainActionInvoker<T>` |
 | **Mutation** | Entity CRUD via declarative DTO | `MutationInvoker<TMutation, TEntity>` |
 
-A `DomainAction` is what you write when you need full control — you implement `Execute()` and decide what happens. A `Mutation` is what you write when the operation is structural — create/update/delete an entity from a DTO.
+A `DomainAction` is what you write when you need full control: you implement `Execute()` and decide what happens. A `Mutation` is what you write when the operation is structural: create/update/delete an entity from a DTO.
 
 Both flow through the same endpoint pipeline:
 - Both support `[Endpoint]` for HTTP handler generation
@@ -118,7 +118,7 @@ public static IEndpointConventionBuilder MapEndpoint(IEndpointRouteBuilder endpo
 {
     var builder = endpoints.MapPost("/api/v1/invoices", (RequestDelegate)(async httpContext =>
     {
-        // 1. read the body — a JsonException is a 400 that names "body"
+        // 1. read the body: a JsonException is a 400 that names "body"
         CreateInvoiceMutationBody? read;
         try
         {
@@ -144,7 +144,7 @@ public static IEndpointConventionBuilder MapEndpoint(IEndpointRouteBuilder endpo
             ReservationId = read.ReservationId, GuestId = read.GuestId, Lines = read.Lines
         };
 
-        // 3. one call — validation, load, apply, persist and events all live in the invoker
+        // 3. one call: validation, load, apply, persist and events all live in the invoker
         var result = await invoker.InvokeAsync(mutation, httpContext.RequestAborted);
 
         var response = result.Match(
@@ -165,7 +165,7 @@ Three things worth reading off that shape:
   runs L1 validation in its own pipeline, and validating inline as well would run every sync validator
   twice per request. A query endpoint does the same: the query has its own invoker, and the endpoint
   defers validation to it.
-  `[PreProcessor<T>]` and `[PostProcessor<T>]`, when declared, *are* rendered here — around the
+  `[PreProcessor<T>]` and `[PostProcessor<T>]`, when declared, *are* rendered here, around the
   `InvokeAsync` call.
 - **What `Created` carries depends on `[ReturnsDto<T>]`.** Declared, the response body is that DTO,
   projected from the saved entity; omitted, a create answers `{"id": …}` and any other mutation answers
@@ -262,7 +262,7 @@ Based on `MutationMode`:
 
 | Mode | Behavior |
 |------|----------|
-| **Create** | Skip loading. `new TEntity()` — **not** the generated `Create()` factory, and no factory is looked for. The entity is marked `IsNew`, then computed defaults and `OnCreating` run on it. |
+| **Create** | Skip loading. `new TEntity()`, **not** the generated `Create()` factory, and no factory is looked for. The entity is marked `IsNew`, then computed defaults and `OnCreating` run on it. |
 | **Update** | Load by ID from repository. Return `NotFoundError` if missing. |
 | **CreateOrUpdate** | Try to load. If not found, create new. |
 | **Delete** | Load by ID. Perform soft-delete or hard-delete. |
@@ -303,7 +303,7 @@ var invoiceNumber = await generator.GenerateAsync(entity, lifecycleContext, ct);
 entity.SetInvoiceNumber(invoiceNumber);   // or a direct assignment, when the setter is public
 ```
 
-The `LifecycleContext` in the middle is what carries `Now`, `UserId` and `TenantId` — a generator that
+The `LifecycleContext` in the middle is what carries `Now`, `UserId` and `TenantId`; a generator that
 needs the clock takes it from there rather than from `DateTime.UtcNow`.
 
 This runs **after construction and before `ApplyToEntity`**, so a value the caller sent overrides the
@@ -321,11 +321,11 @@ The generated `ApplyAsync` method applies the mutation's properties to the entit
 // ═══ Generated for CreateInvoiceMutation ═══
 public async Task<Result<Invoice, IError>> ApplyAsync(Invoice entity, CancellationToken ct)
 {
-    // Required properties — always applied
+    // Required properties: always applied
     entity.SetReservationId(ReservationId);
     entity.SetGuestId(GuestId);
 
-    // Optional properties — applied when non-null
+    // Optional properties: applied when non-null
     // (decimal? Total → only set if provided)
     if (Total.HasValue)
         entity.SetTotal(Total.Value);
@@ -342,13 +342,13 @@ public async Task<Result<Invoice, IError>> ApplyAsync(Invoice entity, Cancellati
 }
 ```
 
-The entity's **setter methods** (`SetReservationId`, `SetTotal`) are also source-generated. They are the only way to modify entity properties — direct property assignment is not possible because setters are `private set`.
+The entity's **setter methods** (`SetReservationId`, `SetTotal`) are also source-generated. They are the only way to modify entity properties: direct property assignment is not possible because setters are `private set`.
 
-A state-machine move is not written here: `[TransitionsTo<TState>(target)]` on the mutation and the invoker performs it — before `ApplyAsync` by default, after it with `When = AfterBody`, or checks that `ApplyAsync` made it with `When = ByBody`. A refused move answers 409 and nothing is saved. See [State Machine](19-state-machine.md#usage-in-an-operation-transitionsto).
+A state-machine move is not written here: `[TransitionsTo<TState>(target)]` on the mutation and the invoker performs it, before `ApplyAsync` by default, after it with `When = AfterBody`, or checks that `ApplyAsync` made it with `When = ByBody`. A refused move answers 409 and nothing is saved. See [State Machine](19-state-machine.md#usage-in-an-operation-transitionsto).
 
 ### 2g. Level 2: Entity Validation (Change-Aware)
 
-After applying the mutation, the invoker validates the **entity itself** — not the input DTO:
+After applying the mutation, the invoker validates the **entity itself**, not the input DTO:
 
 ```csharp
 // Detect which properties changed (for update mode)
@@ -380,7 +380,7 @@ else if (entity is ISyncValidator syncEntityValidator)
 
 L1 is fast and prevents unnecessary database work. L2 catches violations that only become apparent after the mutation is applied to the entity.
 
-**Change-aware validation** — for updates, the validator receives the set of modified properties. This allows rules like "email must be unique" to run **only when email actually changed**, avoiding unnecessary uniqueness checks on unmodified fields.
+**Change-aware validation**: for updates, the validator receives the set of modified properties. This allows rules like "email must be unique" to run **only when email actually changed**, avoiding unnecessary uniqueness checks on unmodified fields.
 
 ### 2h. Persist
 
@@ -400,7 +400,7 @@ foreach (var provider in _presetProviders)
 if (BatchContext.Current is { } batch)
 {
     batch.AccumulateEntity(entity);
-    // Skip SaveChanges — batch will save later
+    // Skip SaveChanges: batch will save later
 }
 else
 {
@@ -408,9 +408,9 @@ else
 }
 ```
 
-**Batch mode** — when a `BatchContext` is active (e.g., during bulk imports), the invoker accumulates entities instead of saving each one individually. The batch controls chunking and transaction boundaries.
+**Batch mode**: when a `BatchContext` is active (e.g., during bulk imports), the invoker accumulates entities instead of saving each one individually. The batch controls chunking and transaction boundaries.
 
-**UnitOfWork is keyed by boundary** — `[FromKeyedServices(typeof(BillingBoundary))] IUnitOfWork` ensures the mutation saves to the correct DbContext. If your entity has `[BelongsTo<BillingBoundary>]`, the generated invoker uses keyed DI to resolve the right unit of work.
+**UnitOfWork is keyed by boundary**: `[FromKeyedServices(typeof(BillingBoundary))] IUnitOfWork` ensures the mutation saves to the correct DbContext. If your entity has `[BelongsTo<BillingBoundary>]`, the generated invoker uses keyed DI to resolve the right unit of work.
 
 ### 2i. Dispatch Domain Events
 
@@ -425,7 +425,7 @@ if (entity is IHasDomainEvents eventSource && eventSource.DomainEvents.Count > 0
 }
 ```
 
-Domain events are raised by entity methods (e.g., `TransitionTo()` on a state machine, or `[CascadeSource]` setters). They are dispatched **after** `SaveChanges` — the entity is already persisted when handlers run.
+Domain events are raised by entity methods (e.g., `TransitionTo()` on a state machine, or `[CascadeSource]` setters). They are dispatched **after** `SaveChanges`: the entity is already persisted when handlers run.
 
 In batch mode, events are deferred to `BatchContext` and dispatched when the batch completes.
 
@@ -465,7 +465,7 @@ With `[SoftDelete(Cascade = true)]`, all child entities (from `[Relation.OneToMa
 3. **SaveChanges**: Persist everything
 4. **On failure**: Revert to snapshot (compensation)
 
-This ensures atomicity — either everything is soft-deleted or nothing is.
+This ensures atomicity: either everything is soft-deleted or nothing is.
 
 ### Restore
 
@@ -482,7 +482,7 @@ entity.DeletedAt = null;
 entity.DeletedBy = null;
 ```
 
-Both Pragmatic's filter pipeline and EF Core's global query filters are disabled — otherwise the soft-deleted entity would be invisible to the query.
+Both Pragmatic's filter pipeline and EF Core's global query filters are disabled; otherwise the soft-deleted entity would be invisible to the query.
 
 ---
 
@@ -520,7 +520,7 @@ public partial class CreateInvoiceMutation
 ```
 
 The `[FromKeyedServices(typeof(BillingBoundary))]` on the unit of work is what ties the mutation to its
-boundary's transaction — the repository is unkeyed, the unit of work is not.
+boundary's transaction: the repository is unkeyed, the unit of work is not.
 
 The DI registration is generated too, one file per assembly:
 
@@ -562,7 +562,7 @@ public partial class Invoice { /* ... */ }
 public partial class LineItem { /* ... */ }
 ```
 
-When a mutation saves, it calls `_unitOfWork.SaveChangesAsync()` — which saves **all tracked changes within that boundary's DbContext**. This means:
+When a mutation saves, it calls `_unitOfWork.SaveChangesAsync()`, which saves **all tracked changes within that boundary's DbContext**. This means:
 
 - Creating an `Invoice` with `LineItems` saves both in one transaction
 - Changes to entities in **different boundaries** require separate `SaveChanges` calls
@@ -628,7 +628,7 @@ The mutation pipeline (section 2) replaces steps 3-4 with a structured load-vali
 ```
 
 The sync validation appears **once**, in the invoker. A mutation endpoint deliberately does not repeat
-it — a query endpoint does run `ISyncValidator` inline, because there is no invoker to defer to.
+it; a query endpoint does run `ISyncValidator` inline, because there is no invoker to defer to.
 
 This two-level design means:
 - Bad input is rejected **before** loading the entity (saves a DB round-trip)
@@ -639,8 +639,8 @@ This two-level design means:
 
 ## Related Guides
 
-- [Mutations](06-mutations.md) — Declaring mutations, collection strategies, nested mutations
-- [Entity Attributes](03-attributes.md) — `[SoftDelete]`, `[Auditable]`, `[ConcurrencyAware]`, `[StateMachine]`
-- [Advanced Features](08-advanced.md) — Temporal, hierarchy, polymorphic, lifecycle, presets
-- [Query Pipeline](15-query-pipeline.md) — The read-side counterpart
-- [Repository](05-repository.md) — Repository interface and unit of work
+- [Mutations](06-mutations.md): Declaring mutations, collection strategies, nested mutations
+- [Entity Attributes](03-attributes.md): `[SoftDelete]`, `[Auditable]`, `[ConcurrencyAware]`, `[StateMachine]`
+- [Advanced Features](08-advanced.md): Temporal, hierarchy, polymorphic, lifecycle, presets
+- [Query Pipeline](15-query-pipeline.md): The read-side counterpart
+- [Repository](05-repository.md): Repository interface and unit of work

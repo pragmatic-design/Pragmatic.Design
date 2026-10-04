@@ -42,7 +42,7 @@ public partial class Order : IAuditable
 
 ### How the values are set
 
-The audit fields are **not** set by your code — they are populated automatically by the `AuditingInterceptor` in `Pragmatic.Persistence.EFCore`:
+The audit fields are **not** set by your code: they are populated automatically by the `AuditingInterceptor` in `Pragmatic.Persistence.EFCore`:
 
 | When | CreatedAt | CreatedBy | UpdatedAt | UpdatedBy |
 |------|-----------|-----------|-----------|-----------|
@@ -58,14 +58,14 @@ If `ICurrentUser` is not registered in DI, the `*By` fields remain `null`.
 ### Problem
 
 `[Auditable]` stamps *who/when* on the row itself, but it only tells you the **last** change. For
-compliance and troubleshooting you often need the full **history** of changes — an append-only log of
-what happened, by whom, when — without converting the model to event sourcing.
+compliance and troubleshooting you often need the full **history** of changes (an append-only log of
+what happened, by whom, when) without converting the model to event sourcing.
 
 ### Solution
 
 Mark the entity `[Audited]`. The source generator makes it implement `IAuditedEntity`, and the
 `AuditLogInterceptor` (auto-registered in the boundary's DbContext) writes one append-only row to the
-`__AuditLog` table for **every** insert, update and delete — **in the same transaction** as the change,
+`__AuditLog` table for **every** insert, update and delete, **in the same transaction** as the change,
 so the trail can never diverge from what was persisted.
 
 ```csharp
@@ -83,11 +83,11 @@ Each `AuditLogEntry` captures: `EntityType`, `EntityId`, `Action` (`Created`/`Up
 ### What happens automatically
 
 - The `__AuditLog` table is emitted into the migration schema (SchemaMetadata) **and** mapped in the
-  boundary DbContext — the two stay in sync (dual-source).
+  boundary DbContext; the two stay in sync (dual-source).
 - The `AuditLogInterceptor` is registered for any boundary that owns at least one `[Audited]` entity.
 
 **`[Audited]` vs `[Auditable]`**: `[Auditable]` = last-change stamp on the row; `[Audited]` = full
-append-only change log in a separate table ("event-sourcing-light"). They compose — use both when you
+append-only change log in a separate table ("event-sourcing-light"). They compose: use both when you
 want both the current stamp and the history.
 
 ---
@@ -102,7 +102,7 @@ equality, validated construction, and the EF mapping for every one is boilerplat
 ### Solution
 
 Mark the value object `[ValueObject]` (a `partial record` with a `private static Validate`). The SG
-generates `Create(...)` and `CreateUnsafe(...)`, and **`Create` mirrors whatever `Validate` returns** —
+generates `Create(...)` and `CreateUnsafe(...)`, and **`Create` mirrors whatever `Validate` returns**:
 return the value object and `Create` returns it; return `Result<T, ValidationError>` and so does
 `Create`. The example below takes the first form. When the VO is
 used as an **entity property**, the SG also maps it as an EF Core **complex type**, flattening it into
@@ -125,7 +125,7 @@ public partial class Amenity : IEntity
 }
 ```
 
-> ⚠️ VO sub-properties must be `init`/settable — EF Core needs to bind the constructor parameters to
+> ⚠️ VO sub-properties must be `init`/settable: EF Core needs to bind the constructor parameters to
 > mapped properties; get-only properties are not mapped and the complex type fails to materialize.
 
 ---
@@ -134,10 +134,10 @@ public partial class Amenity : IEntity
 
 ### Problem
 
-Deleting data from a database is irreversible. In many applications, you need the ability to "delete" records while keeping them in the database — for recovery, compliance, or referential integrity.
+Deleting data from a database is irreversible. In many applications, you need the ability to "delete" records while keeping them in the database, for recovery, compliance, or referential integrity.
 
-**Hard delete**: `DELETE FROM Orders WHERE Id = @id` — data is gone forever.
-**Soft delete**: `UPDATE Orders SET IsDeleted = 1 WHERE Id = @id` — data is hidden but recoverable.
+**Hard delete**: `DELETE FROM Orders WHERE Id = @id`; data is gone forever.
+**Soft delete**: `UPDATE Orders SET IsDeleted = 1 WHERE Id = @id`; data is hidden but recoverable.
 
 ### Solution
 
@@ -165,11 +165,11 @@ public partial class Customer : ISoftDelete
 
 ### What happens automatically
 
-1. **Query filtering** — a nested `Customer.SoftDeleteFilter` is generated and registered, with priority 100 so it runs before the others. Every generated read path excludes rows where `IsDeleted == true`; you see them only by asking.
+1. **Query filtering**: a nested `Customer.SoftDeleteFilter` is generated and registered, with priority 100 so it runs before the others. Every generated read path excludes rows where `IsDeleted == true`; you see them only by asking.
 
-2. **Repository `Remove()`** — When you call `repository.Remove(customer)`, it performs a soft-delete (sets `IsDeleted = true`) instead of a physical DELETE.
+2. **Repository `Remove()`**: when you call `repository.Remove(customer)`, it performs a soft-delete (sets `IsDeleted = true`) instead of a physical DELETE.
 
-3. **Cascade** (optional) — With `[SoftDelete(Cascade = true)]`, soft-deleting a parent also soft-deletes its children:
+3. **Cascade** (optional): with `[SoftDelete(Cascade = true)]`, soft-deleting a parent also soft-deletes its children:
 
 ```csharp
 [Entity]
@@ -189,8 +189,8 @@ using (filterToggle.Disable<Customer.SoftDeleteFilter>())
 }
 ```
 
-⚠️ `IgnoreQueryFilters()` does **not** do this. It removes EF Core's own named filter — the safety net
-for code that queries the `DbSet` directly — while the Pragmatic filter is a `Where` the repository
+⚠️ `IgnoreQueryFilters()` does **not** do this. It removes EF Core's own named filter (the safety net
+for code that queries the `DbSet` directly), while the Pragmatic filter is a `Where` the repository
 applies on top. Use the toggle above, or `Query(QueryStrategy.Raw)`.
 
 See [Query Filters](/modules/persistence/07-query-filters/) for full details on the filter toggle mechanism.
@@ -214,26 +214,26 @@ Optimistic concurrency: each entity has a `RowVersion` that the database increme
 public partial class Invoice { /* ... */ }
 ```
 
-**Nothing is added to your entity.** No property, no interface — the token is an EF Core *shadow
+**Nothing is added to your entity.** No property, no interface: the token is an EF Core *shadow
 property*, declared in the generated DbContext and never visible in your model:
 
 ```csharp
 // ═══ In DbContext.{Boundary}.g.cs, and it depends on the provider ═══
 
-// SQL Server — native rowversion, maintained by the database
+// SQL Server: native rowversion, maintained by the database
 modelBuilder.Entity<Invoice>().Property<byte[]>("RowVersion").IsRowVersion();
 
-// PostgreSQL — Npgsql maps this to the xmin system column: no migration, no column of your own
+// PostgreSQL: Npgsql maps this to the xmin system column, so no migration, no column of your own
 modelBuilder.Entity<Invoice>().Property<uint>("RowVersion")
     .IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();
 
-// anything else — a portable uint token
+// anything else: a portable uint token
 modelBuilder.Entity<Invoice>().Property<uint>("RowVersion").IsConcurrencyToken();
 ```
 
 ### How it works at runtime
 
-1. User A loads the invoice, User B loads the same invoice — both hold the same token
+1. User A loads the invoice, User B loads the same invoice; both hold the same token
 2. User A saves → the token moves on
 3. User B saves → the `UPDATE ... WHERE RowVersion = @old` matches no row
 
@@ -248,7 +248,7 @@ public async Task<Result<int, ConcurrencyError>> SaveChangesAsync(CancellationTo
 public Task<int> SaveChangesAsync(CancellationToken ct = default);
 ```
 
-So the conflict arrives as a `ConcurrencyError` — `Code = "CONCURRENCY_CONFLICT"`, `StatusCode = 409` —
+So the conflict arrives as a `ConcurrencyError` (`Code = "CONCURRENCY_CONFLICT"`, `StatusCode = 409`)
 and you handle it like any other `Result` failure: reload, merge, retry.
 
 ⚠️ Saving through `IUnitOfWork.SaveChangesAsync` instead of the repository does not classify it: there
@@ -261,7 +261,7 @@ meeting rather than a rule the schema enforces.
 
 ### Problem
 
-Large applications have many entities. Putting them all in one DbContext becomes unwieldy — slow model building, confusing navigation properties across unrelated domains.
+Large applications have many entities. Putting them all in one DbContext becomes unwieldy: slow model building, confusing navigation properties across unrelated domains.
 
 ### Solution
 
@@ -301,11 +301,11 @@ See [DbContext Generation](/modules/persistence/efcore-01-dbcontext-generation/)
 
 ### Problem
 
-Some entities are reference data that rarely changes — countries, categories, statuses. Querying the database for these on every request wastes resources.
+Some entities are reference data that rarely changes: countries, categories, statuses. Querying the database for these on every request wastes resources.
 
 ### Solution
 
-`[Lookup]` marks an entity as a lookup table. At application startup, all records are loaded into an in-memory cache. Subsequent access is synchronous and instant — zero database queries.
+`[Lookup]` marks an entity as a lookup table. At application startup, all records are loaded into an in-memory cache. Subsequent access is synchronous and instant, with zero database queries.
 
 ```csharp
 // ═══ What YOU write ═══
@@ -327,7 +327,7 @@ public sealed class CategoryLookupCacheLoader : ILookupCacheLoader
     public Task LoadAsync(IServiceProvider serviceProvider, CancellationToken ct);
 }
 
-// _Infra.Persistence.LookupCache.g.cs — one per assembly
+// _Infra.Persistence.LookupCache.g.cs: one per assembly
 public static class CatalogLookupCacheRegistrationExtensions
 {
     // registers every ILookupCache<T, TId> as a singleton, every loader, and the hosted service
@@ -335,7 +335,7 @@ public static class CatalogLookupCacheRegistrationExtensions
 }
 ```
 
-⚠️ **Call it.** `Add{Prefix}LookupCaches()` is generated, not wired — call it from your `IStartupStep`,
+⚠️ **Call it.** `Add{Prefix}LookupCaches()` is generated, not wired; call it from your `IStartupStep`,
 as the Showcase does. Skip the call and there is no `ILookupCache<T, TId>` in the container and no
 preload: the attribute looks applied and does nothing. `{Prefix}` is the identifier derived from the
 common namespace of the lookup entities, so an assembly whose lookups all sit under `Showcase.*`
@@ -377,7 +377,7 @@ public class ProductService(ILookupCache<Category, Guid> categories)
 
 ### The Problem
 
-Entities with status fields (`Pending → Approved → Shipped → Delivered`) need transition validation. Without it, any code can set `order.Status = Delivered` directly — skipping required steps and violating business rules.
+Entities with status fields (`Pending → Approved → Shipped → Delivered`) need transition validation. Without it, any code can set `order.Status = Delivered` directly, skipping required steps and violating business rules.
 
 ### The Solution
 
@@ -415,7 +415,7 @@ Apply it to the entity:
 [StateMachine<OrderStatus>]
 public partial class Order
 {
-    public OrderStatus Status { get; private set; }     // yours — see below
+    public OrderStatus Status { get; private set; }     // yours, see below
 }
 ```
 
@@ -424,7 +424,7 @@ public partial class Order
 ```csharp
 public partial class Order
 {
-    // Returns VoidResult<IError> — it never throws
+    // Returns VoidResult<IError>: it never throws
     public VoidResult<IError> TransitionTo(OrderStatus targetState);
 
     public bool CanTransitionTo(OrderStatus targetState);
@@ -445,7 +445,7 @@ public partial class Order
 }
 ```
 
-If the entity has no property of that name the generator says so — **PRAG0623** — instead of emitting
+If the entity has no property of that name the generator says so (**PRAG0623**) instead of emitting
 code that names a member you never wrote.
 
 ### Guarding a transition
@@ -484,13 +484,13 @@ public partial class Order
 ```
 
 A second, independent lifecycle on the same entity is usually a sign that two aggregates are hiding in
-one — model it as a second entity, or drive it from your own code.
+one: model it as a second entity, or drive it from your own code.
 
 ### Usage
 
 ```csharp
 var order = Order.Create("ORD-001", 199.99m, customerId);
-// order.Status == OrderStatus.Draft — the [InitialState]
+// order.Status == OrderStatus.Draft, the [InitialState]
 
 var result = order.TransitionTo(OrderStatus.Pending);
 // result.IsSuccess == true
@@ -501,7 +501,7 @@ var invalid = order.TransitionTo(OrderStatus.Delivered);
 // whose Reason names both states: "Cannot transition from 'Pending' to 'Delivered'."
 ```
 
-`TransitionTo()` returns `VoidResult<IError>` — **it never throws**. Handle it like any other failure:
+`TransitionTo()` returns `VoidResult<IError>`: **it never throws**. Handle it like any other failure:
 
 ```csharp
 return order.TransitionTo(OrderStatus.Approved)
