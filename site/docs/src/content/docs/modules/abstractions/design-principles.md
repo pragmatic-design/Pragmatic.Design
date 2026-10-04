@@ -20,7 +20,7 @@ The Pragmatic.Design ecosystem comprises many modules (Actions, Persistence, Eve
 
 > **One declared exception:** the package ships four Roslyn analyzers (`Pragmatic.Abstractions.Analyzers`:
 > captive dependency, `BuildServiceProvider`, `[Inject]` consistency, JSON context coverage PRAG2800).
-> They are compile-time tooling that guards these contracts — they add zero runtime dependency and
+> They are compile-time tooling that guards these contracts: they add zero runtime dependency and
 > never execute in your app, so they don't violate the no-implementation rule; they enforce it.
 
 ---
@@ -154,11 +154,11 @@ Attributes in Abstractions follow these rules:
 
 1. **Generic over `typeof`:** Always prefer `[Attr<T>]` over `[Attr(typeof(T))]`.
 2. **Minimal properties:** Only include properties that affect SG output or runtime behavior. Documentation belongs in XML comments.
-3. **No implementation logic — with one admitted exception: validating their own arguments.**
+3. **No implementation logic, with one admitted exception: validating their own arguments.**
    `[RequirePermission]` and `[RequireAnyPermission]` reject an empty permission list,
    `[RequiresConfig]` and `[Rule]` reject a blank string. That is not behaviour, it is refusing to be
    constructed in a state that means nothing. ⚠️ For an attribute the source generator reads, the
-   constructor may never run — the generator reads the *symbol* — so a guard there protects only the
+   constructor may never run (the generator reads the *symbol*), so a guard there protects only the
    reflective path. Where the rule has to hold for generated code, it is enforced by a diagnostic
    instead: `PRAG0422` is exactly that, for the empty permission list.
 4. **`Inherited = false`:** Most attributes are not inherited because each type opts in explicitly.
@@ -189,7 +189,7 @@ Because every module in the ecosystem depends on Abstractions:
 - **New interfaces** are additive (non-breaking). Modules only consume the interfaces they need.
 - **New members on existing interfaces** should use default interface implementations when possible to avoid breaking existing implementors.
 - **No deprecation before v1.** A replaced API is removed in the same change that introduces its
-  successor, with every caller updated — `[Obsolete]` protects consumers that do not exist yet.
+  successor, with every caller updated; `[Obsolete]` protects consumers that do not exist yet.
 
 The package follows the same version as the Pragmatic.Design ecosystem. All packages are versioned together.
 

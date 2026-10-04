@@ -9,7 +9,7 @@ These are the most common issues developers encounter when working with Pragmati
 **Wrong:**
 
 ```csharp
-// In Pragmatic.Abstractions — adding an interface that uses ASP.NET Core types
+// In Pragmatic.Abstractions: adding an interface that uses ASP.NET Core types
 using Microsoft.AspNetCore.Http;
 
 namespace Pragmatic.Identity;
@@ -25,7 +25,7 @@ public interface ICurrentUserAccessor
 **Right:**
 
 ```csharp
-// In Pragmatic.Identity.AspNetCore — the ASP.NET-specific adapter
+// In Pragmatic.Identity.AspNetCore: the ASP.NET-specific adapter
 using Microsoft.AspNetCore.Http;
 using Pragmatic.Identity;
 
@@ -48,7 +48,7 @@ Keep the interface (`ICurrentUser`) in Abstractions. Keep the ASP.NET-specific i
 **Wrong:**
 
 ```csharp
-// In Pragmatic.Abstractions — adding caching logic
+// In Pragmatic.Abstractions: adding caching logic
 namespace Pragmatic.Caching;
 
 public class InMemoryCacheStack : ICacheStack
@@ -69,7 +69,7 @@ public class InMemoryCacheStack : ICacheStack
 **Right:**
 
 ```csharp
-// In Pragmatic.Abstractions — only the contract
+// In Pragmatic.Abstractions: only the contract
 namespace Pragmatic.Caching;
 
 public interface ICacheStack
@@ -79,7 +79,7 @@ public interface ICacheStack
     // ... other members
 }
 
-// In Pragmatic.Caching — the implementation
+// In Pragmatic.Caching: the implementation
 namespace Pragmatic.Caching;
 
 public class HybridCacheStack : ICacheStack
@@ -90,12 +90,12 @@ public class HybridCacheStack : ICacheStack
 
 **Why:** Abstractions must contain only contracts (interfaces, attributes, records, enums) and trivially minimal implementations (null-object singletons). Anything with real logic belongs in the module that provides the runtime behavior.
 
-The exceptions, in full — the list is worth keeping honest, because "only contracts" is what people quote back:
+The exceptions, in full (the list is worth keeping honest, because "only contracts" is what people quote back):
 - Null-object singletons (`AnonymousUser`, `NullUserAuthorization`, `UnresolvedTenantContext`) that return empty/false/null for every member.
 - Stateless extension methods (`CurrentUserExtensions`, `ServiceCollectionDecorateExtensions`).
 - Telemetry helpers (`ActivityHelper`).
-- `PragmaticJsonOptions` — stateful, with a `Lock`, a mutable context list and a `Build()` that freezes it. It is the shared serialization seam, and a seam every module must observe as one object cannot be a contract with the state kept elsewhere.
-- `OutboundUrlGuard` — real logic, classifying addresses against the private and reserved ranges. It lives here so a module can refuse an SSRF without referencing an HTTP package.
+- `PragmaticJsonOptions`: stateful, with a `Lock`, a mutable context list and a `Build()` that freezes it. It is the shared serialization seam, and a seam every module must observe as one object cannot be a contract with the state kept elsewhere.
+- `OutboundUrlGuard`: real logic, classifying addresses against the private and reserved ranges. It lives here so a module can refuse an SSRF without referencing an HTTP package.
 - Argument guards on attributes and records (`PagedResult`, `[RequirePermission]`, `[Rule]`): refusing a meaningless construction, not behaviour.
 
 ---
@@ -105,7 +105,7 @@ The exceptions, in full — the list is worth keeping honest, because "only cont
 **Wrong:**
 
 ```csharp
-// Consumer code — wrong namespace
+// Consumer code: wrong namespace
 using Pragmatic.Abstractions.Identity;
 
 public class MyService(ICurrentUser user)
@@ -121,7 +121,7 @@ using Pragmatic.Identity;
 
 public class MyService(ICurrentUser user)
 {
-    // Works — ICurrentUser lives in Pragmatic.Identity
+    // Works: ICurrentUser lives in Pragmatic.Identity
 }
 ```
 
@@ -134,7 +134,7 @@ public class MyService(ICurrentUser user)
 **Wrong:**
 
 ```csharp
-// In a domain service library — referencing the full module for just the interface
+// In a domain service library: referencing the full module for just the interface
 <ProjectReference Include="...\Pragmatic.Persistence.EFCore.csproj" />
 ```
 
@@ -204,7 +204,7 @@ public class AppHost { }
 **Wrong:**
 
 ```csharp
-// In Pragmatic.Abstractions — an interface only used by Pragmatic.Authorization
+// In Pragmatic.Abstractions: an interface only used by Pragmatic.Authorization
 namespace Pragmatic.Authorization;
 
 public interface IWildcardMatcher
@@ -218,7 +218,7 @@ public interface IWildcardMatcher
 **Right:**
 
 ```csharp
-// In Pragmatic.Authorization — where it belongs
+// In Pragmatic.Authorization: where it belongs
 namespace Pragmatic.Authorization;
 
 internal static class WildcardMatcher
@@ -236,7 +236,7 @@ internal static class WildcardMatcher
 **Wrong:**
 
 ```csharp
-// In Pragmatic.Abstractions — new interface without a null-object
+// In Pragmatic.Abstractions: new interface without a null-object
 namespace Pragmatic.FeatureFlags;
 
 public interface IFeatureFlagStore
@@ -318,7 +318,7 @@ public interface ICurrentUser
 {
     // ... existing members ...
 
-    // NEW: with default implementation — non-breaking
+    // NEW: with default implementation, non-breaking
     IUserProfile? Profile => null;
 }
 ```
@@ -336,7 +336,7 @@ File: src/Pragmatic.Abstractions/Authorization/IPermissionChecker.cs
 ```
 
 ```csharp
-namespace Pragmatic.Identity;  // Wrong namespace — file is in Authorization/ folder
+namespace Pragmatic.Identity;  // Wrong namespace: file is in Authorization/ folder
 
 public interface IPermissionChecker { /* ... */ }
 ```
@@ -360,7 +360,7 @@ public interface IPermissionChecker { /* ... */ }
 **Wrong:**
 
 ```csharp
-// In a startup step — registering the fallback as scoped
+// In a startup step: registering the fallback as scoped
 services.AddScoped<ICurrentUser>(_ => AnonymousUser.Instance);
 ```
 
@@ -369,7 +369,7 @@ services.AddScoped<ICurrentUser>(_ => AnonymousUser.Instance);
 **Right:**
 
 ```csharp
-// Register as singleton — it is an immutable singleton by design
+// Register as singleton: it is an immutable singleton by design
 services.AddSingleton<ICurrentUser>(AnonymousUser.Instance);
 ```
 
@@ -392,14 +392,14 @@ var user = serviceProvider.GetService<ICurrentUser>() ?? AnonymousUser.Instance;
 _logger.LogInformation("Registering {User}", request);   // your own log call is NOT rewritten
 ```
 
-The generator reads the attribute in one place — message types — and emits an `IRedactionMap` per
+The generator reads the attribute in one place (message types) and emits an `IRedactionMap` per
 messaging assembly. No component consults that map: message auditing moved onto the framework audit
 trail, whose entries carry no payload field, so there is no serialized payload left to redact there.
 
 What *does* redact is pattern-based and independent of this attribute: `PragmaticDataRedactor`
 (Pragmatic.Logging) matches configured property-name patterns, and the audit trail applies
 `PersonalDataRedactor` to what it stores. Both match on names and values, so a field called `Pwd`
-slips through unless a pattern covers it — which is precisely what a declarative marker would fix,
+slips through unless a pattern covers it, which is precisely what a declarative marker would fix,
 and does not yet.
 
 For personal data with a declared category, and the erasure/retention/Article 30 machinery behind
@@ -416,7 +416,7 @@ Two different things, two names:
 | `Pragmatic.Persistence.Query.Results.PagedResult<T,TError>` | Result-pattern paged result with an explicit error type. |
 | `Pragmatic.Persistence.Query.Results.PagedResult<T>` | The same, with `QueryError` as the error type. **This is what generated grid queries and endpoints return** (`PagedResultOf{T}` in OpenAPI). |
 
-A generated query answers with a `PagedResult<T>` — a result you check for success before reading
+A generated query answers with a `PagedResult<T>`, a result you check for success before reading
 `Items`. A `Page<T>` is already the page.
 
 ## Quick Reference

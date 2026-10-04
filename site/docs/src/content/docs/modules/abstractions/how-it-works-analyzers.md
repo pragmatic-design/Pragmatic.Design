@@ -1,16 +1,16 @@
 ---
-title: "Analyzers — four mistakes the compiler will not let you make quietly"
-description: "> **Scope**: `src/Pragmatic.Abstractions.Analyzers/` — 5 files, 452 lines: four `DiagnosticAnalyzer`"
+title: "Analyzers: four mistakes the compiler will not let you make quietly"
+description: "> **Scope**: `src/Pragmatic.Abstractions.Analyzers/`, 5 files, 452 lines: four `DiagnosticAnalyzer`"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Abstractions/docs/how-it-works/analyzers.md
 sidebar:
   order: 4
 ---
-> **Scope**: `src/Pragmatic.Abstractions.Analyzers/` — 5 files, 452 lines: four `DiagnosticAnalyzer`
+> **Scope**: `src/Pragmatic.Abstractions.Analyzers/`, 5 files, 452 lines: four `DiagnosticAnalyzer`
 > classes (`InjectRequiredAnalyzer`, `CaptiveDependencyAnalyzer`, `BuildServiceProviderAnalyzer`,
-> `JsonContextCoverageAnalyzer`) and the `DiagnosticDescriptors` that back them — plus
-> `src/Pragmatic.Abstractions.CodeFixers/` — 1 file, 177 lines: `AddJsonSerializableCodeFixProvider`.
+> `JsonContextCoverageAnalyzer`) and the `DiagnosticDescriptors` that back them, plus
+> `src/Pragmatic.Abstractions.CodeFixers/`, 1 file, 177 lines: `AddJsonSerializableCodeFixProvider`.
 >
-> **Not covered here**: the other analyzer projects in the repository —
+> **Not covered here**: the other analyzer projects in the repository:
 > `Pragmatic.Persistence.Analyzers`, `Pragmatic.Result.Analyzers`,
 > `Pragmatic.SourceGenerator.Analyzers`, `Pragmatic.Temporal.Analyzers`. They are separate rule sets
 > with their own diagnostic ranges.
@@ -21,12 +21,12 @@ This document is about what each rule actually looks for, and what happens to co
 ## The inverse of everything else in Abstractions
 
 The rest of this package is contracts: interfaces you implement, attributes you apply. These four
-types are the opposite. Nothing calls them and nothing implements them — they are loaded by the C#
+types are the opposite. Nothing calls them and nothing implements them: they are loaded by the C#
 compiler and run *over your code*, once per compilation. The question is not "who consumes this",
 it is "what does the compiler say when I get this wrong".
 
 All four are pure diagnostics: they never change semantics, never fail a build on their own. In a
-project with `TreatWarningsAsErrors` three of them do fail it, which is the point — the mistakes they
+project with `TreatWarningsAsErrors` three of them do fail it, which is the point: the mistakes they
 catch are the kind that compile perfectly and then misbehave in production.
 
 Each analyzer declares `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`: generated
@@ -41,7 +41,7 @@ code is never analyzed, so nothing the source generator emits can raise one of t
 | `PRAG1451` | Warning | Any call to `IServiceCollection.BuildServiceProvider()` | A second container, with duplicate singletons, twice-bound options and leaked disposables |
 | `PRAG2800` | Info | A message, domain-event or job handler whose payload type has no `[JsonSerializable]` | Serialization that falls back to reflection and breaks under Native AOT |
 
-### PRAG1452 — optional injection has to be said out loud
+### PRAG1452: optional injection has to be said out loud
 
 `[Inject].Required` defaults to `false`, and that default is deliberate: flipping it would break every
 existing member. The consequence is that an unregistered service arrives as `null` instead of failing
@@ -49,7 +49,7 @@ at startup, so a misconfiguration survives the boot and shows up at the first ca
 
 The analyzer restores the fail-fast property without a breaking change. It reads the `Required` named
 argument and stays silent **only** when it is the literal `true`. Everything else warns: the argument
-absent, or written `Required = false`. Writing the `false` explicitly is not an escape — the rule is
+absent, or written `Required = false`. Writing the `false` explicitly is not an escape: the rule is
 that the optional, nullable contract must be acknowledged, and acknowledgement is a suppression, in
 the file or in `.editorconfig`, not a keystroke that looks like intent.
 
@@ -61,7 +61,7 @@ attribute.
 `Pragmatic.Composition.Attributes.InjectAttribute` at compilation start and unregisters itself if the
 type is not there.
 
-### PRAG1450 — the captive dependency, in the two cases that are never right
+### PRAG1450: the captive dependency, in the two cases that are never right
 
 `BackgroundService` and `IHostedService` implementations are registered as singletons. Anything
 scoped they take in the constructor is captured once and kept for the lifetime of the application:
@@ -71,9 +71,9 @@ Deciding in general whether a constructor parameter is scoped would require know
 which an analyzer does not have. So the rule is deliberately narrow and confines itself to two types
 whose lifetime is not a matter of registration:
 
-- **`IOptionsSnapshot<T>`** — scoped by definition. The message names `IOptionsMonitor<T>` as the
+- **`IOptionsSnapshot<T>`**: scoped by definition. The message names `IOptionsMonitor<T>` as the
   replacement, which is the singleton-safe way to read live configuration.
-- **Any type deriving from `DbContext`** — scoped by convention everywhere. The message names
+- **Any type deriving from `DbContext`**: scoped by convention everywhere. The message names
   `IServiceScopeFactory` and a scope per unit of work.
 
 The suggested fix is part of the message text, so the diagnostic tells you what to write, not only
@@ -81,7 +81,7 @@ what is wrong. The location is the offending constructor parameter. Abstract cla
 are skipped, and the whole rule switches off in a compilation that references neither
 `BackgroundService` nor `IHostedService`.
 
-### PRAG1451 — one container per application
+### PRAG1451: one container per application
 
 `BuildServiceProvider()` called during configuration builds a throwaway container that is *not* the
 one the host will use. Every singleton resolved from it is a different instance from the one the
@@ -89,7 +89,7 @@ application sees, options and configuration get bound a second time, and any `ID
 is never disposed. The code compiles, runs, and produces two of everything.
 
 The match is on the invocation: method named `BuildServiceProvider` whose containing type is
-`Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions` — the type that
+`Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions`, the type that
 holds every overload of the extension method, so the overload with `ServiceProviderOptions` is covered
 by the same check. The diagnostic sits on the call expression.
 
@@ -97,32 +97,32 @@ This is the one rule with no activation gate: it registers an operation action d
 applies to any compilation that loads the analyzer, whether or not the project references anything
 else from Pragmatic.
 
-### PRAG2800 — the payloads the generator could not cover
+### PRAG2800: the payloads the generator could not cover
 
 Under Native AOT, every type the framework serializes needs source-generated metadata in a
 `JsonSerializerContext`. Message, domain-event and job payloads are serialized on their way to the
 outbox, the transport and the job store, so a payload missing from the context is a runtime failure
 that only appears in the AOT build.
 
-The analyzer walks the handler interfaces — `Pragmatic.Messaging.IMessageHandler<T>`,
-`Pragmatic.Events.IDomainEventHandler<T>`, `Pragmatic.Jobs.IJob<T>` — takes the payload type argument,
+The analyzer walks the handler interfaces (`Pragmatic.Messaging.IMessageHandler<T>`,
+`Pragmatic.Events.IDomainEventHandler<T>`, `Pragmatic.Jobs.IJob<T>`), takes the payload type argument,
 and checks it against the set of types covered by `[JsonSerializable]` anywhere in the assembly.
 
 That set is built from the `JsonSerializerContext` types declared at namespace level in the assembly,
 including the one the source generator emits. This is what keeps the rule quiet: the generator
 already contributes `[JsonSerializable]` entries for the types it can handle, and what remains
 flagged is what it could not reach. The walk descends into namespaces but not into types, so a
-context nested inside another type is not part of the set — declare contexts at namespace level, as
+context nested inside another type is not part of the set; declare contexts at namespace level, as
 the generated one is.
 
-Positional records and init-only DTOs are **not** in that remainder — the generator covers both,
+Positional records and init-only DTOs are **not** in that remainder: the generator covers both,
 through `UnsafeAccessor`. What it cannot reach is a payload it never sees: a type that arrives only
 at run time, or one whose shape is decided outside the compilation. Those entries have to be written
 into a context of your own, because Roslyn generators are not chainable and one generator's output
 cannot feed another's input.
 
 Severity is `Info`, not `Warning`, because a project that has not committed to AOT should not be
-nagged. The report location is the **handler type**, not the payload — chosen so the code fix has a
+nagged. The report location is the **handler type**, not the payload, chosen so the code fix has a
 class declaration to start from.
 
 ## The code fix
@@ -133,7 +133,7 @@ it re-derives the payload type through the same three handler interfaces, finds 
 
 > Add `[JsonSerializable(typeof(Payload))]` to `MyJsonContext`
 
-Accepting it edits the context — a different file from the one the diagnostic is reported in — through
+Accepting it edits the context (a different file from the one the diagnostic is reported in) through
 a `DocumentEditor`. The attribute is inserted fully qualified, then `Simplifier` reduces it to the
 short form your `using` directives allow and `Formatter` lays it out to the project's style. A final
 pass normalizes line endings to whatever the context file already uses, so the edit never leaves a
@@ -151,8 +151,8 @@ fires reads exactly like a rule that passed:
 | Rule | Silent when |
 |---|---|
 | `PRAG1452` | `InjectAttribute` is not in the compilation |
-| `PRAG1450` | Neither `BackgroundService` nor `IHostedService` is referenced — and always for scoped dependencies other than `IOptionsSnapshot<T>` and `DbContext` |
-| `PRAG1451` | Never — no gate |
+| `PRAG1450` | Neither `BackgroundService` nor `IHostedService` is referenced, and always for scoped dependencies other than `IOptionsSnapshot<T>` and `DbContext` |
+| `PRAG1451` | Never: no gate |
 | `PRAG2800` | None of the three handler interfaces is referenced, or the assembly declares no `JsonSerializerContext` at all |
 
 Two of those deserve to be spelled out.
@@ -162,7 +162,7 @@ into a `BackgroundService` is a captive dependency too, and the analyzer says no
 rule covers the two cases it can decide from the type alone; the rest is still yours to watch.
 
 **`PRAG2800` requires that you have already opted in.** The gate is the presence of a
-`JsonSerializerContext` in the assembly. An application on the reflection path gets no suggestions —
+`JsonSerializerContext` in the assembly. An application on the reflection path gets no suggestions;
 the first one arrives on the day it declares its first context, and then it arrives for every
 uncovered payload at once.
 
@@ -173,6 +173,6 @@ than in `.editorconfig`: the rule is that an optional, nullable contract has to 
 an acknowledgement belongs where the decision was made rather than in a file nobody reads twice.
 
 ⚠️ Do not aim a `PRAG1647` suppression at optional injection: that id belongs to the Composition
-generator, for something else entirely — `[Inject]` members being ignored on an open-generic service.
+generator, for something else entirely: `[Inject]` members being ignored on an open-generic service.
 This rule is `PRAG1452`. Two rules under one id on the same build means one `.editorconfig` line
 silences both, and the one silenced by accident is the one saying those members were dropped.

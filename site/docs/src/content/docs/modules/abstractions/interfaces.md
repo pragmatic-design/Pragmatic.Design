@@ -33,7 +33,7 @@ public interface IError
 
 ### `IEntity` (`Pragmatic.Persistence.Entity`)
 
-An entity: something with an identity that outlives a single request. The key is a `Guid`, always —
+An entity: something with an identity that outlives a single request. The key is a `Guid`, always;
 there is no type parameter.
 
 ```csharp
@@ -123,7 +123,7 @@ Written to be implemented by the application, for entities whose construction ne
 
 Two ways to construct entities correctly. `ICreatable<TSelf>` is implemented FOR you by the
 generator: a compile-time `static Create()` factory (Guid v7 for a `Guid` id, audit stamps,
-defaults) with zero DI — an `int` or `long` id is left unset, because that one belongs to the
+defaults) with zero DI; an `int` or `long` id is left unset, because that one belongs to the
 database. `IEntityFactory<TEntity>` is the escape hatch when construction needs services, and the
 application both implements and calls it: no generated code resolves it.
 
@@ -132,7 +132,7 @@ application both implements and calls it: no generated code resolves it.
 Row-level data ownership. `IOwnedEntity.OwnerId` is auto-set from the current user on insert and
 enforced by the ownership query filter ("you see what you created"). `IScopedEntity.AccessScopes`
 is a list of scope tokens (`user:...`, `role:...`, `scope:dept-x`) matched against the user's
-resolved scopes (`IUserScopeResolver`, section 5) — queries come back already filtered. Apply via
+resolved scopes (`IUserScopeResolver`, section 5), so queries come back already filtered. Apply via
 `[HasOwner]` / `[HasAccessScopes]` on the entity; the generator wires interfaces and filters.
 
 ## 3. Persistence -- Repositories
@@ -140,7 +140,7 @@ resolved scopes (`IUserScopeResolver`, section 5) — queries come back already 
 > ⚠️ `IReadRepository<TEntity>` and `IRepository<TEntity>` are documented here and **shipped in
 > `Pragmatic.Persistence`**: their signatures name the query contracts and `PagedResult<T>`, which
 > Abstractions cannot reference without a cycle through `Pragmatic.Result`. The namespace is
-> unchanged — `Pragmatic.Persistence.Repository` — so nothing a consumer writes moves with them.
+> unchanged (`Pragmatic.Persistence.Repository`), so nothing a consumer writes moves with them.
 
 ### `IReadRepository<TEntity>` (`Pragmatic.Persistence.Repository`)
 
@@ -349,7 +349,7 @@ public interface IUserAuthorization
 
 ### `[assembly: Permission]` (`Pragmatic.Authorization`)
 
-Declares a custom permission of the assembly — one that is not an entity's CRUD permission. The generator
+Declares a custom permission of the assembly, one that is not an entity's CRUD permission. The generator
 adds its `const` to the boundary's `{Boundary}Permissions` class and its entry to the permission registry.
 
 ```csharp
@@ -437,11 +437,11 @@ public interface IPermissionChecker
 }
 ```
 
-**When to use:** `IUserAuthorization` is reached through `ICurrentUser`, and answers roles, groups and scopes straight off the claims. Permissions are not free: the shipped implementation fans out over the providers and passes through the cache stack, and the synchronous members block on that work. `IPermissionChecker` is the other seam, for a check that must go and ask something — a database, a directory, a remote policy service — and the signature is the warning that a call may cost.
+**When to use:** `IUserAuthorization` is reached through `ICurrentUser`, and answers roles, groups and scopes straight off the claims. Permissions are not free: the shipped implementation fans out over the providers and passes through the cache stack, and the synchronous members block on that work. `IPermissionChecker` is the other seam, for a check that must go and ask something (a database, a directory, a remote policy service), and the signature is the warning that a call may cost.
 
 ### `IResourceAuthorizer<TResource>` (`Pragmatic.Authorization`)
 
-Resource-level (ABAC) authorization. `TResource` is **not** contravariant: the filter resolves the authorizer by the resource's own type and the container applies no variance, so an authorizer declared for a base type would never be found for a derived one. Every type it guards needs its own registration. An unregistered type is allowed — the interface is opt-in — unless an authorizer is registered for one of its base types, in which case it is refused.
+Resource-level (ABAC) authorization. `TResource` is **not** contravariant: the filter resolves the authorizer by the resource's own type and the container applies no variance, so an authorizer declared for a base type would never be found for a derived one. Every type it guards needs its own registration. An unregistered type is allowed (the interface is opt-in) unless an authorizer is registered for one of its base types, in which case it is refused.
 
 ```csharp
 public interface IResourceAuthorizer<TResource>
@@ -513,8 +513,8 @@ public sealed class RequireAnyPermissionAttribute(params string[] permissions) :
 
 ### `[ExplicitPermission]` (`Pragmatic.Authorization`)
 
-Overrides the auto-derived permission name. Pass a generated constant — an entity's CRUD, or an
-`[assembly: Permission]` — so the value follows the declaration; one nothing generates is `PRAG0421`.
+Overrides the auto-derived permission name. Pass a generated constant (an entity's CRUD, or an
+`[assembly: Permission]`) so the value follows the declaration; one nothing generates is `PRAG0421`.
 
 ```csharp
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -614,7 +614,7 @@ public sealed record EntityPropertyChanged<TEntity> : IDomainEvent where TEntity
 ### `IIntegrationEvent` / `[PublicEvent]` / `[ObsoleteEvent]` (`Pragmatic.Events`)
 
 The two-tier event model. A plain `IDomainEvent` is INTERNAL to its boundary; marking it
-`[PublicEvent]` (or implementing `IIntegrationEvent`) declares it a cross-boundary contract —
+`[PublicEvent]` (or implementing `IIntegrationEvent`) declares it a cross-boundary contract,
 surfaced in the generated AsyncAPI document and eligible for transport publishing.
 `[ObsoleteEvent("remove-by")]` deprecates an event while keeping consumers compiling; the AsyncAPI
 contract shows the deprecation.
@@ -701,7 +701,7 @@ public static readonly UnresolvedTenantContext Instance;
 ### `IMutableTenantContext` (`Pragmatic.MultiTenancy`)
 
 Lets NON-HTTP entry points (outbox delivery, jobs, message handlers) set the tenant on their DI
-scope — the same scoped context the EF tenant filter reads, so background work stays
+scope, the same scoped context the EF tenant filter reads, so background work stays
 tenant-isolated:
 
 ```csharp
@@ -714,7 +714,7 @@ using var _ = mutableTenantContext.SetTenant(message.TenantId, tenantName: null)
 Persistent tenant metadata: CRUD plus lifecycle (`Active`, `Migrating`, `Suspended`,
 `Deactivated`, `Provisioning`). A non-null `TenantInfo.ConnectionString` means DB-per-tenant (and
 is masked in ToString/logs). `DeactivateAsync` is the supported "soft delete"; `DeleteAsync` is a
-default-throwing member — implement it only if hard deletion is truly wanted.
+default-throwing member; implement it only if hard deletion is truly wanted.
 
 ## 9. Caching
 
@@ -1062,19 +1062,19 @@ Hook for modules that need to map custom endpoints on the WebApplication without
 dependency in the contract (the `app` parameter is typed `object` and cast by the host).
 Implementations are discovered and invoked by the host at startup.
 
-### Assembly metadata — `[PragmaticMetadata]` / `IAssemblyMetadataProvider` / `AssemblyMetadataRegistry` (`Pragmatic.Composition.Metadata`)
+### Assembly metadata: `[PragmaticMetadata]` / `IAssemblyMetadataProvider` / `AssemblyMetadataRegistry` (`Pragmatic.Composition.Metadata`)
 
 The reflection-free channel modules use to describe themselves to hosts. It is **two** channels over
 one attribute, and conflating them makes neither make sense:
 
 - **Compile time.** The generator emits `[assembly: PragmaticMetadata(category, schemaVersion, json)]`,
   and the *host generator* reads those attributes straight off the referenced assemblies through
-  Roslyn — `assembly.GetAttributes()`, no registry involved. This is what aggregates cross-assembly
+  Roslyn (`assembly.GetAttributes()`, no registry involved). This is what aggregates cross-assembly
   topology and why `[Include<Module>]` "just works" without scanning.
 - **Run time.** The generator also registers a provider into `AssemblyMetadataRegistry` from a module
   initializer, for code that needs the same description while the application is running.
 
-The compile-time half cannot use the registry — the host generator runs before any of that code
+The compile-time half cannot use the registry: the host generator runs before any of that code
 exists. You never touch either directly.
 
 ⚠️ The compile-time half reads **referenced** assemblies. A host that declares framework types itself
@@ -1294,15 +1294,15 @@ public decimal CalculateRefund(Reservation r) => throw Behavior.Pending("UC-12 p
 ```
 
 **What you get:** the source generator detects endpoints whose body is still pending and emits
-`[assembly: PendingContract(...)]`; the contract-test generator then *skips* those endpoints — a
+`[assembly: PendingContract(...)]`; the contract-test generator then *skips* those endpoints, so a
 freshly scaffolded app is green on what exists and silent (not red) on what is declared but pending.
 
 ### `[Raises<TEvent>]` (`Pragmatic.Authoring`)
 
 Declares the domain event a member raises. On an **entity**, the generator wires the raise for you
 at the chosen lifecycle transition (`Created` default, `Updated`, `Deleted`), filling the event's
-constructor from matching entity members by name — zero code. On a **method/mutation**, the generator
-wires the raise as well — do not raise the event by hand too, or it goes out twice.
+constructor from matching entity members by name, with zero code. On a **method/mutation**, the generator
+wires the raise as well; do not raise the event by hand too, or it goes out twice.
 
 ```csharp
 [Raises<ReservationCreated>]                       // auto-raised when the entity is created
@@ -1326,7 +1326,7 @@ public partial class RefundInvoiceAction { }
 ```
 
 **What you get:** requirements that survive refactorings and answer "which code implements UC-12?"
-with an exact search. By design these are annotation-only — no framework tool consumes them today;
+with an exact search. By design these are annotation-only: no framework tool consumes them today;
 they are meant for manual traceability and for external tooling.
 
 ## 19. Maintenance
@@ -1346,7 +1346,7 @@ public interface IMaintenanceMode
 }
 ```
 
-**When to use:** you rarely call it — `app.UseMaintenanceMode()` registers the service together with
+**When to use:** you rarely call it; `app.UseMaintenanceMode()` registers the service together with
 its options and the migration progress stream, and a control-plane `EnterMaintenanceCommand` flips
 it. What that registers is the switch, not the pipeline: the 503 middleware and the admin panel are
 the job of `MaintenanceStep`, which nothing adds to a generated host. Implement
@@ -1355,9 +1355,9 @@ the job of `MaintenanceStep`, which nothing adds to a generated host. Implement
 ### `IMigrationProgressStream` / `MigrationProgressEvent` (`Pragmatic.Maintenance`)
 
 Producer/consumer channel for migration progress: producers `Report(...)`, consumers
-`StreamAsync(ct)` (an `IAsyncEnumerable`) — this is what feeds the maintenance panel's SSE stream.
+`StreamAsync(ct)` (an `IAsyncEnumerable`); this is what feeds the maintenance panel's SSE stream.
 `MigrationProgressEvent` validates in its constructor (percent 0–100 inclusive) and timestamps
-itself; its setters are `init`, so build these events positionally — an object initializer or a
+itself; its setters are `init`, so build these events positionally: an object initializer or a
 `with` assigns over the validated value.
 
 ## 20. Control Plane
@@ -1385,27 +1385,27 @@ public interface IControlPlane
 
 Polymorphic commands (`DrainCommand`, `MigrateCommand`, `EnterMaintenanceCommand`,
 `ExitMaintenanceCommand`) serialized with `$type`. `IHostCommandDispatcher` routes a serialized
-command to its `IHostCommandHandler<TCommand>` — implement a handler to support a new command.
+command to its `IHostCommandHandler<TCommand>`; implement a handler to support a new command.
 Dispatch is allow-listed by design: unknown command types are rejected, never activated by name.
 
 ### Host identity, state and health (`Pragmatic.ControlPlane`)
 
-- `IHostIdentity` — who am I: `HostId`, `HostName`, `HostType` (Tenant/Admin/Worker/Gateway), `StartedAt`.
-- `IHostStatus` — mutable runtime state (`HostState`: Starting → Ready → Migrating/Maintenance/Draining → Drained or Stopped) with `TransitionTo(...)`. `Drained` is out of the rotation with nothing in flight and still running; `ExitMaintenanceCommand` returns it to `Ready`.
-- `IHostHealthContributor` — implement to plug a component into the composite health report
+- `IHostIdentity` (who am I): `HostId`, `HostName`, `HostType` (Tenant/Admin/Worker/Gateway), `StartedAt`.
+- `IHostStatus`: mutable runtime state (`HostState`: Starting → Ready → Migrating/Maintenance/Draining → Drained or Stopped) with `TransitionTo(...)`. `Drained` is out of the rotation with nothing in flight and still running; `ExitMaintenanceCommand` returns it to `Ready`.
+- `IHostHealthContributor`: implement to plug a component into the composite health report
   (`Name`, `Category`, `Mode` Pull/Push, `CheckAsync` → Healthy/Degraded/Unhealthy);
   `IHostHealthAggregator` combines them. Messaging transports ship contributors out of the box.
-- `MigrationStatus` — snapshot of migration progress per database, validated in the constructor
+- `MigrationStatus`: snapshot of migration progress per database, validated in the constructor
   alone: its `init` properties let an object initializer or a `with` assign an inconsistent pair.
-- `ControlPlaneError` — the `IError` (502) returned by control-plane operations, with factories
+- `ControlPlaneError`: the `IError` (502) returned by control-plane operations, with factories
   (`HostNotFound`, `NotConnected`, `CommandFailed`).
-- `ControlPlaneEvent` records — `HostStateChangedEvent` and `ConfigChangedEvent`, the two the KV watch
+- `ControlPlaneEvent` records: `HostStateChangedEvent` and `ConfigChangedEvent`, the two the KV watch
   maps (`state/app:` and `config/` keys). Migration progress is reported through `MigrationStatus` on
   `IHostStatus`, not as an event.
 
 ## 21. Serialization (AOT-first JSON seam)
 
-One shared, source-generated JSON pipeline for messaging payloads, outbox, sagas, jobs and host —
+One shared, source-generated JSON pipeline for messaging payloads, outbox, sagas, jobs and host,
 reflection-free by default, so native AOT publishes cleanly.
 
 ### `[assembly: PragmaticGenerateJsonContext]` (`Pragmatic.Serialization`)
@@ -1417,17 +1417,17 @@ reflection-free by default, so native AOT publishes cleanly.
 ```
 
 **What you get:** the source generator emits a `JsonSerializerContext` covering your boundary types
-(message/job/event/saga payloads, mapped DTOs — transitively closed) and registers it. No hand-written
+(message/job/event/saga payloads, mapped DTOs, transitively closed) and registers it. No hand-written
 context, no IL2026/IL3050 warnings. The PRAG2800 analyzer (see section 26) reports an uncovered
-payload on message, domain-event and job handlers — at `Info` severity, and only once the assembly
-declares a context of its own — with a code-fix.
+payload on message, domain-event and job handlers (at `Info` severity, and only once the assembly
+declares a context of its own) with a code-fix.
 
 ### `PragmaticJsonOptions` (`Pragmatic.Serialization`)
 
 The seam itself: an ordered chain of `JsonSerializerContext`s plus an opt-out reflection fallback,
 built once and cached. Configure it in the host with `UseJson(...)` / `UseJson<TContext>()`, or let
 `AddPragmaticJsonContext` (called by generated code) contribute contexts idempotently.
-`DisableReflectionFallback()` makes any uncovered type a hard error — recommended for AOT.
+`DisableReflectionFallback()` makes any uncovered type a hard error, which is recommended for AOT.
 
 ## 22. Specification
 
@@ -1436,7 +1436,7 @@ built once and cached. Configure it in the host with `UseJson(...)` / `UseJson<T
 Composable predicate usable both against `IQueryable` (translated to SQL) and in memory:
 `ToExpression()` for query translation, `IsSatisfiedBy(entity)` for direct checks. Consumed by
 `IReadRepository.FindAsync(spec)`. The base class and combinators (And/Or/Not) live in
-Pragmatic.Specification — see that module's docs.
+Pragmatic.Specification; see that module's docs.
 
 ## 23. Pagination
 
@@ -1469,8 +1469,8 @@ construct it yourself.
 public enum ReservationStatus { Draft, Confirmed, Cancelled }
 ```
 
-**What you get:** generated zero-allocation, reflection-free helpers — `ToStringFast()`,
-`IsDefined`, `TryParse`, `GetValues`, `GetNames` — instead of the slow reflection-based `Enum` APIs.
+**What you get:** generated zero-allocation, reflection-free helpers (`ToStringFast()`,
+`IsDefined`, `TryParse`, `GetValues`, `GetNames`) instead of the slow reflection-based `Enum` APIs.
 
 ### `[NotLogged]` (`Pragmatic`)
 
@@ -1482,7 +1482,7 @@ public sealed record RegisterUser(string Email, [property: NotLogged] string Pas
 ```
 
 > **Current status: the attribute marks, nothing enforces it.** The generator reads it on message
-> types and emits an `IRedactionMap` per messaging assembly, but no component consults that map —
+> types and emits an `IRedactionMap` per messaging assembly, but no component consults that map:
 > message auditing moved onto the framework audit trail, whose entries carry no payload field, so
 > nothing is serialized there to redact. Hand-written `_logger.Log*` calls, generated `ToString()`
 > and OpenAPI flagging are unaffected and always were.
@@ -1494,11 +1494,11 @@ public sealed record RegisterUser(string Email, [property: NotLogged] string Pas
 
 ## 26. Analyzers (`Pragmatic.Abstractions.Analyzers`)
 
-Shipped with the package — they guard the contracts above at compile time:
+Shipped with the package to guard the contracts above at compile time:
 
 | Analyzer | Catches |
 |---|---|
 | `CaptiveDependencyAnalyzer` | A Scoped/Transient service captured by a Singleton (classic DI bug: stale dependency) |
 | `BuildServiceProviderAnalyzer` | `BuildServiceProvider()` calls that create a second container (memory leaks, split singletons) |
 | `InjectRequiredAnalyzer` | `[Inject]` usage inconsistencies (e.g. required injection on nullable/unset members) |
-| `JsonContextCoverageAnalyzer` (PRAG2800) | A message, domain-event or job payload that no `[JsonSerializable]` in the assembly covers — with an `Add [JsonSerializable]` code-fix |
+| `JsonContextCoverageAnalyzer` (PRAG2800) | A message, domain-event or job payload that no `[JsonSerializable]` in the assembly covers, with an `Add [JsonSerializable]` code-fix |
