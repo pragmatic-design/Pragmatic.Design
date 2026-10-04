@@ -1,6 +1,6 @@
 # DOCX Rendering
 
-The `Pragmatic.Documents.Docx` package renders a `DocumentModel` to a DOCX (Office Open XML / ISO/IEC 29500) byte stream. The implementation is pure managed — no native dependency, AOT-compatible.
+The `Pragmatic.Documents.Docx` package renders a `DocumentModel` to a DOCX (Office Open XML / ISO/IEC 29500) byte stream. The implementation is pure managed: no native dependency, AOT-compatible.
 
 ---
 
@@ -64,7 +64,7 @@ using (var pdf  = File.Create("report.pdf"))  PdfRenderer.RenderTo(pdf, doc);
 using (var docx = File.Create("report.docx")) DocxRenderer.RenderTo(docx, doc);
 ```
 
-Not every node maps identically — see the "Node mapping" section below.
+Not every node maps identically; see the "Node mapping" section below.
 
 ---
 
@@ -78,7 +78,7 @@ Not every node maps identically — see the "Node mapping" section below.
 | `TableNode` | `<w:tbl>` table with header row styling |
 | `ImageNode` | Embedded image (PNG/JPEG) with DrawingML |
 | `HyperlinkNode` | External hyperlink run |
-| `TocNode` | Field-coded TOC (populated on open — see "Table of contents" below) |
+| `TocNode` | Field-coded TOC (populated on open; see "Table of contents" below) |
 | `PageBreakNode` | `<w:br w:type="page"/>` |
 | `Spacer` | Empty paragraph with height |
 | `HorizontalRule` | Paragraph with a bottom border |
@@ -140,8 +140,8 @@ DocxRenderer.RenderTo(fs, doc, resources);
 Each image is embedded as a part of the OOXML package. The renderer embeds bytes it is given: it does
 not fetch URLs or read files. **An image it cannot resolve fails the render** with an
 `InvalidOperationException` that names the source, the node's alt text, and the resource names that
-were passed — a name that is not among them, no resources at all, a URL, or a `data:` URI that is not
-valid base64. Dropping the image instead would let the call succeed with the picture missing from
+were passed (a name that is not among them, no resources at all, a URL, or a `data:` URI that is not
+valid base64). Dropping the image instead would let the call succeed with the picture missing from
 the file.
 
 ---
@@ -172,7 +172,7 @@ Headers and footers are per-document (not per-page) in DOCX. If the `DocumentMod
 
 ```csharp
 .Page(p => p
-    .Header(new TextNode { Content = "Acme Corp — Q1 2026" })
+    .Header(new TextNode { Content = "Acme Corp · Q1 2026" })
     .Footer(
         new TextNode { Content = "Page " },
         new FieldNode { FieldType = FieldType.Page },
@@ -186,13 +186,13 @@ Headers and footers are per-document (not per-page) in DOCX. If the `DocumentMod
 
 - No multi-column layout (single-column flow only).
 - No advanced drawing shapes (tables and images are supported; SmartArt / charts are not).
-- Custom paragraph styling is limited to `NodeStyle` properties — if you need complex styled paragraphs, use a designer template instead.
+- Custom paragraph styling is limited to `NodeStyle` properties; if you need complex styled paragraphs, use a designer template instead.
 - Track-changes and comments are out of scope.
 
 ---
 
 ## Related
 
-- [pdf-rendering.md](pdf-rendering.md) — same model, PDF output
-- [markup-parser.md](markup-parser.md) — author templates in PDX-Doc markup
-- [`Pragmatic.Documents.Docx.Samples`](../samples/Pragmatic.Documents.Docx.Samples/README.md) — runnable scenarios
+- [pdf-rendering.md](pdf-rendering.md): same model, PDF output
+- [markup-parser.md](markup-parser.md): author templates in PDX-Doc markup
+- [`Pragmatic.Documents.Docx.Samples`](../samples/Pragmatic.Documents.Docx.Samples/README.md): runnable scenarios

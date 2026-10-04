@@ -78,7 +78,7 @@ using var fs = File.Create("guests.csv");
 CsvWriter.Write(fs, book);    // exports the first sheet
 ```
 
-For multi-sheet workbooks, CSV can only carry one sheet — write each sheet to its own file, or use XLSX instead.
+For multi-sheet workbooks, CSV can only carry one sheet: write each sheet to its own file, or use XLSX instead.
 
 ---
 
@@ -153,8 +153,8 @@ var book = CsvReader.ReadAsModel(fs, options: options);
 - Leading/trailing whitespace preserved inside quoted fields, stripped in unquoted fields (RFC behaviour)
 
 What it doesn't do:
-- Auto-detect delimiter — specify `CsvOptions.Delimiter` if it's not `,`
-- Infer column types — everything comes back as `string` in `Cell.Value`. If you need typed values, convert after reading.
+- Auto-detect delimiter: specify `CsvOptions.Delimiter` if it's not `,`
+- Infer column types: everything comes back as `string` in `Cell.Value`. If you need typed values, convert after reading.
 
 ---
 
@@ -180,7 +180,7 @@ public partial record Guest
 The generator adds a nested static `Csv` class to the partial type:
 
 ```csharp
-// Generated at compile time — zero reflection
+// Generated at compile time, zero reflection
 public partial record Guest
 {
     public static class Csv
@@ -215,11 +215,11 @@ using (var fs = File.OpenRead("guests.csv"))
 properties fill the remaining slots in declaration order) and `Ignore`.
 
 Types that round-trip: `string`, `int`, `long`, `float`, `double`, `decimal`, `bool`, `DateTime`,
-`DateTimeOffset`, `Guid`, `TimeSpan`, enums, and their nullable variants. Any other type — `DateOnly`
-and `TimeOnly` included — is written with `ToString()` and left at its default on read, reported as
+`DateTimeOffset`, `Guid`, `TimeSpan`, enums, and their nullable variants. Any other type (`DateOnly`
+and `TimeOnly` included) is written with `ToString()` and left at its default on read, reported as
 **PRAG1900** (Warning). Change the type or mark the property `[CsvColumn(Ignore = true)]`.
 
-A computed property with no setter — `public decimal Total => Net + Tax;` — is a column of the file and
+A computed property with no setter (`public decimal Total => Net + Tax;`) is a column of the file and
 is not read back: it recomputes from the columns that are. No diagnostic, because nothing is lost.
 
 ---
@@ -227,19 +227,19 @@ is not read back: it recomputes from the columns that are. No diagnostic, becaus
 ## Performance
 
 - Writing is single-pass, constant-memory (reads headers + rows, writes as it goes).
-- Reading materialises the whole file in memory — `ReadAsModel` as a `SpreadsheetModel`, the generated `Read` as a `List<T>`.
+- Reading materialises the whole file in memory: `ReadAsModel` as a `SpreadsheetModel`, the generated `Read` as a `List<T>`.
 
 ---
 
 ## Limitations
 
 - No multi-sheet support (CSV is inherently single-sheet).
-- No cell styling, formulas, or column widths — use XLSX if those matter.
+- No cell styling, formulas, or column widths; use XLSX if those matter.
 - No delimiter auto-detection.
 
 ---
 
 ## Related
 
-- [xlsx-rendering.md](xlsx-rendering.md) — same model, full-featured output
-- [`Pragmatic.Documents.Csv.Samples`](../samples/Pragmatic.Documents.Csv.Samples/README.md) — basic roundtrip, locale, formula injection, edge cases
+- [xlsx-rendering.md](xlsx-rendering.md): same model, full-featured output
+- [`Pragmatic.Documents.Csv.Samples`](../samples/Pragmatic.Documents.Csv.Samples/README.md): basic roundtrip, locale, formula injection, edge cases

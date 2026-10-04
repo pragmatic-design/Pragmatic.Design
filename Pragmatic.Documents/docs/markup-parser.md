@@ -20,11 +20,11 @@ Authoring a `DocumentBuilder` in C# is great when the author is the developer. W
 - easy to version per-customer variants
 - parseable by tools outside the runtime (snippet validators, linters, preview tools)
 
-The markup is **declarative** — expressions live in `{{ ... }}` blocks, so a designer can author the structure and a developer provides the data.
+The markup is **declarative**: expressions live in `{{ ... }}` blocks, so a designer can author the structure and a developer provides the data.
 
 ---
 
-## PDX-Doc — document markup
+## PDX-Doc: document markup
 
 ### Skeleton
 
@@ -57,26 +57,26 @@ Without `<page>` elements, the root's children are the content of a single page.
 
 ### Content elements
 
-Inside `<page>` — or `<header>` / `<footer>` inside a page — you place nodes:
+Inside `<page>` (or `<header>` / `<footer>` inside a page) you place nodes:
 
 | Element | Maps to | Attributes / children |
 |---------|---------|------------|
 | `<heading>` | `HeadingNode` | `level` (1-6) |
-| `<text>` | `TextNode` | none — plain text with `{{ }}` |
+| `<text>` | `TextNode` | none: plain text with `{{ }}` |
 | `<paragraph>` | `ParagraphNode` | child nodes |
 | `<container>` | a group of nodes | child nodes |
 | `<spacer />` | `SpacerNode` | `height` (points, default 10) |
 | `<hr />` | `HorizontalRuleNode` | `thickness` (default 0.5) |
 | `<image />` | `ImageNode` | `src`, `alt`, `width`, `height` |
 | `<barcode />` | `BarcodeNode` | `value`, `type` (`qr` default, `code128`, `code39`, `ean13`, `ean8`), `width`, `height` |
-| `<pagebreak />` | `PageBreakNode` | — |
+| `<pagebreak />` | `PageBreakNode` | n/a |
 | `<table>` | `TableNode` | see below |
 | `<list>` | `ListNode` | `ordered`, `data-source`; `<list-item>`, `<item-template>` |
 | `<for-each>` | repeats its children | `source` (required), `item` (default `item`) |
-| `<import src="…" />` / `<partial name="…" />` | a partial — see [Partials](#partials) | |
+| `<import src="…" />` / `<partial name="…" />` | a partial; see [Partials](#partials) | |
 
 An element not in this table is refused with a `MarkupParseException` that names it, and so is an
-attribute the table does not list — `<text>` takes no `align`, `style` or `color`. Hyperlinks, page-number fields, bookmarks,
+attribute the table does not list: `<text>` takes no `align`, `style` or `color`. Hyperlinks, page-number fields, bookmarks,
 footnotes, a table of contents and per-node styling exist in the model but not in the markup: build
 those parts with `DocumentBuilder`.
 
@@ -89,10 +89,10 @@ Every element takes two attributes:
 <heading level="3" for="line in invoice.lines">{{ line.description }}</heading>
 ```
 
-- `if="expression"` — the element is skipped when the expression is false: `null`, `false`, a zero of
+- `if="expression"`: the element is skipped when the expression is false, that is `null`, `false`, a zero of
   any numeric type (`decimal` included, so `if="invoice.balance"` hides a zero balance), an empty
   string, or an empty collection (`if="invoice.lines"`). Everything else is true.
-- `for="name in collection.path"` — the element is repeated once per item, with `name` in scope.
+- `for="name in collection.path"`: the element is repeated once per item, with `name` in scope.
 
 ### Tables
 
@@ -137,10 +137,10 @@ Any attribute or text content can include `{{ expression }}` interpolation. See 
 ```xml
 <page>
   <header>
-    <text>{{company.name}} — Invoice {{invoice.number}}</text>
+    <text>{{company.name}} · Invoice {{invoice.number}}</text>
   </header>
   <footer>
-    <text>Confidential — {{company.name}}</text>
+    <text>Confidential · {{company.name}}</text>
   </footer>
 
   <heading level="1">{{invoice.number}}</heading>
@@ -161,7 +161,7 @@ build that document with `DocumentBuilder`.
     <spacer />
     <heading level="2">Invoice {{invoice.number}}</heading>
     <text>Date: {{invoice.date | date:"dd MMMM yyyy"}}</text>
-    <text>Customer: {{customer.name}} — VAT {{customer.vatId}}</text>
+    <text>Customer: {{customer.name}} · VAT {{customer.vatId}}</text>
     <hr />
     <table data-source="invoice.items">
       <column width="90">Description</column>
@@ -222,7 +222,7 @@ Sections:
 | Element | What it is | Attributes |
 |---------|------------|------------|
 | `<hero>` | one centred column | `background`, `padding` (default 30) |
-| `<row>` | a 12-column grid of `<col>` | `background`, `padding`; `<col width="1..12" valign="top\|middle\|bottom" padding>` — no `<col>` means one full-width column |
+| `<row>` | a 12-column grid of `<col>` | `background`, `padding`; `<col width="1..12" valign="top\|middle\|bottom" padding>`; no `<col>` means one full-width column |
 | `<article>` | one column; a level-1 heading becomes level 2 | `background`, `padding` |
 | `<footer>` | one column | `background`, `padding` (default 10) |
 | anything else | a section holding that single element | |
@@ -238,7 +238,7 @@ Content, inside a section or a column:
 | `<spacer>` | `height` (default 20) |
 | `<divider>` | `color`, `thickness` |
 | `<table>` | `data-source`, `border`, `padding`; `<column width align>`, `<row background>`, `<row-template>`, `<cell bold color align colspan>` |
-| `<partial name="…" />` / `<import src="…" />` | the partial of that name — see [Partials](#partials) |
+| `<partial name="…" />` / `<import src="…" />` | the partial of that name; see [Partials](#partials) |
 
 `if` and `for` work on sections and on content, as in PDX-Doc.
 
@@ -314,7 +314,7 @@ Partials receive the same data context as the parent template.
 ### The same two spellings in both markups
 
 `<import src="…" />` and `<partial name="…" />` are the same thing, and both parsers accept both: the
-name is whatever the attribute carries, and what to make of it — a file name, a key — is the partial
+name is whatever the attribute carries, and what to make of it (a file name, a key) is the partial
 provider's business. In an email a partial may sit inside a section or be a direct child of
 `<email>`, where it becomes a section of its own.
 
@@ -350,13 +350,13 @@ See [templating.md](templating.md) for the data context, pipes, and custom pipe 
 
 ## Editor support
 
-A VS Code / Rider language server for PDX-Doc is on the roadmap. For now use XML IntelliSense — the schema validates structure, though expression syntax is intentionally free-form.
+A VS Code / Rider language server for PDX-Doc is on the roadmap. For now use XML IntelliSense: the schema validates structure, though expression syntax is intentionally free-form.
 
 ---
 
 ## Related
 
-- [templating.md](templating.md) — expressions, pipes, data context
-- [pdf-rendering.md](pdf-rendering.md) — render resolved document templates to PDF
-- [email-rendering.md](email-rendering.md) — render resolved email templates to HTML
-- [`Pragmatic.Documents.Markup.Samples`](../samples/Pragmatic.Documents.Markup.Samples/README.md) — simple, data-bound, and batch markup examples
+- [templating.md](templating.md): expressions, pipes, data context
+- [pdf-rendering.md](pdf-rendering.md): render resolved document templates to PDF
+- [email-rendering.md](email-rendering.md): render resolved email templates to HTML
+- [`Pragmatic.Documents.Markup.Samples`](../samples/Pragmatic.Documents.Markup.Samples/README.md): simple, data-bound, and batch markup examples

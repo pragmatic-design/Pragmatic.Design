@@ -19,7 +19,7 @@ Patterns that look reasonable but don't fit the module's design. Read before you
 - `Pragmatic.Documents.Csv` for CSV
 - `Pragmatic.Documents.Email` for HTML email
 
-`dotnet add package Pragmatic.Documents` will fail — there is no package with that exact name.
+`dotnet add package Pragmatic.Documents` will fail: there is no package with that exact name.
 
 ---
 
@@ -30,7 +30,7 @@ These are **intentionally** different models. HTML email has constraints that pa
 ```csharp
 // ❌ Building a DocumentModel, rendering as email
 var doc = new DocumentBuilder().Page(p => p.Heading("Hi")).Build();
-new EmailHtmlRenderer().Render(doc);  // no — wrong model type
+new EmailHtmlRenderer().Render(doc);  // no: wrong model type
 
 // ✅ Use EmailModel for email
 var email = new EmailBuilder().Section(s => s.Column(c => c.Heading("Hi"))).Build();
@@ -63,7 +63,7 @@ XlsxRenderer.RenderTo(fs, book);
 `Render(model)` allocates a full `byte[]`. For multi-megabyte PDFs or XLSX workbooks, stream instead:
 
 ```csharp
-// ❌ 50MB PDF — pays the allocation twice (model + byte array)
+// ❌ 50MB PDF: pays the allocation twice (model + byte array)
 var bytes = PdfRenderer.Render(doc);
 File.WriteAllBytes("big.pdf", bytes);
 
@@ -107,7 +107,7 @@ Leave it on for every CSV with user-supplied content.
 ## 7. Treating template expressions as C# code
 
 `{{ expr }}` is a **small** expression language, not C#. It has property paths, pipes, comparisons,
-`&&`/`||`/`!`, arithmetic, `cond ? a : b`, `??` and aggregates (`lines.Sum(amount)`) — see
+`&&`/`||`/`!`, arithmetic, `cond ? a : b`, `??` and aggregates (`lines.Sum(amount)`); see
 [templating.md](/modules/documents/templating/#operators). It does not have:
 
 - method calls (`invoice.GetTotal()`)
@@ -120,7 +120,7 @@ eligibility belong to the domain, computed once and tested there; a template tha
 second copy that will disagree with the first:
 
 ```csharp
-// ❌ {{ price * 1.22 | currency:"EUR" }} — the VAT rate now lives in a text file
+// ❌ {{ price * 1.22 | currency:"EUR" }}: the VAT rate now lives in a text file
 // ✅ compute in the domain, present in the template
 data.AddSource("invoice", new Dictionary<string, object?> { ["net"] = net, ["vat"] = vat, ["total"] = total });
 ```
@@ -133,7 +133,7 @@ Then bind `{{ invoice.total | currency:"EUR" }}`.
 
 By design, `{{ customer.nonexistent }}` renders as nothing rather than throwing. This keeps templates robust in the face of optional fields, but it hides typos.
 
-Always check `data.Warnings` — the warnings live on the data context — after `ResolveAsync`:
+Always check `data.Warnings` (the warnings live on the data context) after `ResolveAsync`:
 
 ```csharp
 var model = await resolver.ResolveAsync(template, data);
@@ -159,7 +159,7 @@ If you want a specific font size, use a `TextNode` with explicit `NodeStyle.Font
 
 ## 10. Treating `TocNode` as a static table
 
-`TocNode` in both PDF and DOCX is a **field**. Content viewers populate it when they open the file. If you inspect the raw DOCX XML and the TOC body looks empty, that's expected — Word fills it in.
+`TocNode` in both PDF and DOCX is a **field**. Content viewers populate it when they open the file. If you inspect the raw DOCX XML and the TOC body looks empty, that's expected: Word fills it in.
 
 For PDF the TOC is pre-populated with heading bookmarks at render time, so it's correct immediately.
 
@@ -176,7 +176,7 @@ Neither renderer takes a font file: `DocxResources` and `PdfResources` hold imag
 
 ```csharp
 new TextNode { Content = "Acme", Style = new NodeStyle { FontFamily = "Acme Serif" } }
-// DOCX: "Acme Serif" by name — present on the reader's machine or substituted there.
+// DOCX: "Acme Serif" by name, present on the reader's machine or substituted there.
 // PDF:  "Acme Serif" if the rendering machine has it, else the default list
 //       (see pdf-rendering.md, Styles and fonts).
 ```
@@ -218,5 +218,5 @@ var message = new EmailMessageBuilder()
 
 ## Related
 
-- [troubleshooting.md](/modules/documents/troubleshooting/) — runtime errors and their fixes
-- [concepts.md](/modules/documents/concepts/) — the architecture rationale
+- [troubleshooting.md](/modules/documents/troubleshooting/): runtime errors and their fixes
+- [concepts.md](/modules/documents/concepts/): the architecture rationale

@@ -11,10 +11,10 @@ HTML email is not HTML. The big differences:
 | HTML | HTML email |
 |------|------------|
 | CSS classes, stylesheets | Inline styles (Outlook ignores `<style>` half the time) |
-| Modern layout (flex, grid) | Nested `<table>`s — tables are the safe layout primitive |
+| Modern layout (flex, grid) | Nested `<table>`s: tables are the safe layout primitive |
 | No fixed width | Wrapper width (typically 600px) for predictable rendering |
 | Preheader in `<head>` | Hidden preheader as the first text element |
-| Images rendered freely | Images often blocked — need `alt` text and fallback |
+| Images rendered freely | Images often blocked: need `alt` text and fallback |
 
 Pragmatic.Documents.Email abstracts all of this. You describe sections and columns; the renderer produces HTML that works in Gmail, Outlook (including MSO-conditional tables for 2007+), Apple Mail, iOS/Android clients, and webmail.
 
@@ -83,7 +83,7 @@ string html = new EmailHtmlRenderer().Render(email);
 
 ### Generic section
 
-Sections are the default container — they accept one or more columns.
+Sections are the default container: they accept one or more columns.
 
 ```csharp
 .Section(s => s
@@ -164,12 +164,12 @@ Each helper returns the builder, so you can chain them.
 
 The renderer emits:
 
-- **DOCTYPE** — HTML 4.01 Transitional (most compatible)
-- **Meta tags** — charset UTF-8, viewport, colour-scheme
-- **MSO conditionals** — `<!--[if mso]>` blocks for Outlook-specific layout
-- **Inline CSS** on every element — no reliance on `<style>`
-- **Preheader** — hidden text as the first body element
-- **Fallbacks** — buttons are bulletproof (anchor + table + MSO VML), images have `alt` text, font stacks include email-safe fallbacks
+- **DOCTYPE**: HTML 4.01 Transitional (most compatible)
+- **Meta tags**: charset UTF-8, viewport, colour-scheme
+- **MSO conditionals**: `<!--[if mso]>` blocks for Outlook-specific layout
+- **Inline CSS** on every element, no reliance on `<style>`
+- **Preheader**: hidden text as the first body element
+- **Fallbacks**: buttons are bulletproof (anchor + table + MSO VML), images have `alt` text, font stacks include email-safe fallbacks
 
 Tested against Gmail (web + iOS + Android), Outlook 2016/2019/365, Apple Mail, iOS Mail, Yahoo Mail, Outlook.com. For older Outlook (2007-2010) MSO-conditional blocks keep the layout intact.
 
@@ -177,10 +177,10 @@ Tested against Gmail (web + iOS + Android), Outlook 2016/2019/365, Apple Mail, i
 
 ## Delivering the email
 
-Pragmatic.Documents.Email **produces HTML** — it doesn't send email. `Pragmatic.Email` sends it (or any
+Pragmatic.Documents.Email **produces HTML**: it doesn't send email. `Pragmatic.Email` sends it (or any
 SMTP library or provider SDK):
 
-From a template — the usual case — `IPdxTemplates` (`Pragmatic.Documents.Markup`) resolves and renders in
+From a template (the usual case), `IPdxTemplates` (`Pragmatic.Documents.Markup`) resolves and renders in
 one call, in the recipient's language:
 
 ```csharp
@@ -198,10 +198,10 @@ await email.SendAsync(message, ct);  // IEmailSender
 ```
 
 From a model you built or resolved yourself: `new EmailHtmlRenderer().Render(model)` for the HTML (it holds
-no state — keep one in a static field; `IEmailRenderer` is a contract nobody registers, so injecting it is
-`PRAG1641`) and `EmailTextRenderer.Render(model)` for the text part. The text comes from the **model** —
+no state, so keep one in a static field; `IEmailRenderer` is a contract nobody registers, so injecting it is
+`PRAG1641`) and `EmailTextRenderer.Render(model)` for the text part. The text comes from the **model** (
 headings, paragraphs, a button as `label: url`, a table a row per line, trusted markup without its
-tags — not from stripping the HTML and not from a second template, so the two parts cannot drift.
+tags), not from stripping the HTML and not from a second template, so the two parts cannot drift.
 
 In an application the model comes from a `.pdxemail` template ([markup-parser.md](markup-parser.md))
 rather than from `EmailBuilder`: the wording is then a file that is translated and changed without a
@@ -211,15 +211,15 @@ build. `EmailBuilder` is for mail whose layout code decides.
 
 ## Limitations
 
-- No support for AMP email (`<amp-carousel>`, forms) — plain HTML email only.
-- No built-in i18n — use `Pragmatic.Documents.Templating.I18N` + a template.
-- No A/B test variants or preview images — those belong to your ESP.
-- Dark-mode tuning is opt-in per design — the renderer uses `color-scheme: light dark` but doesn't auto-adjust colour choices.
+- No support for AMP email (`<amp-carousel>`, forms): plain HTML email only.
+- No built-in i18n: use `Pragmatic.Documents.Templating.I18N` + a template.
+- No A/B test variants or preview images: those belong to your ESP.
+- Dark-mode tuning is opt-in per design: the renderer uses `color-scheme: light dark` but doesn't auto-adjust colour choices.
 
 ---
 
 ## Related
 
-- [markup-parser.md](markup-parser.md) — `.pdxemail` markup → `EmailTemplate`
-- [templating.md](templating.md) — bind dynamic data into email templates
-- [`Pragmatic.Documents.Email.Samples`](../samples/Pragmatic.Documents.Email.Samples/README.md) — hero, two-column, footer, markup-bound
+- [markup-parser.md](markup-parser.md): `.pdxemail` markup → `EmailTemplate`
+- [templating.md](templating.md): bind dynamic data into email templates
+- [`Pragmatic.Documents.Email.Samples`](../samples/Pragmatic.Documents.Email.Samples/README.md): hero, two-column, footer, markup-bound

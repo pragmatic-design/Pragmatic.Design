@@ -14,7 +14,7 @@ This guide explains **why** Pragmatic.Documents is split the way it is, how the 
 .NET document generation typically means one of three things:
 
 - A **large closed-source library** (iText, Aspose, Syncfusion) that does everything but is expensive, carries unclear licensing for commercial products, or drags a large native dependency
-- A **managed renderer** for a single format (OpenXml SDK for DOCX, QuestPDF for PDF, ClosedXML for XLSX) — you end up with 4 different APIs for 4 different outputs
+- A **managed renderer** for a single format (OpenXml SDK for DOCX, QuestPDF for PDF, ClosedXML for XLSX): you end up with 4 different APIs for 4 different outputs
 - A **templating engine** (Razor, Liquid, Handlebars) that covers binding but leaves actual rendering to you
 
 Each path solves part of the problem. None of them gives you a consistent model-driven workflow across PDF, DOCX, XLSX, CSV, and HTML email.
@@ -23,9 +23,9 @@ Each path solves part of the problem. None of them gives you a consistent model-
 
 Pragmatic.Documents is a **family of packages** organised around three intentional concepts:
 
-1. **Models** — serialisable data structures that describe a document, an email, or a spreadsheet
-2. **Renderers** — pure functions that take a model and produce a byte stream
-3. **Templates and markup** — optional layer that builds models from external definitions bound to data
+1. **Models**: serialisable data structures that describe a document, an email, or a spreadsheet
+2. **Renderers**: pure functions that take a model and produce a byte stream
+3. **Templates and markup**: optional layer that builds models from external definitions bound to data
 
 Each layer is independent. You can use the builders alone, or plug the markup parser and templating engine in front of them.
 
@@ -87,7 +87,7 @@ var doc = new DocumentBuilder()
 
 ### Email model
 
-`EmailModel` represents an **HTML email** — table-based layout, inline CSS, preheader, width constraints. The renderer emits email-client-safe HTML (MSO-compatible tables, no external CSS).
+`EmailModel` represents an **HTML email**: table-based layout, inline CSS, preheader, width constraints. The renderer emits email-client-safe HTML (MSO-compatible tables, no external CSS).
 
 ```csharp
 var email = new EmailBuilder()
@@ -153,11 +153,11 @@ Renderers and readers share the same model, so roundtrips are idempotent for the
 
 | Package | Purpose |
 |---------|---------|
-| `Pragmatic.Documents.Templates` | `DocumentTemplate` — a `DocumentModel` with placeholders |
-| `Pragmatic.Email.Templates` | `EmailTemplate` — an `EmailModel` with placeholders |
+| `Pragmatic.Documents.Templates` | `DocumentTemplate`, a `DocumentModel` with placeholders |
+| `Pragmatic.Email.Templates` | `EmailTemplate`, an `EmailModel` with placeholders |
 | `Pragmatic.Documents.Templating` | Expression engine, pipe registry, data context resolver |
 | `Pragmatic.Documents.Templating.I18N` | Date / currency / percent pipes + translation integration |
-| `Pragmatic.Documents.Templating.Spreadsheet` | Spreadsheet data sources: `AddCsvStream` / `AddXlsxStream` read from wherever you can open one — `IFileStorage`, a blob column, object storage — and `AddCsvFile` / `AddXlsxFile` are the convenience over them for a workbook the operator puts beside the application. ⚠️ A spreadsheet a tenant **uploads** has no path; use the stream form for it |
+| `Pragmatic.Documents.Templating.Spreadsheet` | Spreadsheet data sources: `AddCsvStream` / `AddXlsxStream` read from wherever you can open one (`IFileStorage`, a blob column, object storage), and `AddCsvFile` / `AddXlsxFile` are the convenience over them for a workbook the operator puts beside the application. ⚠️ A spreadsheet a tenant **uploads** has no path; use the stream form for it |
 | `Pragmatic.Documents.Markup` | `PdxDocParser` (PDX-Doc) and `PdxEmailParser` (PDX-Email) |
 
 ### Shared infrastructure
@@ -177,23 +177,23 @@ Every output follows the same three-stage pipeline:
 Build or parse → Model → Render
 ```
 
-### Stage 1 — build or parse
+### Stage 1: build or parse
 
 - **Builder**: imperative C# API (`DocumentBuilder`, `EmailBuilder`, `SpreadsheetBuilder`). Best when you have full control and want strongly-typed code paths.
 - **Markup parser**: `PdxDocParser.Parse(markup)` / `PdxEmailParser.Parse(markup)` reads a `.pdxdoc` / `.pdxemail` file into a template. Best when authors (designers, content teams) own the layout.
 
-### Stage 2 — model
+### Stage 2: model
 
 All three paths land on a fully-typed, immutable model. You can:
 - serialise it with `DocumentSerializer` / `EmailSerializer` / `SpreadsheetSerializer` for caching or wire transfer (all three use source-generated, AOT-safe `System.Text.Json`; weakly-typed spreadsheet cell values round-trip with their CLR type preserved)
 - inspect/modify it before rendering
 - attach images via renderer-specific resources objects (`DocxResources`, `PdfResources`)
 
-### Stage 3 — render
+### Stage 3: render
 
 Renderers are pure functions: same model → same output bytes. No hidden state, no ambient environment.
 (The one exception is the OOXML document-property timestamp: DOCX/XLSX stamp `created`/`modified` with
-`DateTimeOffset.UtcNow` when you don't supply one — set `DocumentModel.CreatedDate` / `DocxRenderOptions.RenderTimestamp`
+`DateTimeOffset.UtcNow` when you don't supply one; set `DocumentModel.CreatedDate` / `DocxRenderOptions.RenderTimestamp`
 for byte-reproducible output.)
 
 ```csharp
@@ -218,7 +218,7 @@ Templates are a **thin layer on top of models** that adds:
 - conditionals (`{% if total > 0 %}...{% endif %}`)
 - pipes for formatting (`{{price | currency:'EUR'}}`, `{{date | format:'yyyy-MM-dd'}}`)
 
-When you resolve a template with a data context, you get back a regular `DocumentModel`, `EmailModel`, or equivalent — so rendering proceeds exactly as it would for hand-built models.
+When you resolve a template with a data context, you get back a regular `DocumentModel`, `EmailModel`, or equivalent, so rendering proceeds exactly as it would for hand-built models.
 
 See [templating.md](/modules/documents/templating/) and [markup-parser.md](/modules/documents/markup-parser/) for the full syntax.
 
@@ -240,11 +240,11 @@ See [templating.md](/modules/documents/templating/) and [markup-parser.md](/modu
 
 ## What this module does not do
 
-- **No reporting designer** (no WYSIWYG authoring tool) — templates are text files.
-- **No form filling** — the PDF renderer emits, it does not fill existing PDFs.
-- **No digital signatures** — a PDF signing step is out of scope for this package.
-- **No email delivery** — `Pragmatic.Documents.Email` produces HTML; send it with `Pragmatic.Email` or your SMTP library of choice.
-- **No chart rendering** — embed pre-rendered images, or generate SVG/PNG separately.
+- **No reporting designer** (no WYSIWYG authoring tool): templates are text files.
+- **No form filling**: the PDF renderer emits, it does not fill existing PDFs.
+- **No digital signatures**: a PDF signing step is out of scope for this package.
+- **No email delivery**: `Pragmatic.Documents.Email` produces HTML; send it with `Pragmatic.Email` or your SMTP library of choice.
+- **No chart rendering**: embed pre-rendered images, or generate SVG/PNG separately.
 
 These are deliberate boundaries. The module focuses on being a small, composable, model-driven rendering layer.
 
@@ -252,12 +252,12 @@ These are deliberate boundaries. The module focuses on being a small, composable
 
 ## Reading order
 
-1. [getting-started.md](/modules/documents/getting-started/) — five concrete scenarios, each ~5 minutes
-2. [pdf-rendering.md](/modules/documents/pdf-rendering/) — the PDF-specific details (resources, options, quirks)
-3. [docx-rendering.md](/modules/documents/docx-rendering/) — DOCX-specific details (TOC auto-update, headers/footers)
-4. [xlsx-rendering.md](/modules/documents/xlsx-rendering/) — XLSX formulas, styling, freeze panes, merges
-5. [csv-io.md](/modules/documents/csv-io/) — CSV read/write, locale, formula injection
-6. [email-rendering.md](/modules/documents/email-rendering/) — email client compatibility, preheader, sections
-7. [markup-parser.md](/modules/documents/markup-parser/) — PDX-Doc and PDX-Email syntax reference
-8. [templating.md](/modules/documents/templating/) — expressions, pipes, data context, custom pipe registration
+1. [getting-started.md](/modules/documents/getting-started/): five concrete scenarios, each ~5 minutes
+2. [pdf-rendering.md](/modules/documents/pdf-rendering/): the PDF-specific details (resources, options, quirks)
+3. [docx-rendering.md](/modules/documents/docx-rendering/): DOCX-specific details (TOC auto-update, headers/footers)
+4. [xlsx-rendering.md](/modules/documents/xlsx-rendering/): XLSX formulas, styling, freeze panes, merges
+5. [csv-io.md](/modules/documents/csv-io/): CSV read/write, locale, formula injection
+6. [email-rendering.md](/modules/documents/email-rendering/): email client compatibility, preheader, sections
+7. [markup-parser.md](/modules/documents/markup-parser/): PDX-Doc and PDX-Email syntax reference
+8. [templating.md](/modules/documents/templating/): expressions, pipes, data context, custom pipe registration
 9. [common-mistakes.md](/modules/documents/common-mistakes/) / [troubleshooting.md](/modules/documents/troubleshooting/)

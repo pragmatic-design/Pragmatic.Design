@@ -1,5 +1,5 @@
 ---
-title: "Templating — Expressions, Pipes, Data Context"
+title: "Templating: Expressions, Pipes, Data Context"
 description: "The `Pragmatic.Documents.Templating` package is the expression engine shared between PDX-Doc and PDX-Email templates. It evaluates `{{ ... }}` expressions again"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Documents/docs/templating.md
 sidebar:
@@ -37,18 +37,18 @@ TemplateDataContext   PipeRegistry
 ```
 
 There is no indexing: `{{ items[0].name }}` is a `TemplateParseException` naming `[0].name`. Hand the
-template the value it needs (`firstItem`), or iterate. An expression is read to its end — text the
+template the value it needs (`firstItem`), or iterate. An expression is read to its end: text the
 grammar cannot place, an unquoted pipe argument with a space in it (`date:dd MMM yyyy`, quote it), or a
 string with no closing quote is an error, never a silently shorter expression.
 
 Properties are resolved via `IPropertyAccessor`. Built-in accessors:
 
 - `DictionaryPropertyAccessor` for `IDictionary<string, object?>`
-- `ReflectionPropertyAccessor` for typed records and classes — on a JIT runtime only. Under Native AOT
+- `ReflectionPropertyAccessor` for typed records and classes, on a JIT runtime only. Under Native AOT
   a property no registered accessor covers **throws**; pass dictionaries there.
 
 You can register custom accessors (`context.WithAccessor(accessor)`) for JSON nodes, expando objects,
-dynamic proxies — anything with a "property by name" contract.
+dynamic proxies, anything with a "property by name" contract.
 
 ### Operators
 
@@ -101,8 +101,8 @@ Pipes with multiple arguments separate them with commas:
 
 If a property doesn't exist in the data context, the expression returns `null` (not a runtime error). Use `| default:"fallback"` to substitute.
 
-The data context records a `TemplateWarning` for each path that could not be followed — a source or a
-property nobody provides; a property that is there and `null` is not a warning — so you can audit
+The data context records a `TemplateWarning` for each path that could not be followed (a source or a
+property nobody provides; a property that is there and `null` is not a warning), so you can audit
 which placeholders went unresolved:
 
 ```csharp
@@ -117,9 +117,9 @@ foreach (var warning in data.Warnings)
 
 | Name | Arguments | Purpose |
 |------|-----------|---------|
-| `uppercase` | — | `foo` → `FOO` |
-| `lowercase` | — | `FOO` → `foo` |
-| `trim` | — | strip surrounding whitespace |
+| `uppercase` | n/a | `foo` → `FOO` |
+| `lowercase` | n/a | `FOO` → `foo` |
+| `trim` | n/a | strip surrounding whitespace |
 | `default` | `value` | fallback when input is null/empty |
 | `number` | `format` | .NET numeric format string |
 
@@ -131,7 +131,7 @@ With `Pragmatic.Documents.Templating.I18N`:
 | `date` | format | `DateTime` → formatted per culture |
 | `percent` | decimals | `0.225` → `22.5%` |
 
-> `currency`, `date`, and `percent` are **not** built into the core engine — they ship in the
+> `currency`, `date`, and `percent` are **not** built into the core engine: they ship in the
 > `Pragmatic.Documents.Templating.I18N` package and must be registered with `WithI18N()` (below).
 > Without it, `{{ x | currency }}` throws and the message says so: *"Unknown pipe: 'currency'. It is
 > one of the pipes Pragmatic.Documents.Templating.I18N adds (currency, date, percent): reference that
@@ -176,14 +176,14 @@ var data = new TemplateDataContext()
     .AddSource("company",  companyProfile);
 ```
 
-Each root is isolated — `invoice.total` and `customer.total` can coexist without collision.
+Each root is isolated: `invoice.total` and `customer.total` can coexist without collision.
 
 ### Typed vs dictionary sources
 
 Both work on a JIT runtime. Dictionary sources use `DictionaryPropertyAccessor`; typed objects use
 `ReflectionPropertyAccessor` (cached per type). Prefer dictionaries:
 
-- the keys a template may use become a list you wrote down, instead of every property — and navigation —
+- the keys a template may use become a list you wrote down, instead of every property (and navigation)
   the object happens to have;
 - under Native AOT there is no reflection fallback: a property no registered accessor covers throws.
 
@@ -196,7 +196,7 @@ source, once, and the result is cached for the rest of the resolution:
 data.AddSource("fees", async ct => await LoadFeeTableAsync(ct));
 ```
 
-To compose several named providers — static values, async factories, JSON files, SQL queries — use a
+To compose several named providers (static values, async factories, JSON files, SQL queries), use a
 `DataSourceCatalog` and turn it into a context:
 
 ```csharp
@@ -307,7 +307,7 @@ context with no culture set resolves in the ambient one.
 
 Translation is the `t:` expression, not a pipe (see above). The context resolves it through an
 `ITranslationResolver`: `WithLocalizer(localizer)` wraps an `IStringLocalizer` in one, and
-`WithTranslationResolver` takes your own — which receives the context's culture:
+`WithTranslationResolver` takes your own, which receives the context's culture:
 
 ```csharp
 public sealed class ResxTranslationResolver(ResourceManager strings) : ITranslationResolver
@@ -330,13 +330,13 @@ var data = new TemplateDataContext()
 - Pipe lookup is a hashtable lookup.
 - Resolving an invoice template with ~20 expressions + a 10-row data-bound table: ~0.5ms on modern hardware.
 
-For templates evaluated thousands of times, prefer loading the template once at startup and reusing it — the resolver is stateless across calls.
+For templates evaluated thousands of times, prefer loading the template once at startup and reusing it: the resolver is stateless across calls.
 
 ---
 
 ## Related
 
-- [markup-parser.md](/modules/documents/markup-parser/) — PDX-Doc / PDX-Email structural syntax
-- [pdf-rendering.md](/modules/documents/pdf-rendering/) — render resolved document models
-- [email-rendering.md](/modules/documents/email-rendering/) — render resolved email models
-- [`Pragmatic.Documents.Templating.Spreadsheet.Samples`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Documents/samples/Pragmatic.Documents.Templating.Spreadsheet.Samples/README.md) — data-source catalogue and spreadsheet workflows
+- [markup-parser.md](/modules/documents/markup-parser/): PDX-Doc / PDX-Email structural syntax
+- [pdf-rendering.md](/modules/documents/pdf-rendering/): render resolved document models
+- [email-rendering.md](/modules/documents/email-rendering/): render resolved email models
+- [`Pragmatic.Documents.Templating.Spreadsheet.Samples`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Documents/samples/Pragmatic.Documents.Templating.Spreadsheet.Samples/README.md): data-source catalogue and spreadsheet workflows

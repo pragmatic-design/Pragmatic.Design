@@ -31,7 +31,7 @@ public static class PdfOperations
 
 - `Render` materialises the whole PDF in memory. Fine for invoices, letters, one-offs.
 - `RenderTo(Stream, ...)` streams directly to the destination. Use this for large reports.
-- `GetPageCount` is a lightweight PDF-aware scan — no full parsing.
+- `GetPageCount` is a lightweight PDF-aware scan, with no full parsing.
 
 ---
 
@@ -58,7 +58,7 @@ PdfRenderer.RenderTo(fs, doc);
 
 | Node | Effect in PDF |
 |------|---------------|
-| `TextNode` | Text run, formatted by its `NodeStyle` — see *Styles and fonts* |
+| `TextNode` | Text run, formatted by its `NodeStyle`; see *Styles and fonts* |
 | `HeadingNode` | Heading with auto-generated bookmark (for TOC); its `Children`, when set, replace `Content` |
 | `ParagraphNode` | Block-level paragraph with inline children |
 | `TableNode` | Table with header row, optional styling |
@@ -68,7 +68,7 @@ PdfRenderer.RenderTo(fs, doc);
 | `TocNode` | Table of contents built from heading bookmarks |
 | `PageBreakNode` | Starts a new page |
 | `Spacer`, `HorizontalRule` | Layout separators |
-| `FieldNode` | Dynamic field — `FieldType.Page`, `NumPages`, `Date`, etc. |
+| `FieldNode` | Dynamic field: `FieldType.Page`, `NumPages`, `Date`, etc. |
 | `BookmarkNode` | Named anchor for internal navigation |
 | `FootnoteNode` | Footnote marker + footer entry on the same page |
 
@@ -107,7 +107,7 @@ an OOXML highlight name (`yellow`, `lightGray`, `none`). A colour that is neithe
 a `PdfRenderException` instead of being dropped.
 
 The rest of `NodeStyle` is layout the PDF engine does not map: margins and padding, borders,
-background, width and height, line height, first-line indent, letter spacing — and a style on a
+background, width and height, line height, first-line indent, letter spacing, and a style on a
 `TableCell` or `TableRow`. DOCX applies the paragraph spacing, indents, line height and letter spacing,
 and a cell's shading and vertical alignment.
 
@@ -212,7 +212,7 @@ var doc = new DocumentBuilder()
 PdfRenderer.RenderTo(fs, doc, resources);
 ```
 
-`PdfResources` holds images only — it has no font entries. An image the engine cannot find fails the
+`PdfResources` holds images only; it has no font entries. An image the engine cannot find fails the
 render with a `PdfRenderException`; see *Known limitations* for the sources it does not accept.
 
 ---
@@ -231,7 +231,7 @@ Available types include `QrCode`, `Code128`, `Code39`, `Ean13`. The barcode rend
 ## Performance
 
 - For **large reports** (many pages, embedded images) use `RenderTo(Stream, ...)` instead of `Render` so you don't hold the whole output in memory.
-- The renderer is deterministic — the same model produces byte-identical output (modulo creation dates), which makes PDFs snapshot-testable.
+- The renderer is deterministic: the same model produces byte-identical output (modulo creation dates), which makes PDFs snapshot-testable.
 - Typical single-page invoice renders in ~5-15ms on modern hardware.
 
 ---
@@ -240,7 +240,7 @@ Available types include `QrCode`, `Code128`, `Code39`, `Ean13`. The barcode rend
 
 The PDF renderer is backed by a native library (`Pragmatic.Pdf.Native`). The package ships it for
 **`win-x64`**, **`linux-x64`** and **`osx-arm64`**. On Linux the machine also needs fontconfig and a font
-package — see *Styles and fonts*. The macOS binary is built and stamped by the `PDF Native` CI workflow on
+package; see *Styles and fonts*. The macOS binary is built and stamped by the `PDF Native` CI workflow on
 a macOS runner, where its Rust unit tests run; no .NET test renders a PDF on macOS yet.
 
 On any other platform the native library is not found and a
@@ -259,11 +259,11 @@ else
 
 ## Known limitations
 
-- No full CSS/HTML input — feed the document model directly.
+- No full CSS/HTML input: feed the document model directly.
 - No form fields (fillable PDFs are out of scope).
-- No digital signatures — sign with a separate step after rendering.
+- No digital signatures: sign with a separate step after rendering.
 - No PDF/A profile tagging yet.
-- The layout half of `NodeStyle` — spacing, borders, background, line height — is not applied; see
+- The layout half of `NodeStyle` (spacing, borders, background, line height) is not applied; see
   *Styles and fonts*.
 - `ImageNode.Source` for PDF must be a `resource:name` (from `PdfResources`). A `data:` URI, a file
   path, a remote URL or a name that is not in the resources fails the render with a
@@ -274,6 +274,6 @@ else
 
 ## Related
 
-- [docx-rendering.md](/modules/documents/docx-rendering/) — same document model, DOCX output
-- [markup-parser.md](/modules/documents/markup-parser/) — `.pdxdoc` markup → `DocumentTemplate`
-- [templating.md](/modules/documents/templating/) — bind data into templates before rendering
+- [docx-rendering.md](/modules/documents/docx-rendering/): same document model, DOCX output
+- [markup-parser.md](/modules/documents/markup-parser/): `.pdxdoc` markup → `DocumentTemplate`
+- [templating.md](/modules/documents/templating/): bind data into templates before rendering

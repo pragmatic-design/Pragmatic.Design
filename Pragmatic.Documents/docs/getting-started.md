@@ -3,12 +3,12 @@
 Five concrete scenarios, each ~5 minutes. Pick the one that matches your immediate need.
 
 ⚠️ The scenarios build models in C#, which is right when code decides the layout. A document or a mail
-whose **wording** somebody will change — a letter, an invoice, a notification — is a template: start from
-[Templates and markup](#templates-and-markup--the-default-for-documents-and-mail).
+whose **wording** somebody will change (a letter, an invoice, a notification) is a template: start from
+[Templates and markup](#templates-and-markup-the-default-for-documents-and-mail).
 
 ---
 
-## Scenario 1 — PDF from C#
+## Scenario 1: PDF from C#
 
 Produce an invoice PDF with a heading, a paragraph, and a simple table.
 
@@ -49,13 +49,13 @@ PdfRenderer.RenderTo(fs, doc);
 ### What happens
 
 - `DocumentBuilder` constructs an immutable `DocumentModel` with document metadata and a single page
-- `PdfRenderer.RenderTo` writes the PDF directly into the stream — no intermediate byte array
+- `PdfRenderer.RenderTo` writes the PDF directly into the stream, with no intermediate byte array
 
 Open `invoice.pdf` in any viewer. See [pdf-rendering.md](pdf-rendering.md) for fonts, images, TOCs, and page numbering.
 
 ---
 
-## Scenario 2 — Same content, PDF + DOCX
+## Scenario 2: Same content, PDF + DOCX
 
 The document model is renderer-agnostic. Build once, render to both.
 
@@ -81,7 +81,7 @@ Features like `Toc(...)` and page numbering `Field`s render correctly in both fo
 
 ---
 
-## Scenario 3 — XLSX from tabular data
+## Scenario 3: XLSX from tabular data
 
 Export a list of guests to a styled XLSX.
 
@@ -117,7 +117,7 @@ The freeze pane and formula work when opened in Excel or LibreOffice. See [xlsx-
 
 ---
 
-## Scenario 4 — CSV read + write
+## Scenario 4: CSV read + write
 
 Read an existing CSV, add a column, write it back.
 
@@ -150,7 +150,7 @@ CSV handles quoting, CRLF, embedded commas, and RFC 4180 edge cases out of the b
 
 ---
 
-## Scenario 5 — HTML email
+## Scenario 5: HTML email
 
 Build a verification email with a hero section and a call-to-action.
 
@@ -188,9 +188,9 @@ The renderer emits email-client-safe HTML: inline CSS, MSO-compatible tables, pr
 
 ## Beyond the five scenarios
 
-### Templates and markup — the default for documents and mail
+### Templates and markup: the default for documents and mail
 
-A letter, an invoice, a notification mail — anything whose wording somebody will want to change — is a
+A letter, an invoice, a notification mail, anything whose wording somebody will want to change, is a
 template, not C#. The markup is XML ([markup-parser.md](markup-parser.md)):
 
 ```xml
@@ -224,7 +224,7 @@ using Pragmatic.Documents.Templating.Data;
 
 [assembly: PdxTemplates<BillingModule>]   // module: the generated host registers the source
 
-// IPdxTemplates templates — injected
+// IPdxTemplates templates, injected
 var data = new TemplateDataContext()
     .AddSource("invoice", new Dictionary<string, object?> { ["number"] = "2026-001", ["total"] = 1150m })
     .AddSource("customer", new Dictionary<string, object?> { ["name"] = "Alice" })
@@ -261,7 +261,7 @@ public partial record Guest
     public string Last { get; init; } = "";
 }
 
-// Zero reflection — generated at compile time, as a nested Csv class
+// Zero reflection: generated at compile time, as a nested Csv class
 Guest.Csv.Write(stream, guests);
 List<Guest> decoded = Guest.Csv.Read(stream);
 ```
@@ -272,10 +272,10 @@ List<Guest> decoded = Guest.Csv.Read(stream);
 
 Every renderer ships with a runnable `samples/` project you can `dotnet run`:
 
-- [`Pragmatic.Documents.Pdf.Samples`](../samples/Pragmatic.Documents.Pdf.Samples/README.md) — basic / table / multi-page / landscape
-- [`Pragmatic.Documents.Docx.Samples`](../samples/Pragmatic.Documents.Docx.Samples/README.md) — basic / table / multi-page with TOC / hyperlinks
-- [`Pragmatic.Documents.Xlsx.Samples`](../samples/Pragmatic.Documents.Xlsx.Samples/README.md) — basic / multiple sheets / formulas + freeze / styled
-- [`Pragmatic.Documents.Csv.Samples`](../samples/Pragmatic.Documents.Csv.Samples/README.md) — roundtrip / locale / formula injection / edge cases
-- [`Pragmatic.Documents.Markup.Samples`](../samples/Pragmatic.Documents.Markup.Samples/README.md) — simple markup / data-bound / batch
-- [`Pragmatic.Documents.Email.Samples`](../samples/Pragmatic.Documents.Email.Samples/README.md) — hero / columns / footer / markup-bound
-- [`Pragmatic.Documents.Templating.Spreadsheet.Samples`](../samples/Pragmatic.Documents.Templating.Spreadsheet.Samples/README.md) — CSV / XLSX / in-memory data sources
+- [`Pragmatic.Documents.Pdf.Samples`](../samples/Pragmatic.Documents.Pdf.Samples/README.md): basic / table / multi-page / landscape
+- [`Pragmatic.Documents.Docx.Samples`](../samples/Pragmatic.Documents.Docx.Samples/README.md): basic / table / multi-page with TOC / hyperlinks
+- [`Pragmatic.Documents.Xlsx.Samples`](../samples/Pragmatic.Documents.Xlsx.Samples/README.md): basic / multiple sheets / formulas + freeze / styled
+- [`Pragmatic.Documents.Csv.Samples`](../samples/Pragmatic.Documents.Csv.Samples/README.md): roundtrip / locale / formula injection / edge cases
+- [`Pragmatic.Documents.Markup.Samples`](../samples/Pragmatic.Documents.Markup.Samples/README.md): simple markup / data-bound / batch
+- [`Pragmatic.Documents.Email.Samples`](../samples/Pragmatic.Documents.Email.Samples/README.md): hero / columns / footer / markup-bound
+- [`Pragmatic.Documents.Templating.Spreadsheet.Samples`](../samples/Pragmatic.Documents.Templating.Spreadsheet.Samples/README.md): CSV / XLSX / in-memory data sources
