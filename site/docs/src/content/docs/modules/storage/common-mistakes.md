@@ -117,7 +117,7 @@ Or with `AddLocalDiskStorage`:
 builder.Services.AddLocalDiskStorage(builder.Environment.WebRootPath);
 ```
 
-**Why:** Deriving the base path from the host environment (`IWebHostEnvironment.WebRootPath`, or `ContentRootPath + "wwwroot"` on `IPragmaticBuilder.Environment`) resolves to the correct directory in every deployment. A hardcoded path does not fail loudly on other machines: `LocalDiskFileStorage` creates the full directory tree on first save, so files land in a location the static-files middleware never serves — saves succeed, downloads 404.
+**Why:** Deriving the base path from the host environment (`IWebHostEnvironment.WebRootPath`, or `ContentRootPath + "wwwroot"` on `IPragmaticBuilder.Environment`) resolves to the correct directory in every deployment. A hardcoded path does not fail loudly on other machines: `LocalDiskFileStorage` creates the full directory tree on first save, so files land in a location the static-files middleware never serves. Saves succeed, downloads 404.
 
 ---
 
@@ -149,7 +149,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseStorage<AzureBlobFileStorage>();  // requires its ctor dependencies registered — see mistake 8
+    app.UseStorage<AzureBlobFileStorage>();  // requires its ctor dependencies registered; see mistake 8
 }
 ```
 
@@ -287,7 +287,7 @@ builder.Services.AddSingleton(new AzureBlobStorageOptions { ContainerPrefix = "m
 app.UseStorage<AzureBlobFileStorage>();
 ```
 
-Or build everything in one place with the factory overload — no separate registrations needed:
+Or build everything in one place with the factory overload (no separate registrations needed):
 
 ```csharp
 app.UseStorage(sp => new AzureBlobFileStorage(
@@ -296,7 +296,7 @@ app.UseStorage(sp => new AzureBlobFileStorage(
     sp.GetRequiredService<ILogger<AzureBlobFileStorage>>()));
 ```
 
-**Why:** `UseStorage<T>()` registers `T` as `IFileStorage` via `AddSingleton<IFileStorage, T>()`. The DI container constructs `T` by resolving its constructor parameters — for `AzureBlobFileStorage` that means `BlobServiceClient` *and* `AzureBlobStorageOptions` (for `S3FileStorage`: `IAmazonS3` and `S3StorageOptions`). The storage registration does not register the provider's dependencies. The factory overload sidesteps the problem by constructing the provider explicitly.
+**Why:** `UseStorage<T>()` registers `T` as `IFileStorage` via `AddSingleton<IFileStorage, T>()`. The DI container constructs `T` by resolving its constructor parameters: for `AzureBlobFileStorage` that means `BlobServiceClient` *and* `AzureBlobStorageOptions` (for `S3FileStorage`: `IAmazonS3` and `S3StorageOptions`). The storage registration does not register the provider's dependencies. The factory overload sidesteps the problem by constructing the provider explicitly.
 
 ---
 
@@ -310,7 +310,7 @@ var uri = await _storage.SaveAsync(stream, file.FileName, "user uploads/2024", c
 
 **Runtime result:** Each provider interprets the container string differently, so the same code behaves differently per backend:
 
-- **LocalDisk** treats `/` as a path separator and creates *nested* directories (`files/user uploads/2024/`). It works, and nested containers are explicitly allowed — but only here.
+- **LocalDisk** treats `/` as a path separator and creates *nested* directories (`files/user uploads/2024/`). It works, and nested containers are explicitly allowed, but only here.
 - **Azure Blob** maps the container to a blob container name, and Azure container names cannot contain spaces or slashes (lowercase alphanumeric + hyphens, 3-63 chars). The operation throws.
 - **S3** embeds the container into the object key (`{KeyPrefix}{container}/{guid}{ext}`), so a slash silently becomes an extra key segment. It works, but the layout no longer matches the other providers.
 
@@ -373,14 +373,14 @@ var uri = await _storage.SaveAsync(stream, File.FileName, "photos", ct);
 // Later, serve the file inline in the browser trusting that content-type
 ```
 
-**Runtime result:** The Azure and S3 providers set the object's content type via `MimeTypes.GetMimeType(extension)` — a pure extension lookup, no content sniffing. The file name is attacker-controlled, so a file named `avatar.jpg` containing HTML/JavaScript is stored and served as `image/jpeg`... unless the browser sniffs it. Served inline from your domain, that is a stored-XSS vector.
+**Runtime result:** The Azure and S3 providers set the object's content type via `MimeTypes.GetMimeType(extension)`: a pure extension lookup, no content sniffing. The file name is attacker-controlled, so a file named `avatar.jpg` containing HTML/JavaScript is stored and served as `image/jpeg`... unless the browser sniffs it. Served inline from your domain, that is a stored-XSS vector.
 
 **Right:**
 
 ```csharp
 await using var stream = File.OpenReadStream();
 
-// Validate the actual content before saving — magic bytes, an allow-list, or a real decoder
+// Validate the actual content before saving: magic bytes, an allow-list, or a real decoder
 using var ms = new MemoryStream();
 await stream.CopyToAsync(ms, ct);
 ms.Position = 0;
@@ -393,7 +393,7 @@ var uri = await _storage.SaveAsync(ms, File.FileName, "photos", ct);
 
 When serving user-uploaded files, also send `X-Content-Type-Options: nosniff` and prefer `Content-Disposition: attachment` for anything you have not validated.
 
-**Why:** `MimeTypes.GetMimeType` maps an extension to a MIME type — that is all. Content validation is an application responsibility: the storage layer cannot know whether the bytes match the claimed type. Validate on upload (magic bytes / allow-list / decode) if files are ever served inline from your origin.
+**Why:** `MimeTypes.GetMimeType` maps an extension to a MIME type, and that is all. Content validation is an application responsibility: the storage layer cannot know whether the bytes match the claimed type. Validate on upload (magic bytes / allow-list / decode) if files are ever served inline from your origin.
 
 ---
 
@@ -409,6 +409,6 @@ When serving user-uploaded files, also send `X-Content-Type-Options: nosniff` an
 | Missing UseStaticFiles | Files saved but 404 on HTTP requests |
 | LocalDisk in production | Files lost on restart, no CDN, no scaling |
 | Missing cloud provider dependencies | `InvalidOperationException` at first upload |
-| Special characters in container names | Works on LocalDisk/S3, throws on Azure — not portable |
+| Special characters in container names | Works on LocalDisk/S3, throws on Azure: not portable |
 | Deleting files without entity cleanup | Dangling URI references, 404 for users |
 | Trusting extension-derived content type | Stored XSS when unvalidated uploads are served inline |

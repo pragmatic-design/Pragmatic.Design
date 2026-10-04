@@ -44,11 +44,11 @@ public interface IErrorMessageResolver
 - `context` is the error instance itself (cast to extract details)
 - `Resolve` returning `null` leaves `detail` unset; `ResolveTitle` returning `null` keeps the error's own `Title` (or the RFC default title for the status code)
 
-The default `NullErrorMessageResolver` returns null for everything — no localization; responses carry the code, title, and the error's structured extension fields.
+The default `NullErrorMessageResolver` returns null for everything (no localization); responses carry the code, title, and the error's structured extension fields.
 
 ## Example: Simple Dictionary Resolver
 
-The simplest approach — no Resx, no external dependencies:
+The simplest approach (no Resx, no external dependencies):
 
 ```csharp
 using Pragmatic.Result.Http;
@@ -132,8 +132,8 @@ app.UseRequestLocalization("en", "it", "de");
 1. Your action returns `NotFoundError.Create("User", 42)` as its failure
 2. The filter catches the failure and calls `IProblemDetailsFactory.Create(error)`
 3. `DefaultProblemDetailsFactory` sets `status` from `error.StatusCode`, `type` from the status code, and `title` from `error.Title` (falling back to the RFC default title)
-4. It calls `IErrorMessageResolver.ResolveTitle("NOT_FOUND", error)` — a non-null return overrides `title`
-5. It calls `IErrorMessageResolver.Resolve("NOT_FOUND", error)` — a non-null return becomes `detail`; null leaves `detail` unset
+4. It calls `IErrorMessageResolver.ResolveTitle("NOT_FOUND", error)`: a non-null return overrides `title`
+5. It calls `IErrorMessageResolver.Resolve("NOT_FOUND", error)`: a non-null return becomes `detail`; null leaves `detail` unset
 6. It writes `code` as an extension, then calls `Error.WriteExtensions()` to emit the error's custom properties as extensions (and `retryAfter` for transient errors)
 
 ```json
@@ -152,16 +152,16 @@ app.UseRequestLocalization("en", "it", "de");
 
 Two related mechanisms, from wire identifier to resource key:
 
-**`Code`** (on `IError`) is the semantic identifier — UPPER_SNAKE_CASE, stable across cultures, always present in the response. It is what `IErrorMessageResolver` receives.
+**`Code`** (on `IError`) is the semantic identifier: UPPER_SNAKE_CASE, stable across cultures, always present in the response. It is what `IErrorMessageResolver` receives.
 
-**`MessageKey`** (on the `Error` base record) is a resource-lookup key derived from `Code`: lowercase, underscores become dots, prefixed with `error.` — `NOT_FOUND` → `error.not.found`. It is virtual: built-in errors override it per scenario (e.g., `ConflictError.AlreadyExists(...)` yields `error.conflict.already_exists`). The derivation is cached per code. Use it in a resolver when your resource files are organized by dotted keys:
+**`MessageKey`** (on the `Error` base record) is a resource-lookup key derived from `Code`: lowercase, underscores become dots, prefixed with `error.`, so `NOT_FOUND` → `error.not.found`. It is virtual: built-in errors override it per scenario (e.g., `ConflictError.AlreadyExists(...)` yields `error.conflict.already_exists`). The derivation is cached per code. Use it in a resolver when your resource files are organized by dotted keys:
 
 ```csharp
 public string? Resolve(string code, object? context = null)
     => context is Error error ? localizer[error.MessageKey].Value : null;
 ```
 
-Localization is driven entirely by `Code` (via `MessageKey`) and the `IErrorMessageResolver.Resolve(code)` / `ResolveTitle(code)` pair — there is no generated `TitleKey`/`DescriptionKey` property. The source generator's only Result-related output is the `WriteExtensions` override for `partial` `Error`-derived types with custom properties, so those properties flow into ProblemDetails extensions with zero reflection.
+Localization is driven entirely by `Code` (via `MessageKey`) and the `IErrorMessageResolver.Resolve(code)` / `ResolveTitle(code)` pair; there is no generated `TitleKey`/`DescriptionKey` property. The source generator's only Result-related output is the `WriteExtensions` override for `partial` `Error`-derived types with custom properties, so those properties flow into ProblemDetails extensions with zero reflection.
 
 ## Custom Error Types
 
@@ -201,7 +201,7 @@ public async Task GetUser_NotFound_ReturnsCorrectCode()
 
     result.IsFailure.Should().BeTrue();
     result.Error.Code.Should().Be("NOT_FOUND");
-    // Don't assert on messages — they're culture-dependent
+    // Don't assert on messages: they're culture-dependent
 }
 ```
 
@@ -213,6 +213,6 @@ public async Task GetUser_NotFound_ReturnsCorrectCode()
 | Detail translation | `IErrorMessageResolver.Resolve(code, context)` |
 | Title translation | `IErrorMessageResolver.ResolveTitle(code, context)` |
 | Resource-key convention | `Error.MessageKey` (derived from `Code`) |
-| Default behavior | `NullErrorMessageResolver` — no localization, codes pass through |
+| Default behavior | `NullErrorMessageResolver`: no localization, codes pass through |
 | Registration | `services.AddPragmaticResult<YourResolver>()` |
 | Trigger | `DefaultProblemDetailsFactory` calls the resolver when the filters build the HTTP response |

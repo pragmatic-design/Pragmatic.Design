@@ -29,7 +29,7 @@ await PragmaticApp.RunAsync(args, app =>
 ```
 
 The third constructor parameter caps upload size: `0` (the default) means no limit; a positive
-value rejects oversized uploads before they fill the disk — enforced up front for seekable streams
+value rejects oversized uploads before they fill the disk, enforced up front for seekable streams
 and mid-copy for non-seekable ones (HTTP bodies).
 
 Or using the `IServiceCollection` extension directly:
@@ -79,7 +79,7 @@ Each provider package also ships a DI helper on `IServiceCollection` that regist
 an already-registered SDK client:
 
 ```csharp
-// Azure — register the client (or pass a connection string to the overload), then the provider
+// Azure: register the client (or pass a connection string to the overload), then the provider
 builder.Services.AddSingleton(new BlobServiceClient(builder.Configuration.GetConnectionString("BlobStorage")));
 builder.Services.AddAzureBlobStorage(new AzureBlobStorageOptions { ContainerPrefix = "myapp-" });
 // Or in one call: builder.Services.AddAzureBlobStorage(new AzureBlobStorageOptions(), connectionString);
@@ -91,7 +91,7 @@ builder.Services.AddFtpStorage(new FtpStorageOptions { Host = "ftp.example.com",
 ```
 
 `UseStorage<AzureBlobFileStorage>()` (the type-based overload) lets the DI container construct the
-provider — it works only if every constructor dependency (`BlobServiceClient` and
+provider: it works only if every constructor dependency (`BlobServiceClient` and
 `AzureBlobStorageOptions`, or `IAmazonS3` and `S3StorageOptions`) is registered separately. The
 factory overload above builds everything in one place. Runnable setup samples:
 `samples/Pragmatic.Storage.Samples/AzureBlobStorageSample.cs` and `S3StorageSample.cs`.
@@ -150,7 +150,7 @@ app.MapPost("/api/files", async (IFormFile file, string container, IFileStorage 
 
 Every `IFileStorage` method has a `*AsResultAsync` counterpart that returns `Result<T, IError>`
 (`VoidResult<IError>` for delete) instead of throwing. Reach for it on the framework's
-action/mutation path: the failure is a value that composes with the rest of the pipeline — no
+action/mutation path: the failure is a value that composes with the rest of the pipeline, no
 `try`/`catch`, and the error carries the right HTTP status.
 
 ```csharp
@@ -171,14 +171,14 @@ public partial class UploadPhoto : DomainAction<Uri>
 |--------|---------|---------|
 | `SaveAsResultAsync(stream, fileName, container, ct)` | `Result<Uri, IError>` | `FileTooLargeError` (413), `StorageWriteError` (500) |
 | `GetAsResultAsync(uri, ct)` | `Result<Stream, IError>` | `StorageFileNotFoundError` (404), `StorageWriteError` (500) |
-| `ExistsAsResultAsync(uri, ct)` | `Result<bool, IError>` | `StorageWriteError` (500) — a missing file is a successful `false` |
+| `ExistsAsResultAsync(uri, ct)` | `Result<bool, IError>` | `StorageWriteError` (500); a missing file is a successful `false` |
 | `DeleteAsResultAsync(uri, ct)` | `VoidResult<IError>` | `StorageWriteError` (500) |
 
 `StorageWriteError` is transient-aware (`IsTransient` is set for `IOException` / `TimeoutException`),
-so a resilience policy can retry on it. Cancellation is never swallowed — an
+so a resilience policy can retry on it. Cancellation is never swallowed: an
 `OperationCanceledException` propagates rather than becoming a failure.
 
-**Use the throwing surface** (`SaveAsync` and friends) for direct, non-pipeline use — a background
+**Use the throwing surface** (`SaveAsync` and friends) for direct, non-pipeline use: a background
 utility, a script, a place where you already handle exceptions. The throwing path signals an
 oversized upload with `FileSizeLimitExceededException` (a subtype of `InvalidOperationException`,
 so existing `catch (InvalidOperationException)` code keeps working).
@@ -194,7 +194,7 @@ Uri uri = await storage.SaveAsync(input, "report.pdf", "documents", ct);
 await using Stream? stream = await storage.GetAsync(uri, ct);   // null if missing; caller disposes
 bool exists = await storage.ExistsAsync(uri, ct);               // true
 
-await storage.DeleteAsync(uri, ct);                             // idempotent — no-op if already gone
+await storage.DeleteAsync(uri, ct);                             // idempotent: no-op if already gone
 ```
 
 A download endpoint that streams the file to the client:
@@ -258,7 +258,7 @@ URIs returned by `LocalDiskFileStorage` are relative (e.g., `/files/photos/abc12
 
 For cloud storage, `SaveAsync` returns absolute URIs. Whether clients can open them directly
 depends on your configuration: Azure returns the blob URI
-(`https://account.blob.core.windows.net/photos/abc123.jpg`) — directly accessible only if the
+(`https://account.blob.core.windows.net/photos/abc123.jpg`), directly accessible only if the
 container allows public read, otherwise serve through your API (`GetAsync`) or attach a SAS token.
 S3 returns a `PublicBaseUrl`-based URI (CDN or website endpoint) when that option is set, otherwise
 an `s3://` URI intended to be read back through `GetAsync`.
@@ -268,10 +268,10 @@ an `s3://` URI intended to be read back through `GetAsync`.
 Two optional capabilities live next to `IFileStorage`. A provider that supports them implements the
 extra interface; `IFileStorage` itself stays at four methods, so pattern-match to use them.
 
-### File metadata — `IFileInfoProvider`
+### File metadata: `IFileInfoProvider`
 
 `GetInfoAsync(uri)` returns a `StoredFileInfo` (`SizeBytes`, `ContentType`, `LastModified`,
-`FileUri`) without downloading the file — a local `stat`, an Azure `GetProperties`, an S3 `HEAD`.
+`FileUri`) without downloading the file: a local `stat`, an Azure `GetProperties`, an S3 `HEAD`.
 It returns `null` for a missing file, exactly like `GetAsync`. Every shipped provider implements it.
 
 ```csharp
@@ -283,10 +283,10 @@ if (storage is IFileInfoProvider info)
 }
 ```
 
-### Signed download URLs — `ISignedUrlProvider`
+### Signed download URLs: `ISignedUrlProvider`
 
 `GetDownloadUrlAsync(uri, expiry)` mints a temporary, pre-authenticated URL so the browser downloads
-a **private** file straight from the backend — the application never proxies the bytes. Azure (SAS),
+a **private** file straight from the backend; the application never proxies the bytes. Azure (SAS),
 S3/R2 (pre-signed), and Google Cloud (signed URL) implement it; `LocalDiskFileStorage`,
 `InMemoryFileStorage`, SFTP, and FTP do not (local files are served as static files).
 
@@ -311,13 +311,13 @@ app.MapGet("/api/documents/{id:guid}/download", async (
 ```
 
 On Azure, a SAS URL requires the `BlobServiceClient` to be created with a shared-key credential (a
-connection string or an account key). A client built from a managed identity cannot sign — the call
+connection string or an account key). A client built from a managed identity cannot sign: the call
 throws `NotSupportedException`. On Google Cloud, signing requires a service-account credential
 (supply a `UrlSigner` in the options or set `GOOGLE_APPLICATION_CREDENTIALS`).
 
-Both capabilities also have Result-based counterparts — `GetInfoAsResultAsync(uri)` →
+Both capabilities also have Result-based counterparts, `GetInfoAsResultAsync(uri)` →
 `Result<StoredFileInfo, IError>` and `GetDownloadUrlAsResultAsync(uri, expiry)` → `Result<Uri, IError>`
-— for the action/mutation path.
+for the action/mutation path.
 
 ## Step 6: Display in Frontend
 
@@ -327,7 +327,7 @@ The `Uri` stored on your entity works as a direct download URL:
 <!-- For local disk: relative URI -->
 <img src="/files/photos/abc123.jpg" />
 
-<!-- For cloud: absolute URI (public container/bucket or CDN — see Step 5) -->
+<!-- For cloud: absolute URI (public container/bucket or CDN; see Step 5) -->
 <img src="https://account.blob.core.windows.net/photos/abc123.jpg" />
 ```
 
@@ -347,7 +347,7 @@ Containers map to folders (local disk) or blob containers (Azure) or prefixes (S
 
 ## Testing
 
-Reference the `Pragmatic.Storage.InMemory` package and register `InMemoryFileStorage` — it backs all
+Reference the `Pragmatic.Storage.InMemory` package and register `InMemoryFileStorage`; it backs all
 four `IFileStorage` methods (and `IFileInfoProvider`) with a dictionary, no filesystem or network:
 
 ```csharp
@@ -358,7 +358,7 @@ services.AddInMemoryStorage();
 
 `AddInMemoryStorage()` registers `InMemoryFileStorage` as the `IFileStorage` singleton. Every
 `SaveAsync` returns a resolvable URI, `GetAsync`/`ExistsAsync` round-trip it, and `DeleteAsync` is
-idempotent — so an upload endpoint under test behaves exactly as it would in production, without
+idempotent, so an upload endpoint under test behaves exactly as it would in production, without
 touching disk or a cloud account. Use the same package for a zero-config local run.
 
 ## Environment-Based Configuration

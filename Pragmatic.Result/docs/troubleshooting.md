@@ -64,7 +64,7 @@ Your code throws `InvalidOperationException` with the message "Cannot access Err
        logger.LogWarning("Failed: {Code}", error.Code);
    ```
 
-3. **"uninitialized Result" means `default(Result<T, E>)`.** A Result must be created via `Success(...)` or `Failure(...)`. A default/zero-initialized struct — an unassigned field, `default` argument, or `new Result<T, E>()` — is neither success nor failure: `IsSuccess` is false, `TryGetError()` returns false, and reading `.Error` throws. Find where the Result is constructed without a factory method.
+3. **"uninitialized Result" means `default(Result<T, E>)`.** A Result must be created via `Success(...)` or `Failure(...)`. A default/zero-initialized struct (an unassigned field, `default` argument, or `new Result<T, E>()`) is neither success nor failure: `IsSuccess` is false, `TryGetError()` returns false, and reading `.Error` throws. Find where the Result is constructed without a factory method.
 
 ---
 
@@ -88,7 +88,7 @@ var result = Result<NotFoundError, NotFoundError>.Success(errorAsValue);
 var result = Result<NotFoundError, NotFoundError>.Failure(error);
 ```
 
-Better: avoid instantiating a Result whose value type is also its error type — it defeats the discriminated-union semantics.
+Better: avoid instantiating a Result whose value type is also its error type, which defeats the discriminated-union semantics.
 
 ---
 
@@ -115,7 +115,7 @@ Raw Result JSON in the response means the conversion filter never ran. ProblemDe
    });
    ```
 
-3. **Did you register `AddPragmaticResult()`?** It registers the `IProblemDetailsFactory` and `IErrorMessageResolver` the filters use. Without it the filters still emit ProblemDetails via a built-in fallback (status, title, and description only — no `code` extension, no error-specific fields, no localization):
+3. **Did you register `AddPragmaticResult()`?** It registers the `IProblemDetailsFactory` and `IErrorMessageResolver` the filters use. Without it the filters still emit ProblemDetails via a built-in fallback (status, title, and description only; no `code` extension, no error-specific fields, no localization):
 
    ```csharp
    builder.Services.AddPragmaticResult();
@@ -131,13 +131,13 @@ Raw Result JSON in the response means the conversion filter never ran. ProblemDe
 
 The API returns an unexpected status code (e.g., 422 instead of 404).
 
-The status code always comes from the error instance's `StatusCode` property — there is no separate mapping table to configure.
+The status code always comes from the error instance's `StatusCode` property; there is no separate mapping table to configure.
 
 ### Possible Causes
 
 **Wrong error type returned.** Verify the error instance you are actually returning. If a shared helper returns `BusinessRuleError` (422) where you expected `NotFoundError` (404), the response reflects the actual error. A 422 usually means a `BusinessRuleError` reached the boundary.
 
-**Custom error's `StatusCode` returns the wrong value.** For errors extending `Error`, `StatusCode` is an abstract override — check the override on your error type:
+**Custom error's `StatusCode` returns the wrong value.** For errors extending `Error`, `StatusCode` is an abstract override; check the override on your error type:
 
 ```csharp
 public sealed record PaymentRequiredError : Error
@@ -166,7 +166,7 @@ public sealed record PaymentRequiredError : Error
 
 You reference `Result<T, E1, E2>` but the compiler does not recognize the type.
 
-The multi-error variants (`Result<TValue, TError1, TError2>` up to 8 error types, and `VoidResult<TError1, TError2>` up to 8) are compiled into the `Pragmatic.Result` package itself — they arrive ready-made with the package. The files `Result3_Generated.g.cs` through `Result9_Generated.g.cs` exist only in the Pragmatic.Result package build, not in your project.
+The multi-error variants (`Result<TValue, TError1, TError2>` up to 8 error types, and `VoidResult<TError1, TError2>` up to 8) are compiled into the `Pragmatic.Result` package itself: they arrive ready-made with the package. The files `Result3_Generated.g.cs` through `Result9_Generated.g.cs` exist only in the Pragmatic.Result package build, not in your project.
 
 ### Checklist
 
@@ -244,7 +244,7 @@ Result types serialize as `{}` or throw `JsonException`.
    ```
 
    There is no factory that discovers them for you: one would have to materialize converters with
-   `MakeGenericType`, so it could never run under Native AOT, and the framework does not need one —
+   `MakeGenericType`, so it could never run under Native AOT, and the framework does not need one:
    endpoints unwrap a result into its value or a ProblemDetails, and the remote invoker sends its own
    envelope.
 
@@ -264,9 +264,9 @@ Result types serialize as `{}` or throw `JsonException`.
 
    The untyped `Result<T>` and the multi-error variants have **no** fixed-arity typed converter to
    register. If you must serialize them under NativeAOT, project them to a two-arg
-   `Result<T, IError>` (or `VoidResult<IError>`) first — a multi-error result carries a single active
+   `Result<T, IError>` (or `VoidResult<IError>`) first. A multi-error result carries a single active
    error (reachable via its `Error` / `IError` member), so widening to the common `IError` slot loses
-   nothing on the wire — then register `ResultJsonConverter<T, IError>` for that shape. Automatic
+   nothing on the wire. Then register `ResultJsonConverter<T, IError>` for that shape. Automatic
    source-generated converters for these variants are tracked as future work; today they are
    reflection-only.
 
@@ -303,7 +303,7 @@ Error-specific fields are written by `Error.WriteExtensions()`, which the Proble
    BadRequestError.MissingHeader("X-Api-Key");  // reason + field
    ```
 
-2. **For custom errors: declare the type `partial`.** The source generator emits a `WriteExtensions` override for every partial `Error`-derived type with custom properties — each property becomes a camelCase extension, zero reflection:
+2. **For custom errors: declare the type `partial`.** The source generator emits a `WriteExtensions` override for every partial `Error`-derived type with custom properties. Each property becomes a camelCase extension, with zero reflection:
 
    ```csharp
    public sealed partial record OrderLimitError : Error
@@ -349,7 +349,7 @@ public sealed partial record PaymentDeclinedError : Error
 }
 ```
 
-The source generator skips `[JsonIgnore]` properties when emitting `WriteExtensions`, and the OpenAPI schema enricher excludes them symmetrically — so the property never appears in either the response body or the documented schema.
+The source generator skips `[JsonIgnore]` properties when emitting `WriteExtensions`, and the OpenAPI schema enricher excludes them symmetrically, so the property never appears in either the response body or the documented schema.
 
 ---
 
@@ -382,7 +382,7 @@ Profiling shows heap allocations where you expect zero-allocation behavior.
    result.Map(Process);
    ```
 
-3. **Lazy iterators in hot paths.** `GetSuccesses()` and `GetFailures()` are lazy iterators — each call allocates an iterator state machine. For hot paths, iterate manually:
+3. **Lazy iterators in hot paths.** `GetSuccesses()` and `GetFailures()` are lazy iterators: each call allocates an iterator state machine. For hot paths, iterate manually:
 
    ```csharp
    // Iterator (allocates the state machine)
@@ -486,7 +486,7 @@ For deeper integration, see [Pragmatic.Validation](../../Pragmatic.Validation/do
 
 ### Can I use Result in library code without ASP.NET Core?
 
-Yes. The core `Pragmatic.Result` package has no ASP.NET Core dependency. It targets `net10.0` and works in any .NET 10 project — class libraries, console apps, workers. The ASP.NET Core integration (`Pragmatic.Result.AspNetCore`) is a separate package.
+Yes. The core `Pragmatic.Result` package has no ASP.NET Core dependency. It targets `net10.0` and works in any .NET 10 project (class libraries, console apps, workers). The ASP.NET Core integration (`Pragmatic.Result.AspNetCore`) is a separate package.
 
 ### How do I test methods that return Result?
 

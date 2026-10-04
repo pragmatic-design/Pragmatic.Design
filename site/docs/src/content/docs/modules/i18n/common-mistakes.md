@@ -155,10 +155,10 @@ return date.ToString("d", culture);
 
 ⚠️ **Option C is for formatting inside a scope, and not for choosing one.** With no scope open
 `I18NContext.Current` falls back to the thread's culture, and `WithCultureAsync` does not restore it
-after an await — so "what language when nobody said?" answered from there is whatever the last piece of
+after an await, so "what language when nobody said?" answered from there is whatever the last piece of
 work on that thread left behind (measured: a letter in Italian for an applicant who named no language,
 because another test had rendered an Italian one on the same thread). That question has one contract:
-`IConfiguredCultures.Default`, registered by `UseI18N` — see
+`IConfiguredCultures.Default`, registered by `UseI18N`; see
 [Concepts](/modules/i18n/concepts/#fallback-behavior).
 
 ---
@@ -302,7 +302,7 @@ public class ShippingNotifier
 **Why:** `LocalizedString` is designed for per-entity database content (product names, descriptions) where translations vary per record. Application strings (UI labels, email subjects) should use the generated `T` class because: (a) translations are centralized in JSON files, (b) the SG validates completeness at build time via PRAG1802 warnings, (c) adding a new language means adding one JSON file, not modifying dozens of C# files.
 
 Error messages are neither: an error carries no text. Return `NotFoundError.For("Order", id)` and the
-response is localized from the error's `Code` by the registered `IErrorMessageResolver` — see
+response is localized from the error's `Code` by the registered `IErrorMessageResolver`; see
 [Result localization](/modules/result/localization/).
 
 ---

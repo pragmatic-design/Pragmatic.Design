@@ -215,8 +215,8 @@ var result = I18NContext.WithCulture<string>("it-IT", () =>
 If no context has been set explicitly, `I18NContext.Current` falls back to `CultureInfo.CurrentCulture` from the current thread. This means the system works out of the box in console applications and tests without any setup.
 
 ⚠️ **Which is why it is the wrong place to ask "what language when nobody said?"** `WithCultureAsync`
-does not restore the thread's culture after an await — the continuation may resume on another pool
-thread — so outside a scope `I18NContext.Current` is whatever the last piece of work on that thread
+does not restore the thread's culture after an await (the continuation may resume on another pool
+thread), so outside a scope `I18NContext.Current` is whatever the last piece of work on that thread
 left behind. Measured: a letter for an applicant who named no language came out in Italian because
 another test had rendered an Italian one on the same thread, and a background job is in the same
 position as that test.
@@ -224,7 +224,7 @@ position as that test.
 The configured answer is a contract of its own:
 
 ```csharp
-// Pragmatic.Internationalization.Context — registered by UseI18N, scoped
+// Pragmatic.Internationalization.Context: registered by UseI18N, scoped
 public sealed class TheLetter(IConfiguredCultures cultures)
 {
     private string LanguageFor(string? theirs)
@@ -233,7 +233,7 @@ public sealed class TheLetter(IConfiguredCultures cultures)
 ```
 
 `IConfiguredCultures` answers `Default` (the host's `i18n.DefaultCulture(...)`, merged across
-providers exactly as a request resolves it) and `Supported`, and nothing else — the *current* culture
+providers exactly as a request resolves it) and `Supported`, and nothing else: the *current* culture
 stays `I18NContext`'s business. It is scoped because a provider may be per-request, and it throws
 rather than guessing when nothing is configured. ⚠️ `I18NConfigResolver` is deliberately **not** the
 contract to inject: it carries the merge and the validation, so a module asking for it gets
@@ -406,7 +406,7 @@ Most applications use both together. The choice depends on whether the content i
 
 **Use `LocalizedString`** for: product names, category descriptions, CMS content, invoice notes.
 
-**Use `T` class** for: UI labels, email subjects, system notifications — application strings.
+**Use `T` class** for: UI labels, email subjects, system notifications (application strings).
 
 Error and validation messages are neither: an error carries a `Code`, a validation issue a message key,
 and both are resolved to text at the response boundary by the registered `IErrorMessageResolver`.
@@ -473,8 +473,8 @@ public static LocalizedString Welcome => LocalizedString.From(
 ```
 
 It also generates `TTranslations`, an `ILocalizationProvider` over the same values, which the host of any
-application that includes the module registers: a lookup by key — `IStringLocalizer`, `t:` in a document
-template, a localized error — finds the module's translations with no file copied beside the host. Plural
+application that includes the module registers: a lookup by key (`IStringLocalizer`, `t:` in a document
+template, a localized error) finds the module's translations with no file copied beside the host. Plural
 forms are not embedded.
 
 When `EmbedTranslations = false`, the `T` class generates `LocalizationKey` references for runtime lookup:

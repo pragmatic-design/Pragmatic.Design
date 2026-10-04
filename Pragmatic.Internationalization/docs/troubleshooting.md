@@ -249,7 +249,7 @@ For `T` class keys, missing translations are caught at build time by PRAG1802. A
 
 ### Can I use both `LocalizedString` and `T` class in the same project?
 
-Yes. This is the recommended approach. Use `T` class for static application strings (UI labels, email subjects — error messages are resolved from the error's `Code` instead) and `LocalizedString` for dynamic per-entity content (product names, descriptions).
+Yes. This is the recommended approach. Use `T` class for static application strings (UI labels, email subjects; error messages are resolved from the error's `Code` instead) and `LocalizedString` for dynamic per-entity content (product names, descriptions).
 
 ### How do I add a new language?
 

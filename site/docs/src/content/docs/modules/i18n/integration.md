@@ -1,5 +1,5 @@
 ---
-title: "Integration — ASP.NET Core, Pragmatic Host, EF Core"
+title: "Integration: ASP.NET Core, Pragmatic Host, EF Core"
 description: "How to wire Pragmatic.Internationalization into a web application: DI registration, the culture"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Internationalization/docs/integration.md
 sidebar:
@@ -43,7 +43,7 @@ builder.Services.AddPragmaticInternationalization(builder.Configuration);
 | `SystemConfigProvider` | singleton | fallback config provider (Priority 0) reading `I18NOptions` |
 | `I18NConfigResolver` | scoped | merges all `II18NConfigProvider`s by priority |
 | `GlobalizationFormatter` | scoped | culture-aware formatting, follows `I18NContext.Current` |
-| JSON converters | — | all i18n types on `ConfigureHttpJsonOptions` (see below) |
+| JSON converters | n/a | all i18n types on `ConfigureHttpJsonOptions` (see below) |
 
 It returns an `I18NBuilder` for further fluent configuration (see below).
 
@@ -51,18 +51,18 @@ It returns an `I18NBuilder` for further fluent configuration (see below).
 
 1. Resolves the configuration from the provider chain (`I18NConfigResolver`).
 2. Applies a request culture override: query string (`options.QueryStringKey`, default `culture`)
-   first, then `Accept-Language` (quality-ordered best match) — both validated against
+   first, then `Accept-Language` (quality-ordered best match), both validated against
    `SupportedCultures`.
 3. Sets `I18NContext` (and thread cultures), opens an `I18N.Context.Resolve` activity.
-4. Captures and restores the previous thread cultures after the request — no culture leaks
+4. Captures and restores the previous thread cultures after the request: no culture leaks
    between requests on the same thread.
 
 ## Pragmatic Host
 
 ### When you need it
 
-In a Pragmatic.Composition host — the middleware is auto-wired for you by
-`InternationalizationStep` (an `IStartupStep` with `Order = 95`, after authentication — so a provider
+In a Pragmatic.Composition host, the middleware is auto-wired for you by
+`InternationalizationStep` (an `IStartupStep` with `Order = 95`, after authentication, so a provider
 that reads the signed-in user's preference sees who is asking).
 
 ### What you write
@@ -83,20 +83,20 @@ await PragmaticApp.RunAsync(args, app =>
 ### What you get
 
 `UseI18N` calls `AddPragmaticInternationalization()` and hands you the same `I18NBuilder`.
-No manual `UsePragmaticInternationalization()` needed — the startup step adds the middleware.
+No manual `UsePragmaticInternationalization()` needed: the startup step adds the middleware.
 
 ### Where the culture comes from when you configure none
 
 The modules' translations. The host registers a `DeclaredLanguagesConfigProvider` (priority −100, below
 everything else) from their translation metadata: the supported cultures are those of their
-`translations/{culture}.json` files, and the default is the culture they are written from —
-`[TranslationKeys(DefaultCulture = …)]`, `en` unless set — when every module names the same one and has a
+`translations/{culture}.json` files, and the default is the culture they are written from
+(`[TranslationKeys(DefaultCulture = …)]`, `en` unless set) when every module names the same one and has a
 file for it. `DefaultCulture(...)`, `Support(...)` and the `I18N` configuration section override it.
 
 There is no silent fallback beyond that. When no default comes from anywhere, `UsePragmaticInternationalization`
-throws `I18NConfigurationException` while the pipeline is built, so **the host does not start** — it used
+throws `I18NConfigurationException` while the pipeline is built, so **the host does not start**; it used
 to start and fail every request instead. The check runs only when every registered provider is static (the
-options and the declared languages): one that answers per request — tenant, user, database — may supply
+options and the declared languages): one that answers per request (tenant, user, database) may supply
 the default, and then the request decides, as before.
 
 ## I18NBuilder Reference
@@ -130,7 +130,7 @@ languages and ships three is wrong about one of them, not unable to start.
 
 ### When you need it
 
-The culture must come from data — the tenant's settings, the user profile — not from static options.
+The culture must come from data (the tenant's settings, the user profile), not from static options.
 
 ### What you write
 
@@ -192,7 +192,7 @@ i18n.LocalizeProblemDetails();
 ```
 
 Translation keys are the error's `MessageKey` (or, when resolving from a bare code,
-`error.` + the code lowercased with `_` → `.`) plus a suffix — `.detail` for the message,
+`error.` + the code lowercased with `_` → `.`) plus a suffix: `.detail` for the message,
 `.title` for the title. Never the bare key: a key that is also the prefix of another cannot become
 both a member and a nested class of the generated key class, and is reported as `PRAG1805`.
 
@@ -211,8 +211,8 @@ placeholders interpolated from `Error.Parameters` (`"Cannot exceed {limit} night
 `Parameters["limit"] = 14` → `"Cannot exceed 14 nights"`). Missing keys fall back to the
 error's own message.
 
-A validation failure also carries one message per issue. `errors` keeps the keys — what a client
-matches on, the same in every language — and `messages` beside it holds their words in the
+A validation failure also carries one message per issue. `errors` keeps the keys (what a client
+matches on, the same in every language) and `messages` beside it holds their words in the
 caller's language, aligned one for one. Each issue's key is looked up as it is, no suffix, with
 the issue's parameters (`"validation.maxlength": "At most {max} characters"`):
 
@@ -243,7 +243,7 @@ Covered types (plus their nullable variants): `Money` (`{ "amount": 99.99, "curr
 
 ## Validation Attributes
 
-Three rules from `Pragmatic.Validation.Attributes`, generated like any other — no registration needed.
+Three rules from `Pragmatic.Validation.Attributes`, generated like any other; no registration needed.
 The type is `partial` because the generator writes `Validate()` into it:
 
 ```csharp
@@ -291,7 +291,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 ### Money: manual mapping
 
-`Money` has **no automatic converter** — a single-column mapping would lose either precision
+`Money` has **no automatic converter**: a single-column mapping would lose either precision
 or the currency. Map it as two columns; `MoneyConfiguration.DefaultPrecision` (19) and
 `MoneyConfiguration.DefaultScale` (4) are the recommended constants:
 
@@ -308,9 +308,9 @@ builder.OwnsOne(i => i.Total, money =>
 
 The module emits OpenTelemetry-friendly signals, all named under `Pragmatic.Internationalization`:
 
-- **ActivitySource** — the middleware opens an `I18N.Context.Resolve` activity per request,
+- **ActivitySource**: the middleware opens an `I18N.Context.Resolve` activity per request,
   tagged with the resolved cultures.
-- **Meter** — counters `pragmatic.i18n.key_lookups` and `pragmatic.i18n.missing_keys` track
+- **Meter**: counters `pragmatic.i18n.key_lookups` and `pragmatic.i18n.missing_keys` track
   translation lookups and misses at runtime (`StringLocalizer`).
 
 Enable richer tracing with `I18NOptions.EnableDiagnostics = true`, and subscribe your OTel
@@ -318,7 +318,7 @@ setup to the `Pragmatic.Internationalization` source/meter names.
 
 ## See Also
 
-- [Getting Started](/modules/i18n/getting-started/) — culture context, Money, formatting
-- [Translation Keys](/modules/i18n/translation-keys/) — the generated `T` class and localization providers
-- [Troubleshooting](/modules/i18n/troubleshooting/) — diagnostics and common failures
-- `Pragmatic.Temporal.Internationalization` — culture-aware formatting for the Temporal types (`LocalDateTime`, `ZonedDateTime`); `LocalDate`/`LocalTime` work out of the box via `DateOnly`/`TimeOnly` conversions
+- [Getting Started](/modules/i18n/getting-started/): culture context, Money, formatting
+- [Translation Keys](/modules/i18n/translation-keys/): the generated `T` class and localization providers
+- [Troubleshooting](/modules/i18n/troubleshooting/): diagnostics and common failures
+- `Pragmatic.Temporal.Internationalization`: culture-aware formatting for the Temporal types (`LocalDateTime`, `ZonedDateTime`); `LocalDate`/`LocalTime` work out of the box via `DateOnly`/`TimeOnly` conversions
