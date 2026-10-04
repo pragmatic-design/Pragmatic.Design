@@ -78,7 +78,7 @@ These are two different questions and features gate on different ones. Getting t
 
 | Flag | Condition | Meaning |
 |------|-----------|---------|
-| `IsHostMode` | `CompositionDetector.IsHostProject(compilation)` — `OutputKind` is `ConsoleApplication` or `WindowsApplication` **and** `GetEntryPoint()` is non-null | "This project is an executable." Nothing more. A console tool that references only `Pragmatic.Persistence` sets this. |
+| `IsHostMode` | `CompositionDetector.IsHostProject(compilation)`: `OutputKind` is `ConsoleApplication` or `WindowsApplication` **and** `GetEntryPoint()` is non-null | "This project is an executable." Nothing more. A console tool that references only `Pragmatic.Persistence` sets this. |
 | `IsHostCompositionMode` | `IsHostProject(compilation)` **and** `IsCompositionHostReferenced(compilation)` | "This project is a full Pragmatic host." Only then does the Composition feature emit `PragmaticHost.Services.g.cs` with its aggregated DI wiring. |
 
 The narrower flag is the one that gates host aggregation. Note that a test project can satisfy `IsHostMode`, which is why `CompositionDetector` also exposes `IsTestProject` and a `GeneratorMode` (`Library` / `Host` / `Skip`) that folds all three checks together.
@@ -136,19 +136,19 @@ context.RegisterSourceOutputSafe(
     static (ctx, x) => GenerateCacheable(ctx, x.Left!));
 ```
 
-A feature may also *return* a provider so a later feature can consume it — `PersistenceFeature`, `ResourceFeature`, `TraitFeature`, and `EndpointsFeature` all do, and `Initialize` threads their outputs into downstream registrations.
+A feature may also *return* a provider so a later feature can consume it: `PersistenceFeature`, `ResourceFeature`, `TraitFeature`, and `EndpointsFeature` all do, and `Initialize` threads their outputs into downstream registrations.
 
 ### Crash Isolation: RegisterSourceOutputSafe
 
 Every one of the ~130 output registrations in the generator uses `RegisterSourceOutputSafe`, never `context.RegisterSourceOutput`. This is not optional.
 
-The Pragmatic ecosystem is served by a **single** `IIncrementalGenerator`. Roslyn does not isolate its output registrations from each other: an unhandled exception in any one transform or template surfaces as a single CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. One malformed attribute argument on one entity takes out repositories, endpoints, DI registration, and host wiring at once — and the error names the generator, not the feature.
+The Pragmatic ecosystem is served by a **single** `IIncrementalGenerator`. Roslyn does not isolate its output registrations from each other: an unhandled exception in any one transform or template surfaces as a single CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. One malformed attribute argument on one entity takes out repositories, endpoints, DI registration, and host wiring at once, and the error names the generator, not the feature.
 
 `shared/SourceGen/SafeSourceOutput.cs` provides a drop-in extension on `IncrementalGeneratorInitializationContext`, with overloads for both `IncrementalValueProvider<T>` and `IncrementalValuesProvider<T>`. It wraps the callback, reports the failure as **PRAG9000**, and lets the other outputs proceed.
 
 PRAG9000 is a **`DiagnosticSeverity.Error`**. A failed output means generated code the consumer's source refers to is simply not there; reporting that as a warning would let the build run on into a cascade of CS0246s whose real cause is buried in warning output. The failure has to surface where it happens.
 
-`OperationCanceledException`, `OutOfMemoryException`, and `StackOverflowException` pass through uncaught — cancellation must propagate for the IDE to stay responsive, and the other two are not recoverable.
+`OperationCanceledException`, `OutOfMemoryException`, and `StackOverflowException` pass through uncaught: cancellation must propagate for the IDE to stay responsive, and the other two are not recoverable.
 
 ### Single Emission Point: SourceOutput.AddSource
 
@@ -156,7 +156,7 @@ PRAG9000 is a **`DiagnosticSeverity.Error`**. A failed output means generated co
 ctx.AddSource(artifact);          // correct
 ```
 
-`shared/SourceGen/SourceOutput.cs` extends `SourceProductionContext` with an `AddSource(Artifact)` overload that checks `artifact.IsEmpty` and skips the file. A template whose `Validate()` returns `false` renders to *empty* content rather than to nothing — that is how every template says "there is nothing to generate here" — so the raw two-argument call would write a zero-byte `.g.cs` into the compilation. Harmless to compile, but it pollutes the generated output and erases the distinction between "deliberately nothing" and "the template silently produced nothing". With roughly 200 emission sites, that decision belongs in one place.
+`shared/SourceGen/SourceOutput.cs` extends `SourceProductionContext` with an `AddSource(Artifact)` overload that checks `artifact.IsEmpty` and skips the file. A template whose `Validate()` returns `false` renders to *empty* content rather than to nothing (that is how every template says "there is nothing to generate here"), so the raw two-argument call would write a zero-byte `.g.cs` into the compilation. Harmless to compile, but it pollutes the generated output and erases the distinction between "deliberately nothing" and "the template silently produced nothing". With roughly 200 emission sites, that decision belongs in one place.
 
 ### Aggregate Pipelines
 
@@ -167,13 +167,13 @@ var allActions = validActions.Collect();
 context.RegisterSourceOutputSafe(allActions, GenerateActionsRegistration);
 ```
 
-`.Collect()` produces `IncrementalValueProvider<ImmutableArray<T>>` and that is the **one place a raw `ImmutableArray<T>` is correct** — it is pipeline plumbing that Roslyn compares elementwise itself, not a cached model field. See the next section.
+`.Collect()` produces `IncrementalValueProvider<ImmutableArray<T>>` and that is the **one place a raw `ImmutableArray<T>` is correct**: it is pipeline plumbing that Roslyn compares elementwise itself, not a cached model field. See the next section.
 
 ### Cacheable Models: EquatableArray
 
 Every collection field on a model that flows through the pipeline must be `EquatableArray<T>` (`shared/SourceGen/EquatableArray.cs`), and every map `EquatableDictionary<TKey, TValue>`.
 
-`ImmutableArray<T>` is a readonly struct over a `T[]` whose `Equals` compares the array **reference**, not the contents. A transform allocates a fresh array on every run, so a record holding one never compares equal to its predecessor. The compiler-generated record `Equals` returns `false`, the stage re-runs, the template re-renders — on every keystroke. Nothing fails, the IDE just degrades. `ImmutableDictionary<TKey, TValue>` has the identical defect.
+`ImmutableArray<T>` is a readonly struct over a `T[]` whose `Equals` compares the array **reference**, not the contents. A transform allocates a fresh array on every run, so a record holding one never compares equal to its predecessor. The compiler-generated record `Equals` returns `false`, the stage re-runs, the template re-renders, on every keystroke. Nothing fails, the IDE just degrades. `ImmutableDictionary<TKey, TValue>` has the identical defect.
 
 `EquatableArray<T>` walks the elements with `EqualityComparer<T>.Default`. The conversion is free at the call sites: there is an implicit conversion from `ImmutableArray<T>` (so transforms need no edit), `[CollectionBuilder]` makes collection expressions work, `.AsImmutableArray()` unwraps where an `ImmutableArray`-specific API is needed, and the struct is an `IReadOnlyList<T>` for reading.
 
@@ -181,7 +181,7 @@ Every collection field on a model that flows through the pipeline must be `Equat
 
 Models carry `LocationInfo?` (`Core/LocationInfo.cs`), never a Roslyn `Location`.
 
-A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one `Compilation`. A cached model outlives the compilation it was built from, so reporting from a stored `Location` means reporting a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation", killing source generation, classification, and CodeLens in the IDE. The CLI never notices — one run, fresh trees — so this reproduces only for the people using the IDE.
+A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one `Compilation`. A cached model outlives the compilation it was built from, so reporting from a stored `Location` means reporting a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation", killing source generation, classification, and CodeLens in the IDE. The CLI never notices (one run, fresh trees), so this reproduces only for the people using the IDE.
 
 `LocationInfo` captures the file path plus both spans as plain values and rebuilds a location on demand. It is deliberately excluded from equality (`Equals` always `true`, `GetHashCode` `0`): a position never changes the generated output, and including it would make the owning model unequal on every re-parse.
 
@@ -311,7 +311,7 @@ PersistenceFeature.Register()  -> IncrementalValueProvider<ImmutableArray<Entity
 
 ### Two Persistence features that are NOT sub-features
 
-`Features/Persistence/` contains two more `*Feature.cs` files that `PersistenceFeature` does **not** call. Both are registered directly from `PragmaticSourceGenerator.Initialize()` and both take only `context` — no `DetectedFeatures` gate:
+`Features/Persistence/` contains two more `*Feature.cs` files that `PersistenceFeature` does **not** call. Both are registered directly from `PragmaticSourceGenerator.Initialize()` and both take only `context`, with no `DetectedFeatures` gate:
 
 | Feature | Trigger | Output |
 |---------|---------|--------|
@@ -322,7 +322,7 @@ If you are counting sub-features from the folder listing, this is the discrepanc
 
 ### Boundary readers
 
-Four `*BoundaryReader.cs` classes — `BatchProgressBoundaryReader`, `EventOutboxBoundaryReader`, `MessagingOutboxBoundaryReader`, `SagaPersistenceBoundaryReader` — share one shape:
+Four `*BoundaryReader.cs` classes (`BatchProgressBoundaryReader`, `EventOutboxBoundaryReader`, `MessagingOutboxBoundaryReader`, `SagaPersistenceBoundaryReader`) share one shape:
 
 ```csharp
 ReadEnabledBoundaries(Compilation, ImmutableArray<EntityMetadataModel>, CancellationToken)
@@ -371,14 +371,14 @@ public partial class Invoice
 
 | Class | ID | Suppresses | Fires only when |
 |-------|----|------------|-----------------|
-| `EntityPropertyNullabilitySuppressor` | PRAGS001 | CS8618 | The member is a **property** whose setter is non-public or `init`, on a `partial` `[Entity]` type — exactly what the generated `Create()` factory and the trait templates assign. A public setter or a field is hand-written surface, so the warning stays. |
+| `EntityPropertyNullabilitySuppressor` | PRAGS001 | CS8618 | The member is a **property** whose setter is non-public or `init`, on a `partial` `[Entity]` type, exactly what the generated `Create()` factory and the trait templates assign. A public setter or a field is hand-written surface, so the warning stays. |
 | `PartialMethodStaticSuppressor` | PRAGS002 | CA1822 | The containing type is `partial` and Pragmatic-decorated **and** either the member is in a generated file, or it is one half of a `partial` method. CA1822 reasons about what the member touches, not about its callers, so a plain hand-written method that ignores instance state is a genuine finding the generated half does not change. |
 | `GeneratedParameterValidationSuppressor` | PRAGS003 | CA1062 | The location is inside a `*.g.cs` / `*.generated.cs` file of a Pragmatic-decorated type, where dependencies come from the generated DI constructor. In a hand-written file CA1062 is real, even in the other half of the same partial type. |
 | `UnusedMemberSuppressor` | PRAGS004 | IDE0051 | The containing type is `partial` and Pragmatic-decorated, so the generated half may reference the member. Without `partial` no such half exists and an unused private member is genuinely dead. |
 
 All four share `SuppressionHelper`, which recognizes `[Entity]`, `[DomainAction]`, `[Mutation]`, `[Query]`, `[MapFrom]` and `[MapTo]` (walking the base-type chain), plus the `IsPartialType` and `IsGeneratedLocation` predicates the table above relies on.
 
-Suppress narrowly. The justification for every suppression here is "the generator contributes the other half of this type" — so each predicate has to establish that the other half can exist (`partial`) and that the member is one the generator actually owns. A suppressor that fires more broadly hides real bugs in the user's own code, and it does so silently.
+Suppress narrowly. The justification for every suppression here is "the generator contributes the other half of this type", so each predicate has to establish that the other half can exist (`partial`) and that the member is one the generator actually owns. A suppressor that fires more broadly hides real bugs in the user's own code, and it does so silently.
 
 ---
 
@@ -388,16 +388,16 @@ The generator is one of **three** shipped Roslyn components, each its own NuGet 
 
 ### Pragmatic.SourceGenerator.Analyzers
 
-Design-time diagnostics — they report as you type, without waiting for a build.
+Design-time diagnostics: they report as you type, without waiting for a build.
 
-- **`NotPartialClassAnalyzer`** is the only source of the "this type must be `partial`" diagnostics — the generator skips a non-partial type without reporting it, so each ID has one owner. It reports on the declaration that lacks `partial`, where the code fix acts, and it maps attribute simple names to descriptors declared in `NotPartialDiagnosticDescriptors.cs`, covering 14 IDs, all errors: PRAG0200 (Validation), PRAG0300 (Mapping), PRAG0400 (Mutation/DomainAction), PRAG0406 (Boundary), PRAG0500 (Endpoint), PRAG0600 (Entity/Repository), PRAG0602 (Database/PragmaticDbContext), PRAG0712 (Query), PRAG0801 (MessageHandler), PRAG1100 (OwnedEntity), PRAG1700 (Caching), PRAG2000 (Configuration), PRAG2200 (Patch), PRAG2502 (Jobs). For a message handler or a job the generator emits no `partial` part of the type either, so the diagnostic is the only thing the author sees.
+- **`NotPartialClassAnalyzer`** is the only source of the "this type must be `partial`" diagnostics: the generator skips a non-partial type without reporting it, so each ID has one owner. It reports on the declaration that lacks `partial`, where the code fix acts, and it maps attribute simple names to descriptors declared in `NotPartialDiagnosticDescriptors.cs`, covering 14 IDs, all errors: PRAG0200 (Validation), PRAG0300 (Mapping), PRAG0400 (Mutation/DomainAction), PRAG0406 (Boundary), PRAG0500 (Endpoint), PRAG0600 (Entity/Repository), PRAG0602 (Database/PragmaticDbContext), PRAG0712 (Query), PRAG0801 (MessageHandler), PRAG1100 (OwnedEntity), PRAG1700 (Caching), PRAG2000 (Configuration), PRAG2200 (Patch), PRAG2502 (Jobs). For a message handler or a job the generator emits no `partial` part of the type either, so the diagnostic is the only thing the author sees.
 - **`EventCycleAnalyzer`** reports PRAG0822, "domain-event cascade cycle". It builds an event → handler → operation → event graph from `[Raises<T>]` and `IMessageHandler<T>` / `IDomainEventHandler<T>` and reports cycles. It is tagged `WellKnownDiagnosticTags.CompilationEnd`, since the graph is only complete once the whole compilation is seen.
 
 **If you add an attribute that requires `partial`**, register its descriptor here too. Otherwise the user gets a build error from the generator with no design-time feedback and no fix.
 
 ### Pragmatic.SourceGenerator.CodeFixers
 
-One provider: `MakeClassPartialCodeFixProvider` ("Make class partial"), with `WellKnownFixAllProviders.BatchFixer` so a whole file or project can be fixed at once. Its `FixableDiagnosticIds` is exactly the 13 IDs above — adding a descriptor to the analyzer without adding its ID here gives the user a squiggle with no lightbulb.
+One provider: `MakeClassPartialCodeFixProvider` ("Make class partial"), with `WellKnownFixAllProviders.BatchFixer` so a whole file or project can be fixed at once. Its `FixableDiagnosticIds` is exactly the 14 IDs above; adding a descriptor to the analyzer without adding its ID here gives the user a squiggle with no lightbulb.
 
 It references the Analyzers project with `PrivateAssets="all"` so the analyzer DLL is not packed twice, and sets `IsAotCompatible=false` because it depends on `Microsoft.CodeAnalysis.CSharp.Workspaces`.
 
@@ -405,11 +405,11 @@ It references the Analyzers project with `PrivateAssets="all"` so the analyzer D
 
 ## Testing
 
-Generator tests live in `tests/Pragmatic.SourceGenerator.Tests/` — its own suite, with Verify snapshots for the larger outputs (the gate prints the current count). The Analyzers and CodeFixers projects have their own suites.
+Generator tests live in `tests/Pragmatic.SourceGenerator.Tests/`, its own suite, with Verify snapshots for the larger outputs (the gate prints the current count). The Analyzers and CodeFixers projects have their own suites.
 
 Two shapes, and most features want both.
 
-**Render the template directly.** Templates are pure functions of the model, so the fastest test builds a model by hand and calls `RenderOutput()` — no compilation, no generator driver:
+**Render the template directly.** Templates are pure functions of the model, so the fastest test builds a model by hand and calls `RenderOutput()`, with no compilation and no generator driver:
 
 ```csharp
 [Fact]
@@ -446,4 +446,4 @@ The `MetadataReference[]` the test base supplies is what drives `FeatureDetector
 
 There is no `ModuleInitializer.cs` in the SG test project, and none should be added. Verify's configuration lives once, repo-wide, in `shared/Testing/VerifyHelpers.cs` (`Pragmatic.Testing.VerifyConfiguration`), which carries its own `[ModuleInitializer]` and is globbed into every `IsTest=true` project by `Directory.Build.props`.
 
-It registers four scrubbers — the attribution header and its tool line collapse to a stable marker, as does any other `// Generated by …` banner, inline `v1.2.3` becomes `v*`, ISO timestamps become `<timestamp>` — and calls `DontScrubDateTimes()` / `DontScrubGuids()` so Verify's own defaults do not mangle dates and GUIDs that are genuinely part of the generated code. If a new header form leaks into a diff, extend `VerifyHelpers.cs`, not the test project.
+It registers four scrubbers (the attribution header and its tool line collapse to a stable marker, as does any other `// Generated by …` banner, inline `v1.2.3` becomes `v*`, ISO timestamps become `<timestamp>`) and calls `DontScrubDateTimes()` / `DontScrubGuids()` so Verify's own defaults do not mangle dates and GUIDs that are genuinely part of the generated code. If a new header form leaks into a diff, extend `VerifyHelpers.cs`, not the test project.

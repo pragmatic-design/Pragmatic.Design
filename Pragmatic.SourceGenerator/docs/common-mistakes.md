@@ -86,7 +86,7 @@ internal sealed record ActionModel : GeneratorModel
 
 `List<T>` is the obvious case: reference equality, plus it is mutable, so a template that accidentally writes to it corrupts the cached model.
 
-`ImmutableArray<T>` is the case that actually bites, because it *looks* right. `ImmutableArray<T>.Equals` compares the underlying **array reference**, not the contents — it is a struct wrapper over `T[]`, and that is exactly the equality it inherits. A transform allocates a fresh array on every run, so two models describing the identical source compare as **not equal**. The record's compiler-generated `Equals` therefore returns `false` on every keystroke, the pipeline stage re-runs, the template re-renders, and incremental caching provides zero benefit. Nothing fails; the IDE just gets slower and slower as the model grows.
+`ImmutableArray<T>` is the case that actually bites, because it *looks* right. `ImmutableArray<T>.Equals` compares the underlying **array reference**, not the contents: it is a struct wrapper over `T[]`, and that is exactly the equality it inherits. A transform allocates a fresh array on every run, so two models describing the identical source compare as **not equal**. The record's compiler-generated `Equals` therefore returns `false` on every keystroke, the pipeline stage re-runs, the template re-renders, and incremental caching provides zero benefit. Nothing fails; the IDE just gets slower and slower as the model grows.
 
 **Right:**
 
@@ -96,12 +96,12 @@ internal sealed record ActionModel : GeneratorModel
     public required EquatableArray<DependencyModel> Dependencies { get; init; }
     public required EquatableArray<string> Imports { get; init; }
 
-    // Empty is the safe default — a default-constructed EquatableArray<T> reads as Count 0.
+    // Empty is the safe default: a default-constructed EquatableArray<T> reads as Count 0.
     public EquatableArray<string> Tags { get; init; } = EquatableArray<string>.Empty;
 }
 ```
 
-**Why:** `EquatableArray<T>` (`shared/SourceGen/EquatableArray.cs`) is a readonly struct wrapper over `ImmutableArray<T>` whose `Equals` walks the elements with `EqualityComparer<T>.Default`. That is the equality the incremental pipeline needs. This is not a style preference — it is mandatory for every collection field on a model that flows through the pipeline (`docs/CONVENTIONS.md`, «netstandard2.0 in the generator»). The same applies to dictionaries: use `EquatableDictionary<TKey, TValue>`, whose equality is order-insensitive.
+**Why:** `EquatableArray<T>` (`shared/SourceGen/EquatableArray.cs`) is a readonly struct wrapper over `ImmutableArray<T>` whose `Equals` walks the elements with `EqualityComparer<T>.Default`. That is the equality the incremental pipeline needs. This is not a style preference: it is mandatory for every collection field on a model that flows through the pipeline (`docs/CONVENTIONS.md`, «netstandard2.0 in the generator»). The same applies to dictionaries: use `EquatableDictionary<TKey, TValue>`, whose equality is order-insensitive.
 
 **Four things that make the switch cheap:**
 
@@ -112,7 +112,7 @@ internal sealed record ActionModel : GeneratorModel
 | "I need an `ImmutableArray`-specific API in the template." | Call `.AsImmutableArray()`. It returns the inner array (empty when the struct is default). |
 | "It's a plain `IEnumerable<T>`." | `.ToEquatableArray()` materializes it. |
 
-**The one legitimate exception:** `IncrementalValueProvider<ImmutableArray<T>>`. That is pipeline plumbing — the type Roslyn's `.Collect()` hands you — not a field on a cached model. Roslyn compares those elementwise itself. Do not wrap it; wrap the fields *inside* the elements.
+**The one legitimate exception:** `IncrementalValueProvider<ImmutableArray<T>>`. That is pipeline plumbing (the type Roslyn's `.Collect()` hands you), not a field on a cached model. Roslyn compares those elementwise itself. Do not wrap it; wrap the fields *inside* the elements.
 
 ---
 
@@ -138,7 +138,7 @@ public override Artifact RenderOutput() => new(
     ToSourceText());
 ```
 
-**Why:** `VirtualFolderHints` (`Core/VirtualFolderHints.cs`) is the single source of truth for hint names. `ForType` produces `Sales.Invoice.Repository.g.cs` — namespace, then type, then artifact — consistent with every other template, sorted predictably, easy to find.
+**Why:** `VirtualFolderHints` (`Core/VirtualFolderHints.cs`) is the single source of truth for hint names. `ForType` produces `Sales.Invoice.Repository.g.cs` (namespace, then type, then artifact), consistent with every other template, sorted predictably, easy to find.
 
 Note the third argument. See the next section for why omitting it is not a cosmetic mistake.
 
@@ -154,7 +154,7 @@ public override Artifact RenderOutput() => new(
     ToSourceText());
 ```
 
-**What goes wrong:** The parameter is optional in the signature, so this compiles and works — right up until a solution contains two types with the same simple name in different namespaces. `Sales.Invoice` and `Archive.Invoice` both produce the hint `Invoice.Repository.g.cs`. Roslyn's `AddSource` throws on a duplicate hint name, and because the whole ecosystem is served by one `IIncrementalGenerator`, that exception takes down **all** code generation for the compilation, not just this feature. The symptom is a wall of CS0246 "type not found" errors for every Pragmatic-generated type in the project.
+**What goes wrong:** The parameter is optional in the signature, so this compiles and works, right up until a solution contains two types with the same simple name in different namespaces. `Sales.Invoice` and `Archive.Invoice` both produce the hint `Invoice.Repository.g.cs`. Roslyn's `AddSource` throws on a duplicate hint name, and because the whole ecosystem is served by one `IIncrementalGenerator`, that exception takes down **all** code generation for the compilation, not just this feature. The symptom is a wall of CS0246 "type not found" errors for every Pragmatic-generated type in the project.
 
 **Right:**
 
@@ -165,7 +165,7 @@ public override Artifact RenderOutput() => new(
 // Produces: Sales.Invoice.Repository.g.cs
 ```
 
-**Why:** Always pass the namespace for per-type outputs. `ForType` skips the prefix when it is null, empty, or the literal `"<global namespace>"`, so the global-namespace case is handled for you — there is no reason to pass anything but the model's namespace.
+**Why:** Always pass the namespace for per-type outputs. `ForType` skips the prefix when it is null, empty, or the literal `"<global namespace>"`, so the global-namespace case is handled for you; there is no reason to pass anything but the model's namespace.
 
 This applies **only** to `ForType`. `ForAssembly` and `ForMetadata` also accept a `namespacePrefix` parameter, but genuinely ignore it (their outputs are one-per-assembly, so there is nothing to disambiguate). Do not generalize from those two to `ForType`.
 
@@ -520,7 +520,7 @@ context.RegisterSourceOutput(
     static (ctx, x) => GenerateCacheable(ctx, x.Left!));
 ```
 
-**What goes wrong:** Nothing — until the callback throws. Pragmatic ships the whole ecosystem as **one** `IIncrementalGenerator` with roughly 130 output registrations. Roslyn does not isolate them: an unhandled exception anywhere in any transform or template surfaces as a single CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. One malformed attribute argument in one entity takes out repositories, endpoints, DI registration, and host wiring at once, and the error message names the generator, not the feature.
+**What goes wrong:** Nothing, until the callback throws. Pragmatic ships the whole ecosystem as **one** `IIncrementalGenerator` with roughly 130 output registrations. Roslyn does not isolate them: an unhandled exception anywhere in any transform or template surfaces as a single CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. One malformed attribute argument in one entity takes out repositories, endpoints, DI registration, and host wiring at once, and the error message names the generator, not the feature.
 
 **Right:**
 
@@ -530,7 +530,7 @@ context.RegisterSourceOutputSafe(
     static (ctx, x) => GenerateCacheable(ctx, x.Left!));
 ```
 
-**Why:** `RegisterSourceOutputSafe` (`shared/SourceGen/SafeSourceOutput.cs`) is an extension method on `IncrementalGeneratorInitializationContext` with the same shape as the Roslyn method — it exists in both `IncrementalValueProvider<T>` and `IncrementalValuesProvider<T>` overloads, so it is a drop-in replacement. It wraps the callback in a `try/catch`, reports the failure as **PRAG9000**, and lets every other output proceed.
+**Why:** `RegisterSourceOutputSafe` (`shared/SourceGen/SafeSourceOutput.cs`) is an extension method on `IncrementalGeneratorInitializationContext` with the same shape as the Roslyn method: it exists in both `IncrementalValueProvider<T>` and `IncrementalValuesProvider<T>` overloads, so it is a drop-in replacement. It wraps the callback in a `try/catch`, reports the failure as **PRAG9000**, and lets every other output proceed.
 
 Two details worth knowing:
 
@@ -550,7 +550,7 @@ var artifact = new CacheableTemplate(model).RenderOutput();
 ctx.AddSource(artifact.HintName, artifact.Source);
 ```
 
-**What goes wrong:** A template whose `Validate()` returns `false` does not return "nothing" — `ToString()` returns `null` and `ToSourceText()` renders **empty content**. That is how every template in the generator says "there is nothing to generate here". The two-argument call happily writes that empty content into the compilation as a real `.g.cs` file. It compiles, so nothing breaks, but the generated-files list fills with zero-byte artifacts and the distinction between "deliberately generated nothing" and "the template silently produced nothing" disappears — which is exactly the distinction you need when debugging a missing output.
+**What goes wrong:** A template whose `Validate()` returns `false` does not return "nothing": `ToString()` returns `null` and `ToSourceText()` renders **empty content**. That is how every template in the generator says "there is nothing to generate here". The two-argument call happily writes that empty content into the compilation as a real `.g.cs` file. It compiles, so nothing breaks, but the generated-files list fills with zero-byte artifacts and the distinction between "deliberately generated nothing" and "the template silently produced nothing" disappears, which is exactly the distinction you need when debugging a missing output.
 
 **Right:**
 
@@ -561,7 +561,7 @@ ctx.AddSource(artifact);
 
 **Why:** `SourceOutput.AddSource` (`shared/SourceGen/SourceOutput.cs`) is the single emission point. It checks `artifact.IsEmpty` (`Source is null || Source.Length == 0`) and skips the file, otherwise forwarding to Roslyn's own two-argument method. Keeping that decision in one place is the whole point: there are roughly 200 emission sites, and only a handful would ever remember to guard for it by hand.
 
-It is an extension method on `SourceProductionContext`, and Roslyn's `AddSource` is an instance method — an instance method always wins overload resolution over an extension, so the forwarding call inside the helper does not recurse.
+It is an extension method on `SourceProductionContext`, and Roslyn's `AddSource` is an instance method; an instance method always wins overload resolution over an extension, so the forwarding call inside the helper does not recurse.
 
 ---
 
@@ -578,7 +578,7 @@ internal sealed record ActionModel : GeneratorModel
 
 **What goes wrong:** Two things, and the second one is ugly.
 
-A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one specific `Compilation`. A cached model outlives the compilation it was built from, so the generator ends up reporting a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation", which kills source generation, classification, and CodeLens in the IDE. The CLI never notices — one run, fresh trees — so this reproduces only for the people using the IDE.
+A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one specific `Compilation`. A cached model outlives the compilation it was built from, so the generator ends up reporting a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation", which kills source generation, classification, and CodeLens in the IDE. The CLI never notices (one run, fresh trees), so this reproduces only for the people using the IDE.
 
 Separately, `Location` is not value-equatable in a useful way, so including it in the record makes the model compare unequal on every re-parse, defeating incremental caching.
 
@@ -597,11 +597,11 @@ Location = LocationInfo.From(symbol.Locations.FirstOrDefault()),
 ctx.ReportDiagnostic(ActionsDiagnostics.MustBePartial, model.Location?.ToLocation(), model.TypeName);
 ```
 
-**Why:** `LocationInfo` (`Core/LocationInfo.cs`) captures the file path and spans as plain values and rebuilds a tree-free `Location` on demand, valid against any compilation. It is deliberately excluded from equality — `Equals` always returns `true`, `GetHashCode` returns `0` — because a position never changes the generated output, and including it would defeat caching for no benefit.
+**Why:** `LocationInfo` (`Core/LocationInfo.cs`) captures the file path and spans as plain values and rebuilds a tree-free `Location` on demand, valid against any compilation. It is deliberately excluded from equality (`Equals` always returns `true`, `GetHashCode` returns `0`) because a position never changes the generated output, and including it would defeat caching for no benefit.
 
 `ToLocation(Compilation)` is the better overload where a compilation is available: it rebinds to the current tree for the same file, so `#pragma warning disable` and `[SuppressMessage]` in the user's source actually suppress the diagnostic. The parameterless `ToLocation()` gives a tree-free location, which reports the right file and line but cannot be suppressed from source.
 
-**One trap:** `LocationInfo.From` returns `null` when the syntax tree's `FilePath` is empty. Generator tests that parse source without a path therefore get `null`, and any diagnostic guarded on `if (model.Location is null) return;` silently disappears — the test fails while production works. `GeneratorTestHelper.RunGenerator` parses with an explicit path for this reason; if you build a compilation by hand in a test, pass one.
+**One trap:** `LocationInfo.From` returns `null` when the syntax tree's `FilePath` is empty. Generator tests that parse source without a path therefore get `null`, and any diagnostic guarded on `if (model.Location is null) return;` silently disappears: the test fails while production works. `GeneratorTestHelper.RunGenerator` parses with an explicit path for this reason; if you build a compilation by hand in a test, pass one.
 
 ---
 
@@ -612,14 +612,14 @@ ctx.ReportDiagnostic(ActionsDiagnostics.MustBePartial, model.Location?.ToLocatio
 ```csharp
 // The user writes [GreaterThanOrEqualProperty(nameof(From), MessageKey = TKeys.Validation.EndsBeforeItStarts)]
 var messageKey = attr.NamedArguments
-    .FirstOrDefault(a => a.Key == "MessageKey").Value.Value as string;   // null — and then the default key
+    .FirstOrDefault(a => a.Key == "MessageKey").Value.Value as string;   // null, and then the default key
 ```
 
-**What goes wrong:** `TKeys` is written by this generator (the I18n feature). While any transform runs, it does not exist: the argument binds to nothing and `Value` is `null`. The transform takes that as "no MessageKey" and the rule reports its default key. The compiler, which runs after generation, accepts the argument — so the build is green, the test that asks "does it compile?" is green, and the application answers with a key nobody translated. Permission constants had the same shape (PRAG0418).
+**What goes wrong:** `TKeys` is written by this generator (the I18n feature). While any transform runs, it does not exist: the argument binds to nothing and `Value` is `null`. The transform takes that as "no MessageKey" and the rule reports its default key. The compiler, which runs after generation, accepts the argument, so the build is green, the test that asks "does it compile?" is green, and the application answers with a key nobody translated. Permission constants had the same shape (PRAG0418).
 
 **Right:** the feature that writes the symbols publishes a **catalog** of them through the pipeline (`I18nFeature.KeyConstantCatalog`, built from the same model the template renders); the transform keeps the argument **as written** when it has no value; the output step resolves it through the catalog, and reports what it cannot resolve (PRAG0222) instead of falling back in silence.
 
-**Why:** `docs/CONVENTIONS.md`, «Decide at compile time», point 3 — what one feature needs from another passes through the pipeline, never through a lookup that answers "no" because the other output does not exist yet. **Ask it of every symbol you generate:** will someone write it inside an attribute that one of our transforms reads? Then "it compiles" is no proof — assert on the generated file.
+**Why:** `docs/CONVENTIONS.md`, «Decide at compile time», point 3: what one feature needs from another passes through the pipeline, never through a lookup that answers "no" because the other output does not exist yet. **Ask it of every symbol you generate:** will someone write it inside an attribute that one of our transforms reads? Then "it compiles" is no proof; assert on the generated file.
 
 ---
 
@@ -634,9 +634,9 @@ return await base.ExecuteActionAsync(action, ct);
 // ...while PrepareActionAsync ([LoadEntity]) runs before it, with the filter on
 ```
 
-**What goes wrong:** the invoker runs several stages — validation and authorization filters, `PrepareActionAsync` / `PrepareMutationAsync` (the `[LoadEntity]` preload), `LoadEntityAsync`, the body. A scope the operation *declares* (`[WithoutFilter<T>]`, `[FilterMode]`) opened around one of them leaves the others outside: an erasure declared to reach soft-deleted employees answered 404 from its preload. ⚠️ It was invisible over HTTP, because the generated **endpoint** opens the same scopes around the whole invocation — only a call through the boundary, or from code, showed it.
+**What goes wrong:** the invoker runs several stages: validation and authorization filters, `PrepareActionAsync` / `PrepareMutationAsync` (the `[LoadEntity]` preload), `LoadEntityAsync`, the body. A scope the operation *declares* (`[WithoutFilter<T>]`, `[FilterMode]`) opened around one of them leaves the others outside: an erasure declared to reach soft-deleted employees answered 404 from its preload. ⚠️ It was invisible over HTTP, because the generated **endpoint** opens the same scopes around the whole invocation; only a call through the boundary, or from code, showed it.
 
-**Right:** every stage that reads for the operation opens the scope it declares — the preparation methods emit `RenderFilterOverrideScopes()` like the execution does. And test it **through the boundary or `IDomainActionInvoker`**, not only over HTTP (`ErasingAnEmployee.TheErasure_ReachesAnEmployeeWhoLeft_AlsoWhenTheApplicationCallsIt`).
+**Right:** every stage that reads for the operation opens the scope it declares: the preparation methods emit `RenderFilterOverrideScopes()` like the execution does. And test it **through the boundary or `IDomainActionInvoker`**, not only over HTTP (`ErasingAnEmployee.TheErasure_ReachesAnEmployeeWhoLeft_AlsoWhenTheApplicationCallsIt`).
 
 **Why:** a declaration on the operation is a promise about the operation, not about one method of its invoker. The endpoint doing it too is defence in depth, not the implementation.
 
@@ -644,11 +644,11 @@ return await base.ExecuteActionAsync(action, ct);
 
 ## 19. Generated Code That Relies on the File's Usings for an Extension Method
 
-**Wrong:** copying a user's expression body into a generated file and letting the compiler bind it there — `Lines.Where(LineSpecifications.Shipped)` in `Order.Projectable.g.cs`.
+**Wrong:** copying a user's expression body into a generated file and letting the compiler bind it there, as in `Lines.Where(LineSpecifications.Shipped)` in `Order.Projectable.g.cs`.
 
-**What goes wrong:** the user's file imports `Pragmatic.Specification`, whose extension `Where(ISpecification<T>)` the body binds to; the generated file imports `System` and `System.Linq.Expressions` only. There the same text binds to `Enumerable.Where` and fails with CS1503 — or worse, to a different overload that compiles and means something else. Time off wrote its rules inline in every computed member because the named form never compiled.
+**What goes wrong:** the user's file imports `Pragmatic.Specification`, whose extension `Where(ISpecification<T>)` the body binds to; the generated file imports `System` and `System.Linq.Expressions` only. There the same text binds to `Enumerable.Where` and fails with CS1503, or worse, to a different overload that compiles and means something else. Time off wrote its rules inline in every computed member because the named form never compiled.
 
-**Right:** rewrite what the body calls into fully qualified calls the generated file cannot misbind — `global::System.Linq.Queryable.Where(global::System.Linq.Queryable.AsQueryable(e.Lines), (global::….LineSpecifications.Shipped).ToExpression())` — as `ProjectableBody` already does for types (`global::` for every type it names).
+**Right:** rewrite what the body calls into fully qualified calls the generated file cannot misbind (`global::System.Linq.Queryable.Where(global::System.Linq.Queryable.AsQueryable(e.Lines), (global::….LineSpecifications.Shipped).ToExpression())`), as `ProjectableBody` already does for types (`global::` for every type it names).
 
 **Why:** a generated file has its own usings, and nothing in the build compares them with the user's. Qualify, don't import.
 
@@ -658,9 +658,9 @@ return await base.ExecuteActionAsync(action, ct);
 
 **Wrong:** implementing `[FromClock]` / `[FromCurrentUser]` in the query transform and the query invoker template, and nowhere else.
 
-**What goes wrong:** the attribute targets any property, so on a `[DomainAction]` or a `[Mutation]` it compiles and nothing reads it — the property stays `default`. A decision stamped with it reads 0001-01-01; the examples injected `IClock` instead, and nobody asked why the attribute was not used. The boundary overload was worse than silent: it tried to set the private setter, CS0272 in a generated file.
+**What goes wrong:** the attribute targets any property, so on a `[DomainAction]` or a `[Mutation]` it compiles and nothing reads it: the property stays `default`. A decision stamped with it reads 0001-01-01; the examples injected `IClock` instead, and nobody asked why the attribute was not used. The boundary overload was worse than silent: it tried to set the private setter, CS0272 in a generated file.
 
-**Right:** an attribute that means something about *an operation* is read for every operation kind — query, action, mutation — through one shared piece: `InvokerBindingsTransform` / `InvokerBindingEmitter` / `InvokerBindingReporter`, the same binding models, the same diagnostics. Then follow the property to every place that treats the operation's properties as inputs (endpoint body, boundary overload, mutation auto-map, Mapping) and ask each one whether it is still an input: `InvokerBinding.IsBound`.
+**Right:** an attribute that means something about *an operation* is read for every operation kind (query, action, mutation) through one shared piece: `InvokerBindingsTransform` / `InvokerBindingEmitter` / `InvokerBindingReporter`, the same binding models, the same diagnostics. Then follow the property to every place that treats the operation's properties as inputs (endpoint body, boundary overload, mutation auto-map, Mapping) and ask each one whether it is still an input: `InvokerBinding.IsBound`.
 
 **Why:** "it works on queries" and "it works" are indistinguishable from the attribute's declaration, and a second copy per operation kind is where the three would start to differ.
 
@@ -672,12 +672,12 @@ return await base.ExecuteActionAsync(action, ct);
 
 ```csharp
 var returnType = baseType.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-return new ActionModel { ReturnTypeName = returnType, … };   // "CallerDto" — no namespace at all
+return new ActionModel { ReturnTypeName = returnType, … };   // "CallerDto", no namespace at all
 ```
 
-**What goes wrong:** when the type does not resolve — one missing `using` in the author's own file — Roslyn hands you an **error symbol**. It is still an `INamedTypeSymbol`, so `is not null`, `TypeArguments.Length`, `.Name` and every other check pass; only its fully-qualified display gives back the bare name as written. The generator then writes that name into every artifact it produces about the operation, and where a template prefixes `global::` itself the result is `global::CallerDto`.
+**What goes wrong:** when the type does not resolve (one missing `using` in the author's own file), Roslyn hands you an **error symbol**. It is still an `INamedTypeSymbol`, so `is not null`, `TypeArguments.Length`, `.Name` and every other check pass; only its fully-qualified display gives back the bare name as written. The generator then writes that name into every artifact it produces about the operation, and where a template prefixes `global::` itself the result is `global::CallerDto`.
 
-Measured: one missing `using` became a page of `CS0246`/`CS0400` across the endpoint contract, the three boundary facades, the invoker, the query and its invoker — against the **one** error that was the cause. The cost is not the noise, it is the wrong diagnosis: errors inside generated files read as a generator bug, and have been reported that way, in good faith, against templates that were already correct.
+Measured: one missing `using` became a page of `CS0246`/`CS0400` across the endpoint contract, the three boundary facades, the invoker, the query and its invoker, against the **one** error that was the cause. The cost is not the noise, it is the wrong diagnosis: errors inside generated files read as a generator bug, and have been reported that way, in good faith, against templates that were already correct.
 
 **Right:** ask the symbol before you write it, and generate nothing for that operation:
 
@@ -688,7 +688,7 @@ if (returnTypeSymbol is { TypeKind: TypeKind.Error })
 
 The model carries the fact, the feature reports `PRAG9001` naming the type and the operation, and the compiler's own error stays the only one pointing at a file the author can edit. Downstream consumers skip it through the validity they already filter on (`IsValid`), so one check covers the facade, the registration and the metadata too.
 
-**Why:** the generated code is not where the mistake is, and a reader who starts there loses the afternoon. A transform that reads a type argument has the one piece of information that settles it — `TypeKind` — and ignoring it converts a good error into several bad ones.
+**Why:** the generated code is not where the mistake is, and a reader who starts there loses the afternoon. A transform that reads a type argument has the one piece of information that settles it, `TypeKind`, and ignoring it converts a good error into several bad ones.
 
 ---
 
@@ -702,9 +702,9 @@ yield return $"var {variable} = await {repository}.GetByIdAsync(…);";
 yield return $"{operation}.SetLoadedEntities({variable});";
 ```
 
-**What goes wrong:** an entity named `Case`, `Event`, `Lock`, `Object`, `Default`, `Class` or `Record` — all ordinary domain nouns — camel-cases to a C# **keyword**, and `var case = …` does not parse. On Casework's `Case` that is **28 errors** in two generated files, starting `CS1525: Invalid expression term 'case'` and ending `CS0161: not all code paths return a value`, none of them in a file the author can edit.
+**What goes wrong:** an entity named `Case`, `Event`, `Lock`, `Object`, `Default`, `Class` or `Record` (all ordinary domain nouns) camel-cases to a C# **keyword**, and `var case = …` does not parse. On Casework's `Case` that is **28 errors** in two generated files, starting `CS1525: Invalid expression term 'case'` and ending `CS0161: not all code paths return a value`, none of them in a file the author can edit.
 
-It survived because the one site that happened to be right made the shape look handled: `CSharpTemplate` escapes the **parameter** names it renders, so `SetLoadedEntities(Case @case)` was correct while the local, the hand-over and the assignment in the same feature — composed as interpolated strings — were not. One site in four.
+It survived because the one site that happened to be right made the shape look handled: `CSharpTemplate` escapes the **parameter** names it renders, so `SetLoadedEntities(Case @case)` was correct while the local, the hand-over and the assignment in the same feature (composed as interpolated strings) were not. One site in four.
 
 **Right:** escape where the name is an identifier, and keep the raw stem for the names built out of it:
 
@@ -715,10 +715,10 @@ private static string Stem(LoadEntityModel le) => TemplateHelpers.ToCamelCase(�
 ```
 
 ```csharp
-var variable = Variable(le);       // @case            — the identifier
-var stem = Stem(le);               // case             — the stem
+var variable = Variable(le);       // @case            (the identifier)
+var stem = Stem(le);               // case             (the stem)
 var key = $"__{stem}Key";          // __caseKey        ✅
-                                   // __@caseKey       ❌ — as broken as `case`
+                                   // __@caseKey       ❌ (as broken as `case`)
 ```
 
 `IdentifierHelper.EscapeIfKeyword` in `shared/SourceGen/` is the one list; it existed for years before this, and its own summary names `Event`, `Default` and `Lock`.
@@ -747,11 +747,11 @@ foreach (var method in current.GetMembers().OfType<IMethodSymbol>())
         continue;
 ```
 
-**What goes wrong:** every one of those conditions is correct — a generated call to a `private` method
+**What goes wrong:** every one of those conditions is correct: a generated call to a `private` method
 *is* a `CS0122`. What is wrong is the order. After the filter, a method that carries `[Invariant]` and
 fails a condition is indistinguishable from a method nobody annotated, so there is nobody to tell. An
-`[Invariant]` written `private` — which is what a rule nobody calls from outside the entity looks
-like — is dropped in silence: a request that breaks the rule answers **201 Created**, and a grep for
+`[Invariant]` written `private` (which is what a rule nobody calls from outside the entity looks
+like) is dropped in silence: a request that breaks the rule answers **201 Created**, and a grep for
 the method name across the generated files finds **zero** hits. The rule is in the source, reads as
 enforced, and is checked on no path at all.
 
@@ -772,10 +772,10 @@ message saying only "cannot be called" sends the author to read the accessibilit
 real problem is its return type. `PRAG0463` names the condition.
 
 **Why it is an error and not a warning:** a rule that cannot fire is not a weaker check, it is the
-absence of one — a guarantee written in the entity's source that nothing keeps. An author who wants
+absence of one: a guarantee written in the entity's source that nothing keeps. An author who wants
 the method private wants it not to be an invariant.
 
-⚠️ **The shape generalises.** Any convention the generator collects *by shape* — a computed
-`[LogicKey]`, a `[Projectable]` body, a lifecycle hook — has the same trap: the filter that makes the
+⚠️ **The shape generalises.** Any convention the generator collects *by shape* (a computed
+`[LogicKey]`, a `[Projectable]` body, a lifecycle hook) has the same trap: the filter that makes the
 generated code compile is also the filter that makes a mistake invisible. If the collection reads an
 attribute, the attribute has to be read first.

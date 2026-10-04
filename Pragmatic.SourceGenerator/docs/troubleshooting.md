@@ -48,7 +48,7 @@ The transform executes (verified with `Debugger.Launch()` or a diagnostic), but 
 
 2. **Is `model.IsValid` false?** Many features filter with `.Where(static m => m.IsValid)`. Check what conditions set `IsValid` to `false`. Common causes: the class is not `partial`, the class is `abstract`, a required attribute argument is missing.
 
-3. **Does `Validate()` return `false` in the template?** This is the most likely cause, and it is silent by design. When `Validate()` returns `false`, `ToString()` returns `null`, `ToSourceText()` renders empty content, and `ctx.AddSource(artifact)` sees `artifact.IsEmpty` and skips the file rather than emitting an empty `.g.cs`. No diagnostic, no error — just nothing. Check every condition in the `Validate()` override; `IsPartial` is the usual culprit.
+3. **Does `Validate()` return `false` in the template?** This is the most likely cause, and it is silent by design. When `Validate()` returns `false`, `ToString()` returns `null`, `ToSourceText()` renders empty content, and `ctx.AddSource(artifact)` sees `artifact.IsEmpty` and skips the file rather than emitting an empty `.g.cs`. No diagnostic, no error: just nothing. Check every condition in the `Validate()` override; `IsPartial` is the usual culprit.
 
 4. **Is there an early return in the `Generate()` method?** Look for `if (!model.IsPartial) return;` or similar guards before `ctx.AddSource()`.
 
@@ -64,7 +64,7 @@ The template re-executes on every keystroke, even when the source file has not c
 
 ### Checklist
 
-1. **Does the model use `EquatableArray<T>` for every collection?** This is the first thing to check and by far the most common cause. `List<T>` and `T[]` use reference equality — obvious. `ImmutableArray<T>` *also* uses reference equality: it is a struct wrapper over `T[]` and compares the underlying array reference, not the contents. A transform allocates a fresh array on every run, so the model never compares equal. Replace every collection field with `EquatableArray<T>` (and every dictionary with `EquatableDictionary<TKey, TValue>`). See [Common Mistakes #2](common-mistakes.md#2-raw-collections-in-models-listt-or-immutablearrayt-instead-of-equatablearrayt).
+1. **Does the model use `EquatableArray<T>` for every collection?** This is the first thing to check and by far the most common cause. `List<T>` and `T[]` use reference equality, which is obvious. `ImmutableArray<T>` *also* uses reference equality: it is a struct wrapper over `T[]` and compares the underlying array reference, not the contents. A transform allocates a fresh array on every run, so the model never compares equal. Replace every collection field with `EquatableArray<T>` (and every dictionary with `EquatableDictionary<TKey, TValue>`). See [Common Mistakes #2](common-mistakes.md#2-raw-collections-in-models-listt-or-immutablearrayt-instead-of-equatablearrayt).
 
 2. **Does the model store `ISymbol` references?** Roslyn creates new symbol instances on every compilation pass. Stored symbols always compare as not equal. Extract string/flag data instead.
 
@@ -122,7 +122,7 @@ PRAG9000 is an **error**, so the build stops here. That is deliberate: the code 
 
 ### What the message tells you
 
-The message carries the exception type and text, but not the feature — `SourceProductionContext` has no way to report which registration failed, and the location is `Location.None`. To find it:
+The message carries the exception type and text, but not the feature: `SourceProductionContext` has no way to report which registration failed, and the location is `Location.None`. To find it:
 
 1. **Read the exception type.** `NullReferenceException` and `ArgumentOutOfRangeException` in a template almost always mean the model has a field the transform left unset or empty for this particular input.
 2. **Narrow by the triggering code.** Comment out or minimize the user code until the error disappears; the last construct you removed drives the failing pipeline.
@@ -133,7 +133,7 @@ The message carries the exception type and text, but not the feature — `Source
 The failure escaped the guard. Three possibilities:
 
 - The registration uses `context.RegisterSourceOutput` instead of `RegisterSourceOutputSafe`. The symptom is CS8785 instead of PRAG9000, and *all* features go dark. Fix the registration.
-- The exception is `OperationCanceledException`, `OutOfMemoryException`, or `StackOverflowException` — deliberately not caught.
+- The exception is `OperationCanceledException`, `OutOfMemoryException`, or `StackOverflowException`, which are deliberately not caught.
 - The output did not throw at all: the template's `Validate()` returned `false`, so the artifact rendered empty and `ctx.AddSource(artifact)` correctly skipped it. See "Transform Runs But No Output" above.
 
 ---
@@ -145,7 +145,7 @@ The generated `.g.cs` file is produced, but it causes build errors in the consum
 ### Read the errors in the hand-written files first
 
 A `CS0246` or a `CS0400` **inside a generated file** is usually not a generator bug. When a type an
-operation names does not resolve — one missing `using` in a hand-written file — Roslyn hands the
+operation names does not resolve (one missing `using` in a hand-written file), Roslyn hands the
 transform an **error symbol**: still an `INamedTypeSymbol`, so every check passes, and its
 `ToDisplayString(FullyQualifiedFormat)` is the **bare name with no namespace**. Written back out it
 becomes `global::CallerDto`, a name that cannot exist, in every artifact the generator produces about
@@ -192,11 +192,11 @@ Fix: Use `AccessModifier.Public` for nested classes that need cross-assembly acc
 
 ## Snapshot Tests Failing on Header Noise
 
-A Verify snapshot fails and the diff shows only the generated-file header changed — a version bump, a copyright year, a timestamp.
+A Verify snapshot fails and the diff shows only the generated-file header changed: a version bump, a copyright year, a timestamp.
 
-### This should not happen — scrubbing is already global
+### This should not happen: scrubbing is already global
 
-There is no `ModuleInitializer.cs` in `tests/Pragmatic.SourceGenerator.Tests/`, and you should not add one. The scrubbers live in `shared/Testing/VerifyHelpers.cs` (`Pragmatic.Testing.VerifyConfiguration`), which carries its own `[ModuleInitializer]` and is compiled into **every** test project in the repo automatically — `Directory.Build.props` globs `$(SharedTestingPath)**\*.cs` into any project with `IsTest=true`. Nothing is wired up per project.
+There is no `ModuleInitializer.cs` in `tests/Pragmatic.SourceGenerator.Tests/`, and you should not add one. The scrubbers live in `shared/Testing/VerifyHelpers.cs` (`Pragmatic.Testing.VerifyConfiguration`), which carries its own `[ModuleInitializer]` and is compiled into **every** test project in the repo automatically: `Directory.Build.props` globs `$(SharedTestingPath)**\*.cs` into any project with `IsTest=true`. Nothing is wired up per project.
 
 Four scrubbers run. Verify decides their order, so none of them may depend on another having run
 first:
@@ -212,7 +212,7 @@ It also calls `DontScrubDateTimes()` and `DontScrubGuids()`, so Verify's own agg
 
 ### So if a header still leaks into a diff
 
-The output contains a form none of the four patterns match. Add the pattern to `VerifyHelpers.cs` rather than to the test project — a per-project scrubber would fix one suite and leave the other forty snapshots exposed. Then re-accept the affected `.verified.txt` files once.
+The output contains a form none of the four patterns match. Add the pattern to `VerifyHelpers.cs` rather than to the test project; a per-project scrubber would fix one suite and leave the other forty snapshots exposed. Then re-accept the affected `.verified.txt` files once.
 
 ---
 
@@ -230,7 +230,7 @@ The IDE becomes slow when editing files in a project that references the generat
 | Not filtering with `DetectedFeatures` | Pipeline runs even when feature is not referenced | Combine with `features` and filter |
 | Calling `compilation.GetTypeByMetadataName` per-type | Repeated compilation queries | Move to `FeatureDetector` (runs once) |
 | Non-static lambdas in the source-output callback | Prevents delegate caching | Use `static` lambdas |
-| Raw `ImmutableArray<T>` on a model | Reference equality — the stage never caches | `EquatableArray<T>` |
+| Raw `ImmutableArray<T>` on a model | Reference equality: the stage never caches | `EquatableArray<T>` |
 
 ### Diagnosis
 
@@ -383,7 +383,7 @@ if (!model.IsPartial)
 }
 ```
 
-`model.Location` is a `LocationInfo?`, never a raw `Location` — see [Common Mistakes #16](common-mistakes.md#16-storing-a-roslyn-location-in-a-model).
+`model.Location` is a `LocationInfo?`, never a raw `Location`; see [Common Mistakes #16](common-mistakes.md#16-storing-a-roslyn-location-in-a-model).
 
 Design-time coverage for this case already exists: `NotPartialClassAnalyzer` in `Pragmatic.SourceGenerator.Analyzers` reports the same "must be partial" IDs without waiting for a build, and `MakeClassPartialCodeFixProvider` offers the fix. If you add a new attribute that requires `partial`, register its descriptor in `NotPartialDiagnosticDescriptors.cs` and add the ID to the fixer's `FixableDiagnosticIds` so users get the lightbulb.
 
