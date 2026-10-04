@@ -7,7 +7,7 @@ sidebar:
 ---
 This guide takes you from zero to your first date-safe, testable code in a few minutes. For the mental
 model behind the library (type = scope, `Duration` vs `Period`, DST policies), read
-[Concepts](/modules/temporal/concepts/) — this page is the hands-on path.
+[Concepts](/modules/temporal/concepts/); this page is the hands-on path.
 
 ## Installation
 
@@ -25,16 +25,16 @@ dotnet add package Pragmatic.Temporal.Testing     # TestClock and test utilities
 ## Your First Temporal Types
 
 **When you need this**: any time you are about to write `DateTime` and the value is *not* a precise
-instant — a birthday, a store opening time, an appointment on somebody's calendar.
+instant: a birthday, a store opening time, an appointment on somebody's calendar.
 
 **What you write**:
 
 ```csharp
 using Pragmatic.Temporal.Types;
 
-var orderDate    = new LocalDate(2026, 6, 15);            // date only — no time, no zone
-var deliveryTime = new LocalTime(14, 30);                 // time only — no date, no zone
-var appointment  = orderDate.At(deliveryTime);            // LocalDateTime — wall clock, no zone
+var orderDate    = new LocalDate(2026, 6, 15);            // date only: no time, no zone
+var deliveryTime = new LocalTime(14, 30);                 // time only: no date, no zone
+var appointment  = orderDate.At(deliveryTime);            // LocalDateTime: wall clock, no zone
 
 // Only when you need a real instant on the planet, bring in a timezone:
 var flight = ZonedDateTime.FromUtc(DateTimeOffset.UtcNow, "Europe/Rome");
@@ -55,7 +55,7 @@ instant" is required. The `Kind` ambiguity of `DateTime` is gone.
 
 ## Date Arithmetic
 
-**When you need this**: "next month", "in 7 days", "how many days until" — the places where raw
+**When you need this**: "next month", "in 7 days", "how many days until", the places where raw
 `DateTime` math silently produces the wrong answer (`Jan 31 + 1 month`?).
 
 **What you write**:
@@ -64,12 +64,12 @@ instant" is required. The `Kind` ambiguity of `DateTime` is gone.
 var date = new LocalDate(2026, 1, 31);
 
 var nextWeek  = date.AddDays(7);       // 2026-02-07
-var nextMonth = date.AddMonths(1);     // 2026-02-28 — clamped, calendar-correct
+var nextMonth = date.AddMonths(1);     // 2026-02-28, clamped, calendar-correct
 var nextYear  = date.AddYears(1);      // 2027-01-31
 
 var checkIn  = new LocalDate(2026, 6, 1);
 var checkOut = new LocalDate(2026, 6, 4);
-var nights   = checkOut.DaysBetween(checkIn);   // 3 — signed: checkOut − checkIn
+var nights   = checkOut.DaysBetween(checkIn);   // 3, signed: checkOut − checkIn
 
 // Navigation helpers
 date.StartOfMonth();   // 2026-01-01
@@ -110,7 +110,7 @@ var service = new BookingService(clock);
 clock.Advance(TimeSpan.FromHours(2));        // move time forward when the test needs it
 ```
 
-**What you get**: deterministic tests — no flakiness near midnight, month boundaries, or DST
+**What you get**: deterministic tests, with no flakiness near midnight, month boundaries, or DST
 transitions. `IClock` also exposes `Now`, `Today`/`UtcToday`, `TimeOfDay`/`UtcTimeOfDay`, and
 `GetTimeProvider()` for interop with `TimeProvider`-based APIs. See [Testing](/modules/temporal/testing/).
 
@@ -144,11 +144,11 @@ services.AddPragmaticTemporal()
 ```
 
 > **Note**: in a `Pragmatic.Composition` host, `AddPragmaticTemporal()` is registered automatically
-> when the source generator detects the package — you only add the call yourself in a plain host.
+> when the source generator detects the package; you only add the call yourself in a plain host.
 
 ## Business Days
 
-**When you need this**: delivery estimates, SLA deadlines, payment terms — anything that skips
+**When you need this**: delivery estimates, SLA deadlines, payment terms, anything that skips
 weekends and (optionally) public holidays.
 
 **What you write**:
@@ -171,7 +171,7 @@ var itCalculator = new TemporalCalculator(holidays);
 var itDelivery = itCalculator.AddBusinessDays(new LocalDate(2026, 12, 23), 3, "IT");
 
 var count = itCalculator.CountBusinessDays(
-    new LocalDate(2026, 12, 21), new LocalDate(2026, 12, 28), "IT");  // [from, to) — end exclusive
+    new LocalDate(2026, 12, 21), new LocalDate(2026, 12, 28), "IT");  // [from, to): end exclusive
 var next  = itCalculator.NextBusinessDay(new LocalDate(2026, 12, 24), "IT");
 ```
 
@@ -187,7 +187,7 @@ Full reference: [Business Days](/modules/temporal/business-days/).
 
 ## Scheduling with Cron
 
-**When you need this**: recurring schedules — "every weekday at 9", "first of the month".
+**When you need this**: recurring schedules, such as "every weekday at 9", "first of the month".
 
 **What you write**:
 
@@ -205,17 +205,17 @@ DST-aware occurrence calculation, and lazy `GetOccurrences(from, until)` enumera
 
 ## Golden Rules
 
-1. **Store UTC only** — databases contain UTC instants; wall-clock types (`LocalDate`, `LocalTime`) for calendar data.
-2. **Convert at boundaries** — timezone conversion happens at API input/output, never in business logic or queries.
-3. **Never query with local time** — pre-calculate UTC ranges, then query.
-4. **Use `IClock`, never `DateTime.Now`** — the analyzers (PRAG0900+) will remind you.
-5. **Be explicit about DST** — conversions from local time take policies for non-existent/ambiguous times.
+1. **Store UTC only**: databases contain UTC instants; wall-clock types (`LocalDate`, `LocalTime`) for calendar data.
+2. **Convert at boundaries**: timezone conversion happens at API input/output, never in business logic or queries.
+3. **Never query with local time**: pre-calculate UTC ranges, then query.
+4. **Use `IClock`, never `DateTime.Now`**: the analyzers (PRAG0900+) will remind you.
+5. **Be explicit about DST**: conversions from local time take policies for non-existent/ambiguous times.
 
 ## Next Steps
 
-- [Concepts](/modules/temporal/concepts/) — the mental model: type = scope, `Duration` vs `Period`, `TemporalContext`
-- [Core Types](/modules/temporal/core-types/) — full reference for every type
-- [Business Days](/modules/temporal/business-days/) — holiday providers and calculator in depth
-- [DST Handling](/modules/temporal/dst-handling/) — ambiguous and non-existent times, policies
-- [Testing](/modules/temporal/testing/) — `TestClock`, `TestTemporalContext`, `TestHolidayProvider`
-- [Common Mistakes](/modules/temporal/common-mistakes/) — the most frequent pitfalls, wrong/right/why
+- [Concepts](/modules/temporal/concepts/): the mental model (type = scope, `Duration` vs `Period`, `TemporalContext`)
+- [Core Types](/modules/temporal/core-types/): full reference for every type
+- [Business Days](/modules/temporal/business-days/): holiday providers and calculator in depth
+- [DST Handling](/modules/temporal/dst-handling/): ambiguous and non-existent times, policies
+- [Testing](/modules/temporal/testing/): `TestClock`, `TestTemporalContext`, `TestHolidayProvider`
+- [Common Mistakes](/modules/temporal/common-mistakes/): the most frequent pitfalls, wrong/right/why

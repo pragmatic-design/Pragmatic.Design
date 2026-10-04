@@ -707,7 +707,7 @@ await PragmaticApp.RunAsync(args, app =>
 ```
 
 Default and business timezones are configured on `TemporalOptions` at registration time
-(`AddPragmaticTemporal(o => o.DefaultTimeZone = ...)` — see [Getting Started](/modules/temporal/getting-started/)).
+(`AddPragmaticTemporal(o => o.DefaultTimeZone = ...)`; see [Getting Started](/modules/temporal/getting-started/)).
 
 ### What gets registered automatically
 

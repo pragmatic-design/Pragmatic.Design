@@ -1,7 +1,7 @@
 # Business Days
 
 Business-day arithmetic with weekend and holiday awareness: delivery dates, SLA deadlines,
-settlement dates, working-day counters — without hand-rolling weekend loops.
+settlement dates, working-day counters, without hand-rolling weekend loops.
 
 Everything goes through `ITemporalCalculator` (implementation: `TemporalCalculator`). It is
 registered by `AddPragmaticTemporal()` and injectable; you can also `new` it directly.
@@ -18,14 +18,14 @@ public class DeliveryService(ITemporalCalculator calculator, IClock clock)
 }
 ```
 
-> There is no `LocalDate.Today` — "today" always comes from an injected `IClock`
+> There is no `LocalDate.Today`: "today" always comes from an injected `IClock`
 > (`clock.Today` returns a `DateOnly` that converts implicitly to `LocalDate`).
 
 ## Adding Business Days
 
 **When you need it**: "ship in 5 working days", "respond within 3 business days".
 
-**What you write** — three overloads:
+**What you write**: three overloads.
 
 ```csharp
 var calculator = new TemporalCalculator();          // weekends only (NoHolidaysProvider)
@@ -43,7 +43,7 @@ var delivery = calculator.AddBusinessDays(orderDate, 5, closures);
 
 **What you get**: the resulting `LocalDate`. Negative `days` moves backward. The
 implementation skips full weeks mathematically (5 business days = 7 calendar days), so cost
-is O(1) on the weekday part — safe for batch/reporting workloads.
+is O(1) on the weekday part, so it is safe for batch/reporting workloads.
 
 ## Counting Business Days
 
@@ -54,7 +54,7 @@ int count = calculator.CountBusinessDays(from, to);          // weekends only
 int count = calculator.CountBusinessDays(from, to, "IT");    // weekends + IT holidays
 ```
 
-**Interval semantics — important**: the range is `[from, to)` — `from` is **included**,
+**Interval semantics (important)**: the range is `[from, to)`, so `from` is **included**,
 `to` is **excluded**. `CountBusinessDays(monday, friday)` on a plain week returns **4**
 (Mon, Tue, Wed, Thu). If `from >= to` the result is `0`. To include the end date, pass
 `to.AddDays(1)`.
@@ -68,7 +68,7 @@ calculator.IsBusinessDay(date, "IT");       // not a weekend AND not an IT holid
 calculator.IsHoliday(date, "IT");           // asks the holiday provider
 ```
 
-Note: `IsBusinessDay(date)` without a country code only checks weekends — Christmas on a
+Note: `IsBusinessDay(date)` without a country code only checks weekends; Christmas on a
 Thursday is a "business day" for that overload.
 
 ## Next / Previous Business Day
@@ -82,7 +82,7 @@ var prev = calculator.PreviousBusinessDay(date);
 var prev = calculator.PreviousBusinessDay(date, "IT");
 ```
 
-**What you get**: always a date **strictly after** (or before) `date` — if `date` itself is
+**What you get**: always a date **strictly after** (or before) `date`. If `date` itself is
 a business day, you still get the following one. There is no "include today" option; check
 `IsBusinessDay(date)` first if you need that behavior.
 
@@ -104,7 +104,7 @@ The same operations exist directly on `LocalDate` (see [Core Types](core-types.m
 
 ### The Holiday model
 
-`Holiday` is a `readonly record struct` with three components — the type is required:
+`Holiday` is a `readonly record struct` with three components; the type is required:
 
 ```csharp
 using Pragmatic.Temporal.Holidays;
@@ -118,9 +118,9 @@ var h3 = Holiday.Bank(new LocalDate(2026, 12, 31), "Bank closure");
 var h4 = Holiday.Optional(new LocalDate(2026, 2, 14), "Observance");
 ```
 
-### IHolidayProvider — the contract
+### IHolidayProvider: the contract
 
-Holiday data is **country-based and year-based** — the calculator asks the provider per
+Holiday data is **country-based and year-based**: the calculator asks the provider per
 year and ISO 3166-1 alpha-2 country code:
 
 ```csharp
@@ -142,7 +142,7 @@ every country-aware overload behaves as "weekends only" until you plug in a real
 
 **When you need it**: a fixed, known-in-advance holiday list (configuration, seed data, tests).
 
-**What you write** — the fluent builder is the recommended way:
+**What you write**: the fluent builder is the recommended way.
 
 ```csharp
 var provider = StaticHolidayProvider.CreateBuilder()
@@ -188,19 +188,19 @@ public sealed class DatabaseHolidayProvider(IHolidayRepository repository) : IHo
 }
 ```
 
-Tip: `GetHolidays` is called once per year in the requested range — cache per
+Tip: `GetHolidays` is called once per year in the requested range; cache per
 `(year, countryCode)` if the source is remote.
 
 ### Real holiday data (Nager.Date adapter)
 
 **When you need it**: real public-holiday calendars for many countries without
 maintaining the dates yourself. Pragmatic.Temporal deliberately ships no holiday
-data (it goes stale and needs constant per-country maintenance) — plug a data
+data (it goes stale and needs constant per-country maintenance); plug a data
 source into `IHolidayProvider` instead. [Nager.Date](https://date.nager.at/)
 covers 100+ countries; its **REST API is free**, while the offline NuGet/Docker
 packages require a sponsorship license key for commercial use.
 
-**What you write** — an adapter over the free REST API, cached per `(year, country)`:
+**What you write**: an adapter over the free REST API, cached per `(year, country)`.
 
 ```csharp
 public sealed class NagerHolidayProvider(HttpClient http) : IHolidayProvider
@@ -298,10 +298,10 @@ Supported grammar: `*`, `?`, lists (`1,3,5`), ranges (`1-5`), steps (`*/15`, `10
 `L` (last day of month), `nW` (nearest weekday), `dow#n` (nth weekday of month), month and
 day names (`JAN`, `MON`), `7` as an alias for Sunday. Vixie macros parse too: `@yearly` /
 `@annually`, `@monthly`, `@weekly`, `@daily` / `@midnight`, `@hourly` (case-insensitive;
-`Expression` keeps the original string). `@reboot` is rejected — it depends on process
+`Expression` keeps the original string). `@reboot` is rejected: it depends on process
 lifetime, not wall-clock time.
 
-**What you get** — evaluation:
+**What you get**, on evaluation:
 
 ```csharp
 // Next run strictly after `from`; evaluated in `zone` (defaults to UTC)
@@ -322,12 +322,12 @@ DST is handled with Vixie/Cronos semantics:
 
 - **Spring-forward gap**: local times that don't exist are skipped forward to the next
   valid wall time.
-- **Fall-back (repeated hour)** — the behavior depends on the schedule's shape:
-  - *Interval* expressions — star-based minute or hour field (`*`, `*/n`), e.g.
-    `*/30 * * * *` or `0 * * * *` — fire in **both** passes of the repeated hour: an
+- **Fall-back (repeated hour)**: the behavior depends on the schedule's shape:
+  - *Interval* expressions, with a star-based minute or hour field (`*`, `*/n`), e.g.
+    `*/30 * * * *` or `0 * * * *`, fire in **both** passes of the repeated hour: an
     every-30-minutes job really runs every 30 minutes of real time.
-  - *Fixed-time* expressions — explicit values, lists or ranges in the time fields, e.g.
-    `30 2 * * *` or `0,30 2 * * *` — fire **once**, in the first (daylight) pass.
+  - *Fixed-time* expressions, with explicit values, lists or ranges in the time fields, e.g.
+    `30 2 * * *` or `0,30 2 * * *`, fire **once**, in the first (daylight) pass.
 
 Occurrences are always strictly increasing instants; schedules never stall across
 transitions.
@@ -342,8 +342,8 @@ var unix   = CronExpression.Parse("0 0 13 * 5");                        // defau
 var quartz = CronExpression.Parse("0 0 13 * 5", CronSemantics.Quartz);
 ```
 
-- `CronSemantics.Unix` (default): day fields combine with **OR** — "the 13th, or any Friday".
-- `CronSemantics.Quartz`: day fields combine with **AND** — "only Friday the 13th".
+- `CronSemantics.Unix` (default): day fields combine with **OR**, as in "the 13th, or any Friday".
+- `CronSemantics.Quartz`: day fields combine with **AND**, as in "only Friday the 13th".
 
 > Full Unix crontab parity is a non-goal: `L`/`W`/`#` are extensions, and exotic crontab
 > quirks are not guaranteed. Equality of two `CronExpression`s compares the **raw string**,
@@ -351,7 +351,7 @@ var quartz = CronExpression.Parse("0 0 13 * 5", CronSemantics.Quartz);
 
 ## Testing
 
-Deterministic tests need a fixed "today" and controlled holidays — use
+Deterministic tests need a fixed "today" and controlled holidays; use
 `Pragmatic.Temporal.Testing` (see [Testing](testing.md)):
 
 ```csharp
@@ -380,5 +380,5 @@ public class DeliveryCalculationTests
 }
 ```
 
-> `TestHolidayProvider.AddHoliday(year, month, day, countryCode)` — the last argument is the
+> `TestHolidayProvider.AddHoliday(year, month, day, countryCode)`: the last argument is the
 > **country code**, not the holiday name.
