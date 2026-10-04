@@ -6,7 +6,7 @@
 
 ## Registering the Converters
 
-**When you need it**: any time a temporal type crosses a JSON boundary — API responses, request bodies, message payloads, cached documents.
+**When you need it**: any time a temporal type crosses a JSON boundary, such as API responses, request bodies, message payloads, cached documents.
 
 **What you write**:
 
@@ -23,7 +23,7 @@ Or create pre-configured options (camelCase properties, not indented):
 var options = JsonSerializerOptionsExtensions.CreateTemporalOptions();
 ```
 
-**What you get**: converters for `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, `Duration`, `Period`, `DateRange`, `CronExpression` and their nullable variants — no attributes needed on your DTOs.
+**What you get**: converters for `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, `Duration`, `Period`, `DateRange`, `CronExpression` and their nullable variants, with no attributes needed on your DTOs.
 
 ```csharp
 public sealed record BookingDto(
@@ -38,7 +38,7 @@ var back = JsonSerializer.Deserialize<BookingDto>(json, options);
 
 ### ASP.NET Core: MVC and Minimal API
 
-`AddPragmaticTemporalAspNetCore()` (from `Pragmatic.Temporal.AspNetCore`) registers the converters — and the per-property [timezone behaviors](aspnetcore.md#timezone-conversion-attributes) — on **both** pipelines: MVC controllers (`Microsoft.AspNetCore.Mvc.JsonOptions`) and Minimal APIs (`Microsoft.AspNetCore.Http.Json.JsonOptions`). No extra registration needed.
+`AddPragmaticTemporalAspNetCore()` (from `Pragmatic.Temporal.AspNetCore`) registers the converters (and the per-property [timezone behaviors](aspnetcore.md#timezone-conversion-attributes)) on **both** pipelines: MVC controllers (`Microsoft.AspNetCore.Mvc.JsonOptions`) and Minimal APIs (`Microsoft.AspNetCore.Http.Json.JsonOptions`). No extra registration needed.
 
 Apps that don't use that entry point (workers, non-Pragmatic hosts) register explicitly:
 
@@ -78,7 +78,7 @@ Parsing failures throw `JsonException` with the offending value in the message.
 
 ### LocalDateTime: timezone information is discarded
 
-`LocalDateTime` is a wall-clock value. If the incoming JSON carries an offset or `Z` suffix (`"2026-06-01T14:30:00Z"`), the suffix is **stripped and ignored** — you get the wall-clock part only. If you need the instant, use `ZonedDateTime` or `DateTimeOffset` in your DTO instead.
+`LocalDateTime` is a wall-clock value. If the incoming JSON carries an offset or `Z` suffix (`"2026-06-01T14:30:00Z"`), the suffix is **stripped and ignored**: you get the wall-clock part only. If you need the instant, use `ZonedDateTime` or `DateTimeOffset` in your DTO instead.
 
 ### ZonedDateTime: dual format
 
@@ -111,11 +111,11 @@ Mind the asymmetry in form 3: a round-trip of `DateRange.Empty` does not produce
 
 ### CronExpression: empty string behavior
 
-`CronExpressionConverter` throws `JsonException` on empty/whitespace strings and on invalid expressions — malformed payloads never become silent `null`s. For optional cron values use a JSON `null` (the reference-type converter handles null tokens itself; there is no separate nullable converter).
+`CronExpressionConverter` throws `JsonException` on empty/whitespace strings and on invalid expressions: malformed payloads never become silent `null`s. For optional cron values use a JSON `null` (the reference-type converter handles null tokens itself; there is no separate nullable converter).
 
 ---
 
 ## See Also
 
-- [Core Types](core-types.md) — the exact `ToString()`/`Parse` formats each converter delegates to
-- [ASP.NET Core Integration](aspnetcore.md) — model binding and per-request timezone context
+- [Core Types](core-types.md): the exact `ToString()`/`Parse` formats each converter delegates to
+- [ASP.NET Core Integration](aspnetcore.md): model binding and per-request timezone context

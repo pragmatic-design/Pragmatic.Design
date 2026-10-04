@@ -50,7 +50,7 @@ A `DateTimeOffset` or `ZonedDateTime` shows the wrong local time after convertin
    }
    ```
 
-4. **Check the platform.** On Linux containers, timezone data comes from the OS `tzdata` package — see [Timezone data on Linux containers](#timezone-data-on-linux-containers) below.
+4. **Check the platform.** On Linux containers, timezone data comes from the OS `tzdata` package; see [Timezone data on Linux containers](#timezone-data-on-linux-containers) below.
 
 5. **Check TemporalOptions.ThrowOnInvalidTimeZone.** When set to `false` (default), invalid timezone IDs fall back to `DefaultTimeZone` with a logged warning instead of throwing.
 
@@ -68,7 +68,7 @@ means the OS must ship timezone data.
 **Cause:** slim images (Alpine, distroless, some `-slim` variants) do not include the
 `tzdata` package, so the OS has no IANA database to resolve against.
 
-**Fix — install `tzdata` in the image:**
+**Fix by installing `tzdata` in the image:**
 
 ```dockerfile
 # Debian/Ubuntu-based images (e.g. mcr.microsoft.com/dotnet/aspnet)
@@ -84,7 +84,7 @@ zone, but named-zone lookups always need the zoneinfo files.
 
 **Keep it updated:** timezone rules change several times a year (governments move DST
 dates at short notice). Because the data comes from the OS, you pick up new rules by
-rebuilding the image against an updated base — not by updating a NuGet package. If your
+rebuilding the image against an updated base, not by updating a NuGet package. If your
 app does date math far in the future across political timezone changes, schedule regular
 base-image rebuilds.
 
@@ -257,7 +257,7 @@ The `TemporalContext.ClientTimeZone` does not match the expected user timezone.
 | PRAG0903 | Warning | `DateTimeOffset` relational comparison (`<`, `>`) without `.UtcDateTime` | Compare `.UtcDateTime` properties or use `ZonedDateTime` | Wraps both operands with `.UtcDateTime` (only when both are `DateTimeOffset`) |
 | PRAG0904 | Info | `DateTime.Now`/`.UtcNow` in test code | Use `TestClock` for deterministic tests | Same clock-member replacement as PRAG0900 when the test class exposes an `IClock` |
 
-The quick-fixes ship in `Pragmatic.Temporal.CodeFixers`, packaged alongside the analyzers — they appear as lightbulb actions in the IDE and support Fix All. Check the **Error List** window in Visual Studio or the build output for diagnostic details and the affected source location.
+The quick-fixes ship in `Pragmatic.Temporal.CodeFixers`, packaged alongside the analyzers: they appear as lightbulb actions in the IDE and support Fix All. Check the **Error List** window in Visual Studio or the build output for diagnostic details and the affected source location.
 
 ---
 

@@ -1,19 +1,19 @@
 # DST Handling
 
-How Pragmatic.Temporal handles Daylight Saving Time transitions — explicitly, with policies you choose instead of silent surprises.
+How Pragmatic.Temporal handles Daylight Saving Time transitions: explicitly, with policies you choose instead of silent surprises.
 
 ## The DST Problem
 
 Twice a year, wall clocks in DST-observing zones misbehave:
 
-1. **Spring forward — non-existent times.** In Europe/Rome on March 31, 2024, clocks jump from 02:00 directly to 03:00. The local time **02:30 does not exist** that day.
-2. **Fall back — ambiguous times.** In Europe/Rome on October 27, 2024, clocks fall back from 03:00 to 02:00. The local time **02:30 occurs twice**: once at offset +02:00 (daylight) and once at +01:00 (standard).
+1. **Spring forward: non-existent times.** In Europe/Rome on March 31, 2024, clocks jump from 02:00 directly to 03:00. The local time **02:30 does not exist** that day.
+2. **Fall back: ambiguous times.** In Europe/Rome on October 27, 2024, clocks fall back from 03:00 to 02:00. The local time **02:30 occurs twice**: once at offset +02:00 (daylight) and once at +01:00 (standard).
 
 Any code that converts a wall-clock time to an instant must decide what to do in these two cases. Pragmatic.Temporal forces that decision into two explicit policy enums instead of letting the runtime pick silently.
 
 ## The Two Policies
 
-**When you need them**: every time a local (wall-clock) time is converted to a UTC instant — creating a `ZonedDateTime` from a `DateTime`/`LocalDateTime`, or converting user input to UTC through `TemporalContext`.
+**When you need them**: every time a local (wall-clock) time is converted to a UTC instant, such as creating a `ZonedDateTime` from a `DateTime`/`LocalDateTime`, or converting user input to UTC through `TemporalContext`.
 
 ```csharp
 using Pragmatic.Temporal.Types;
@@ -32,7 +32,7 @@ public enum AmbiguousTimePolicy     // fall-back overlap
 }
 ```
 
-The defaults (`ShiftForward`, `UseStandardTime`) are deterministic and never throw — good for background processing. Choose `ThrowException` at input boundaries when the user should resolve the ambiguity.
+The defaults (`ShiftForward`, `UseStandardTime`) are deterministic and never throw, which is good for background processing. Choose `ThrowException` at input boundaries when the user should resolve the ambiguity.
 
 ## Creating a ZonedDateTime from a Local Time
 
@@ -58,12 +58,12 @@ var explicitPolicy = ZonedDateTime.FromLocal(local, rome,
     NonExistentTimePolicy.ShiftForward,
     AmbiguousTimePolicy.UseDaylightTime);
 
-// Strict: throws on BOTH gap and ambiguity — for input validation
+// Strict: throws on BOTH gap and ambiguity, for input validation
 var strict = ZonedDateTime.FromLocalStrict(local, rome);
 // → throws NonExistentTimeException
 ```
 
-**What you get**: a `ZonedDateTime` whose UTC instant is well-defined even in the two DST edge windows — or a specific exception if you asked for one. Note that `FromLocal` takes a `TimeZoneInfo`, not a timezone string; resolve IANA IDs with `TimeZoneResolver.GetTimeZone("Europe/Rome")` first.
+**What you get**: a `ZonedDateTime` whose UTC instant is well-defined even in the two DST edge windows, or a specific exception if you asked for one. Note that `FromLocal` takes a `TimeZoneInfo`, not a timezone string; resolve IANA IDs with `TimeZoneResolver.GetTimeZone("Europe/Rome")` first.
 
 The same conversion is available from `LocalDateTime`, including a string-zone convenience overload:
 
@@ -75,7 +75,7 @@ var zoned = appointment.InZone("Europe/Rome",
 // → throws AmbiguousTimeException (02:30 occurs twice that night)
 ```
 
-If you already have a UTC instant, `ZonedDateTime.FromUtc(utc, zone)` is always safe — UTC has no gaps and no ambiguity. `ZonedDateTime.Now(zone, clock)` builds on it.
+If you already have a UTC instant, `ZonedDateTime.FromUtc(utc, zone)` is always safe: UTC has no gaps and no ambiguity. `ZonedDateTime.Now(zone, clock)` builds on it.
 
 ## Handling the Exceptions
 
@@ -88,14 +88,14 @@ try
 }
 catch (NonExistentTimeException ex)
 {
-    // ex.LocalTime — the DateTime that doesn't exist
-    // ex.TimeZone  — the zone where it doesn't exist
-    // "That time is skipped by DST — pick a time from 03:00 onwards."
+    // ex.LocalTime: the DateTime that doesn't exist
+    // ex.TimeZone: the zone where it doesn't exist
+    // "That time is skipped by DST: pick a time from 03:00 onwards."
 }
 catch (AmbiguousTimeException ex)
 {
     // ex.LocalTime, ex.TimeZone
-    // "That time occurs twice — did you mean the earlier or the later one?"
+    // "That time occurs twice: did you mean the earlier or the later one?"
 }
 ```
 
@@ -120,7 +120,7 @@ public sealed class BookingService(TemporalContext temporal)
 }
 ```
 
-**What you get**: `ClientToUtc`/`BusinessToUtc` accept both `DateTime` and `LocalDateTime`, use the context's `ClientTimeZone`/`BusinessTimeZone`, and apply the context's `NonExistentTimeHandling`/`AmbiguousTimeHandling` defaults — with per-call policy overloads when one boundary needs stricter rules.
+**What you get**: `ClientToUtc`/`BusinessToUtc` accept both `DateTime` and `LocalDateTime`, use the context's `ClientTimeZone`/`BusinessTimeZone`, and apply the context's `NonExistentTimeHandling`/`AmbiguousTimeHandling` defaults, with per-call policy overloads when one boundary needs stricter rules.
 
 ## DST-Safe Arithmetic: Wall Clock vs Physical Time
 
@@ -130,16 +130,16 @@ public sealed class BookingService(TemporalContext temporal)
 
 ```csharp
 var rome = TimeZoneResolver.GetTimeZone("Europe/Rome");
-// Saturday March 30, 2024, 12:00 in Rome — the night before spring forward
+// Saturday March 30, 2024, 12:00 in Rome: the night before spring forward
 var saturdayNoon = ZonedDateTime.FromLocal(new DateTime(2024, 3, 30, 12, 0, 0), rome);
 
 // CALENDAR arithmetic: keeps the wall-clock time, re-resolves the offset
 var sundayNoon = saturdayNoon.AddDays(1);
-// → 2024-03-31T12:00:00+02:00 — still noon, but only 23 physical hours later
+// → 2024-03-31T12:00:00+02:00, still noon, but only 23 physical hours later
 
 // PHYSICAL arithmetic: adds exact elapsed time on the UTC instant
 var plus24h = saturdayNoon.Add(Duration.FromHours(24));
-// → 2024-03-31T13:00:00+02:00 — a full 24h later, wall clock moved to 13:00
+// → 2024-03-31T13:00:00+02:00, a full 24h later: wall clock moved to 13:00
 ```
 
 **What you get**:
@@ -172,14 +172,14 @@ public sealed class MaintenanceScheduler(IClock clock)
 
 **What you get**: occurrences are evaluated on the wall clock of the given zone (UTC when omitted), with the two edge cases handled for you:
 
-- **Spring forward**: an occurrence falling inside the gap (02:30 doesn't exist on March 31) is skipped forward to the next valid minute — the job is not lost.
-- **Fall back**: for an ambiguous time the scheduler picks the offset producing the **earliest instant strictly after `from`** — the sequence keeps advancing and never stalls or double-fires on the repeated hour.
+- **Spring forward**: an occurrence falling inside the gap (02:30 doesn't exist on March 31) is skipped forward to the next valid minute, so the job is not lost.
+- **Fall back**: for an ambiguous time the scheduler picks the offset producing the **earliest instant strictly after `from`**, so the sequence keeps advancing and never stalls or double-fires on the repeated hour.
 
 `GetOccurrences(from, until, zone)` streams the same DST-aware sequence lazily.
 
 ## Pitfall: `LocalDateTime.ToDateTimeOffset(zone)`
 
-`ToDateTimeOffset(zone)` resolves the offset with a plain `TimeZoneInfo.GetUtcOffset` — it does **not** apply the DST policies. Inside a gap or overlap it silently produces whatever offset the runtime returns, without shifting, choosing, or throwing.
+`ToDateTimeOffset(zone)` resolves the offset with a plain `TimeZoneInfo.GetUtcOffset`: it does **not** apply the DST policies. Inside a gap or overlap it silently produces whatever offset the runtime returns, without shifting, choosing, or throwing.
 
 ```csharp
 var dt = new LocalDateTime(2024, 3, 31, 2, 30);
@@ -210,7 +210,7 @@ User-facing input should surface DST problems (`ThrowException` + a helpful mess
 
 ### 3. Test the transition dates
 
-`TestClock` (from `Pragmatic.Temporal.Testing`) ships helpers that park the clock one second before a transition — `SetBeforeRomeSpringForward()`, `SetBeforeRomeFallBack()`, `SetBeforeUsEasternSpringForward()`. See [Testing](testing.md).
+`TestClock` (from `Pragmatic.Temporal.Testing`) ships helpers that park the clock one second before a transition: `SetBeforeRomeSpringForward()`, `SetBeforeRomeFallBack()`, `SetBeforeUsEasternSpringForward()`. See [Testing](testing.md).
 
 ## Common Timezone DST Rules
 
@@ -222,4 +222,4 @@ User-facing input should surface DST problems (`ThrowException` + a helpful mess
 | UK | Last Sunday March, 1 AM | Last Sunday October, 2 AM |
 | Australia (Sydney) | 1st Sunday October, 2 AM | 1st Sunday April, 3 AM |
 
-Some regions don't observe DST at all (Arizona, most of Asia and Africa) — but don't hardcode that: resolve zones through `TimeZoneResolver` and let the policies handle whatever rules apply.
+Some regions don't observe DST at all (Arizona, most of Asia and Africa), but don't hardcode that: resolve zones through `TimeZoneResolver` and let the policies handle whatever rules apply.

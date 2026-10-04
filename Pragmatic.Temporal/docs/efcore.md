@@ -8,7 +8,7 @@
 
 **When you need it**: your entities have `LocalDate`, `Duration`, `ZonedDateTime`, … properties and EF Core must know how to store them. Without activation, model building fails with "could not be mapped" errors.
 
-**What you write** — one line on the options builder:
+**What you write**: one line on the options builder.
 
 ```csharp
 services.AddDbContext<AppDbContext>(options => options
@@ -16,7 +16,7 @@ services.AddDbContext<AppDbContext>(options => options
     .UsePragmaticTemporal());
 ```
 
-**What you get**: every property of a temporal type, on every entity, gets the right value converter and max-length automatically — nothing to configure per property, no `OnModelCreating` code.
+**What you get**: every property of a temporal type, on every entity, gets the right value converter and max-length automatically, with nothing to configure per property and no `OnModelCreating` code.
 
 Two options are available:
 
@@ -55,11 +55,11 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 | CLR type | Column type | Stored as | MaxLength |
 |----------|------------|-----------|-----------|
-| `LocalDate` / `LocalDate?` | `date` | native `DateOnly` | — |
-| `LocalTime` / `LocalTime?` | `time` | native `TimeOnly` | — |
-| `LocalDateTime` / `LocalDateTime?` | `datetime` | `DateTime`, **no timezone conversion**, read back as `Kind.Unspecified` | — |
+| `LocalDate` / `LocalDate?` | `date` | native `DateOnly` | n/a |
+| `LocalTime` / `LocalTime?` | `time` | native `TimeOnly` | n/a |
+| `LocalDateTime` / `LocalDateTime?` | `datetime` | `DateTime`, **no timezone conversion**, read back as `Kind.Unspecified` | n/a |
 | `ZonedDateTime` / `ZonedDateTime?` | `nvarchar` | string `"2026-06-01T14:30:00+02:00[Europe/Rome]"` | 100 |
-| `Duration` / `Duration?` | `bigint` | **ticks** (`long`) | — |
+| `Duration` / `Duration?` | `bigint` | **ticks** (`long`) | n/a |
 | `Period` / `Period?` | `nvarchar` | ISO string `"P1Y2M3D"` | 50 |
 | `DateRange` / `DateRange?` | `nvarchar` | string `"2026-01-01/2026-12-31"` | 50 |
 | `CronExpression` (+ nullable) | `nvarchar` | raw cron string | 100 |
@@ -77,7 +77,7 @@ Details worth knowing:
 
 **When you need it**: filtering UTC timestamp columns by "a day / month / range *in some timezone*" without writing DST-buggy boilerplate and without breaking index usage.
 
-All methods live in `Pragmatic.Temporal.EntityFrameworkCore.QueryExtensions` and take an `Expression<Func<T, DateTimeOffset>>` selector — they target **plain UTC `DateTimeOffset` columns** (your `CreatedAt`, `OccurredAt`, …), not the converted temporal types above. Every method compiles to a pre-computed UTC range (`>= start && < end`) so indexes keep working; no conversion functions ever appear inside the SQL `WHERE`.
+All methods live in `Pragmatic.Temporal.EntityFrameworkCore.QueryExtensions` and take an `Expression<Func<T, DateTimeOffset>>` selector: they target **plain UTC `DateTimeOffset` columns** (your `CreatedAt`, `OccurredAt`, …), not the converted temporal types above. Every method compiles to a pre-computed UTC range (`>= start && < end`) so indexes keep working; no conversion functions ever appear inside the SQL `WHERE`.
 
 **What you write**:
 
@@ -115,13 +115,13 @@ var last7  = await db.Orders.WhereLast(o => o.CreatedAt, 7, temporalContext).ToL
 
 ### Caveats
 
-- Day boundaries are computed DST-safely (midnight in a DST gap shifts forward; ambiguous midnight uses standard time) — consistent with `TemporalContext.ClientStartOfDay`.
+- Day boundaries are computed DST-safely (midnight in a DST gap shifts forward; ambiguous midnight uses standard time), consistent with `TemporalContext.ClientStartOfDay`.
 - Range bounds are embedded as constants (`Expression.Constant`), not parameters: each distinct range produces a distinct SQL text, which can pressure the query plan cache under high cardinality of ranges.
-- The relative methods (`WhereToday`, `WhereLast`, …) take the ambient `TemporalContext` — inject it (scoped) rather than constructing zones by hand.
+- The relative methods (`WhereToday`, `WhereLast`, …) take the ambient `TemporalContext`: inject it (scoped) rather than constructing zones by hand.
 
 ---
 
 ## See Also
 
-- [Concepts](concepts.md) — why instants are stored UTC and converted only at boundaries
-- [ASP.NET Core Integration](aspnetcore.md) — where the per-request `TemporalContext` comes from
+- [Concepts](concepts.md): why instants are stored UTC and converted only at boundaries
+- [ASP.NET Core Integration](aspnetcore.md): where the per-request `TemporalContext` comes from

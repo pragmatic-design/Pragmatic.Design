@@ -9,7 +9,7 @@ dotnet add package Pragmatic.Temporal.Testing
 
 ## Why: time is a dependency
 
-**When you need it.** Any code that reads "now" — expiry checks, scheduling, audit timestamps,
+**When you need it.** Any code that reads "now": expiry checks, scheduling, audit timestamps,
 "today" filters. If it calls `DateTime.Now` directly, the test result depends on when the test
 runs: flaky around midnight, month boundaries, DST transitions, and impossible to reproduce.
 
@@ -37,7 +37,7 @@ public class SubscriptionService(IClock clock)
 ```
 
 **What you get.** In production, `AddPragmaticTemporal()` registers `SystemClock` (a `TimeProvider`
-wrapper) automatically. In tests, you swap in a `TestClock` and control time explicitly — no
+wrapper) automatically. In tests, you swap in a `TestClock` and control time explicitly: no
 `Task.Delay`, no flakiness.
 
 > Note: `Today`/`UtcToday` return `DateOnly`, which converts implicitly to `LocalDate`, so
@@ -77,7 +77,7 @@ var rome = TimeZoneResolver.GetTimeZone("Europe/Rome");
 clock.SetDateTime(2026, 6, 15, 10, 30, rome);  // 10:30 Rome time
 ```
 
-There is no `Freeze` method — a `TestClock` is frozen by construction: it never advances unless
+There is no `Freeze` method; a `TestClock` is frozen by construction: it never advances unless
 you call an `Advance*` method or enable auto-advance.
 
 ### Advancing the time
@@ -102,7 +102,7 @@ var atMidnight = TestClock.AtMidnight(2026, 6, 15); // 00:00 UTC
 ### Auto-advance
 
 **When you need it.** Code that reads the clock in a loop and would spin forever (or produce
-identical timestamps) if time never moved — e.g. polling loops, unique-timestamp generation.
+identical timestamps) if time never moved, e.g. polling loops, unique-timestamp generation.
 
 **What you write.**
 
@@ -114,7 +114,7 @@ var fast  = new TestClock().WithAutoAdvance(TimeSpan.FromSeconds(1));   // +1 s 
 **What you get.** Every read of `Now` or `UtcNow` moves the clock forward by `AutoAdvanceAmount`.
 
 > ⚠️ Auto-advance triggers **only** on `Now`/`UtcNow`. Reading `Today`, `UtcToday`, `TimeOfDay`,
-> or `UtcTimeOfDay` does not advance the clock — so mixing `UtcNow` and `Today` reads under
+> or `UtcTimeOfDay` does not advance the clock, so mixing `UtcNow` and `Today` reads under
 > auto-advance can observe different instants. Disable auto-advance if you need perfectly
 > consistent component reads.
 
@@ -149,7 +149,7 @@ var clock = TestClock.AtNoon(2026, 6, 15);
 
 services.AddPragmaticTemporal();
 services.UseClock(clock);          // instance
-// or: services.UseClock<TestClock>();  — by type
+// or: services.UseClock<TestClock>();  (by type)
 ```
 
 **What you get.** `IClock` resolves to your test clock everywhere, and the `TimeProvider`
@@ -158,7 +158,7 @@ Persistence timestamps) see the same fake time.
 
 ⚠️ **HybridCache reads that `TimeProvider` too**, and it judges an entry invalidated when it was
 written *at or before* its tag's last invalidation. Under a frozen clock the two instants are the same:
-a write that invalidates a tag — declaring a term, say, with `[InvalidatesCache]` on its event — makes
+a write that invalidates a tag (declaring a term, say, with `[InvalidatesCache]` on its event) makes
 every entry written afterwards under that tag born invalidated, and the cache stops hitting with
 nothing to say why. Move the clock forward before a read that has to hit after such a write:
 
@@ -237,7 +237,7 @@ var calculator = new TemporalCalculator(holidays);
 country. `Clear()` resets it.
 
 > ⚠️ The last argument of `AddHoliday` is the **ISO country code** (`"IT"`, `"US"`), not the
-> holiday name. Test holidays are always named `"Test Holiday"` — the provider models *when*
+> holiday name. Test holidays are always named `"Test Holiday"`: the provider models *when*
 > holidays fall, not what they are called. Region codes are ignored.
 
 ## TimeProvider interop
@@ -255,7 +255,7 @@ var sut = new ThrottledPublisher(provider);
 clock.AdvanceMinutes(5);
 ```
 
-**What you get.** A `TimeProvider` whose `GetUtcNow()` reads the `TestClock` — one source of
+**What you get.** A `TimeProvider` whose `GetUtcNow()` reads the `TestClock`: one source of
 truth for both abstractions. (Note: if `AutoAdvance` is enabled, each `GetUtcNow()` call advances
 the clock too.)
 
@@ -264,8 +264,8 @@ the clock too.)
 The `Pragmatic.Temporal.Analyzers` package flags the patterns that break all of the above:
 
 - **PRAG0900** (Warning): `DateTime.Now`/`UtcNow`, `DateTimeOffset.Now`/`UtcNow` in application
-  code — inject `IClock` instead.
-- **PRAG0904** (Info): `DateTime.Now`/`UtcNow` inside test methods (xUnit/NUnit/MSTest) — use
+  code; inject `IClock` instead.
+- **PRAG0904** (Info): `DateTime.Now`/`UtcNow` inside test methods (xUnit/NUnit/MSTest); use
   `TestClock` so the test is deterministic.
 
 ## Common test patterns
@@ -353,12 +353,12 @@ public void AddBusinessDays_SkipsChristmas()
 
 ## Best practices
 
-1. **Never read `DateTime.Now`** — inject `IClock`; the analyzers (PRAG0900/0904) will remind you.
-2. **Pick explicit instants** — start tests from `TestClock.AtNoon(...)`/`AtMidnight(...)` rather
+1. **Never read `DateTime.Now`**: inject `IClock`; the analyzers (PRAG0900/0904) will remind you.
+2. **Pick explicit instants**: start tests from `TestClock.AtNoon(...)`/`AtMidnight(...)` rather
    than `AtNow()`, so failures are reproducible.
-3. **Test the boundaries** — midnight, month/year ends, and DST transitions (use the
+3. **Test the boundaries**: midnight, month/year ends, and DST transitions (use the
    `SetBefore*` helpers).
-4. **Use the countryCode overloads** for business-day assertions — the plain overloads skip
+4. **Use the countryCode overloads** for business-day assertions: the plain overloads skip
    weekends only.
-5. **One clock per test** — share the same `TestClock` between the system under test and the
+5. **One clock per test**: share the same `TestClock` between the system under test and the
    assertions; don't mix it with real time.

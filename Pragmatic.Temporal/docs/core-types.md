@@ -3,7 +3,7 @@
 Full reference for the Pragmatic.Temporal value types. Every signature on this page is verified
 against the current implementation.
 
-**The rule of thumb — type = scope:**
+**The rule of thumb is type = scope:**
 
 | Type | Has Date | Has Time | Has Zone | Meaning |
 |------|----------|----------|----------|---------|
@@ -11,10 +11,10 @@ against the current implementation.
 | `LocalTime` | ❌ | ✅ | ❌ | A wall-clock time ("9:00 AM") |
 | `LocalDateTime` | ✅ | ✅ | ❌ | A wall-clock date+time, **not** an instant |
 | `ZonedDateTime` | ✅ | ✅ | ✅ | An exact instant + the zone it belongs to |
-| `Duration` | — | — | — | Exact elapsed *physical* time (24h is always 24h) |
-| `Period` | — | — | — | Calendar units (years/months/days — "1 month" varies) |
+| `Duration` | n/a | n/a | n/a | Exact elapsed *physical* time (24h is always 24h) |
+| `Period` | n/a | n/a | n/a | Calendar units (years/months/days; "1 month" varies) |
 | `DateRange` | ✅ | ❌ | ❌ | An inclusive range of dates `[Start, End]` |
-| `CronExpression` | — | — | — | A recurrence schedule |
+| `CronExpression` | n/a | n/a | n/a | A recurrence schedule |
 
 > There is no `LocalDate.Today` or static "now" on any type. "Now" always comes from an injected
 > `IClock` (`clock.Today`, `clock.UtcNow`) so your code stays testable. See [Testing](testing.md).
@@ -23,7 +23,7 @@ against the current implementation.
 
 ## LocalDate
 
-**When you need it**: birthdays, invoice dates, check-in dates, deadlines — anything where "the
+**When you need it**: birthdays, invoice dates, check-in dates, deadlines, anything where "the
 date" is meaningful on its own and must not shift with timezones. A `readonly struct` wrapping
 `DateOnly`.
 
@@ -42,7 +42,7 @@ LocalDate today = clock.Today;                      // IClock.Today is DateOnly 
 
 > ⚠️ `LocalDate.FromDateTimeOffset(dto)` takes the **wall-clock date of the offset value** and
 > ignores the offset itself. For "what date is this instant in zone X?" use
-> `dto.ToLocalDate(zone)` from `Pragmatic.Temporal.Extensions` instead — it converts the UTC
+> `dto.ToLocalDate(zone)` from `Pragmatic.Temporal.Extensions` instead: it converts the UTC
 > instant into the zone first.
 
 ### Properties
@@ -97,19 +97,19 @@ date.ToDateTime(time);           // → DateTime at the given LocalTime
 ### Operators, parsing, formatting
 
 - Full comparison set: `== != < <= > >=`.
-- **Implicit conversions both ways** with `DateOnly` — you can pass a `LocalDate` wherever a
+- **Implicit conversions both ways** with `DateOnly`: you can pass a `LocalDate` wherever a
   `DateOnly` is expected and vice versa (this is why `clock.Today` assigns directly).
 - `ToString()` → ISO `yyyy-MM-dd` (invariant). `ToString(format)` for custom formats.
 - `Parse` / `TryParse`: tries exact `yyyy-MM-dd` first, then falls back to invariant
-  `DateOnly.TryParse`. Prefer feeding it ISO strings only — the fallback accepts other
+  `DateOnly.TryParse`. Prefer feeding it ISO strings only: the fallback accepts other
   invariant-culture formats (e.g. `06/15/2026` parses as month/day), which can surprise you.
 
 ---
 
 ## LocalTime
 
-**When you need it**: store opening hours, a daily report time, an alarm — a time of day with no
-date and no zone. Wraps `TimeOnly`.
+**When you need it**: store opening hours, a daily report time, an alarm (a time of day with no
+date and no zone). Wraps `TimeOnly`.
 
 ### Creation
 
@@ -147,7 +147,7 @@ time.IsBetween(start, end);
 ```csharp
 time.Add(TimeSpan.FromMinutes(90));   // wraps around midnight: 23:30 + 1h → 00:30
 time.Add(duration);                   // same, takes a Duration
-time.AddHours(1.5);                   // double — fractional hours OK
+time.AddHours(1.5);                   // double: fractional hours OK
 time.AddMinutes(30);
 
 time.DurationUntil(other);            // TimeSpan, always forward: if other is "earlier",
@@ -170,7 +170,7 @@ time.ToTimeOnly();      time.ToTimeSpan();
 
 ## LocalDateTime
 
-**When you need it**: a wall-clock date+time where the zone is context, not data — "the meeting
+**When you need it**: a wall-clock date+time where the zone is context, not data, as in "the meeting
 is at 2026-03-21 14:30" (in whatever office you're in). Internally a `DateTime` with
 `Kind.Unspecified`.
 
@@ -188,7 +188,7 @@ var dt4 = date.At(time);                                 // fluent equivalent
 LocalDateTime.MinValue; LocalDateTime.MaxValue;
 ```
 
-(There is no `FromDateTime` static — use the constructor.)
+(There is no `FromDateTime` static; use the constructor.)
 
 ### Properties and navigation
 
@@ -216,12 +216,12 @@ dt + duration;  dt - duration;      // operators
 later - earlier;                     // LocalDateTime − LocalDateTime → Duration
 ```
 
-These are plain wall-clock operations — no DST is involved because there is no zone yet.
+These are plain wall-clock operations: no DST is involved because there is no zone yet.
 
 ### Attaching a zone
 
 ```csharp
-// The safe way — explicit DST policies (defaults shown):
+// The safe way, with explicit DST policies (defaults shown):
 ZonedDateTime zoned = dt.InZone("Europe/Rome");
 ZonedDateTime z2    = dt.InZone(tzInfo,
     nonExistentPolicy: NonExistentTimePolicy.ShiftForward,
@@ -248,24 +248,24 @@ dt.ToDateTimeOffset(zone,
   `yyyy-MM-ddTHH:mm`, plus an invariant fallback.
 
 > ⚠️ If the input string carries a timezone suffix (`Z`, `+02:00`, `-05:00`), the parser
-> **strips and discards it** — a `LocalDateTime` has no zone to store it in. If the offset
+> **strips and discards it**: a `LocalDateTime` has no zone to store it in. If the offset
 > matters, parse a `ZonedDateTime` or `DateTimeOffset` instead.
 
 ---
 
 ## ZonedDateTime
 
-**When you need it**: an exact instant where the zone is part of the data — flight departures,
+**When you need it**: an exact instant where the zone is part of the data, such as flight departures,
 meeting starts across offices, anything you'll show in "local time" later. Internally stores the
 UTC instant + the `TimeZoneInfo`.
 
-Constructors are internal — you always go through a factory, which is what makes the type
+Constructors are internal: you always go through a factory, which is what makes the type
 DST-safe:
 
 ### Creation
 
 ```csharp
-// From a UTC instant (safest — UTC has no DST):
+// From a UTC instant (safest, since UTC has no DST):
 var z1 = ZonedDateTime.FromUtc(dtoUtc, "Europe/Rome");
 var z2 = ZonedDateTime.FromUtc(dtoUtc, tzInfo);
 
@@ -276,24 +276,24 @@ var z4 = ZonedDateTime.FromLocal(dateTime, tzInfo,
              AmbiguousTimePolicy.UseDaylightTime);
 var z5 = ZonedDateTime.FromLocalStrict(dateTime, tzInfo);              // throws on any DST edge
 
-// "Now" requires a clock (injectable, testable — there is no parameterless Now):
+// "Now" requires a clock (injectable, testable; there is no parameterless Now):
 var z6 = ZonedDateTime.Now("Europe/Rome", clock);
 var z7 = ZonedDateTime.Now(tzInfo, clock);
 ```
 
-`FromLocal` takes a `DateTime`; if you have a `LocalDateTime`, call `.InZone(...)` on it — same
+`FromLocal` takes a `DateTime`; if you have a `LocalDateTime`, call `.InZone(...)` on it: same
 thing, fluent form.
 
 ### Properties
 
 ```csharp
-z.UtcDateTime      // DateTimeOffset — the UTC instant
+z.UtcDateTime      // DateTimeOffset: the UTC instant
 z.Zone             // TimeZoneInfo
-z.ZoneId           // string — the IANA id ("Europe/Rome")
-z.Offset           // TimeSpan — UTC offset at this instant (+01:00 or +02:00 depending on DST)
+z.ZoneId           // string: the IANA id ("Europe/Rome")
+z.Offset           // TimeSpan: UTC offset at this instant (+01:00 or +02:00 depending on DST)
 z.IsDaylightSavingTime
 
-z.LocalDateTime    // DateTime  — wall clock in the zone
+z.LocalDateTime    // DateTime: wall clock in the zone
 z.Date             // LocalDate   z.Time  // LocalTime
 z.LocalDate        // DateOnly    z.LocalTime // TimeOnly
 z.Year; z.Month; z.Day; z.Hour; z.Minute; z.Second; z.DayOfWeek;   // all in the zone
@@ -305,11 +305,11 @@ z.Year; z.Month; z.Day; z.Hour; z.Minute; z.Second; z.DayOfWeek;   // all in the
 ### The two kinds of arithmetic (the whole point of this type)
 
 ```csharp
-// WALL-CLOCK (calendar) — "same local time tomorrow". May be 23h or 25h of real time
+// WALL-CLOCK (calendar): "same local time tomorrow". May be 23h or 25h of real time
 // across a DST transition; the result is re-resolved with the default DST policies:
 z.AddDays(1); z.AddMonths(1); z.AddYears(1); z.AddHours(2); z.AddMinutes(30);
 
-// PHYSICAL — exact elapsed time on the UTC instant. Local time-of-day may shift
+// PHYSICAL: exact elapsed time on the UTC instant. Local time-of-day may shift
 // across a DST transition:
 z.Add(Duration.FromHours(24));
 z.Add(timeSpan);
@@ -322,14 +322,14 @@ later - earlier;            // same, as an operator
 Pick consciously: a hotel checkout "tomorrow at 11:00" is `AddDays(1)`; a parking meter expiring
 "in 24 hours" is `Add(Duration.FromHours(24))`.
 
-### Equality — instant vs exact
+### Equality: instant vs exact
 
 ```csharp
 var rome  = ZonedDateTime.FromUtc(instant, "Europe/Rome");
 var tokyo = rome.InZone("Asia/Tokyo");
 
-rome == tokyo;              // TRUE  — same instant (== and Equals compare the instant only)
-rome.EqualsExact(tokyo);    // FALSE — also compares Zone.Id
+rome == tokyo;              // TRUE: same instant (== and Equals compare the instant only)
+rome.EqualsExact(tokyo);    // FALSE: also compares Zone.Id
 ```
 
 Comparisons (`< <= > >=`) and `GetHashCode` also use the instant only.
@@ -357,16 +357,16 @@ Parsing rules worth knowing:
 
 - With a `[Zone]` bracket, the zone id must resolve and be ≤ 64 chars.
 - If the string has **both** an explicit offset and a `[Zone]`, the offset must be valid for
-  that zone at that wall time — inconsistent values (wrong offset, or a time inside a DST gap)
+  that zone at that wall time; inconsistent values (wrong offset, or a time inside a DST gap)
   are rejected rather than silently reinterpreted.
 - Without a bracket the value is parsed as a `DateTimeOffset` and normalized to the **UTC**
-  zone — the original offset is not kept as a zone.
+  zone; the original offset is not kept as a zone.
 
 ---
 
 ## Duration
 
-**When you need it**: elapsed physical time — timeouts, SLAs, "how long did it take". `24 hours`
+**When you need it**: elapsed physical time, such as timeouts, SLAs, "how long did it take". `24 hours`
 is always exactly 24 hours; DST doesn't exist for `Duration`. Wraps `TimeSpan`.
 
 Contrast with [`Period`](#period) (calendar units) and with `ZonedDateTime.AddDays` (wall-clock).
@@ -413,16 +413,16 @@ Duration.Parse("-PT30S");                // leading minus for negative
 Duration.TryParse(s, out var d);
 ```
 
-Limits of the format (by design): days are the largest unit emitted/accepted — **no weeks, no
+Limits of the format (by design): days are the largest unit emitted/accepted, with **no weeks, no
 years/months** (those are calendar concepts → `Period`); `H`/`M`/`S` must appear after the `T`;
-fractional values are accepted (`PT0.5H`); custom format strings are not supported —
+fractional values are accepted (`PT0.5H`); custom format strings are not supported:
 `ToString(format, provider)` always returns the ISO form.
 
 ---
 
 ## Period
 
-**When you need it**: calendar-speak — "a 1-month subscription", "payment due in 30 days",
+**When you need it**: calendar-speak, as in "a 1-month subscription", "payment due in 30 days",
 "2 years and 3 months". Components are `Years`/`Months`/`Days` ints; the *actual* length depends
 on the date you apply it to.
 
@@ -439,7 +439,7 @@ Period.Between(start, end);   // calendar difference between two LocalDates
 `Between` computes years, then months, then leftover days (borrowing from the month before the
 end date when needed). It negates cleanly when `start > end`, but because month lengths differ,
 `Between(a, b)` applied back to `a` lands on `b` while intermediate components may not be what
-you'd guess near month ends — verify with round-trip tests if you do bookkeeping with it.
+you'd guess near month ends; verify with round-trip tests if you do bookkeeping with it.
 
 ### Properties and arithmetic
 
@@ -447,12 +447,12 @@ you'd guess near month ends — verify with round-trip tests if you do bookkeepi
 p.Years; p.Months; p.Days;
 p.IsZero;
 p.IsNegative;         // true if ANY component is negative
-p.TotalMonths;        // Years*12 + Months — ignores Days
+p.TotalMonths;        // Years*12 + Months, ignores Days
 
 p.Negate();
 p.Normalize();        // 14 months → 1 year 2 months; days are never folded
 
-p1 + p2; p1 - p2;     // component-wise — results are NOT normalized (can hold 14 months)
+p1 + p2; p1 - p2;     // component-wise: results are NOT normalized (can hold 14 months)
 p * 3; -p;
 var (y, m, d) = p;    // Deconstruct
 ```
@@ -478,14 +478,14 @@ Period.Parse("P1Y2M3D"); Period.Parse("P-1M");   // negative components allowed
 Period.TryParse(s, out var p);
 ```
 
-The parser accepts only `P…Y…M…D` (case-insensitive, at least one component) — no weeks (`P2W`
+The parser accepts only `P…Y…M…D` (case-insensitive, at least one component): no weeks (`P2W`
 is invalid; use `FromWeeks`), no time part (`PT…` belongs to `Duration`).
 
 ---
 
 ## DateRange
 
-**When you need it**: reporting periods, booking spans, "the last 30 days" — a **closed,
+**When you need it**: reporting periods, booking spans, "the last 30 days". A **closed,
 inclusive** range `[Start, End]` of `LocalDate`s that you can query, combine, and enumerate.
 
 ### Creation
@@ -503,8 +503,8 @@ DateRange.LastDays(today, 30);             // last 30 days ending at today (incl
 DateRange.NextDays(start, 7);
 ```
 
-> ⚠️ **Testability**: `ThisWeek()`, `ThisMonth()`, `ThisQuarter()`, `ThisYear()` — the
-> overloads *without* a date — read `DateTime.Today` (server-local, not injectable) and are
+> ⚠️ **Testability**: the overloads of `ThisWeek()`, `ThisMonth()`, `ThisQuarter()`, `ThisYear()`
+> *without* a date read `DateTime.Today` (server-local, not injectable) and are
 > marked `[Obsolete]`. `LastDays(n)`/`NextDays(n)` without a date have the same problem.
 > In application code always use the overloads that take an explicit `today`:
 >
@@ -552,7 +552,7 @@ r.ToList();                        // pre-sized List<LocalDate>
 r.Weekdays();  r.Weekends();       // lazy filters
 ```
 
-Enumerating materializes every day — fine for months, think twice for multi-decade ranges.
+Enumerating materializes every day: fine for months, think twice for multi-decade ranges.
 
 ### Equality, parsing, formatting
 
@@ -564,7 +564,7 @@ Enumerating materializes every day — fine for months, think twice for multi-de
 
 ## CronExpression
 
-**When you need it**: recurring schedules — "every day at 9", "last day of the month", "second
+**When you need it**: recurring schedules, such as "every day at 9", "last day of the month", "second
 Tuesday". Zero-dependency implementation; a `sealed class` (not a struct).
 
 ### Creation
@@ -629,7 +629,7 @@ bool hits = cron.Matches(someInstant, romeZone);
 - **DST-aware**: wall times inside a spring-forward gap are skipped; during a fall-back overlap
   the earliest instant strictly after `from` is chosen, so `GetOccurrences` never stalls or
   double-fires.
-- There is no `GetNextOccurrences(from, count)` — use `GetOccurrences(...).Take(count)`.
+- There is no `GetNextOccurrences(from, count)`; use `GetOccurrences(...).Take(count)`.
 
 ### Unix vs Quartz day semantics
 
@@ -641,9 +641,9 @@ var unix   = CronExpression.Parse("0 0 1 * MON");                        // defa
 var quartz = CronExpression.Parse("0 0 1 * MON", CronSemantics.Quartz);
 ```
 
-- **Unix** (default): OR — "the 1st of the month, *or* any Monday". If one of the two fields is
+- **Unix** (default): OR, "the 1st of the month, *or* any Monday". If one of the two fields is
   `*`, only the other is evaluated.
-- **Quartz**: AND — "the 1st of the month, *only if* it's a Monday".
+- **Quartz**: AND, "the 1st of the month, *only if* it's a Monday".
 
 ### Equality caveat
 
@@ -654,7 +654,7 @@ var quartz = CronExpression.Parse("0 0 1 * MON", CronSemantics.Quartz);
 
 ## LocalDate extensions
 
-`using Pragmatic.Temporal.Extensions;` — calendar navigation on top of `LocalDate`.
+`using Pragmatic.Temporal.Extensions;` gives calendar navigation on top of `LocalDate`.
 
 ### Relative weekday navigation
 
@@ -670,7 +670,7 @@ date.PreviousOrSame(DayOfWeek.Monday);
 ```csharp
 date.FirstInMonth(DayOfWeek.Monday);
 date.LastInMonth(DayOfWeek.Friday);
-date.NthInMonth(2, DayOfWeek.Tuesday);      // Patch Tuesday. Returns LocalDate? —
+date.NthInMonth(2, DayOfWeek.Tuesday);      // Patch Tuesday. Returns LocalDate?,
                                             // null when the nth occurrence doesn't exist.
 date.NthInMonth(-1, DayOfWeek.Sunday);      // last Sunday; -2 = one week before last
 date.NthInMonthOrThrow(4, DayOfWeek.Thursday);  // Thanksgiving, throws if missing
@@ -686,7 +686,7 @@ date.IsoWeekYear();       // may differ from Year near Jan 1 / Dec 31
 LocalDateExtensions.FromIsoWeekDate(2026, 25, DayOfWeek.Wednesday);
 ```
 
-### Weekday helpers (weekend-only — no holidays)
+### Weekday helpers (weekend-only, no holidays)
 
 ```csharp
 date.NextWeekday();  date.NextWeekdayOrSame();
@@ -694,14 +694,14 @@ date.PreviousWeekday(); date.PreviousWeekdayOrSame();
 date.NearestWeekday();    // Saturday → Friday, Sunday → Monday
 ```
 
-These only skip Saturday/Sunday. For holiday-aware business days use `ITemporalCalculator` —
+These only skip Saturday/Sunday. For holiday-aware business days use `ITemporalCalculator`;
 see [Business Days](business-days.md).
 
 ---
 
 ## DateTimeOffset extensions
 
-`using Pragmatic.Temporal.Extensions;` — the correct bridge from an instant to local types:
+`using Pragmatic.Temporal.Extensions;` gives the correct bridge from an instant to local types:
 
 ```csharp
 DateTimeOffset instant = clock.UtcNow;
@@ -723,7 +723,7 @@ is what you want instead of `LocalDate.FromDateTimeOffset` (which ignores the of
 Italian, "3/21/2026" for US English) instead of the fixed ISO wire format.
 
 **What you write:** `LocalDate` and `LocalTime` already work with the
-`Pragmatic.Internationalization` formatting APIs — they convert implicitly to
+`Pragmatic.Internationalization` formatting APIs: they convert implicitly to
 `DateOnly`/`TimeOnly`. For `LocalDateTime` and `ZonedDateTime`, add the bridge package:
 
 ```bash
@@ -737,7 +737,7 @@ using Pragmatic.Temporal.Internationalization.Extensions;   // ambient-culture e
 public class BookingDisplayService(GlobalizationFormatter formatter)
 {
     public string Describe(ZonedDateTime start, LocalDateTime deadline)
-        => $"{formatter.FormatDateTime(start)} — reply by {formatter.FormatDate(deadline)}";
+        => $"{formatter.FormatDateTime(start)}, reply by {formatter.FormatDate(deadline)}";
 }
 
 // Or with the ambient I18N culture context (mirrors I18n's DateExtensions):
@@ -745,14 +745,14 @@ var label = webinarStart.FormatDateTime();   // ZonedDateTime → wall time in I
 ```
 
 **What you get:** `LocalDateTime` formats its wall time as-is (no timezone conversion);
-`ZonedDateTime` formats the wall time **in its own zone** — the same instant shown for a
+`ZonedDateTime` formats the wall time **in its own zone**: the same instant shown for a
 Rome-zoned and a UTC-zoned value renders differently, which is exactly what the type means
 for display. All members delegate to the Internationalization APIs; no formatting logic is
 duplicated. Full formatting reference: the `Pragmatic.Internationalization` module docs.
 
 ---
 
-## Choosing the right type — quick answers
+## Choosing the right type: quick answers
 
 | You have… | Use |
 |-----------|-----|
@@ -764,4 +764,4 @@ duplicated. Full formatting reference: the `Pragmatic.Internationalization` modu
 | "The subscription lasts 1 month" | `Period` |
 | "Q2 2026" | `DateRange` |
 | "Every weekday at 7" | `CronExpression` |
-| "What time is it?" | `IClock` (injected) — never `DateTime.Now` |
+| "What time is it?" | `IClock` (injected), never `DateTime.Now` |
