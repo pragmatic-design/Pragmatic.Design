@@ -5,7 +5,7 @@ Writes trail entries with raw ADO.NET, on a connection and transaction the calle
 ## Why it exists
 
 The EF writer cannot reach every producer that needs atomicity. A producer built on ADO.NET with its
-own dialect over several providers — `Pragmatic.Configuration.Database` is exactly that — cannot hand
+own dialect over several providers (`Pragmatic.Configuration.Database` is exactly that) cannot hand
 the EF writer a `DbContext` on its connection without depending on EF *and* on one specific provider,
 inside a package written to abstract over providers.
 
@@ -24,7 +24,7 @@ await transaction.CommitAsync();
 ```
 
 Entry shaping goes through `AuditEntryPreparer`, the same as every other writer. Skipping it produces
-entries with no segment — which cannot be sealed, and therefore cannot be verified — and with an
+entries with no segment (which cannot be sealed, and therefore cannot be verified) and with an
 unredacted detail.
 
 ## The dialect
