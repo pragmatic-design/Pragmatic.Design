@@ -72,13 +72,13 @@ public sealed class AzureBlobFileStorage(
 Construct the provider through `UseStorage`, or use the `AddAzureBlobStorage` DI helper:
 
 ```csharp
-// Via IPragmaticBuilder — factory registration, everything inline
+// Via IPragmaticBuilder: factory registration, everything inline
 app.UseStorage(sp => new AzureBlobFileStorage(
     new BlobServiceClient(builder.Configuration.GetConnectionString("Storage")),
     new AzureBlobStorageOptions { ContainerPrefix = "myapp-" },
     sp.GetRequiredService<ILogger<AzureBlobFileStorage>>()));
 
-// Via DI helper — register the client (or pass a connection string), then the provider
+// Via DI helper: register the client (or pass a connection string), then the provider
 services.AddSingleton(new BlobServiceClient(connectionString));
 services.AddAzureBlobStorage(new AzureBlobStorageOptions { ContainerPrefix = "myapp-" });
 // One call: services.AddAzureBlobStorage(new AzureBlobStorageOptions(), connectionString);
@@ -158,7 +158,7 @@ public sealed class GoogleCloudFileStorage(
 | `ObjectPrefix` | Optional object-name prefix. Default: empty. |
 | `PublicBaseUrl` | When set, `SaveAsync` returns `{PublicBaseUrl}/{object}` URIs; when `null`, `gs://bucket/object` URIs. |
 | `MaxFileSizeBytes` | Upload size limit in bytes; `0` (default) = no limit. |
-| `UrlSigner` | Optional `UrlSigner` for signed URLs — signing needs a service-account credential; without one, `GetDownloadUrlAsync` throws `NotSupportedException`. |
+| `UrlSigner` | Optional `UrlSigner` for signed URLs. Signing needs a service-account credential; without one, `GetDownloadUrlAsync` throws `NotSupportedException`. |
 
 The application registers the `StorageClient`; `AddGoogleCloudStorage(options)` resolves it:
 
@@ -191,7 +191,7 @@ services.AddSftpStorage(new SftpStorageOptions
 
 `FtpFileStorage` (FluentFTP) supports plain FTP and explicit FTPS. Implements `IFileStorage` and `IFileInfoProvider` -- no signed URLs.
 
-`FtpStorageOptions`: `Host` (**required**), `Port` (default `21`), `Username` (**required**), `Password?`, `UseSsl` (default `false` — set `true` for FTPS), `BasePath` (default `"/"`), `MaxFileSizeBytes` (`0` = no limit).
+`FtpStorageOptions`: `Host` (**required**), `Port` (default `21`), `Username` (**required**), `Password?`, `UseSsl` (default `false`; set `true` for FTPS), `BasePath` (default `"/"`), `MaxFileSizeBytes` (`0` = no limit).
 
 ```csharp
 services.AddFtpStorage(new FtpStorageOptions
@@ -208,7 +208,7 @@ services.AddFtpStorage(new FtpStorageOptions
 
 ## Shipped: Pragmatic.Storage.InMemory
 
-`InMemoryFileStorage` keeps files in a dictionary — for tests and local development, with no filesystem or network. Implements `IFileStorage` and `IFileInfoProvider`.
+`InMemoryFileStorage` keeps files in a dictionary, for tests and local development, with no filesystem or network. Implements `IFileStorage` and `IFileInfoProvider`.
 
 ```csharp
 services.AddInMemoryStorage();

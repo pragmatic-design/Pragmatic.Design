@@ -19,7 +19,7 @@ dotnet add package Pragmatic.Endpoints
 
 ---
 
-## Scenario 1 — free-form tagging
+## Scenario 1: free-form tagging
 
 Users tag their own articles with whatever labels they want.
 
@@ -39,9 +39,9 @@ public partial class Article
 
 That's it. After the next build, the following endpoints exist:
 
-- `POST   /articles/{id}/tags`       — add a tag (body: a bare JSON string, e.g. `"urgent"`)
-- `GET    /articles/{id}/tags`       — list the tags on the article (paged)
-- `DELETE /articles/{id}/tags/{tagId}` — remove
+- `POST   /articles/{id}/tags`: add a tag (body: a bare JSON string, e.g. `"urgent"`)
+- `GET    /articles/{id}/tags`: list the tags on the article (paged)
+- `DELETE /articles/{id}/tags/{tagId}`: remove
 
 Each endpoint is gated on its own permission: `{boundary}.article.tags.add`, `.read` and `.remove`.
 
@@ -63,7 +63,7 @@ Because `AllowCustom = true`, any new value creates a `Tag` row on the fly. Beca
 
 ---
 
-## Scenario 2 — curated taxonomy
+## Scenario 2: curated taxonomy
 
 Moderators maintain a closed set of tags. Users can attach existing tags but cannot create new ones.
 
@@ -99,7 +99,7 @@ Now:
 
 ```bash
 curl -X POST /articles/42/tags -d '"breaking"'   # 201 Created
-curl -X POST /articles/42/tags -d '"nonsense"'   # 404 — not in the curated taxonomy
+curl -X POST /articles/42/tags -d '"nonsense"'   # 404: not in the curated taxonomy
 ```
 
 ### Curated + policy validation
@@ -127,7 +127,7 @@ services.AddScoped<ITagPolicy<Guid>, EditorialTagPolicy>();
 
 ---
 
-## Scenario 3 — shared scope across multiple entities
+## Scenario 3: shared scope across multiple entities
 
 Multiple entity types share the same tag pool. Adding `"launch"` to an article and to a product reuses the same underlying `Tag` row.
 
@@ -176,7 +176,7 @@ foreach (var at in article.Tags)
 ### Paged list via the generated query
 
 The generated `List{Parent}TagsQuery` runs over the junction and projects `{Parent}TagDto`
-(`TagId`, `{Parent}Id`, `Value`, `DisplayValue`, `Scope`, `AddedAt`, `AddedBy`) — this is exactly
+(`TagId`, `{Parent}Id`, `Value`, `DisplayValue`, `Scope`, `AddedAt`, `AddedBy`); this is exactly
 what `GET /articles/{id}/tags` serves.
 
 ```csharp
@@ -193,7 +193,7 @@ foreach (var tag in page.Items)
 
 ```csharp
 [HasTags(CaseSensitive = true)]        // "CSS" and "css" are different tags
-[HasTags(CaseSensitive = false)]       // default — they collapse
+[HasTags(CaseSensitive = false)]       // default: they collapse
 ```
 
 Flip this on for technology tag sets (`C#` vs `c#`, `iOS` vs `ios`) where casing carries meaning.
@@ -210,10 +210,10 @@ By default the generated sub-boundary is `{Parent}Tags`. Override when the namin
 
 ## Next
 
-- [Concepts](concepts.md) — scope, normalisation, usage counter, comparison with Comments
+- [Concepts](concepts.md): scope, normalisation, usage counter, comparison with Comments
 - [Common Mistakes](common-mistakes.md)
 - [Troubleshooting](troubleshooting.md)
 
 Related:
 
-- [`Pragmatic.Comments`](../../Pragmatic.Comments/README.md) — similar trait for rich user-authored content
+- [`Pragmatic.Comments`](../../Pragmatic.Comments/README.md): similar trait for rich user-authored content

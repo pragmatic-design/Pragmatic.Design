@@ -699,7 +699,7 @@ public sealed partial record OutOfStockError : Error
 }
 ```
 
-- **`WriteExtensions` override** -- every `partial` record extending `Error` with custom properties gets a generated `WriteExtensions` that writes each property (`sku`, `requested`) into ProblemDetails extensions. Zero reflection at runtime. Localization itself is driven by `Code`/`MessageKey` and `IErrorMessageResolver` (see [Localization](localization.md)) — no per-type key properties are generated.
+- **`WriteExtensions` override**: every `partial` record extending `Error` with custom properties gets a generated `WriteExtensions` that writes each property (`sku`, `requested`) into ProblemDetails extensions. Zero reflection at runtime. Localization itself is driven by `Code`/`MessageKey` and `IErrorMessageResolver` (see [Localization](localization.md)); no per-type key properties are generated.
 
 Generated files appear under `obj/Debug/net10.0/generated/` in the IDE and are fully debuggable.
 
@@ -802,7 +802,7 @@ null
 
 Built-in error types round-trip out of the box. Register custom error types with `ErrorTypeRegistry.Register<MyError>()` so a `Result<T, IError>` failure deserializes back to the concrete type; unregistered discriminators fall back gracefully to `SerializedError` (code, status code, and title preserved).
 
-Register the typed converters directly: `new ResultJsonConverter<OrderDto, IError>()`, `new VoidResultJsonConverter<IError>()`, `new MaybeJsonConverter<string>()`. For a multi-error result — `Result<T, E1, E2, …>`, which has no fixed-arity converter — declare it with `[assembly: JsonResultContract<Result<T, E1, E2>>]` and the generator emits one, registered in bulk through `json.AddPragmaticResultConverters()`.
+Register the typed converters directly: `new ResultJsonConverter<OrderDto, IError>()`, `new VoidResultJsonConverter<IError>()`, `new MaybeJsonConverter<string>()`. For a multi-error result (`Result<T, E1, E2, …>`, which has no fixed-arity converter), declare it with `[assembly: JsonResultContract<Result<T, E1, E2>>]` and the generator emits one, registered in bulk through `json.AddPragmaticResultConverters()`.
 
 ---
 

@@ -146,7 +146,7 @@ public static class TKeys
 }
 ```
 
-Use it where a property cannot go — a validation rule's `MessageKey` above all:
+Use it where a property cannot go, a validation rule's `MessageKey` above all:
 
 ```csharp
 [GreaterThanOrEqualProperty(nameof(From), MessageKey = TKeys.Validation.LeaveRequest.EndsBeforeItStarts)]
@@ -289,7 +289,7 @@ var german = localizer.WithCulture("de");          // Culture switch
 
 **Use `T` class** for compile-time safe application strings: UI labels, email subjects, notifications.
 Error and validation messages are resolved from the error's `Code` or the issue's message key by the
-`IErrorMessageResolver` — an error carries no text.
+`IErrorMessageResolver`: an error carries no text.
 
 Most applications use both together:
 

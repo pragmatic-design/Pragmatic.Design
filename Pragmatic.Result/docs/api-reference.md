@@ -137,7 +137,7 @@ Same shape as `Result<TValue, TError>` with these differences:
 | `Success(TValue value)` | Accepts `null` by design (`TValue` may be a nullable type where null encodes "success, no value") |
 | `Failure(Error error)` | Throws `ArgumentNullException` on null |
 | Members | `Match` (func/action), `Map`, `Bind`, `TryGetValue`, `TryGetError`, `Deconstruct(out isSuccess, out value, out error)`, full equality |
-| Implicit conversions | `TValue → Result` (null becomes `Success(null)` — no validation), `Error → Result`, `Result → TValue` (throws on failure) |
+| Implicit conversions | `TValue → Result` (null becomes `Success(null)`, no validation), `Error → Result`, `Result → TValue` (throws on failure) |
 
 `Result<TValue>` has no `MapError`, no `MatchAsync` members, and no 2-way `Deconstruct`.
 
@@ -247,7 +247,7 @@ public readonly struct Maybe<T> : IEquatable<Maybe<T>>
 
 ---
 
-## Static Factories — `Result`
+## Static Factories: `Result`
 
 The `Result` static class (`Result.Factories.cs`) bridges exception-throwing code and nullable values into the Result pattern.
 
@@ -303,7 +303,7 @@ Each variant provides:
 | `Success(TValue value)` | Success factory (value-bearing variants) / `Success()` (void variants) |
 | `Failure(TError1 error)` ... `Failure(TErrorN error)` | One typed failure factory per error type |
 | `Failure(IError error)` | Dispatches on the runtime error type |
-| `Match<TResult>(onSuccess, onError1, ..., onErrorN)` | Exhaustive matching — one handler per error type |
+| `Match<TResult>(onSuccess, onError1, ..., onErrorN)` | Exhaustive matching: one handler per error type |
 | `Match<TResult>(onSuccess, Func<IError, TResult> onError)` | Generic error handler when per-type handling isn't needed |
 | `Map<TNewValue>` / `Bind<TNewValue>` | Transformation preserving all error types |
 | Implicit conversions | From `TValue` and from each error type |
@@ -438,7 +438,7 @@ public abstract record Error : IError
 | `Parameters` (virtual) | `IReadOnlyDictionary<string, object>?` for message interpolation |
 | `IsTransient` (virtual) | `false` by default; `true` signals retry may succeed |
 | `RetryAfter` (virtual) | Suggested retry delay; meaningful only when `IsTransient` |
-| `WriteExtensions(IDictionary<string, object?> extensions)` (virtual) | Writes custom properties as ProblemDetails extensions; the source generator overrides it per error type — zero reflection |
+| `WriteExtensions(IDictionary<string, object?> extensions)` (virtual) | Writes custom properties as ProblemDetails extensions; the source generator overrides it per error type, with zero reflection |
 
 ```csharp
 public sealed record OutOfStockError : Error
@@ -474,14 +474,14 @@ Static factories:
 |--------|-------------|
 | `FromErrors(IEnumerable<IError> errors)` | Wraps a pre-filtered error list |
 | `FromFailures<TValue>(params Result<TValue, IError>[] results)` | Collects failures; throws `ArgumentException` if none failed |
-| `From<T1, T2>(r1, r2)` ... `From<T1..T5>(...)` | Returns `AggregateError?` — null when every result succeeded |
+| `From<T1, T2>(r1, r2)` ... `From<T1..T5>(...)` | Returns `AggregateError?`: null when every result succeeded |
 | `FromMany<T>(params Result<T, IError>[] results)` | Same-type variadic variant, returns `AggregateError?` |
 
 ---
 
 ## HTTP Error Types
 
-`Pragmatic.Result.Http` — eight built-in `Error` records with HTTP semantics. Each overrides `WriteExtensions` to expose its properties as ProblemDetails extensions.
+`Pragmatic.Result.Http`: eight built-in `Error` records with HTTP semantics. Each overrides `WriteExtensions` to expose its properties as ProblemDetails extensions.
 
 ### BadRequestError (400)
 
@@ -518,7 +518,7 @@ ForbiddenError.MissingPermissions(["users.read", "users.admin"], PermissionMatch
 ForbiddenError.ActionDenied("delete", resource: "admin/users");
 ```
 
-On the wire a missing permission is the same body whichever layer refuses — the HTTP authorization
+On the wire a missing permission is the same body whichever layer refuses, the HTTP authorization
 policy or the action pipeline:
 
 ```json
@@ -544,7 +544,7 @@ NotFoundError.Create("User", "42");            // Create(string entityType, stri
 NotFoundError.Create("User", userId);          // Create<TId>(string entityType, TId entityId)
 NotFoundError.For("User", "42");               // For(string entityName, string? entityId = null)
 NotFoundError.For("User", userId);             // For<TId>(string entityName, TId entityId)
-NotFoundError.ForAll("User", missingIds);      // ForAll<TId>(string entityName, IEnumerable<TId> entityIds) — every key, comma-separated
+NotFoundError.ForAll("User", missingIds);      // ForAll<TId>(string entityName, IEnumerable<TId> entityIds); every key, comma-separated
 ```
 
 ### ConflictError (409)
@@ -612,11 +612,11 @@ builder.Services.AddPragmaticResult<ResourceErrorMessageResolver>();
 ### Automatic Result Handling
 
 ```csharp
-// Minimal APIs — per group or per endpoint
+// Minimal APIs: per group or per endpoint
 app.MapGroup("api").WithResultHandling();          // RouteGroupBuilder
 app.MapGet("/users/{id}", GetUser).WithResultHandling();  // RouteHandlerBuilder
 
-// Controllers — global filter
+// Controllers: global filter
 builder.Services.AddControllers(opt => opt.Filters.Add<ResultActionFilter>());
 ```
 
@@ -628,7 +628,7 @@ Opt out per endpoint/action or per class with `[SkipResultHandling]`:
 app.MapGet("/raw", [SkipResultHandling] () => GetResult());
 ```
 
-### Manual Conversion — Minimal APIs (`ResultHttpExtensions`)
+### Manual Conversion: Minimal APIs (`ResultHttpExtensions`)
 
 On `Result<TValue, TError>` where `TError : IError`:
 
@@ -646,7 +646,7 @@ On `VoidResult<TError>`:
 | `ToHttpResult(IProblemDetailsFactory factory, int successStatusCode = 204)` | Localized |
 | `ToHttpResult(int successStatusCode = 204)` | Static |
 
-### Manual Conversion — Controllers (`ResultControllerExtensions`)
+### Manual Conversion: Controllers (`ResultControllerExtensions`)
 
 MVC extensions constrain `TError : Error` (not `IError`) and always take the factory:
 
@@ -722,7 +722,7 @@ options.Converters.Add(new MaybeJsonConverter<OrderDto>());
 // Success
 { "isSuccess": true, "value": { "id": 42, "name": "John" } }
 
-// Failure — the error carries a "$errorType" discriminator
+// Failure: the error carries a "$errorType" discriminator
 { "isSuccess": false,
   "error": { "$errorType": "Pragmatic.Result.Http.NotFoundError",
              "code": "NOT_FOUND", "statusCode": 404,
@@ -747,7 +747,7 @@ Maps the `$errorType` discriminator (the concrete type's `Type.FullName`) to a C
 
 ### SerializedError
 
-Concrete `Error` used as a graceful fallback when a discriminator is missing or unregistered on read. Preserves `Code`, `StatusCode`, `Title`, the original discriminator (`OriginalErrorType`), and every extension property (`Extensions`, `[JsonExtensionData]`) — no wire information is lost. An error that round-trips through this carrier loses its CLR type identity; register the type in `ErrorTypeRegistry` to get the concrete type back.
+Concrete `Error` used as a graceful fallback when a discriminator is missing or unregistered on read. Preserves `Code`, `StatusCode`, `Title`, the original discriminator (`OriginalErrorType`), and every extension property (`Extensions`, `[JsonExtensionData]`): no wire information is lost. An error that round-trips through this carrier loses its CLR type identity; register the type in `ErrorTypeRegistry` to get the concrete type back.
 
 ---
 
@@ -765,7 +765,7 @@ builder.Services.AddOpenApi(opt => opt.AddResultTypeSupport());
 |-------------|------|
 | `ResultOpenApiTransformer` (document) | Adds the ProblemDetails schema and error responses to Result-returning operations |
 | `ResultSchemaTransformer` (schema) | Correct schema for Result types (success/failure shape) |
-| `ErrorSchemaEnricher` (schema) | Documents error extension properties — reads `ErrorSchemaRegistry` (AOT-safe), falls back to reflection for unregistered types |
+| `ErrorSchemaEnricher` (schema) | Documents error extension properties: reads `ErrorSchemaRegistry` (AOT-safe), falls back to reflection for unregistered types |
 | `CommonSchemaEnricher` (schema) | Format annotations for common types (Guid, DateTime, ...) |
 
 ### ErrorSchemaRegistry
@@ -800,8 +800,8 @@ Package `Pragmatic.Result.EFCore`, namespace `Pragmatic.Result.EntityFrameworkCo
 | Method | Returns |
 |--------|---------|
 | `SaveChangesAsResultAsync(ct)` | `Task<VoidResult<DbConflictError, DbConstraintError>>` |
-| `SaveChangesWithCountAsResultAsync(ct)` | `Task<Result<int, DbConflictError, DbConstraintError>>` — affected row count on success |
-| `SaveChangesDetailedAsResultAsync(ct)` | `Task<VoidResult<DbConflictError, DbNullConstraintError, DbMaxLengthError, DbNumericOverflowError, DbConstraintError, DbTransientError>>` — uses `DbExceptionParserRegistry.Default` |
+| `SaveChangesWithCountAsResultAsync(ct)` | `Task<Result<int, DbConflictError, DbConstraintError>>`: affected row count on success |
+| `SaveChangesDetailedAsResultAsync(ct)` | `Task<VoidResult<DbConflictError, DbNullConstraintError, DbMaxLengthError, DbNumericOverflowError, DbConstraintError, DbTransientError>>`; uses `DbExceptionParserRegistry.Default` |
 | `SaveChangesDetailedAsResultAsync(DbExceptionParserRegistry parserRegistry, ct)` | Same, with an explicit parser registry |
 
 ```csharp
@@ -884,7 +884,7 @@ public interface IDbExceptionParser
 
 ### IResultBase
 
-Runtime identification of Result types — used by the ASP.NET Core filters to convert return values.
+Runtime identification of Result types, used by the ASP.NET Core filters to convert return values.
 
 ```csharp
 public interface IResultBase
@@ -907,4 +907,4 @@ Package `Pragmatic.Result.Analyzers`.
 
 | ID | Severity | Description |
 |----|----------|-------------|
-| `PRAG0001` | Warning | `Unsafe Result.Value access` — accessing `.Value` without checking `IsSuccess`/`IsFailure` may throw `InvalidOperationException`. Guarded access (if/ternary/pattern matching/early exit), `Match()`, or `TryGetValue()` suppresses it |
+| `PRAG0001` | Warning | `Unsafe Result.Value access`: accessing `.Value` without checking `IsSuccess`/`IsFailure` may throw `InvalidOperationException`. Guarded access (if/ternary/pattern matching/early exit), `Match()`, or `TryGetValue()` suppresses it |

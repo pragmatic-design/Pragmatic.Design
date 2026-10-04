@@ -216,7 +216,7 @@ Deleting a non-existent file is a no-op (does not throw), on every provider. Thi
 
 ### Result-based surface
 
-Each method has a `*AsResultAsync` counterpart that returns `Result<T, IError>` (`VoidResult<IError>` for delete) instead of throwing. The error slot is `IError` — matching the Actions/Mutation path that returns `Result<T, IError>` — and the concrete error types convert implicitly:
+Each method has a `*AsResultAsync` counterpart that returns `Result<T, IError>` (`VoidResult<IError>` for delete) instead of throwing. The error slot is `IError` (matching the Actions/Mutation path that returns `Result<T, IError>`), and the concrete error types convert implicitly:
 
 ```csharp
 public interface IFileStorage { /* the four throwing methods above */ }
@@ -234,7 +234,7 @@ Task<VoidResult<IError>>     DeleteAsResultAsync(Uri fileUri, CancellationToken 
 | `StorageFileNotFoundError` | `STORAGE_FILE_NOT_FOUND` | 404 | `GetAsResultAsync` on a missing file (a `null` stream becomes this error). |
 | `StorageWriteError` | `STORAGE_WRITE_ERROR` | 500 | A provider I/O fault or invalid container/path. Transient-aware: `IsTransient` is set for `IOException` / `TimeoutException`, so a resilience policy can retry. |
 
-**Which surface?** Use `*AsResultAsync` in the framework's action/mutation path — the failure is a value that composes with the rest of the pipeline, no `try`/`catch`, and the error already carries the right status. Use the throwing `IFileStorage` methods for direct, out-of-pipeline use where you handle exceptions yourself; the throwing path signals an oversized upload with `FileSizeLimitExceededException` (a subtype of `InvalidOperationException`). An `OperationCanceledException` is never converted to a failure — it propagates from both surfaces, keeping cancellation distinct from an I/O error.
+**Which surface?** Use `*AsResultAsync` in the framework's action/mutation path: the failure is a value that composes with the rest of the pipeline, no `try`/`catch`, and the error already carries the right status. Use the throwing `IFileStorage` methods for direct, out-of-pipeline use where you handle exceptions yourself; the throwing path signals an oversized upload with `FileSizeLimitExceededException` (a subtype of `InvalidOperationException`). An `OperationCanceledException` is never converted to a failure. It propagates from both surfaces, keeping cancellation distinct from an I/O error.
 
 ### Optional capabilities
 
@@ -243,7 +243,7 @@ Two optional interfaces sit next to `IFileStorage`. It stays at four methods; a 
 | Capability | Method | Providers |
 |------------|--------|-----------|
 | `IFileInfoProvider` | `GetInfoAsync(uri)` → `StoredFileInfo?` (`SizeBytes`, `ContentType`, `LastModified`, `FileUri`); `null` if missing, like `GetAsync` | every shipped provider |
-| `ISignedUrlProvider` | `GetDownloadUrlAsync(uri, expiry)` → `Uri` (a temporary, pre-authenticated download URL) | Azure (SAS), S3/R2 (pre-signed), Google Cloud (signed URL) — **not** LocalDisk, InMemory, SFTP, FTP |
+| `ISignedUrlProvider` | `GetDownloadUrlAsync(uri, expiry)` → `Uri` (a temporary, pre-authenticated download URL) | Azure (SAS), S3/R2 (pre-signed), Google Cloud (signed URL); **not** LocalDisk, InMemory, SFTP, FTP |
 
 A signed URL lets a browser download a private file straight from the backend, so the application never proxies the bytes. Result-based counterparts exist too: `GetInfoAsResultAsync(uri)` → `Result<StoredFileInfo, IError>` and `GetDownloadUrlAsResultAsync(uri, expiry)` → `Result<Uri, IError>`. See [Getting Started](getting-started.md#file-metadata-and-signed-urls) for the endpoint pattern and the Azure/Google credential requirements.
 
@@ -357,13 +357,13 @@ Registration -- either construct the provider through `UseStorage`, or use the `
 DI helper (a connection-string overload registers the `BlobServiceClient` for you):
 
 ```csharp
-// Via IPragmaticBuilder — factory registration
+// Via IPragmaticBuilder: factory registration
 app.UseStorage(sp => new AzureBlobFileStorage(
     new BlobServiceClient(builder.Configuration.GetConnectionString("Storage")),
     new AzureBlobStorageOptions { ContainerPrefix = "myapp-" },
     sp.GetRequiredService<ILogger<AzureBlobFileStorage>>()));
 
-// Via DI helper — pass a connection string and the client is registered too
+// Via DI helper: pass a connection string and the client is registered too
 builder.Services.AddAzureBlobStorage(
     new AzureBlobStorageOptions { ContainerPrefix = "myapp-", MaxFileSizeBytes = 10 * 1024 * 1024 },
     builder.Configuration.GetConnectionString("Storage")!);
@@ -371,7 +371,7 @@ builder.Services.AddAzureBlobStorage(
 
 ### Pragmatic.Storage.S3
 
-Amazon S3 / S3-compatible provider — AWS, Cloudflare R2, MinIO, Wasabi, DigitalOcean Spaces, Backblaze B2. Files are stored as objects with key `{KeyPrefix}{container}/{guid}{extension}` in a single bucket.
+Amazon S3 / S3-compatible provider: AWS, Cloudflare R2, MinIO, Wasabi, DigitalOcean Spaces, Backblaze B2. Files are stored as objects with key `{KeyPrefix}{container}/{guid}{extension}` in a single bucket.
 
 ```csharp
 public sealed class S3FileStorage(
@@ -411,7 +411,7 @@ app.UseStorage(sp => new S3FileStorage(
     },
     sp.GetRequiredService<ILogger<S3FileStorage>>()));
 
-// Or via DI helper — register the client, then the provider
+// Or via DI helper: register the client, then the provider
 builder.Services.AddSingleton<IAmazonS3>(new AmazonS3Client());
 builder.Services.AddS3Storage(new S3StorageOptions { BucketName = "my-app-uploads" });
 ```
@@ -435,7 +435,7 @@ public sealed class GoogleCloudFileStorage(
 | `ObjectPrefix` | Optional object-name prefix (e.g., `"uploads/"`). Default: empty. |
 | `PublicBaseUrl` | When set, `SaveAsync` returns `{PublicBaseUrl}/{object}` URIs; when `null`, it returns `gs://bucket/object` URIs. |
 | `MaxFileSizeBytes` | Maximum accepted upload size in bytes. `0` (default) means no limit. |
-| `UrlSigner` | Optional `UrlSigner` used for signed URLs. Signing needs a service-account credential (a private key), which the plain `StorageClient` does not carry — supply a `UrlSigner` here or set `GOOGLE_APPLICATION_CREDENTIALS`; otherwise `GetDownloadUrlAsync` throws `NotSupportedException`. |
+| `UrlSigner` | Optional `UrlSigner` used for signed URLs. Signing needs a service-account credential (a private key), which the plain `StorageClient` does not carry: supply a `UrlSigner` here or set `GOOGLE_APPLICATION_CREDENTIALS`; otherwise `GetDownloadUrlAsync` throws `NotSupportedException`. |
 
 The application registers the `StorageClient` (typically `StorageClient.Create()`, which picks up application-default credentials); `AddGoogleCloudStorage(options)` resolves it from the container:
 
@@ -502,7 +502,7 @@ builder.Services.AddFtpStorage(new FtpStorageOptions
 
 ### Pragmatic.Storage.InMemory
 
-`InMemoryFileStorage` keeps files in a dictionary — for tests and local development, with no filesystem or network. Implements `IFileStorage` and `IFileInfoProvider`.
+`InMemoryFileStorage` keeps files in a dictionary, for tests and local development, with no filesystem or network. Implements `IFileStorage` and `IFileInfoProvider`.
 
 ```csharp
 builder.Services.AddInMemoryStorage();
@@ -577,14 +577,14 @@ Containers map to different physical structures depending on the provider:
 Direct `IServiceCollection` registration for scenarios where `IPragmaticBuilder` is not available:
 
 ```csharp
-// LocalDiskFileStorage as singleton — no size limit, or with a cap
+// LocalDiskFileStorage as singleton: no size limit, or with a cap
 services.AddLocalDiskStorage(basePath);
 services.AddLocalDiskStorage(basePath, maxFileSizeBytes: 10 * 1024 * 1024);
 
 // InMemoryFileStorage for tests / local dev (Pragmatic.Storage.InMemory)
 services.AddInMemoryStorage();
 
-// Provider helpers — register the SDK client, then the provider
+// Provider helpers: register the SDK client, then the provider
 services.AddSingleton(new BlobServiceClient(connectionString));
 services.AddAzureBlobStorage(new AzureBlobStorageOptions { ContainerPrefix = "myapp-" });
 // ...also AddS3Storage, AddGoogleCloudStorage, AddSftpStorage, AddFtpStorage
@@ -716,7 +716,7 @@ await PragmaticApp.RunAsync(args, app =>
 
 ### Testing
 
-Reference the `Pragmatic.Storage.InMemory` package and register `InMemoryFileStorage` — it backs all four `IFileStorage` methods (and `IFileInfoProvider`) with a dictionary, no filesystem or network:
+Reference the `Pragmatic.Storage.InMemory` package and register `InMemoryFileStorage`; it backs all four `IFileStorage` methods (and `IFileInfoProvider`) with a dictionary, no filesystem or network:
 
 ```csharp
 using Pragmatic.Storage.InMemory;
@@ -724,7 +724,7 @@ using Pragmatic.Storage.InMemory;
 services.AddInMemoryStorage();
 ```
 
-Every `SaveAsync` returns a resolvable URI, `GetAsync`/`ExistsAsync` round-trip it, and `DeleteAsync` is idempotent — an upload endpoint under test behaves as it would in production without touching disk or a cloud account.
+Every `SaveAsync` returns a resolvable URI, `GetAsync`/`ExistsAsync` round-trip it, and `DeleteAsync` is idempotent, so an upload endpoint under test behaves as it would in production without touching disk or a cloud account.
 
 ---
 
