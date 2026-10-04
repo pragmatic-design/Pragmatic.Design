@@ -26,14 +26,14 @@ Declare it with attributes on a `partial` class, and the generator writes the th
 public sealed partial class ManagerRole;
 ```
 
-`DefaultPermissions` is the role's grants plus every included role's — flattened, de-duplicated and ordered —
+`DefaultPermissions` is the role's grants plus every included role's, flattened, de-duplicated and ordered,
 and the role registry lists the same set. A granted constant is resolved through the permission catalogue,
 so the generator's own `LeavePermissions.*` work; one no generator writes is `PRAG1008`. A class that is not
 a top-level `partial` is `PRAG1006`, roles that include each other are `PRAG1007`. An included role can be a
-`[Role]` class or a hand-written `IRole` of the same assembly, or a `[Role]` class of a referenced one — its
+`[Role]` class or a hand-written `IRole` of the same assembly, or a `[Role]` class of a referenced one: its
 attributes are in the metadata; a hand-written role of another assembly cannot be read (`PRAG1009`).
 
-A list held in **another assembly** has no initializer for the build to follow — a referenced assembly is
+A list held in **another assembly** has no initializer for the build to follow: a referenced assembly is
 metadata, and a `static readonly string[]` has no constant value. The assembly that declares it publishes it:
 
 ```csharp
@@ -49,8 +49,8 @@ into that assembly, and the compilation whose role reads the list takes the valu
 marked is `PRAG1015` on the role that reads it: the registry says it cannot tell, instead of listing an empty
 grant while the runtime grants every entry.
 
-A hand-written `IRole` keeps working, and so does inheriting by spreading another role's list —
-`DefaultPermissions => [.. EmployeeRole.DefaultPermissions, "extra"]` — which the role registry lists as the
+A hand-written `IRole` keeps working, and so does inheriting by spreading another role's list
+(`DefaultPermissions => [.. EmployeeRole.DefaultPermissions, "extra"]`), which the role registry lists as the
 union. A spread the generator cannot follow (a method call) is `PRAG1013`:
 
 ```csharp
@@ -282,9 +282,9 @@ public enum AccessRole
 claims.Roles.Add(employee.Role.RoleNameOf());
 ```
 
-The generator writes `AccessRoleNames.RoleNameOf(this AccessRole)` — a switch with one arm per member, each
+The generator writes `AccessRoleNames.RoleNameOf(this AccessRole)`: a switch with one arm per member, each
 answering the role's own `Name` (a `[Role]` class or a hand-written `IRole`). Once any member of an enum declares
-it, every member must: a member without one is `PRAG1014`, an error, and the method is not generated — so a new
+it, every member must: a member without one is `PRAG1014`, an error, and the method is not generated, so a new
 access level cannot reach a sign-in with no role, as it could with a hand-written switch and its
 `ArgumentOutOfRangeException`.
 
@@ -331,7 +331,7 @@ The `roles.pragmatic.json` file provides a declarative way to define additional 
 
 ### Inheritance
 
-Roles can inherit from other roles **of the same file** via the `inherits` array. The SG expands inheritance at compile-time, producing flattened permission sets in the generated code. A role the file does not declare — a code-defined `IRole` included — is not inherited, and is reported; so are roles that inherit each other.
+Roles can inherit from other roles **of the same file** via the `inherits` array. The SG expands inheritance at compile-time, producing flattened permission sets in the generated code. A role the file does not declare (a code-defined `IRole` included) is not inherited, and is reported; so are roles that inherit each other.
 
 ### What Is Reported
 
@@ -343,7 +343,7 @@ The generator reads one file and names it in every diagnostic:
 | `PRAG1011` | A property the format does not have (`"permission"` for `"permissions"`), a value of the wrong kind (`"permissions": "x"`, a number in a list), an `inherits` naming a role the file does not declare, roles that inherit each other | Everything that could be read |
 | `PRAG1012` | A second `roles.pragmatic.json` in the same project | The first file only |
 
-Without these diagnostics each case would be silent — the roles would simply not exist at runtime — or,
+Without these diagnostics each case would be silent (the roles would simply not exist at runtime) or,
 for a value of the wrong kind, the whole generator's output would be lost.
 
 ### Usage
@@ -356,15 +356,15 @@ This calls the SG-generated `RoleSeedingExtensions.SeedFromJson()`, which calls 
 
 ## Custom Permissions -- `[assembly: Permission]`
 
-For operations beyond standard CRUD, declare the permission on the assembly — one line, with what holding it
+For operations beyond standard CRUD, declare the permission on the assembly: one line, with what holding it
 allows and, optionally, the group a role screen lists it under:
 
 ```csharp
 [assembly: Permission("billing.invoice.refund", "Refund a paid invoice", Category = "Billing")]
 ```
 
-The SG adds its constant to the boundary's permissions class (below) — `BillingPermissions.Invoice.Refund`, a
-`const` — and its entry to the generated `PermissionRegistry`, so `IPermissionCatalog.GetAllPermissionsAsync()`
+The SG adds its constant to the boundary's permissions class (below), `BillingPermissions.Invoice.Refund`, a
+`const`, and its entry to the generated `PermissionRegistry`, so `IPermissionCatalog.GetAllPermissionsAsync()`
 lists it with its description and category. A role names the constant like any other:
 
 ```csharp

@@ -416,7 +416,7 @@ Most application code does not need authentication metadata. Use it when:
 - **Token refresh**: check if the token is about to expire (`Authentication.ExpiresAt`)
 - **Audit logging**: record which IdP authenticated the user (`Authentication.Issuer`)
 - **Linking an external identity to a local record**: correlate on `Authentication.ExternalIdentityKey`
-  (the framework does not do this for you — there is no JIT provisioning)
+  (the framework does not do this for you: there is no JIT provisioning)
 - **Protocol-aware logic**: behave differently for OIDC vs API key (`Authentication.Protocol`)
 
 ---
@@ -470,7 +470,7 @@ This is registered as scoped by `AddPragmaticIdentity()` and is the default for 
 
 ## The Package Architecture
 
-Pragmatic.Identity is split into five core packages organized in layers, plus three integration packages — OIDC, Keycloak and security auditing — described in [Packages](/modules/identity/packages/#integration-packages). Each layer adds capabilities without requiring the layers above it.
+Pragmatic.Identity is split into five core packages organized in layers, plus three integration packages (OIDC, Keycloak and security auditing) described in [Packages](/modules/identity/packages/#integration-packages). Each layer adds capabilities without requiring the layers above it.
 
 ```
 Layer 0 (Abstractions)     Layer 1 (Core)          Layer 2 (ASP.NET)       Layer 3 (Features)
@@ -530,7 +530,7 @@ The ASP.NET Core bridge. Maps `HttpContext.User` to `ICurrentUser`.
 | `NoOpAuthenticationHandler` | Development auth handler: trusts identities from earlier middleware |
 | `PragmaticPermissionHandler` | `AuthorizationHandler` delegating to `IPermissionChecker` |
 
-⚠️ `PragmaticPermissionRequirement` and `PermissionMode` — what the handler above evaluates — are
+⚠️ `PragmaticPermissionRequirement` and `PermissionMode` (what the handler above evaluates) are
 **not** in this package: they ship with `Pragmatic.Endpoints.AspNetCore`, so a boundary declaring an
 endpoint puts the requirement in its policy without referencing anything of Identity's.
 
@@ -561,7 +561,7 @@ The package defines `ILocalIdentityStore` which you must implement (typically vi
 
 **Token delivery is out-of-band.** `RequestPasswordReset` and `RequestEmailVerification` never return the
 token; they hand the plaintext to `IPasswordResetNotifier` / `IEmailVerificationNotifier`. The registered
-defaults (`LogOnly*`) intentionally **do not deliver** — they log a warning so the feature fails loud.
+defaults (`LogOnly*`) intentionally **do not deliver**: they log a warning so the feature fails loud.
 Register a real email/SMS-backed notifier in production, or reset/verification links never reach users.
 
 Security features: BCrypt adaptive hashing, account lockout, reset/verification token hashing, timing-safe comparison with equal-cost not-found paths, email existence hiding, security-stamp rotation on password change, and optional `RequireEmailVerification` login gating.

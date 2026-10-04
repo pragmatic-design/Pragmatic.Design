@@ -148,7 +148,7 @@ authz.UseRolePermissionStore<EfRolePermissionStore>();
 
 `GroupExpansionProvider` depends on **both** `IGroupRoleStore` and `IRolePermissionStore` (group → role →
 permission). If groups are mapped (or a custom group store is registered) but no role store exists at all,
-`AddPragmaticAuthorization` **throws `InvalidOperationException` at startup** with an actionable message —
+`AddPragmaticAuthorization` **throws `InvalidOperationException` at startup** with an actionable message:
 without a role store every group lookup would silently resolve to zero permissions, which reads like an
 authorization bug. Map at least one role, or register a custom `IRolePermissionStore`, before enabling
 groups.
@@ -213,7 +213,7 @@ public interface ITenantGroupRoleStore : IGroupRoleStore
 
 These interfaces support runtime RBAC management (creating roles and permissions at runtime via admin UIs). They are consumed by the catalog system and the optional `Pragmatic.Authorization.Management` package.
 
-> ⚠️ They feed the **catalog** — what exists, what an admin screen lists. They are not what a request
+> ⚠️ They feed the **catalog**: what exists, what an admin screen lists. They are not what a request
 > is authorized against. What a request is authorized against, besides the identity's roles and
 > `IRolePermissionStore`, is the management package's own assignments: its `ManagedRolePermissionProvider`
 > reads `UserRoleAssignment` and `DynamicRolePermission` on every resolution, and its assign and revoke

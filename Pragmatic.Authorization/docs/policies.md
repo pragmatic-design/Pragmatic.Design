@@ -88,7 +88,7 @@ ResourcePolicy.IsAuthenticated()
 
 ### RequiresMfa
 
-Checks `ICurrentUser.Authentication.IsMfaAuthenticated` — for the ASP.NET Core context, an `amr`
+Checks `ICurrentUser.Authentication.IsMfaAuthenticated`: for the ASP.NET Core context, an `amr`
 claim equal to `mfa`. Singleton instance:
 
 ```csharp

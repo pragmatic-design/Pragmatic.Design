@@ -1,15 +1,15 @@
 # Typed test client (`Api.*`)
 
 The Pragmatic.Testing source generator emits a **typed API client** into your test project,
-with routes and verbs resolved **at compile time** — rename a route and every test that calls
+with routes and verbs resolved **at compile time**: rename a route and every test that calls
 it breaks at build, not at runtime.
 
 ## Two tiers
 
 | Tier | Where | What |
 |------|-------|------|
-| 1 — `ApiRoutes` | app assembly (unified SG) | per-boundary route constants (`{Name}Method`, `{Name}Template`) + typed URL builders (`ApiRoutes.Orders.GetOrder(id)`) |
-| 2 — `Api` | test project (Testing SG) | `Api.{Boundary}.{Name}Async(client, ...)` returning `ApiResponse` / `ApiResponse<T>` |
+| 1 (`ApiRoutes`) | app assembly (unified SG) | per-boundary route constants (`{Name}Method`, `{Name}Template`) + typed URL builders (`ApiRoutes.Orders.GetOrder(id)`) |
+| 2 (`Api`) | test project (Testing SG) | `Api.{Boundary}.{Name}Async(client, ...)` returning `ApiResponse` / `ApiResponse<T>` |
 
 Tier 2 correlates the app's `ApiRoutes` builders (typed parameters) with its
 `[assembly: PragmaticEndpointContract]` attributes (verb, body, response type) by
@@ -31,14 +31,14 @@ The test project references the app and both Testing pieces:
 using Pragmatic.Tests.Generated;   // generated Api client
 using Pragmatic.Testing;           // ApiResponse, assertions, PragmaticJson
 
-// POST with body (anonymous object or typed DTO — serialized with host conventions)
+// POST with body (anonymous object or typed DTO, serialized with host conventions)
 var created = await Api.Booking.CreateGuestAsync(Client, new
 {
     firstName = "Ada", lastName = "Lovelace", email = "ada@example.com"
 });
 created.Raw.ShouldBeCreated();
 
-// GET by id — URL built from typed parameters, response deserialized lazily
+// GET by id: URL built from typed parameters, response deserialized lazily
 var fetched = await Api.Guests.GetGuestAsync(Client, guestId);
 var dto = await fetched.ReadAsync();   // ApiResponse<GuestDto> → GuestDto
 
@@ -51,7 +51,7 @@ var url = ApiRoutes.Guests.GetGuest(guestId);
 - **Body parameter is `object`**: anonymous objects are idiomatic in tests; typed DTO
   instances work too (serialization is by runtime type, `PragmaticJson.Options`).
 - **Entity-returning mutations**: generated entities have internal setters, so
-  `ReadAsync<Entity>()` cannot populate them — read `ReadBodyAsync()` and parse the JSON
+  `ReadAsync<Entity>()` cannot populate them; read `ReadBodyAsync()` and parse the JSON
   (DTO-returning endpoints deserialize fine).
 - **SSE endpoints are skipped**: streaming responses are consumed with
   `System.Net.ServerSentEvents.SseParser` over the raw stream.

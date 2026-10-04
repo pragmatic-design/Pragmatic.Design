@@ -23,7 +23,7 @@ Database-backed authorization with EF Core: temporal role/permission stores and 
 > ```
 >
 > The EF stores (`EfRolePermissionStore`, `EfGroupRoleStore`) and the temporal entities documented
-> below do not need to know the user type. **There is no JIT provisioning** — creating a local
+> below do not need to know the user type. **There is no JIT provisioning**: creating a local
 > record on first external login is not in `LocalIdentityPackage`. If it is added, it will be
 > package-shaped, never an inheritance base.
 
@@ -205,17 +205,17 @@ public sealed class EmployeeResolver(IReadRepository<Employee> repository, ICurr
 }
 ```
 
-- **The match.** `MatchProperty` names the entity member compared with the caller — by default
+- **The match.** `MatchProperty` names the entity member compared with the caller: by default
   `ExternalIdentityKey`, on the entity or on its `IdentityRecord` navigation. With `MatchClaim = "sub"`
   and the default key, the caller's side is `ICurrentUser.Authentication.ExternalIdentityKey`; any other
   claim is compared as it is.
 - **It reads through `IReadRepository<TUser>`**, not a `DbContext`: the resolver lives in the module, and
   the boundary's context is generated in the host.
 - **By a given key.** `FindByIdentityKeyAsync(key)` is the same match for a key the caller holds rather
-  than the current user's — what an `IUserClaimsContributor` does for the account being signed in, when
+  than the current user's: what an `IUserClaimsContributor` does for the account being signed in, when
   nobody is authenticated yet.
-- **Registration.** It is registered like any `[Service]` of the module — scoped, published to the host
-  through the module's DI metadata — when the entity is public (the host names it from its own
+- **Registration.** It is registered like any `[Service]` of the module (scoped, published to the host
+  through the module's DI metadata) when the entity is public (the host names it from its own
   assembly). So an action, a mutation or a service takes it as a dependency, a field included:
 
   ```csharp
@@ -228,8 +228,8 @@ public sealed class EmployeeResolver(IReadRepository<Employee> repository, ICurr
   registers it, with `TryAdd`, for a container built without the module's registration.
 
 **A query reads it with `[FromCurrentUser(member)]`.** `[FromCurrentUser(nameof(Employee.Id))]` on a
-`[Query]` property makes the query's generated invoker construct the resolver — the generator knows
-its constructor, so it does not ask DI for it — resolve the caller's entity after validation and the
+`[Query]` property makes the query's generated invoker construct the resolver (the generator knows
+its constructor, so it does not ask DI for it), resolve the caller's entity after validation and the
 permission check, and write that member into the property before the read. No entity is 404, no
 caller is 401. The member form needs the `[PragmaticUser]` entity in the same compilation as the query,
 and this package referenced; otherwise `PRAG0731` says why. The whole form:
@@ -240,7 +240,7 @@ and this package referenced; otherwise `PRAG0731` says why. The whole form:
 Put `[UsePackage<LocalIdentityPackage>]` on the host module: the generator registers the EF stores
 and composes the identity entities into the boundary DbContext.
 
-For direct DI registration — a test host, or an application not using the package:
+For direct DI registration (a test host, or an application not using the package):
 
 ```csharp
 services.AddPragmaticIdentityPersistence();
@@ -350,7 +350,7 @@ This uses `ICacheStack` (via `CacheCategories.Permissions` category) with:
 ### Cache Invalidation
 
 When temporal role/permission mappings change (e.g., a `ValidTo` is set to revoke early), invalidate the
-affected cache entries through `IPermissionCacheInvalidator` — it targets the tags above so you never
+affected cache entries through `IPermissionCacheInvalidator`: it targets the tags above so you never
 enumerate users by hand:
 
 ```csharp

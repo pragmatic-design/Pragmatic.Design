@@ -1,6 +1,6 @@
 # Package Architecture
 
-The Pragmatic.Identity stack is split into five core packages, each with a clear responsibility and minimal dependencies, plus three integration packages (OIDC, Keycloak, security auditing — see [Integration Packages](#integration-packages)). This document describes each package in detail.
+The Pragmatic.Identity stack is split into five core packages, each with a clear responsibility and minimal dependencies, plus three integration packages (OIDC, Keycloak, security auditing; see [Integration Packages](#integration-packages)). This document describes each package in detail.
 
 ## Layer Diagram
 
@@ -74,8 +74,8 @@ The ASP.NET Core bridge. Maps `HttpContext.User` (a `ClaimsPrincipal`) to the Pr
 | `PragmaticPermissionHandler` | `AuthorizationHandler` that delegates permission checks to `IPermissionChecker`. |
 
 ⚠️ The requirement it handles, `PragmaticPermissionRequirement`, and its `PermissionMode` live in
-**`Pragmatic.Endpoints.AspNetCore`**. What an endpoint requires is declared where the endpoint is —
-every boundary with an `[Endpoint]` already has that package — and only the evaluation, which needs
+**`Pragmatic.Endpoints.AspNetCore`**. What an endpoint requires is declared where the endpoint is
+(every boundary with an `[Endpoint]` already has that package), and only the evaluation, which needs
 `IPermissionChecker` resolved from the container, is host-side and lives here.
 
 #### DI Registration
@@ -134,7 +134,7 @@ Self-hosted identity provider. Manages local credentials (email + password) with
 | `RequestEmailVerification` | `VoidDomainAction` | `Email` | void | (none -- never reveals email existence/state) |
 | `ConfirmEmail` | `VoidDomainAction` | `Email`, `Token` | void | `InvalidEmailVerificationTokenError` |
 
-> `ChangePassword` is gated by `[RequirePermission(LocalIdentityPermissions.ChangePassword)]` — it acts
+> `ChangePassword` is gated by `[RequirePermission(LocalIdentityPermissions.ChangePassword)]`: it acts
 > on the currently authenticated identity (resolved from `ICurrentUser.Authentication.ExternalIdentityKey`).
 >
 > `RequestPasswordReset` and `RequestEmailVerification` **do not return the token**. They generate a
@@ -147,12 +147,12 @@ Self-hosted identity provider. Manages local credentials (email + password) with
 
 | Interface | Default Implementation | Description |
 |-----------|----------------------|-------------|
-| `ILocalIdentityStore` | Generated | Loads and saves the `LocalIdentity` owned by the `[PragmaticUser]` entity — the generator writes `{User}.LocalIdentityStore` when the project references `Pragmatic.Persistence.EFCore`. A class of your own implementing the interface replaces it. |
+| `ILocalIdentityStore` | Generated | Loads and saves the `LocalIdentity` owned by the `[PragmaticUser]` entity; the generator writes `{User}.LocalIdentityStore` when the project references `Pragmatic.Persistence.EFCore`. A class of your own implementing the interface replaces it. |
 | `IPasswordHasher` | `BcryptPasswordHasher` | BCrypt with configurable work factor (default: 12). |
 | `ISecurityTokenService` | `HmacSecurityTokenService` | SHA-256 based token generation and verification. |
 | `IPasswordPolicy` | `DefaultPasswordPolicy` | Minimum length validation (default: 8 chars). Replace for complexity/history/breach checks. |
-| `IPasswordResetNotifier` | `LogOnlyPasswordResetNotifier` | Delivers the reset token out-of-band. **The default does NOT deliver** — it logs a warning so a misconfigured app fails loud. Register a real email/SMS notifier in production. |
-| `IEmailVerificationNotifier` | `LogOnlyEmailVerificationNotifier` | Delivers the email-verification token out-of-band. Same **log-only, non-delivering** default — replace in production. |
+| `IPasswordResetNotifier` | `LogOnlyPasswordResetNotifier` | Delivers the reset token out-of-band. **The default does NOT deliver**: it logs a warning so a misconfigured app fails loud. Register a real email/SMS notifier in production. |
+| `IEmailVerificationNotifier` | `LogOnlyEmailVerificationNotifier` | Delivers the email-verification token out-of-band. Same **log-only, non-delivering** default; replace in production. |
 
 #### LocalIdentity Entity
 
@@ -320,7 +320,7 @@ Database-backed authorization stores with temporal validity. See [Persistence](p
 - You want temporal authorization (permissions that expire or activate at specific times).
 - You are building an admin panel for role/permission management.
 
-JIT provisioning — creating a local record on first external login — is **not** in this package, or in
+JIT provisioning (creating a local record on first external login) is **not** in this package, or in
 any other (see [Persistence](persistence.md)).
 
 ## Integration Packages
