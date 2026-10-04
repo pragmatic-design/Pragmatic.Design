@@ -9,7 +9,7 @@ namespace Pragmatic.SourceGenerator.Features.Messaging.Templates;
 ///     resilience (retry, circuit breaker), idempotency, and logging around the handler's HandleAsync.
 ///     Conditionally includes cross-cutting concerns based on DetectedFeatures.
 /// </summary>
-internal sealed class HandlerPipelineTemplate : CSharpTemplate
+internal sealed class HandlerPipelineTemplate : LoggingTemplate
 {
     private readonly MessageHandlerModel _model;
 
@@ -563,55 +563,67 @@ internal sealed class HandlerPipelineTemplate : CSharpTemplate
         AppendLine("await next().ConfigureAwait(false);");
     }
 
-    // ── LoggerMessage partials ──
+    // ── Log methods ──
+
+    private static readonly (string Type, string Name)[] MessageAndHandler =
+        [("string", "messageName"), ("string", "handlerName")];
 
     private void RenderLoggerMessages()
     {
-        AppendLine("[LoggerMessage(Level = LogLevel.Debug,");
-        AppendLine("    Message = \"Starting handler {HandlerName} for message {MessageName} (id: {MessageId})\")]");
-        AppendLine("partial void LogHandlerStarted(string messageName, string handlerName, string messageId);");
+        RenderLogMethod("LogHandlerStarted", "Debug",
+            "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})",
+            [..MessageAndHandler, ("string", "messageId")],
+            ["handlerName", "messageName", "messageId"]);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Debug,");
-        AppendLine("    Message = \"Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms\")]");
-        AppendLine("partial void LogHandlerCompleted(string messageName, string handlerName, double durationMs);");
+        RenderLogMethod("LogHandlerCompleted", "Debug",
+            "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms",
+            [..MessageAndHandler, ("double", "durationMs")],
+            ["handlerName", "messageName", "durationMs"]);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Error,");
-        AppendLine("    Message = \"Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})\")]");
-        AppendLine("partial void LogHandlerFailed(string messageName, string handlerName, int retryCount, Exception ex);");
+        RenderLogMethod("LogHandlerFailed", "Error",
+            "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})",
+            [..MessageAndHandler, ("int", "retryCount")],
+            ["handlerName", "messageName", "retryCount"],
+            exception: "ex");
         AppendLine();
 
         // Idempotency
-        AppendLine("[LoggerMessage(Level = LogLevel.Debug,");
-        AppendLine("    Message = \"Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})\")]");
-        AppendLine("partial void LogDuplicateSkipped(string messageName, string handlerName, string messageId);");
+        RenderLogMethod("LogDuplicateSkipped", "Debug",
+            "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})",
+            [..MessageAndHandler, ("string", "messageId")],
+            ["messageName", "handlerName", "messageId"]);
 
         // Retry
         if (_model.HasRetry)
         {
             AppendLine();
-            AppendLine("[LoggerMessage(Level = LogLevel.Warning,");
-            AppendLine("    Message = \"Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms\")]");
-            AppendLine("partial void LogRetryAttempt(string messageName, string handlerName, int attempt, int delayMs, Exception ex);");
+            RenderLogMethod("LogRetryAttempt", "Warning",
+                "Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms",
+                [..MessageAndHandler, ("int", "attempt"), ("int", "delayMs")],
+                ["handlerName", "messageName", "attempt", "delayMs"],
+                exception: "ex");
         }
 
         // Circuit breaker
         if (_model.HasCircuitBreaker)
         {
             AppendLine();
-            AppendLine("[LoggerMessage(Level = LogLevel.Warning,");
-            AppendLine("    Message = \"Circuit breaker OPEN for handler {HandlerName}, rejecting {MessageName}\")]");
-            AppendLine("partial void LogCircuitOpen(string messageName, string handlerName);");
+            RenderLogMethod("LogCircuitOpen", "Warning",
+                "Circuit breaker OPEN for handler {HandlerName}, rejecting {MessageName}",
+                MessageAndHandler,
+                ["handlerName", "messageName"]);
         }
 
         // Redelivery
         if (_model.HasRedelivery)
         {
             AppendLine();
-            AppendLine("[LoggerMessage(Level = LogLevel.Warning,");
-            AppendLine("    Message = \"Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}\")]");
-            AppendLine("partial void LogRedeliveryScheduled(string messageName, string handlerName, int redelivery, global::System.TimeSpan delay);");
+            RenderLogMethod("LogRedeliveryScheduled", "Warning",
+                "Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}",
+                [..MessageAndHandler, ("int", "redelivery"), ("global::System.TimeSpan", "delay")],
+                ["redelivery", "messageName", "handlerName", "delay"]);
         }
     }
 }

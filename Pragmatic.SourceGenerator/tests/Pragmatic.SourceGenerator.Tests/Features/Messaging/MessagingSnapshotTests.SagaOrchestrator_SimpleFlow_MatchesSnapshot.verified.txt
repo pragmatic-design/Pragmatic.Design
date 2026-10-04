@@ -285,41 +285,59 @@ public partial class OrderSaga
             }
         }
         
-        [LoggerMessage(Level = LogLevel.Information,
-            Message = "Saga {SagaType} starting for correlation {CorrelationId}")]
-        partial void LogSagaStarting(string sagaType, string correlationId);
+        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaStarting =
+            LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSagaStarting"), "Saga {SagaType} starting for correlation {CorrelationId}");
         
-        [LoggerMessage(Level = LogLevel.Debug,
-            Message = "Saga {SagaType} executing step {StepName} in state {CurrentState}")]
-        partial void LogSagaStepExecuting(string sagaType, string stepName, string currentState);
+        private void LogSagaStarting(string sagaType, string correlationId)
+            => __logSagaStarting(_logger, sagaType, correlationId, null);
         
-        [LoggerMessage(Level = LogLevel.Error,
-            Message = "Saga {SagaType} step {StepName} failed")]
-        partial void LogSagaStepFailed(string sagaType, string stepName, Exception ex);
+        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaStepExecuting =
+            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogSagaStepExecuting"), "Saga {SagaType} executing step {StepName} in state {CurrentState}");
         
-        [LoggerMessage(Level = LogLevel.Information,
-            Message = "Saga {SagaType} step {StepName} rejected: {Reason}")]
-        partial void LogSagaStepRejected(string sagaType, string stepName, string reason);
+        private void LogSagaStepExecuting(string sagaType, string stepName, string currentState)
+            => __logSagaStepExecuting(_logger, sagaType, stepName, currentState, null);
         
-        [LoggerMessage(Level = LogLevel.Information,
-            Message = "Saga {SagaType} compensated step {StepName}")]
-        partial void LogSagaCompensated(string sagaType, string stepName);
+        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaStepFailed =
+            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(0, "LogSagaStepFailed"), "Saga {SagaType} step {StepName} failed");
         
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null")]
-        partial void LogSagaCompensationSkipped(string sagaType, string stepName);
+        private void LogSagaStepFailed(string sagaType, string stepName, global::System.Exception ex)
+            => __logSagaStepFailed(_logger, sagaType, stepName, ex);
         
-        [LoggerMessage(Level = LogLevel.Error,
-            Message = "Saga {SagaType} compensator for step {StepName} threw — continuing chain")]
-        partial void LogSagaCompensationFailed(string sagaType, string stepName, Exception ex);
+        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaStepRejected =
+            LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(0, "LogSagaStepRejected"), "Saga {SagaType} step {StepName} rejected: {Reason}");
         
-        [LoggerMessage(Level = LogLevel.Warning,
-            Message = "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain")]
-        partial void LogSagaTimedOut(string sagaType, string correlationId, string state);
+        private void LogSagaStepRejected(string sagaType, string stepName, string reason)
+            => __logSagaStepRejected(_logger, sagaType, stepName, reason, null);
         
-        [LoggerMessage(Level = LogLevel.Information,
-            Message = "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})")]
-        partial void LogSagaConflictRetrying(string sagaType, string correlationId, int attempt);
+        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensated =
+            LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSagaCompensated"), "Saga {SagaType} compensated step {StepName}");
+        
+        private void LogSagaCompensated(string sagaType, string stepName)
+            => __logSagaCompensated(_logger, sagaType, stepName, null);
+        
+        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensationSkipped =
+            LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(0, "LogSagaCompensationSkipped"), "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null");
+        
+        private void LogSagaCompensationSkipped(string sagaType, string stepName)
+            => __logSagaCompensationSkipped(_logger, sagaType, stepName, null);
+        
+        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensationFailed =
+            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(0, "LogSagaCompensationFailed"), "Saga {SagaType} compensator for step {StepName} threw — continuing chain");
+        
+        private void LogSagaCompensationFailed(string sagaType, string stepName, global::System.Exception ex)
+            => __logSagaCompensationFailed(_logger, sagaType, stepName, ex);
+        
+        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaTimedOut =
+            LoggerMessage.Define<string, string, string>(LogLevel.Warning, new EventId(0, "LogSagaTimedOut"), "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain");
+        
+        private void LogSagaTimedOut(string sagaType, string correlationId, string state)
+            => __logSagaTimedOut(_logger, sagaType, correlationId, state, null);
+        
+        private static readonly global::System.Action<ILogger, string, string, int, global::System.Exception?> __logSagaConflictRetrying =
+            LoggerMessage.Define<string, string, int>(LogLevel.Information, new EventId(0, "LogSagaConflictRetrying"), "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})");
+        
+        private void LogSagaConflictRetrying(string sagaType, string correlationId, int attempt)
+            => __logSagaConflictRetrying(_logger, sagaType, correlationId, attempt, null);
     }
     
 }

@@ -57,8 +57,9 @@ internal sealed partial class SagaOrchestratorTemplate
 
     private void RenderConflictLoggerMessage()
     {
-        AppendLine("[LoggerMessage(Level = LogLevel.Information,");
-        AppendLine("    Message = \"Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})\")]");
-        AppendLine("partial void LogSagaConflictRetrying(string sagaType, string correlationId, int attempt);");
+        RenderLogMethod("LogSagaConflictRetrying", "Information",
+            "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})",
+            [("string", "sagaType"), ("string", "correlationId"), ("int", "attempt")],
+            ["sagaType", "correlationId", "attempt"]);
     }
 }

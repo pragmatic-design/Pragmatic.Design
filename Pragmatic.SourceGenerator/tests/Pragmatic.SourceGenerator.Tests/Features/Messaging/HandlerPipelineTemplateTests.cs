@@ -75,7 +75,10 @@ public class HandlerPipelineTemplateTests
         var model = BuildModel("MyHandler");
         var source = new HandlerPipelineTemplate(model).RenderOutput().Text;
 
-        source.Should().Contain("[LoggerMessage");
+        // Written out with a body: the logging generator never sees this output, so a
+        // [LoggerMessage] partial would stay bodiless and every call to it would be compiled away.
+        source.Should().NotContain("[LoggerMessage");
+        source.Should().Contain("LoggerMessage.Define<");
         source.Should().Contain("LogHandlerStarted");
         source.Should().Contain("LogHandlerCompleted");
         source.Should().Contain("LogHandlerFailed");

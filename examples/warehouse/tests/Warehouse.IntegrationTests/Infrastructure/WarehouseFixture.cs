@@ -284,8 +284,8 @@ public sealed class WarehouseFixture : IAsyncLifetime
     ///     A second Orders instance on its own port, connected where no Stock instance listens: what
     ///     placing an order meets when Stock is down. The caller disposes it.
     /// </summary>
-    internal ServiceHost<OrdersHost> OrdersWithNobodyToAnswer()
-        => new ServiceHost<OrdersHost>(OrdersSettings(_rabbit.NobodyAnswersConnectionString)).Start();
+    internal ServiceHost<OrdersHost> OrdersWithNobodyToAnswer(Action<IServiceCollection>? services = null)
+        => new ServiceHost<OrdersHost>(OrdersSettings(_rabbit.NobodyAnswersConnectionString), services).Start();
 
     private Dictionary<string, string?> OrdersSettings(string broker)
     {
