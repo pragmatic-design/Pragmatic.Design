@@ -7,7 +7,7 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <!-- netstandard2.0 Roslyn component: the runtime-lib default IsAotCompatible=true is meaningless here and raises NETSDK1210 -->
     <IsAotCompatible>false</IsAotCompatible>
-    <Description>Roslyn code fixers for Pragmatic.Persistence — IDE quick-fixes for entity usage diagnostics</Description>
+    <Description>Roslyn code fixers for Pragmatic.Persistence: IDE quick-fixes for entity usage diagnostics</Description>
     <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Claim check pattern for Pragmatic.Messaging — payloads above a threshold move to Pragmatic.Storage (local/Azure/S3) and messages carry only the reference.</Description>
+    <Description>Claim check pattern for Pragmatic.Messaging: payloads above a threshold move to Pragmatic.Storage (local/Azure/S3) and messages carry only the reference.</Description>
     <PackageTags>messaging;claim-check;large-payloads;storage</PackageTags>
   </PropertyGroup>
 

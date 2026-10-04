@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>PostgreSQL LISTEN/NOTIFY push notifications for Pragmatic.Configuration.Database — low-latency native watch (with poll reconcile), including DELETEs.</Description>
+    <Description>PostgreSQL LISTEN/NOTIFY push notifications for Pragmatic.Configuration.Database: low-latency native watch (with poll reconcile), including DELETEs.</Description>
     <PackageTags>configuration;database;postgresql;listen;notify;watch;hot-reload</PackageTags>
   </PropertyGroup>
 

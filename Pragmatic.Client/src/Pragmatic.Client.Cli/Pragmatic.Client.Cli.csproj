@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>Pragmatic.Design client generator CLI — emits a TypeScript client (types, errors, fetch client, paging) from a compile-time PragmaticManifest.json.</Description>
+    <Description>Pragmatic.Design client generator CLI: emits a TypeScript client (types, errors, fetch client, paging) from a compile-time PragmaticManifest.json.</Description>
     <PackageTags>pragmatic;client;typescript;codegen;manifest</PackageTags>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>pragmatic-client</ToolCommandName>

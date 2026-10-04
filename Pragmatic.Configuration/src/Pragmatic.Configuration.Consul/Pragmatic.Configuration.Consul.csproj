@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>HashiCorp Consul backend for Pragmatic.Configuration — configuration via the Consul KV store.</Description>
+    <Description>HashiCorp Consul backend for Pragmatic.Configuration: configuration via the Consul KV store.</Description>
     <PackageTags>configuration;consul;hashicorp;kv;service-discovery</PackageTags>
   </PropertyGroup>
 

@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Pragmatic.Comments</RootNamespace>
-    <Description>Comment trait plugin for Pragmatic.Design — adds [HasComments] attribute for auto-generated comment entities, actions, and endpoints via source generation.</Description>
+    <Description>Comment trait plugin for Pragmatic.Design: adds [HasComments] attribute for auto-generated comment entities, actions, and endpoints via source generation.</Description>
     <PackageTags>pragmatic;comments;trait;source-generator</PackageTags>
   </PropertyGroup>
 

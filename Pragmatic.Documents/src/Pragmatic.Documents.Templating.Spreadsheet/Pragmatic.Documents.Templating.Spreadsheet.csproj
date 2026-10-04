@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>DataSourceCatalog integration for XLSX and CSV — file-based and stream-based providers.</Description>
+    <Description>DataSourceCatalog integration for XLSX and CSV: file-based and stream-based providers.</Description>
     <PackageTags>datasource;xlsx;csv;templating;spreadsheet</PackageTags>
   </PropertyGroup>
 

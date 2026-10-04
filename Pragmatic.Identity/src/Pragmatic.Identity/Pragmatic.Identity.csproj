@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Identity runtime for the Pragmatic.Design ecosystem. Provides SystemUser, identity options, and claim mapping configuration — no ASP.NET Core dependency.</Description>
+    <Description>Identity runtime for the Pragmatic.Design ecosystem. Provides SystemUser, identity options, and claim mapping configuration, with no ASP.NET Core dependency.</Description>
     <PackageTags>identity;currentuser;authentication;claims</PackageTags>
   </PropertyGroup>
 

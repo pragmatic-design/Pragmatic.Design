@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Pragmatic.SourceGenerator</RootNamespace>
-    <Description>Unified Roslyn source generator powering the Pragmatic.Design ecosystem — detects referenced Pragmatic.* modules and generates invokers, registrations, mappings, metadata, and DI wiring.</Description>
+    <Description>Unified Roslyn source generator powering the Pragmatic.Design ecosystem: detects referenced Pragmatic.* modules and generates invokers, registrations, mappings, metadata, and DI wiring.</Description>
     <PackageTags>source-generator;roslyn;incremental-generator;codegen;pragmatic</PackageTags>
     <!-- RS2008: Release tracking not required for unified generator -->
     <NoWarn>$(NoWarn);RS1032;RS2008</NoWarn>

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>OpenAPI enrichment for Pragmatic.Design — typed errors, permissions, validation constraints from compile-time manifest.</Description>
+    <Description>OpenAPI enrichment for Pragmatic.Design: typed errors, permissions, validation constraints from compile-time manifest.</Description>
     <PackageTags>openapi;swagger;pragmatic;typed-errors;permissions</PackageTags>
   </PropertyGroup>
 

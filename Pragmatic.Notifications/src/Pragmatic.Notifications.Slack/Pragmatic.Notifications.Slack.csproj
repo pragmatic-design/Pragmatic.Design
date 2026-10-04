@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Slack channel for Pragmatic.Notifications. Delivers notifications to Slack incoming webhooks — no SDK, plain HTTP.</Description>
+    <Description>Slack channel for Pragmatic.Notifications. Delivers notifications to Slack incoming webhooks over plain HTTP, with no SDK.</Description>
     <PackageTags>notifications;slack;webhook;alerts;aot</PackageTags>
   </PropertyGroup>
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>SQL transport for Pragmatic.Messaging — durable queues on PostgreSQL or SQL Server tables (no broker), with native delayed messages, restart-safe schedule cancellation and optional pg_notify low-latency wakeups.</Description>
+    <Description>SQL transport for Pragmatic.Messaging: durable queues on PostgreSQL or SQL Server tables (no broker), with native delayed messages, restart-safe schedule cancellation and optional pg_notify low-latency wakeups.</Description>
     <PackageTags>messaging;sql;postgresql;sqlserver;transport;queue;no-broker</PackageTags>
   </PropertyGroup>
 

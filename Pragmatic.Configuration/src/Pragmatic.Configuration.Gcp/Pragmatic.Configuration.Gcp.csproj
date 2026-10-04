@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Google Cloud backend for Pragmatic.Configuration — secrets via GCP Secret Manager.</Description>
+    <Description>Google Cloud backend for Pragmatic.Configuration: secrets via GCP Secret Manager.</Description>
     <PackageTags>configuration;gcp;google-cloud;secret-manager;secrets</PackageTags>
   </PropertyGroup>
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>PDF renderer for DocumentModel — via Rust Typst compiler.</Description>
+    <Description>PDF renderer for DocumentModel, via the Rust Typst compiler.</Description>
     <PackageTags>pdf;document;typst;renderer</PackageTags>
   </PropertyGroup>
 

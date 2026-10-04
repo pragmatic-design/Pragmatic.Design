@@ -7,7 +7,7 @@
        ======================================== -->
 
   <PropertyGroup>
-    <Description>Pure endpoint definitions: attributes, base classes, processors, and typed error models. No ASP.NET Core dependency — domain modules reference this package.</Description>
+    <Description>Pure endpoint definitions: attributes, base classes, processors, and typed error models. No ASP.NET Core dependency; domain modules reference this package.</Description>
     <PackageTags>endpoints;rest-api;source-generator;openapi;attributes</PackageTags>
   </PropertyGroup>
 

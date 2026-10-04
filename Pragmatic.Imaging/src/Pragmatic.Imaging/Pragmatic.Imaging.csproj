@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Image processing via Rust native library — decode, encode, resize, crop, filters, QR. Currently ships win-x64; other platforms via CI.</Description>
+    <Description>Image processing via Rust native library: decode, encode, resize, crop, filters, QR. Currently ships win-x64; other platforms via CI.</Description>
     <PackageTags>imaging;image;resize;crop;qr;webp;avif;native;aot</PackageTags>
   </PropertyGroup>
 
