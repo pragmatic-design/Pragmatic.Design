@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>SMS channel for Pragmatic.Notifications. Delivers text messages through the Twilio REST API over plain HTTP — no vendor SDK.</Description>
+    <Description>SMS channel for Pragmatic.Notifications. Delivers text messages through the Twilio REST API over plain HTTP, with no vendor SDK.</Description>
     <PackageTags>notifications;sms;twilio;text;aot</PackageTags>
   </PropertyGroup>
 

@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>pragmatic-migrate</ToolCommandName>
-    <Description>Interactive CLI for Pragmatic.Migrations — schema diff, preview, apply with rich terminal UX.</Description>
+    <Description>Interactive CLI for Pragmatic.Migrations: schema diff, preview, apply with rich terminal UX.</Description>
     <PackageTags>migrations;cli;schema;diff;interactive</PackageTags>
   </PropertyGroup>
 

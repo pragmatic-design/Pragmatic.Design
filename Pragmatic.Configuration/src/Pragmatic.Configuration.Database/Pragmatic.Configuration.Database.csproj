@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Database backend (ADO.NET) for Pragmatic.Configuration — supports PostgreSQL, SQL Server, SQLite</Description>
+    <Description>Database backend (ADO.NET) for Pragmatic.Configuration, supporting PostgreSQL, SQL Server, SQLite</Description>
     <PackageTags>configuration;database;ado.net;postgresql;sqlserver;sqlite</PackageTags>
   </PropertyGroup>
 

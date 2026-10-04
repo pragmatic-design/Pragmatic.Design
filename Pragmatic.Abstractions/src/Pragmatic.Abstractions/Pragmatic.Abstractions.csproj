@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Pragmatic</RootNamespace>
-    <Description>Cross-cutting abstractions for the Pragmatic.Design ecosystem. Contains interfaces, attributes, and contracts shared across all modules — no ASP.NET Core or EF Core dependency.</Description>
+    <Description>Cross-cutting abstractions for the Pragmatic.Design ecosystem. Contains interfaces, attributes, and contracts shared across all modules, with no ASP.NET Core or EF Core dependency.</Description>
     <PackageTags>abstractions;contracts;interfaces;composition;di;entity;unit-of-work;events</PackageTags>
   </PropertyGroup>
 

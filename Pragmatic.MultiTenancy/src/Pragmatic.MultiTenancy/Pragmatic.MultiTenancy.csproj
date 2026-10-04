@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Multi-tenancy runtime for the Pragmatic.Design ecosystem. Provides tenant resolution, scoping, and configuration — no ASP.NET Core dependency.</Description>
+    <Description>Multi-tenancy runtime for the Pragmatic.Design ecosystem. Provides tenant resolution, scoping, and configuration, with no ASP.NET Core dependency.</Description>
     <PackageTags>multitenancy;tenant;isolation;saas</PackageTags>
   </PropertyGroup>
 

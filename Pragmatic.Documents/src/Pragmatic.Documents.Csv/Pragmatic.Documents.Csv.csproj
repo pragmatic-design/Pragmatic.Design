@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>CSV reader and writer — RFC 4180 compliant, culture-aware, zero dependencies.</Description>
+    <Description>CSV reader and writer: RFC 4180 compliant, culture-aware, zero dependencies.</Description>
     <PackageTags>csv;reader;writer;rfc4180</PackageTags>
   </PropertyGroup>
 

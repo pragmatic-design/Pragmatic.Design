@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Pragmatic.Tags</RootNamespace>
-    <Description>Tag trait plugin for Pragmatic.Design — adds [HasTags] attribute for auto-generated M:N tag entities, actions, and endpoints via source generation.</Description>
+    <Description>Tag trait plugin for Pragmatic.Design: adds [HasTags] attribute for auto-generated M:N tag entities, actions, and endpoints via source generation.</Description>
     <PackageTags>pragmatic;tags;trait;source-generator</PackageTags>
   </PropertyGroup>
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Azure backend for Pragmatic.Configuration — Azure App Configuration and Azure Key Vault</Description>
+    <Description>Azure backend for Pragmatic.Configuration: Azure App Configuration and Azure Key Vault</Description>
     <PackageTags>configuration;azure;app-configuration;keyvault;secrets</PackageTags>
   </PropertyGroup>
 

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <Description>Roslyn analyzer for Pragmatic.Ensure — flags hand-written argument guards that Ensure already expresses</Description>
+    <Description>Roslyn analyzer for Pragmatic.Ensure that flags hand-written argument guards that Ensure already expresses</Description>
     <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>
 

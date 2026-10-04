@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>Pragmatic Agent daemon — coordination, KV store, gossip cluster, deployment orchestration. Standalone AOT binary.</Description>
+    <Description>Pragmatic Agent daemon: coordination, KV store, gossip cluster, deployment orchestration. Standalone AOT binary.</Description>
     <PackageTags>agent;daemon;gossip;kv;coordination</PackageTags>
     <IsPackable>false</IsPackable>
     <!-- AOT deferred to Phase 6 — requires JsonSerializerContext for all types -->

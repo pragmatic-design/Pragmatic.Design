@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Document template types and resolver — template with bindings to resolved DocumentModel.</Description>
+    <Description>Document template types and resolver: template with bindings to resolved DocumentModel.</Description>
     <PackageTags>template;document;binding;resolver</PackageTags>
     <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
   </PropertyGroup>

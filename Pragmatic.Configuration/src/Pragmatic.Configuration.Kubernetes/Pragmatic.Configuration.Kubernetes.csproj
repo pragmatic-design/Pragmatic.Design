@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Kubernetes backend for Pragmatic.Configuration — configuration via ConfigMaps and secrets via Secrets.</Description>
+    <Description>Kubernetes backend for Pragmatic.Configuration: configuration via ConfigMaps and secrets via Secrets.</Description>
     <PackageTags>configuration;kubernetes;configmap;secret;k8s</PackageTags>
   </PropertyGroup>
 

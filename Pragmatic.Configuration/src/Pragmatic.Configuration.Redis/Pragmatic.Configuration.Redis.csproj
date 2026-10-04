@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Redis backend for Pragmatic.Configuration — configuration key-values on Redis strings.</Description>
+    <Description>Redis backend for Pragmatic.Configuration: configuration key-values on Redis strings.</Description>
     <PackageTags>configuration;redis;kv;cache</PackageTags>
   </PropertyGroup>
 

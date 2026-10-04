@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Email Model — JSON-serializable node tree for HTML email rendering (table-based, inline CSS).</Description>
+    <Description>Email Model: JSON-serializable node tree for HTML email rendering (table-based, inline CSS).</Description>
     <PackageTags>email;model;html;template;json</PackageTags>
   </PropertyGroup>
 

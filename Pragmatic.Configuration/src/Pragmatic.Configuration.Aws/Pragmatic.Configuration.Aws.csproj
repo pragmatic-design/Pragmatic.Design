@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>AWS backend for Pragmatic.Configuration — secrets via AWS Secrets Manager and configuration via SSM Parameter Store.</Description>
+    <Description>AWS backend for Pragmatic.Configuration: secrets via AWS Secrets Manager and configuration via SSM Parameter Store.</Description>
     <PackageTags>configuration;aws;secrets-manager;parameter-store;ssm;secrets</PackageTags>
   </PropertyGroup>
 

@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Pragmatic.Attachments</RootNamespace>
-    <Description>Attachment trait plugin for Pragmatic.Design — adds [HasAttachments] for auto-generated file attachment entities, actions (upload/download/delete), and endpoints via source generation.</Description>
+    <Description>Attachment trait plugin for Pragmatic.Design: adds [HasAttachments] for auto-generated file attachment entities, actions (upload/download/delete), and endpoints via source generation.</Description>
     <PackageTags>pragmatic;attachments;files;trait;source-generator</PackageTags>
   </PropertyGroup>
 

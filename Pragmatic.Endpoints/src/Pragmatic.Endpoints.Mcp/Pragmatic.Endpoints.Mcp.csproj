@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>MCP (Model Context Protocol) exposure for Pragmatic.Design endpoints: [McpTool] endpoints become MCP tools with input schemas derived from the compile-time manifest — zero reflection. Self-HTTP execution reuses the full endpoint pipeline (authz, validation, tenancy).</Description>
+    <Description>MCP (Model Context Protocol) exposure for Pragmatic.Design endpoints: [McpTool] endpoints become MCP tools with input schemas derived from the compile-time manifest, with zero reflection. Self-HTTP execution reuses the full endpoint pipeline (authz, validation, tenancy).</Description>
     <PackageTags>mcp;model-context-protocol;pragmatic;tools;ai</PackageTags>
     <!-- The MCP SDK's HTTP transport is not fully trim/AOT annotated yet; isolate the limit here. -->
     <IsAotCompatible>false</IsAotCompatible>

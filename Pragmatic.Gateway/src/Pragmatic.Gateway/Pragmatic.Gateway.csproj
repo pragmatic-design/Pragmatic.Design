@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>Pragmatic Gateway — YARP-based API Gateway with Agent-driven routing, maintenance page serving, and tenant-aware proxying.</Description>
+    <Description>Pragmatic Gateway: YARP-based API Gateway with Agent-driven routing, maintenance page serving, and tenant-aware proxying.</Description>
     <PackageTags>gateway;yarp;proxy;routing;maintenance</PackageTags>
     <IsPackable>false</IsPackable>
     <PublishAot>false</PublishAot>

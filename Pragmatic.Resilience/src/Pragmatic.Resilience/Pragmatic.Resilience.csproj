@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>Native resilience library — retry, timeout, circuit breaker, bulkhead, fallback, hedging, rate limiter. AOT-safe, SG-driven.</Description>
+    <Description>Native resilience library: retry, timeout, circuit breaker, bulkhead, fallback, hedging, rate limiter. AOT-safe, SG-driven.</Description>
     <PackageTags>resilience;retry;circuit-breaker;bulkhead;fallback;hedging;rate-limiter;aot</PackageTags>
   </PropertyGroup>
 

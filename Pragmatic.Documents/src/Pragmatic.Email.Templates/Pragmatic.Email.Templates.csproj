@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Email template types and resolver — template with bindings to resolved EmailModel.</Description>
+    <Description>Email template types and resolver: template with bindings to resolved EmailModel.</Description>
     <PackageTags>template;email;binding;resolver</PackageTags>
     <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
   </PropertyGroup>

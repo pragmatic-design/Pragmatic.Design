@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Pragmatic.Client — runtime helpers for SG-generated API clients. Provides error mapping from ProblemDetails to typed IError.</Description>
+    <Description>Pragmatic.Client: runtime helpers for SG-generated API clients. Provides error mapping from ProblemDetails to typed IError.</Description>
     <PackageTags>client;api;pragmatic;result;typed-errors</PackageTags>
   </PropertyGroup>
 
