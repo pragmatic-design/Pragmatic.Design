@@ -248,7 +248,7 @@ If you want self-hosted user registration, login, and password management (inste
 These actions are exposed as endpoints by the source generator when the host references the `Pragmatic.Identity.Local` package. The route prefix defaults to `identity/local`.
 
 > **Register a notifier for reset / verification tokens.** `RequestPasswordReset` and
-> `RequestEmailVerification` never return the token in the response — they hand the plaintext to
+> `RequestEmailVerification` never return the token in the response: they hand the plaintext to
 > `IPasswordResetNotifier` / `IEmailVerificationNotifier` for out-of-band delivery. The defaults
 > (`LogOnlyPasswordResetNotifier`, `LogOnlyEmailVerificationNotifier`) **do not deliver anything** and
 > only log a warning. Register a real email/SMS-backed implementation, otherwise users never receive
@@ -261,8 +261,8 @@ These actions are exposed as endpoints by the source generator when the host ref
 
 ### The identity store is generated
 
-When the `[PragmaticUser]` entity owns a `LocalIdentity` — a property of that type, stored in the user's
-row — and the project references `Pragmatic.Persistence.EFCore`, the generator writes
+When the `[PragmaticUser]` entity owns a `LocalIdentity` (a property of that type, stored in the user's
+row) and the project references `Pragmatic.Persistence.EFCore`, the generator writes
 `{User}.LocalIdentityStore` and registers it as `ILocalIdentityStore`. Its finders load the **user**,
 tracked, and hand back its identity, so `UpdateAsync` saves what the actions changed; every save goes
 through the boundary's unit of work. The emails it receives are already in their stored form
@@ -299,7 +299,7 @@ generated.
 
 With `Pragmatic.Identity.Local.Jwt`, the package's `SignInUser` checks the credentials exactly as
 `LoginUser` does and returns the token. `UseJwtAuthentication` registers the `IAccessTokenIssuer` it signs
-with, and the token always carries the account's key and its **security stamp** — without the stamp,
+with, and the token always carries the account's key and its **security stamp**: without the stamp,
 `UseJwtAuthentication` refuses a token by default (see [The security stamp](#the-security-stamp) below).
 Expose it from the module that imports the package:
 
@@ -311,8 +311,8 @@ public sealed class AppModule;
 
 The answer is an `AccessToken`: `{ "token": "…", "expiresAt": "…" }`.
 
-What the token says about the user beyond the account — a display name, roles, a tenant, or a subject
-other than the account's key — is the application's to say, with an `IUserClaimsContributor`:
+What the token says about the user beyond the account (a display name, roles, a tenant, or a subject
+other than the account's key) is the application's to say, with an `IUserClaimsContributor`:
 
 ```csharp
 public sealed class UserProfileClaims(IReadRepository<UserProfile> profiles) : IUserClaimsContributor
@@ -352,8 +352,8 @@ What `UseJwtAuthentication` does with it, on every request:
   is refused unless the identity is active and its current stamp equals the token's. So an
   `ILocalIdentityStore` has to be registered; without one, a stamped token is refused.
 - **The subject can be a pseudonym.** `Generate(subject, …, externalIdentityKey: …)` writes the two
-  separately: the account is found by the key, and `ICurrentUser.Id` — what ownership stamps and the audit
-  trail record as the actor — is the subject. Pass a reference rather than the key, and nothing that
+  separately: the account is found by the key, and `ICurrentUser.Id` (what ownership stamps and the audit
+  trail record as the actor) is the subject. Pass a reference rather than the key, and nothing that
   records who acted records an email.
 - **A token without a stamp** is refused while `JwtOptions.RequireSecurityStamp` is `true`, which is the
   default. A token that carries no stamp cannot be revoked, and would outlive the password change meant to

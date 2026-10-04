@@ -42,7 +42,7 @@ sets `ASPNETCORE_ENVIRONMENT=Development`; outside Development the middleware th
 
 ## A `_WithRequiredPermission_IsReachable` test fails with 400
 
-The endpoint requires a request body and the generated contract sends none — the assertion is that
+The endpoint requires a request body and the generated contract sends none: the assertion is that
 authorization did not block the call, and a 400 means it did not. This is a genuine failure only if your
 pipeline maps a missing body to 401/403; otherwise it indicates the endpoint rejects before
 authorization, which the wider `ShouldNotBeForbidden` assertion already tolerates. If you see 401/403,

@@ -1,12 +1,12 @@
 ---
 title: "Getting Started"
-description: "Pragmatic.Testing turns the contracts your app already declares — endpoints, permissions, entities,"
+description: "Pragmatic.Testing turns the contracts your app already declares (endpoints, permissions, entities,"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Testing/docs/getting-started.md
 sidebar:
   order: 1
 ---
-Pragmatic.Testing turns the contracts your app already declares — endpoints, permissions, entities,
-state transitions — into executable tests, and gives you a typed client to write the rest by hand.
+Pragmatic.Testing turns the contracts your app already declares (endpoints, permissions, entities,
+state transitions) into executable tests, and gives you a typed client to write the rest by hand.
 You wire it once per test project; from then on new endpoints arrive with their contract tests already
 written.
 
@@ -23,7 +23,7 @@ The test project references the app under test, the runtime harness, and the gen
 </ItemGroup>
 ```
 
-The generator scans the compilation — the test assembly and every referenced module — for
+The generator scans the compilation (the test assembly and every referenced module) for
 `[Endpoint]` types. Endpoints still marked `[assembly: PendingContract]` (a body that is
 `throw Behavior.Pending()`) are skipped, and their tests appear on their own once implemented.
 
@@ -64,7 +64,7 @@ public sealed class ContractTestCollection : ICollectionFixture<ContractAppFixtu
 ```
 
 A broad default grant on this client is fine and usually necessary: the positive contracts need to
-reach their endpoints. The negative contracts do **not** inherit it — they set an explicit empty
+reach their endpoints. The negative contracts do **not** inherit it: they set an explicit empty
 permission header on their own request, which overrides the client default for that call.
 
 ## 3. Build
@@ -111,7 +111,7 @@ request.AsUser("auditor-1", tenantId: "acme", userName: "Auditor", "billing.invo
 var response = await Client.SendAsync(request);
 ```
 
-Applied to a request, the permission header is always written — empty when you pass no permission —
+Applied to a request, the permission header is always written (empty when you pass no permission),
 so an underprivileged caller stays underprivileged even when the shared client carries a wildcard
 grant. The tenant and user-name headers behave the opposite way: omit them and the client defaults
 apply.

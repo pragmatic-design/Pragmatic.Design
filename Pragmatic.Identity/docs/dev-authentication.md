@@ -28,7 +28,7 @@ The `HeaderUserMiddleware` must be added manually to the pipeline in your `IStar
 ```csharp
 public void ConfigurePipeline(IApplicationBuilder app)
 {
-    // Identity from headers (development/test) — must run before UseAuthentication()
+    // Identity from headers (development/test); must run before UseAuthentication()
     app.UseMiddleware<Pragmatic.Identity.HeaderUserMiddleware>();
 
     app.UseAuthentication();
@@ -370,7 +370,7 @@ dbug: Pragmatic.Identity.HeaderUserMiddleware[0]
 
 ## Security Warning
 
-`HeaderUserMiddleware` and `NoOpAuthenticationHandler` are **development and testing only — enforced in
+`HeaderUserMiddleware` and `NoOpAuthenticationHandler` are **development and testing only, enforced in
 code, not by convention**. Both check `IHostEnvironment.IsDevelopment()` and **throw
 `InvalidOperationException`** the moment they run outside the `Development` environment:
 
@@ -383,5 +383,5 @@ production:
 
 - Use a real authentication handler (JWT, OIDC, etc.)
 - Never route `X-User-*` headers from external traffic to the app
-- The config-driven pattern (JWT key present = JWT auth, absent = dev auth) is the recommended approach —
+- The config-driven pattern (JWT key present = JWT auth, absent = dev auth) is the recommended approach:
   it keeps the dev-only components out of the pipeline entirely when a signing key is configured

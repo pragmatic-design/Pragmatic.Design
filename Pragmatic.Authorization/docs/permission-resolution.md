@@ -120,7 +120,7 @@ Permissions are resolved lazily on first access to `Permissions`, `HasPermission
 
 ### Sync vs Async Checks
 
-`CachedPermissionResolver` also implements the async members of `IUserAuthorization` —
+`CachedPermissionResolver` also implements the async members of `IUserAuthorization`:
 `GetPermissionsAsync`, `HasPermissionAsync`, `HasAnyPermissionAsync`, `HasAllPermissionsAsync`. On a
 cross-request cache miss these `await` the cache/provider chain instead of blocking a thread-pool thread,
 so prefer them on request hot paths. The synchronous `HasPermission` overloads remain available for the
@@ -134,7 +134,7 @@ Cache key format (explicit scope markers avoid cross-tenant collisions):
 - Global / single-tenant: `{prefix}:g:u:{userId}`
 - Multi-tenant: `{prefix}:t:{tenantId}:u:{userId}`
 
-Cache tags — the entry is tagged by everything that contributed to it:
+Cache tags. The entry is tagged by everything that contributed to it:
 - `user:{userId}`, `tenant:{tenantId}` (multi-tenant only)
 - `role:{roleName}` for each role claim, `group:{groupName}` for each group claim
 
@@ -168,7 +168,7 @@ Because entries are tagged by their contributing roles and groups, `InvalidateRo
 | Strategy | Behavior |
 |----------|----------|
 | `TimeToLive` (default) | The entry expires after `Expiration` and is re-resolved. A short expiration gives periodic re-validation; a long one favors throughput. Calling the invalidator is optional. |
-| `ManualInvalidation` | The entry is kept until `IPermissionCacheInvalidator` evicts it — call it on every authorization change for immediate propagation. `Expiration` still applies as a safety-net upper bound. |
+| `ManualInvalidation` | The entry is kept until `IPermissionCacheInvalidator` evicts it; call it on every authorization change for immediate propagation. `Expiration` still applies as a safety-net upper bound. |
 
 ```csharp
 authz.UsePermissionCache(o =>

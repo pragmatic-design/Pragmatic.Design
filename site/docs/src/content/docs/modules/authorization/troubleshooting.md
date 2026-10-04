@@ -33,7 +33,7 @@ Authenticated users are denied access to all endpoints, even those they should h
 
 4. **Is the `[RequirePermission]` string correct?** Compare the permission string on the action with the permissions granted to the role. A typo like `"booking.reservations.read"` (plural) will not match `"booking.reservation.read"` (singular). Use SG-generated constants.
 
-5. **Is auto-derivation on?** With `[assembly: PragmaticAutoDerivePermissions]` or the matching build property, an operation that declares no permission gets one derived from its name — kebab-case, three segments when the name opens with a recognised verb (`AddGuestCommentAction` → `booking.guest-comment.add`), two otherwise (`IssueRefundAction` → `booking.issue-refund`). Read the generated permission requirement registry for what it actually asks, and check a role grants that exact string.
+5. **Is auto-derivation on?** With `[assembly: PragmaticAutoDerivePermissions]` or the matching build property, an operation that declares no permission gets one derived from its name: kebab-case, three segments when the name opens with a recognised verb (`AddGuestCommentAction` → `booking.guest-comment.add`), two otherwise (`IssueRefundAction` → `booking.issue-refund`). Read the generated permission requirement registry for what it actually asks, and check a role grants that exact string.
 
 6. **Check the permission claim type.** By default, direct permissions come from the `"permission"` claim. If your token uses a different claim type (e.g., `"permissions"` or `"scp"`), configure `AuthorizationOptions.PermissionClaimType`.
 
@@ -140,7 +140,7 @@ Expected `BookingPermissions.Reservation.Read` but the constant does not exist a
 
 2. **Is it a CRUD constant?** Those come from the entities: the entity must belong to a boundary, and the assembly must reference `Pragmatic.Persistence.EFCore`. The class is `{Boundary}Permissions`, in the entities' root namespace (the first two segments of `{App}.{Module}.Entities`).
 
-3. **Is it a declared permission?** It needs an `[assembly: Permission("…", "…")]` line — or a `[RequirePermission("…", Description = "…")]` — and a build without `PRAG1004`, `PRAG1001` or `PRAG1005`: a refused declaration gets no constant.
+3. **Is it a declared permission?** It needs an `[assembly: Permission("…", "…")]` line (or a `[RequirePermission("…", Description = "…")]`) and a build without `PRAG1004`, `PRAG1001` or `PRAG1005`: a refused declaration gets no constant.
 
 4. **Check the SG output.** In Visual Studio, expand **Dependencies > Analyzers > Pragmatic.SourceGenerator** in Solution Explorer. The class is in `_Infra.Identity.EntityPermissions.g.cs`.
 
@@ -168,9 +168,9 @@ Permissions are resolved fresh on every request despite `UsePermissionCache` bei
 
 | ID | Severity | Cause | Fix |
 |----|----------|-------|-----|
-| PRAG1001 | Error | A permission value declared twice — two declarations, or a declaration equal to a CRUD permission | Declare each value once; a CRUD permission is already generated |
+| PRAG1001 | Error | A permission value declared twice: two declarations, or a declaration equal to a CRUD permission | Declare each value once; a CRUD permission is already generated |
 | PRAG1004 | Error | A declared permission's first segment is none of the assembly's boundaries | Start the value with the boundary it belongs to: `{boundary}.{resource}.{verb}` |
-| PRAG1005 | Error | A declared permission's constant would take a name its class already uses — a resource, an entity, another verb | Pick a value whose segments do not reuse, at the same depth, a name the class already has |
+| PRAG1005 | Error | A declared permission's constant would take a name its class already uses: a resource, an entity, another verb | Pick a value whose segments do not reuse, at the same depth, a name the class already has |
 | PRAG1003 | Error | `IRole.Name` is empty | Ensure the static abstract `Name` property returns a non-empty string literal |
 | PRAG1015 | Warning | A role's `DefaultPermissions` reads a list held in another assembly that does not publish it, so the registry would list an empty grant while the runtime grants every entry | Mark the list `[PermissionSet]` in the assembly that declares it, or move it into this one |
 | PRAG1016 | Warning | A `[PermissionSet]` list the generator cannot read: the assembly publishes nothing for it | Write the list as a collection expression or an array initializer, in place or in a member of this compilation |

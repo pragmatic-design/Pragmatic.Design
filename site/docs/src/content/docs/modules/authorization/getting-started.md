@@ -175,7 +175,7 @@ authz.MapGroup<CustomerCareGroup>();
 
 ## Step 8: Add Custom Permissions (Optional)
 
-For operations beyond standard CRUD, declare the permission on the assembly — one line each:
+For operations beyond standard CRUD, declare the permission on the assembly, one line each:
 
 ```csharp
 using Pragmatic.Authorization;
@@ -192,8 +192,8 @@ names it:
 public partial class RefundInvoiceAction : VoidDomainAction<ConflictError> { /* ... */ }
 ```
 
-A permission only one operation requires can be declared where it is required —
-`[RequirePermission("billing.invoice.refund", Description = "Refund a paid invoice")]` — with the same
+A permission only one operation requires can be declared where it is required
+(`[RequirePermission("billing.invoice.refund", Description = "Refund a paid invoice")]`), with the same
 effect: the full value, as written, nothing derived.
 
 ## Step 9: Add a Resource Authorizer (Optional)
@@ -222,7 +222,7 @@ public sealed class InvoiceAuthorizer : IResourceAuthorizer<RefundInvoiceAction>
 }
 ```
 
-Register it — prefer the two-type-parameter, reflection-free overload:
+Register it; prefer the two-type-parameter, reflection-free overload:
 
 ```csharp
 authz.AddResourceAuthorizer<InvoiceAuthorizer, RefundInvoiceAction>();
@@ -247,7 +247,7 @@ authz.UsePermissionCache(o =>
 
 Cache keys include the user ID (and tenant ID if multi-tenant); entries are tagged by `user:{userId}`,
 `tenant:{tenantId}`, and each contributing role/group. `UsePermissionCache` also registers
-`IPermissionCacheInvalidator` — inject it to evict entries after a permission change
+`IPermissionCacheInvalidator`: inject it to evict entries after a permission change
 (`InvalidateUserAsync` / `InvalidateRoleAsync` / `InvalidateGroupAsync` / `InvalidateTenantAsync`).
 
 ## Step 11: Seed Roles from JSON (Optional)

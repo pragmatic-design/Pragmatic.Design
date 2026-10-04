@@ -231,18 +231,18 @@ public static class BookingPermissions
 
 Use these constants in `[RequirePermission]` attributes and `IRoleDefinition.Permissions` for compile-time safety. Typos become compile errors.
 
-### Custom Permissions — `[assembly: Permission]`
+### Custom Permissions: `[assembly: Permission]`
 
-For operations beyond standard CRUD, one line per permission — its value, what holding it allows, and
+For operations beyond standard CRUD, one line per permission: its value, what holding it allows, and
 optionally the group a role screen lists it under:
 
 ```csharp
 [assembly: Permission("billing.invoice.refund", "Refund a paid invoice", Category = "Billing")]
 ```
 
-The SG adds its constant to the **same** `{Boundary}Permissions` class the CRUD constants are in — a
+The SG adds its constant to the **same** `{Boundary}Permissions` class the CRUD constants are in (a
 resource that is an entity puts it in that entity's class, so this one is `BillingPermissions.Invoice.Refund`,
-a `const` usable in `[RequirePermission]` — and its entry (name, description, category) to the generated
+a `const` usable in `[RequirePermission]`) and its entry (name, description, category) to the generated
 `PermissionRegistry`, so `IPermissionCatalog` lists it.
 
 The generator refuses what would not be one constant in that class:
@@ -253,7 +253,7 @@ The generator refuses what would not be one constant in that class:
 | The value is declared twice, or is a CRUD permission (`billing.invoice.read`) | `PRAG1001` |
 | Its constant would take a name the class already uses (`billing.invoice` beside the entity `Invoice`'s class) | `PRAG1005` |
 
-In an assembly with **no** boundary — a package such as `Pragmatic.Authorization.Management` — there is no
+In an assembly with **no** boundary (a package such as `Pragmatic.Authorization.Management`) there is no
 boundary class and nothing to check the first segment against: the first segment names the class
 (`authorization.view` → `AuthorizationPermissions.View`), and when that class is an entity's own CRUD class the
 constant joins it.
@@ -591,7 +591,7 @@ public sealed class InvoiceAuthorizer : IResourceAuthorizer<RefundInvoiceAction>
 
 ### Registration
 
-Two overloads. Prefer the two-type-parameter one — it registers the exact closed interface with **no
+Two overloads. Prefer the two-type-parameter one: it registers the exact closed interface with **no
 reflection** (aligns with the zero-reflection philosophy):
 
 ```csharp
@@ -790,16 +790,16 @@ Cache key format (explicit scope markers prevent cross-tenant collisions):
 - Global / single-tenant: `{prefix}:g:u:{userId}`
 - Multi-tenant: `{prefix}:t:{tenantId}:u:{userId}`
 
-Cache tags — the entry is tagged by **everything that contributes to it**, so a change to any
+Cache tags: the entry is tagged by **everything that contributes to it**, so a change to any
 contributing role or group can invalidate exactly the affected users:
-- `user:{userId}` — direct per-user invalidation / account disable
-- `tenant:{tenantId}` — tenant-wide change (present only for multi-tenant requests)
-- `role:{roleName}` — one per role claim; invalidate when a role's permission set changes
-- `group:{groupName}` — one per group claim; invalidate when a group's role set changes
+- `user:{userId}`: direct per-user invalidation / account disable
+- `tenant:{tenantId}`: tenant-wide change (present only for multi-tenant requests)
+- `role:{roleName}`: one per role claim; invalidate when a role's permission set changes
+- `group:{groupName}`: one per group claim; invalidate when a group's role set changes
 
 ### Invalidating on demand: IPermissionCacheInvalidator
 
-`UsePermissionCache` also registers `IPermissionCacheInvalidator` — inject it and call the method that
+`UsePermissionCache` also registers `IPermissionCacheInvalidator`: inject it and call the method that
 matches the change, rather than composing tag strings by hand:
 
 ```csharp
@@ -809,9 +809,9 @@ public sealed class AssignRoleHandler(IPermissionCacheInvalidator invalidator)
     {
         // ... persist the role change ...
         await invalidator.InvalidateUserAsync(userId, ct);      // this user
-        // invalidator.InvalidateRoleAsync("booking-manager")   — every holder of the role
-        // invalidator.InvalidateGroupAsync("customer-care")    — every member of the group
-        // invalidator.InvalidateTenantAsync(tenantId)          — a whole tenant
+        // invalidator.InvalidateRoleAsync("booking-manager")   (every holder of the role)
+        // invalidator.InvalidateGroupAsync("customer-care")    (every member of the group)
+        // invalidator.InvalidateTenantAsync(tenantId)          (a whole tenant)
     }
 }
 ```
@@ -845,7 +845,7 @@ The source generator detects `Pragmatic.Authorization` via `FeatureDetector` and
 
 ### The `{Boundary}Permissions` class
 
-One static class per boundary — the only one: the CRUD constants of each entity, and the declared
+One static class per boundary, the only one: the CRUD constants of each entity, and the declared
 permissions beside them:
 
 ```csharp
@@ -863,8 +863,8 @@ public static class BookingPermissions
 }
 ```
 
-A declared permission's path is its value's segments in PascalCase — `billing.invoice.refund` is
-`BillingPermissions.Invoice.Refund`, `leave.personal-data.erase` is `LeavePermissions.PersonalData.Erase` —
+A declared permission's path is its value's segments in PascalCase: `billing.invoice.refund` is
+`BillingPermissions.Invoice.Refund`, `leave.personal-data.erase` is `LeavePermissions.PersonalData.Erase`,
 and it is a `const`, like the CRUD ones.
 
 ### PermissionRegistry
@@ -892,8 +892,8 @@ The registry feeds `IPermissionCatalog` for admin tooling and inspection.
 
 ### Declared Permission Constants
 
-`[assembly: Permission("billing.invoice.refund", "Refund a paid invoice")]` — or the same value on a
-`[RequirePermission(..., Description = ...)]` — puts the constant into the boundary's class, beside the CRUD
+`[assembly: Permission("billing.invoice.refund", "Refund a paid invoice")]` (or the same value on a
+`[RequirePermission(..., Description = ...)]`) puts the constant into the boundary's class, beside the CRUD
 ones:
 
 ```csharp
@@ -966,7 +966,7 @@ Custom stores are registered as **Scoped**. When registered, they replace the in
 | Neither called | None | None |
 
 Same logic applies for groups. When groups are mapped but **no role store exists at all**, configuration
-throws `InvalidOperationException` at startup — `GroupExpansionProvider` needs an `IRolePermissionStore`
+throws `InvalidOperationException` at startup: `GroupExpansionProvider` needs an `IRolePermissionStore`
 to resolve group → role → permission, and silently returning an empty set would look like an
 authorization bug. Map at least one role (or register a custom role store) alongside your groups.
 
@@ -1094,7 +1094,7 @@ What an endpoint without those attributes requires is decided in two places, nei
 | What | Where | Default |
 |---|---|---|
 | A valid identity | `PragmaticEndpointsOptions.RequireAuthorizationByDefault`, applied by the generated root group | `true` |
-| A permission for an operation that declares none | auto-derivation — `[assembly: PragmaticAutoDerivePermissions]` or the `PragmaticAutoDerivePermissions` build property | off |
+| A permission for an operation that declares none | auto-derivation: `[assembly: PragmaticAutoDerivePermissions]` or the `PragmaticAutoDerivePermissions` build property | off |
 
 These two are the whole surface, and deliberately: a second switch deciding the same thing is how two
 settings come to disagree, and the loser is silent.
@@ -1113,7 +1113,7 @@ when access scopes must come from a database or an external system rather than c
 
 The **write** side is `Pragmatic.Persistence.EFCore`'s `ScopeInterceptor`, at `SaveChanges`: an
 inserted row with no scopes carries its creator's `user:{id}`. The two sides have to agree on the exact
-string, and no type enforces it — a divergence is not an error anywhere, it is a row nobody can see —
+string, and no type enforces it: a divergence is not an error anywhere, it is a row nobody can see,
 so both read the spelling from `ScopeIdentifiers` in `Pragmatic.Abstractions`.
 
 ### Caching (Pragmatic.Caching)
@@ -1134,7 +1134,7 @@ Cross-request permission caching uses `ICacheStack` from `Pragmatic.Caching`. Th
 | `IRolePermissionStore` (InMemoryRolePermissionStore) | Singleton | When `MapRole` used without custom store |
 | `IGroupRoleStore` (InMemoryGroupRoleStore) | Singleton | When `MapGroup` used without custom store |
 | `IUserAuthorization` (CachedPermissionResolver) | Scoped | Always registered |
-| `IUserScopeResolver` (DefaultUserScopeResolver) | Scoped | TryAdd — a custom resolver registered first wins |
+| `IUserScopeResolver` (DefaultUserScopeResolver) | Scoped | TryAdd: a custom resolver registered first wins |
 | `IPermissionCacheInvalidator` (PermissionCacheInvalidator) | Scoped | Only when `UsePermissionCache` is called |
 | `IPermissionCatalog` (DefaultPermissionCatalog) | Singleton | TryAdd (SG-generated takes precedence) |
 | `IResourceCatalog` (DefaultResourceCatalog) | Singleton | TryAdd (SG-generated takes precedence) |
@@ -1168,7 +1168,7 @@ The `roles.pragmatic.json` file provides declarative role and group definitions 
 }
 ```
 
-Role inheritance (`inherits`) is expanded at compile-time by the SG, between roles of the same file — a code-defined role is not inherited. The generated `SeedFromJson()` contains flattened permission sets. A file that is not JSON is `PRAG1010`; a property or value it does not understand, an inherited role it does not declare, or roles that inherit each other is `PRAG1011`; a second file is `PRAG1012` (see [roles-and-groups.md](roles-and-groups.md)).
+Role inheritance (`inherits`) is expanded at compile-time by the SG, between roles of the same file; a code-defined role is not inherited. The generated `SeedFromJson()` contains flattened permission sets. A file that is not JSON is `PRAG1010`; a property or value it does not understand, an inherited role it does not declare, or roles that inherit each other is `PRAG1011`; a second file is `PRAG1012` (see [roles-and-groups.md](roles-and-groups.md)).
 
 Usage:
 

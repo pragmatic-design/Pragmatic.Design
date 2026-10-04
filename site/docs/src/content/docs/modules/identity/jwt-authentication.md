@@ -43,7 +43,7 @@ await PragmaticApp.RunAsync(args, app =>
 });
 ```
 
-Without arguments it reads the `Jwt` section — `Key` (required: the host does not start without it,
+Without arguments it reads the `Jwt` section: `Key` (required: the host does not start without it,
 and the message names the key), `Issuer`, `Audience`, and optionally `TokenExpiration` and `ClockSkew`
 (TimeSpan, `00:20:00`) and `RequireSecurityStamp`. `UseJwtAuthentication("Auth:Tokens")` reads another
 section. When the values are not in configuration, set them in code:
@@ -85,7 +85,7 @@ For production, use a secrets manager:
 ### Sign-in rate limit
 
 `UseJwtAuthentication` also caps sign-in attempts per client address: 10 a minute by default, on the
-exposed `LoginUser` and `SignInUser` endpoints — recognised by the operation they run, whatever route the
+exposed `LoginUser` and `SignInUser` endpoints, recognised by the operation they run, whatever route the
 application gave them. The per-account lockout stops guessing one account's password; this stops trying a
 password against many accounts from one address. Refused attempts answer 429.
 
@@ -94,7 +94,7 @@ password against many accounts from one address. Refused attempts answer 429.
 ```
 
 The address is the connection's: behind a load balancer configure `UseForwardedHeaders` with the known
-proxies, or every client shares one bucket. `X-Forwarded-For` is never read directly — a client could
+proxies, or every client shares one bucket. `X-Forwarded-For` is never read directly: a client could
 rotate it to get a fresh bucket. Under `TestServer` there is no address at all, so a test host shares one
 bucket across all its requests: raise `PermitLimit` for a suite that signs in often.
 
@@ -117,12 +117,12 @@ signs the token through `IAccessTokenIssuer`, which `UseJwtAuthentication` regis
 `JwtTokenGenerator`. See [Integration with Login Flow](#integration-with-login-flow).
 
 A host that imports the package and calls no `UseJwtAuthentication` still starts: the package registers
-`UnconfiguredAccessTokenIssuer`, which the host's issuer replaces. It signs nothing — a sign-in there
+`UnconfiguredAccessTokenIssuer`, which the host's issuer replaces. It signs nothing: a sign-in there
 checks the credentials and then fails with an `InvalidOperationException` that names the call to make.
 
 ### Generate() Overloads
 
-`JwtTokenGenerator` stays available for a token that is not a sign-in's — a service account, a test.
+`JwtTokenGenerator` stays available for a token that is not a sign-in's: a service account, a test.
 Depend on `IAccessTokenIssuer` where you can: it is the contract a module can see.
 
 ```csharp
@@ -278,8 +278,8 @@ public class SomeService(ICurrentUser currentUser)
 
 ## Integration with Login Flow
 
-The package signs a user in: `SignInUser` checks the credentials exactly as `LoginUser` does — lockout,
-timing equalisation, the password rehash, the events — and answers with the `AccessToken`. The token
+The package signs a user in: `SignInUser` checks the credentials exactly as `LoginUser` does (lockout,
+timing equalisation, the password rehash, the events) and answers with the `AccessToken`. The token
 carries the account's key and its security stamp always, and what the application's
 `IUserClaimsContributor`s add. Expose it from the module that imports the package:
 

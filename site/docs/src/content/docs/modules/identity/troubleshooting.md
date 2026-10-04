@@ -16,7 +16,7 @@ The endpoints require authorization and no authentication method is configured f
 ```
 
 The endpoints require authorization by default, and nothing can authenticate a caller in the environment
-the host is running in — typically `UseDevelopmentIdentity()` guarded by `IsDevelopment()`, and the host
+the host is running in: typically `UseDevelopmentIdentity()` guarded by `IsDevelopment()`, and the host
 started without a launch profile, so in Production. The host stops there (with the maintenance page,
 503, unless `EnableOnStartupFailure` is off) rather than answering 500 to every protected request.
 
@@ -50,7 +50,7 @@ The user authenticates successfully (no 401), but `ICurrentUser.Id` returns an e
        logger.LogDebug("Claim {Key}: {Values}", key, string.Join(", ", values));
    ```
 
-3. **Check JWT handler claim mapping.** The .NET JWT handler renames `sub` and `role` to the WS-* URIs `IdentityOptions` defaults to, and leaves `name` as it is. `UseJwtAuthentication()` therefore sets `NameClaimType = "name"`, `RoleClaimType = ClaimTypes.Role`, and `IdentityOptions.DisplayNameClaimType = "name"`. If you are using a custom JWT setup, check that `TokenValidationParameters.NameClaimType` and `IdentityOptions.DisplayNameClaimType` name the same claim — when they do not, `User.Identity.Name` has a value and `ICurrentUser.DisplayName` is null.
+3. **Check JWT handler claim mapping.** The .NET JWT handler renames `sub` and `role` to the WS-* URIs `IdentityOptions` defaults to, and leaves `name` as it is. `UseJwtAuthentication()` therefore sets `NameClaimType = "name"`, `RoleClaimType = ClaimTypes.Role`, and `IdentityOptions.DisplayNameClaimType = "name"`. If you are using a custom JWT setup, check that `TokenValidationParameters.NameClaimType` and `IdentityOptions.DisplayNameClaimType` name the same claim; when they do not, `User.Identity.Name` has a value and `ICurrentUser.DisplayName` is null.
 
 4. **Check if `AddPragmaticIdentity()` was called.** Without it, `ICurrentUser` is not registered and may resolve to a default or throw.
 
@@ -226,8 +226,8 @@ Permissions change in the database, but the user still sees the old permissions.
 ## Self-registration throws NotSupportedException
 
 `RegisterUser` fails with "… is not created by self-registration". The user entity does not implement
-`ISelfRegisteringUser<TUser>`, so the generated store will not guess how to create a user. Implement it —
-`static TUser Register(LocalIdentity identity)` — or provision users another way.
+`ISelfRegisteringUser<TUser>`, so the generated store will not guess how to create a user. Implement it
+(`static TUser Register(LocalIdentity identity)`) or provision users another way.
 
 ---
 

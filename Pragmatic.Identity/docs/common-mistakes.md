@@ -143,7 +143,7 @@ await PragmaticApp.RunAsync(args, app =>
     app.UseAuthentication<NoOpAuthenticationHandler>("PragmaticDefault");
 });
 
-// IStartupStep — middleware NOT registered
+// IStartupStep: middleware NOT registered
 public void ConfigurePipeline(IApplicationBuilder app)
 {
     app.UseAuthentication();
@@ -253,7 +253,7 @@ services.AddPragmaticIdentity();
 **Wrong:**
 
 ```csharp
-// Program.cs — standalone, without Pragmatic.Composition
+// Program.cs: standalone, without Pragmatic.Composition
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAuthentication("Bearer")
@@ -433,7 +433,7 @@ public partial class AppUser : IEntity
 ```
 
 **Why:** `Pragmatic.Identity.Local` is storage-agnostic, and the store it needs is derivable from the user
-entity — which property holds the credentials, which boundary saves it. A store you write yourself (Dapper,
+entity: which property holds the credentials, which boundary saves it. A store you write yourself (Dapper,
 in-memory for tests) still works: a class implementing `ILocalIdentityStore` in the project, and nothing is
 generated. Compare the emails it receives as given: they arrive normalized.
 
