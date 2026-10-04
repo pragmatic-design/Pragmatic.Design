@@ -11,7 +11,7 @@ This guide explains **why** Pragmatic.SourceGenerator exists, how its pieces fit
 ### Reflection: hidden runtime cost
 
 ```csharp
-// Typical repository registration — discovers types at startup
+// Typical repository registration: discovers types at startup
 var entityTypes = Assembly.GetExecutingAssembly()
     .GetTypes()
     .Where(t => t.GetInterfaces().Any(i =>
@@ -105,7 +105,7 @@ At compile time, the source generator reads this declaration and produces:
 | `_Infra.Persistence.Registration.g.cs` | DI registration for repository, filters, entity config |
 | `_Metadata.Persistence.g.cs` | JSON metadata for cross-assembly entity discovery |
 
-Per-type hint names lead with the namespace — that is what keeps `Sales.Invoice` and `Archive.Invoice` from colliding. Host-level artifacts (`EntityConfig.`, `DbContext.`) lead with the function instead, because in a host you look for them by purpose.
+Per-type hint names lead with the namespace: that is what keeps `Sales.Invoice` and `Archive.Invoice` from colliding. Host-level artifacts (`EntityConfig.`, `DbContext.`) lead with the function instead, because in a host you look for them by purpose.
 
 All generated code is plain C#. It appears in the IDE Solution Explorer under **Dependencies > Analyzers > Pragmatic.SourceGenerator**. You can set breakpoints in it. You can inspect it. There is no magic -- just code that the compiler writes instead of you.
 
@@ -133,7 +133,7 @@ Multiple generators cannot share state. If the Actions generator and the Persist
 
 ### Entry point
 
-`PragmaticSourceGenerator` is the sole `[Generator]`-annotated class. Its `Initialize` registers every feature pipeline and is the map of the whole system — worth reading top to bottom before touching anything.
+`PragmaticSourceGenerator` is the sole `[Generator]`-annotated class. Its `Initialize` registers every feature pipeline and is the map of the whole system, and worth reading top to bottom before touching anything.
 
 Most registrations are a single line. The interesting part is the minority that are not, because they encode the only ordering constraints that exist:
 
@@ -143,7 +143,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Detect which features are available — ONCE per compilation.
+        // Detect which features are available, ONCE per compilation.
         var features = context.CompilationProvider
             .Select(static (compilation, _) => FeatureDetector.Detect(compilation));
 
@@ -184,7 +184,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         Features.Serialization.SerializationFeature.Register(context, features);
         TemporalFeature.Register(context, features);
 
-        // Standalone features — no runtime package dependency, so no `features` argument.
+        // Standalone features: no runtime package dependency, so no `features` argument.
         FastEnumFeature.Register(context);
         JobsFeature.Register(context);
         LifecycleEventsFeature.Register(context);
@@ -198,11 +198,11 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 
 ### Three things this shows
 
-**Some `Register` methods return providers.** `ResourceFeature`, `TraitFeature`, `PersistenceFeature`, and `EndpointsFeature` hand back models that later features consume. This is how cross-feature coordination works — there is no shared mutable state anywhere, only providers threaded through `Initialize`.
+**Some `Register` methods return providers.** `ResourceFeature`, `TraitFeature`, `PersistenceFeature`, and `EndpointsFeature` hand back models that later features consume. This is how cross-feature coordination works: there is no shared mutable state anywhere, only providers threaded through `Initialize`.
 
-**Some take extra named arguments.** `PersistenceFeature(…, resourceQueries:)`, `ActionsFeature(…, traitActions:, permissionCatalog:)`, `EndpointsFeature(…, programmaticEndpoints:)`. These carry *programmatically synthesized* models — actions, queries, and endpoints that no user wrote, produced by the Resource and Trait features — into the pipelines that render them. A `[Resource]` entity and a `[HasComments]` attribute both work this way.
+**Some take extra named arguments.** `PersistenceFeature(…, resourceQueries:)`, `ActionsFeature(…, traitActions:, permissionCatalog:)`, `EndpointsFeature(…, programmaticEndpoints:)`. These carry *programmatically synthesized* models (actions, queries, and endpoints that no user wrote, produced by the Resource and Trait features) into the pipelines that render them. A `[Resource]` entity and a `[HasComments]` attribute both work this way.
 
-**Registration order matters in exactly one way.** It does not affect execution — Roslyn drives the pipeline — but a feature cannot consume a provider that does not exist yet. The load-bearing case is Persistence before Actions, and the reason is worth quoting from the source:
+**Registration order matters in exactly one way.** It does not affect execution (Roslyn drives the pipeline), but a feature cannot consume a provider that does not exist yet. The load-bearing case is Persistence before Actions, and the reason is worth quoting from the source:
 
 ```
 Persistence registers BEFORE ActionsFeature so its generated entity-permission catalog
@@ -212,7 +212,7 @@ compilation, so those references would otherwise fail-open (permission silently 
 Registration order does not affect execution; it only makes the catalog provider available.
 ```
 
-A permission check that silently does not run is worse than one that fails loudly. The catalog exists so `ActionsFeature` can resolve a constant the generator itself is emitting in the same pass — something Roslyn's semantic model cannot do — and PRAG0418 fails the build closed when it cannot.
+A permission check that silently does not run is worse than one that fails loudly. The catalog exists so `ActionsFeature` can resolve a constant the generator itself is emitting in the same pass (something Roslyn's semantic model cannot do), and PRAG0418 fails the build closed when it cannot.
 
 ### Feature inventory
 
@@ -224,25 +224,25 @@ A permission check that silently does not run is worse than one that fails loudl
 | `Configuration` | `HasConfiguration` | `[Configuration]` | Binding, validation, DI registration |
 | `Endpoints` | `HasEndpoints` | `[Endpoint]` | Minimal-API mapping; also drives the Manifest (below) |
 | `FastEnum` | standalone | enum marker | Allocation-free enum lookup tables |
-| `Glossary` | standalone | `[Entity]` / `[Entity]` | `_Infra.Glossary.Generated.g.cs` — `PragmaticGlossary.Markdown`, a Markdown domain glossary as a `const string` |
-| `Glossary`/`Architecture` | standalone | `[Include<…>]`, `[RemoteBoundary<T>]` | `_Infra.Architecture.Generated.g.cs` — `PragmaticArchitecture.C4ContainerDiagram`, a Mermaid C4 diagram string |
-| `Glossary`/`AsyncApi` | standalone | types implementing `IDomainEvent` | `_Infra.AsyncApi.Generated.g.cs` — `PragmaticAsyncApi.Json`, an AsyncAPI 3.0.0 document string |
+| `Glossary` | standalone | `[Entity]` / `[Entity]` | `_Infra.Glossary.Generated.g.cs`: `PragmaticGlossary.Markdown`, a Markdown domain glossary as a `const string` |
+| `Glossary`/`Architecture` | standalone | `[Include<…>]`, `[RemoteBoundary<T>]` | `_Infra.Architecture.Generated.g.cs`: `PragmaticArchitecture.C4ContainerDiagram`, a Mermaid C4 diagram string |
+| `Glossary`/`AsyncApi` | standalone | types implementing `IDomainEvent` | `_Infra.AsyncApi.Generated.g.cs`: `PragmaticAsyncApi.Json`, an AsyncAPI 3.0.0 document string |
 | `I18n` | `HasI18n` | `[TranslationKeys]` | The compile-checked `T` class |
 | `Identity` | `HasIdentityAspNetCore` / `HasIdentityPersistence` | `[PragmaticUser]`, permission attributes | Permission constants, identity entity wiring |
 | `Jobs` | standalone | `[Job]`, `[RecurringJob]` | Job registry, schedules, invokers |
-| `Lifecycle` | standalone | `[Raises<T>]` | `{Ns}.{Type}.LifecycleEvents.g.cs` — the `IRaisesLifecycleEvents` partial raising declared events at their transition |
-| `Manifest` | — | *not registered* | `_Metadata.PragmaticManifest.g.cs`. `ManifestFeature` has **no** `Register`; `EndpointsFeature` calls `ManifestFeature.GenerateManifest(...)` inline through `RegisterSourceOutputSafe`, so a failure reports PRAG9000 |
+| `Lifecycle` | standalone | `[Raises<T>]` | `{Ns}.{Type}.LifecycleEvents.g.cs`: the `IRaisesLifecycleEvents` partial raising declared events at their transition |
+| `Manifest` | n/a | *not registered* | `_Metadata.PragmaticManifest.g.cs`. `ManifestFeature` has **no** `Register`; `EndpointsFeature` calls `ManifestFeature.GenerateManifest(...)` inline through `RegisterSourceOutputSafe`, so a failure reports PRAG9000 |
 | `Mapping` | `HasMapping` | `[MapFrom<T>]`, `[MapTo<T>]` | `FromEntity` / `ToEntity` mappers |
 | `Messaging` | `HasMessaging` (+6 sub-flags) | `[MessageHandler]`, saga/outbox markers | Handler pipeline, dispatch table, type registry |
 | `Patch` | `HasPatch` | `[GeneratePatch<T>]` | Patch DTO and apply logic |
 | `Persistence` | `HasPersistence*` | `[Entity]`, `[Query<,>]`, … | See the orchestrator section below |
-| `Resource` | — | `[Resource]` | `_Resource.{Type}.{Create\|Read\|Update\|Delete\|List\|Search}.g.cs` plus `_Resource.{Type}.{…}Dto.g.cs`; also *returns* synthesized query/endpoint/action models to downstream features. Diagnostics PRAG2602/2603/2605 |
+| `Resource` | n/a | `[Resource]` | `_Resource.{Type}.{Create\|Read\|Update\|Delete\|List\|Search}.g.cs` plus `_Resource.{Type}.{…}Dto.g.cs`; also *returns* synthesized query/endpoint/action models to downstream features. Diagnostics PRAG2602/2603/2605 |
 | `Result` | `HasResult` | error/result types | Result plumbing, JSON converters |
-| `Serialization` | opt-in | `PragmaticGenerateJsonContext` / `PublishAot` / assembly attribute | `_Infra.Json.Context.g.cs`, `_Infra.Json.Registration.g.cs`, `_Metadata.JsonContexts.g.cs` — an AOT-safe `JsonSerializerContext` |
-| `Temporal` | `HasTemporalJson` | six timezone attributes on properties | `_Infra.Temporal.Behaviors.g.cs` — registration into `TemporalJsonBehaviorRegistry`. Diagnostic PRAG0905 |
+| `Serialization` | opt-in | `PragmaticGenerateJsonContext` / `PublishAot` / assembly attribute | `_Infra.Json.Context.g.cs`, `_Infra.Json.Registration.g.cs`, `_Metadata.JsonContexts.g.cs`: an AOT-safe `JsonSerializerContext` |
+| `Temporal` | `HasTemporalJson` | six timezone attributes on properties | `_Infra.Temporal.Behaviors.g.cs`: registration into `TemporalJsonBehaviorRegistry`. Diagnostic PRAG0905 |
 | `Traits` | `HasPersistenceEFCore` (+`HasActions`) | `[HasComments]`, `[HasTags]`, `[HasNotes<T>]`, `[HasAttachments]` | Child entity + EF config + navigations + CRUD actions + DTOs + queries + permission constants per trait; aggregate `_Metadata.{Trait\|Tag\|Note\|Attachment}Entities.g.cs`. Diagnostic PRAG2601 when the parent lacks `[Resource]` |
 | `Validation` | `HasValidation` | `[Validation]` attributes | Validators, validation metadata |
-| `ValueObject` | standalone | `[ValueObject]` | `{Ns}.{Type}.ValueObject.g.cs` — `Create` / `CreateUnsafe` factories mirroring the user's `Validate` |
+| `ValueObject` | standalone | `[ValueObject]` | `{Ns}.{Type}.ValueObject.g.cs`: `Create` / `CreateUnsafe` factories mirroring the user's `Validate` |
 
 `Traits` and `Resource` are the two features that generate *other features' inputs* rather than final code, which is why they are registered first and why their `Register` methods return tuples.
 
@@ -326,7 +326,7 @@ internal sealed record DetectedFeatures
 }
 ```
 
-Detection granularity is **per assembly, not per module**. Temporal contributes three flags and Messaging seven, because a consumer can reference any subset — and emitting registration code for an assembly that is not there produces CS0246 in *their* build, not yours.
+Detection granularity is **per assembly, not per module**. Temporal contributes three flags and Messaging seven, because a consumer can reference any subset, and emitting registration code for an assembly that is not there produces CS0246 in *their* build, not yours.
 
 Not every flag is consumed. `HasNotifications` and `HasControlPlane` exist in the record and are set by the detector, but no feature currently reads them. Adding a flag is cheap; wiring a pipeline to it is the actual work.
 
@@ -337,7 +337,7 @@ Not every flag is consumed. `HasNotifications` and `HasControlPlane` exist in th
 | **Feature pipelines** | `HasActions`, `HasMapping`, `HasValidation`, `HasEndpoints`, `HasPersistence`, `HasPersistenceEFCore`, `HasCaching`, `HasComposition`, `HasI18n`, `HasResult`, `HasConfiguration`, `HasPatch`, `HasIdentityAspNetCore`, `HasIdentityPersistence`, `HasMessaging`, `HasJobs`, `HasTemporalJson`, `HasSerialization` | Gate feature-specific generation pipelines |
 | **Behavioral modifiers** | `HasMultiTenancy`, `HasTemporal`, `HasTemporalAspNetCore`, `HasAuthorization`, `HasEventsEFCore`, `HasFeatureFlags`, `HasDiscovery`, `HasResilience`, `HasMigrations`, `HasComments` | Modify behavior within other features (e.g., `HasMultiTenancy` triggers tenant filter generation in Persistence; `HasAuthorization` gates CRUD permission constants) |
 | **Sub-capability flags** | `HasMessagingEFCore`, `HasMessagingChannels`, `HasMessagingRabbitMq`, `HasMessagingAuditing`, `HasMessagingSagas`, `HasMessagingBatch`, `HasMessagingJobs` | Enable optional parts of a module that ship as separate assemblies |
-| **Mode flags** | `IsHostMode`, `IsHostCompositionMode` | Switch between module-level and host-level generation — see below, they are not interchangeable |
+| **Mode flags** | `IsHostMode`, `IsHostCompositionMode` | Switch between module-level and host-level generation; see below, they are not interchangeable |
 | **Provider detection** | `EfCoreProvider` | Generate provider-specific code (PostgreSQL `xmin`, SQL Server `rowversion`, etc.) |
 
 ### FQN rules for GetTypeByMetadataName
@@ -355,7 +355,7 @@ The backtick-arity suffix is mandatory for generic types. Without it, `GetTypeBy
 
 ### Centralized FQN constants
 
-Attribute FQNs belong in `shared/SourceGen/AttributeNames.cs` — roughly 80 `public const string` members, grouped by layer:
+Attribute FQNs belong in `shared/SourceGen/AttributeNames.cs`, roughly 80 `public const string` members, grouped by layer:
 
 ```csharp
 internal static class AttributeNames
@@ -369,7 +369,7 @@ internal static class AttributeNames
 
 Feature classes reference these constants in their `ForAttributeWithMetadataName` calls rather than using string literals.
 
-This is the convention, not yet the state of the code. Several features still carry their trigger FQN as a private const on the feature class — `ReadContractFeature`, `RollUpFeature`, `GlossaryFeature`, `ArchitectureFeature`, `SerializationFeature`, and the four `*BoundaryReader` classes — and `FeatureDetector` holds its own detection strings inline. Put new FQNs in `AttributeNames.cs`: a literal you can only find by grepping is precisely how a typo survives review, and a typo here fails silently.
+This is the convention, not yet the state of the code. Several features still carry their trigger FQN as a private const on the feature class (`ReadContractFeature`, `RollUpFeature`, `GlossaryFeature`, `ArchitectureFeature`, `SerializationFeature`, and the four `*BoundaryReader` classes), and `FeatureDetector` holds its own detection strings inline. Put new FQNs in `AttributeNames.cs`: a literal you can only find by grepping is precisely how a typo survives review, and a typo here fails silently.
 
 ### IsHostMode vs IsHostCompositionMode
 
@@ -380,7 +380,7 @@ Two flags, two different questions. They are not interchangeable, and gating on 
 1. The compilation's `OutputKind` is `ConsoleApplication` or `WindowsApplication`.
 2. The compilation has an entry point (`GetEntryPoint()` returns non-null).
 
-That is the whole test. It means "this project is an executable" — a console tool referencing only `Pragmatic.Persistence` satisfies it.
+That is the whole test. It means "this project is an executable": a console tool referencing only `Pragmatic.Persistence` satisfies it.
 
 **`IsHostCompositionMode`** adds the reference check:
 
@@ -391,7 +391,7 @@ IsHostCompositionMode = CompositionDetector.IsHostProject(compilation)
 
 It means "this project is a full Pragmatic host": executable **and** referencing `Pragmatic.Composition.Host`. Only then does the Composition feature emit `PragmaticHost.Services.g.cs` with its aggregated DI wiring.
 
-Note also that a test project can satisfy `IsHostMode` — which is why `CompositionDetector` additionally exposes `IsTestProject()` and a `GeneratorMode` enum (`Library` / `Host` / `Skip`) that folds all three checks together.
+Note also that a test project can satisfy `IsHostMode`, which is why `CompositionDetector` additionally exposes `IsTestProject()` and a `GeneratorMode` enum (`Library` / `Host` / `Skip`) that folds all three checks together.
 
 ### EfCoreProvider detection
 
@@ -431,13 +431,13 @@ These invariants must hold for every feature pipeline. Violating any of them cau
 
 **Transforms must be deterministic.** Same `ISymbol` input produces the same model output. No randomness, no timestamps, no environment-dependent logic.
 
-**Models must be immutable sealed records whose fields are genuinely value-equatable.** Use `EquatableArray<T>` for collections and `EquatableDictionary<TKey, TValue>` for maps — never `List<T>`, never `T[]`, and never a raw `ImmutableArray<T>`. See "Value-Equatable Model Fields" below; this is the invariant most often broken by accident.
+**Models must be immutable sealed records whose fields are genuinely value-equatable.** Use `EquatableArray<T>` for collections and `EquatableDictionary<TKey, TValue>` for maps; never `List<T>`, never `T[]`, and never a raw `ImmutableArray<T>`. See "Value-Equatable Model Fields" below; this is the invariant most often broken by accident.
 
 **Templates must be pure functions of the model.** No `Compilation`, no `ISymbol`, no `SemanticModel`, no side effects. If a template needs information that is not in the model, the model is incomplete -- fix the transform.
 
 **Transforms must not store `ISymbol` references.** Extract string names, type names, flags, and lists. A stored `ISymbol` defeats incremental caching because the symbol's identity changes on every compilation, even when the underlying source has not changed.
 
-**Transforms must not store a raw `Location`.** Use `LocationInfo` — see "Diagnostic Positions" below. A stored `Location` pins a `SyntaxTree` to a dead compilation and breaks the IDE.
+**Transforms must not store a raw `Location`.** Use `LocationInfo`; see "Diagnostic Positions" below. A stored `Location` pins a `SyntaxTree` to a dead compilation and breaks the IDE.
 
 ---
 
@@ -447,9 +447,9 @@ This is the single most commonly broken invariant in the generator, and it is br
 
 ### Why `ImmutableArray<T>` is wrong
 
-`ImmutableArray<T>` is a readonly struct wrapping a `T[]`. Its `Equals` compares the **array reference**, not the elements — that is the equality it inherits from the array it wraps. Immutability and value equality are different properties, and it only has the first.
+`ImmutableArray<T>` is a readonly struct wrapping a `T[]`. Its `Equals` compares the **array reference**, not the elements: that is the equality it inherits from the array it wraps. Immutability and value equality are different properties, and it only has the first.
 
-A transform allocates a fresh array every run. So a record field of type `ImmutableArray<T>` makes the compiler-generated record `Equals` return `false` on every pass, even when the source is byte-identical. Roslyn concludes the model changed, re-runs the stage, re-renders the template. On every keystroke. Nothing errors — the IDE simply gets slower as the model grows, and the cause is invisible because the code reads as correct.
+A transform allocates a fresh array every run. So a record field of type `ImmutableArray<T>` makes the compiler-generated record `Equals` return `false` on every pass, even when the source is byte-identical. Roslyn concludes the model changed, re-runs the stage, re-renders the template. On every keystroke. Nothing errors: the IDE simply gets slower as the model grows, and the cause is invisible because the code reads as correct.
 
 `ImmutableDictionary<TKey, TValue>` has the identical defect.
 
@@ -473,15 +473,15 @@ internal sealed record ValueObjectModel
 
 | Situation | What to write |
 |-----------|---------------|
-| Transform ends in `.ToImmutableArray()` | Nothing — implicit conversion wraps it on assignment |
+| Transform ends in `.ToImmutableArray()` | Nothing: implicit conversion wraps it on assignment |
 | Transform has an `IEnumerable<T>` | `.ToEquatableArray()` |
-| Collection expression | `Imports = ["System", "System.Linq"]` — works, via `[CollectionBuilder]` |
+| Collection expression | `Imports = ["System", "System.Linq"]` works, via `[CollectionBuilder]` |
 | Template needs an `ImmutableArray`-specific API | `.AsImmutableArray()` |
 | Reading it | It is an `IReadOnlyList<T>`: indexer, `Count`, `Length`, `IsDefaultOrEmpty`, `foreach` |
 
 ### The one legitimate exception
 
-`IncrementalValueProvider<ImmutableArray<T>>` — what `.Collect()` returns — stays as it is. That is pipeline plumbing, not a cached model field, and Roslyn compares those elementwise itself. Wrap the fields *inside* the elements, not the provider. The same goes for a template constructor parameter that receives a collected array directly: the template is not cached, so its parameter type is irrelevant to caching.
+`IncrementalValueProvider<ImmutableArray<T>>` (what `.Collect()` returns) stays as it is. That is pipeline plumbing, not a cached model field, and Roslyn compares those elementwise itself. Wrap the fields *inside* the elements, not the provider. The same goes for a template constructor parameter that receives a collected array directly: the template is not cached, so its parameter type is irrelevant to caching.
 
 ---
 
@@ -489,7 +489,7 @@ internal sealed record ValueObjectModel
 
 Models carry `LocationInfo?` (`Core/LocationInfo.cs`), never a Roslyn `Location`.
 
-A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one specific `Compilation`. A cached model outlives the compilation it was built from, so reporting through a stored `Location` reports a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation" — which kills source generation, classification, and CodeLens in the IDE. The CLI never notices (one run, fresh trees), so this reproduces only for the people who have to work in the editor all day.
+A `Location` references its `SyntaxTree`, and a `SyntaxTree` belongs to one specific `Compilation`. A cached model outlives the compilation it was built from, so reporting through a stored `Location` reports a diagnostic whose tree is not part of the **current** compilation. Roslyn's suppression filtering then throws "SyntaxTree is not part of the compilation", which kills source generation, classification, and CodeLens in the IDE. The CLI never notices (one run, fresh trees), so this reproduces only for the people who have to work in the editor all day.
 
 Separately, `Location` is not usefully value-equatable, so including it in a record defeats caching on every re-parse.
 
@@ -501,7 +501,7 @@ Location = LocationInfo.From(symbol.Locations.FirstOrDefault()),
 ctx.ReportDiagnostic(MyDiagnostics.MustBePartial, model.Location?.ToLocation(compilation), model.TypeName);
 ```
 
-`LocationInfo` captures the file path plus both spans as plain values and is deliberately excluded from equality — `Equals` always returns `true`, `GetHashCode` returns `0` — because a position never changes the generated output.
+`LocationInfo` captures the file path plus both spans as plain values and is deliberately excluded from equality (`Equals` always returns `true`, `GetHashCode` returns `0`) because a position never changes the generated output.
 
 | Rebuild call | Result |
 |--------------|--------|
@@ -510,7 +510,7 @@ ctx.ReportDiagnostic(MyDiagnostics.MustBePartial, model.Location?.ToLocation(com
 
 Prefer the compilation overload wherever a `Compilation` is in scope.
 
-**One trap.** `LocationInfo.From` returns `null` when the syntax tree's `FilePath` is empty. Any diagnostic guarded on `if (model.Location is null) return;` therefore vanishes in a test whose compilation was parsed without a path — the test fails while production works fine. `GeneratorTestHelper.RunGenerator` parses with an explicit path for exactly this reason; if you build a compilation by hand, pass one.
+**One trap.** `LocationInfo.From` returns `null` when the syntax tree's `FilePath` is empty. Any diagnostic guarded on `if (model.Location is null) return;` therefore vanishes in a test whose compilation was parsed without a path: the test fails while production works fine. `GeneratorTestHelper.RunGenerator` parses with an explicit path for exactly this reason; if you build a compilation by hand, pass one.
 
 ---
 
@@ -627,7 +627,7 @@ internal abstract record GeneratorModel
 
 2. **Use `sealed record`.** Records provide structural equality by default. `sealed` prevents inheritance that could break equality semantics.
 
-3. **Use `EquatableArray<T>` for collections, `EquatableDictionary<TKey, TValue>` for maps.** `List<T>` and `T[]` use reference equality — and so does `ImmutableArray<T>`, which is the trap. See "Value-Equatable Model Fields" above.
+3. **Use `EquatableArray<T>` for collections, `EquatableDictionary<TKey, TValue>` for maps.** `List<T>` and `T[]` use reference equality, and so does `ImmutableArray<T>`, which is the trap. See "Value-Equatable Model Fields" above.
 
 4. **All properties must participate in equality.** Records include all properties by default. If you override `Equals`, ensure all properties are compared.
 
@@ -637,7 +637,7 @@ internal abstract record GeneratorModel
 
 7. **Mark required properties with `required`.** This prevents accidentally constructing an incomplete model.
 
-8. **Inherit `GeneratorModel` only when the model describes a type.** Some models describe a property or a relationship instead — `TemporalBehaviorPropertyModel` is one — and are flat records with no base.
+8. **Inherit `GeneratorModel` only when the model describes a type.** Some models describe a property or a relationship instead (`TemporalBehaviorPropertyModel` is one) and are flat records with no base.
 
 ### Example model
 
@@ -693,7 +693,7 @@ Templates extend `CSharpTemplate` (`shared/SourceGen/CSharpTemplate*.cs`) and pr
 
 | Member | Default | Purpose |
 |--------|---------|---------|
-| `Validate()` | `return true` | Return `false` to skip generation entirely. `ToString()` returns `null`, `ToSourceText()` renders empty content, and `ctx.AddSource(artifact)` skips the file. Nothing is reported — a deliberately missing output is silent. |
+| `Validate()` | `return true` | Return `false` to skip generation entirely. `ToString()` returns `null`, `ToSourceText()` renders empty content, and `ctx.AddSource(artifact)` skips the file. Nothing is reported: a deliberately missing output is silent. |
 | `GeneratorName` | `null` | Appears in `// Generated by {GeneratorName} v{version}` header comment. |
 | `SourceInfo` | `null` | Appears in `// Source: {SourceInfo}` header comment. |
 | `TriggerInfo` | `null` | Appears in `// Trigger: {TriggerInfo}` header comment. |
@@ -708,7 +708,7 @@ Templates extend `CSharpTemplate` (`shared/SourceGen/CSharpTemplate*.cs`) and pr
 6. The base class assembles the final output: auto-generated header, `#nullable enable`, usings, aliases, namespace, then the rendered body.
 7. `ToSourceText()` converts the assembled string to `SourceText` with UTF-8 encoding and normalized CRLF line endings.
 8. The `Artifact` (hint name + source text) is returned to the feature.
-9. The feature calls `ctx.AddSource(artifact)`, which emits it — or skips it when it is empty.
+9. The feature calls `ctx.AddSource(artifact)`, which emits it, or skips it when it is empty.
 
 ### Artifact struct
 
@@ -737,7 +737,7 @@ ctx.AddSource(artifact.HintName, artifact.Source);       // wrong
 
 `SourceOutput.AddSource` (`shared/SourceGen/SourceOutput.cs`) is an extension on `SourceProductionContext`. It checks `artifact.IsEmpty` and skips the file, otherwise forwarding to Roslyn's own two-argument method. (An instance method beats an extension in overload resolution, so the forwarding call does not recurse.)
 
-The reason it exists is step 4 of the lifecycle above. A template that fails `Validate()` renders to *empty* content, not to nothing — that is how every template in the generator says "there is nothing to generate here". The raw call writes that empty content into the compilation as a real zero-byte `.g.cs`: harmless to compile, but it pollutes the generated-file list and destroys the distinction between "deliberately nothing" and "the template silently produced nothing", which is exactly the distinction you need when an output goes missing. With roughly 200 emission sites, the check belongs in one place rather than in 200 `if` statements only a handful of which would ever be written.
+The reason it exists is step 4 of the lifecycle above. A template that fails `Validate()` renders to *empty* content, not to nothing, and that is how every template in the generator says "there is nothing to generate here". The raw call writes that empty content into the compilation as a real zero-byte `.g.cs`: harmless to compile, but it pollutes the generated-file list and destroys the distinction between "deliberately nothing" and "the template silently produced nothing", which is exactly the distinction you need when an output goes missing. With roughly 200 emission sites, the check belongs in one place rather than in 200 `if` statements only a handful of which would ever be written.
 
 ### Example template
 
@@ -865,7 +865,7 @@ Use `TemplateHelpers.ParseAccessibility()` to convert the string from the model 
 
 `VirtualFolderHints` is the single source of truth for Roslyn hint names. Hint names determine the file name under which generated source appears in the IDE and build output.
 
-It lives in `Core/VirtualFolderHints.cs` — inside the generator project, not `shared/SourceGen/` — and is `internal` to that assembly. The standalone generators that do not link it (Result, Country/Currency/Language) build their hint names themselves.
+It lives in `Core/VirtualFolderHints.cs` (inside the generator project, not `shared/SourceGen/`) and is `internal` to that assembly. The standalone generators that do not link it (Result, Country/Currency/Language) build their hint names themselves.
 
 Slashes in hint names are unreliable across IDE versions (dotnet/roslyn#70859), which is why every pattern is flat and dot-separated rather than a real path.
 
@@ -907,7 +907,7 @@ _Metadata.Persistence.g.cs
 
 - **Always use `VirtualFolderHints`.** Never construct hint names by string concatenation.
 - **Artifact names must be unique per type.** Two templates for the same type must use different artifact suffixes.
-- **Always pass `namespacePrefix` to `ForType`.** See below — this one is load-bearing.
+- **Always pass `namespacePrefix` to `ForType`.** See below; this one is load-bearing.
 
 ### The `namespacePrefix` parameter
 
@@ -915,9 +915,9 @@ Three helpers accept it, and they do **not** treat it the same way:
 
 | Helper | Uses it? |
 |--------|----------|
-| `ForType` | **Yes** — it becomes the first segment of the hint name |
-| `ForAssembly` | No — one output per assembly, nothing to disambiguate |
-| `ForMetadata` | No — same reason |
+| `ForType` | **Yes**: it becomes the first segment of the hint name |
+| `ForAssembly` | No: one output per assembly, nothing to disambiguate |
+| `ForMetadata` | No: same reason |
 
 For `ForType` the parameter is optional in the signature but not in practice:
 
@@ -926,7 +926,7 @@ VirtualFolderHints.ForType("Invoice", "Repository", "Sales")   // Sales.Invoice.
 VirtualFolderHints.ForType("Invoice", "Repository")            // Invoice.Repository.g.cs  <- collides
 ```
 
-`Sales.Invoice` and `Archive.Invoice` produce the same hint without the prefix. `AddSource` throws on a duplicate hint name, and since the entire ecosystem is one `IIncrementalGenerator`, that exception aborts generation for **every** feature in the compilation — the visible symptom being a wall of CS0246 errors rather than the duplicate-hint message itself.
+`Sales.Invoice` and `Archive.Invoice` produce the same hint without the prefix. `AddSource` throws on a duplicate hint name, and since the entire ecosystem is one `IIncrementalGenerator`, that exception aborts generation for **every** feature in the compilation, the visible symptom being a wall of CS0246 errors rather than the duplicate-hint message itself.
 
 The helper drops a null, empty, or `"<global namespace>"` prefix on its own, so there is no case in which passing the model's namespace is wrong. Pass it unconditionally.
 
@@ -1026,7 +1026,7 @@ Key elements:
 
 Every one of the ~130 output registrations in the generator uses `RegisterSourceOutputSafe`. This is not a style preference.
 
-Because the whole ecosystem is served by one `IIncrementalGenerator`, Roslyn gives its output registrations no isolation from each other. An unhandled exception in any single transform or template surfaces as one CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. A malformed attribute argument on one entity takes out repositories, endpoints, DI registration, and host wiring simultaneously — and the diagnostic names the generator, not the feature that broke.
+Because the whole ecosystem is served by one `IIncrementalGenerator`, Roslyn gives its output registrations no isolation from each other. An unhandled exception in any single transform or template surfaces as one CS8785 ("Generator failed to generate source") and suppresses the output of **every** feature in the compilation. A malformed attribute argument on one entity takes out repositories, endpoints, DI registration, and host wiring simultaneously, and the diagnostic names the generator, not the feature that broke.
 
 `shared/SourceGen/SafeSourceOutput.cs` provides a drop-in extension on `IncrementalGeneratorInitializationContext`, with overloads for both `IncrementalValueProvider<T>` and `IncrementalValuesProvider<T>`. It wraps the callback in a `try/catch`, reports the failure as **PRAG9000**, and lets every other output proceed.
 
@@ -1051,7 +1051,7 @@ context.RegisterSourceOutputSafe(allActions, static (ctx, models) =>
 
 `.Collect()` gathers all models into an `ImmutableArray<T>`. The trade-off: any change to any model triggers regeneration of the aggregate artifact. Use per-type pipelines when possible.
 
-This `IncrementalValueProvider<ImmutableArray<T>>` is the one place a raw `ImmutableArray<T>` is correct — it is pipeline plumbing that Roslyn compares elementwise itself, not a cached model field.
+This `IncrementalValueProvider<ImmutableArray<T>>` is the one place a raw `ImmutableArray<T>` is correct: it is pipeline plumbing that Roslyn compares elementwise itself, not a cached model field.
 
 Aggregate templates must sort their input before rendering. The pipeline delivers models in whatever order Roslyn collected them, which is not stable across runs; unsorted output produces spurious diffs in generated files and flapping snapshot tests.
 
@@ -1095,9 +1095,9 @@ internal static class PersistenceFeature
 
 Each sub-feature owns its templates and registers its own outputs, keeping every file under 300 lines while the orchestrator manages the shared providers.
 
-**Two files in `Features/Persistence/` are not sub-features.** `ReadContractFeature` and `RollUpFeature` are registered directly from `PragmaticSourceGenerator.Initialize()` and take only `context` — no feature gate. If you count `*Feature.cs` files in that folder you get nine: one orchestrator, six delegated sub-features, two independent siblings.
+**Two files in `Features/Persistence/` are not sub-features.** `ReadContractFeature` and `RollUpFeature` are registered directly from `PragmaticSourceGenerator.Initialize()` and take only `context`, with no feature gate. If you count `*Feature.cs` files in that folder you get nine: one orchestrator, six delegated sub-features, two independent siblings.
 
-**Four `*BoundaryReader.cs` classes** (`BatchProgressBoundaryReader`, `EventOutboxBoundaryReader`, `MessagingOutboxBoundaryReader`, `SagaPersistenceBoundaryReader`) resolve boundary marker attributes through `Compilation.GetTypeByMetadataName` rather than `ForAttributeWithMetadataName`. That is deliberate: in host mode the markers live in **referenced assemblies**, which a syntax-based provider cannot see. It is one of the few sanctioned compilation queries outside `FeatureDetector` — do not take it as licence for the general case.
+**Four `*BoundaryReader.cs` classes** (`BatchProgressBoundaryReader`, `EventOutboxBoundaryReader`, `MessagingOutboxBoundaryReader`, `SagaPersistenceBoundaryReader`) resolve boundary marker attributes through `Compilation.GetTypeByMetadataName` rather than `ForAttributeWithMetadataName`. That is deliberate: in host mode the markers live in **referenced assemblies**, which a syntax-based provider cannot see. It is one of the few sanctioned compilation queries outside `FeatureDetector`; do not take it as licence for the general case.
 
 ---
 
@@ -1116,7 +1116,7 @@ The default when the compilation is a class library. Generates:
 
 ### Host mode
 
-Two flags, and they gate different things — do not conflate them.
+Two flags, and they gate different things: do not conflate them.
 
 **`IsHostMode`** is true when the project is an executable with an entry point, and nothing more (`CompositionDetector.IsHostProject`). It gates the host-level *persistence* artifacts, which cannot be generated in module assemblies because they depend on EF Core types the module may not reference:
 
@@ -1126,7 +1126,7 @@ Two flags, and they gate different things — do not conflate them.
 
 **`IsHostCompositionMode`** adds the requirement that the project reference `Pragmatic.Composition.Host`. Only with this flag does the Composition feature emit its aggregated DI wiring (`PragmaticHost.Services.g.cs`).
 
-The narrower flag exists because "is an executable" is a much weaker statement than "is a Pragmatic host". A console utility, a benchmark project, or a test host can satisfy `IsHostMode` while having no composition root to wire — emitting host aggregation into those produces code that does not compile. `CompositionDetector` also exposes `IsTestProject()` and a `GeneratorMode` enum (`Library` / `Host` / `Skip`) folding all three checks together.
+The narrower flag exists because "is an executable" is a much weaker statement than "is a Pragmatic host". A console utility, a benchmark project, or a test host can satisfy `IsHostMode` while having no composition root to wire; emitting host aggregation into those produces code that does not compile. `CompositionDetector` also exposes `IsTestProject()` and a `GeneratorMode` enum (`Library` / `Host` / `Skip`) folding all three checks together.
 
 ### Cross-assembly entity discovery
 
@@ -1209,11 +1209,11 @@ Features report diagnostics via `ctx.ReportDiagnostic()` when they detect issues
 | `PRAG0400`--`PRAG0449` | Actions |
 | `PRAG0500`--`PRAG0599` | Endpoints |
 | `PRAG0600`--`PRAG0699` | Persistence / Persistence.EFCore |
-| `PRAG0700`--`PRAG0799` | Persistence — query pipeline |
+| `PRAG0700`--`PRAG0799` | Persistence: query pipeline |
 | `PRAG0800`--`PRAG0899` | Messaging |
 | `PRAG0900`--`PRAG0999` | Temporal |
 | `PRAG1000`--`PRAG1099` | Identity / Authorization |
-| `PRAG1100`--`PRAG1199` | Persistence — data ownership |
+| `PRAG1100`--`PRAG1199` | Persistence: data ownership |
 | `PRAG1400`--`PRAG1499` | DependencyInjection |
 | `PRAG1600`--`PRAG1699` | Composition |
 | `PRAG1700`--`PRAG1799` | Caching |
@@ -1234,7 +1234,7 @@ Two ranges sit outside the per-module scheme:
 | ID | Meaning |
 |----|---------|
 | `PRAG9000` | A source generator output failed and was caught by `RegisterSourceOutputSafe`. **Error.** |
-| `PRAGS001`--`PRAGS004` | The four diagnostic **suppressors** (see below) — a suppression ID, not a diagnostic |
+| `PRAGS001`--`PRAGS004` | The four diagnostic **suppressors** (see below); a suppression ID, not a diagnostic |
 
 ### Building descriptors
 
@@ -1265,7 +1265,7 @@ private static void ReportDiagnostics(SourceProductionContext ctx, ActionModel m
 }
 ```
 
-`model.Location` is a `LocationInfo?`, never a raw `Location` — see "Diagnostic Positions" above.
+`model.Location` is a `LocationInfo?`, never a raw `Location`; see "Diagnostic Positions" above.
 
 Two habits that matter more than they look:
 
@@ -1277,7 +1277,7 @@ Two habits that matter more than they look:
 
 Some diagnostics are worth reporting before a build happens. `Pragmatic.SourceGenerator.Analyzers` ships `NotPartialClassAnalyzer`, which mirrors the generator's 13 "must be `partial`" IDs at design time, and `EventCycleAnalyzer` (PRAG0822, domain-event cascade cycles). `Pragmatic.SourceGenerator.CodeFixers` ships `MakeClassPartialCodeFixProvider` with a batch fix-all.
 
-If you add an attribute that requires `partial`, register its descriptor in `NotPartialDiagnosticDescriptors.cs` **and** add the ID to the fixer's `FixableDiagnosticIds` — otherwise the user gets a build error with no squiggle and no lightbulb.
+If you add an attribute that requires `partial`, register its descriptor in `NotPartialDiagnosticDescriptors.cs` **and** add the ID to the fixer's `FixableDiagnosticIds`; otherwise the user gets a build error with no squiggle and no lightbulb.
 
 ---
 
@@ -1385,7 +1385,7 @@ public class CachingGeneratorTests : CachingGeneratorTestBase
 
 ### Testing a template without a compilation
 
-Because templates are pure functions of the model, the cheapest test builds a model by hand and renders it — no compilation, no generator driver. This is how most of the 40 snapshots in the suite are written:
+Because templates are pure functions of the model, the cheapest test builds a model by hand and renders it, with no compilation and no generator driver. This is how most of the 40 snapshots in the suite are written:
 
 ```csharp
 public class TemporalSnapshotTests
@@ -1416,7 +1416,7 @@ Note the `Task` return type, returned directly from `Verify(...)`.
 
 Reserve the full generator run for what template tests cannot cover: transform behaviour, feature gating, and diagnostics.
 
-### Snapshot scrubbing is global — configure nothing
+### Snapshot scrubbing is global: configure nothing
 
 There is no `ModuleInitializer.cs` in `tests/Pragmatic.SourceGenerator.Tests/`, and none should be added. Verify's configuration lives once, repo-wide, in `shared/Testing/VerifyHelpers.cs` (`Pragmatic.Testing.VerifyConfiguration`). It carries its own `[ModuleInitializer]` and `Directory.Build.props` globs `$(SharedTestingPath)**\*.cs` into every project with `IsTest=true`, so it is already compiled into your test assembly before you write a line.
 
@@ -1431,13 +1431,13 @@ Four scrubbers run:
 
 It also calls `DontScrubDateTimes()` and `DontScrubGuids()` so Verify's aggressive defaults do not mangle dates and GUIDs that are genuinely part of the generated output.
 
-Write the test, run it, accept the `.verified.txt`. If some header form still leaks into a diff, extend `VerifyHelpers.cs` — a per-project scrubber would fix your suite and leave the other snapshots across the repo exposed.
+Write the test, run it, accept the `.verified.txt`. If some header form still leaks into a diff, extend `VerifyHelpers.cs`; a per-project scrubber would fix your suite and leave the other snapshots across the repo exposed.
 
 ---
 
 ## Shared Source Code (Zero NuGet Dependencies)
 
-The generator assembly references no NuGet packages at generation time. Shared code lives in `shared/SourceGen/` and is linked in by `Directory.Build.props` — no per-project wiring:
+The generator assembly references no NuGet packages at generation time. Shared code lives in `shared/SourceGen/` and is linked in by `Directory.Build.props`, with no per-project wiring:
 
 ```xml
 <!-- Auto-include shared SourceGen code for generators (excluding Testing subfolder) -->
@@ -1448,17 +1448,17 @@ The generator assembly references no NuGet packages at generation time. Shared c
 
 Note the glob is `*.cs`, not `**\*.cs`: only the top level is linked, which is why `Testing/` is excluded here and picked up separately by the `IsTest` condition instead. Setting `IsGenerator` on a project is all it takes to get `CSharpTemplate`, `EquatableArray`, `SourceOutput`, and the rest.
 
-All of this code compiles as **`netstandard2.0`**, which constrains the C# you can use in the generator itself — `System.Threading.Lock`, `params ReadOnlySpan<T>`, and inline arrays are unavailable, while `field`, extension members, primary constructors, collection expressions, and `init`/`required` (via `Polyfills.cs`) all work. The code the generator *emits* runs on `net10.0` and has no such limits. See `docs/CONVENTIONS.md`.
+All of this code compiles as **`netstandard2.0`**, which constrains the C# you can use in the generator itself: `System.Threading.Lock`, `params ReadOnlySpan<T>`, and inline arrays are unavailable, while `field`, extension members, primary constructors, collection expressions, and `init`/`required` (via `Polyfills.cs`) all work. The code the generator *emits* runs on `net10.0` and has no such limits. See `docs/CONVENTIONS.md`.
 
 ### Key shared files
 
 | File | Purpose |
 |------|---------|
 | `CSharpTemplate*.cs` | Template base class (4 partial files) |
-| `EquatableArray.cs` | Value-equatable collection wrapper — **mandatory** on model fields |
+| `EquatableArray.cs` | Value-equatable collection wrapper, **mandatory** on model fields |
 | `EquatableDictionary.cs` | Same, for maps; order-insensitive equality |
-| `SafeSourceOutput.cs` | `RegisterSourceOutputSafe` — crash isolation, PRAG9000 |
-| `SourceOutput.cs` | `ctx.AddSource(artifact)` — the single emission point |
+| `SafeSourceOutput.cs` | `RegisterSourceOutputSafe`: crash isolation, PRAG9000 |
+| `SourceOutput.cs` | `ctx.AddSource(artifact)`, the single emission point |
 | `Artifact.cs` | Readonly struct for hint name + source text, with `IsEmpty` |
 | `NamingHelper.cs` | Suffix deduplication |
 | `GeneratorModel.cs` | Base record for type-describing models |
