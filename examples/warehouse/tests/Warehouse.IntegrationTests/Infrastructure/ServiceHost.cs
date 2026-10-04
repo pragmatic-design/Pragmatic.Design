@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pragmatic.ControlPlane;
@@ -22,7 +23,8 @@ namespace Warehouse.IntegrationTests.Infrastructure;
 ///         their services. Not Development, so the committed development settings stay out.
 ///     </para>
 /// </remarks>
-internal sealed class ServiceHost<TEntryPoint>(IReadOnlyDictionary<string, string?> settings)
+internal sealed class ServiceHost<TEntryPoint>(
+    IReadOnlyDictionary<string, string?> settings, Action<IServiceCollection>? services = null)
     : WebApplicationFactory<TEntryPoint>
     where TEntryPoint : class
 {
@@ -68,5 +70,9 @@ internal sealed class ServiceHost<TEntryPoint>(IReadOnlyDictionary<string, strin
             builder.UseSetting(key, value);
 
         builder.ConfigureLogging(logging => logging.AddProvider(Errors));
+
+        // A fault a test injects, registered after the host's own services so it can wrap one of them.
+        if (services is not null)
+            builder.ConfigureTestServices(services);
     }
 }

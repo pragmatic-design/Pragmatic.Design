@@ -17,6 +17,9 @@ internal sealed class HostErrorLog : ILoggerProvider
 
     public ILogger CreateLogger(string categoryName) => new Logger(categoryName, _entries);
 
+    /// <summary>Every error logged so far, oldest first, for an assertion about one of them.</summary>
+    public IReadOnlyCollection<string> Entries => _entries.ToArray();
+
     /// <summary>
     ///     Every error logged so far, newest first, each with its chain of exceptions and the frame that threw
     ///     each one.

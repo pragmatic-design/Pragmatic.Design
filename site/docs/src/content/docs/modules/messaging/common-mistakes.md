@@ -27,7 +27,7 @@ public sealed partial class OrderCreatedHandler : IMessageHandler<OrderCreated>
 }
 ```
 
-**Why:** The SG generates a partial declaration of the handler to host the nested `Pipeline` class and its `[LoggerMessage]` methods. Without `partial` the generator emits nothing for the handler (no pipeline, no registration), and **PRAG0801** says so as an error on your declaration.
+**Why:** The SG generates a partial declaration of the handler to host the nested `Pipeline` class and its log methods. Without `partial` the generator emits nothing for the handler (no pipeline, no registration), and **PRAG0801** says so as an error on your declaration.
 
 ---
 

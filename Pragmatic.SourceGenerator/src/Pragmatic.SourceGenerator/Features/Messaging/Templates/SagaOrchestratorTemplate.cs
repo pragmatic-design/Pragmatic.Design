@@ -14,7 +14,7 @@ namespace Pragmatic.SourceGenerator.Features.Messaging.Templates;
 ///        compensation chain from the current state before marking the instance TimedOut
 ///     6. Persists saga state via ISagaRepository
 /// </summary>
-internal sealed partial class SagaOrchestratorTemplate : CSharpTemplate
+internal sealed partial class SagaOrchestratorTemplate : LoggingTemplate
 {
     /// <summary>The typed-metadata helper the compensation clone goes through — no reflection.</summary>
     private const string Info = "global::Pragmatic.Serialization.PragmaticJsonTypeInfo.For";
@@ -139,7 +139,6 @@ internal sealed partial class SagaOrchestratorTemplate : CSharpTemplate
 
         AppendLine();
 
-        // LoggerMessage partials
         RenderLoggerMessages();
     }
 
@@ -686,45 +685,55 @@ internal sealed partial class SagaOrchestratorTemplate : CSharpTemplate
         AppendLine("}");
     }
 
+    private static readonly (string Type, string Name)[] SagaAndStep =
+        [("string", "sagaType"), ("string", "stepName")];
+
+    private static readonly string[] SagaAndStepOrder = ["sagaType", "stepName"];
+
     private void RenderLoggerMessages()
     {
-        AppendLine("[LoggerMessage(Level = LogLevel.Information,");
-        AppendLine("    Message = \"Saga {SagaType} starting for correlation {CorrelationId}\")]");
-        AppendLine("partial void LogSagaStarting(string sagaType, string correlationId);");
+        RenderLogMethod("LogSagaStarting", "Information",
+            "Saga {SagaType} starting for correlation {CorrelationId}",
+            [("string", "sagaType"), ("string", "correlationId")],
+            ["sagaType", "correlationId"]);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Debug,");
-        AppendLine("    Message = \"Saga {SagaType} executing step {StepName} in state {CurrentState}\")]");
-        AppendLine("partial void LogSagaStepExecuting(string sagaType, string stepName, string currentState);");
+        RenderLogMethod("LogSagaStepExecuting", "Debug",
+            "Saga {SagaType} executing step {StepName} in state {CurrentState}",
+            [..SagaAndStep, ("string", "currentState")],
+            [..SagaAndStepOrder, "currentState"]);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Error,");
-        AppendLine("    Message = \"Saga {SagaType} step {StepName} failed\")]");
-        AppendLine("partial void LogSagaStepFailed(string sagaType, string stepName, Exception ex);");
-        AppendLine();
-        AppendLine("[LoggerMessage(Level = LogLevel.Information,");
-        AppendLine("    Message = \"Saga {SagaType} step {StepName} rejected: {Reason}\")]");
-        AppendLine("partial void LogSagaStepRejected(string sagaType, string stepName, string reason);");
+        RenderLogMethod("LogSagaStepFailed", "Error",
+            "Saga {SagaType} step {StepName} failed",
+            SagaAndStep, SagaAndStepOrder, exception: "ex");
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Information,");
-        AppendLine("    Message = \"Saga {SagaType} compensated step {StepName}\")]");
-        AppendLine("partial void LogSagaCompensated(string sagaType, string stepName);");
+        RenderLogMethod("LogSagaStepRejected", "Information",
+            "Saga {SagaType} step {StepName} rejected: {Reason}",
+            [..SagaAndStep, ("string", "reason")],
+            [..SagaAndStepOrder, "reason"]);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Warning,");
-        AppendLine("    Message = \"Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null\")]");
-        AppendLine("partial void LogSagaCompensationSkipped(string sagaType, string stepName);");
+        RenderLogMethod("LogSagaCompensated", "Information",
+            "Saga {SagaType} compensated step {StepName}",
+            SagaAndStep, SagaAndStepOrder);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Error,");
-        AppendLine("    Message = \"Saga {SagaType} compensator for step {StepName} threw — continuing chain\")]");
-        AppendLine("partial void LogSagaCompensationFailed(string sagaType, string stepName, Exception ex);");
+        RenderLogMethod("LogSagaCompensationSkipped", "Warning",
+            "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null",
+            SagaAndStep, SagaAndStepOrder);
         AppendLine();
 
-        AppendLine("[LoggerMessage(Level = LogLevel.Warning,");
-        AppendLine("    Message = \"Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain\")]");
-        AppendLine("partial void LogSagaTimedOut(string sagaType, string correlationId, string state);");
+        RenderLogMethod("LogSagaCompensationFailed", "Error",
+            "Saga {SagaType} compensator for step {StepName} threw — continuing chain",
+            SagaAndStep, SagaAndStepOrder, exception: "ex");
+        AppendLine();
+
+        RenderLogMethod("LogSagaTimedOut", "Warning",
+            "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain",
+            [("string", "sagaType"), ("string", "correlationId"), ("string", "state")],
+            ["sagaType", "correlationId", "state"]);
         AppendLine();
 
         RenderConflictLoggerMessage();

@@ -121,21 +121,29 @@ public partial class SlowHandler
         }
         
         
-        [LoggerMessage(Level = LogLevel.Debug,
-            Message = "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})")]
-        partial void LogHandlerStarted(string messageName, string handlerName, string messageId);
+        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logHandlerStarted =
+            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogHandlerStarted"), "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})");
         
-        [LoggerMessage(Level = LogLevel.Debug,
-            Message = "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms")]
-        partial void LogHandlerCompleted(string messageName, string handlerName, double durationMs);
+        private void LogHandlerStarted(string messageName, string handlerName, string messageId)
+            => __logHandlerStarted(_logger, handlerName, messageName, messageId, null);
         
-        [LoggerMessage(Level = LogLevel.Error,
-            Message = "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})")]
-        partial void LogHandlerFailed(string messageName, string handlerName, int retryCount, Exception ex);
+        private static readonly global::System.Action<ILogger, string, string, double, global::System.Exception?> __logHandlerCompleted =
+            LoggerMessage.Define<string, string, double>(LogLevel.Debug, new EventId(0, "LogHandlerCompleted"), "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms");
         
-        [LoggerMessage(Level = LogLevel.Debug,
-            Message = "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})")]
-        partial void LogDuplicateSkipped(string messageName, string handlerName, string messageId);
+        private void LogHandlerCompleted(string messageName, string handlerName, double durationMs)
+            => __logHandlerCompleted(_logger, handlerName, messageName, durationMs, null);
+        
+        private static readonly global::System.Action<ILogger, string, string, int, global::System.Exception?> __logHandlerFailed =
+            LoggerMessage.Define<string, string, int>(LogLevel.Error, new EventId(0, "LogHandlerFailed"), "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})");
+        
+        private void LogHandlerFailed(string messageName, string handlerName, int retryCount, global::System.Exception ex)
+            => __logHandlerFailed(_logger, handlerName, messageName, retryCount, ex);
+        
+        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logDuplicateSkipped =
+            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogDuplicateSkipped"), "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})");
+        
+        private void LogDuplicateSkipped(string messageName, string handlerName, string messageId)
+            => __logDuplicateSkipped(_logger, messageName, handlerName, messageId, null);
     }
     
 }
