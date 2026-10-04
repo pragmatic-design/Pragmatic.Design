@@ -127,7 +127,7 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
         if (outputStream != null)
         {
             _outputStream = outputStream;
-            _textWriter = new StreamWriter(_outputStream, Encoding.UTF8, leaveOpen: true);
+            _textWriter = new StreamWriter(_outputStream, LogTextEncoding.Utf8, leaveOpen: true);
             _ownsStream = false;
         }
         else
@@ -603,7 +603,7 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
         }
 
         _fileStream = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-        _streamWriter = new StreamWriter(_fileStream, Encoding.UTF8);
+        _streamWriter = new StreamWriter(_fileStream, LogTextEncoding.Utf8);
 
         if (_currentFileDate == DateTime.MinValue)
         {
