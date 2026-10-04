@@ -16,9 +16,9 @@ Entities raise events, `SaveChangesAsync()` succeeds, but handlers never fire.
    builder.Services.AddInMemoryDomainEvents();
    ```
 
-   `AddPragmaticEventHandlers()` already does this (via `TryAdd`), so this step only applies when you register handlers by hand. Without a dispatcher the events are **left on the entity** rather than taken and dropped — so `entity.DomainEvents` growing across saves is the symptom that says this is your problem.
+   `AddPragmaticEventHandlers()` already does this (via `TryAdd`), so this step only applies when you register handlers by hand. Without a dispatcher the events are **left on the entity** rather than taken and dropped, so `entity.DomainEvents` growing across saves is the symptom that says this is your problem.
 
-2. **Did you save through the unit of work?** Dispatch belongs to whoever performed the write: the generated invoker of a mutation or action, the batch of a composition, or `EfCoreUnitOfWork`. A call straight to `dbContext.SaveChangesAsync()` bypasses all three — the rows are written and nothing is dispatched.
+2. **Did you save through the unit of work?** Dispatch belongs to whoever performed the write: the generated invoker of a mutation or action, the batch of a composition, or `EfCoreUnitOfWork`. A call straight to `dbContext.SaveChangesAsync()` bypasses all three: the rows are written and nothing is dispatched.
 
 3. **Did you add the interceptor to your DbContext?** Only matters for `[Raises<T>]`, which is what raises them:
 
@@ -26,7 +26,7 @@ Entities raise events, `SaveChangesAsync()` succeeds, but handlers never fire.
    services.AddDbContext<AppDbContext>(options =>
    {
        options.UseNpgsql(connectionString);
-       options.UseDomainEvents();  // LifecycleEventsInterceptor — raising only
+       options.UseDomainEvents();  // LifecycleEventsInterceptor: raising only
    });
    ```
 
@@ -184,7 +184,7 @@ You call the synchronous `SaveChanges()`, it commits, but no handlers fire.
 
 ### Cause
 
-Handlers are asynchronous, so dispatch is too, and `IUnitOfWork` exposes only `SaveChangesAsync`. A synchronous `SaveChanges()` on the `DbContext` goes around the unit of work entirely: the rows are written, the declared events are still raised by the interceptor, and nobody takes them. There is no `GetAwaiter().GetResult()` bridge on purpose — that pattern can deadlock in ASP.NET Core and other synchronization-context-bearing hosts.
+Handlers are asynchronous, so dispatch is too, and `IUnitOfWork` exposes only `SaveChangesAsync`. A synchronous `SaveChanges()` on the `DbContext` goes around the unit of work entirely: the rows are written, the declared events are still raised by the interceptor, and nobody takes them. There is no `GetAwaiter().GetResult()` bridge on purpose: that pattern can deadlock in ASP.NET Core and other synchronization-context-bearing hosts.
 
 ### Fix
 
@@ -194,7 +194,7 @@ Save through the unit of work, always asynchronously:
 await unitOfWork.SaveChangesAsync(ct);   // dispatches; dbContext.SaveChanges() does not
 ```
 
-If a code path genuinely cannot go async and still needs events delivered, dispatch manually after the sync save (clear before dispatch — see "Events Dispatched Twice on Retry"), or route the write through an async path.
+If a code path genuinely cannot go async and still needs events delivered, dispatch manually after the sync save (clear before dispatch; see "Events Dispatched Twice on Retry"), or route the write through an async path.
 
 ---
 
@@ -235,7 +235,7 @@ await dispatcher.DispatchAsync(new ReservationConfirmed(/* ... */));
 
 ### Is InMemoryEventDispatcher suitable for production?
 
-Yes, for in-process side effects. It is the standard dispatcher for monolithic applications and single-process deployments. When you need at-least-once delivery and crash-safety, enable the **transactional outbox** — it ships in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`), not `Pragmatic.Messaging`. See the outbox Quick Start in [Getting Started](getting-started.md#transactional-outbox-at-least-once-delivery). For cross-service messaging over a broker, add `Pragmatic.Messaging`.
+Yes, for in-process side effects. It is the standard dispatcher for monolithic applications and single-process deployments. When you need at-least-once delivery and crash-safety, enable the **transactional outbox**: it ships in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`), not `Pragmatic.Messaging`. See the outbox Quick Start in [Getting Started](getting-started.md#transactional-outbox-at-least-once-delivery). For cross-service messaging over a broker, add `Pragmatic.Messaging`.
 
 ### Can I replace InMemoryEventDispatcher with a custom implementation?
 

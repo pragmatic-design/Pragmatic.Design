@@ -10,11 +10,11 @@ Five concrete scenarios, each ~3 minutes.
 dotnet add package Pragmatic.Imaging
 ```
 
-The NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64` — the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner; no test runs it on macOS yet. See [native-deployment.md](native-deployment.md).
+The NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner, and no test runs it on macOS yet. See [native-deployment.md](native-deployment.md).
 
 ---
 
-## Scenario 1 — resize and convert
+## Scenario 1: resize and convert
 
 Load a JPEG, thumbnail it, write WebP.
 
@@ -32,7 +32,7 @@ pipe.EncodeTo(output, ImageFormat.WebP);
 
 ---
 
-## Scenario 2 — apply filters
+## Scenario 2: apply filters
 
 Grayscale + sharpen + tonal tweaks.
 
@@ -52,7 +52,7 @@ See [operations.md](operations.md) for every filter parameter.
 
 ---
 
-## Scenario 3 — inspect an upload before decoding
+## Scenario 3: inspect an upload before decoding
 
 Validate dimensions and format cheaply (header only) before running anything expensive, then hand the same limits to `Load`.
 
@@ -85,7 +85,7 @@ using var pipe = ImagePipeline.Load(upload, options);
 
 ---
 
-## Scenario 4 — batch thumbnailing
+## Scenario 4: batch thumbnailing
 
 `ImageBatch` is static and works on `byte[]` inputs with bounded concurrency.
 
@@ -106,13 +106,13 @@ for (var i = 0; i < files.Length; i++)
     await File.WriteAllBytesAsync(Path.ChangeExtension(files[i], ".thumb.webp"), thumbs[i]);
 ```
 
-`maxConcurrency` caps how many pipelines are alive at once — 4–8 is a safe start on a typical server. For a custom per-item operation, use `ImageBatch.ProcessAsync(images, data => …)`.
+`maxConcurrency` caps how many pipelines are alive at once; 4–8 is a safe start on a typical server. For a custom per-item operation, use `ImageBatch.ProcessAsync(images, data => …)`.
 
 ---
 
-## Scenario 5 — generate a QR code
+## Scenario 5: generate a QR code
 
-No pipeline needed — QR generation is a direct static call.
+No pipeline needed: QR generation is a direct static call.
 
 ```csharp
 using var output = File.Create("qr.png");
@@ -153,18 +153,18 @@ public async Task ThumbnailAsync(CancellationToken ct)
 }
 ```
 
-Always pass `ImagingOptions` (start from `ImagingOptions.Strict`) for untrusted input — the defaults are conservative but not tailored to your workload.
+Always pass `ImagingOptions` (start from `ImagingOptions.Strict`) for untrusted input: the defaults are conservative but not tailored to your workload.
 
 ---
 
 ## Runnable samples
 
-- [`Pragmatic.Imaging.Samples`](../samples/Pragmatic.Imaging.Samples/) — QR / image info / resize / format / filters / crop / rotate / flip / chained transforms / batch
+- [`Pragmatic.Imaging.Samples`](../samples/Pragmatic.Imaging.Samples/): QR / image info / resize / format / filters / crop / rotate / flip / chained transforms / batch
 
 ---
 
 ## Next
 
-- [Operations reference](operations.md) — full method catalogue with parameters and semantics
-- [Native deployment](native-deployment.md) — platforms, AOT, Docker notes
-- [Concepts](concepts.md) — architecture, thread safety, error model
+- [Operations reference](operations.md): full method catalogue with parameters and semantics
+- [Native deployment](native-deployment.md): platforms, AOT, Docker notes
+- [Concepts](concepts.md): architecture, thread safety, error model

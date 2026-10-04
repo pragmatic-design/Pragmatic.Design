@@ -332,7 +332,7 @@ services.AddDbContext<AppDbContext>(options =>
 });
 ```
 
-**Runtime result:** `SaveChangesAsync()` persists the entity changes and nothing raises the declared events, so there is nothing to dispatch and no handler fires. `[Raises<T>]` produces code that nobody calls — the quietest failure in the module, because the attribute is right there in the source saying otherwise.
+**Runtime result:** `SaveChangesAsync()` persists the entity changes and nothing raises the declared events, so there is nothing to dispatch and no handler fires. `[Raises<T>]` produces code that nobody calls: the quietest failure in the module, because the attribute is right there in the source saying otherwise.
 
 **Right:**
 
@@ -346,7 +346,7 @@ services.AddDbContext<AppDbContext>(options =>
 });
 ```
 
-**Why:** `UseDomainEvents()` adds `LifecycleEventsInterceptor`, and that is the only thing that calls the `RaiseLifecycleEvents` method the generator puts on a `[Raises<T>]` entity. It takes no service provider — dispatch is not its job, so it has nothing to resolve. Events raised by hand with `RaiseEvent(...)` do not depend on it; declared ones do entirely.
+**Why:** `UseDomainEvents()` adds `LifecycleEventsInterceptor`, and that is the only thing that calls the `RaiseLifecycleEvents` method the generator puts on a `[Raises<T>]` entity. It takes no service provider: dispatch is not its job, so it has nothing to resolve. Events raised by hand with `RaiseEvent(...)` do not depend on it; declared ones do entirely.
 
 ---
 

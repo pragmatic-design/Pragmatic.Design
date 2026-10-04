@@ -15,12 +15,12 @@ The NuGet package carries native binaries for the RIDs below:
 |-----|------|--------|
 | `win-x64` | `Pragmatic.Imaging.Native.dll` | **Shipped** |
 | `linux-x64` | `libPragmatic.Imaging.Native.so` | **Shipped** (glibc) |
-| `osx-arm64` | `libPragmatic.Imaging.Native.dylib` | **Shipped** — built by the `Imaging Native` CI workflow; no test runs it on macOS yet |
-| `linux-arm64`, `osx-x64` | — | Not shipped |
-| `linux-musl-x64` (Alpine) | — | Not planned (glibc required) |
+| `osx-arm64` | `libPragmatic.Imaging.Native.dylib` | **Shipped**: built by the `Imaging Native` CI workflow; no test runs it on macOS yet |
+| `linux-arm64`, `osx-x64` | n/a | Not shipped |
+| `linux-musl-x64` (Alpine) | n/a | Not planned (glibc required) |
 
 For a RID the package does not ship, build the library yourself (below) and put it next to your
-app under the name the loader asks for — on macOS, `libPragmatic.Imaging.Native.dylib`.
+app under the name the loader asks for: on macOS, `libPragmatic.Imaging.Native.dylib`.
 
 ---
 
@@ -49,7 +49,7 @@ dotnet publish -c Release -r win-x64 --self-contained true
 
 ## Native AOT
 
-The binding is AOT-compatible — no reflection, no dynamic code generation, `LibraryImport`-generated P/Invoke.
+The binding is AOT-compatible: no reflection, no dynamic code generation, `LibraryImport`-generated P/Invoke.
 
 ```bash
 dotnet publish -c Release -r win-x64 -p:PublishAot=true
@@ -63,9 +63,9 @@ AOT affects the .NET code; the Rust library still ships alongside the AOT-compil
 
 The native library needs **glibc** on Linux. Recommended base images:
 
-- `mcr.microsoft.com/dotnet/runtime:10.0-bookworm-slim` — Debian, works
-- `mcr.microsoft.com/dotnet/runtime:10.0-jammy` — Ubuntu, works
-- `mcr.microsoft.com/dotnet/runtime:10.0-alpine` — **does NOT work** (musl, not glibc)
+- `mcr.microsoft.com/dotnet/runtime:10.0-bookworm-slim`: Debian, works
+- `mcr.microsoft.com/dotnet/runtime:10.0-jammy`: Ubuntu, works
+- `mcr.microsoft.com/dotnet/runtime:10.0-alpine`: **does NOT work** (musl, not glibc)
 
 ### Minimal Dockerfile
 
@@ -97,7 +97,7 @@ try
 }
 catch (DllNotFoundException ex)
 {
-    logger.LogCritical(ex, "Pragmatic.Imaging native library not found — check deployment");
+    logger.LogCritical(ex, "Pragmatic.Imaging native library not found; check deployment");
     throw;
 }
 ```
@@ -106,7 +106,7 @@ catch (DllNotFoundException ex)
 
 ## Building the native library yourself
 
-The Rust source lives at `Pragmatic.Imaging/native/pragmatic-imaging/` — the crate that
+The Rust source lives at `Pragmatic.Imaging/native/pragmatic-imaging/`, the crate that
 produces the Imaging native library (`pragmatic_imaging_native`). It depends on the shared
 `shared/native/pragmatic-core` crate for error/buffer plumbing.
 
