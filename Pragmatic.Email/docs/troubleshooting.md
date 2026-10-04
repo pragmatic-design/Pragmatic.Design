@@ -79,11 +79,17 @@ smtp.OAuth2Token = accessToken; // Fresh bearer token
 
 ### STARTTLS not upgrading
 
-If `UseSsl = true` (default) but the server doesn't advertise STARTTLS in its EHLO capabilities, the connection continues without TLS. This is by design: the library upgrades opportunistically.
+With `UseSsl = true` (the default), a connection on which TLS cannot be established is refused: when the
+server does not advertise STARTTLS in its EHLO capabilities, or the handshake fails, the send throws
+`InvalidOperationException` ("SMTP connection requires TLS…") before authenticating, so credentials never
+travel in cleartext.
 
-If you need to enforce TLS:
-- Use port 465 (implicit TLS) instead of 587 (STARTTLS).
-- Check your SMTP server configuration to ensure STARTTLS is enabled.
+To fix it:
+- If the endpoint speaks implicit TLS (usually port 465), use that port: `UseImplicitTls` defaults to on
+  for 465. On another port, set `UseImplicitTls = true`.
+- Otherwise enable STARTTLS in the SMTP server's configuration.
+
+`UseSsl = false` sends everything, credentials included, in cleartext; keep it for a local test server.
 
 ### Connection timeouts
 
