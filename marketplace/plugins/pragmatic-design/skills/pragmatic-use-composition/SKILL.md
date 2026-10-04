@@ -1,6 +1,6 @@
 ---
 name: pragmatic-use-composition
-description: Use when wiring the host, DI, modules, startup steps or the module-to-database topology — Pragmatic.Composition, PragmaticApp, IPragmaticBuilder, [Service], [Decorator], [Module], [Include], [StartupStep].
+description: Use when wiring the host, DI, modules, startup steps or the module-to-database topology (Pragmatic.Composition, PragmaticApp, IPragmaticBuilder, [Service], [Decorator], [Module], [Include], [StartupStep]).
 ---
 
 # Pragmatic Use Composition
@@ -32,7 +32,7 @@ Dense API surface: **`../pragmatic-ecosystem/references/api-surface/composition.
 
 Public namespaces: `Pragmatic.Composition.Attributes`, `Pragmatic.Composition.Enums`, `Pragmatic.Composition.Database`, `Pragmatic.Composition` (`IPragmaticBuilder`), `Pragmatic.Composition.Abstractions` (`IStartupStep`), `Pragmatic.Composition.Hosting` (`PragmaticApp`). There is **no** `Pragmatic.DependencyInjection` package.
 
-## 3-tier config — the mental model
+## 3-tier config: the mental model
 
 ```
 Topology (compile-time)  →  Strategy (Program.cs)       →  Business wiring (IStartupStep)
@@ -82,7 +82,7 @@ public sealed class StripeProvider : IPaymentProvider;
 - The SG generates centralised registration; do not call `services.AddScoped<...>()` manually.
 - Diagnostics: PRAG1640 (non-class), PRAG1642 (singleton→scoped captive dependency), PRAG1645 (abstract class).
 
-When construction needs logic — a connection string read, a client built from options — write a
+When construction needs logic (a connection string read, a client built from options), write a
 factory method instead of a `[Service]`:
 
 ```csharp
@@ -108,7 +108,7 @@ Must implement the same interface as the decorated service and accept it as a co
 
 ### 3. Inject into a service
 
-Inside a `[Service]` class you can use `[Inject]` on a property/method (`Required`, `Key`). **Action/Mutation** classes use uninitialised private fields instead — see `pragmatic-use-actions-endpoints`.
+Inside a `[Service]` class you can use `[Inject]` on a property/method (`Required`, `Key`). **Action/Mutation** classes use uninitialised private fields instead; see `pragmatic-use-actions-endpoints`.
 
 ### 4. Module
 
@@ -117,13 +117,13 @@ Inside a `[Service]` class you can use `[Inject]` on a property/method (`Require
 public sealed class SalesModule;
 ```
 
-A boundary library declares one `[Module]`. To depend on another module: `[IncludeModule<CatalogModule>]` — a declaration, not a registration: the host that hosts this module must `[Include<>]` Catalog too, or declare it `[RemoteBoundary<>]` (PRAG1603). To declare that the module requires a startup step from a package: `[NeedsStep<RoutingStep>]`.
+A boundary library declares one `[Module]`. To depend on another module: `[IncludeModule<CatalogModule>]`. It is a declaration, not a registration: the host that hosts this module must `[Include<>]` Catalog too, or declare it `[RemoteBoundary<>]` (PRAG1603). To declare that the module requires a startup step from a package: `[NeedsStep<RoutingStep>]`.
 
 A host that deliberately has no authentication (LAN app, kiosk, tool behind an authenticating proxy) puts `[AnonymousHost]` on its host `[Module]`. The generated endpoint root then does not require authorization, and PRAG1695 is not reported. There is no runtime option to set and no `NoWarn`.
 
-### 5. StartupStep — business wiring
+### 5. StartupStep: business wiring
 
-The interface and the attribute live in **different namespaces** — you need both usings.
+The interface and the attribute live in **different namespaces**: you need both usings.
 
 ```csharp
 using Pragmatic.Composition.Abstractions;   // IStartupStep
@@ -178,11 +178,11 @@ Infrastructure topology choices (provider, transport, scheme) go here; domain wi
 **A host that fails to start stays up, answering `503`.** That is `MaintenanceModeOptions.EnableOnStartupFailure`
 (default `true`), and it is on without calling `UseMaintenanceMode()`. Turn it off with
 `UseMaintenanceMode(m => m.EnableOnStartupFailure = false)`, or from configuration with
-`Pragmatic:MaintenanceMode:EnableOnStartupFailure = false` — the configuration key can only switch it
+`Pragmatic:MaintenanceMode:EnableOnStartupFailure = false`; the configuration key can only switch it
 off, and `"false"` is the one value it reads. Tests should set it: otherwise a startup failure surfaces
 as a `503` on the first request instead of as the exception that caused it.
 
-### 8. UsePackage — integrating a full-stack package
+### 8. UsePackage: integrating a full-stack package
 
 ```csharp
 [Module(Name = "MyApp.Accounts")]
@@ -191,7 +191,7 @@ as a `503` on the first request instead of as the exception that caused it.
 public sealed class AccountsModule;
 ```
 
-`[UsePackage<T>]` folds the actions/entities/services of a self-contained Pragmatic package into the module; `[ExposeEndpoint<T>]` (on the `[Module]`) exposes an action over HTTP. ⚠️ It is not restricted to package actions — the module's own work too, mapped on the host root rather than under the package prefix — but that is the case it exists for, since a package's actions carry no `[Endpoint]` of their own.
+`[UsePackage<T>]` folds the actions/entities/services of a self-contained Pragmatic package into the module; `[ExposeEndpoint<T>]` (on the `[Module]`) exposes an action over HTTP. ⚠️ It is not restricted to package actions (the module's own work too, mapped on the host root rather than under the package prefix), but that is the case it exists for, since a package's actions carry no `[Endpoint]` of their own.
 
 ### 9. A `[Service]` may depend on what somebody else registers
 
@@ -231,7 +231,7 @@ contract, the dependency fails when it is first resolved, not at build time.
 | **PRAG1602** | Error | Circular dependency between modules | Break the cycle |
 | **PRAG1603** | Error | The host hosts a module whose dependency it does not host | `[Include<T>]` the dependency, or `[RemoteBoundary<T>]` |
 | **PRAG1632** | Error | `[NeedsStep<T>]` type not found | Reference the package that provides the step |
-| **PRAG1641** | Warning | DI dependency not registered | Add `[Service]`, or a manual registration. Not reported for a contract that says who registers it — see below |
+| **PRAG1641** | Warning | DI dependency not registered | Add `[Service]`, or a manual registration. Not reported for a contract that says who registers it; see below |
 | **PRAG1642** | Warning | Singleton depends on Scoped | Align lifetimes |
 | **PRAG1645** | Error | `[Service]` on an abstract class | Make it concrete or use an interface |
 | **PRAG1651** | Warning | Boundary with no database assigned | Assign via `[Include<M,DB>]` |
@@ -240,13 +240,13 @@ contract, the dependency fails when it is first resolved, not at build time.
 
 ## Troubleshooting
 
-**`PragmaticApp` not resolved** — Reference `Pragmatic.Composition` and use `using Pragmatic.Composition.Hosting`.
+**`PragmaticApp` not resolved.** Reference `Pragmatic.Composition` and use `using Pragmatic.Composition.Hosting`.
 
-**Service not injected** — Does the class have `[Service]`? Is the SG referenced as an analyzer? Check `PRAG1641`.
+**Service not injected.** Does the class have `[Service]`? Is the SG referenced as an analyzer? Check `PRAG1641`.
 
-**`Use*()` not available** — The target module's package is not referenced by the host (e.g. `UseJobs` requires `Pragmatic.Jobs`).
+**`Use*()` not available.** The target module's package is not referenced by the host (e.g. `UseJobs` requires `Pragmatic.Jobs`).
 
-**Generated DI registrations to inspect** — `obj/Debug/net10.0/generated/Pragmatic.SourceGenerator/`, files `_Infra.*.Registration.g.cs` and `PragmaticHost.*.g.cs`.
+**Generated DI registrations to inspect:** `obj/Debug/net10.0/generated/Pragmatic.SourceGenerator/`, files `_Infra.*.Registration.g.cs` and `PragmaticHost.*.g.cs`.
 
 ## Build verification
 
@@ -257,8 +257,8 @@ dotnet test path\to\App.Tests --no-restore -v minimal
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application — code
-that compiles and that `Invoicing.IntegrationTests` exercises — and kept identical to it by the gate: the
+Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application (code
+that compiles and that `Invoicing.IntegrationTests` exercises) and kept identical to it by the gate: the
 host's `Program.cs` and topology, the database marker, a module that includes another, a boundary, and
-two `[Service<T>]` classes — one replacing a framework default, one depending on what other packages
+two `[Service<T>]` classes, one replacing a framework default, one depending on what other packages
 register.

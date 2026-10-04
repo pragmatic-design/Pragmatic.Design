@@ -1,17 +1,17 @@
 ---
 name: pragmatic-use-identity
-description: Use when choosing authentication, adding sign-in, issuing or validating JWTs, connecting OIDC or Keycloak, or when every request is 401 — Pragmatic.Identity, local accounts, [PragmaticUser]. Permissions are pragmatic-use-authorization.
+description: Use when choosing authentication, adding sign-in, issuing or validating JWTs, connecting OIDC or Keycloak, or when every request is 401 (Pragmatic.Identity, local accounts, [PragmaticUser]). Permissions are pragmatic-use-authorization.
 ---
 
 # Pragmatic Use Identity
 
-**Covers:** Authenticate callers with Pragmatic.Identity — development headers, local accounts (sign-in, reset, lockout) with self-issued JWTs, or OIDC/Keycloak; the [PragmaticUser] entity, IUserClaimsContributor, SystemUser.
+**Covers:** Authenticate callers with Pragmatic.Identity: development headers, local accounts (sign-in, reset, lockout) with self-issued JWTs, or OIDC/Keycloak; the [PragmaticUser] entity, IUserClaimsContributor, SystemUser.
 
 Identity answers **who is calling**; authorization (`pragmatic-use-authorization`) answers what they
 may do. Code reads the caller through `ICurrentUser` (in `Pragmatic.Abstractions`) and never through
 `HttpContext.User`, so a job, a message handler and a request look the same.
 
-## Choose one — the build asks
+## Choose one: the build asks
 
 Every endpoint requires an authenticated caller by default, and a host with no choice stops on
 **PRAG1695**. The choices:
@@ -22,11 +22,11 @@ Every endpoint requires an authenticated caller by default, and a host with no c
 | keeps its own accounts (email + password) and signs its own tokens | `app.UseJwtAuthentication();` + the local package on a module | `Pragmatic.Identity.Local.Jwt` (brings Local and AspNetCore) |
 | delegates sign-in to an OpenID Connect provider (Entra ID, Auth0, Okta…) | `app.UseOidcAuthentication(o => …)` | `Pragmatic.Identity.Oidc` |
 | delegates to Keycloak, and may provision users there | `app.UseKeycloakAuthentication(k => …)` | `Pragmatic.Identity.Keycloak` |
-| deliberately has no users (a LAN tool, behind an authenticating proxy) | `[AnonymousHost]` on the host `[Module]` | — |
+| deliberately has no users (a LAN tool, behind an authenticating proxy) | `[AnonymousHost]` on the host `[Module]` | n/a |
 
 ⚠️ **A scheme configured for one environment only leaves the others without one**: the host refuses to
 start there, naming the protected endpoints and the calls that would fix it. `dotnet run` without a
-launch profile runs in **Production**, where `UseDevelopmentIdentity()` is off — keep
+launch profile runs in **Production**, where `UseDevelopmentIdentity()` is off; keep
 `Properties/launchSettings.json` with `ASPNETCORE_ENVIRONMENT=Development`.
 
 ⚠️ `Audience` is **mandatory outside Development** for JWT, OIDC and Keycloak: without it any token the
@@ -39,7 +39,7 @@ issuer minted for any other client would be accepted, so startup throws instead.
 `X-User-Id`, `X-User-Name`, `X-User-Roles`, `X-User-Permissions`, `X-User-Tenant`, `X-User-Groups`.
 
 The generated OpenAPI document and Scalar know the header, so the reference UI can call protected
-routes. Tests use the same headers — see `pragmatic-use-testing` (`request.AsUser(...)`).
+routes. Tests use the same headers; see `pragmatic-use-testing` (`request.AsUser(...)`).
 
 ## Local accounts
 
@@ -68,13 +68,13 @@ public sealed class AccountsModule;
 - **The store is generated.** A `[PragmaticUser]` entity that owns a `LocalIdentity`, in a project with
   `Pragmatic.Persistence.EFCore`, gets `{User}.LocalIdentityStore` registered as `ILocalIdentityStore`,
   saving through the boundary's unit of work. Write your own class implementing the interface only when
-  the credentials live elsewhere — then nothing is generated.
+  the credentials live elsewhere; then nothing is generated.
 - **Self-registration** (`RegisterUser`) needs a user to create: the entity implements
   `ISelfRegisteringUser<TUser>` with `static TUser Register(LocalIdentity identity)`. Without it the
   application provisions accounts itself (an administrator, an import), as Time off does.
 - **Opening an account in code**: normalize the email with `LocalIdentity.NormalizeEmail`, compose the key
   with `ExternalIdentityKey.Compose(LocalIdentity.Provider, email)`, hash with `IPasswordHasher`, and give
-  it a fresh `SecurityStamp` — the same shape `RegisterUser` produces, so the actions cannot tell them
+  it a fresh `SecurityStamp`: the same shape `RegisterUser` produces, so the actions cannot tell them
   apart.
 
 Operations: `SignInUser` (credentials → `AccessToken { Token, ExpiresAt }`), `LoginUser`
@@ -96,7 +96,7 @@ builder.Services.Configure<LocalIdentityOptions>(o =>
 
 ⚠️ **Reset and verification tokens never come back in a response.** They go to
 `IPasswordResetNotifier` / `IEmailVerificationNotifier`, whose defaults **only log a warning** and deliver
-nothing. Register real ones (a mail from a `.pdxemail` template — `pragmatic-use-documents`) or users never
+nothing. Register real ones (a mail from a `.pdxemail` template, see `pragmatic-use-documents`) or users never
 receive them. The request operations answer the same whether the email exists or not.
 
 `IPasswordPolicy` replaces the length rule (complexity, history, breach lists); `IPasswordHasher` is
@@ -104,8 +104,8 @@ BCrypt by default (`PasswordWorkFactor`, 12).
 
 ## The token
 
-`app.UseJwtAuthentication()` reads the `Jwt` section — `Key` (at least 32 bytes, from secrets, never a
-committed file), `Issuer`, `Audience`, `TokenExpiration`, `ClockSkew`, `RequireSecurityStamp` — and
+`app.UseJwtAuthentication()` reads the `Jwt` section: `Key` (at least 32 bytes, from secrets, never a
+committed file), `Issuer`, `Audience`, `TokenExpiration`, `ClockSkew`, `RequireSecurityStamp`, and
 registers the issuer `SignInUser` signs with.
 
 What the token says about the user is the application's, through a contributor:
@@ -125,12 +125,12 @@ public sealed class UserClaims(IReadRepository<AppUser> users) : IUserClaimsCont
     }
 }
 
-// in the host — every contributor runs, in registration order
+// in the host: every contributor runs, in registration order
 builder.Services.TryAddEnumerable(ServiceDescriptor.Scoped<IUserClaimsContributor, UserClaims>());
 ```
 
 ⚠️ **The security stamp revokes tokens.** Every token carries the account's stamp; a password change or
-reset rotates it, and on every request the stamp is checked against the store — a stale token is 401.
+reset rotates it, and on every request the stamp is checked against the store: a stale token is 401.
 A token **without** a stamp is refused while `RequireSecurityStamp` is `true` (the default). Turn it off
 only while old tokens drain, or on a host whose tokens come from an issuer that owns revocation. Rotate
 the stamp yourself whenever what the token claims stops being true (a role changed).
@@ -167,7 +167,7 @@ provisioning of a local user on first external sign-in: map the token's subject 
 ## Outside a request
 
 - `SystemUser` is the `ICurrentUser` for background work: authenticated, full access. A job acting on
-  behalf of someone should act **as** them — see `pragmatic-use-delegation`.
+  behalf of someone should act **as** them; see `pragmatic-use-delegation`.
 - In a message handler there is no request: `MessageContext` carries the originating `UserId` and
   `TenantId`, and the tenant is restored into the consume scope. Read the originator from the context
   when the handler needs it; do not read `HttpContext`.
@@ -179,7 +179,7 @@ builder.Services.AddIdentitySecurityAuditing<TheUserASignInWasAbout>();   // Pra
 ```
 
 Failed sign-ins and lockouts are recorded on the `Pragmatic.Audit` trail, pseudonymised. Use the generic
-overload: `ISecuritySubjectLocator` turns the identity an event named into **your** subject key — the
+overload: `ISecuritySubjectLocator` turns the identity an event named into **your** subject key; the
 parameterless overload assumes `("User", email)` and, when your subjects are registered otherwise, writes
 every entry with no subject without saying so. The trail (`AddAuditTrail()`) and the subject registry
 (`AddSubjectRegistry()`) are registered separately. `UserLoggedIn`, `LoginFailed`, `AccountLocked`,
@@ -189,14 +189,14 @@ every entry with no subject without saying so. The trail (`AddAuditTrail()`) and
 
 - The environment has no scheme (see the startup message) or `Audience`/`Issuer` do not match the token.
 - A local token has no stamp, or the password changed since it was issued.
-- `ICurrentUser.Id` is empty: the token names its user under another claim — set
+- `ICurrentUser.Id` is empty: the token names its user under another claim; set
   `IdentityOptions.UserIdClaimType` (`services.AddPragmaticIdentity(o => o.UserIdClaimType = "sub")`).
 - In tests, a real scheme is on and the test still sends only `X-User-*` headers (or the reverse).
 
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Time off and Invoicing example
-applications — code that compiles and that `TimeOff.IntegrationTests` and `Invoicing.IntegrationTests`
-exercise — and kept identical to it by the gate: local accounts imported as a package, the user entity,
+applications (code that compiles and that `TimeOff.IntegrationTests` and `Invoicing.IntegrationTests`
+exercise) and kept identical to it by the gate: local accounts imported as a package, the user entity,
 what the token says, the host's JWT and security auditing, the subject a failed sign-in was about, the
 first account from configuration, and an external OIDC provider.

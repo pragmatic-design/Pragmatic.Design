@@ -1,14 +1,14 @@
 ---
 name: pragmatic-use-feature-flags
-description: Use when the app needs runtime feature toggles — gradual rollout, A/B tests, beta programs, kill switches, per-tenant or per-user targeting — with Pragmatic.FeatureFlags.
+description: Use when the app needs runtime feature toggles (gradual rollout, A/B tests, beta programs, kill switches, per-tenant or per-user targeting) with Pragmatic.FeatureFlags.
 ---
 
 # Pragmatic Use Feature Flags
 
-**Covers:** Feature flags with Pragmatic.FeatureFlags from NuGet — context-aware evaluation, targeting rules, percentage rollout with deterministic per-user/tenant bucketing, and change watching.
+**Covers:** Feature flags with Pragmatic.FeatureFlags from NuGet: context-aware evaluation, targeting rules, percentage rollout with deterministic per-user/tenant bucketing, and change watching.
 
 A deterministic evaluation engine: define flags with targeting rules, evaluate them against a context.
-The same user/tenant always resolves the same way (stable bucketing) — no flapping between requests.
+The same user/tenant always resolves the same way (stable bucketing), with no flapping between requests.
 
 ## When to use
 
@@ -23,7 +23,7 @@ The same user/tenant always resolves the same way (stable bucketing) — no flap
 
 ## Core pattern
 
-Rules are built with the static factories on `FeatureFlagRule` — there is no `PercentageRule` /
+Rules are built with the static factories on `FeatureFlagRule`; there is no `PercentageRule` /
 `TenantRule` type. They are evaluated **in order, first match wins**; if none matches, the flag's global
 `Enabled` applies.
 
@@ -34,7 +34,7 @@ using Pragmatic.FeatureFlags.Providers;
 // register the in-memory store (see "Registration" below for what the host already does)
 services.AddPragmaticFeatureFlags();
 
-// define — Define() lives on the concrete InMemoryFeatureFlagStore, not on IFeatureFlagStore;
+// define: Define() lives on the concrete InMemoryFeatureFlagStore, not on IFeatureFlagStore;
 // AddPragmaticFeatureFlags registers both against the same instance, so resolve the concrete type to seed.
 var store = provider.GetRequiredService<InMemoryFeatureFlagStore>();
 store.Define(new FeatureFlagDefinition
@@ -58,7 +58,7 @@ if (await store.IsEnabledAsync("new-checkout", context, ct))
 ```
 
 In application code prefer `IFeatureFlags`, which resolves the context for you from the registered
-`IFeatureFlagContextProvider` (tenant, user, plan, environment) — inject it and ask directly:
+`IFeatureFlagContextProvider` (tenant, user, plan, environment); inject it and ask directly:
 
 ```csharp
 public sealed class CheckoutService(IFeatureFlags flags)
@@ -89,7 +89,7 @@ public sealed class FlagContextFromCurrentUser(ICurrentUser user, IHostEnvironme
 }
 ```
 
-Without a provider, evaluation falls back to `FeatureFlagContext.Empty` — global state and percentage
+Without a provider, evaluation falls back to `FeatureFlagContext.Empty`: global state and percentage
 rules still apply, targeting rules never match. Reach for `IFeatureFlagStore` directly only when the
 context is *not* the ambient one (a background job acting for another tenant).
 
@@ -103,10 +103,10 @@ Available factories: `Percentage(int)`, `Tenant(params string[])`, `User(params 
 `Plan(params string[])`, `Property(key, params string[])`. Add `.Denying()` to turn a match into a
 denial. Rule types and values match case-insensitively; an unrecognized rule type is silently skipped,
 which is why the factories are preferable to setting `Type` by hand. The known types are
-`FeatureFlagRule.KnownTypes` — `tenant`, `user`, `plan`, `environment`, `percentage`, `property`
+`FeatureFlagRule.KnownTypes`: `tenant`, `user`, `plan`, `environment`, `percentage`, `property`
 (`environment` has no factory: `new FeatureFlagRule { Type = "environment", Values = ["Staging"] }`).
 
-### Percentage rollout — what "20%" means
+### Percentage rollout: what "20%" means
 
 - The bucket is a stable hash of **flag name + `UserId`**, falling back to `TenantId`, falling back to
   the literal `"anonymous"`. ⚠️ Every anonymous caller shares one bucket: for signed-out traffic a
@@ -115,12 +115,12 @@ which is why the factories are preferable to setting `Type` by hand. The known t
 - A user **outside** the bucket does not match, and evaluation moves to the next rule.
 - ⚠️ The borders short-circuit: `Percentage(0)` answers `false` and `Percentage(100)` answers `true`
   for everyone, ignoring the rules after them and the rule's own `enabled`. That makes `Percentage(0)`
-  a kill switch — so it must be **last** unless killing everything is what you mean.
+  a kill switch, so it must be **last** unless killing everything is what you mean.
 - The flag name is part of the hash: two flags at 20% do not select the same 20%.
 
 ## Flags from configuration
 
-`Pragmatic.FeatureFlags.Configuration` — `services.AddConfigurationFeatureFlagStore()` replaces the
+`Pragmatic.FeatureFlags.Configuration`: `services.AddConfigurationFeatureFlagStore()` replaces the
 in-memory store and reads the `FeatureFlags` section (another name as its argument):
 
 ```json
@@ -145,17 +145,17 @@ on an unknown rule type, this store does not validate: a misspelt `"Type"` is a 
 matches. Check `FeatureFlagRule.IsKnownType` in a start-up test over the section.
 
 Across instances, at runtime: the Agent (`UseAgent()`) replaces the store with its shared `flags/…` keys,
-keeping the previous store as the fallback when the Agent is unreachable — `pragmatic-use-distributed`.
+keeping the previous store as the fallback when the Agent is unreachable; see `pragmatic-use-distributed`.
 
 ## Strongly-typed flags
 
-Avoids magic strings — an unknown flag name evaluates to `false`, so a typo disables the feature silently.
+Avoids magic strings: an unknown flag name evaluates to `false`, so a typo disables the feature silently.
 
 ```csharp
 public sealed class NewCheckout : IFeatureFlag
 {
     public static string Name => "new-checkout";
-    public static string? Description => "Redesigned checkout — gradual rollout";
+    public static string? Description => "Redesigned checkout: gradual rollout";
 }
 
 if (await store.IsEnabledAsync<NewCheckout>(context, ct)) { /* … */ }
@@ -164,7 +164,7 @@ if (await store.IsEnabledAsync<NewCheckout>(context, ct)) { /* … */ }
 ## Watching for changes
 
 `WatchAsync` broadcasts: every concurrent watcher observes every change. Treat an event as
-"this flag moved, re-read it" — `FeatureFlagChange` carries only `WasEnabled`/`IsEnabled`, so a change
+"this flag moved, re-read it": `FeatureFlagChange` carries only `WasEnabled`/`IsEnabled`, so a change
 caused by a rule edit reports the same value in both.
 
 ```csharp
@@ -179,8 +179,8 @@ await foreach (var change in store.WatchAsync(ct))
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Warehouse and Showcase example
-applications — code that compiles and that `Showcase.IntegrationTests` and `Warehouse.IntegrationTests`
-exercise — and kept identical to it by the gate: a typed flag read at each request, the in-memory
+applications (code that compiles and that `Showcase.IntegrationTests` and `Warehouse.IntegrationTests`
+exercise) and kept identical to it by the gate: a typed flag read at each request, the in-memory
 definitions with the rule factories, the context provider, the ambient and the explicit evaluation, and
 flags from configuration.
 

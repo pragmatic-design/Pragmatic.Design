@@ -1,15 +1,15 @@
 ---
 name: pragmatic-use-imaging
-description: Use when the app makes thumbnails, converts or resizes uploads, strips metadata, applies filters or renders QR codes — Pragmatic.Imaging, a native AOT-friendly binding, no ImageSharp or SkiaSharp.
+description: Use when the app makes thumbnails, converts or resizes uploads, strips metadata, applies filters or renders QR codes (Pragmatic.Imaging, a native AOT-friendly binding, no ImageSharp or SkiaSharp).
 ---
 
 # Pragmatic Use Imaging
 
-**Covers:** Server-side image processing with Pragmatic.Imaging — decode and encode PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF; resize, thumbnail, crop, rotate; filters, QR codes, EXIF stripping, upload limits. AOT-friendly native binding, no ImageSharp or SkiaSharp.
+**Covers:** Server-side image processing with Pragmatic.Imaging: decode and encode PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF; resize, thumbnail, crop, rotate; filters, QR codes, EXIF stripping, upload limits. AOT-friendly native binding, no ImageSharp or SkiaSharp.
 
 `Pragmatic.Imaging` is a small managed binding over a Rust native library (built on the `image` crate).
 It gives server-side .NET code a predictable, AOT-friendly image pipeline without a heavy managed
-dependency. The core APIs are **static or fluent** — no DI required.
+dependency. The core APIs are **static or fluent**, with no DI required.
 
 ## When to use
 
@@ -19,7 +19,7 @@ dependency. The core APIs are **static or fluent** — no DI required.
 - Applying filters (grayscale, blur, sharpen, brightness, contrast).
 - Generating QR code PNGs.
 
-For PDF/DOCX/CSV/XLSX documents use `pragmatic-use-documents` instead — this module is pixels, not pages.
+For PDF/DOCX/CSV/XLSX documents use `pragmatic-use-documents` instead; this module is pixels, not pages.
 
 ## Package
 
@@ -46,7 +46,7 @@ dotnet add package Pragmatic.Imaging
 
 ## Fluent pipeline
 
-Load once, chain transforms, encode. **Always `using`** — the pipeline owns native memory. `Encode`
+Load once, chain transforms, encode. **Always `using`**: the pipeline owns native memory. `Encode`
 does *not* dispose the pipeline, so you can encode several formats from one state.
 
 ```csharp
@@ -60,7 +60,7 @@ pipeline
     .Sharpen(sigma: 1.2f);
 
 byte[] jpeg = pipeline.Encode(ImageFormat.Jpeg, quality: 85);
-byte[] webp = pipeline.Encode(ImageFormat.WebP);   // still valid — encode again
+byte[] webp = pipeline.Encode(ImageFormat.WebP);   // still valid: encode again
 ```
 
 Transforms: `Resize(w,h,filter)`, `Thumbnail(maxW,maxH,filter,allowUpscale)`, `Crop(x,y,w,h)`,
@@ -69,7 +69,7 @@ Filters: `Grayscale()`, `Blur(sigma)`, `Sharpen(sigma,threshold)`, `Brightness(-
 `ResizeFilter`: `Nearest`, `Triangle`, `CatmullRom`, `Gaussian`, `Lanczos3` (default).
 
 > **`quality` applies to JPEG only.** WebP encodes lossless, AVIF uses the library default, and
-> PNG/BMP/TIFF/GIF are lossless/paletted — `quality` is ignored for all of them.
+> PNG/BMP/TIFF/GIF are lossless/paletted; `quality` is ignored for all of them.
 
 ## One-liners
 
@@ -167,7 +167,7 @@ text) throw `ArgumentException`, not `ImagingException`.
 
 The static/fluent APIs need no DI. `AddPragmaticImaging(options?)` registers an `ImagingOptions`
 singleton **and** installs a hardened `NativeLibrary` DLL-import resolver (restricts the native
-search path — mitigates DLL hijacking via PATH on Windows). Call it at startup if you want that
+search path, which mitigates DLL hijacking via PATH on Windows). Call it at startup if you want that
 hardening even though you use the static APIs.
 
 ```csharp
@@ -176,12 +176,12 @@ services.AddPragmaticImaging(ImagingOptions.Strict);   // in an IStartupStep, or
 
 ## Gotchas
 
-- **Dispose the pipeline** (`using`) — it owns native memory the GC can't reclaim promptly.
+- **Dispose the pipeline** (`using`): it owns native memory the GC can't reclaim promptly.
 - **Not thread-safe**: one `ImagePipeline` per thread/task. `ImageInfo`/`QrCode`/`ImageConverter`/`ImageBatch` are safe (each opens its own pipeline).
-- **`Load(Stream)` drains the stream** — rewind if you need to re-read.
+- **`Load(Stream)` drains the stream**: rewind if you need to re-read.
 - **EXIF is stripped on any re-encode** (this is how `StripExif` works); orientation isn't auto-applied.
   ⚠️ A portrait photo from a phone is stored landscape with an orientation tag: its thumbnail comes out
-  **sideways**, and after the re-encode the tag is gone. This library does not read the tag either — read
+  **sideways**, and after the re-encode the tag is gone. This library does not read the tag either; read
   it before processing with an EXIF reader of your choice and apply `Rotate(...)`/`Flip*()` yourself, or
   test your upload path with a real phone photo before relying on the thumbnails.
 - **sRGB assumed**; no colour-space conversion, no arbitrary-angle rotation, no text/draw, no animation (first frame only).
@@ -189,8 +189,8 @@ services.AddPragmaticImaging(ImagingOptions.Strict);   // in an IStartupStep, or
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Showcase example application — code
-that compiles and that `Showcase.IntegrationTests` exercises — and kept identical to it by the gate: a QR
+Complete files in [`examples/`](examples/README.md), copied from the Showcase example application (code
+that compiles and that `Showcase.IntegrationTests` exercises) and kept identical to it by the gate: a QR
 code generated, loaded, resized and encoded, and returned as a file.
 
 Upload inspection, batch processing and the safety limits beyond `ImagingOptions.Strict` are used by no

@@ -1,18 +1,18 @@
 ---
 name: pragmatic-use-distributed
-description: Use when splitting out a service, scaling a host out, adding a gateway, or when instances disagree (stale cache, a job run twice) — [RemoteBoundary], broker, sagas, Agent, YARP gateway. Decide first with pragmatic-architecture.
+description: Use when splitting out a service, scaling a host out, adding a gateway, or when instances disagree (stale cache, a job run twice); [RemoteBoundary], broker, sagas, Agent, YARP gateway. Decide first with pragmatic-architecture.
 ---
 
 # Pragmatic Use Distributed
 
-**Covers:** Run a Pragmatic app as several services or instances — [RemoteBoundary] calls, broker events and request/reply, cross-service sagas, the Pragmatic Agent, the YARP gateway, discovery, cross-instance cache invalidation.
+**Covers:** Run a Pragmatic app as several services or instances: [RemoteBoundary] calls, broker events and request/reply, cross-service sagas, the Pragmatic Agent, the YARP gateway, discovery, cross-instance cache invalidation.
 
-Stay a modular monolith until something forces the split — independent deployment or scaling of one
+Stay a modular monolith until something forces the split: independent deployment or scaling of one
 area. The modules are already boundaries; splitting changes how they are **wired**, not how they are
 written. The examples go one step each: Invoicing is two modules in one host, Casework is two services
 over a broker, Warehouse is three services and two instances of one behind a gateway.
 
-## How services talk — choose per interaction
+## How services talk: choose per interaction
 
 | The caller… | Shape | Mechanism |
 |---|---|---|
@@ -24,7 +24,7 @@ over a broker, Warehouse is three services and two instances of one behind a gat
 **Contracts assembly.** What a service publishes lives in `{Service}.Contracts` (events, requests,
 replies), referencing only `Pragmatic.Abstractions` and `Pragmatic.Events`; consumers reference that and
 nothing of the service. The host of the publisher registers the contracts assembly's generated handler
-registry (`{Contracts}.Generated.PragmaticMessageHandlerRegistration.AddPragmaticMessageHandlers(...)`) —
+registry (`{Contracts}.Generated.PragmaticMessageHandlerRegistration.AddPragmaticMessageHandlers(...)`);
 forgetting it is **PRAG1699**.
 
 ### `[RemoteBoundary<TModule>]`
@@ -33,9 +33,9 @@ On the host, instead of `[Include<TModule, TDatabase>]` (both on one module is *
 generator writes HTTP invokers behind the same `I{Boundary}Actions` interface, so calling code does not
 change. The base URL is configuration: `Pragmatic:RemoteBoundaries:{Module}:BaseUrl`.
 
-- The remote module's in-process workers (handlers, jobs, sagas) are **not** registered on the caller —
+- The remote module's in-process workers (handlers, jobs, sagas) are **not** registered on the caller:
   they run where the module is hosted.
-- ⚠️ Only **actions** are invoked across it — there is no remote mutation invoker — and its calls have no
+- ⚠️ Only **actions** are invoked across it (there is no remote mutation invoker), and its calls have no
   retry or circuit breaker of their own. A write another service must trigger is an action there, or a
   message.
 - ⚠️ A compensator (`[UndoWith]`) behind a remote boundary never runs in the caller: compensation belongs
@@ -60,10 +60,10 @@ What breaks the moment there are two:
 
 | Concern | What to do |
 |---|---|
-| `[Cacheable]` reads | each instance keeps its own copy — add `AddRedisCacheInvalidationBroadcast(redis)` so an invalidation reaches every instance (it carries invalidations, not values) |
+| `[Cacheable]` reads | each instance keeps its own copy; add `AddRedisCacheInvalidationBroadcast(redis)` so an invalidation reaches every instance (it carries invalidations, not values) |
 | recurring and scheduled jobs | `jobs.UseEfCore()` + `UseEfCorePersistence()` + `[EnableJobPersistence]` on the boundary: the store's lease runs each occurrence once |
-| two writers on one row | `[ConcurrencyAware]` on the entity; retry the unit of work on conflict — never last-write-wins by accident |
-| configuration and flags changed at runtime | the Agent (below), read through `IOptionsMonitor` / the flag at each request — `IOptions` is read once at startup |
+| two writers on one row | `[ConcurrencyAware]` on the entity; retry the unit of work on conflict, never last-write-wins by accident |
+| configuration and flags changed at runtime | the Agent (below), read through `IOptionsMonitor` / the flag at each request; `IOptions` is read once at startup |
 | migrations | two instances starting together is handled by the migration lock; still, run migrations once in the release pipeline for large changes |
 
 ## The Pragmatic Agent
@@ -78,7 +78,7 @@ app.UseAgent();   // Pragmatic.Agent.Client; Pragmatic:Agent:SocketPath, AppName
 - `config/…` keys become part of the host's `IConfiguration`; `flags/…` back `IFeatureFlagStore`;
   `secret/…` are encrypted at rest (a 32-byte key in `PRAGMATIC_AGENT_SECRET_KEY`, required in Production).
 - **Route announcement**: `Pragmatic:Agent:Announce` (`RouteId`, `Path`, `PathRemovePrefix`,
-  `RequireAuth`, `Address`) — the host announces itself, the gateway learns the route, and the
+  `RequireAuth`, `Address`): the host announces itself, the gateway learns the route, and the
   announcement disappears when the host's connection closes: a stopped instance leaves the rotation.
 - **Drain**: a command through the control plane takes one instance out of the rotation while it
   finishes what it has in flight; exiting maintenance puts it back. A release without failed requests.
@@ -99,7 +99,7 @@ limiting, per-cluster timeout and circuit breaker (`Gateway:Resilience`), mainte
 
 ## Topology discovery
 
-`Pragmatic.Discovery` registers what each host hosts (modules, databases, providers — from the
+`Pragmatic.Discovery` registers what each host hosts (modules, databases, providers, from the
 generated metadata) in a shared backend and validates the deployment at startup: the same module on two
 hosts with different databases, `[ReadAccess]` that would join across hosts, provider mismatches. Use
 `services.UseAgentDiscovery()` (`Pragmatic.Agent.Discovery`) to share it through the Agents; the default
@@ -107,15 +107,15 @@ backend is in-memory, one process.
 
 ## Limits to know
 
-- ⚠️ **The Agent daemon and the gateway are executables in the repository, not NuGet packages** — an
+- ⚠️ **The Agent daemon and the gateway are executables in the repository, not NuGet packages**: an
   application built from packages uses `Pragmatic.Agent.Client`, `Pragmatic.Agent.Discovery` and runs
   the daemon and the gateway built from source.
 - `[RemoteBoundary]` resolves its address from configuration, not from discovery, and speaks HTTP only.
-- One manifest per generated client — for a separate front end, see `pragmatic-use-client`.
+- One manifest per generated client; for a separate front end, see `pragmatic-use-client`.
 
 ## Testing a distributed shape
 
-Start the real processes — broker, database, each host on its own port, the Agents — as Warehouse's
+Start the real processes (broker, database, each host on its own port, the Agents) as Warehouse's
 fixture does; a test double for the broker or the Agent proves nothing about the wiring. Read which
 instance answered from a header each host writes, and test the failure paths: one instance stopped,
 the broker slow, a request nobody answers.
@@ -123,7 +123,7 @@ the broker slow, a request nobody answers.
 ## Examples
 
 Complete files in [`examples/`](examples/README.md), copied from the Warehouse and Showcase example
-applications — code that compiles and that `Warehouse.IntegrationTests` and `Showcase.Billing.Host.Tests`
-exercise — and kept identical to it by the gate: a contracts project and a request in it, request/reply
+applications (code that compiles and that `Warehouse.IntegrationTests` and `Showcase.Billing.Host.Tests`
+exercise) and kept identical to it by the gate: a contracts project and a request in it, request/reply
 over the broker from both sides, a service's host, the step that says which instance answered, and a
 `[RemoteBoundary]`.
