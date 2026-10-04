@@ -95,22 +95,25 @@ await PragmaticApp.RunAsync(args, app =>
 
 ### Performance
 
-Benchmarked against Serilog and NLog on .NET 10 (per call, null sinks for every library):
+Benchmarked on .NET 10 against Serilog, NLog and ZLogger, each writing into a sink that renders the
+message and reads every property (per call, 2026-10-04):
 
-| Scenario | Pragmatic | NLog | Serilog |
-|----------|-----------|------|---------|
-| `[LoggerMessage]` call site | **33.6 ns / 0 B** | 297.6 ns / 1,032 B | 294.6 ns / 712 B |
-| Simple logging | **44.0 ns / 64 B** | 170.8 ns / 488 B | 202.3 ns / 440 B |
-| Structured (with scope) | **117.2 ns / 328 B** | 292.5 ns / 696 B | 670.8 ns / 2,016 B |
-| Exception logging | **51.0 ns / 64 B** | 229.4 ns / 504 B | 233.9 ns / 440 B |
-| High volume (1000/iter) | **46.4 µs / 64 KB** | 193.7 µs / 487 KB | 210.1 µs / 440 KB |
+| Scenario | Pragmatic | ZLogger | NLog | Serilog |
+|----------|-----------|---------|------|---------|
+| `[LoggerMessage]` call site | 203.9 ns / 544 B | 155.2 ns / 192 B | 384.0 ns / 1,416 B | 321.6 ns / 800 B |
+| Simple logging | 214.3 ns / 592 B | 167.6 ns / 216 B | 228.4 ns / 760 B | 263.9 ns / 528 B |
+| Structured (with scope) | 501.7 ns / 1,176 B | 404.8 ns / 520 B | 675.4 ns / 1,328 B | 839.6 ns / 1,912 B |
+| Exception logging | 235.5 ns / 608 B | 172.1 ns / 232 B | 244.8 ns / 776 B | 279.8 ns / 528 B |
+| Production (context + scope) | 1,376.2 ns / 4,112 B | 536.0 ns / 832 B | 1,023.2 ns / 2,872 B | 1,054.5 ns / 3,000 B |
 
-First in every category. The key is the **deferred pipeline**: when no feature needs a materialized
-entry (advanced filters, context enrichment, redaction), the typed log state flows straight to the
-sink: no `LogEntry`, no dictionaries, no eager rendering. Combined with `[LoggerMessage]` call sites
-(zero-boxing struct state), a log call is allocation-free end-to-end. Enabling redaction or enrichment
-transparently switches to the full materialized pipeline. See
-[BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the full run and history.
+Pragmatic is ahead of Serilog and NLog on the plain calls and behind both once the production preset's
+context enrichment is on; ZLogger is ahead of all three throughout.
+
+The **deferred pipeline** (the typed state handed to the sink with no `LogEntry` and no eager
+rendering) applies only to a provider that declares `SupportsDeferredWrite`, and the only one that does
+today is `PragmaticNullProvider`, which discards the entry. A provider that writes anywhere takes the
+materialized pipeline measured above. See [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the run,
+the machine and the reports.
 
 ---
 

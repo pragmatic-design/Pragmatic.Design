@@ -15,6 +15,8 @@
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="NLog.Extensions.Logging" />
+    <!-- ZLogger: the reference for a zero-allocation logger built on Microsoft.Extensions.Logging. -->
+    <PackageReference Include="ZLogger" />
   </ItemGroup>
 
   <ItemGroup>

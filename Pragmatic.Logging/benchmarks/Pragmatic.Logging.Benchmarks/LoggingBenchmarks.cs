@@ -1,524 +1,331 @@
+using System.Globalization;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Exporters;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Order;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NLog.Extensions.Logging;
+using Pragmatic.Logging.Benchmarks.Comparison;
+using Pragmatic.Logging.Context;
 using Pragmatic.Logging.Extensions;
-using Pragmatic.Logging.Filtering;
 using Pragmatic.Logging.Providers;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using Serilog.Extensions.Logging;
+using ZLogger;
 
 namespace Pragmatic.Logging.Benchmarks;
 
 /// <summary>
-/// Null sink for Serilog benchmarking - discards all log events without I/O overhead.
+///     Pragmatic.Logging against Serilog, NLog and ZLogger, each writing into a sink that consumes the
+///     event: the message rendered, every structured property read.
 /// </summary>
-internal sealed class NullSink : ILogEventSink
-{
-    public void Emit(LogEvent logEvent)
-    {
-        // Intentionally do nothing - this measures pure logging overhead
-    }
-}
-
-/// <summary>
-/// Comprehensive benchmarks comparing Pragmatic.Logging with popular logging libraries.
-/// Tests multiple scenarios with accurate performance measurement:
-/// 
-/// BENCHMARK CATEGORIES:
-/// - Simple: Basic logging performance (all libraries use null sinks/providers for fair comparison)
-/// - Structured: Structured logging with scope properties
-/// - HighVolume: Bulk logging operations (1000 messages per benchmark)
-/// - Filtering: Expression DSL filter evaluation performance  
-/// - ErrorHandling: Exception logging performance (uses pre-created exceptions)
-/// - Memory: Zero-allocation pattern verification
-/// 
-/// PRAGMATIC.LOGGING CONFIGURATIONS TESTED:
-/// - Minimal: PragmaticNullConfiguration.ForBenchmarking() - Ultra-fast baseline
-/// - Structured: ForStructuredBenchmarking() - With structured properties enabled
-/// - Production: ForProductionBenchmarking() - Production-like settings with full processing
-/// 
-/// All providers are configured to discard output to measure pure logging overhead without I/O.
-/// </summary>
+/// <remarks>
+///     <para>
+///         Every library is called through <c>Microsoft.Extensions.Logging</c>, as an application calls
+///         it, and every sink does the same work with what it receives (<see cref="EventConsumer" />).
+///         <see cref="Setup" /> checks that before timing anything: one call per scenario through each
+///         library must leave the same message, the same property set and the same exception, or the run
+///         stops. A sink that skipped the work would be measuring something else.
+///     </para>
+///     <para>
+///         Pragmatic is the baseline of every category, so the Ratio column reads as "how this library
+///         compares with Pragmatic doing the same thing".
+///     </para>
+/// </remarks>
 [Config(typeof(LoggingBenchmarkConfig))]
 [MemoryDiagnoser]
-[SimpleJob]
-[Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
-[RankColumn]
 public class LoggingBenchmarks
 {
-    // Loggers for comparison
-    private ILogger<LoggingBenchmarks> _pragmaticLogger = null!;
-    private ILogger<LoggingBenchmarks> _pragmaticStructuredLogger = null!;
-    private ILogger<LoggingBenchmarks> _pragmaticProductionLogger = null!;
-    private ILogger<LoggingBenchmarks> _serilogLogger = null!;
-    private ILogger<LoggingBenchmarks> _nlogLogger = null!;
-    private ILogger<LoggingBenchmarks> _nullLogger = null!;
+    private const int HighVolumeCalls = 1000;
 
-    // Test data
-    private readonly string _userId = "user12345";
+    private const string SimpleTemplate = "Order {OrderId} processed for user {UserId}";
+    private const string StructuredTemplate = "Order processed with amount {Amount} at {Timestamp}";
+    private const string ErrorTemplate = "Error processing order {OrderId} for user {UserId}";
+
+    private static readonly Exception Failure = new InvalidOperationException("The order could not be processed");
+
     private readonly int _orderId = 67890;
+    private readonly string _userId = "user12345";
     private readonly decimal _amount = 199.99m;
-    private readonly DateTime _timestamp = DateTime.UtcNow;
-    private readonly Dictionary<string, object?> _properties = new()
+    private readonly DateTime _timestamp = new(2026, 10, 4, 12, 30, 0, DateTimeKind.Utc);
+    private readonly string _correlationId = "corr-7f3a";
+    private readonly string _requestId = "req-0042";
+
+    private readonly Dictionary<string, object?> _scope = new()
     {
-        ["UserId"] = "user12345",
         ["SessionId"] = "session_abc123",
         ["RequestPath"] = "/api/orders/create",
         ["Duration"] = 1500.0,
-        ["Success"] = true
+        ["Success"] = true,
     };
 
-    // Pre-created exception for benchmarking to avoid allocation overhead
-    private static readonly Exception _benchmarkException = new InvalidOperationException("Pre-created benchmark exception to measure pure logging performance without allocation overhead");
+    private readonly EventConsumer _pragmaticSink = new();
+    private readonly EventConsumer _serilogSink = new();
+    private readonly EventConsumer _nlogSink = new();
+    private readonly EventConsumer _zloggerSink = new();
 
-    // Expression DSL filter for testing
-    private FilterExpression _complexFilter = null!;
-    private LogEntry _testLogEntry = null!;
-    private LogFilterContext _filterContext = null!;
+    private ILogger _pragmatic = null!;
+    private ILogger _pragmaticProduction = null!;
+    private ILogger _serilog = null!;
+    private ILogger _nlog = null!;
+    private ILogger _zlogger = null!;
+
+    private readonly List<IDisposable> _owned = [];
 
     [GlobalSetup]
     public void Setup()
     {
-        SetupPragmaticLogging();
-        SetupPragmaticStructuredLogging();
-        SetupPragmaticProductionLogging();
-        SetupSerilog();
-        SetupNLog();
-        SetupNullLogger();
-        SetupExpressionDslFiltering();
+        // Every library formats with the current culture somewhere; one culture for all of them.
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+
+        _pragmatic = Pragmatic(PragmaticNullConfiguration.ForStructuredBenchmarking());
+        _pragmaticProduction = Pragmatic(PragmaticNullConfiguration.ForProductionBenchmarking());
+        _serilog = Serilog();
+        _nlog = NLog();
+        _zlogger = ZLogger();
+
+        VerifySameWork();
     }
 
-    private void SetupPragmaticLogging()
+    [GlobalCleanup]
+    public void Cleanup()
     {
-        var services = new ServiceCollection();
+        foreach (var owned in _owned)
+            owned.Dispose();
+        global::NLog.LogManager.Shutdown();
+    }
 
-        // Add standard Microsoft.Extensions.Logging first
-        services.AddLogging();
+    // ── Simple: logger.LogInformation(template, args) ──
 
-        // Add Pragmatic Logging with NullProvider for fair performance comparison  
-        services.AddPragmaticLoggingBuilder(builder =>
+    [Benchmark(Baseline = true), BenchmarkCategory("Simple")]
+    public void Pragmatic_Simple() => _pragmatic.LogInformation(SimpleTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Simple")]
+    public void Serilog_Simple() => _serilog.LogInformation(SimpleTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Simple")]
+    public void NLog_Simple() => _nlog.LogInformation(SimpleTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Simple")]
+    public void ZLogger_Simple() => _zlogger.LogInformation(SimpleTemplate, _orderId, _userId);
+
+    // ── SourceGenerated: a [LoggerMessage] call site ──
+
+    [Benchmark(Baseline = true), BenchmarkCategory("SourceGenerated")]
+    public void Pragmatic_SourceGenerated() => BenchmarkLog.OrderProcessed(_pragmatic, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("SourceGenerated")]
+    public void Serilog_SourceGenerated() => BenchmarkLog.OrderProcessed(_serilog, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("SourceGenerated")]
+    public void NLog_SourceGenerated() => BenchmarkLog.OrderProcessed(_nlog, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("SourceGenerated")]
+    public void ZLogger_SourceGenerated() => BenchmarkLog.OrderProcessed(_zlogger, _orderId, _userId);
+
+    // ── Structured: a scope with four properties, and a call with two ──
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Structured")]
+    public void Pragmatic_Structured() => Structured(_pragmatic);
+
+    [Benchmark, BenchmarkCategory("Structured")]
+    public void Serilog_Structured() => Structured(_serilog);
+
+    [Benchmark, BenchmarkCategory("Structured")]
+    public void NLog_Structured() => Structured(_nlog);
+
+    [Benchmark, BenchmarkCategory("Structured")]
+    public void ZLogger_Structured() => Structured(_zlogger);
+
+    // ── Exception ──
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Exception")]
+    public void Pragmatic_Exception() => _pragmatic.LogError(Failure, ErrorTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Exception")]
+    public void Serilog_Exception() => _serilog.LogError(Failure, ErrorTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Exception")]
+    public void NLog_Exception() => _nlog.LogError(Failure, ErrorTemplate, _orderId, _userId);
+
+    [Benchmark, BenchmarkCategory("Exception")]
+    public void ZLogger_Exception() => _zlogger.LogError(Failure, ErrorTemplate, _orderId, _userId);
+
+    // ── HighVolume: the simple call a thousand times, reported per call ──
+
+    [Benchmark(Baseline = true, OperationsPerInvoke = HighVolumeCalls), BenchmarkCategory("HighVolume")]
+    public void Pragmatic_HighVolume() => HighVolume(_pragmatic);
+
+    [Benchmark(OperationsPerInvoke = HighVolumeCalls), BenchmarkCategory("HighVolume")]
+    public void Serilog_HighVolume() => HighVolume(_serilog);
+
+    [Benchmark(OperationsPerInvoke = HighVolumeCalls), BenchmarkCategory("HighVolume")]
+    public void NLog_HighVolume() => HighVolume(_nlog);
+
+    [Benchmark(OperationsPerInvoke = HighVolumeCalls), BenchmarkCategory("HighVolume")]
+    public void ZLogger_HighVolume() => HighVolume(_zlogger);
+
+    // ── Production: two request context properties through each library's own mechanism, plus the scope ──
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Production")]
+    public void Pragmatic_Production()
+    {
+        using var context = LogContextScope.PushContext();
+        LogContextScope.Current!.SetProperty("CorrelationId", _correlationId);
+        LogContextScope.Current.SetProperty("RequestId", _requestId);
+        Structured(_pragmaticProduction);
+    }
+
+    [Benchmark, BenchmarkCategory("Production")]
+    public void Serilog_Production()
+    {
+        using var correlation = global::Serilog.Context.LogContext.PushProperty("CorrelationId", _correlationId);
+        using var request = global::Serilog.Context.LogContext.PushProperty("RequestId", _requestId);
+        Structured(_serilog);
+    }
+
+    [Benchmark, BenchmarkCategory("Production")]
+    public void NLog_Production()
+    {
+        using var correlation = global::NLog.ScopeContext.PushProperty("CorrelationId", _correlationId);
+        using var request = global::NLog.ScopeContext.PushProperty("RequestId", _requestId);
+        Structured(_nlog);
+    }
+
+    /// <summary>ZLogger has no ambient context of its own: the request context is a second MEL scope.</summary>
+    [Benchmark, BenchmarkCategory("Production")]
+    public void ZLogger_Production()
+    {
+        using var context = _zlogger.BeginScope(new KeyValuePair<string, object?>[]
         {
-            // Use NullProvider to measure pure logging overhead without I/O
-            builder.AddProvider(serviceProvider =>
-                new PragmaticNullProvider("Benchmark", PragmaticNullConfiguration.ForBenchmarking()));
+            new("CorrelationId", _correlationId),
+            new("RequestId", _requestId),
         });
-
-        var serviceProvider = services.BuildServiceProvider();
-        _pragmaticLogger = serviceProvider.GetRequiredService<ILogger<LoggingBenchmarks>>();
+        Structured(_zlogger);
     }
 
-    private void SetupPragmaticStructuredLogging()
+    private void Structured(ILogger logger)
     {
+        using var scope = logger.BeginScope(_scope);
+        logger.LogInformation(StructuredTemplate, _amount, _timestamp);
+    }
+
+    private void HighVolume(ILogger logger)
+    {
+        for (var i = 0; i < HighVolumeCalls; i++)
+            logger.LogInformation(SimpleTemplate, i, _userId);
+    }
+
+    // ── Setup ──
+
+    private ILogger Pragmatic(PragmaticProviderConfiguration configuration)
+    {
+        configuration.MinimumLevel = LogLevel.Information;
         var services = new ServiceCollection();
-
-        // Add standard Microsoft.Extensions.Logging first
         services.AddLogging();
-
-        // Add Pragmatic Logging with structured properties enabled
         services.AddPragmaticLoggingBuilder(builder =>
-        {
-            builder.AddProvider(serviceProvider =>
-                new PragmaticNullProvider("StructuredBenchmark", PragmaticNullConfiguration.ForStructuredBenchmarking()));
-        });
-
-        var serviceProvider = services.BuildServiceProvider();
-        _pragmaticStructuredLogger = serviceProvider.GetRequiredService<ILogger<LoggingBenchmarks>>();
+            builder.AddProvider(_ => new PragmaticConsumingProvider("Consuming", configuration, _pragmaticSink)));
+        return Owned(services.BuildServiceProvider()).GetRequiredService<ILoggerFactory>().CreateLogger("Benchmark");
     }
 
-    private void SetupPragmaticProductionLogging()
+    private ILogger Serilog()
     {
-        var services = new ServiceCollection();
-
-        // Add standard Microsoft.Extensions.Logging first
-        services.AddLogging();
-
-        // Add Pragmatic Logging with production-like configuration
-        services.AddPragmaticLoggingBuilder(builder =>
-        {
-            builder.AddProvider(serviceProvider =>
-                new PragmaticNullProvider("ProductionBenchmark", PragmaticNullConfiguration.ForProductionBenchmarking()));
-        });
-
-        var serviceProvider = services.BuildServiceProvider();
-        _pragmaticProductionLogger = serviceProvider.GetRequiredService<ILogger<LoggingBenchmarks>>();
-    }
-
-    private void SetupSerilog()
-    {
-        // Use a null sink to measure pure logging overhead without I/O
-        var serilogLogger = new LoggerConfiguration()
+        var serilog = new global::Serilog.LoggerConfiguration()
             .MinimumLevel.Information()
-            .WriteTo.Sink(new NullSink())
+            .Enrich.FromLogContext()
+            .WriteTo.Sink(new SerilogConsumingSink(_serilogSink))
             .CreateLogger();
-
-        var loggerFactory = new SerilogLoggerFactory(serilogLogger);
-        _serilogLogger = loggerFactory.CreateLogger<LoggingBenchmarks>();
+        return Owned(new SerilogLoggerFactory(serilog, dispose: true)).CreateLogger("Benchmark");
     }
 
-    private void SetupNLog()
+    private ILogger NLog()
     {
-        // Configure NLog with null target for fair performance comparison
-        var config = new NLog.Config.LoggingConfiguration();
-        var nullTarget = new NLog.Targets.NullTarget("null");
-        config.AddTarget(nullTarget);
-        config.AddRule(NLog.LogLevel.Info, NLog.LogLevel.Fatal, nullTarget);
-        NLog.LogManager.Configuration = config;
+        var config = new global::NLog.Config.LoggingConfiguration();
+        var target = new NLogConsumingTarget(_nlogSink);
+        config.AddRule(global::NLog.LogLevel.Info, global::NLog.LogLevel.Fatal, target);
+        global::NLog.LogManager.Configuration = config;
 
         var services = new ServiceCollection();
         services.AddLogging(builder =>
         {
             builder.ClearProviders();
-            builder.AddNLog();
             builder.SetMinimumLevel(LogLevel.Information);
+            builder.AddNLog();
         });
-
-        var serviceProvider = services.BuildServiceProvider();
-        _nlogLogger = serviceProvider.GetRequiredService<ILogger<LoggingBenchmarks>>();
+        return Owned(services.BuildServiceProvider()).GetRequiredService<ILoggerFactory>().CreateLogger("Benchmark");
     }
 
-    private void SetupNullLogger()
+    private ILogger ZLogger()
     {
-        _nullLogger = NullLogger<LoggingBenchmarks>.Instance;
-    }
-
-    private void SetupExpressionDslFiltering()
-    {
-        // Create a complex filter expression for performance testing
-        _complexFilter = f => f.Group(ctx =>
-            ((ctx.Error() | ctx.Critical()) & ctx.Production() & !ctx.HealthCheck()) |
-            (ctx.BusinessCritical() & ctx.HasStructuredProperties()) |
-            (ctx.SecurityEvent() & ctx.Level(LogLevel.Warning)));
-
-        _testLogEntry = new LogEntry
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
         {
-            LogLevel = LogLevel.Information,
-            Category = "MyApp.Controllers.OrderController",
-            Message = "Order processing completed",
-            Properties = _properties
+            builder.ClearProviders();
+            builder.SetMinimumLevel(LogLevel.Information);
+            builder.AddZLoggerLogProcessor(options =>
+            {
+                options.IncludeScopes = true;
+                return new ZLoggerConsumingProcessor(_zloggerSink);
+            });
+        });
+        return Owned(services.BuildServiceProvider()).GetRequiredService<ILoggerFactory>().CreateLogger("Benchmark");
+    }
+
+    private T Owned<T>(T disposable) where T : IDisposable
+    {
+        _owned.Add(disposable);
+        return disposable;
+    }
+
+    // ── The equivalence check ──
+
+    /// <summary>
+    ///     Runs every scenario once through each library and throws unless the four sinks consumed the same
+    ///     message, the same property set and the same exception.
+    /// </summary>
+    internal void VerifySameWork()
+    {
+        Compare("Simple", Pragmatic_Simple, Serilog_Simple, NLog_Simple, ZLogger_Simple);
+        Compare("SourceGenerated", Pragmatic_SourceGenerated, Serilog_SourceGenerated, NLog_SourceGenerated, ZLogger_SourceGenerated);
+        Compare("Structured", Pragmatic_Structured, Serilog_Structured, NLog_Structured, ZLogger_Structured);
+        Compare("Exception", Pragmatic_Exception, Serilog_Exception, NLog_Exception, ZLogger_Exception);
+        Compare("HighVolume", Pragmatic_HighVolume, Serilog_HighVolume, NLog_HighVolume, ZLogger_HighVolume);
+        Compare("Production", Pragmatic_Production, Serilog_Production, NLog_Production, ZLogger_Production);
+    }
+
+    private void Compare(string scenario, Action pragmatic, Action serilog, Action nlog, Action zlogger)
+    {
+        var events = new (string Library, ConsumedEvent? Event)[]
+        {
+            ("Pragmatic", Consume(_pragmaticSink, pragmatic)),
+            ("Serilog", Consume(_serilogSink, serilog)),
+            ("NLog", Consume(_nlogSink, nlog)),
+            ("ZLogger", Consume(_zloggerSink, zlogger)),
         };
 
-        _filterContext = new LogFilterContext();
+        var reference = events[0];
+        var differs = events.Any(e => e.Event is null) || events.Skip(1).Any(e => !e.Event!.SameAs(reference.Event!));
+        if (!differs)
+            return;
+
+        throw new InvalidOperationException(
+            $"The sinks did not consume the same event for '{scenario}', so the rows would not measure the same work:"
+            + Environment.NewLine
+            + string.Join(Environment.NewLine, events.Select(e => $"  {e.Library,-10} {e.Event?.ToString() ?? "(nothing reached the sink)"}")));
     }
 
-    #region Simple Logging Benchmarks
-
-    [Benchmark(Baseline = true)]
-    [BenchmarkCategory("Simple")]
-    public void NullLogger_SimpleLog()
+    private static ConsumedEvent? Consume(EventConsumer sink, Action call)
     {
-        _nullLogger.LogInformation("Order {OrderId} processed for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Simple")]
-    public void PragmaticLogging_SimpleLog()
-    {
-        _pragmaticLogger.LogInformation("Order {OrderId} processed for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Simple")]
-    public void Serilog_SimpleLog()
-    {
-        _serilogLogger.LogInformation("Order {OrderId} processed for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Simple")]
-    public void NLog_SimpleLog()
-    {
-        _nlogLogger.LogInformation("Order {OrderId} processed for user {UserId}", _orderId, _userId);
-    }
-
-    #endregion
-
-    #region Source-Generated Call Sites ([LoggerMessage], the sanctioned hot-path pattern)
-
-    // All three libraries are invoked through the same Microsoft [LoggerMessage]-generated
-    // method (zero-boxing struct state, cached delegate) — the pattern Pragmatic recommends
-    // for hot paths. This measures each provider pipeline under the modern call-site.
-
-    [Benchmark(Baseline = true)]
-    [BenchmarkCategory("SourceGenerated")]
-    public void NullLogger_SourceGenLog()
-    {
-        BenchmarkLog.OrderProcessed(_nullLogger, _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("SourceGenerated")]
-    public void PragmaticLogging_SourceGenLog()
-    {
-        BenchmarkLog.OrderProcessed(_pragmaticLogger, _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("SourceGenerated")]
-    public void Serilog_SourceGenLog()
-    {
-        BenchmarkLog.OrderProcessed(_serilogLogger, _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("SourceGenerated")]
-    public void NLog_SourceGenLog()
-    {
-        BenchmarkLog.OrderProcessed(_nlogLogger, _orderId, _userId);
-    }
-
-    #endregion
-
-    #region Structured Logging Benchmarks
-
-    [Benchmark]
-    [BenchmarkCategory("Structured")]
-    public void PragmaticLogging_StructuredLog()
-    {
-        using var scope = _pragmaticStructuredLogger.BeginScope(_properties);
-        _pragmaticStructuredLogger.LogInformation("Order processed with amount {Amount:C} at {Timestamp}",
-            _amount, _timestamp);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Structured")]
-    public void PragmaticLogging_ProductionStructuredLog()
-    {
-        using var scope = _pragmaticProductionLogger.BeginScope(_properties);
-        _pragmaticProductionLogger.LogInformation("Order processed with amount {Amount:C} at {Timestamp}",
-            _amount, _timestamp);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Structured")]
-    public void Serilog_StructuredLog()
-    {
-        using var scope = _serilogLogger.BeginScope(_properties);
-        _serilogLogger.LogInformation("Order processed with amount {Amount:C} at {Timestamp}",
-            _amount, _timestamp);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Structured")]
-    public void NLog_StructuredLog()
-    {
-        using var scope = _nlogLogger.BeginScope(_properties);
-        _nlogLogger.LogInformation("Order processed with amount {Amount:C} at {Timestamp}",
-            _amount, _timestamp);
-    }
-
-    #endregion
-
-    #region High-Volume Logging Benchmarks
-
-    [Benchmark]
-    [BenchmarkCategory("HighVolume")]
-    public void PragmaticLogging_HighVolume()
-    {
-        for (int i = 0; i < 1000; i++)
+        sink.Capture = true;
+        try
         {
-            _pragmaticLogger.LogInformation("Processing item {ItemId} for user {UserId}", i, _userId);
+            call();
+            return sink.TakeLast();
+        }
+        finally
+        {
+            sink.Capture = false;
         }
     }
-
-    [Benchmark]
-    [BenchmarkCategory("HighVolume")]
-    public void Serilog_HighVolume()
-    {
-        for (int i = 0; i < 1000; i++)
-        {
-            _serilogLogger.LogInformation("Processing item {ItemId} for user {UserId}", i, _userId);
-        }
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("HighVolume")]
-    public void NLog_HighVolume()
-    {
-        for (int i = 0; i < 1000; i++)
-        {
-            _nlogLogger.LogInformation("Processing item {ItemId} for user {UserId}", i, _userId);
-        }
-    }
-
-    #endregion
-
-    #region Expression DSL Filtering Benchmarks
-
-    [Benchmark]
-    [BenchmarkCategory("Filtering")]
-    public void PragmaticLogging_ExpressionDslSimple()
-    {
-        FilterExpression simpleFilter = f => f.Level(LogLevel.Information);
-        FilterExpressionEvaluator.Evaluate(simpleFilter, _testLogEntry, _filterContext);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Filtering")]
-    public void PragmaticLogging_ExpressionDslComplex()
-    {
-        FilterExpressionEvaluator.Evaluate(_complexFilter, _testLogEntry, _filterContext);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Filtering")]
-    public void PragmaticLogging_ExpressionDslBatch()
-    {
-        for (int i = 0; i < 100; i++)
-        {
-            FilterExpressionEvaluator.Evaluate(_complexFilter, _testLogEntry, _filterContext);
-        }
-    }
-
-    #endregion
-
-    #region Error Handling Benchmarks
-
-    [Benchmark]
-    [BenchmarkCategory("ErrorHandling")]
-    public void PragmaticLogging_ExceptionLogging()
-    {
-        // Use pre-created exception to measure pure logging performance (minimal configuration)
-        _pragmaticLogger.LogError(_benchmarkException, "Error processing order {OrderId} for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("ErrorHandling")]
-    public void PragmaticLogging_ProductionExceptionLogging()
-    {
-        // Use pre-created exception to measure production-like configuration performance
-        _pragmaticProductionLogger.LogError(_benchmarkException, "Error processing order {OrderId} for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("ErrorHandling")]
-    public void Serilog_ExceptionLogging()
-    {
-        // Use pre-created exception to measure pure logging performance
-        _serilogLogger.LogError(_benchmarkException, "Error processing order {OrderId} for user {UserId}", _orderId, _userId);
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("ErrorHandling")]
-    public void NLog_ExceptionLogging()
-    {
-        // Use pre-created exception to measure pure logging performance
-        _nlogLogger.LogError(_benchmarkException, "Error processing order {OrderId} for user {UserId}", _orderId, _userId);
-    }
-
-    #endregion
-
-    #region Memory Allocation Benchmarks
-
-    [Benchmark]
-    [BenchmarkCategory("Memory")]
-    public void PragmaticLogging_ZeroAllocation()
-    {
-        // Test zero-allocation patterns
-        if (_pragmaticLogger.IsEnabled(LogLevel.Information))
-        {
-            _pragmaticLogger.LogInformation("User {UserId} completed action", _userId);
-        }
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Memory")]
-    public void Serilog_StandardAllocation()
-    {
-        if (_serilogLogger.IsEnabled(LogLevel.Information))
-        {
-            _serilogLogger.LogInformation("User {UserId} completed action", _userId);
-        }
-    }
-
-    [Benchmark]
-    [BenchmarkCategory("Memory")]
-    public void NLog_StandardAllocation()
-    {
-        if (_nlogLogger.IsEnabled(LogLevel.Information))
-        {
-            _nlogLogger.LogInformation("User {UserId} completed action", _userId);
-        }
-    }
-
-    #endregion
-
-    [GlobalCleanup]
-    public void Cleanup()
-    {
-        // Print Expression DSL statistics
-        var stats = FilterExpressionEvaluator.GetStatistics();
-        Console.WriteLine($"\n📊 Pragmatic.Logging Benchmark Summary:");
-        Console.WriteLine($"   Expression DSL Performance:");
-        Console.WriteLine($"     - Total Evaluations: {stats.TotalEvaluations:N0}");
-        Console.WriteLine($"     - Cache Hits: {stats.CacheHits:N0} ({stats.CacheHitRatio:P2})");
-        Console.WriteLine($"     - Cached Expressions: {stats.CachedExpressions:N0}");
-
-        // Print configuration details for benchmarked scenarios
-        Console.WriteLine($"\n   Configuration Details:");
-        Console.WriteLine($"     - Minimal Config: Zero-allocation, no structured properties, no context");
-        Console.WriteLine($"     - Structured Config: Structured properties enabled, minimal context");
-        Console.WriteLine($"     - Production Config: Full processing, context enrichment, batching enabled");
-        Console.WriteLine($"     - All providers use null sinks for fair I/O-free comparison");
-
-        Console.WriteLine($"\n   All benchmarks measure pure logging performance without I/O overhead.");
-    }
-}
-
-/// <summary>
-/// Custom benchmark configuration optimized for logging performance testing.
-/// </summary>
-public class LoggingBenchmarkConfig : ManualConfig
-{
-    public LoggingBenchmarkConfig()
-    {
-        // Realistic benchmark configuration for production logging evaluation
-        AddJob(Job.Default
-            .WithWarmupCount(5)       // Sufficient warmup for JIT optimization
-            .WithIterationCount(15)   // Increased from 7 for lower CV and stable results
-            .WithInvocationCount(1000) // Reduced from 10000 to reasonable level
-            .WithUnrollFactor(1));    // Keep single invocation for accurate memory measurement
-
-        // Essential performance columns
-        AddColumn(StatisticColumn.Mean);
-        AddColumn(StatisticColumn.StdDev);
-        AddColumn(StatisticColumn.Median);
-        AddColumn(BaselineRatioColumn.RatioMean);
-
-        // Memory analysis columns
-        AddColumn(StatisticColumn.Min);
-        AddColumn(StatisticColumn.Max);
-        AddColumn(StatisticColumn.Q1);
-        AddColumn(StatisticColumn.Q3);
-
-        WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest));
-        WithSummaryStyle(BenchmarkDotNet.Reports.SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend));
-
-        // Add exporters to save results in multiple formats
-        AddExporter(HtmlExporter.Default);
-        AddExporter(MarkdownExporter.Default);
-
-        // Add validation to ensure results are meaningful
-        AddValidator(BenchmarkDotNet.Validators.BaselineValidator.FailOnError);
-        AddValidator(BenchmarkDotNet.Validators.ExecutionValidator.FailOnError);
-    }
-}
-/// <summary>
-/// Microsoft [LoggerMessage] source-generated call sites shared by the SourceGenerated
-/// benchmark category — the hot-path pattern Pragmatic.Logging recommends.
-/// </summary>
-internal static partial class BenchmarkLog
-{
-    [LoggerMessage(Level = LogLevel.Information, Message = "Order {OrderId} processed for user {UserId}")]
-    public static partial void OrderProcessed(Microsoft.Extensions.Logging.ILogger logger, int orderId, string userId);
 }

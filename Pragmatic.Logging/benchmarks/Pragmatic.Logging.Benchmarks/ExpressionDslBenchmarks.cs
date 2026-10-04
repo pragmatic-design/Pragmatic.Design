@@ -1,9 +1,5 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Exporters;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Order;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Logging.Filtering;
 using Pragmatic.Logging.Providers;
@@ -14,13 +10,10 @@ namespace Pragmatic.Logging.Benchmarks;
 /// Focused benchmarks for Expression DSL performance.
 /// Tests the unique filtering capabilities of Pragmatic.Logging.
 /// </summary>
-[Config(typeof(ExpressionDslBenchmarkConfig))]
+[Config(typeof(LoggingBenchmarkConfig))]
 [MemoryDiagnoser]
-[SimpleJob]
-[Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
-[RankColumn]
 public class ExpressionDslBenchmarks
 {
     // Test data
@@ -189,7 +182,7 @@ public class ExpressionDslBenchmarks
 
     #region Batch Expression Evaluation
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     [BenchmarkCategory("BatchEvaluation")]
     public int SimpleLevel_BatchEvaluation()
     {
@@ -250,7 +243,7 @@ public class ExpressionDslBenchmarks
 
     #region High-Volume Evaluation
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     [BenchmarkCategory("HighVolume")]
     public int HighVolume_SimpleFilter()
     {
@@ -298,7 +291,7 @@ public class ExpressionDslBenchmarks
 
     #region Cache Performance Testing
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     [BenchmarkCategory("CachePerformance")]
     public int CacheWarmup_SingleExpression()
     {
@@ -348,7 +341,7 @@ public class ExpressionDslBenchmarks
 
     #region Property-Based Filtering
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     [BenchmarkCategory("PropertyFiltering")]
     public bool PropertyExists_Evaluation()
     {
@@ -390,44 +383,5 @@ public class ExpressionDslBenchmarks
         Console.WriteLine($"   Total Evaluations: {stats.TotalEvaluations:N0}");
         Console.WriteLine($"   Cache Hit Ratio: {stats.CacheHitRatio:P2}");
         Console.WriteLine($"   Cached Expressions: {stats.CachedExpressions:N0}");
-        Console.WriteLine($"   Average per evaluation: {CalculateAverageTime():F2}ns");
-    }
-
-    private double CalculateAverageTime()
-    {
-        var stats = FilterExpressionEvaluator.GetStatistics();
-        if (stats.TotalEvaluations > 0)
-        {
-            // Estimate based on our micro-benchmarks from examples (0.24-0.42μs per evaluation)
-            return 300.0; // Conservative estimate in nanoseconds
-        }
-        return 0.0;
-    }
-}
-
-/// <summary>
-/// Specialized benchmark configuration for Expression DSL testing.
-/// </summary>
-public class ExpressionDslBenchmarkConfig : ManualConfig
-{
-    public ExpressionDslBenchmarkConfig()
-    {
-        AddJob(Job.Default
-            .WithWarmupCount(5)
-            .WithIterationCount(15)
-            .WithInvocationCount(1000)
-            .WithUnrollFactor(1));
-
-        AddColumn(StatisticColumn.Mean);
-        AddColumn(StatisticColumn.StdDev);
-        AddColumn(StatisticColumn.Min);
-        AddColumn(StatisticColumn.Max);
-        AddColumn(BaselineRatioColumn.RatioMean);
-
-        WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest));
-        WithSummaryStyle(BenchmarkDotNet.Reports.SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend));
-
-        AddExporter(HtmlExporter.Default);
-        AddExporter(MarkdownExporter.Default);
     }
 }
