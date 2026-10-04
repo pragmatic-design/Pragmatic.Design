@@ -235,10 +235,10 @@ Maps all generated routes to the ASP.NET Core endpoint router.
 
 ### With Pragmatic.Composition (recommended)
 
-When you use `Pragmatic.Composition` and `PragmaticApp.RunAsync()`, both calls are **automatic** — the SG-generated host handles everything:
+When you use `Pragmatic.Composition` and `PragmaticApp.RunAsync()`, both calls are **automatic**; the SG-generated host handles everything:
 
 ```csharp
-// Program.cs — with Composition, no manual registration needed
+// Program.cs: with Composition, no manual registration needed
 await PragmaticApp.RunAsync(args, app =>
 {
     app.UseAuthentication<NoOpAuthenticationHandler>("Default");
@@ -251,7 +251,7 @@ await PragmaticApp.RunAsync(args, app =>
 If you use Endpoints without Composition, you call them manually in `Program.cs`:
 
 ```csharp
-// Program.cs — standalone, manual registration
+// Program.cs: standalone, manual registration
 builder.Services.AddPragmaticEndpoints(options =>
 {
     options.RoutePrefix = "/api";

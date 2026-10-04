@@ -45,17 +45,17 @@ public class ReservationService
     public async Task<Result<Guid>> CreateReservationAsync(
         CreateReservationRequest request, ClaimsPrincipal user, CancellationToken ct)
     {
-        // 1. Authorization — manual, easy to forget
+        // 1. Authorization: manual, easy to forget
         var authResult = await _authService.AuthorizeAsync(user, "booking.reservation.create");
         if (!authResult.Succeeded)
             return Result<Guid>.Failure(ForbiddenError.MissingPermission("booking.reservation.create"));
 
-        // 2. Validation — manual, duplicated across methods
+        // 2. Validation: manual, duplicated across methods
         var validation = await _validator.ValidateAsync(request, ct);
         if (!validation.IsValid)
             return Result<Guid>.Failure(BadRequestError.Create(validation.ToString()));
 
-        // 3. Business logic — finally
+        // 3. Business logic, finally
         _logger.LogInformation("Creating reservation for guest {GuestId}", request.GuestId);
 
         var property = await _properties.GetByIdAsync(request.PropertyId, ct);
@@ -224,7 +224,7 @@ PrepareActionAsync(action)           [FromClock]/[FromCurrentUser] written, then
   |                                  and [LoadEntity<T>]/[LoadEntities<T>] pre-load the signed-in user
   |                                  and entities by ID, by a list of IDs, or by a named specification
   |                                  (RequireReadPermission: the entity's read permission first)
-  |                                  — 404 if not found
+  |                                  (404 if not found)
   |                                  After authorization (no 404-vs-403 probing), inside the
   |                                  [WithoutFilter]/[FilterMode] scopes like the body
   v
@@ -309,7 +309,7 @@ The framework provides three base classes (with void variants), each designed fo
 | Operation that succeeds or fails, no return value? | `VoidDomainAction` | Keep reading |
 | Standard CRUD on a persisted entity? | `Mutation<T>` | Keep reading |
 | Need the entity lifecycle (load/create, apply, validate entity, persist, events)? | `Mutation<T>` | `DomainAction<T>` |
-| Orchestrating a **fixed, named** set of writes atomically? | `[CompositeAction]` on `DomainAction<T>` — see [Mutations — Composing Mutations](mutations.md#composing-mutations-compositeaction) | Single mutation |
+| Orchestrating a **fixed, named** set of writes atomically? | `[CompositeAction]` on `DomainAction<T>`; see [Mutations: Composing Mutations](mutations.md#composing-mutations-compositeaction) | Single mutation |
 | A nested DTO whose **collections** carry a variable number of children? | `[PartOf<TParent>]` + `CollectionStrategy` on the parent's mutation | Keep reading |
 
 ### Base Class Reference
@@ -355,7 +355,7 @@ The `IProducesError<T>` marker interfaces are used by the SG to generate OpenAPI
 
 **Do not use `[CompositeAction]` for a collection.** Its steps are individual properties, named at compile time; a `List<TMutation>` property is not a step and is skipped without a diagnostic. Children arriving as a collection inside one nested DTO are `[PartOf<TParent>]` with a `CollectionStrategy`, written alongside the parent.
 
-⚠️ **A composite exposed with `[Endpoint]` must declare its own `[RequirePermission]`.** Its steps run as internal calls and their permissions are not re-checked, so a composite without one answers `204` to a caller who holds nothing. Both points are worked through in [Mutations — Composing Mutations](mutations.md#composing-mutations-compositeaction).
+⚠️ **A composite exposed with `[Endpoint]` must declare its own `[RequirePermission]`.** Its steps run as internal calls and their permissions are not re-checked, so a composite without one answers `204` to a caller who holds nothing. Both points are worked through in [Mutations: Composing Mutations](mutations.md#composing-mutations-compositeaction).
 
 ---
 
@@ -710,7 +710,7 @@ services.AddActionFilter<OrderResultFilter, PlaceOrder, OrderResult>();
 
 ### Internal call bypass
 
-When one action calls another within the same boundary through `I{Boundary}InternalActions`, authorization filters are skipped. The `ActionCallContext.IsInternalCall` flag is set by that interface's implementation, and only by it: the public `I{Boundary}Actions` — what another module injects — enforces the permission of the operation it invokes, unless the caller declares `[AbsorbsChildPermissions]`.
+When one action calls another within the same boundary through `I{Boundary}InternalActions`, authorization filters are skipped. The `ActionCallContext.IsInternalCall` flag is set by that interface's implementation, and only by it: the public `I{Boundary}Actions` (what another module injects) enforces the permission of the operation it invokes, unless the caller declares `[AbsorbsChildPermissions]`.
 
 ```csharp
 // PermissionAuthorizationFilter checks:

@@ -4,7 +4,7 @@ Complete guide to request binding in Pragmatic.Endpoints.
 
 ## Route Parameters
 
-Route parameters are extracted from the URL path. The SG matches properties to route segments **by name** (case-insensitive). If your route has `{id}` and your class has a property named `Id`, the binding happens automatically — `[FromRoute]` is optional:
+Route parameters are extracted from the URL path. The SG matches properties to route segments **by name** (case-insensitive). If your route has `{id}` and your class has a property named `Id`, the binding happens automatically, and `[FromRoute]` is optional:
 
 ### Basic Route Parameters
 
@@ -14,7 +14,7 @@ public partial class GetUserEndpoint : Endpoint<UserDto>
 {
     public Guid Id { get; set; }  // auto-bound: matches {id} by name
 
-    // [FromRoute] is optional — only needed when the property name
+    // [FromRoute] is optional: only needed when the property name
     // doesn't match the route parameter name
 }
 ```
@@ -181,9 +181,9 @@ public partial class UpdateResourceEndpoint : Endpoint<ResourceDto>
 ## Cookie Parameters
 
 `[FromCookie]` binds from `HttpContext.Request.Cookies` (minimal APIs have no native cookie
-binding — the generated handler reads it in the body). Required missing → **400** (a cookie
+binding; the generated handler reads it in the body). Required missing → **400** (a cookie
 is request input, not auth). Supported typed values: `string`, `Guid`, `int`, `long`, `bool`,
-`DateTimeOffset` (TryParse; malformed required values → 400). Values are used as-is — no URL
+`DateTimeOffset` (TryParse; malformed required values → 400). Values are used as-is: no URL
 decoding, consistent with `[FromHeader]`.
 
 ```csharp
@@ -208,15 +208,15 @@ spellings of one thing.
 | Where | any endpoint | a `[Query]` |
 | Who writes it | the generated **endpoint**, from `HttpContext.User` | the generated **invoker**, after validation and the permission check |
 | What | one raw claim, parsed to the property's type | `ICurrentUser.Id`, or a member of the `[PragmaticUser]` entity through its generated resolver |
-| Reached in process | ❌ — an in-process caller sets the property, and can set anyone's | ✅ — the boundary member runs the same invoker |
-| The property | public, settable | `{ get; private set; }` — `PRAG0730` otherwise |
-| Request parameter / OpenAPI | no | **never** — not query string, not route, not body, not the boundary interface |
+| Reached in process | ❌ (an in-process caller sets the property, and can set anyone's) | ✅ (the boundary member runs the same invoker) |
+| The property | public, settable | `{ get; private set; }` (`PRAG0730` otherwise) |
+| Request parameter / OpenAPI | no | **never**: not query string, not route, not body, not the boundary interface |
 
 `[FromClaim]` is binding: the claim is one more source the handler reads, like a header. Its value
 stays a public property, so the HTTP door is the only one that fills it.
 
-`[FromCurrentUser]` is not binding at all. The endpoint does not see the property — a route placeholder
-that names it matches nothing and is reported by `PRAG0504` — and the value is written by the
+`[FromCurrentUser]` is not binding at all. The endpoint does not see the property (a route placeholder
+that names it matches nothing and is reported by `PRAG0504`), and the value is written by the
 operation's invoker (a query's, an action's or a mutation's), the one pipeline every caller goes through. A caller who is not authenticated gets 401; an
 authenticated one with no user entity gets 404. Use it for "my …" reads; the form and its diagnostics
 (`PRAG0730`, `PRAG0731`) are in
@@ -224,7 +224,7 @@ authenticated one with no user entity gets 404. Use it for "my …" reads; the f
 
 ## Default Values
 
-Property initializers on optional query/header parameters are the effective defaults —
+Property initializers on optional query/header parameters are the effective defaults:
 absent parameters never overwrite the constructed instance:
 
 ```csharp
@@ -248,8 +248,8 @@ property is **PRAG0536**: give it a constant default, or a `set` accessor.
 [FromQuery] public string Tag { get; init; } = NewTag();              // PRAG0536
 ```
 
-Claims and cookies follow the same rule. The generated endpoint reads them — and refuses a missing or
-malformed required one — before it builds the operation, so a `[FromClaim]` or `[FromCookie]`
+Claims and cookies follow the same rule. The generated endpoint reads them (and refuses a missing or
+malformed required one) before it builds the operation, so a `[FromClaim]` or `[FromCookie]`
 property can be `required` or `init`: it is set in the object initializer like any other, and an
 optional `init` one keeps its declared default when the value is absent.
 
@@ -340,13 +340,13 @@ choose, and it has to land unedited. Renaming the property to match would carry 
 through the loop, the result and the log line for the sake of one boundary; the attribute keeps the
 disagreement where it belongs, at the edge.
 
-The published OpenAPI schema uses the wire name too — a document that advertised the property name
+The published OpenAPI schema uses the wire name too: a document that advertised the property name
 would describe a request the endpoint rejects, and the client generated from it would be broken
 against the very application it was generated from.
 
 > ⚠️ **A body with exactly one property is not wrapped.** The endpoint binds that property's type
 > straight from the request, so `POST` takes a bare JSON array (or scalar), there is no object with a
-> field name in it, and `[JsonPropertyName]` has nothing to rename — silently. Add a second body
+> field name in it, and `[JsonPropertyName]` has nothing to rename, silently. Add a second body
 > property, or accept the bare shape.
 
 ### What the published contract says about a type
@@ -357,21 +357,21 @@ declared for it. What it can say depends on what the manifest carries:
 | Declared as | Published as |
 |---|---|
 | `string`, `int`, `Guid`, `DateTime`, … | `type` + `format` |
-| `byte[]`, `Stream` | `"type": "string"` with `format` `byte` / `binary` — both are strings on the wire |
+| `byte[]`, `Stream` | `"type": "string"` with `format` `byte` / `binary`: both are strings on the wire |
 | `List<T>`, `T[]`, `IReadOnlyList<T>`, … | `"type": "array"` with an `items` schema for `T` |
 | `IReadOnlyDictionary<K,V>`, `Dictionary<K,V>` | `"type": "object"` with `additionalProperties` for `V` |
 | a type the manifest describes | `$ref` to its schema |
-| an enum the manifest does not describe | `"type": "string"` — what `JsonStringEnumConverter` writes |
+| an enum the manifest does not describe | `"type": "string"`, what `JsonStringEnumConverter` writes |
 | anything else | an **empty schema**, which means "any value" |
 
 The empty schema is deliberate, and the alternative is worse than it looks: publishing a type the
 document cannot describe as `"type": "string"` is a statement a client generator believes, so it emits
-a client that sends a string where an array is required — against the very application the document
+a client that sends a string where an array is required, against the very application the document
 came from. An unconstrained schema says the document does not know, which is the true statement.
 
 **Nullability** is a type union, not a keyword: the document is OpenAPI **3.1**, where `nullable`
 belongs to 3.0 and is a member every reader drops. An optional `string` is `"type": ["string","null"]`,
-and an optional reference is an `anyOf` of the `$ref` and `{"type": "null"}` — a `$ref` cannot be
+and an optional reference is an `anyOf` of the `$ref` and `{"type": "null"}`: a `$ref` cannot be
 qualified by a sibling keyword.
 
 **Validation attributes** on a body property are published under their JSON Schema keywords, so a
@@ -380,8 +380,8 @@ caller reads the bound instead of discovering it by being refused: `[MinLength]`
 collection, `[MinCount]`/`[MaxCount]`/`[Count]` as `minItems`/`maxItems`, `[Range]` as
 `minimum`/`maximum`, `[GreaterThan]`/`[LessThan]`/`[Positive]`/`[Negative]` as the exclusive bounds,
 `[GreaterThanOrEqual]`/`[LessThanOrEqual]` as the inclusive ones, `[Regex]` as `pattern`, and
-`[Email]`/`[Url]`/`[Guid]` on a string as `format`. Rules JSON Schema cannot spell — a phone number,
-a credit card, a date in the future, a comparison with another property — stay with the server.
+`[Email]`/`[Url]`/`[Guid]` on a string as `format`. Rules JSON Schema cannot spell (a phone number,
+a credit card, a date in the future, a comparison with another property) stay with the server.
 
 ## Mixed Bindings
 
@@ -485,11 +485,11 @@ endpoint, one without `File` answers 400. Nullability is read from the declarati
 `[FromForm(Name = "…")]` gives it another, and the runtime document publishes the same key.
 
 ⚠️ **Once one property carries a file or a `[FromForm]`, the request is `multipart/form-data` and
-*every* value comes from the form** — including the properties nobody marked. There is no JSON body
+*every* value comes from the form**, including the properties nobody marked. There is no JSON body
 left for them to arrive in, so `[FromForm]` on the rest is explicit rather than load-bearing, and the
 wire key is the same either way (the property name).
 
-What a form field cannot carry is a **nested object** — it is a string on the wire — and that is
+What a form field cannot carry is a **nested object** (it is a string on the wire), and that is
 `PRAG0552`, which names the property. The three ways out are the same as for a `GET` (`PRAG0532`): a
 scalar, a single value holding JSON the operation parses itself, or an operation without the file.
 

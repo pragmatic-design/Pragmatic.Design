@@ -13,9 +13,9 @@ Endpoint processors are hooks that run before or after the handler, enabling cro
 
 Endpoints often need logic that runs before the handler (pre-conditions, input enrichment, resource existence checks) or after it (audit logs, metrics, notifications). Without processors, this logic ends up:
 
-1. **Duplicated** across handlers — every endpoint that checks "does the customer exist?" repeats the same code.
-2. **Tangled** with business logic — the handler does too many things, violating SRP.
-3. **Hard to reorder** — changing the execution order means refactoring the handler.
+1. **Duplicated** across handlers: every endpoint that checks "does the customer exist?" repeats the same code.
+2. **Tangled** with business logic: the handler does too many things, violating SRP.
+3. **Hard to reorder**: changing the execution order means refactoring the handler.
 
 Processors solve this by externalizing pre/post logic into reusable, ordered, DI-resolved classes.
 
@@ -66,9 +66,9 @@ public readonly struct PreProcessorResult
 }
 ```
 
-- `Continue()` — proceed to the next processor or handler.
-- `Fail(error)` — stop the pipeline and return the error as HTTP response.
-- `NotFound(...)` — shorthand for `Fail(NotFoundError.Create(...))`. Returns HTTP 404.
+- `Continue()`: proceed to the next processor or handler.
+- `Fail(error)`: stop the pipeline and return the error as HTTP response.
+- `NotFound(...)`: shorthand for `Fail(NotFoundError.Create(...))`. Returns HTTP 404.
 
 ### Example: Validate Customer Exists
 
@@ -198,7 +198,7 @@ public partial class PlaceOrderEndpoint : Endpoint<OrderDto>
 
     public override async Task<Result<OrderDto>> HandleAsync(CancellationToken ct)
     {
-        // Only business logic here — pre-conditions handled by processors
+        // Only business logic here; pre-conditions handled by processors
         var order = await PlaceOrder(CustomerId, ProductId, Quantity, ct);
         return order;
     }
@@ -225,13 +225,13 @@ Model binding (route, query, body, headers, claims)
 Return error response                     Return error response
   |
   v (all Continue)
-HandleAsync() — the endpoint handler
+HandleAsync() (the endpoint handler)
   |
   v
-[PostProcessor #1] — always runs
+[PostProcessor #1] (always runs)
   |
   v
-[PostProcessor #2] — always runs
+[PostProcessor #2] (always runs)
   |
   v
 Response serialization (Result → HTTP)
@@ -251,15 +251,15 @@ Response serialization (Result → HTTP)
 
 Nothing to write: naming a processor in `[PreProcessor<T>]` / `[PostProcessor<T>]` registers it. The
 generated handler resolves it from the request services, and the same generator emits
-`TryAddScoped<TProcessor>` — in the assembly's own `AddPragmaticEndpoints()`, and in the Composition
+`TryAddScoped<TProcessor>`, in the assembly's own `AddPragmaticEndpoints()`, and in the Composition
 host's `RegisterAllEndpoints()`, which builds its own registration from the assembly metadata.
 
-Scoped, because a processor may inject anything the request can reach — a repository, a `DbContext`,
+Scoped, because a processor may inject anything the request can reach: a repository, a `DbContext`,
 the current user. `TryAdd`, so a registration you write yourself keeps precedence: a different
 lifetime, or a factory supplying an argument the container cannot resolve on its own.
 
 ```csharp
-// Registered by the attribute — no startup code.
+// Registered by the attribute; no startup code.
 public class AuditLogProcessor(IAuditService audit) : IEndpointPostProcessor
 {
     // ...
@@ -269,7 +269,7 @@ public class AuditLogProcessor(IAuditService audit) : IEndpointPostProcessor
 builder.Services.AddSingleton<StatelessHeaderProcessor>();
 ```
 
-A processor the container cannot build — abstract, or without a public constructor — gets no
+A processor the container cannot build (abstract, or without a public constructor) gets no
 registration, and `PRAG0534` says so at compile time instead of letting the first request fail.
 
 ---
@@ -356,7 +356,7 @@ public class TenantIsolationProcessor(ITenantContext tenant) : IEndpointPreProce
 
 | Factory | HTTP Result | When to Use |
 |---------|-------------|-------------|
-| `Continue()` | — (pipeline continues) | Validation passed |
+| `Continue()` | n/a (pipeline continues) | Validation passed |
 | `Fail(IError)` | Error's StatusCode | Business rule violation |
 | `NotFound(type, id?)` | 404 | Resource does not exist |
 | `NotFound<T>(id?)` | 404 | Type-safe resource not found |

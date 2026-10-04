@@ -19,7 +19,7 @@ The attribute is defined in `Pragmatic.Endpoints.Attributes.ResponseCacheAttribu
 | `VaryByQueryKeys` | `string[]?` | `null` | Query string keys that create separate cache entries. Generates `c.SetVaryByQuery(...)`. |
 | `VaryByHeaders` | `string[]?` | `null` | Request headers that create separate cache entries. Generates `c.SetVaryByHeader(...)`. |
 | `Profile` | `string?` | `null` | Named cache tag for grouping. Generates `c.Tag("profile")`. |
-| `Location` | `ResponseCacheLocation` | `Any` | Which form the SG generates — see below. |
+| `Location` | `ResponseCacheLocation` | `Any` | Which form the SG generates; see below. |
 
 ### ResponseCacheLocation Enum
 
@@ -183,7 +183,7 @@ This layered approach is particularly effective when you have expensive queries 
 
 Output caching requires its services and its middleware. **The generated host adds both** when a module
 declares a shared `[ResponseCache]`: `services.AddOutputCache()` and `OutputCacheStep` (Order 95, after
-authorization — a refused caller is refused before any cached answer is considered). A host that declares
+authorization: a refused caller is refused before any cached answer is considered). A host that declares
 none gets neither.
 
 A host you build by hand adds them itself:
@@ -242,8 +242,8 @@ public partial class CreateProduct : DomainAction<ProductId> { }
 
 - **GET and HEAD only**: Output caching only applies to GET and HEAD requests by default. POST, PUT, DELETE responses are not cached.
 - **Authenticated responses are never kept by the shared form.** ASP.NET's default output-cache policy
-  does not cache a request whose user is authenticated, and varying by a header — `Authorization`
-  included — does not change it. So one user's answer is not served to another, and `[ResponseCache]`
+  does not cache a request whose user is authenticated, and varying by a header (`Authorization`
+  included) does not change it. So one user's answer is not served to another, and `[ResponseCache]`
   with `Location = Any` on an authenticated route caches nothing, silently. Measured in
   `Pragmatic.Integration.Tests/WhatASharedResponseCacheKeepsTests`. For a signed-in user's data use
   `Location = ResponseCacheLocation.Client` (the browser keeps it); for server-side caching of a

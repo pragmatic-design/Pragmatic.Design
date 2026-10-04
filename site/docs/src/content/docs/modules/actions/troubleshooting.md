@@ -132,10 +132,10 @@ An action calls another action within the same boundary, but the inner action fa
 
 ### Checklist
 
-1. **Are you calling through the internal interface?** Only the generated `I{Boundary}InternalActions` runs the call as an internal one. The public `I{Boundary}Actions` enforces the permission of the operation it invokes — it is the contract another module injects — and so does a direct invoker call:
+1. **Are you calling through the internal interface?** Only the generated `I{Boundary}InternalActions` runs the call as an internal one. The public `I{Boundary}Actions` enforces the permission of the operation it invokes (it is the contract another module injects), and so does a direct invoker call:
 
    ```csharp
-   // Correct: I{Boundary}InternalActions (same assembly) — the internal call skips the callee's permission
+   // Correct: I{Boundary}InternalActions (same assembly); the internal call skips the callee's permission
    await _booking.ConfirmReservation(mutation, ct);        // _booking is IBookingInternalActions
 
    // Refused with 403 if the caller lacks the callee's permission
@@ -145,7 +145,7 @@ An action calls another action within the same boundary, but the inner action fa
 
    An operation that answers for what it invokes through the public interface declares `[AbsorbsChildPermissions]` instead.
 
-   ⚠️ **If the operation sits in a group, the internal interface is the group's twin.** `I{Boundary}{Group}InternalActions` is what carries it, and `I{Boundary}Actions.{Group}` is the *public* group interface — resolved to the guarded implementation, so calling through it enforces the permission. Either inject the twin, or go `root.{Group}` from `I{Boundary}InternalActions`; both hand back the same unguarded object.
+   ⚠️ **If the operation sits in a group, the internal interface is the group's twin.** `I{Boundary}{Group}InternalActions` is what carries it, and `I{Boundary}Actions.{Group}` is the *public* group interface, resolved to the guarded implementation, so calling through it enforces the permission. Either inject the twin, or go `root.{Group}` from `I{Boundary}InternalActions`; both hand back the same unguarded object.
 
 2. **Is `ActionCallContext` registered?** It must be scoped in DI. `AddPragmaticActions()` registers it automatically.
 
@@ -220,10 +220,10 @@ The build fails with PRAG04xx diagnostics from the source generator.
 | PRAG0454 | Error | A load's `Specification` names no static `Specification<TEntity>` of the entity | Name one with `nameof(EntitySpecifications.Member)`, or a member of `{Entity}Specifications`, returning a specification of that entity and accessible from the operation |
 | PRAG0455 | Error | A parameter of a load's rule binds no property of the operation | Declare a property of the parameter's name (case ignored) whose type converts to it, or give the parameter a default |
 | PRAG0456 | Error | A load names both a key and a `Specification`, or neither | Keep one: the key property, or the rule |
-| PRAG0457 | Error | `RequireReadPermission` on an entity whose read permission is not known | The entity's permissions are generated with it by the persistence generator — load an `[Entity]` of this module or of a referenced one |
+| PRAG0457 | Error | `RequireReadPermission` on an entity whose read permission is not known | The entity's permissions are generated with it by the persistence generator: load an `[Entity]` of this module or of a referenced one |
 | PRAG0458 | Error | A `[LoadFrom<TQuery>]` property is not of what the query answers, or `TQuery` is no declared `[Query]` of this compilation | Declare the property as the query's answer: the DTO for `Single = true`, `PagedResult<TDto>` for a paged query, `IReadOnlyList<TDto>` otherwise |
-| PRAG0459 | Error | A `required` input of a `[LoadFrom]` query binds no property of the operation | Declare a property of the input's name (case ignored) whose type converts to it — a private computed one is fine: `private int Year => From.Year;` |
-| PRAG0460 | Error | `[LoadEntity(By = …)]` names no single-part `[LogicKey]` of the entity, or stands beside a `Specification` | Name the entity's logic key member — `By = nameof(Employee.EmployeeNumber)` — beside the key property; a composite key or an entity without one loads by id or by a `Specification` |
+| PRAG0459 | Error | A `required` input of a `[LoadFrom]` query binds no property of the operation | Declare a property of the input's name (case ignored) whose type converts to it; a private computed one is fine: `private int Year => From.Year;` |
+| PRAG0460 | Error | `[LoadEntity(By = …)]` names no single-part `[LogicKey]` of the entity, or stands beside a `Specification` | Name the entity's logic key member (`By = nameof(Employee.EmployeeNumber)`) beside the key property; a composite key or an entity without one loads by id or by a `Specification` |
 | PRAG0461 | Error | The key property of `[LoadEntity(By = …)]` is not of the logic key's type | Declare the property of the logic key's type (`string` for a number or code) |
 | PRAG0462 | Warning | `[RequireExists]` beside a `[LoadEntity]` of the same entity and key | Remove the `[RequireExists]`: the load already proves the row exists, and only the load runs |
 | PRAG0453 | Error | A `[LoadEntity]` `Include` path, or an `[EagerLoad]` path of a mutation, names no navigation of the entity | Fix the path: each segment a navigation (declared, or generated by a `[Relation]`) of the entity the previous one leads to |
@@ -323,7 +323,7 @@ L1 validates the **mutation input** (the properties on the mutation class) befor
 
 ### Can I use `[LoadEntity<T>]` on a Mutation?
 
-Yes, for an entity **other than** the mutation's own — which the pipeline already loads by `Id`. A
+Yes, for an entity **other than** the mutation's own, which the pipeline already loads by `Id`. A
 mutation that needs, say, the manager a team is created for declares
 `[LoadEntity<Employee>(nameof(ManagerId), FieldName = "_manager")]` instead of injecting a repository:
 the invoker loads it after the authorization checks and before the mutation's row, answers 404 when
@@ -333,35 +333,35 @@ the mutation saves, so what `ApplyAsync` changes on it is written with the mutat
 The row comes alone unless the attribute names its navigations: `Include = "Members, Manager"` (dotted
 paths for deeper ones). There is no lazy loading, so a navigation not included is empty.
 
-The key is of the entity's key type — `Guid` — or `PRAG0411` says so on the attribute. A **nullable** key
+The key is of the entity's key type (`Guid`), or `PRAG0411` says so on the attribute. A **nullable** key
 is the optional load: `[LoadEntity<Employee>(nameof(ManagerId))]` on a `Guid? ManagerId` gives a nullable
 field, reads nothing when the caller sent no manager, and still answers 404 for one that does not exist
 (Time off `UpdateTeamMutation`).
 
 A key the entity has no member for is not an input to map: on a mutation it is not "a property with no
-setter" (`PRAG0414`) — the body reads the row it names.
+setter" (`PRAG0414`): the body reads the row it names.
 
 ### What do several loads cost?
 
-One query per load, in sequence — except loads of **one entity by key** with the same `Include` paths, which
+One query per load, in sequence, except loads of **one entity by key** with the same `Include` paths, which
 are **one** query: `[LoadEntity<Employee>(nameof(ManagerId), FieldName = "_manager")]` beside
 `[LoadEntity<Employee>(nameof(DeputyId), FieldName = "_deputy")]` is a single `WHERE Id IN (…)`, each field then
 taken from it; a key that names no row is still a 404 naming it, and a null optional key is not asked. Two loads
-of one entity need distinct `FieldName`s — the field, and the generated local and setter parameter, are named
+of one entity need distinct `FieldName`s: the field, and the generated local and setter parameter, are named
 after it. Loads of different entities stay separate queries: one DbContext runs one query at a time.
 
 ### How do I load the rows a list of keys names?
 
-`[LoadEntities<Employee>(nameof(EmployeeIds))]` on an `IReadOnlyList<Guid> EmployeeIds` — or an array, or
-a list — gives an `IReadOnlyList<Employee> _employees` (`FieldName` overrides it), read in **one** query
+`[LoadEntities<Employee>(nameof(EmployeeIds))]` on an `IReadOnlyList<Guid> EmployeeIds` (or an array, or
+a list) gives an `IReadOnlyList<Employee> _employees` (`FieldName` overrides it), read in **one** query
 through the same repository and filters as `[LoadEntity]`. The rows come in the order of the keys, a key
-given twice once. Every key that names no row is in **one** 404 — `NotFoundError.ForAll`, the keys
-comma-separated in `entityId` — not the first alone. An empty list, or a null one, is an empty field and no
+given twice once. Every key that names no row is in **one** 404 (`NotFoundError.ForAll`, the keys
+comma-separated in `entityId`), not the first alone. An empty list, or a null one, is an empty field and no
 query. A property that is not a collection of the entity's key is `PRAG0411`.
 
 ### How do I check that a referenced row exists without loading it?
 
-For a key the operation carries but does not read — a foreign key in the body of a create:
+For a key the operation carries but does not read, a foreign key in the body of a create:
 
 ```csharp
 [Mutation(Mode = MutationMode.Create)]
@@ -370,13 +370,13 @@ For a key the operation carries but does not read — a foreign key in the body 
 public partial class GrantAllowanceMutation : Mutation<Allowance> { … }
 ```
 
-Before the body, after authorization, the invoker asks the repository `ExistsAsync` — its filters, an `EXISTS`, no
-row materialized — and answers 404 naming the key when it is not there, instead of the database's foreign-key
+Before the body, after authorization, the invoker asks the repository `ExistsAsync` (its filters, an `EXISTS`, no
+row materialized) and answers 404 naming the key when it is not there, instead of the database's foreign-key
 violation. A nullable key that is null is not checked. The key is of the entity's key type (`PRAG0411`); on a
 mutation it is still written to the entity when the entity has a member of its name. Beside a `[LoadEntity]` of
 the same entity and key it is `PRAG0462`: a row that was read exists, and only the load runs.
 
-### How do I load a row by its domain key — a number, a code — rather than its id?
+### How do I load a row by its domain key (a number, a code) rather than its id?
 
 `By` names the entity's `[LogicKey]` member; the key property holds its value:
 
@@ -389,8 +389,8 @@ public partial class GetEmployeeCardAction : DomainAction<EmployeeCardDto>
 }
 ```
 
-The row is read through the lookup the generator writes for the logic key — `{Entity}Specifications.GetBy{Key}Async`,
-or `By{Key}` on the filtered query when there is an `Include` — with the same filters and tracking as by id. The
+The row is read through the lookup the generator writes for the logic key (`{Entity}Specifications.GetBy{Key}Async`,
+or `By{Key}` on the filtered query when there is an `Include`), with the same filters and tracking as by id. The
 member must be the entity's single-part logic key (`PRAG0460` otherwise, also for a composite key or `By` beside a
 `Specification`), and the property of its type (`PRAG0461`). Showcase `GetAmenityByNameAction` loads this way.
 
@@ -398,16 +398,16 @@ member must be the entity's single-part logic key (`PRAG0460` otherwise, also fo
 
 Name a specification instead of the key:
 `[LoadEntity<Employee>(Specification = nameof(EmployeeSpecifications.ActiveWithNumber))]` reads the first row
-it matches — none is a 404 — and `[LoadEntities<LeaveRequest>(Specification = nameof(LeaveRequestSpecifications.PendingOf))]`
-every one — none is an empty list, or a 404 with `RequireAny = true`. The member is a static method,
+it matches (none is a 404) and `[LoadEntities<LeaveRequest>(Specification = nameof(LeaveRequestSpecifications.PendingOf))]`
+every one (none is an empty list, or a 404 with `RequireAny = true`). The member is a static method,
 property or field returning a `Specification<TEntity>`; a bare string names a member of `{Entity}Specifications`.
-Its parameters bind **by name**, case ignored, to the operation's properties — `PendingOf(Guid id)` takes
-the operation's `Id` — and an optional parameter with no property keeps its default. The read goes through
+Its parameters bind **by name**, case ignored, to the operation's properties (`PendingOf(Guid id)` takes
+the operation's `Id`), and an optional parameter with no property keeps its default. The read goes through
 the entity's repository with its filters and tracking, as the key form does (Time off `TransferEmployeeAction`
 moves the requests it preloads this way).
 
-`RequireReadPermission = true`, on any load, also asks the entity's read permission — the value of its CRUD
-`Read` constant — before anything is read: 401 for nobody signed in, 403 without it. An internal call is not
+`RequireReadPermission = true`, on any load, also asks the entity's read permission (the value of its CRUD
+`Read` constant) before anything is read: 401 for nobody signed in, 403 without it. An internal call is not
 asked, as it is not asked the operation's own permission.
 
 ### How do I use what a declared query answers inside an operation?
@@ -421,7 +421,7 @@ private int Year => From.Year;                          // binds GetMyBalancesQu
 private IReadOnlyList<AllowanceBalanceDto> Balances { get; set; } = [];
 ```
 
-The invoker builds the query — each input bound by name, case ignored, from the operation's properties —
+The invoker builds the query (each input bound by name, case ignored, from the operation's properties)
 and runs it through the **query's own invoker** before the body: its validation, its permission, its read.
 A query that fails fails the operation with the same error (403 for its permission, 404 for a `Single`
 query that finds nothing). The property is not an input: it is not in the body, the OpenAPI document or the

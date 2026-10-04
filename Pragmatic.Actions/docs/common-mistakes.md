@@ -497,7 +497,7 @@ public partial class CreateAmenityPairAction : VoidDomainAction
 }
 ```
 
-**Runtime result:** `204 No Content`, both rows created — for an authenticated caller holding **no
+**Runtime result:** `204 No Content`, both rows created, for an authenticated caller holding **no
 permissions at all**. Each step's own endpoint would have answered `403` to the same caller.
 
 **Right:**
@@ -507,10 +507,10 @@ permissions at all**. Each step's own endpoint would have answered `403` to the 
 public partial class CreateAmenityPairAction : VoidDomainAction { /* ... */ }
 ```
 
-**Diagnostic:** `PRAG0440`, an error. It fires only when a step actually requires a permission — a composite of steps that require none has nothing to suppress.
+**Diagnostic:** `PRAG0440`, an error. It fires only when a step actually requires a permission: a composite of steps that require none has nothing to suppress.
 
 **Why:** the composite is the authorization boundary. Its steps run as internal calls, and their own
-`[RequirePermission]` is deliberately not re-checked — otherwise every composite would demand the union
+`[RequirePermission]` is deliberately not re-checked; otherwise every composite would demand the union
 of its steps' permissions, which is not what "this operation is allowed" means. The consequence is that
 the composite must state the permission itself. `RequireAuthorizationByDefault` still requires the caller to be
 *authenticated*, which is why the result was `204` and not `401` before `PRAG0440` refused the build.

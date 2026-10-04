@@ -254,7 +254,7 @@ public sealed record FileResponse(
 | `ETag` | `string?` | Entity tag for conditional requests |
 | `LastModified` | `DateTimeOffset?` | Last modification date for conditional requests |
 | `Inline` | `bool` | `true` = `Content-Disposition: inline`, `false` = `attachment` |
-| `PartialContent` | `FileContentRange?` | Set when `Content` is already one byte range — see [Downloads Across a Remote Boundary](#downloads-across-a-remote-boundary) |
+| `PartialContent` | `FileContentRange?` | Set when `Content` is already one byte range; see [Downloads Across a Remote Boundary](#downloads-across-a-remote-boundary) |
 
 ### Basic Download
 
@@ -333,9 +333,9 @@ A file action reached through `[RemoteBoundary<TModule>]` streams the same `File
 | `X-Pragmatic-File-Name` | `FileName`, percent-encoded UTF-8 |
 | `X-Pragmatic-File-Inline` | `Inline` |
 
-`Content-Disposition` is still emitted exactly as it always was — these headers are an extra channel for boundary-to-boundary RPC, not a replacement. `ETag` and `LastModified` need no extra header: they already travel as `ETag` and `Last-Modified` (the latter to whole-second precision).
+`Content-Disposition` is still emitted exactly as it always was: these headers are an extra channel for boundary-to-boundary RPC, not a replacement. `ETag` and `LastModified` need no extra header: they already travel as `ETag` and `Last-Modified` (the latter to whole-second precision).
 
-`Range` and `If-Range` are propagated end to end. The host forwards them onto the `POST /_pragmatic/invoke` call, the boundary reads only the requested bytes out of storage and answers `206`, and the host passes that response through untouched — status, `Content-Range` and `Accept-Ranges` as received. A seek into a 500 MB object therefore moves the requested bytes, not 500 MB.
+`Range` and `If-Range` are propagated end to end. The host forwards them onto the `POST /_pragmatic/invoke` call, the boundary reads only the requested bytes out of storage and answers `206`, and the host passes that response through untouched (status, `Content-Range` and `Accept-Ranges` as received). A seek into a 500 MB object therefore moves the requested bytes, not 500 MB.
 
 The pass-through matters: an already-partial body handed back to `Results.File(..., enableRangeProcessing: true)` would have the caller's `Range` applied to it a second time, producing a range of a range under a plausible status and a plausible `Content-Range`. `FileResponse.PartialContent` marks such a body as already sliced, and `ToResult` forwards rather than re-interprets it. An unsatisfiable range is answered `416` with `Content-Range: bytes */length`.
 
