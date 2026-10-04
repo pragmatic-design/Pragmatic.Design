@@ -1,12 +1,12 @@
-﻿# Cookbook — Modelling a domain
+﻿# Cookbook: Modelling a domain
 
 Boundaries, entities, relations and what the generator adds for you. Read this **before** writing the
 first entity: the sections are ordered by what costs the most build cycles.
 
-> The single most expensive thing is not a concept — it is **not knowing which namespace an attribute
+> The single most expensive thing is not a concept: it is **not knowing which namespace an attribute
 > lives in**. Section 1 exists for that reason and nothing else.
 
-## 1. Namespaces — the table to copy
+## 1. Namespaces: the table to copy
 
 ```csharp
 using Pragmatic.Persistence.Entity;            // [Entity], [Auditable], [SoftDelete], [LogicKey],
@@ -25,9 +25,9 @@ using Pragmatic.Result;                        // Result, Error, IError
 using Pragmatic.Result.Http;                   // NotFoundError, BusinessRuleError, ConflictError
 ```
 
-**`[BelongsTo<T>]` comes from `Pragmatic.Persistence.Entity`** — for entities *and* for domain
+**`[BelongsTo<T>]` comes from `Pragmatic.Persistence.Entity`**, for entities *and* for domain
 actions, which both use it to override the namespace-derived boundary. There is one of it, so
-importing both that namespace and `Pragmatic.Actions.Attributes` — ordinary on an entity — needs no
+importing both that namespace and `Pragmatic.Actions.Attributes` (ordinary on an entity) needs no
 qualification.
 
 > Likewise for eager loading: the mutation attribute is `[EagerLoad]`, and
@@ -49,10 +49,10 @@ types land elsewhere and the host stops compiling.
 Sub-folders under the boundary (`Orders/`, `Customers/`) become **sub-boundaries** inferred from the
 namespace, and produce separate action interfaces. That is the only thing folders decide.
 
-### Where each kind of file goes — and which namespaces are flat
+### Where each kind of file goes, and which namespaces are flat
 
 The namespace follows the folder, with one exception: entities, DTOs and errors declare a **flat**
-namespace whatever folder they sit in — `MyApp.Sales.Dtos`, never `MyApp.Sales.Orders.Dtos`:
+namespace whatever folder they sit in (`MyApp.Sales.Dtos`, never `MyApp.Sales.Orders.Dtos`):
 
 | what | folder | namespace |
 |---|---|---|
@@ -66,7 +66,7 @@ namespace whatever folder they sit in — `MyApp.Sales.Dtos`, never `MyApp.Sales
 **Operations carry the feature; entities, DTOs and errors are flat.** That is not decoration: the
 operation namespace is what the generator reads to infer the sub-boundary, and a DTO or an error that
 carried the feature would put two spellings of the same concept in the API surface for no gain.
-`Infrastructure` stays in the namespace like any folder, and the inference stops at it — nothing
+`Infrastructure` stays in the namespace like any folder, and the inference stops at it: nothing
 under it is a group.
 
 ## 3. The entity, and what you must write yourself
@@ -92,14 +92,14 @@ takes no type argument (the key is always a `Guid`); the interface is what the g
 infrastructure binds to.
 
 ⚠️ **`ITenantEntity` also obliges the host**: without `app.UseMultiTenancy(…)` the host runs the
-single-tenant default — every row gets tenant `default`, so nothing is isolated. Choose where the
+single-tenant default: every row gets tenant `default`, so nothing is isolated. Choose where the
 tenant comes from. See `pragmatic-use-multitenancy`.
 
 ⚠️ Implementing a marker interface means implementing **its members too**: `ITenantEntity` requires
-`public string TenantId { get; set; }` written by hand — with a **public setter**, the interceptor
+`public string TenantId { get; set; }` written by hand, with a **public setter**; the interceptor
 assigns it. "Managed for you" describes the value, not the property (`CS0535` otherwise).
 
-## 4. What the generator adds — do not write these
+## 4. What the generator adds: do not write these
 
 This is where a newcomer loses the most build cycles: rewriting a member that already exists.
 
@@ -109,18 +109,18 @@ This is where a newcomer loses the most build cycles: rewriting a member that al
 | setters | `SetOrderNumber(...)`, one per `private set` property | `CS0111` |
 | identity | `Id`, `PersistenceId` (equality stays reference-based) | `CS0111` |
 | permissions | `SalesPermissions.Order.Read/Create/Update/Delete` | `CS0102` |
-| repository | `IRepository<Order>`; `GetByOrderNumberAsync` from `[LogicKey]` on the concrete `Order.Repository` | — |
+| repository | `IRepository<Order>`; `GetByOrderNumberAsync` from `[LogicKey]` on the concrete `Order.Repository` | n/a |
 | audit / soft delete | `CreatedAt`, `UpdatedBy`, `IsDeleted`… | `CS0111` |
 
 Two rules that surprise people:
 
 - **`Create(...)` takes fewer parameters than you expect.** A property becomes one only when it is
-  **non-nullable, has no initializer, and is not a foreign key** — and never for `Id`/`PersistenceId`
+  **non-nullable, has no initializer, and is not a foreign key**, and never for `Id`/`PersistenceId`
   or the audit, soft-delete and concurrency members. So `public string Notes { get; private set; } = "";`
   is out (initializer), `public string? Note` is out (nullable), and `WorksiteId` is out (foreign key).
   Set those afterwards with the generated `SetNotes(...)`. Guessing the arity gives `CS1729`.
 - **In hand-written LINQ use `PersistenceId`, not `Id`.** `Id` is a generated convenience alias with no
-  column behind it, and EF fails at runtime with *"Translation of member 'Id' … failed"* — a 500, not
+  column behind it, and EF fails at runtime with *"Translation of member 'Id' … failed"*: a 500, not
   a compile error. In `[Filter]` say `MapTo = "PersistenceId"`.
 
 Inspect what was generated for a type with `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>`;
@@ -131,7 +131,7 @@ the files land under `obj/…/generated/`.
 Declare them on the entity that owns the reference. The generator creates the navigation and the
 foreign key; you consume the navigation in queries and projections.
 
-The foreign key is an ordinary property, so a DTO may carry `CustomerId` and a mutation may set it —
+The foreign key is an ordinary property, so a DTO may carry `CustomerId` and a mutation may set it;
 you do not have to reach through the navigation, and you must **not** declare the property yourself
 (the generator already writes it, and a second declaration collides).
 
@@ -143,7 +143,7 @@ you do not have to reach through the navigation, and you must **not** declare th
 public partial class Order : IEntity { ... }
 ```
 
-What it buys you — this is the part worth the attribute:
+What it buys you (this is the part worth the attribute):
 
 ```csharp
 [Filter(MapTo = "Customer.Phone")] public string? Phone { get; init; }   // filters through the nav,
@@ -152,7 +152,7 @@ What it buys you — this is the part worth the attribute:
 
 Two relations to the same type? `WithNavigation("UniqueName")` tells them apart.
 
-**Many-to-many with data on the relation is not `[Relation.ManyToMany<>]`** — it is an entity of its
+**Many-to-many with data on the relation is not `[Relation.ManyToMany<>]`**: it is an entity of its
 own. If the link carries an amount, a date, or who decided it, model it:
 
 ```csharp
@@ -166,26 +166,26 @@ public partial class Assignment : IEntity       // the link IS the domain object
 }
 ```
 
-Use `[Relation.ManyToMany<>]` only for a bare association — "this supplier is accredited on this
+Use `[Relation.ManyToMany<>]` only for a bare association: "this supplier is accredited on this
 site", nothing more to say about it.
 
 ### Across boundaries: foreign key, and a contract
 
-A relation declared across boundaries generates the foreign key only — the two entities live in
+A relation declared across boundaries generates the foreign key only: the two entities live in
 different `DbContext`s, so there is no navigation to include. (A boundary that declares
 `[ReadAccess<T>]` on the target reads it in its own context, and then the navigation is generated.)
 
-**To *do* something in the other boundary, use the interface the generator already emits** —
+**To *do* something in the other boundary, use the interface the generator already emits**:
 `I{Boundary}Actions`, registered for you, with a `Local` implementation now and a `Remote` one if the
 boundary is ever split out. Hand-writing a service for that duplicates it and loses the invoker
 (permission check, validation, unit of work, audit). See `pragmatic-use-actions-endpoints`.
 
 **To *read* data it owns, the owning boundary publishes a query.** `[Published]` beside `[Query<,>]`
-makes the generator write `I{Module}Reads` — the contract, its implementation and its registration —
+makes the generator write `I{Module}Reads` (the contract, its implementation and its registration),
 and the other boundary injects that contract, never the entities:
 
 ```csharp
-// in MyApp.Suppliers — the owner declares what others may read
+// in MyApp.Suppliers: the owner declares what others may read
 [Query<Supplier, SupplierContactDto>]
 [Published]                                          // → ISuppliersReads.GetSupplierContacts(...)
 public partial class GetSupplierContactsQuery
@@ -195,7 +195,7 @@ public partial class GetSupplierContactsQuery
                                                             // looping one id at a time is an N+1
 }
 
-// in MyApp.Worksites — depends on the contract, never on the other boundary's entities
+// in MyApp.Worksites: depends on the contract, never on the other boundary's entities
 public partial class Assignment : IEntity
 {
     public Guid SupplierId { get; private set; }     // no navigation, and that is correct
@@ -208,7 +208,7 @@ on `[Published]` rename them.
 
 ⚠️ Flattening through a cross-boundary relation (`[MapProperty("Supplier.Name")]`) is **PRAG0334**:
 the navigation does not exist (unless `[ReadAccess<T>]`). And do not generalise the foreign-key style back into the same
-boundary — inside one boundary the navigation is what makes a nested read a single query.
+boundary: inside one boundary the navigation is what makes a nested read a single query.
 
 ## 6. Domain errors: a type, not a string
 
@@ -232,7 +232,7 @@ public sealed record ExpiredQualificationError(string Company, string WorkType, 
 
 The type is the rule's identity, the constructor carries the facts, and `Parameters` is what makes
 the message translatable. **Interpolating the text into `Details` hardcodes one language** and
-bypasses the resolver — which reads `MessageKey` verbatim, with no `error.` prefix added.
+bypasses the resolver, which reads `MessageKey` verbatim, with no `error.` prefix added.
 
 **Then declare it on the action**, or nothing downstream knows it exists:
 
@@ -245,7 +245,7 @@ public partial class CreateAssignmentAction
 
 `BusinessRuleError.Create("worksite-closed", …)` raised from three places writes the string three
 times and still produces one type, so a caller cannot tell it from any other 422 and the endpoint
-contract cannot name it. Derive instead — the family, the code, the 422 and the `rule` field on the
+contract cannot name it. Derive instead: the family, the code, the 422 and the `rule` field on the
 wire all come with it:
 
 ```csharp
@@ -268,7 +268,7 @@ outside has to name.
 ## 7. Checklist before the first build
 
 - Entities in `{Boundary}.Entities`, each with `[Entity]` **and** `: IEntity`.
-- `[BelongsTo<T>]` from `Pragmatic.Persistence.Entity` — the only one there is.
+- `[BelongsTo<T>]` from `Pragmatic.Persistence.Entity`, the only one there is.
 - No hand-written `Create`, `SetXxx`, `Id`, or permission constants.
 - Relations inside the boundary; across it, a foreign key plus a `[Published]` query of the owner.
 - A link that carries data is an entity, not a `ManyToMany`.

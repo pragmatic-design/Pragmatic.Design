@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-email
+# Examples: pragmatic-use-email
 
 Copied from `examples/invoicing`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests`. **Do not edit here**: change the source and run

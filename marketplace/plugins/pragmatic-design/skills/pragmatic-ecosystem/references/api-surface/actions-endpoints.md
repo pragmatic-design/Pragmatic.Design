@@ -1,4 +1,4 @@
-# API Surface — Pragmatic.Actions + Pragmatic.Endpoints
+# API Surface: Pragmatic.Actions + Pragmatic.Endpoints
 
 Attribute-first reference for consumers. Each entry follows the triple: **decorate → SG generates → consume**.
 Complete diagnostics: `../diagnostics.md` (PRAG0400-0499 Actions, PRAG0500-0599 Endpoints).
@@ -21,7 +21,7 @@ Complete diagnostics: `../diagnostics.md` (PRAG0400-0499 Actions, PRAG0500-0599 
 
 ## `[Boundary]`
 
-- **Target**: `class` — must be `partial` and in a namespace (PRAG0406/0407).
+- **Target**: `class`; must be `partial` and in a namespace (PRAG0406/0407).
 - **Properties**: `Name` (`string?`), `Visibility` (`BoundaryVisibility`: `Public` default | `Internal`).
 - **Generates**: `I{Boundary}Actions` (public interface of all `InvokeAsync`) + sub-interfaces per sub-boundary, composed as properties.
 
@@ -33,11 +33,11 @@ Complete diagnostics: `../diagnostics.md` (PRAG0400-0499 Actions, PRAG0500-0599 
   - `ReturnType` (`MutationReturnType`): `Entity` (default) | `Id` (boundary returns `Guid`, endpoint `{"id": …}`) | `LogicalKey` (generated `{Mutation}.LogicalKey` record; PRAG0403 without a `[LogicKey]`).
   - `SoftDelete` (`bool`): for `Mode = Delete`, performs a logical delete.
 - **Generates**:
-  - `{Type}.ApplyToEntity.g.cs` — `override void ApplyToEntity(TEntity)` with auto-mapping property→`entity.SetXxx(...)`.
-  - `{Type}.MutationInvoker.g.cs` — nested `Invoker : MutationInvoker<TMutation, TEntity>`.
-  - `{Type}.SetDependencies.g.cs` — if the mutation has private dependency fields.
+  - `{Type}.ApplyToEntity.g.cs`: `override void ApplyToEntity(TEntity)` with auto-mapping property→`entity.SetXxx(...)`.
+  - `{Type}.MutationInvoker.g.cs`: nested `Invoker : MutationInvoker<TMutation, TEntity>`.
+  - `{Type}.SetDependencies.g.cs`: if the mutation has private dependency fields.
 - **Invoker pipeline**: input validation → load/create entity → `ApplyToEntity` → `ApplyAsync` (custom override) → entity validation → persist → `SaveChanges` via `IUnitOfWork`.
-- `[EagerLoad("Lines.Product")]` (`AllowMultiple`) — eager-loads a navigation on the loaded entity. (`[Include<TModule, TDatabase>]` is host topology, not this.)
+- `[EagerLoad("Lines.Product")]` (`AllowMultiple`) eager-loads a navigation on the loaded entity. (`[Include<TModule, TDatabase>]` is host topology, not this.)
 
 ## `Mutation<TEntity>`
 
@@ -85,13 +85,13 @@ private IRepository<Order> _orders = null!;     // SG generates SetDependencies 
 
 | Attribute | Target | Effect |
 |---|---|---|
-| `[Validate]` | class | Changes the validation default — `Async = false` switches the async half off, `AsyncOnly` skips the sync pass. It does not enable async validation: declaring a `[Validator]` for the operation (or for a property's type) in the same assembly is the opt-in |
+| `[Validate]` | class | Changes the validation default: `Async = false` switches the async half off, `AsyncOnly` skips the sync pass. It does not enable async validation: declaring a `[Validator]` for the operation (or for a property's type) in the same assembly is the opt-in |
 | `[NoValidation]` | class | Skips all validation |
-| `[LoadEntity<TEntity>("IdProp")]` | class, `AllowMultiple` | Loads entity by id before `Execute` — on a mutation, before `ApplyAsync` (another entity than its own); 404 when missing; optional `FieldName` |
+| `[LoadEntity<TEntity>("IdProp")]` | class, `AllowMultiple` | Loads entity by id before `Execute` (on a mutation, before `ApplyAsync`, for another entity than its own); 404 when missing; optional `FieldName` |
 | `[LoadEntities<TEntity>("IdsProp")]` | class, `AllowMultiple` | Loads the rows a list of ids names, in one query, into an `IReadOnlyList<TEntity>` in the order of the ids; one 404 naming every missing id; optional `FieldName`, `RequireAny` |
 | `[LoadFrom<TQuery>]` | property | Fills the property with the declared query's answer before `Execute`, through the query's own invoker (permission included), inputs bound by name; not an input |
 | `Specification = nameof(…)` on either load | named arg | Reads by a static `Specification<TEntity>` instead of a key, its parameters bound by name to the operation's properties; `RequireReadPermission = true` asks the entity's read permission first |
-| `[CompositeAction]` | class | Composes fixed steps — mutations, actions or void actions — with one atomic commit |
+| `[CompositeAction]` | class | Composes fixed steps (mutations, actions or void actions) with one atomic commit |
 | `[Transactional]` | class | One database transaction around the body or the steps; each step saves, so a later one reads what an earlier wrote |
 | `[DomainAction(Internal = …)]` | class | Visibility on the boundary interface. Unset infers it from `[Endpoint]`; `false` exports an endpoint-less operation; `true` hides one that has an endpoint |
 | `[Mutation(Internal = …)]` | class | The same three states, on a mutation |
@@ -99,7 +99,7 @@ private IRepository<Order> _orders = null!;     // SG generates SetDependencies 
 | `[UndoWith<TCompensator>]` | class | Best-effort, in-request undo run when a later step of the same request fails |
 | `[CompensableStep]` | method | Emitted on a facade method whose action declares an undo; PRAG0424 stops asking its callers |
 | `[AcceptsPartialWrites(reason)]` | class | Records that the leftovers of a cross-boundary failure are harmless, and why |
-| `[BelongsTo<TBoundary>]` | class | Chooses the boundary only — the group still comes from the namespace; an operation outside the boundary's namespace has no group |
+| `[BelongsTo<TBoundary>]` | class | Chooses the boundary only: the group still comes from the namespace, and an operation outside the boundary's namespace has no group |
 | `[SubBoundary(Name, Description)]` | the operation class | Names the group this operation belongs to, instead of the namespace inferring it. `Name` wins over the inference and is not reported as inferred (PRAG0413); empty, or the boundary's own name, is **PRAG0416** and the operation stays where it would have been. `Description` becomes the generated group interface's summary. ⚠️ On the **operation**, not on a marker class of its own |
 
 ---
@@ -137,7 +137,7 @@ To join a group, put `[EndpointGroup<TGroup>]` beside `[Endpoint]` (see below). 
 Properties without an attribute → implicit bind to body (PRAG0512 info). `[FromClaim]` supported types: `string`, `Guid`, `int`, `long`, `bool`, `DateTimeOffset`.
 
 `[FromCurrentUser]` (`Pragmatic.Identity`, on a `[Query]`, action or mutation property) is **not** in this table because it
-is not binding: the endpoint never reads it — not from the query string, the route or the body — and it
+is not binding: the endpoint never reads it (not from the query string, the route or the body), and it
 is absent from OpenAPI and from the boundary member's arguments. The operation's invoker writes it from
 the caller, on every door; `[FromClock]` is the same, from `IClock`. `[FromClaim]` stays a public input an in-process caller can set; a
 `[FromCurrentUser]` property is `{ get; private set; }` (PRAG0730). Details:
@@ -162,15 +162,15 @@ forms: its own `[EndpointGroup("…")]` and `[EndpointGroup<TParent>]`.
 - **Target**: `[Module]` class (not the action). `AllowMultiple`.
 - `ExposeEndpointAttribute<TAction>(HttpVerb method, string route)`; `Name`, `AdditionalPermissions`, `AllowAnonymous`.
 - Exposes over HTTP the actions of a package integrated via `[UsePackage<T>]`. Route is relative to the package `RoutePrefix`.
-- `ExposeEndpointAttribute<TAction, TGroup>` puts the route inside `TGroup` instead — its prefix and its
-  `ConfigureGroup` options — exactly as a member `[Endpoint]` is; the group need not be used by any
+- `ExposeEndpointAttribute<TAction, TGroup>` puts the route inside `TGroup` instead (its prefix and its
+  `ConfigureGroup` options), exactly as a member `[Endpoint]` is; the group need not be used by any
   `[Endpoint]`. A `TGroup` that is not an `[EndpointGroup("…")]` the host can resolve is **PRAG1682**.
 
 ## Processor
 
 ```csharp
 [PreProcessor<TProcessor>]      // Order; IEndpointPreProcessor → ValueTask<PreProcessorResult>
-[PostProcessor<TProcessor>]     // IEndpointPostProcessor — always runs, even on failure
+[PostProcessor<TProcessor>]     // IEndpointPostProcessor: always runs, even on failure
 ```
 
 `PreProcessorResult`: `Continue()` | `Fail(IError)` | `NotFound(resourceType, id?)`.
@@ -183,11 +183,11 @@ forms: its own `[EndpointGroup("…")]` and `[EndpointGroup<TParent>]`.
 | `[ApiSummary]` / `[ApiDescription]` | OpenAPI documentation |
 | `[AllowAnonymous]` | Override group-level auth |
 | `[ApiVersion("2.0")]` | Version; `Deprecated`, `SunsetDate` |
-| `[SinceVersion("2.0")]` | On property — body versioning, convention `ExecuteV2`/`V3` |
+| `[SinceVersion("2.0")]` | On property: body versioning, convention `ExecuteV2`/`V3` |
 | `[RateLimit(Requests, Window)]` or `Policy` | Throttling; invalid config (no `Policy` nor `Requests`+`Window`) is a runtime no-op |
 | `[ResponseCache(Duration, ...)]` | Response caching |
-| `[AllowedContentTypes(...)]` / `[MaxFileSize(bytes)]` | On `IFormFile` — 415 / 413 |
-| `[HttpStatus(code)]` | On an `Error` class — overrides HTTP mapping |
+| `[AllowedContentTypes(...)]` / `[MaxFileSize(bytes)]` | On `IFormFile`: 415 / 413 |
+| `[HttpStatus(code)]` | On an `Error` class: overrides HTTP mapping |
 
 ## Error → HTTP mapping
 

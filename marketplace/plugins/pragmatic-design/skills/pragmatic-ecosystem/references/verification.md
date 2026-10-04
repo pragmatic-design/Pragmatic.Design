@@ -30,8 +30,8 @@ The monorepo is verified through one script, not through `dotnet build`/`dotnet 
 | Before a publish or a batch of commits | `node scripts/check.mjs --tier all` |
 | Consumer sample | `dotnet run --project examples/consumer-samples/Pragmatic.{Sample}.Consumer` |
 
-⚠️ A bare `dotnet build` can report 0 errors on sources that fail from clean — MSBuild skips projects
-it considers up to date — and `dotnet test` on the whole solution starts the container suites in
+⚠️ A bare `dotnet build` can report 0 errors on sources that fail from clean (MSBuild skips projects
+it considers up to date), and `dotnet test` on the whole solution starts the container suites in
 parallel, saturates Docker and produces failures that look like regressions. The script does both
 the right way and exits non-zero with `FAIL`.
 

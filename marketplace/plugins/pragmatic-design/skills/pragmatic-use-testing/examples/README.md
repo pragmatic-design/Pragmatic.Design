@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-testing
+# Examples: pragmatic-use-testing
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests` and `examples/showcase/tests/Showcase.Tests`. **Do not edit here**: change the source and run

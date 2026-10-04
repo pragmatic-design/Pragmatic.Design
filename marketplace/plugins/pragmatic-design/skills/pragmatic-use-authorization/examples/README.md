@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-authorization
+# Examples: pragmatic-use-authorization
 
 Copied from `examples/time-off/src/TimeOff.Leave`, which compiles in the repository and is exercised by
 `examples/time-off/tests/TimeOff.IntegrationTests`. **Do not edit here**: change the source and run
@@ -6,7 +6,7 @@ Copied from `examples/time-off/src/TimeOff.Leave`, which compiles in the reposit
 
 | File | What it shows |
 |---|---|
-| [`Infrastructure/Authorization/Permissions.cs`](Infrastructure/Authorization/Permissions.cs) | Permissions that are not an entity's CRUD, declared with `[assembly: Permission]` — a description, a category, and why each stands on its own |
+| [`Infrastructure/Authorization/Permissions.cs`](Infrastructure/Authorization/Permissions.cs) | Permissions that are not an entity's CRUD, declared with `[assembly: Permission]`: a description, a category, and why each stands on its own |
 | [`Infrastructure/Authorization/EmployeeRole.cs`](Infrastructure/Authorization/EmployeeRole.cs) | A role: `[Role]` and `[Grants]` of generated constants, one of them another module's (`LocalIdentityPermissions`) |
 | [`Infrastructure/Authorization/ManagerRole.cs`](Infrastructure/Authorization/ManagerRole.cs) | A role that includes another (`[IncludesRole<EmployeeRole>]`) and adds one permission |
 | [`Infrastructure/Authorization/HrAdministratorRole.cs`](Infrastructure/Authorization/HrAdministratorRole.cs) | Granting an entity's whole permission set with the generated `.All` wildcards, and `ViewAll` to see every row |

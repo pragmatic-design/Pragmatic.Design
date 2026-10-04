@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-foundation
+# Examples: pragmatic-use-foundation
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests` and `examples/showcase/tests/Showcase.IntegrationTests`. **Do not edit here**: change the source and run
@@ -6,7 +6,7 @@ Copied from `examples`, which compiles in the repository and is exercised by
 
 | File | What it shows |
 |---|---|
-| [`invoicing/src/Invoicing.Billing/Payments/Errors/OverpaymentError.cs`](invoicing/src/Invoicing.Billing/Payments/Errors/OverpaymentError.cs) | A typed error: a code, a status (422, and why not 409), and the values it carries — named parameters for the localized message, extensions in the problem details |
+| [`invoicing/src/Invoicing.Billing/Payments/Errors/OverpaymentError.cs`](invoicing/src/Invoicing.Billing/Payments/Errors/OverpaymentError.cs) | A typed error: a code, a status (422, and why not 409), and the values it carries, as named parameters for the localized message and extensions in the problem details |
 | [`invoicing/src/Invoicing.Billing/Payments/Actions/RecordPaymentAction.cs`](invoicing/src/Invoicing.Billing/Payments/Actions/RecordPaymentAction.cs) | An action answering `Result<T, IError>` with the errors it declares, and `[PositiveMoney]`/`[MaxLength]` on its input |
 | [`invoicing/src/Invoicing.Registry/Customers/Mutations/CreateCustomerMutation.cs`](invoicing/src/Invoicing.Registry/Customers/Mutations/CreateCustomerMutation.cs) | Validation on an input: `[Required]`, `[Email]`, `[OneOf]`, `[Range]`, `[MaxLength]` |
 | [`invoicing/src/Invoicing.Registry/Customers/Dtos/CustomerDto.cs`](invoicing/src/Invoicing.Registry/Customers/Dtos/CustomerDto.cs) | A DTO: `[MapFrom<Customer>]` and `[GenerateProjection]` |

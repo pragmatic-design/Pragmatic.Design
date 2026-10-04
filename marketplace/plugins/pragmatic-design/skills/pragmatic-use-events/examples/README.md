@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-events
+# Examples: pragmatic-use-events
 
 Copied from `examples/invoicing/src`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests`. **Do not edit here**: change the source and run

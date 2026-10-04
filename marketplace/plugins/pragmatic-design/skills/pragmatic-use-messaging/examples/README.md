@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-messaging
+# Examples: pragmatic-use-messaging
 
 Copied from `examples/warehouse/src`, which compiles in the repository and is exercised by
 `examples/warehouse/tests/Warehouse.IntegrationTests`. **Do not edit here**: change the source and run

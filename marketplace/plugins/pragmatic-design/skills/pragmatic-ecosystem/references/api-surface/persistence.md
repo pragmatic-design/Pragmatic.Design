@@ -1,4 +1,4 @@
-﻿# API Surface — Pragmatic.Persistence + Pragmatic.Persistence.EFCore
+﻿# API Surface: Pragmatic.Persistence + Pragmatic.Persistence.EFCore
 
 Attribute-first reference for consumers. Each entry follows the triple: **decorate → SG generates → consume**.
 Signatures here are those of the published NuGet packages. For the complete list of PRAG diagnostics: `../diagnostics.md`.
@@ -9,15 +9,15 @@ Signatures here are those of the published NuGet packages. For the complete list
 |---|---|---|
 | `Pragmatic.Persistence` | Always when there are entities/queries/repositories | No EF Core, no provider. Carries its analyzers (PRAG0680-0688, e.g. `new Entity()`) |
 | `Pragmatic.Persistence.EFCore` | EF Core runtime for real providers | Adds interceptors, query filters, providers |
-| `Pragmatic.SourceGenerator` (analyzer) | Always — produces entity/repo/query/dbcontext | `<IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>` |
+| `Pragmatic.SourceGenerator` (analyzer) | Always: produces entity/repo/query/dbcontext | `<IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>` |
 | `Pragmatic.Migrations` | Replaces EF Migrations with declarative diff | Activated with `app.UsePragmaticMigrations()` |
 
 Providers a host can declare (`DatabaseProvider`): `PostgreSql`, `SqlServer`, `SQLite`, `MySql`, `InMemory`.
-`MySql` is Oracle's `MySql.EntityFrameworkCore` — GPL-2.0 with the FOSS exception, referenced by the
+`MySql` is Oracle's `MySql.EntityFrameworkCore`: GPL-2.0 with the FOSS exception, referenced by the
 application, by no Pragmatic package. Marker types (`IDatabaseProvider`, namespace
 `Pragmatic.Persistence.EFCore.Providers`) exist for `PostgreSQL`, `SQLServer`, `SQLite`, `InMemory`.
 
-## Identifiers — `Pragmatic.Persistence.Identifiers`
+## Identifiers: `Pragmatic.Persistence.Identifiers`
 
 | Type | Form | Typical use |
 |---|---|---|
@@ -30,7 +30,7 @@ There is no separate `Pragmatic.Identifiers` package: identifiers live here.
 
 ---
 
-# Entity Attributes — `Pragmatic.Persistence.Entity`
+# Entity Attributes: `Pragmatic.Persistence.Entity`
 
 ## `[Entity]`
 
@@ -40,24 +40,24 @@ public sealed class EntityAttribute : Attribute;
 ```
 
 - **Target**: `class`. Must be `partial`.
-- **Key**: always a `Guid` — `PersistenceId`, a version 7 value assigned at construction, with `Id` as its
+- **Key**: always a `Guid` (`PersistenceId`, a version 7 value assigned at construction), with `Id` as its
   read-only alias. There is no type argument. An identifier carried from another system is an ordinary
   property with its own uniqueness (`[Unique(nameof(LegacyCode))]`).
 - **Generates**:
-  - `{Ns}.{Entity}.Traits.g.cs` — `PersistenceId`, `Id`, and the Audit/SoftDelete properties when
+  - `{Ns}.{Entity}.Traits.g.cs`: `PersistenceId`, `Id`, and the Audit/SoftDelete properties when
     those attributes are present. **One file**, not one per trait
-  - `{Ns}.{Entity}.Create.g.cs` — factory `Create(...)` when applicable
-  - `{Ns}.{Entity}.Setters.g.cs` — `internal Set{Property}(...)` with change tracking
-  - `{Ns}.{Entity}.Specs.g.cs` — `{Entity}Specifications.ById(...)`, and `By{LogicKey}(...)`
-  - `{Ns}.{Entity}.Repository.g.cs` — the nested `{Entity}.Repository`
-  - `EntityConfig.{Ns}.{Entity}.g.cs` (HOST-side) — the EF configuration
+  - `{Ns}.{Entity}.Create.g.cs`: factory `Create(...)` when applicable
+  - `{Ns}.{Entity}.Setters.g.cs`: `internal Set{Property}(...)` with change tracking
+  - `{Ns}.{Entity}.Specs.g.cs`: `{Entity}Specifications.ById(...)`, and `By{LogicKey}(...)`
+  - `{Ns}.{Entity}.Repository.g.cs`: the nested `{Entity}.Repository`
+  - `EntityConfig.{Ns}.{Entity}.g.cs` (HOST-side): the EF configuration
 - **Consume**:
   ```csharp
   [Entity] public partial class Booking { }
   var b = Booking.Create(...);                    // generated factory
   var repo = sp.GetRequiredService<IRepository<Booking>>();
   ```
-- **Diagnostics**: PRAG0600 (must be partial), PRAG0680 (`new Booking()` forbidden — use `Create`).
+- **Diagnostics**: PRAG0600 (must be partial), PRAG0680 (`new Booking()` forbidden; use `Create`).
 
 ## `[Auditable]`
 
@@ -77,7 +77,7 @@ public sealed class EntityAttribute : Attribute;
 
 ## `[BelongsTo<TBoundary>]`
 
-- **Target**: `[Entity]` class, and a domain action or mutation — one attribute for both
+- **Target**: `[Entity]` class, and a domain action or mutation, one attribute for both
   (`Pragmatic.Persistence.Entity`), generic only.
 - **Generates**: routes the type to the DbContext of the specified boundary. If omitted, the boundary is
   inferred from the namespace. On an operation it chooses the boundary only: the group still comes from
@@ -86,22 +86,22 @@ public sealed class EntityAttribute : Attribute;
 ## `[HasOwner]` / `[HasAccessScopes]`
 
 - Generate `OwnerId: string` or `AccessScopes: List<string>`, plus the respective filters (`OwnershipFilter` Priority 200, `ScopedDataFilter` Priority 250). Bypass: permission `{boundary}.{entity-kebab}.view-all`.
-- **Both are written at `SaveChanges`**, by `OwnershipInterceptor` and `ScopeInterceptor` — not by the mutation invoker, so a row created by an action through a repository is attributed too. Insert-only, and only when the value is absent; no current user means nothing is written and the row is the system's. `ScopeInterceptor` then materialises the registered `DataScopeRule<T>` (inserts **and** updates), in that order.
+- **Both are written at `SaveChanges`**, by `OwnershipInterceptor` and `ScopeInterceptor`, not by the mutation invoker, so a row created by an action through a repository is attributed too. Insert-only, and only when the value is absent; no current user means nothing is written and the row is the system's. `ScopeInterceptor` then materialises the registered `DataScopeRule<T>` (inserts **and** updates), in that order.
 - **Diagnostics**: PRAG1100 (partial, from `Pragmatic.SourceGenerator.Analyzers`), PRAG1104 (manual OwnerId → SG skips generation, filter still emitted).
 
 ## `[LogicKey]`
 
 - **Target**: property.
-- **Generates**: a unique DB index — **partial** when the entity is `[SoftDelete]`, so a deleted row
-  does not block re-inserting the same code — and a `GetBy{Property}Async(value, ct)` method on the
+- **Generates**: a unique DB index (**partial** when the entity is `[SoftDelete]`, so a deleted row
+  does not block re-inserting the same code) and a `GetBy{Property}Async(value, ct)` method on the
   **concrete** repository (`{Entity}.Repository`), not on `IRepository<T>`.
   ```csharp
   [LogicKey] public string Code { get; private set; }
   // → await repo.GetByCodeAsync("ABC123", ct)
   ```
   Two `[LogicKey]` properties make one composite key: `GetByCodeAndSeasonAsync(code, season, ct)`.
-- **Order**: `[LogicKey(Order = n)]`, lower first. It decides the index's leading column — the only one
-  it can be searched by alone — and the parameter order of the lookup. Unset keeps declaration order,
+- **Order**: `[LogicKey(Order = n)]`, lower first. It decides the index's leading column (the only one
+  it can be searched by alone) and the parameter order of the lookup. Unset keeps declaration order,
   so nothing existing moves. ⚠️ Unset means `0`, so setting it on one part of two puts the **other**
   first; ⚠️ without it, moving a property up or down in the class is a schema change *and* a signature
   change, with a green build.
@@ -111,24 +111,24 @@ public sealed class EntityAttribute : Attribute;
 `{E}ReadDto`, and reports nothing. Name the capabilities: `Capabilities = ResourceCapabilities.All`, or
 the subset the entity actually offers.
 
-## Publishing a rule — `[Query]` on a `Specification<T>`
+## Publishing a rule: `[Query]` on a `Specification<T>`
 
 The inverse of the section below, and the shorter of the two. `[Query]` on a **static** member
 returning `Specification<TEntity>` derives `{Member}Query` in the container's namespace: the member's
 parameters become the query's inputs, `Paged = true` adds the paging surface, and `[Endpoint]` /
 `[RequirePermission]` written beside the member apply to the derived query. The specification itself
-is untouched — it stays a predicate and still composes with `&`.
+is untouched: it stays a predicate and still composes with `&`.
 
 - **Opt-in twice.** No `[Query]`, no query; no `[Endpoint]`, no route. `[Endpoint]` on a member that
   derives nothing is **PRAG0525**.
 - **The entity comes from the specification**, not from the attribute's argument: two answers could
   disagree.
-- ⚠️ **PRAG0726** — two specifications in one namespace whose members share a name would derive one
+- ⚠️ **PRAG0726**: two specifications in one namespace whose members share a name would derive one
   type twice. It is an **error**, not a rename: two generated files would carry one hint name, and
   Roslyn answers a duplicate hint by discarding the whole generator's output under a warning.
 
 ```csharp
-// The other half of the entity's generated KnowledgeItemSpecifications, in the entities' namespace —
+// The other half of the entity's generated KnowledgeItemSpecifications, in the entities' namespace,
 // not a class of its own: see pragmatic-use-foundation, "Where to put them".
 public static partial class KnowledgeItemSpecifications
 {
@@ -142,23 +142,23 @@ public static partial class KnowledgeItemSpecifications
 ⚠️ The derived query is emitted in the **namespace of the class that declares the rule**: with the rules on
 the entity's partial, that is the entities' namespace.
 
-Use the class form below instead when the read **composes** — several filters, a sort, a projection.
+Use the class form below instead when the read **composes**: several filters, a sort, a projection.
 
-## Reusing a rule — `Specification<T>` on a query
+## Reusing a rule: `Specification<T>` on a query
 
 - **A property of type `Specification<TEntity>` is applied whole**, in the generated `Apply()` and in
   `ToSpecification()`. Recognised by its type; `null` is skipped, so a rule that applies sometimes
   answers null when it does not.
 - **`[BindSpecification]`** marks the input the rule reads. A specification cannot be bound from a
-  request — there is no way to deserialize a predicate — so it is a computed, get-only property and what
+  request (there is no way to deserialize a predicate), so it is a computed, get-only property and what
   crosses the wire is the value it is built from. The attribute takes that value out of the filter model:
   without it a nullable input would generate a `Where` **and** feed the rule, applying it twice.
-- **Composition is AND**, like every contribution. An alternative goes *inside* one property — `a | b` —
+- **Composition is AND**, like every contribution. An alternative goes *inside* one property (`a | b`),
   where the reader can see it, which is the rule `[FilterDto]` groups already follow.
 - ⚠️ **Not for ordinary filters.** `[Filter] Guid? GuestId` is shorter and clearer than any
   specification of the same predicate. Reach for one when the predicate has a name worth writing down
   and more than one caller.
-- **PRAG0709**: a `[BindSpecification]` input on a query with no `Specification<T>` property at all —
+- **PRAG0709**: a `[BindSpecification]` input on a query with no `Specification<T>` property at all;
   the attribute claims a reader that does not exist.
 
 ```csharp
@@ -180,7 +180,7 @@ public partial class SuggestTermsQuery : IPagedInput
 ## `[PartOf<TParent>]`
 
 - **Target**: entity class.
-- **Means**: this entity has no life of its own — it is written through `TParent`.
+- **Means**: this entity has no life of its own: it is written through `TParent`.
 - **Enables**: a mutation on `TParent` may carry this entity's DTOs and have them created, updated and
   removed alongside it, in the parent's transaction.
   ```csharp
@@ -197,38 +197,38 @@ public partial class SuggestTermsQuery : IPagedInput
       public required List<LineItemDto> LineItems { get; init; }
   }
   ```
-- **Fail-closed**: without it the parent may not write the child — the relation cannot tell a line item
+- **Fail-closed**: without it the parent may not write the child: the relation cannot tell a line item
   from a room type, and both are `[Relation.OneToMany]`. **PRAG0436**.
 - **Diagnostics**: PRAG0436 (child not declared part of this aggregate), PRAG0437 (its elements have no
-  key to be matched by), PRAG0438 (the child also has a mutation of its own — the two declarations
-  contradict each other), **PRAG0439** (the property matches no navigation — the child would be
+  key to be matched by), PRAG0438 (the child also has a mutation of its own; the two declarations
+  contradict each other), **PRAG0439** (the property matches no navigation, so the child would be
   dropped and the endpoint answer 200 having written nothing).
 - The load brings the child with it: a keyed merge decides what to remove by looking at what is there,
   so an unloaded collection would remove nothing and add everything.
 - Removing a `[SoftDelete]` child **flags it**, like any other delete of that entity. Enforced at save
-  time, so it holds on every path — repository, mutation, this merge, a hand-written `context.Remove`.
+  time, so it holds on every path: repository, mutation, this merge, a hand-written `context.Remove`.
   The stamp is never rewritten (a cascade shares one instant and restore matches on it).
 - Erasure that must really delete says so: `using (SoftDeleteScope.Suspend()) { … }`.
-- ⚠️ `ExecuteDelete` goes straight to SQL and is never intercepted — **PRAG0687** on a `[SoftDelete]`
+- ⚠️ `ExecuteDelete` goes straight to SQL and is never intercepted: **PRAG0687** on a `[SoftDelete]`
   entity.
 
-## Eager loading — `RequiredNavigations` and `[EagerLoad]`
+## Eager loading: `RequiredNavigations` and `[EagerLoad]`
 
 - **Derived, not declared, for what the DTO reads.** Every `[MapFrom]` DTO carries a generated
-  `RequiredNavigations` — flattened paths (`[MapProperty("Customer.Name")]`), nested DTOs, and
+  `RequiredNavigations`: flattened paths (`[MapProperty("Customer.Name")]`), nested DTOs, and
   collections of element DTOs. Emitted on every DTO, empty included, so generated code can name it
   without checking.
 - **Consumed by**: a mutation's load (from `[ReturnsDto<T>]` and from the children it writes), a
   generated query as its include paths, and `WithIncludesFor{Dto}()` for a hand-assembled query.
-- **Declared for what your own code reads** — a validator, a lifecycle hook, an `ApplyAsync`:
+- **Declared for what your own code reads** (a validator, a lifecycle hook, an `ApplyAsync`):
   `[EagerLoad("Customer")]`, `[EagerLoad("OrderLines.Product")]` on the mutation or the query. The two
   sources merge.
 - **Missing navigation is loud**: the generated mapping throws naming the navigation and both ways
   out, rather than reading null and carrying on.
 - ⚠️ **EF drops an `Include` before a type-changing `Select`, silently.** Measured. Project with
-  `{Dto}.Projection` when you are projecting anyway — it resolves the navigation in SQL.
+  `{Dto}.Projection` when you are projecting anyway; it resolves the navigation in SQL.
 - ⚠️ **Cross-boundary relations generate no navigation**: different DbContexts, no property to include.
-  Flattening across one is **PRAG0334** — unless the boundary declares `[ReadAccess<T>]`, which
+  Flattening across one is **PRAG0334**, unless the boundary declares `[ReadAccess<T>]`, which
   generates the navigation, read-only.
 
 Full treatment: `Pragmatic.Persistence/docs/20-eager-loading.md`.
@@ -240,7 +240,7 @@ Full treatment: `Pragmatic.Persistence/docs/20-eager-loading.md`.
   representation says nothing about what it omits), anything else ⇒ `Sync` (a full representation says
   what it omits is not there).
 - **Values**: `Sync` (update, add, **remove what was not sent**) · `AddOnly` (update and add) ·
-  `Replace` (discard and rebuild — new rows, new identities) · `Ignore`.
+  `Replace` (discard and rebuild: new rows, new identities) · `Ignore`.
 - **Matching key**: the element DTO's `Id`, else the child's `[LogicKey]`. With neither: **PRAG0333**
   on a mutation, **PRAG2203** on a patch.
   ```csharp
@@ -253,17 +253,17 @@ Full treatment: `Pragmatic.Persistence/docs/20-eager-loading.md`.
 - **Target**: `string` property.
 - **Tokens**: `{YYYY}` `{MM}` `{DD}` `{SEQ:N}` `{RANDOM:N}` `{GUID:N}`.
 - **Properties**: `AutoGenerate=true`, `SequenceName`.
-- **Generates**: validation, parsing, EF unique constraint — and the value itself: the unit of work fills
+- **Generates**: validation, parsing, EF unique constraint, and the value itself: the unit of work fills
   it before the save. No `[ComputedDefault]` beside it.
 
 ## `[ComputedDefault<TEntity, TValue, TGenerator>]` and `[HasPresets]` + `[PresetProvider<TProvider>]`
 
 For what a format cannot express, both run in the **create** mutation's invoker:
 
-- `[ComputedDefault<Invoice, string, InvoiceNumberGenerator>]` on a property — the generator implements
+- `[ComputedDefault<Invoice, string, InvoiceNumberGenerator>]` on a property: the generator implements
   `IDefaultValueGenerator<TEntity, TValue>` and computes the value from the new entity and the
   `LifecycleContext` (clock, user, tenant).
-- `[HasPresets]` + `[PresetProvider<ReservationPresetProvider>]` on the entity — the provider implements
+- `[HasPresets]` + `[PresetProvider<ReservationPresetProvider>]` on the entity: the provider implements
   `IPresetProvider<TParent>.CreatePresetsAsync(parent, context, ct)` and returns child entities saved
   with the parent (a reservation created with its default room assignment). Several providers may be
   declared.
@@ -284,8 +284,8 @@ For what a format cannot express, both run in the **create** mutation's invoker:
 - **Generates**: navigation properties, FK, EF config. Cross-boundary: FK only, no navigation.
 - **Relations are declared, not written.** A navigation or a `{Entity}Id` key typed as a property is `PRAG0619`; EF Core's `[ForeignKey]`/`[InverseProperty]` are `PRAG0635`. The generator owns every member a relation produces, and the features that read keys (`[GenerateHierarchy]`, `[TemporalRelation]`, `[CascadeOn]`, `[Lookup]`, `[MapFrom]`, events) read the declared relation, not a member found by name.
 - **Diagnostics**: PRAG0612/PRAG0617 (several relations to one type without `WithNavigation`/`Inverse`); PRAG0610/0611 (the two ends contradict each other); PRAG0618 (one-to-one without exactly one principal). Cross-boundary stays FK-only unless the boundary declares `[ReadAccess<T>]` on the target, in which case the navigation is generated.
-- **Many-to-many with a join entity** needs `LeftKey` / `RightKey` on `.WithNavigation(...)`, naming the join entity's properties that hold each side's key — unless the join entity declares its own `[Relation.ManyToOne<>]` to both ends, which generates them. ⚠️ Without either, EF Core binds shadow foreign keys named after the navigation that the migration never creates, and the first write dies on a missing column: `PRAG0616` refuses the declaration instead.
-- **A self-referencing many-to-many** names its join columns from the navigations, not the entity — otherwise both ends produce the same name and the database refuses the primary key. It also needs `Inverse` on both sides (`PRAG0613`), so a symmetric relation arrives as two collections to union.
+- **Many-to-many with a join entity** needs `LeftKey` / `RightKey` on `.WithNavigation(...)`, naming the join entity's properties that hold each side's key, unless the join entity declares its own `[Relation.ManyToOne<>]` to both ends, which generates them. ⚠️ Without either, EF Core binds shadow foreign keys named after the navigation that the migration never creates, and the first write dies on a missing column: `PRAG0616` refuses the declaration instead.
+- **A self-referencing many-to-many** names its join columns from the navigations, not the entity; otherwise both ends produce the same name and the database refuses the primary key. It also needs `Inverse` on both sides (`PRAG0613`), so a symmetric relation arrives as two collections to union.
 
 ## `[ValueObject]`
 
@@ -300,7 +300,7 @@ For what a format cannot express, both run in the **create** mutation's invoker:
 
 ---
 
-# Query Attributes — `Pragmatic.Persistence.Query`
+# Query Attributes: `Pragmatic.Persistence.Query`
 
 ## `[Query<TEntity, TResult>]` or `[Query<TEntity>]`
 
@@ -321,11 +321,11 @@ For what a format cannot express, both run in the **create** mutation's invoker:
   var page = await _orders.RunAsync(new SearchOrders { CustomerId = id, Page = 1 }, ct);
   ```
 
-## `[FromCurrentUser]` / `[FromCurrentUser(string? member)]` — `Pragmatic.Identity`
+## `[FromCurrentUser]` / `[FromCurrentUser(string? member)]`: `Pragmatic.Identity`
 
 - **Target**: a property of a `[Query]`, written `{ get; private set; }` (**PRAG0730** otherwise).
-- **Binds**: without a member, `ICurrentUser.Id` (a `string` property); with one —
-  `nameof(Employee.Id)` — that member of the `[PragmaticUser]` entity, read through the generated
+- **Binds**: without a member, `ICurrentUser.Id` (a `string` property); with one
+  (`nameof(Employee.Id)`), that member of the `[PragmaticUser]` entity, read through the generated
   `{User}Resolver` (same compilation, `Pragmatic.Identity.Persistence` referenced). The property has the
   member's type.
 - **Who writes it**: the query's generated invoker, after validation and the permission check, before
@@ -333,7 +333,7 @@ For what a format cannot express, both run in the **create** mutation's invoker:
 - **Never a parameter**: not query string, route, body, OpenAPI, or boundary-member argument. Still a
   property: part of the `[Cacheable]` key and of the serialized query.
 - **As a filter**: always applied, `==` even on a `string`; `[Filter(MapTo = …)]` still renames the column.
-- **PRAG0731**: the binding cannot be generated — unknown member, different type, `nameof` over another
+- **PRAG0731**: the binding cannot be generated: unknown member, different type, `nameof` over another
   type, no `[PragmaticUser]` entity or resolver, member-less form on a non-`string`.
 
 ```csharp
@@ -346,15 +346,15 @@ public partial class GetMyBalancesQuery
 }
 ```
 
-## `[FromClock]` — `Pragmatic.Temporal.Clock`
+## `[FromClock]`: `Pragmatic.Temporal.Clock`
 
 - **Target**: a property of a `[Query]`, a `[DomainAction]` or a `[Mutation]`, `{ get; private set; }`,
   of type `DateOnly` (gets `IClock.UtcToday`) or `DateTimeOffset` (gets `IClock.UtcNow`). **PRAG0734**
   otherwise.
 - **Who writes it**: the operation's generated invoker, from `GetRequiredService<IClock>()`, after
-  validation and authorization — before the read, or before `Execute`/`ApplyAsync` and the
+  validation and authorization, before the read, or before `Execute`/`ApplyAsync` and the
   `[LoadEntity]` preload. On a mutation it is also written to an entity member of the same name, if any.
-- **Not a filter, not a parameter**: a specification property of the query reads it — typically passing
+- **Not a filter, not a parameter**: a specification property of the query reads it, typically passing
   it to a `[ComputedFilter]` method (`EmployeeComputedFilters.IsAwayOnSpec(Today)`). Part of the
   `[Cacheable]` key.
 
@@ -371,7 +371,7 @@ public partial class GetMyBalancesQuery
 
 ## `[Sort(MapTo, DefaultDirection, Priority)]`
 
-- `DefaultDirection`: `SortDirection?` — `Ascending`, `Descending`, or unset for no default.
+- `DefaultDirection`: `SortDirection?`, meaning `Ascending`, `Descending`, or unset for no default.
 - `Priority`: multi-sort order (lower = first).
 
 ## `[GridFilter<TEntity>]`
@@ -399,7 +399,7 @@ public partial class GetMyBalancesQuery
 
 ---
 
-# Patch Attributes — `Pragmatic.Persistence.Patch`
+# Patch Attributes: `Pragmatic.Persistence.Patch`
 
 ## `[Patch<TEntity>]`
 
@@ -414,19 +414,19 @@ public partial class GetMyBalancesQuery
 
 ---
 
-# Less common attributes — reach for them when the case fits
+# Less common attributes: reach for them when the case fits
 
-## `[RollUp<TChild>(childProperty, aggregation)]` — a stored aggregate over children
+## `[RollUp<TChild>(childProperty, aggregation)]`: a stored aggregate over children
 
 ```csharp
 [RollUp<InvoiceLine>(nameof(InvoiceLine.Amount))]          // Sum (default)
 public decimal Subtotal { get; private set; }
 
-[RollUp<OrderLine>("", RollUpAggregation.Count)]           // Count: the child property is ignored — pass ""
+[RollUp<OrderLine>("", RollUpAggregation.Count)]           // Count: the child property is ignored, pass ""
 public int LineCount { get; private set; }
 ```
 
-Kept current as children are created and deleted, in the child's own unit of work — no recompute by
+Kept current as children are created and deleted, in the child's own unit of work, with no recompute by
 hand. The host registers the rules; `AddPragmaticPersistenceRepositories<TDbContext>()` does too for a
 hand-wired app, without doubling them.
 
@@ -437,9 +437,9 @@ A property kept in step with a property of another entity (`LineItem.UnitPrice` 
 assembly**, mark the source property `[CascadeSource]` so its generated setter raises the
 `EntityPropertyChanged` event the other side listens to.
 
-## `[GenerateTimeline]` — periods of a temporal relation, with their neighbours
+## `[GenerateTimeline]`: periods of a temporal relation, with their neighbours
 
-On an `ITemporalRelation` entity (`ValidFrom`/`ValidTo`): generates `GetTimeline()` on the DbContext —
+On an `ITemporalRelation` entity (`ValidFrom`/`ValidTo`): generates `GetTimeline()` on the DbContext,
 a LAG/LEAD CTE returning each period with the end of the one before and the start of the one after,
 partitioned by the owning relation. ⚠️ The row type is nested in the generated class:
 `{Entity}TimelineExtensions.{Entity}TimelineEntry`.
@@ -449,7 +449,7 @@ partitioned by the owning relation. ⚠️ The row type is nested in the generat
 Adds a join to a `[Query]`: `Via` is the navigation path (`"Customer"`, `"Lines.Product"`) for declared
 relations; `ForeignKey`/`TargetKey` for a POCO without navigations.
 
-## `[PolymorphicAttachment]` + `[Attachable<TOwner>]` — one child type, several owner types
+## `[PolymorphicAttachment]` + `[Attachable<TOwner>]`: one child type, several owner types
 
 ```csharp
 [Entity]
@@ -461,14 +461,14 @@ public partial class Document : IEntity { }
 
 Generates `Query{Attachment}s(owner, repository)` and `Load{Attachment}sBatchAsync(…)` on each owner and
 `ForOwner<TOwner>()` on the attachment. ⚠️ The attributes go on the **attachment**, naming the owner:
-`[Attachable<Document>]` on `Invoice` generates nothing, silently. No foreign key exists to an owner —
+`[Attachable<Document>]` on `Invoice` generates nothing, silently. No foreign key exists to an owner;
 for integrity per owner, `[HasAttachments]` (`pragmatic-use-traits`) gives each owner its own table.
 
-## Data grids — `[GenerateGridBridge]`, `[GridAdapter<T>]`, `[GridField]`, `[GridExclude]`
+## Data grids: `[GenerateGridBridge]`, `[GridAdapter<T>]`, `[GridField]`, `[GridExclude]`
 
 For a front-end grid (DevExpress, PrimeNG) that sends its filter/sort/group state as JSON:
 
-- `[GenerateGridBridge]` on the entity generates `query.ApplyCanonical(GridFilterRequest)` — a switch per
+- `[GenerateGridBridge]` on the entity generates `query.ApplyCanonical(GridFilterRequest)`, a switch per
   field, no reflection. It is generated anyway for an entity with a `[GridFilter<T>]` DTO.
 - `[GridAdapter<TEntity>(Framework = GridFramework.DevExpress | PrimeNG, SupportNestedFilters,
   SupportGrouping)]` on a class generates the translation from that grid's JSON to the canonical request.
@@ -477,7 +477,7 @@ For a front-end grid (DevExpress, PrimeNG) that sends its filter/sort/group stat
   property `[Filterable]` exposed.
 
 ⚠️ Only mapped fields are reachable: a grid asking for an unmapped field cannot reach an arbitrary
-column — keep it that way, and expose sensitive columns to no grid.
+column; keep it that way, and expose sensitive columns to no grid.
 
 # Main public types
 
@@ -492,7 +492,7 @@ public interface IReadRepository<TEntity>
     Task<int> CountAsync(ISpecification<TEntity> spec, CancellationToken ct = default);
     Task<bool> ExistsAsync(ISpecification<TEntity> spec, CancellationToken ct = default);
     Task<TEntity?> FirstOrDefaultAsync(ISpecification<TEntity> spec, CancellationToken ct = default);
-    IQueryable<TEntity> Query();              // raw — bypasses filters in FilterMode.Raw
+    IQueryable<TEntity> Query();              // raw: bypasses filters in FilterMode.Raw
 
     // The declared query, run against this repository's own set.
     Task<IReadOnlyList<TResult>> RunAsync<TResult>(IQuery<TEntity, TResult> query, CancellationToken ct = default)
@@ -501,7 +501,7 @@ public interface IReadRepository<TEntity>
         where TResult : class;
 }
 // ⚠️ RunAsync runs no operation pipeline: its caller is already inside one. Invoking the query *as an
-// operation* — with its own permission checked — is the boundary facade's job.
+// operation* (with its own permission checked) is the boundary facade's job.
 // Declared in Pragmatic.Persistence, namespace Pragmatic.Persistence.Repository.
 
 public interface IRepository<TEntity> : IReadRepository<TEntity>
@@ -516,7 +516,7 @@ public interface IRepository<TEntity> : IReadRepository<TEntity>
 ```
 
 One type argument: `IRepository<Order>`. The transaction commit is done by the
-generated invoker via `IUnitOfWork` — repositories do not expose `SaveChangesAsync`. Bulk operations
+generated invoker via `IUnitOfWork`; repositories do not expose `SaveChangesAsync`. Bulk operations
 live in `Pragmatic.Persistence.EFCore` extensions. For each `[LogicKey] public TKey Code { get; }` a
 `GetByCodeAsync(TKey, CancellationToken)` lookup is generated on the **concrete** `{Entity}.Repository`
 (see `[LogicKey]` above), not on `IRepository<T>`.
@@ -549,7 +549,7 @@ public interface IPagedQuery<TEntity, TResult> : IQuery<TEntity, TResult>
     int Page { get; } int PageSize { get; } int Skip { get; } int Take { get; }
 }
 
-// Pragmatic.Persistence.Query.Results — a result, not a bare page: check IsSuccess before Items.
+// Pragmatic.Persistence.Query.Results: a result, not a bare page; check IsSuccess before Items.
 public sealed class PagedResult<T>
 {
     bool IsSuccess { get; } bool IsFailure { get; } QueryError? Error { get; }
@@ -574,7 +574,7 @@ public enum FilterMode { Normal, Admin, Background, Raw }   // bypasses filters/
 
 ## Declared visibility rules
 
-A rule the entity carries, applied to every query of it — root, `Include`, projected subqueries, and
+A rule the entity carries, applied to every query of it: root, `Include`, projected subqueries, and
 a raw `context.Set<T>()` alike. The attribute is what installs it: the generated entity configuration
 turns each one into an **EF Core named global query filter**, beside `"SoftDelete"` and `"Tenant"`.
 
@@ -589,11 +589,11 @@ public sealed class ActiveOnly : VisibilityRule<Property>   // the rule IS the I
 }
 ```
 
-- `VisibilityRule<T>` — `ToExpression()` is the predicate. `Priority` and `Scope` are inherited from
+- `VisibilityRule<T>`: `ToExpression()` is the predicate. `Priority` and `Scope` are inherited from
   `IQueryFilter<T>` but decide nothing for a declared rule: EF owns the enforcement.
 - ⚠️ **The rule must be concrete, non-generic, and constructible with no arguments.** Its predicate is
   read once, from `new TRule().ToExpression()`, while EF builds the model. `PRAG0718` says so. A rule
-  that wants `ICurrentUser` cannot be one at all — the model is cached per context type, so a scoped
+  that wants `ICurrentUser` cannot be one at all: the model is cached per context type, so a scoped
   dependency captured there is served to every later request. Caller-dependent predicates are the
   ownership and scope filters, which compose additively and run per request.
 - **No `FilterMode` lifts it** except `Raw`. `Background` lifts only `"Tenant"`, by name.
@@ -601,28 +601,28 @@ public sealed class ActiveOnly : VisibilityRule<Property>   // the rule IS the I
   `IgnoreQueryFilters(["Visibility:{FullName}"])`. The attribute still also takes an entity type,
   which lifts everything that entity carries through the Pragmatic provider.
 - In hand-written code: `IQueryFilterToggle.DisableVisibilityRule<TRule>()`, or
-  `DisableQueryFilter(VisibilityFilterName.Of<TRule>())`. ⚠️ **Not `Disable<TRule>()`** — that reaches
+  `DisableQueryFilter(VisibilityFilterName.Of<TRule>())`. ⚠️ **Not `Disable<TRule>()`**: that reaches
   `DefaultQueryFilterProvider`, where a declared rule is not registered, so it compiles and does
   nothing. **`PRAG0720`** rejects it.
 - **`PRAG0719`** refuses `[WithoutFilter<T>]` on an operation with no `[RequirePermission]`. Reading
   past a filter is a privilege; it asks that the privilege be named, not that it be the right one.
-- `PRAG0717` — the rule is typed for another entity.
+- `PRAG0717`: the rule is typed for another entity.
 - ⚠️ **A hidden row is hidden from writes too**: the row is invisible to every query of the entity,
   so an update loads nothing. The operations that manage those rows need
   `[WithoutFilter<TRule>]`, or the state the rule keys on is a one-way door.
-- `IVisibilityFilterProvider` / `QueryFilterProviderAdapter` — what puts **DI-registered** filters into
+- `IVisibilityFilterProvider` / `QueryFilterProviderAdapter`: what puts **DI-registered** filters into
   the navigation `FilterMap`. That path is for filters registered by hand; a declared rule does not use
   it.
 
 ## Soft delete / ownership runtime hooks
 
-- `ISoftDelete`, `IOwnedEntity`, `IScopedEntity`, `IAuditable` — implemented by SG on classes using the corresponding attributes.
-- `IPermissionBasedFilter` — interface of automatic filters (Ownership/Scoped).
-- `ICurrentUser` (from `Pragmatic.Identity`) — read by MutationInvoker to populate OwnerId.
+- `ISoftDelete`, `IOwnedEntity`, `IScopedEntity`, `IAuditable`: implemented by SG on classes using the corresponding attributes.
+- `IPermissionBasedFilter`: interface of automatic filters (Ownership/Scoped).
+- `ICurrentUser` (from `Pragmatic.Identity`): read by MutationInvoker to populate OwnerId.
 
 ---
 
-# EFCore — `Pragmatic.Persistence.EFCore`
+# EFCore: `Pragmatic.Persistence.EFCore`
 
 ## Recommended pattern (consumer): `PragmaticDatabase`
 

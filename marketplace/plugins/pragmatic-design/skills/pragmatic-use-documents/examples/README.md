@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-documents
+# Examples: pragmatic-use-documents
 
 Copied from `examples/invoicing/src/Invoicing.Billing`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests`. **Do not edit here**: change the source and run

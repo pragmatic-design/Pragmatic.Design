@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-jobs
+# Examples: pragmatic-use-jobs
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests` and `examples/warehouse/tests/Warehouse.IntegrationTests`. **Do not edit here**: change the source and run
@@ -6,7 +6,7 @@ Copied from `examples`, which compiles in the repository and is exercised by
 
 | File | What it shows |
 |---|---|
-| [`invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs`](invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs) | A recurring job: `[RecurringJob]` with a cron and a time zone, `[Timeout]`, and one `TenantScope` per company — without it every read of a tenant-filtered module finds nothing |
+| [`invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs`](invoicing/src/Invoicing.Billing/Infrastructure/Jobs/ChaseOverdueInvoicesJob.cs) | A recurring job: `[RecurringJob]` with a cron and a time zone, `[Timeout]`, and one `TenantScope` per company; without it every read of a tenant-filtered module finds nothing |
 | [`invoicing/src/Invoicing.Billing/BillingBoundary.cs`](invoicing/src/Invoicing.Billing/BillingBoundary.cs) | `[EnableJobPersistence]`: the job store's tables in the boundary's own database |
 | [`invoicing/src/Invoicing.Host/Program.cs`](invoicing/src/Invoicing.Host/Program.cs) | `UseJobs`: worker count, polling interval, `UseEfCore()` and `UseEfCorePersistence()` |
 | [`warehouse/src/Warehouse.Stock/Infrastructure/Jobs/ExpireReservationsJob.cs`](warehouse/src/Warehouse.Stock/Infrastructure/Jobs/ExpireReservationsJob.cs) | A parameterized job (`[Job]`, `IJob<T>`) that throws on failure so the store retries it |

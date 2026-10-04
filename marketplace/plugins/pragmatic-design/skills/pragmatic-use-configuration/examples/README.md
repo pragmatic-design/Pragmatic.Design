@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-configuration
+# Examples: pragmatic-use-configuration
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/showcase/tests/Showcase.IntegrationTests` and `examples/warehouse/tests/Warehouse.IntegrationTests`. **Do not edit here**: change the source and run

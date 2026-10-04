@@ -1,9 +1,9 @@
-# Pragmatic.Design — agent skills
+# Pragmatic.Design: agent skills
 
 Skills that teach a coding agent to build .NET line-of-business applications with the
 [Pragmatic.Design](https://github.com/pragmatic-design/Pragmatic.Design) packages: which packages to
 reference, how to lay out the solution, the attributes of each module, the traps, and how to verify the
-result. They are written for a **consumer project** — an app that uses the `Pragmatic.*` packages — and
+result. They are written for a **consumer project** (an app that uses the `Pragmatic.*` packages) and
 need no access to the framework's source.
 
 Each skill is a folder with a `SKILL.md` in the [Agent Skills](https://agentskills.io/specification)
@@ -32,7 +32,7 @@ Start a new session after installing. `$` followed by a skill name calls one exp
 
 ### Any other agent
 
-Copy the folders under `plugins/pragmatic-design/skills/` to where your agent loads skills from — for
+Copy the folders under `plugins/pragmatic-design/skills/` to where your agent loads skills from, for
 example `.agents/skills/` (Codex, per project), `~/.agents/skills/` (Codex, every project) or
 `.claude/skills/` (Claude Code, per project). The folders need no change, but copy them all: the
 module skills link to references kept in `pragmatic-ecosystem`.
@@ -68,5 +68,5 @@ From a checkout, without installing anything (Claude Code):
 claude --plugin-dir ./plugins/pragmatic-design
 ```
 
-Or register the checkout as a marketplace — `claude plugin marketplace add .` or
-`codex plugin marketplace add .` from this directory — and install as above.
+Or register the checkout as a marketplace (`claude plugin marketplace add .` or
+`codex plugin marketplace add .` from this directory) and install as above.

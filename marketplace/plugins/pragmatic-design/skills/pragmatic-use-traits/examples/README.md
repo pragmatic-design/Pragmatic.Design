@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-traits
+# Examples: pragmatic-use-traits
 
 Copied from `examples/showcase/src/Showcase.Booking`, which compiles in the repository and is exercised by
 `examples/showcase/tests/Showcase.IntegrationTests`. **Do not edit here**: change the source and run
