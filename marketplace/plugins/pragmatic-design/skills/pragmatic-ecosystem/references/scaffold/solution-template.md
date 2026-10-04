@@ -4,9 +4,9 @@ The complete best-practice structure for a new Pragmatic.Design consumer app. La
 first, then fill domain code per `../cookbook/crud-web-api.md`.
 
 ⚠️ **Where these files come from, so the claim is checkable.** The test fixture and the web factory are
-the ones two reference applications build and run on every gate —
+the ones two reference applications build and run on every gate,
 `examples/time-off/tests/TimeOff.IntegrationTests/Infrastructure/` and
-`examples/invoicing/tests/Invoicing.IntegrationTests/Infrastructure/` — with their names replaced by the
+`examples/invoicing/tests/Invoicing.IntegrationTests/Infrastructure/`, with their names replaced by the
 placeholders. The rest is the structure those two applications have.
 
 Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a boundary's module is
@@ -52,7 +52,7 @@ Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a bo
 ```
 
 ⚠ `latestFeature`, and the band floor rather than the exact build you happen to have. Pinning
-`10.0.201` with `latestPatch` does **not** roll forward to an installed `10.0.302` — a patch roll
+`10.0.201` with `latestPatch` does **not** roll forward to an installed `10.0.302`: a patch roll
 stays inside its feature band.
 
 ## Directory.Build.props
@@ -84,7 +84,7 @@ Three MSBuild properties change what the generator emits. They are ordinary prop
 
 | Property | What it turns on |
 |---|---|
-| `PragmaticGenerateJsonContext` | a `JsonSerializerContext` covering this assembly's serializable boundary types — messages, events, job parameters, sagas, mapping DTOs, SSE items, generated request bodies, and action/endpoint response types |
+| `PragmaticGenerateJsonContext` | a `JsonSerializerContext` covering this assembly's serializable boundary types: messages, events, job parameters, sagas, mapping DTOs, SSE items, generated request bodies, and action/endpoint response types |
 | `PublishAot` | the same, implicitly: wanting AOT is the same as wanting the context |
 | `PragmaticAutoDerivePermissions` | permission constants derived from operation names |
 
@@ -128,7 +128,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <PackageVersion Include="Pragmatic.SourceGenerator" Version="$(PragmaticVersion)" />
   </ItemGroup>
 
-  <ItemGroup><!-- EF provider — match Pragmatic's EF Core major (.NET 10 -> EF Core 10) -->
+  <ItemGroup><!-- EF provider: match Pragmatic's EF Core major (.NET 10 -> EF Core 10) -->
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
@@ -223,7 +223,7 @@ indent_size = 2
 </Solution>
 ```
 
-## Boundary library csproj (versionless — CPM)
+## Boundary library csproj (versionless, CPM)
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -246,7 +246,7 @@ indent_size = 2
 </Project>
 ```
 
-## Host csproj (versionless — CPM)
+## Host csproj (versionless, CPM)
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -277,9 +277,9 @@ indent_size = 2
 
 Nothing else is required. Caching, resilience, jobs, messaging are wired when a module **declares**
 them (`[Cacheable]`, `[ResiliencePolicy]`, `[Job]`, `[MessageHandler]`), not because a package is on
-the host — see *Optional feature packages* below for what each one adds.
+the host; see *Optional feature packages* below for what each one adds.
 
-## Host — Program.cs
+## Host: Program.cs
 
 ```csharp
 using Pragmatic.Composition.Hosting;
@@ -311,23 +311,23 @@ await PragmaticApp.RunAsync(args, app =>
 Do not add `public partial class Program;` for `WebApplicationFactory<Program>`: since .NET 10 the Web SDK
 generates it (`PublicProgramSourceGenerator`).
 
-## Host — the API contract  (no code: the generated host publishes it)
+## Host: the API contract  (no code: the generated host publishes it)
 
 With `Pragmatic.Endpoints.OpenApi` referenced, the generated host serves the document the generator
-wrote at compile time at `GET /openapi/v1.json` **in Development**, and — when `Scalar.AspNetCore` is
-referenced too — Scalar over it at `GET /scalar`. Do not write a startup step for either.
+wrote at compile time at `GET /openapi/v1.json` **in Development**, and (when `Scalar.AspNetCore` is
+referenced too) Scalar over it at `GET /scalar`. Do not write a startup step for either.
 
 Every other environment is a decision the application states, because a published contract lists every
 operation and the permission it requires:
 
 ```csharp
-app.UseApiDocumentation();   // using Pragmatic.Endpoints.OpenApi — the document in every environment
+app.UseApiDocumentation();   // using Pragmatic.Endpoints.OpenApi: the document in every environment
 ```
 
 Scalar stays in Development either way. A document or `/scalar` route the application maps itself is
 kept, and the generated one steps aside.
 
-## Host — Properties/launchSettings.json
+## Host: Properties/launchSettings.json
 
 ```json
 {
@@ -347,10 +347,10 @@ kept, and the generated one steps aside.
 ```
 
 Without it `dotnet run` starts in **Production**, where the development identity is off and the host
-refuses to start ("no authentication method is configured for environment Production") — the
+refuses to start ("no authentication method is configured for environment Production"), and the
 maintenance page answers 503 unless disabled.
 
-## Host — AppDatabase.cs
+## Host: AppDatabase.cs
 
 ```csharp
 using Pragmatic.Composition.Attributes;
@@ -363,7 +363,7 @@ namespace {{App}}.Host;
 public sealed class AppDatabase : PragmaticDatabase;
 ```
 
-## Host — HostModule.cs  (⚠ required topology — one [Include] per module)
+## Host: HostModule.cs  (⚠ required topology, one [Include] per module)
 
 ```csharp
 using Pragmatic.Composition.Attributes;
@@ -380,7 +380,7 @@ namespace {{App}}.Host;
 public sealed class HostModule;
 ```
 
-## Host — appsettings.json
+## Host: appsettings.json
 
 ```json
 {
@@ -388,7 +388,7 @@ public sealed class HostModule;
 }
 ```
 
-## Test project — {{App}}.IntegrationTests.csproj
+## Test project: {{App}}.IntegrationTests.csproj
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -410,7 +410,7 @@ public sealed class HostModule;
 </Project>
 ```
 
-## Test project — PostgresFixture.cs
+## Test project: PostgresFixture.cs
 
 ```csharp
 using Testcontainers.PostgreSql;
@@ -421,7 +421,7 @@ namespace {{App}}.IntegrationTests;
 public sealed class PostgresFixture : IAsyncLifetime
 {
     // WithImage works on every 4.x. The shorter `new PostgreSqlBuilder("postgres:17-alpine")` needs a
-    // recent one (4.15.0 has it; 4.2.0 does not — CS1729).
+    // recent one (4.15.0 has it; 4.2.0 does not: CS1729).
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
         .WithImage("postgres:17-alpine")
         .Build();
@@ -438,7 +438,7 @@ public sealed class IntegrationCollection : ICollectionFixture<PostgresFixture>
 }
 ```
 
-## Test project — {{App}}WebFactory.cs
+## Test project: {{App}}WebFactory.cs
 
 ```csharp
 using Microsoft.AspNetCore.Hosting;
@@ -457,7 +457,7 @@ public sealed class {{App}}WebFactory(PostgresFixture fixture) : WebApplicationF
         builder.UseEnvironment("Development");
 
         // UseSetting, not ConfigureAppConfiguration: Program.cs reads configuration **while it
-        // registers the services** — a signing key, a connection string, which provider to use — and
+        // registers the services** (a signing key, a connection string, which provider to use), and
         // configuration added by ConfigureAppConfiguration is not visible that early. A host that
         // chooses a service from a setting silently gets the wrong one.
         builder.UseSetting("ConnectionStrings:App", fixture.ConnectionString);
@@ -470,16 +470,16 @@ public sealed class {{App}}WebFactory(PostgresFixture fixture) : WebApplicationF
 
 **Which environment, and why it changes.** The factory above runs in `Development` because the
 skeleton's `Program.cs` registers its identity only there (`if (app.Environment.IsDevelopment())
-app.UseDevelopmentIdentity();`) — and a host whose endpoints require authorization with **no**
+app.UseDevelopmentIdentity();`), and a host whose endpoints require authorization with **no**
 authentication scheme registered refuses to start outside Development. The moment the host gets a real
 scheme (`UseJwtAuthentication`, `UseOidcAuthentication`, …) registered unconditionally, move the factory
-to `builder.UseEnvironment("Testing")`: the committed `appsettings.Development.json` — a development
-identity, a seeded administrator, a relaxed token — then stops deciding what the tests run against.
+to `builder.UseEnvironment("Testing")`: the committed `appsettings.Development.json` (a development
+identity, a seeded administrator, a relaxed token) then stops deciding what the tests run against.
 Both reference applications are past that point and both use `Testing`.
 
 `Pragmatic:MaintenanceMode:EnableOnStartupFailure = "false"` is there so that a host which fails to
-start **fails the test**. Without it, a startup failure — a migration that does not apply, a missing
-connection string — puts the host into maintenance mode: it keeps running and answers every request
+start **fails the test**. Without it, a startup failure (a migration that does not apply, a missing
+connection string) puts the host into maintenance mode: it keeps running and answers every request
 with `503`, so the test fails later and for the wrong reason, on a status code instead of the
 exception that caused it. The key can only switch the behaviour off; `"false"` (any casing) is the one
 value it reads.
@@ -489,8 +489,8 @@ A test then injects `PostgresFixture` (via `[Collection(IntegrationCollection.Na
 showcase pattern in `examples/showcase/tests/Showcase.IntegrationTests/` for richer scenarios.
 
 `WebApplicationFactory` runs the host inside the test process, so it cannot prove that the data
-survives a restart: there is no process to kill. For that — the service killed and started again, the
-database container stopped and started — run the built host as its own process, as in
+survives a restart: there is no process to kill. For that (the service killed and started again, the
+database container stopped and started), run the built host as its own process, as in
 `../cookbook/restart-and-persistence-tests.md`.
 
 ## Optional feature packages
@@ -504,8 +504,8 @@ the host.
 | `events` (in-process domain events) | `Pragmatic.Events` | `Pragmatic.Events.EFCore` |
 | `messaging` (bus / outbox / saga) | `Pragmatic.Messaging` | `Pragmatic.Messaging` + `.Channels` or `.RabbitMQ` (+ `.EFCore` for outbox) |
 | `jobs` (background / recurring) | `Pragmatic.Jobs` | `Pragmatic.Jobs` (+ `.EFCore` for distributed) |
-| `caching` (`[Cacheable]`/`[InvalidatesCache]`) | `Pragmatic.Caching` | — (wired from the module's declaration) |
-| `multiTenancy` | — | `Pragmatic.MultiTenancy.AspNetCore` (tenant resolution middleware) |
+| `caching` (`[Cacheable]`/`[InvalidatesCache]`) | `Pragmatic.Caching` | none (wired from the module's declaration) |
+| `multiTenancy` | n/a | `Pragmatic.MultiTenancy.AspNetCore` (tenant resolution middleware) |
 | roles and permissions | `Pragmatic.Authorization` (already there through `Pragmatic.Actions`) | `Pragmatic.Identity.AspNetCore` (already there, unless `[AnonymousHost]`) + a real scheme |
 
 ## Build & run

@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-audit
+# Examples: pragmatic-use-audit
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/invoicing/tests/Invoicing.IntegrationTests` and `examples/time-off/tests/TimeOff.IntegrationTests`. **Do not edit here**: change the source and run

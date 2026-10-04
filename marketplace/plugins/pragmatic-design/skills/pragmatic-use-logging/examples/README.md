@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-logging
+# Examples: pragmatic-use-logging
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/time-off/tests/TimeOff.IntegrationTests`, `examples/invoicing/tests/Invoicing.IntegrationTests` and `examples/showcase/tests/Showcase.IntegrationTests`. **Do not edit here**: change the source and run

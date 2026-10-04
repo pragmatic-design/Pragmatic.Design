@@ -1,4 +1,4 @@
-# API Surface — Pragmatic.Composition
+# API Surface: Pragmatic.Composition
 
 Reference for host bootstrap, DI, modules and startup. Diagnostics: `../diagnostics.md` (PRAG1600-1699).
 
@@ -26,7 +26,7 @@ There is no `Pragmatic.DependencyInjection` package.
 [Service]                                              // Scoped lifetime, target = 1st interface
 [Service(Lifetime = Lifetime.Singleton)]
 [Service(AsSelf = true)]                               // register as concrete type
-[Service<IMyService>]                                  // generic form — preferred
+[Service<IMyService>]                                  // generic form, preferred
 [Service<IMyService>(Key = "stripe")]                  // keyed service (.NET 8+)
 ```
 
@@ -71,7 +71,7 @@ Module-to-module dependency. A dependency that names no known module → PRAG160
 
 ## `[NeedsStep<TStep>]`
 
-On `[Module]` — declares that the module requires an `IStartupStep` provided by a package. Type not found → PRAG1632.
+On `[Module]`: declares that the module requires an `IStartupStep` provided by a package. Type not found → PRAG1632.
 
 ## `[Include<...>]` (host)
 
@@ -85,7 +85,7 @@ Attaches a module to the host and a database. Three overloads:
 
 ## `[AnonymousHost]` (host)
 
-On the host `[Module]` — the host deliberately has no authentication. The generated endpoint root
+On the host `[Module]`: the host deliberately has no authentication. The generated endpoint root
 carries no `RequireAuthorization()` and PRAG1695 is not reported. Without it, a host that references
 Authorization and not Identity fails with PRAG1695 (Error). Authorization an endpoint or a group
 declares for itself is unaffected.
@@ -162,7 +162,7 @@ public sealed class AppDatabase : PragmaticDatabase;
 ```
 
 - `Provider` (`DatabaseProvider`): `SqlServer | PostgreSql | SQLite | MySql | InMemory`.
-- `ConfigKey` — `IConfiguration` key for the connection string. Optional `MigrationConfigKey` to use a separate DDL connection.
+- `ConfigKey`: `IConfiguration` key for the connection string. Optional `MigrationConfigKey` to use a separate DDL connection.
 - Boundary without an assigned database → PRAG1651; DbContext name collision → PRAG1652.
 
 ---
@@ -176,7 +176,7 @@ public sealed class AppDatabase : PragmaticDatabase;
 ```
 
 - On `[Module]`. `TPackage : IPackageDefinition`. Merges the package's actions/entities/services into the module. Duplicate → PRAG1050.
-- `[ExposeEndpoint<TAction>(HttpVerb, route)]` (on `[Module]`) exposes an action over HTTP; `AllowAnonymous`, `AdditionalPermissions`. Usually a package action — those carry no `[Endpoint]`, because what they publish is the consumer's to decide — but ⚠️ nothing restricts it: the module's own action works too, mapped on the host root instead of the package prefix.
+- `[ExposeEndpoint<TAction>(HttpVerb, route)]` (on `[Module]`) exposes an action over HTTP; `AllowAnonymous`, `AdditionalPermissions`. Usually a package action (those carry no `[Endpoint]`, because what they publish is the consumer's to decide), but ⚠️ nothing restricts it: the module's own action works too, mapped on the host root instead of the package prefix.
 
 ## `[RemoteBoundary<TModule>]`
 
@@ -193,7 +193,7 @@ public sealed class AppDatabase : PragmaticDatabase;
 
 # Multi-tenancy
 
-`UseMultiTenancy(Action<MultiTenancyBuilder>)` — tenant resolution strategies:
+`UseMultiTenancy(Action<MultiTenancyBuilder>)` takes the tenant resolution strategies:
 
 | Method | Source |
 |---|---|
@@ -204,7 +204,7 @@ public sealed class AppDatabase : PragmaticDatabase;
 | `UseRoute(param?)` | Route parameter (default `tenantId`) |
 | `UseResolver<T>()` | Custom `ITenantResolver` |
 
-Several `Use*` chain in call order — `UseHeader().UseClaim()` tries the header, then the claim — and the
+Several `Use*` chain in call order (`UseHeader().UseClaim()` tries the header, then the claim), and the
 first non-empty answer wins; one strategy is registered as itself, several as a `CompositeTenantResolver`.
 
 ---

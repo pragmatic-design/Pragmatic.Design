@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-notifications
+# Examples: pragmatic-use-notifications
 
 Copied from `examples/showcase/src`, which compiles in the repository and is exercised by
 `examples/showcase/tests/Showcase.IntegrationTests`. **Do not edit here**: change the source and run

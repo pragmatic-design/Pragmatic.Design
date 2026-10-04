@@ -64,7 +64,7 @@ Use this file to avoid stale package names and invented modules. If the agent ca
 | `Pragmatic.Incidents` | `Pragmatic.Incidents/src/` | Security incidents and reporting deadlines; `.Audit` detection from the trail |
 | `Pragmatic.Cryptography` | `Pragmatic.Cryptography/src/` | Key ring, AES-GCM, per-subject keys (`.EFCore`) |
 | `Pragmatic.Redaction` | `Pragmatic.Redaction/src/Pragmatic.Redaction/` | Pattern and declared redaction for logs and the trail |
-| `Pragmatic.Authorization.Management` | `Pragmatic.Authorization/src/Pragmatic.Authorization.Management/` | RBAC admin actions — see the enforcement caveat in `pragmatic-use-authorization` |
+| `Pragmatic.Authorization.Management` | `Pragmatic.Authorization/src/Pragmatic.Authorization.Management/` | RBAC admin actions; see the enforcement caveat in `pragmatic-use-authorization` |
 | `Pragmatic.Identity.*` | `Pragmatic.Identity/src/` | `.Local`, `.Local.Jwt`, `.Oidc`, `.Keycloak`, `.Persistence`, `.Auditing`, `.AspNetCore` |
 
 ## Several services

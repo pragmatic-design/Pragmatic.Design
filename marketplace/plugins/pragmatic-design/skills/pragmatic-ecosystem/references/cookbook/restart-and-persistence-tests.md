@@ -1,4 +1,4 @@
-# Cookbook — Proving the data survives a restart
+# Cookbook: Proving the data survives a restart
 
 "It must not lose anything" is the requirement a line-of-business application is asked for most, and
 the test template in `scaffold/solution-template.md` cannot prove it: `WebApplicationFactory` runs the
@@ -16,15 +16,15 @@ one under the other.
 
 | Test | Red means |
 |---|---|
-| a book written before the service is killed is read after it restarts | the data lived in the process — an in-memory store, a cache answering for the database, a write never committed |
+| a book written before the service is killed is read after it restarts | the data lived in the process: an in-memory store, a cache answering for the database, a write never committed |
 | a book written before the database restarts is read after it | the data lived in something the container restart discards |
-| a written book is a row in the database | the service answered from somewhere other than PostgreSQL — read around the service, with `psql` inside the container |
+| a written book is a row in the database | the service answered from somewhere other than PostgreSQL; read around the service, with `psql` inside the container |
 
 The restart is a **kill**, not a graceful stop: `Process.Kill`, the way a crash or a pulled plug ends
 the process. A write that reached the client as `201` must be there afterwards; one that only waited
 for a clean shutdown to be flushed would not be.
 
-## 1. The test project — `{{App}}.RestartTests.csproj`
+## 1. The test project: `{{App}}.RestartTests.csproj`
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -60,7 +60,7 @@ test process. The assembly attribute records where that build puts `{{App}}.Host
 find it without a hard-coded path. Versions come from `Directory.Packages.props` as in the solution
 template (`Testcontainers.PostgreSql` 4.15.0 or later).
 
-## 2. The host as a process — `ServiceProcess.cs`
+## 2. The host as a process: `ServiceProcess.cs`
 
 ```csharp
 using System.Diagnostics;
@@ -217,7 +217,7 @@ internal sealed class ServiceProcess : IAsyncDisposable
   listens on the configured address and logs, at `Critical`, "Startup failed (…). The host is in
   maintenance mode and answers 503 on …".)
 
-## 3. The service and its database — `ServiceUnderTest.cs`
+## 3. The service and its database: `ServiceUnderTest.cs`
 
 ```csharp
 using Testcontainers.PostgreSql;
@@ -307,7 +307,7 @@ public sealed class ServiceCollection : ICollectionFixture<ServiceUnderTest>
 - **One collection, one service, tests in sequence.** xUnit runs the tests of a collection one at a
   time, so a restart never lands in the middle of another test's request.
 
-## 4. The tests — `RestartTests.cs`
+## 4. The tests: `RestartTests.cs`
 
 ```csharp
 using System.Net;
@@ -387,7 +387,7 @@ A restart test that passes proves nothing until you have seen it fail when the d
 restarts start the service against a **new, empty** container:
 
 ```csharp
-// in RestartServiceAsync, before starting the service again — and the same in RestartDatabaseAsync
+// in RestartServiceAsync, before starting the service again, and the same in RestartDatabaseAsync
 // in place of StopAsync/StartAsync (drop `readonly` from _database for the duration):
 await _database.DisposeAsync();
 _database = new PostgreSqlBuilder("postgres:17-alpine").Build();

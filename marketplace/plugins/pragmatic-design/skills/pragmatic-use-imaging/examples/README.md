@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-imaging
+# Examples: pragmatic-use-imaging
 
 Copied from `examples/showcase`, which compiles in the repository and is exercised by
 `examples/showcase/tests/Showcase.IntegrationTests (InvoiceQrCodeTests)`. **Do not edit here**: change the source and run

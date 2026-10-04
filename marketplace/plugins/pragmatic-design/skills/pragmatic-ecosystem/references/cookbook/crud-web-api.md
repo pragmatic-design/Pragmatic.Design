@@ -1,4 +1,4 @@
-# Cookbook — CRUD Web API
+# Cookbook: CRUD Web API
 
 End-to-end recipe for a Pragmatic.Design app from scratch, consuming NuGet packages (no source access).
 Result: HTTP CRUD API on PostgreSQL with entity, repository, mutation, query, custom action, and
@@ -59,7 +59,7 @@ that are not released yet.
 </configuration>
 ```
 
-## 3. Boundary library — `MyApp.Sales.csproj`
+## 3. Boundary library: `MyApp.Sales.csproj`
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -112,7 +112,7 @@ public sealed class SalesModule;
 Everything under `MyApp.Sales.*` is captured by the boundary via namespace prefix. Sub-folders
 (`Orders/`, `Customers/`, …) become inferred sub-boundaries.
 
-## 5. Entity — `Orders/Order.cs`
+## 5. Entity: `Orders/Order.cs`
 
 > ⚠ **required: entities must live in the `{Boundary}.Entities` namespace** (here
 > `MyApp.Sales.Entities`), regardless of folder. The source generator derives the host database's
@@ -145,17 +145,17 @@ public partial class Order : IEntity
     [Projectable]                                       // SQL-translatable
     public bool IsHighValue => Total >= 1000m;
 
-    /// <summary>Domain mutation — properties have private setters; expose intent as methods.</summary>
+    /// <summary>Domain mutation: properties have private setters; expose intent as methods.</summary>
     public void AdjustTotal(decimal delta) => Total = Math.Max(0m, Total + delta);
 }
 ```
 
 The SG generates `Order.Create(customerId, total)`, `Id`/`PersistenceId`, audit + soft-delete
 members, and the nested `Order.Repository` (an `IRepository<Order>`) with a `GetByOrderNumberAsync`
-lookup — on the concrete type, not on the interface.
+lookup, on the concrete type and not on the interface.
 
 ⚠ `OrderNumber` is **not** a factory parameter: it has an initializer. A property becomes one only
-when it is non-nullable, has no initializer and is not a foreign key — see
+when it is non-nullable, has no initializer and is not a foreign key; see
 `domain-model.md` §4. Set the others with the generated `SetOrderNumber(...)`.
 
 > Auto-generated human-readable keys (`ORD-202606-00001`) use `[GeneratedValue("ORD-{YYYY}{MM}-{SEQ:5}")]`
@@ -163,7 +163,7 @@ when it is non-nullable, has no initializer and is not a foreign key — see
 > mutation does not carry it and a `[Raises<T>]` event built after the save sees it. Omitted here for
 > brevity.
 
-## 6. Mutation — `Orders/Mutations/CreateOrderMutation.cs`
+## 6. Mutation: `Orders/Mutations/CreateOrderMutation.cs`
 
 ```csharp
 using Pragmatic.Actions.Mutation;                 // Mutation<T>, [Mutation], MutationMode
@@ -193,7 +193,7 @@ answer never puts the entity on the wire, and an update or a delete that declare
 boundary member returns the entity either way. Once the read of step 7-bis
 exists at `api/orders/{id}`, the 201 also carries `Location: /api/orders/{id}`.
 
-## 7. Query — `Orders/Queries/SearchOrdersQuery.cs`
+## 7. Query: `Orders/Queries/SearchOrdersQuery.cs`
 
 ```csharp
 using Pragmatic.Endpoints;
@@ -223,14 +223,14 @@ public partial class SearchOrdersQuery
 ```
 
 `Paged = true` generates `Page = 1` and `PageSize = 20`. Write them by hand only to change the
-defaults — declaring both the option and the properties is **PRAG0727**.
+defaults; declaring both the option and the properties is **PRAG0727**.
 
 ⚠️ **When the rule already exists as a `Specification<T>`, this class is the long way round.**
 `[Query]` on the static member derives the query from it; the class form is for a read that composes
 several filters, a sort and a projection, which is what this one does.
 
 The projection DTO **must be a `partial class` with `[MapFrom<TEntity>]` and `[GenerateProjection]`**
-— this is what produces the SQL-translatable projection the query pipeline consumes. A plain record
+(this is what produces the SQL-translatable projection the query pipeline consumes). A plain record
 with matching names is **not** enough.
 
 ```csharp
@@ -259,7 +259,7 @@ The query endpoint returns a paged result (`items`, `totalCount`, `page`, `pageS
 `"api/v1/orders"` looks like versioning and is not: it is a literal that happens to contain a `v1`.
 When a second version arrives you own two unrelated routes and nothing relates them.
 
-Leave the segment out. If the API genuinely needs versions, that is a framework feature — add the
+Leave the segment out. If the API genuinely needs versions, that is a framework feature: add the
 `Asp.Versioning.Http` package and declare it:
 
 ```csharp
@@ -295,8 +295,8 @@ public partial class OrderLineCardDto
 and the payload comes back with an empty list. Three records in one file with the attribute only on
 the outer one is the shape that produces it, and it looks right.
 
-The navigation the nested type maps to may be one the generator writes — `[Relation.OneToMany<T>]`
-produces `Ts`, `[Relation.ManyToOne<T>]` produces `T` — and projecting over it works: the generators
+The navigation the nested type maps to may be one the generator writes (`[Relation.OneToMany<T>]`
+produces `Ts`, `[Relation.ManyToOne<T>]` produces `T`), and projecting over it works: the generators
 know what each other will emit, so the nested `[MapFrom]` is the only thing you owe.
 
 A detail read usually wants three more shapes, and all three stay in the one query:
@@ -321,11 +321,11 @@ public partial class LeaveDecisionDetailDto
 }
 ```
 
-- A nested DTO whose `[MapFrom]` names the container's own entity is built from the row — no
+- A nested DTO whose `[MapFrom]` names the container's own entity is built from the row, with no
   navigation, no join.
 - A nested reference declared **non-nullable** gets no null check in the projection; in `FromEntity`
   an unloaded navigation behind it throws, naming the property, rather than handing back a `null`.
-- `[MapCondition]` gates the projection too when the predicate has an **expression body** — it becomes
+- `[MapCondition]` gates the projection too when the predicate has an **expression body**: it becomes
   `(predicate) ? mapping : default!`. With a block body the projection maps unconditionally and
   `PRAG0332` says so.
 - A localized name inside a nested DTO is read as its value. A nested member the projection cannot
@@ -344,15 +344,15 @@ public partial class MyAssignmentDto
 }
 ```
 
-The whole path is inlined into the SQL — including segments that are generated navigations, and
+The whole path is inlined into the SQL, including segments that are generated navigations, and
 however many levels deep. This replaces a hand-written `.Select(...)`, which is what most people
 write here because the recipe never showed the alternative.
 
-The nested type maps to a **navigation**, so it cannot cross a boundary (**PRAG0334**) — across a
+The nested type maps to a **navigation**, so it cannot cross a boundary (**PRAG0334**); across a
 boundary you hold an id, and the second read comes from that boundary's `[Published]` query (see
 `domain-model.md` §5). Give it a batch form: one call for the whole page, not one per row.
 
-## 7-bis. Read one — `Orders/Queries/GetOrderQuery.cs`
+## 7-bis. Read one: `Orders/Queries/GetOrderQuery.cs`
 
 A get-by-id is the same query with one filter, no paging, and `Single = true`. Do **not** hand-write
 an `Endpoint<T>` that injects a repository and returns `NotFoundError` for this: that is what the
@@ -380,7 +380,7 @@ executor takes the first row (`FirstOrDefault`, not `Single`), so a filter that 
 an error. The entity's `Id` is an alias of `PersistenceId`, and a filter on it targets the key without
 being told.
 
-## 8. Custom action — `Orders/Actions/AdjustTotalAction.cs`
+## 8. Custom action: `Orders/Actions/AdjustTotalAction.cs`
 
 ```csharp
 using Pragmatic.Actions.Abstractions;              // DomainAction<T>
@@ -410,22 +410,22 @@ public partial class AdjustTotalAction : DomainAction<Guid, NotFoundError>   // 
 ```
 
 **An entity named by a key the operation carries is `[LoadEntity<T>]`, not a repository call.** The
-invoker loads it into a generated field (`_order`), answers 404 when the key names nothing — after
-validation and authorization, past a `[WithoutFilter<T>]` the operation declares — and `Execute` never
+invoker loads it into a generated field (`_order`), answers 404 when the key names nothing (after
+validation and authorization, past a `[WithoutFilter<T>]` the operation declares), and `Execute` never
 sees it missing. What `Execute` must not hold, and where each part goes instead (validation, async
 validators, named specifications), is listed in `pragmatic-use-actions-endpoints` → *What does not go in
 `Execute`*.
 
 **Declare the errors on the base.** `DomainAction<TReturn, TError1…>` exists up to six errors (and
 `VoidDomainAction<TError1…>` likewise). The plain `DomainAction<Guid>` returns
-`Result<Guid, IError>`, which says nothing — and what the base does not declare, the generator cannot
+`Result<Guid, IError>`, which says nothing, and what the base does not declare, the generator cannot
 emit: no `ProducesProblem`, no 422 in OpenAPI, nothing in the client manifest. Your API then does not
 document the errors it returns.
 
 `IRepository<TEntity>` takes **one** type argument, the entity. `NotFoundError` is in
 `Pragmatic.Result.Http`; construct it with `NotFoundError.Create(type, id)` / `.For(type, id)`.
 
-## 9. Host — `MyApp.Host.csproj`
+## 9. Host: `MyApp.Host.csproj`
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -459,11 +459,11 @@ document the errors it returns.
 ```
 
 > With `Pragmatic.Endpoints.OpenApi` (above) the generated host serves `/openapi/v1.json` in
-> Development, and Scalar over it at `/scalar` when `Scalar.AspNetCore` is referenced — no startup step.
+> Development, and Scalar over it at `/scalar` when `Scalar.AspNetCore` is referenced, with no startup step.
 > Other environments publish the document after `app.UseApiDocumentation()`. Nothing else is required
 > on the host: caching, resilience, jobs and messaging are wired when a module declares them.
 
-## 10. Database marker — `AppDatabase.cs`
+## 10. Database marker: `AppDatabase.cs`
 
 ```csharp
 using Pragmatic.Composition.Attributes;
@@ -476,7 +476,7 @@ namespace MyApp.Host;
 public sealed class AppDatabase : PragmaticDatabase;
 ```
 
-## 11. Host topology — `HostModule.cs`  (⚠ required, easy to miss)
+## 11. Host topology: `HostModule.cs`  (⚠ required, easy to miss)
 
 The host must declare **which module goes into which database** via a `[Module]` class with
 `[Include<TModule, TDatabase>]`. Without this the host logs *"No databases configured"*, the DbContext
@@ -509,7 +509,7 @@ using Pragmatic.Migrations.Extensions;
 await PragmaticApp.RunAsync(args, app =>
 {
     // ⚠ A culture has to come from somewhere, or the host refuses to start: from the modules'
-    // translations/{culture}.json (the one they are written from), or from here — which also wins over them.
+    // translations/{culture}.json (the one they are written from), or from here, which also wins over them.
     app.UseI18N(i18n =>
     {
         i18n.DefaultCulture(CultureCode.EnglishUS);
@@ -546,9 +546,9 @@ dotnet run --project src/MyApp.Host
 
 Available endpoints:
 
-- `POST /api/orders` — create order → `201` with the created entity.
-- `GET  /api/orders?orderNumber=...&minTotal=...&page=1&pageSize=20` — paged search → `200`.
-- `POST /api/orders/adjust-total` — custom action → `201`, or `404` (`NOT_FOUND`) if the id is unknown.
+- `POST /api/orders`: create order → `201` with the created entity.
+- `GET  /api/orders?orderNumber=...&minTotal=...&page=1&pageSize=20`: paged search → `200`.
+- `POST /api/orders/adjust-total`: custom action → `201`, or `404` (`NOT_FOUND`) if the id is unknown.
 
 ## 14-ter. Running locally without an identity provider
 
@@ -562,14 +562,14 @@ else
 ```
 
 It registers the no-op scheme, the authentication pipeline step, and the step that puts
-`HeaderUserMiddleware` **ahead** of the authentication middleware — so the `X-User-*` headers become
+`HeaderUserMiddleware` **ahead** of the authentication middleware, so the `X-User-*` headers become
 the current identity. Outside Development the handler throws, which is deliberate: a production host
 must configure a real scheme.
 
 ⚠️ Do not assemble those three by hand. The order matters (the principal has to exist before
 authorization looks at it) and there is a trap on the way: an `IStartupStep`'s `ConfigureServices`
 and `ConfigurePipeline` run on **different instances**, so a flag set in the first is gone in the
-second — resolve `IHostEnvironment` from `app.ApplicationServices` instead.
+second; resolve `IHostEnvironment` from `app.ApplicationServices` instead.
 
 ## 14-bis. Calling a protected endpoint from a test
 
@@ -591,7 +591,7 @@ It sends `X-User-Id`, `X-Tenant-Id`, `X-User-Name`, and whichever of `X-User-Rol
 `X-User-Permissions: suppliers.supplier.read` gets a 403 while the role that grants it through
 `MapRole` gets a 200. Authenticating by role is also closer to the real configuration.
 
-`permissions:` still exists and is right for a host that has no role map — and for the deliberately
+`permissions:` still exists and is right for a host that has no role map, and for the deliberately
 underprivileged caller, where passing none writes an *empty* permission header on a single request so
 the client's default grant cannot leak through.
 
@@ -624,7 +624,7 @@ After `dotnet build`, read `obj/Debug/net10.0/generated/Pragmatic.SourceGenerato
 
 ⚠ **Do not redirect it with `CompilerGeneratedFilesOutputPath` in `Directory.Build.props`.** That file
 is imported before the SDK defines `$(BaseIntermediateOutputPath)`, so the obvious
-`$(BaseIntermediateOutputPath)generated` resolves to `generated/` at the project root — inside the
+`$(BaseIntermediateOutputPath)generated` resolves to `generated/` at the project root, inside the
 default `**/*.cs` glob. Every generated type is then compiled twice, and the build reports dozens of
 duplicate-member errors that name members, never the folder. Leave the default, or write a path under
 `obj/` literally: `$(MSBuildProjectDirectory)/obj/generated`.

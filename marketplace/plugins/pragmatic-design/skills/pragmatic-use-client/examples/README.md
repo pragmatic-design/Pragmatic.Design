@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-client
+# Examples: pragmatic-use-client
 
 Copied from `examples/showcase`, which compiles in the repository and is exercised by
 `examples/showcase/tests/Showcase.IntegrationTests (GeneratedClientTests)`. **Do not edit here**: change the source and run

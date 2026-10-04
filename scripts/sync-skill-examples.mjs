@@ -103,7 +103,7 @@ function readme(skill, entry) {
   const suites = [entry.testedBy].flat().map((suite) => `\`${suite}\``);
   const testedBy = suites.length > 1 ? `${suites.slice(0, -1).join(', ')} and ${suites.at(-1)}` : suites[0];
   const lines = [
-    `# Examples — ${skill}`,
+    `# Examples: ${skill}`,
     '',
     `Copied from \`${entry.source}\`, which compiles in the repository and is exercised by`,
     `${testedBy}. **Do not edit here**: change the source and run`,

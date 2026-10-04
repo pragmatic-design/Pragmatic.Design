@@ -83,7 +83,7 @@ After selecting packages, point to the skill that implements them:
 - Configuration: `pragmatic-use-configuration`.
 - Entity traits (comments/tags/attachments/notes): `pragmatic-use-traits`.
 - Audit trail and security incidents: `pragmatic-use-audit`.
-- Who the caller is — local accounts, JWT, OIDC: `pragmatic-use-identity`.
+- Who the caller is (local accounts, JWT, OIDC): `pragmatic-use-identity`.
 - Time, time zones, business days: `pragmatic-use-temporal`.
 - Typed clients: `pragmatic-use-client`.
 - Several services or instances: `pragmatic-use-distributed`.

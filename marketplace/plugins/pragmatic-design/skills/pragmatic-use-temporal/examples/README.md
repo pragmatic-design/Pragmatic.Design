@@ -1,4 +1,4 @@
-# Examples — pragmatic-use-temporal
+# Examples: pragmatic-use-temporal
 
 Copied from `examples`, which compiles in the repository and is exercised by
 `examples/time-off/tests/TimeOff.IntegrationTests`, `examples/showcase/tests/Showcase.IntegrationTests` and `examples/invoicing/tests/Invoicing.IntegrationTests`. **Do not edit here**: change the source and run

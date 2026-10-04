@@ -1,4 +1,4 @@
-# Temporal — API surface
+# Temporal: API surface
 
 Two different things carry the word, and confusing them is the first mistake:
 
@@ -11,7 +11,7 @@ Two different things carry the word, and confusing them is the first mistake:
 
 ## The golden rule
 
-Store instants in **UTC**. Every conversion happens at the edge — serialization, model binding — and
+Store instants in **UTC**. Every conversion happens at the edge (serialization, model binding) and
 never in a handler. The attributes below are how you say which conversion, and the generator writes the
 registration.
 
@@ -52,7 +52,7 @@ One registration per assembly, from every property it found:
 {Prefix}TemporalBehaviorExtensions.Add{Prefix}TemporalBehaviors(IServiceCollection)
 ```
 
-`{Prefix}` is the assembly's namespace prefix identifier — `ContosoSales` for `Contoso.Sales`. On a
+`{Prefix}` is the assembly's namespace prefix identifier: `ContosoSales` for `Contoso.Sales`. On a
 Pragmatic host the generated host registration calls it; a standalone app calls it once at startup, or
 registers by hand:
 
@@ -62,7 +62,7 @@ TemporalJsonBehaviorRegistry.Register<OrderResponse>(
 ```
 
 ⚠️ The attributes are read **per property, per assembly**. A DTO in a package you do not own carries no
-behaviour unless that package generated its own registration — the attribute is not inherited through a
+behaviour unless that package generated its own registration; the attribute is not inherited through a
 type reference.
 
 ## Reading the clock
@@ -88,13 +88,13 @@ public partial class ExpireOrdersAction : VoidDomainAction
 
 `[FromClock]` (`Pragmatic.Temporal.Clock`) takes `DateTimeOffset` (`UtcNow`) or `DateOnly` (`UtcToday`),
 `{ get; private set; }`, else **PRAG0734**. Inject `IClock` itself only for what the property cannot
-give — a second reading, a zone conversion.
+give: a second reading, a zone conversion.
 
 ## Querying by time
 
 Two shapes, and they are not interchangeable:
 
-**An instant comparison** is an ordinary filter — nothing temporal about it beyond the column type:
+**An instant comparison** is an ordinary filter, with nothing temporal about it beyond the column type:
 
 ```csharp
 [Query<Order, OrderDto>]
@@ -105,8 +105,8 @@ public partial class OverdueOrdersQuery
 }
 ```
 
-**A validity period** is `[TemporalRelation]` on the entity — `[TemporalRelation<TParent>]` or
-`[TemporalRelation<TParent, TChild>]` to scope it to a parent — and the generator answers with query
+**A validity period** is `[TemporalRelation]` on the entity (`[TemporalRelation<TParent>]` or
+`[TemporalRelation<TParent, TChild>]` to scope it to a parent), and the generator answers with query
 extensions on `IQueryable<T>`. A generated `TemporalFilter` hides every stretch not active **now**:
 
 ```csharp
@@ -120,7 +120,7 @@ public static class UserRoleTemporalExtensions
 }
 ```
 
-**To read the history, lift the filter before the query is built** — a scope on the entity, not an
+**To read the history, lift the filter before the query is built**: a scope on the entity, not an
 extension on the queryable (a method downstream of the query cannot widen what the filter already
 narrowed):
 
@@ -133,13 +133,13 @@ using (UserRole.IncludeHistory(filters))           // IQueryFilterToggle; keeps 
 
 It also writes `ValidateTemporalConstraints(existing)` → `TemporalOverlapError?`, and with
 `MaxActive = 1` a static `AutoClosePrevious(existing, closedAt[, parentId])`, which closes what is open
-so the next stretch can start. ⚠️ Hand it the history — open `IncludeHistory(filters)` around the call:
+so the next stretch can start. ⚠️ Hand it the history, opening `IncludeHistory(filters)` around the call:
 `repository.Query()` alone is already narrowed to what is active now, so a stretch starting tomorrow is
 invisible and nothing is closed. `MaxActive = 1` is also a partial unique index, so that mistake is
 refused by the database instead of corrupting the history.
 
 ## Where to read more
 
-`Pragmatic.Temporal/docs/` — `aspnetcore.md` for binding and the attributes end to end, `dst-handling.md`
+`Pragmatic.Temporal/docs/`: `aspnetcore.md` for binding and the attributes end to end, `dst-handling.md`
 for the cases where a wall time does not exist or exists twice, `business-days.md`, `testing.md` for
 freezing the clock.
