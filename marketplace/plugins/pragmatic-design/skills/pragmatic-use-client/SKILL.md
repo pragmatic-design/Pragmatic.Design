@@ -1,6 +1,6 @@
 ---
 name: pragmatic-use-client
-description: Use when a front end or another service calls a Pragmatic API, hand-written HttpClient code appears, or PRAG2300-2304 fire — the typed client Pragmatic.Client generates, or a TypeScript one. Same host is pragmatic-use-actions-endpoints.
+description: Use when a front end or another service calls a Pragmatic API, hand-written HttpClient code appears, or PRAG2300-2304 fire (the typed client Pragmatic.Client generates, or a TypeScript one). Same host is pragmatic-use-actions-endpoints.
 ---
 
 # Pragmatic Use Client
@@ -9,7 +9,7 @@ description: Use when a front end or another service calls a Pragmatic API, hand
 
 A Pragmatic API already describes itself: every endpoint, its verb, route, body, response and errors
 is in the **manifest** the server's generator writes. `Pragmatic.Client.SourceGenerator` reads that
-manifest at compile time and writes the client — no hand-written `HttpClient` code, no drift: change the
+manifest at compile time and writes the client, with no hand-written `HttpClient` code and no drift: change the
 server and the client stops compiling where it no longer matches.
 
 Inside one host, modules call each other through the generated boundary interfaces
@@ -25,17 +25,17 @@ Inside one host, modules call each other through the generated boundary interfac
 
 ## Where the manifest comes from
 
-**Mode B — reference the module (recommended).** Reference the server's boundary library at compile
+**Mode B: reference the module (recommended).** Reference the server's boundary library at compile
 time only; the generator reads the `[PragmaticMetadata]` it carries:
 
 ```xml
 <ProjectReference Include="..\Shop.Orders\Shop.Orders.csproj" Private="false" />
 ```
 
-`Private="false"` keeps the server's DLL out of the client's output — for a Blazor WebAssembly client it
+`Private="false"` keeps the server's DLL out of the client's output; for a Blazor WebAssembly client it
 never reaches the browser. The client is always in step with the server it builds against.
 
-**Mode A — a manifest file**, for a client that cannot reference the server's source:
+**Mode A: a manifest file**, for a client that cannot reference the server's source:
 
 ```xml
 <ItemGroup>
@@ -84,7 +84,7 @@ error codes and their ProblemDetails extensions (`ConflictError.ConflictingId`),
 ## Limits to know
 
 - ⚠️ **One manifest per client project.** Two manifests into one namespace collide on shared type names
-  (`PagedResult<T>`, DTOs) — **PRAG2304** when they describe a type differently. One project per API.
+  (`PagedResult<T>`, DTOs): **PRAG2304** when they describe a type differently. One project per API.
 - ⚠️ The boundary name is the **last dot-separated segment** of the manifest's `assembly`
   (`Shop.Orders` → `Orders`): an undotted assembly name becomes the whole name.
 - ⚠️ The generated code is not nullable-clean: a project with warnings as errors needs
@@ -115,7 +115,7 @@ server: `new OrdersHttpClient(factory.CreateClient())`. Assert on the `Result`: 
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Showcase example application — code
-that compiles and that `Showcase.IntegrationTests` exercises — and kept identical to it by the gate: the
+Complete files in [`examples/`](examples/README.md), copied from the Showcase example application (code
+that compiles and that `Showcase.IntegrationTests` exercises) and kept identical to it by the gate: the
 client project and the compile-only reference its manifest comes from, the registration, and the tests
 that drive the generated client against the running application.

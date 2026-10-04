@@ -1,11 +1,11 @@
 ---
 name: pragmatic-use-email
-description: Use when the app sends mail directly, configures SMTP, signs with DKIM or S/MIME, or asserts on sent mail — Pragmatic.Email. Bodies are pragmatic-use-documents; routing across channels is pragmatic-use-notifications.
+description: Use when the app sends mail directly, configures SMTP, signs with DKIM or S/MIME, or asserts on sent mail (Pragmatic.Email). Bodies are pragmatic-use-documents; routing across channels is pragmatic-use-notifications.
 ---
 
 # Pragmatic Use Email
 
-**Covers:** Send e-mail with Pragmatic.Email — message builder, pooled SMTP with STARTTLS and AUTH, DKIM and S/MIME signing, middleware, in-memory and file transports for tests.
+**Covers:** Send e-mail with Pragmatic.Email: message builder, pooled SMTP with STARTTLS and AUTH, DKIM and S/MIME signing, middleware, in-memory and file transports for tests.
 
 `Pragmatic.Email` sends mail over SMTP with no external dependencies: it builds the MIME itself, pools
 connections, and exposes a middleware pipeline for cross-cutting concerns.
@@ -32,7 +32,7 @@ var message = new EmailMessageBuilder()
     .ReplyTo("noreply@hotel.com")
     .Subject("Reservation confirmed")
     .TextBody("Your reservation is confirmed.")
-    .HtmlBody("<h1>Your reservation is confirmed.</h1>")   // a real body comes from a template — see below
+    .HtmlBody("<h1>Your reservation is confirmed.</h1>")   // a real body comes from a template; see below
     .Attach("invoice.pdf", pdfBytes, "application/pdf")
     .Build();
 
@@ -59,7 +59,7 @@ ordinary attachment.
 
 `HtmlBody("<h1>…</h1>")` is fine for a test and wrong for a mail a user reads: the wording belongs in
 a `.pdxemail` template, where it is translated, reviewed and changed without a build. Composing it is
-`pragmatic-use-documents` (`IPdxTemplates`, in `Pragmatic.Documents.Markup` — the mail's **content**);
+`pragmatic-use-documents` (`IPdxTemplates`, in `Pragmatic.Documents.Markup`, for the mail's **content**);
 this module only **sends** what it produces:
 
 ```csharp
@@ -70,14 +70,14 @@ var message = new EmailMessageBuilder()
     .To(recipient.Email, recipient.Name)
     .Subject(mail.Subject)                   // the template owns it too
     .HtmlBody(mail.Html)
-    .TextBody(mail.Text)                     // from the same model — never a second copy of the words
+    .TextBody(mail.Text)                     // from the same model, never a second copy of the words
     .Attach($"{number}.pdf", storedPdf, "application/pdf")   // the bytes you stored, not a second render
     .Build();
 ```
 
 ⚠️ Always send the text part: some clients show an HTML-only mail as an attachment.
 
-⚠️ The language is the **recipient's**, passed to `EmailAsync` — a mail is usually composed from a
+⚠️ The language is the **recipient's**, passed to `EmailAsync`: a mail is usually composed from a
 handler or a job, with no request culture anywhere, and the ambient one is whatever the thread last held.
 
 ## Host wiring
@@ -90,7 +90,7 @@ app.UseEmail(email =>
         smtp.Host = cfg["Smtp:Host"]!;
         smtp.Port = 587;
         smtp.UseSsl = true;         // encryption required; refuses to continue in cleartext
-        // smtp.UseImplicitTls = true;  // SMTPS — inferred automatically when Port is 465
+        // smtp.UseImplicitTls = true;  // SMTPS, inferred automatically when Port is 465
         smtp.Username = cfg["Smtp:User"];
         smtp.Password = cfg["Smtp:Password"];
         smtp.MaxConnections = 5;
@@ -149,7 +149,7 @@ internal sealed class SandboxMiddleware(IHostEnvironment env) : IEmailMiddleware
 app.UseEmail(e => e.AddMiddleware<SandboxMiddleware>());
 ```
 
-`EmailMessage` is an immutable record — transform it with `with { }` and pass it to `next`. Returning
+`EmailMessage` is an immutable record: transform it with `with { }` and pass it to `next`. Returning
 without calling `next` short-circuits the send.
 
 ## Testing
@@ -196,21 +196,21 @@ app.UseEmail(e => e.UseTransport<SesTransport>());
   established, the connection is refused rather than falling back to cleartext.
 - `TimeoutSeconds` (default 30) bounds connect **and** every read/write, so a server that accepts the
   connection and goes silent cannot stall the send.
-- Headers the message owns — From, To, Cc, Bcc, Subject, Date, Message-ID, Content-* — cannot be set
+- Headers the message owns (From, To, Cc, Bcc, Subject, Date, Message-ID, Content-*) cannot be set
   through `Headers`; use the corresponding property. Custom `X-…` headers are free.
 
 ## Limits to know
 
 - Bodies are sent `8bit`; quoted-printable is not implemented.
-- Never put SMTP passwords or the DKIM private key in `appsettings.json` — use user-secrets, environment
+- Never put SMTP passwords or the DKIM private key in `appsettings.json`; use user-secrets, environment
   variables or a secrets manager.
 
 > Licensing: `Pragmatic.Email` is PolyForm Small Business (free for small businesses).
 
 ## Examples
 
-Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application — code
-that compiles and that `Invoicing.IntegrationTests` exercises — and kept identical to it by the gate: the
+Complete files in [`examples/`](examples/README.md), copied from the Invoicing example application (code
+that compiles and that `Invoicing.IntegrationTests` exercises) and kept identical to it by the gate: the
 message built from a template with the stored PDF attached, the send and what is recorded only after it,
 the host's `UseEmail`, and the test harness reading the mailbox.
 
