@@ -51,6 +51,7 @@ Each prints what the gate counts, with the names.
 | [`breaking-change-check.mjs`](breaking-change-check.mjs) | Reads a diff and flags what could break a public contract. |
 | [`publication-scan.mjs`](publication-scan.mjs) | What a publication review can decide by looking: comments not in English, personal data, links into unpublished folders, work marked as not done. |
 | [`publish-local.mjs`](publish-local.mjs) | A clean Release build, pack and push of every package to a local feed. See [docs/howto/local-nuget-server.md](../docs/howto/local-nuget-server.md). |
+| [`attest-published.mjs`](attest-published.mjs) | Fetches a release's packages as nuget.org serves them and checks each is the build plus nuget.org's signature, for `attest-published.yml` to attest. |
 
 ## `lib/`
 

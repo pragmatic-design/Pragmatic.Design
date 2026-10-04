@@ -48,10 +48,13 @@ from there; a Dependabot alert for the same advisory is dismissed with the same 
 ## Releases
 
 - Packages are published by `release.yml` through nuget.org Trusted Publishing: no API key is stored.
-- Every `.nupkg` pushed carries a signed build-provenance attestation. The signed bundle is attached to
-  the GitHub Release as `provenance-<version>.intoto.jsonl`, next to `sbom-<version>.zip`. Verify a
-  package with `gh attestation verify <file>.nupkg --repo pragmatic-design/Pragmatic.Design`, or
-  offline with `--bundle provenance-<version>.intoto.jsonl`.
+- Every `.nupkg` is attested twice. `release.yml` attests the file it builds, before the push. nuget.org
+  then adds its repository signature inside the package, which changes the file's digest, so
+  `attest-published.yml` waits until nuget.org serves each package, checks that it is the built package
+  plus that signature and nothing else, and attests the file as served. A package downloaded from
+  nuget.org is verified with `gh attestation verify <file>.nupkg --repo pragmatic-design/Pragmatic.Design`,
+  or offline with `--bundle provenance-<version>.intoto.jsonl`, the bundle attached to the GitHub Release
+  next to `sbom-<version>.zip`.
 - The publishing job holds no token that can write to the repository. Every workflow starts from a
   read-only token, and a write is granted on the one job that needs it.
 

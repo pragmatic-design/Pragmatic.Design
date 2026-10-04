@@ -2413,6 +2413,7 @@ if (tier === 'verify') {
     && nodeTestCases('scripts/skill-portability.test.mjs', 'the skill-portability check refuses what another agent misreads')
     && nodeTestCases('scripts/commit-message-check.test.mjs', 'the commit-message check refuses what the public history must not carry')
     && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
+    && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()

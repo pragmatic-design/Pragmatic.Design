@@ -73,16 +73,16 @@ jobs:
           [ "$wrong" -eq 0 ]
           echo "$(ls ./artifacts/*.nupkg | wc -l) packages at $version"
 
-      # Before the push, over the exact files pushed. Anyone can check a package downloaded from nuget.org
-      # with `gh attestation verify <file>.nupkg --repo pragmatic-design/Pragmatic.Design`.
+      # Before the push, over the exact files pushed. nuget.org then adds its signature inside each
+      # package, which changes the file's digest: attest-published.yml attests the packages as served.
       - name: Attest build provenance
         id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: ./artifacts/*.nupkg
 
-      # The signed bundle of that attestation, for the release: with it a package can be checked without
-      # asking GitHub's attestation API, `gh attestation verify <file>.nupkg --bundle <the .intoto.jsonl>`.
+      # The signed bundle of that attestation, for the release, until attest-published.yml replaces it with
+      # the bundle for the packages as nuget.org serves them.
       - name: Keep the provenance bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
