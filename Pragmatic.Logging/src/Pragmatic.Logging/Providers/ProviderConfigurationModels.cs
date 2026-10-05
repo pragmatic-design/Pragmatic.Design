@@ -159,6 +159,13 @@ public sealed class ProviderMetrics
     /// <summary>Gets or sets the number of failed message attempts.</summary>
     public long FailedMessages { get; set; }
 
+    /// <summary>
+    ///     Gets or sets the number of entries that carried a declared value and no message template, so
+    ///     their message was written as the masked values in <c>key=value</c> form instead of the text.
+    /// </summary>
+    /// <remarks>Nothing leaks from such an entry, but it is shaped unlike every other one.</remarks>
+    public long RedactedWithoutTemplate { get; set; }
+
     /// <summary>Gets or sets the current queue size.</summary>
     public int CurrentQueueSize { get; set; }
 
