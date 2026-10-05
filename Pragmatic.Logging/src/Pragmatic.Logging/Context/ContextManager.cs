@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 namespace Pragmatic.Logging.Context;
 
@@ -131,10 +130,38 @@ public sealed class ContextManager : IContextManager, IDisposable
     }
 
     /// <inheritdoc />
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    /// <remarks>
+    ///     The properties of static providers come from the cache. Those of per-call providers
+    ///     (<see cref="IContextProvider.IsStatic" /> false) are read now, on the calling thread, and win over
+    ///     a static property with the same key.
+    /// </remarks>
     public IReadOnlyDictionary<string, object?> GetContextProperties()
     {
         ThrowIfDisposed();
+
+        var staticProperties = StaticContextProperties();
+        var perCallProviders = _perCallProviders;
+        if (perCallProviders.Length == 0)
+            return staticProperties;
+
+        var properties = new Dictionary<string, object?>(staticProperties);
+        foreach (var provider in perCallProviders)
+            AddPropertiesOf(provider, properties);
+
+        return properties;
+    }
+
+    /// <summary>The providers that are read on every call, in priority order.</summary>
+    internal IContextProvider[] PerCallProviders => _perCallProviders;
+
+    private volatile IContextProvider[] _perCallProviders = [];
+
+    /// <summary>
+    ///     The aggregated properties of the static providers, computed once and kept until the providers
+    ///     change (<see cref="CacheVersion" />).
+    /// </summary>
+    internal IReadOnlyDictionary<string, object?> StaticContextProperties()
+    {
         Interlocked.Increment(ref _contextRequests);
 
         // Single read of volatile flag to avoid TOCTOU between flag and cache count
@@ -160,24 +187,8 @@ public sealed class ContextManager : IContextManager, IDisposable
 
         foreach (var provider in providers)
         {
-            try
-            {
-                if (!provider.IsAvailable())
-                    continue;
-
-                var contextProperties = provider.GetContextProperties();
-                if (contextProperties.Count > 0)
-                {
-                    foreach (var kvp in contextProperties)
-                    {
-                        aggregatedProperties[kvp.Key] = kvp.Value;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                continue;
-            }
+            if (provider.IsStatic)
+                AddPropertiesOf(provider, aggregatedProperties);
         }
 
         _cache.Clear();
@@ -190,11 +201,32 @@ public sealed class ContextManager : IContextManager, IDisposable
         return _cache;
     }
 
+    private static void AddPropertiesOf(IContextProvider provider, Dictionary<string, object?> target)
+    {
+        try
+        {
+            if (!provider.IsAvailable())
+                return;
+
+            foreach (var kvp in provider.GetContextProperties())
+            {
+                target[kvp.Key] = kvp.Value;
+            }
+        }
+        catch (Exception)
+        {
+            // A failing provider contributes nothing; enrichment never fails the log call.
+        }
+    }
+
     /// <inheritdoc />
     public void InvalidateCache()
     {
         ThrowIfDisposed();
-        InvalidateCacheInternal();
+        lock (_providersLock)
+        {
+            InvalidateCacheInternal();
+        }
     }
 
     /// <summary>
@@ -205,8 +237,10 @@ public sealed class ContextManager : IContextManager, IDisposable
 
     private int _cacheVersion;
 
+    // Called with _providersLock held.
     private void InvalidateCacheInternal()
     {
+        _perCallProviders = _providers.Where(p => !p.IsStatic).ToArray();
         Interlocked.Increment(ref _cacheVersion);
         _cacheInvalid = true;
         _cache.Clear();
@@ -253,20 +287,8 @@ public sealed class ContextManager : IContextManager, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyDictionary<string, object?>> GetAggregateContextAsync(CancellationToken cancellationToken = default)
-    {
-        ThrowIfDisposed();
-        Interlocked.Increment(ref _contextRequests);
-
-        if (!_cacheInvalid)
-        {
-            Interlocked.Increment(ref _cacheHits);
-            return _cache;
-        }
-
-        Interlocked.Increment(ref _cacheMisses);
-        return await GetAggregateContextInternalAsync(cancellationToken).ConfigureAwait(false);
-    }
+    public Task<IReadOnlyDictionary<string, object?>> GetAggregateContextAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(GetContextProperties());
 
     /// <inheritdoc />
     public Task<object?> GetContextPropertyAsync(string providerName, string propertyName, CancellationToken cancellationToken = default)
@@ -328,48 +350,6 @@ public sealed class ContextManager : IContextManager, IDisposable
         {
             return Task.FromResult<IReadOnlyDictionary<string, object?>>(new Dictionary<string, object?>());
         }
-    }
-
-    private Task<IReadOnlyDictionary<string, object?>> GetAggregateContextInternalAsync(CancellationToken cancellationToken)
-    {
-        var aggregatedProperties = new Dictionary<string, object?>();
-
-        IContextProvider[] providers;
-        lock (_providersLock)
-        {
-            providers = _providers.ToArray();
-        }
-
-        foreach (var provider in providers)
-        {
-            try
-            {
-                if (!provider.IsAvailable())
-                    continue;
-
-                var contextProperties = provider.GetContextProperties();
-                if (contextProperties.Count > 0)
-                {
-                    foreach (var kvp in contextProperties)
-                    {
-                        aggregatedProperties[kvp.Key] = kvp.Value;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-        }
-
-        _cache.Clear();
-        foreach (var kvp in aggregatedProperties)
-        {
-            _cache.TryAdd(kvp.Key, kvp.Value);
-        }
-        _cacheInvalid = false;
-
-        return Task.FromResult<IReadOnlyDictionary<string, object?>>(_cache);
     }
 
     private void RegisterDefaultProviders()

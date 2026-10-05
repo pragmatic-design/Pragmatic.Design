@@ -9,7 +9,7 @@
       "name": "pragmatic-design",
       "source": "./plugins/pragmatic-design",
       "description": "Skills for building line-of-business apps with the Pragmatic.Design packages (.NET 10).",
-      "version": "0.11.26"
+      "version": "0.11.27"
     }
   ]
 }

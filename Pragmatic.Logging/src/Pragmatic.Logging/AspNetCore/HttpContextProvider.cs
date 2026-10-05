@@ -19,6 +19,10 @@ public sealed class HttpContextProvider(
     private readonly HttpContextEnrichmentOptions _options = options ?? new HttpContextEnrichmentOptions();
 
     /// <inheritdoc />
+    /// <remarks>Not static: the properties belong to the request being served when the entry is written.</remarks>
+    public override bool IsStatic => false;
+
+    /// <inheritdoc />
     public override bool IsAvailable()
     {
         return _httpContextAccessor.HttpContext != null;

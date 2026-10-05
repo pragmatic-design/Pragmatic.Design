@@ -33,6 +33,10 @@ public sealed class CorrelationIdProvider(IHttpContextAccessor httpContextAccess
     public string HeaderName { get; } = string.IsNullOrWhiteSpace(headerName) ? CorrelationIdHeaderName : headerName;
 
     /// <inheritdoc />
+    /// <remarks>Not static: the correlation id belongs to the request being served when the entry is written.</remarks>
+    public override bool IsStatic => false;
+
+    /// <inheritdoc />
     public override bool IsAvailable()
     {
         return _httpContextAccessor.HttpContext != null;

@@ -348,12 +348,14 @@ Context enrichment automatically attaches ambient information to every log entry
 
 Extend `ContextProviderBase` for domain-specific context. The provider lives as long as the context
 manager (a singleton), so what belongs to the request, the tenant, it reads on each call, not in its
-constructor:
+constructor, and it declares itself not static so that the manager asks it on each call:
 
 ```csharp
 public sealed class TenantContextProvider(IHttpContextAccessor httpContextAccessor)
     : ContextProviderBase("Tenant", priority: 80)
 {
+    public override bool IsStatic => false;
+
     public override bool IsAvailable() => CurrentTenant() is { IsResolved: true };
 
     public override IReadOnlyDictionary<string, object?> GetContextProperties()

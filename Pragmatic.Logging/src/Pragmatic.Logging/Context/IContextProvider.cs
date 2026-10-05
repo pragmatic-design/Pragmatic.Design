@@ -16,6 +16,13 @@ public interface IContextProvider
     int Priority { get; }
 
     /// <summary>
+    ///     Whether the properties stay the same for the life of the process. The context manager computes
+    ///     a static provider's properties once and keeps them until the providers change. A provider that
+    ///     is not static (the calling thread, the current request) is asked again on every call.
+    /// </summary>
+    bool IsStatic => true;
+
+    /// <summary>
     /// Provides context properties that should be added to log messages.
     /// </summary>
     /// <returns>Dictionary of context properties</returns>
@@ -38,6 +45,9 @@ public abstract class ContextProviderBase(string name, int priority = 100) : ICo
 
     /// <inheritdoc />
     public int Priority { get; } = priority;
+
+    /// <inheritdoc />
+    public virtual bool IsStatic => true;
 
     /// <inheritdoc />
     public abstract IReadOnlyDictionary<string, object?> GetContextProperties();
