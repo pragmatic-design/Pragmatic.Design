@@ -269,8 +269,8 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
         var startTimestamp = Stopwatch.GetTimestamp();
         try
         {
-            // Enrich with context if enabled
-            if (_configuration.IncludeContextEnrichment)
+            // Enrich with context if enabled. Mode None asks for no context property: nothing to walk.
+            if (_configuration.IncludeContextEnrichment && _configuration.ContextFilter.Mode != ContextFilterMode.None)
             {
                 EnrichWithContext(logEntry);
             }
@@ -590,7 +590,9 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             case ContextFilterMode.Exclude:
                 return !filter.PropertyNames.Contains(propertyName) && !MatchesAnyPattern(filter, propertyName);
 
-            // ⚠️ None included everything before, and still does: #92.
+            case ContextFilterMode.None:
+                return false;
+
             default:
                 return true;
         }
