@@ -197,7 +197,9 @@ Provides static machine-level information that is computed once (via `Lazy<T>`) 
 
 Provides static process-level information, also computed once via `Lazy<T>`. Identifies the running application and its version.
 
-**Properties provided:** `ProcessId`, `ProcessName`, `ApplicationName`, `ApplicationVersion`, `StartTime`, `WorkingDirectory`, `CommandLine`.
+**Properties provided:** `ProcessId`, `ProcessName`, `ApplicationName`, `ApplicationVersion`, `StartTime`, `WorkingDirectory`.
+
+Not the command line: it is where secrets travel (a connection string or a token passed as an argument), and declared redaction cannot reach a string read from the environment. If you need it, add it through a context provider of your own, deliberately.
 
 ### ThreadContextProvider
 
@@ -429,7 +431,7 @@ logging.AddFile("logs/app.log", config =>
     config.ContextFilter = new ContextFilterConfiguration
     {
         Mode = ContextFilterMode.Exclude,
-        PropertyNames = new HashSet<string> { "CommandLine", "WorkingDirectory" }
+        PropertyNames = new HashSet<string> { "UserName", "WorkingDirectory" }
     };
 });
 ```
