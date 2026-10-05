@@ -19,7 +19,6 @@ public sealed class ContextManager : IContextManager, IDisposable
     private readonly ConcurrentDictionary<string, object?> _cache = new();
     private readonly ConcurrentDictionary<string, Task<object?>> _asyncCache = new();
     private readonly object _providersLock = new();
-    private volatile bool _cacheInvalid = true;
     private volatile bool _disposed;
 
     // Performance monitoring
@@ -132,73 +131,92 @@ public sealed class ContextManager : IContextManager, IDisposable
     /// <inheritdoc />
     /// <remarks>
     ///     The properties of static providers come from the cache. Those of per-call providers
-    ///     (<see cref="IContextProvider.IsStatic" /> false) are read now, on the calling thread, and win over
-    ///     a static property with the same key.
+    ///     (<see cref="IContextProvider.IsStatic" /> false) are read now, on the calling thread. When two
+    ///     providers supply the same key, the lower <see cref="IContextProvider.Priority" /> value wins,
+    ///     static or not.
     /// </remarks>
     public IReadOnlyDictionary<string, object?> GetContextProperties()
     {
         ThrowIfDisposed();
 
-        var staticProperties = StaticContextProperties();
-        var perCallProviders = _perCallProviders;
-        if (perCallProviders.Length == 0)
-            return staticProperties;
+        var layers = Layers();
+        if (!Array.Exists(layers, layer => layer.StaticProperties is null))
+            return _cache;
 
-        var properties = new Dictionary<string, object?>(staticProperties);
-        foreach (var provider in perCallProviders)
-            AddPropertiesOf(provider, properties);
+        var properties = new Dictionary<string, object?>();
+        foreach (var layer in layers)
+        {
+            if (layer.StaticProperties is { } staticProperties)
+            {
+                foreach (var kvp in staticProperties)
+                    properties[kvp.Key] = kvp.Value;
+            }
+            else
+            {
+                AddPropertiesOf(layer.Provider, properties);
+            }
+        }
 
         return properties;
     }
 
-    /// <summary>The providers that are read on every call, in priority order.</summary>
-    internal IContextProvider[] PerCallProviders => _perCallProviders;
-
-    private volatile IContextProvider[] _perCallProviders = [];
+    private volatile ContextLayer[]? _layers;
 
     /// <summary>
-    ///     The aggregated properties of the static providers, computed once and kept until the providers
-    ///     change (<see cref="CacheVersion" />).
+    ///     The providers in merge order, highest priority value first, with the static ones' properties
+    ///     read once and kept until the providers change (<see cref="CacheVersion" />).
     /// </summary>
-    internal IReadOnlyDictionary<string, object?> StaticContextProperties()
+    internal ContextLayer[] Layers()
     {
         Interlocked.Increment(ref _contextRequests);
 
-        // Single read of volatile flag to avoid TOCTOU between flag and cache count
-        if (!_cacheInvalid)
+        // Single read of the volatile field, so the flag and the layers cannot disagree.
+        if (_layers is { } layers)
         {
             Interlocked.Increment(ref _cacheHits);
-            return _cache;
+            return layers;
         }
 
         Interlocked.Increment(ref _cacheMisses);
-        return GetContextPropertiesInternal();
+        return BuildLayers();
     }
 
-    private IReadOnlyDictionary<string, object?> GetContextPropertiesInternal()
+    private ContextLayer[] BuildLayers()
     {
-        var aggregatedProperties = new Dictionary<string, object?>();
-
         IContextProvider[] providers;
         lock (_providersLock)
         {
             providers = _providers.ToArray();
         }
 
-        foreach (var provider in providers)
+        // _providers is kept in ascending priority: walk it backwards so the lowest value comes last.
+        var layers = new ContextLayer[providers.Length];
+        var staticAggregate = new Dictionary<string, object?>();
+        for (var i = 0; i < providers.Length; i++)
         {
-            if (provider.IsStatic)
-                AddPropertiesOf(provider, aggregatedProperties);
+            var provider = providers[providers.Length - 1 - i];
+            if (!provider.IsStatic)
+            {
+                layers[i] = new ContextLayer(provider, null);
+                continue;
+            }
+
+            var properties = new Dictionary<string, object?>();
+            AddPropertiesOf(provider, properties);
+            layers[i] = new ContextLayer(provider, properties.ToArray());
+
+            foreach (var kvp in properties)
+                staticAggregate[kvp.Key] = kvp.Value;
         }
 
         _cache.Clear();
-        foreach (var kvp in aggregatedProperties)
+        foreach (var kvp in staticAggregate)
         {
             _cache.TryAdd(kvp.Key, kvp.Value);
         }
-        _cacheInvalid = false;
+        _layers = layers;
 
-        return _cache;
+        return layers;
     }
 
     private static void AddPropertiesOf(IContextProvider provider, Dictionary<string, object?> target)
@@ -240,9 +258,8 @@ public sealed class ContextManager : IContextManager, IDisposable
     // Called with _providersLock held.
     private void InvalidateCacheInternal()
     {
-        _perCallProviders = _providers.Where(p => !p.IsStatic).ToArray();
+        _layers = null;
         Interlocked.Increment(ref _cacheVersion);
-        _cacheInvalid = true;
         _cache.Clear();
         _asyncCache.Clear();
     }

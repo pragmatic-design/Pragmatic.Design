@@ -486,17 +486,21 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             }
         }
 
-        // Add context provider properties: the static aggregate only changes when providers do, so the
-        // filtered copy is kept until the manager's version or this provider's configuration moves.
-        foreach (var kvp in FilteredContextProperties())
+        // Add context provider properties, layer over layer so the lowest priority value is written last
+        // and wins. Static layers only change when providers do, so their filtered copy is kept until the
+        // manager's version or this provider's configuration moves; per-call layers (the logging thread,
+        // the request) describe this call and are read every time.
+        foreach (var layer in FilteredContextLayers())
         {
-            logEntry.Properties[kvp.Key] = kvp.Value;
-        }
-
-        // Per-call providers (the logging thread) describe this call, so they are read every time.
-        foreach (var provider in ContextManager.Instance.PerCallProviders)
-        {
-            WritePerCallProperties(provider, logEntry.Properties);
+            if (layer.StaticProperties is { } properties)
+            {
+                foreach (var kvp in properties)
+                    logEntry.Properties[kvp.Key] = kvp.Value;
+            }
+            else
+            {
+                WritePerCallProperties(layer.Provider, logEntry.Properties);
+            }
         }
     }
 
@@ -531,29 +535,41 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
 
     private FilteredContext? _filteredContext;
 
-    private KeyValuePair<string, object?>[] FilteredContextProperties()
+    private ContextLayer[] FilteredContextLayers()
     {
         var manager = ContextManager.Instance;
         var version = manager.CacheVersion;
         var configuration = _configuration;
 
         if (_filteredContext is { } cached && cached.Version == version && ReferenceEquals(cached.Configuration, configuration))
-            return cached.Properties;
+            return cached.Layers;
 
-        var filtered = new List<KeyValuePair<string, object?>>();
-        foreach (var kvp in manager.StaticContextProperties())
+        var source = manager.Layers();
+        var layers = new ContextLayer[source.Length];
+        for (var i = 0; i < source.Length; i++)
         {
-            if (ShouldIncludeContextProperty(kvp.Key))
-                filtered.Add(kvp);
+            if (source[i].StaticProperties is not { } properties)
+            {
+                layers[i] = source[i];
+                continue;
+            }
+
+            var filtered = new List<KeyValuePair<string, object?>>(properties.Length);
+            foreach (var kvp in properties)
+            {
+                if (ShouldIncludeContextProperty(kvp.Key))
+                    filtered.Add(kvp);
+            }
+
+            layers[i] = source[i] with { StaticProperties = filtered.ToArray() };
         }
 
-        var properties = filtered.ToArray();
-        _filteredContext = new FilteredContext(version, configuration, properties);
-        return properties;
+        _filteredContext = new FilteredContext(version, configuration, layers);
+        return layers;
     }
 
-    /// <summary>The context properties that passed this provider's filter, for one manager version.</summary>
-    private sealed record FilteredContext(int Version, IPragmaticProviderConfiguration Configuration, KeyValuePair<string, object?>[] Properties);
+    /// <summary>The context layers with their static properties filtered by this provider, for one manager version.</summary>
+    private sealed record FilteredContext(int Version, IPragmaticProviderConfiguration Configuration, ContextLayer[] Layers);
 
     /// <summary>
     ///     Whether a context property passes the configured filter, decided once per property name.
