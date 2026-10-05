@@ -362,27 +362,37 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
 
     private void WriteScopeInformation(Utf8JsonWriter writer, IReadOnlyList<KeyValuePair<string, object?>> scopes)
     {
-        writer.WriteStartArray("@scopes");
+        // An object of the scope properties; a key that more than one scope carries gets an array of its
+        // values, so that no scope's value is lost and no property name repeats.
+        writer.WriteStartObject("@scopes");
 
-        var scopeGroups = scopes.GroupBy(s => s.Key);
-        foreach (var group in scopeGroups)
+        var written = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < scopes.Count; i++)
         {
-            if (group.Count() == 1)
+            var key = scopes[i].Key;
+            if (!written.Add(key))
+                continue;
+
+            var repeated = false;
+            for (var j = i + 1; j < scopes.Count && !repeated; j++)
+                repeated = string.Equals(scopes[j].Key, key, StringComparison.Ordinal);
+
+            if (!repeated)
             {
-                WritePropertyValue(writer, group.Key, group.First().Value);
+                WritePropertyValue(writer, key, scopes[i].Value);
+                continue;
             }
-            else
+
+            writer.WriteStartArray(key);
+            for (var j = i; j < scopes.Count; j++)
             {
-                writer.WriteStartArray();
-                foreach (var scope in group)
-                {
-                    WriteJsonValue(writer, scope.Value);
-                }
-                writer.WriteEndArray();
+                if (string.Equals(scopes[j].Key, key, StringComparison.Ordinal))
+                    WriteJsonValue(writer, scopes[j].Value);
             }
+            writer.WriteEndArray();
         }
 
-        writer.WriteEndArray();
+        writer.WriteEndObject();
     }
 
     private void WritePropertyValue(Utf8JsonWriter writer, string propertyName, object? value)
