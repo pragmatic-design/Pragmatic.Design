@@ -517,7 +517,7 @@ public sealed class PragmaticFileProvider : PragmaticLoggerProviderBase, IAsyncD
             bufferSize: 8192, // 8KB buffer
             useAsync: true);
 
-        _currentWriter = new StreamWriter(_currentFile, Encoding.UTF8, bufferSize: 8192);
+        _currentWriter = new StreamWriter(_currentFile, LogTextEncoding.Utf8, bufferSize: 8192);
 
         if (_currentFileDate == DateTime.MinValue)
         {

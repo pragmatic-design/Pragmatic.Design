@@ -93,8 +93,7 @@ public class DeclaredRedactionReachesTheMessageTests
         log(provider.CreateLogger("Test"));
         provider.Dispose();
 
-        // The provider's StreamWriter writes a UTF-8 byte order mark before the first line.
-        return Encoding.UTF8.GetString(output.ToArray()).Trim().TrimStart('﻿');
+        return Encoding.UTF8.GetString(output.ToArray()).Trim();
     }
 
     private static string Message(string line)

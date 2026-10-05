@@ -543,7 +543,7 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
         }
 
         _fileStream = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096, true);
-        _streamWriter = new StreamWriter(_fileStream, Encoding.UTF8);
+        _streamWriter = new StreamWriter(_fileStream, LogTextEncoding.Utf8);
 
         if (_currentFileDate == DateTime.MinValue)
         {
