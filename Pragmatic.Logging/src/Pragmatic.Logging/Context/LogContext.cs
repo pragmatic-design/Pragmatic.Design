@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 namespace Pragmatic.Logging.Context;
@@ -7,9 +6,23 @@ namespace Pragmatic.Logging.Context;
 /// Default implementation of ILogContext and IMutableLogContext that provides
 /// thread-safe context management with async flow support.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Properties are copy-on-write: a write publishes a new dictionary, and a read sees an immutable snapshot
+/// that is safe to enumerate while another flow writes. A context is typically created per request and
+/// written a handful of times, then read on every log call. It used to be a <c>ConcurrentDictionary</c>,
+/// whose construction alone allocates a lock object per processor, paid on every context created.
+/// </para>
+/// <para>
+/// <see cref="Properties" /> returns that snapshot: a reference held across a later write does not see it.
+/// </para>
+/// </remarks>
 public sealed class LogContext : IMutableLogContext, IDisposable
 {
-    private readonly ConcurrentDictionary<string, object?> _properties = new();
+    private static readonly IReadOnlyDictionary<string, object?> NoProperties = new Dictionary<string, object?>();
+
+    private readonly Lock _writeLock = new();
+    private volatile Dictionary<string, object?>? _properties;
     private readonly LogContext? _parent;
     private bool _disposed;
 
@@ -36,14 +49,18 @@ public sealed class LogContext : IMutableLogContext, IDisposable
         {
             ThrowIfDisposed();
 
+            var own = _properties;
             if (_parent == null)
-                return _properties;
+                return own ?? NoProperties;
 
             // Merge parent and current properties, with current taking precedence
             var merged = new Dictionary<string, object?>(_parent.Properties);
-            foreach (var kvp in _properties)
+            if (own != null)
             {
-                merged[kvp.Key] = kvp.Value;
+                foreach (var kvp in own)
+                {
+                    merged[kvp.Key] = kvp.Value;
+                }
             }
             return merged;
         }
@@ -55,7 +72,7 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        if (_properties.TryGetValue(name, out var value))
+        if (_properties is { } own && own.TryGetValue(name, out var value))
             return value;
 
         return _parent?.GetProperty(name);
@@ -75,28 +92,46 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        return _properties.ContainsKey(name) || (_parent?.HasProperty(name) ?? false);
+        return (_properties?.ContainsKey(name) ?? false) || (_parent?.HasProperty(name) ?? false);
     }
 
     /// <inheritdoc />
     public void SetProperty(string name, object? value)
     {
         ThrowIfDisposed();
-        _properties[name] = value;
+
+        lock (_writeLock)
+        {
+            var copy = _properties is { } own
+                ? new Dictionary<string, object?>(own)
+                : new Dictionary<string, object?>(capacity: 4);
+            copy[name] = value;
+            _properties = copy;
+        }
     }
 
     /// <inheritdoc />
     public bool RemoveProperty(string name)
     {
         ThrowIfDisposed();
-        return _properties.TryRemove(name, out _);
+
+        lock (_writeLock)
+        {
+            if (_properties is not { } own || !own.ContainsKey(name))
+                return false;
+
+            var copy = new Dictionary<string, object?>(own);
+            copy.Remove(name);
+            _properties = copy;
+            return true;
+        }
     }
 
     /// <inheritdoc />
     public void Clear()
     {
         ThrowIfDisposed();
-        _properties.Clear();
+        _properties = null;
     }
 
     /// <summary>

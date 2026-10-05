@@ -98,6 +98,10 @@ namespace Pragmatic.Logging.Providers;
 public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
 {
     private readonly JsonWriterOptions _jsonOptions;
+
+    // One instance for the provider's lifetime, built with the writer options: STJ keeps its type metadata
+    // on the options instance, and a new one per complex value threw that cache away on every call.
+    private readonly JsonSerializerOptions _serializerOptions;
     private readonly Stream _outputStream;
     private readonly TextWriter _textWriter;
     private readonly object _writeLock = new();
@@ -123,6 +127,7 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
         ValidateJsonConfiguration();
 
         _jsonOptions = CreateJsonWriterOptions();
+        _serializerOptions = CreateJsonSerializerOptions();
 
         if (outputStream != null)
         {
@@ -152,6 +157,7 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
         _jsonOptions = CreateJsonWriterOptions();
+        _serializerOptions = CreateJsonSerializerOptions();
         _filePath = filePath;
         _ownsStream = true;
 
@@ -428,17 +434,19 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
             case decimal decimalValue:
                 writer.WriteNumberValue(decimalValue);
                 break;
+            // The same formats as before ("O", "c", "D"), written from a stack buffer rather than through an
+            // intermediate string.
             case DateTime dateTimeValue:
-                writer.WriteStringValue(dateTimeValue.ToString("O", CultureInfo.InvariantCulture));
+                WriteFormatted(writer, dateTimeValue, "O");
                 break;
             case DateTimeOffset dateTimeOffsetValue:
-                writer.WriteStringValue(dateTimeOffsetValue.ToString("O", CultureInfo.InvariantCulture));
+                WriteFormatted(writer, dateTimeOffsetValue, "O");
                 break;
             case TimeSpan timeSpanValue:
-                writer.WriteStringValue(timeSpanValue.ToString("c", CultureInfo.InvariantCulture));
+                WriteFormatted(writer, timeSpanValue, "c");
                 break;
             case Guid guidValue:
-                writer.WriteStringValue(guidValue.ToString("D", CultureInfo.InvariantCulture));
+                WriteFormatted(writer, guidValue, "D");
                 break;
             case string stringValue:
                 writer.WriteStringValue(stringValue);
@@ -447,7 +455,7 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
                 // For complex objects, serialize to string representation
                 // Declared redaction already happened on the entry — see PragmaticLoggerProviderBase.
                 var stringRep = GetCustomProperty<bool>("SerializeComplexObjects", true)
-                    ? JsonSerializer.Serialize(value, CreateJsonSerializerOptions())
+                    ? JsonSerializer.Serialize(value, _serializerOptions)
                     : value?.ToString() ?? "null";
                 writer.WriteStringValue(stringRep);
                 break;
@@ -483,6 +491,15 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
             SkipValidation = skipValidation,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
+    }
+
+    private static void WriteFormatted<T>(Utf8JsonWriter writer, T value, string format) where T : ISpanFormattable
+    {
+        Span<char> buffer = stackalloc char[64];
+        if (value.TryFormat(buffer, out var written, format, CultureInfo.InvariantCulture))
+            writer.WriteStringValue(buffer[..written]);
+        else
+            writer.WriteStringValue(value.ToString(format, CultureInfo.InvariantCulture));
     }
 
     private JsonSerializerOptions CreateJsonSerializerOptions()

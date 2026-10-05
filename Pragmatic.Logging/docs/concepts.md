@@ -91,18 +91,18 @@ await PragmaticApp.RunAsync(args, app =>
 ### Performance
 
 Benchmarked on .NET 10 against Serilog, NLog and ZLogger, each writing into a sink that renders the
-message and reads every property (per call, 2026-10-04):
+message and reads every property (per call, 2026-10-05):
 
 | Scenario | Pragmatic | ZLogger | NLog | Serilog |
 |----------|-----------|---------|------|---------|
-| `[LoggerMessage]` call site | 203.9 ns / 544 B | 155.2 ns / 192 B | 384.0 ns / 1,416 B | 321.6 ns / 800 B |
-| Simple logging | 214.3 ns / 592 B | 167.6 ns / 216 B | 228.4 ns / 760 B | 263.9 ns / 528 B |
-| Structured (with scope) | 501.7 ns / 1,176 B | 404.8 ns / 520 B | 675.4 ns / 1,328 B | 839.6 ns / 1,912 B |
-| Exception logging | 235.5 ns / 608 B | 172.1 ns / 232 B | 244.8 ns / 776 B | 279.8 ns / 528 B |
-| Production (context + scope) | 1,376.2 ns / 4,112 B | 536.0 ns / 832 B | 1,023.2 ns / 2,872 B | 1,054.5 ns / 3,000 B |
+| `[LoggerMessage]` call site | 201.6 ns / 544 B | 149.1 ns / 192 B | 382.8 ns / 1,416 B | 302.2 ns / 800 B |
+| Simple logging | 214.5 ns / 592 B | 164.7 ns / 216 B | 220.5 ns / 760 B | 259.5 ns / 528 B |
+| Structured (with scope) | 517.5 ns / 1,176 B | 432.6 ns / 520 B | 671.5 ns / 1,328 B | 813.2 ns / 1,912 B |
+| Exception logging | 233.2 ns / 608 B | 175.7 ns / 232 B | 240.2 ns / 776 B | 268.5 ns / 528 B |
+| Production (context + scope) | 747.5 ns / 2,368 B | 519.8 ns / 832 B | 968.0 ns / 2,872 B | 1,007.9 ns / 3,000 B |
 
-Pragmatic is ahead of Serilog and NLog on the plain calls and behind both once the production preset's
-context enrichment is on; ZLogger is ahead of all three throughout.
+Pragmatic is ahead of Serilog and NLog in every scenario, the production preset with context enrichment
+included; ZLogger is ahead of all three throughout.
 
 The **deferred pipeline** (the typed state handed to the sink with no `LogEntry` and no eager
 rendering) applies only to a provider that declares `SupportsDeferredWrite`, and the only one that does

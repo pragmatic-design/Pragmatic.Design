@@ -393,4 +393,5 @@ The presets on `PragmaticNullConfiguration` (`ForBenchmarking`, `ForStructuredBe
 `ForContextBenchmarking`, `ForBatchingBenchmarking`, `ForProductionBenchmarking`) are still the
 configurations to compare: pass one to a provider that writes, and the difference between two runs is the
 cost of the feature the preset turns on. Declared redaction is measured that way, on its own
-(`dotnet run -c Release -- redaction`): in the last run it took a call from 749 ns to 1,454 ns.
+(`dotnet run -c Release -- redaction`): in the last run it took a call from 297.5 ns to 962.9 ns, within
+the 700 ns budget [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) states for it.

@@ -8,7 +8,7 @@ Unknown processor
 
 
 ```
-| Method                | Mean       | Error    | StdDev   | Ratio        | RatioSD | Gen0   | Allocated | Alloc Ratio |
-|---------------------- |-----------:|---------:|---------:|-------------:|--------:|-------:|----------:|------------:|
-| WithoutRedaction      |   749.0 ns | 13.87 ns | 21.18 ns |     baseline |         | 0.1574 |   2.58 KB |             |
-| WithDeclaredRedaction | 1,453.5 ns | 28.66 ns | 54.54 ns | 1.94x slower |   0.09x | 0.1984 |   3.34 KB |  1.30x more |
+| Method                | Mean     | Error    | StdDev   | Median   | Ratio        | RatioSD | Gen0   | Gen1   | Allocated | Alloc Ratio |
+|---------------------- |---------:|---------:|---------:|---------:|-------------:|--------:|-------:|-------:|----------:|------------:|
+| WithoutRedaction      | 297.5 ns |  5.73 ns |  6.37 ns | 297.2 ns |     baseline |         | 0.1221 | 0.0005 |      2 KB |             |
+| WithDeclaredRedaction | 962.9 ns | 19.27 ns | 31.11 ns | 947.0 ns | 3.24x slower |   0.12x | 0.1373 |      - |   2.26 KB |  1.13x more |

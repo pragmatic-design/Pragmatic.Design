@@ -39,6 +39,9 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
     private long _failedMessages;
     private long _redactedWithoutTemplate;
 
+    // Per-name context filter decisions; replaced with the configuration. See ShouldIncludeContextProperty.
+    private volatile ConcurrentDictionary<string, bool> _contextDecisions = new(StringComparer.Ordinal);
+
     // Fixed-size ring buffer for processing-time samples: zero allocation and O(1) per log call
     // (a ConcurrentQueue here allocated segments and its Count walk made every log call O(n)).
     private readonly double[] _processingTimes = new double[ProcessingTimeWindow];
@@ -90,6 +93,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
         {
             var oldConfig = _configuration;
             _configuration = configuration;
+            _contextDecisions = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
 
             try
             {
@@ -99,6 +103,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             {
                 // Rollback on error
                 _configuration = oldConfig;
+                _contextDecisions = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
                 RecordError($"Configuration update failed: {ex.Message}");
                 throw;
             }
@@ -481,37 +486,90 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             }
         }
 
-        // Add context provider properties
-        var contextProperties = ContextManager.Instance.GetContextProperties();
-        foreach (var kvp in contextProperties)
+        // Add context provider properties: the aggregate only changes when providers do, so the filtered
+        // copy is kept until the manager's version or this provider's configuration moves.
+        foreach (var kvp in FilteredContextProperties())
         {
-            if (ShouldIncludeContextProperty(kvp.Key))
-            {
-                logEntry.Properties[kvp.Key] = kvp.Value;
-            }
+            logEntry.Properties[kvp.Key] = kvp.Value;
         }
     }
 
+    private FilteredContext? _filteredContext;
+
+    private KeyValuePair<string, object?>[] FilteredContextProperties()
+    {
+        var manager = ContextManager.Instance;
+        var version = manager.CacheVersion;
+        var configuration = _configuration;
+
+        if (_filteredContext is { } cached && cached.Version == version && ReferenceEquals(cached.Configuration, configuration))
+            return cached.Properties;
+
+        var filtered = new List<KeyValuePair<string, object?>>();
+        foreach (var kvp in manager.GetContextProperties())
+        {
+            if (ShouldIncludeContextProperty(kvp.Key))
+                filtered.Add(kvp);
+        }
+
+        var properties = filtered.ToArray();
+        _filteredContext = new FilteredContext(version, configuration, properties);
+        return properties;
+    }
+
+    /// <summary>The context properties that passed this provider's filter, for one manager version.</summary>
+    private sealed record FilteredContext(int Version, IPragmaticProviderConfiguration Configuration, KeyValuePair<string, object?>[] Properties);
+
+    /// <summary>
+    ///     Whether a context property passes the configured filter, decided once per property name.
+    /// </summary>
+    /// <remarks>
+    ///     The same few dozen context properties come through on every call, and the decision depends only
+    ///     on the name and the configuration. Computed per call it allocated a closure per property for the
+    ///     pattern check, even with no pattern configured. The cache is replaced whenever the configuration
+    ///     is (<see cref="UpdateConfiguration" />); a filter mutated in place on the live configuration is
+    ///     not seen, as the configuration is not meant to be changed that way.
+    /// </remarks>
     private bool ShouldIncludeContextProperty(string propertyName)
     {
         var filter = _configuration.ContextFilter;
+        if (filter.Mode == ContextFilterMode.All)
+            return true;
 
+        var decisions = _contextDecisions;
+        if (decisions.TryGetValue(propertyName, out var include))
+            return include;
+
+        include = DecideContextProperty(filter, propertyName);
+        decisions.TryAdd(propertyName, include);
+        return include;
+    }
+
+    private static bool DecideContextProperty(ContextFilterConfiguration filter, string propertyName)
+    {
         switch (filter.Mode)
         {
-            case ContextFilterMode.All:
-                return true;
-
             case ContextFilterMode.Include:
-                return filter.PropertyNames.Contains(propertyName) ||
-                       filter.PropertyPatterns.Any(pattern => IsPatternMatch(propertyName, pattern));
+                return filter.PropertyNames.Contains(propertyName) || MatchesAnyPattern(filter, propertyName);
 
             case ContextFilterMode.Exclude:
-                return !filter.PropertyNames.Contains(propertyName) &&
-                       !filter.PropertyPatterns.Any(pattern => IsPatternMatch(propertyName, pattern));
+                return !filter.PropertyNames.Contains(propertyName) && !MatchesAnyPattern(filter, propertyName);
 
+            // ⚠️ None included everything before, and still does: #92.
             default:
                 return true;
         }
+    }
+
+    private static bool MatchesAnyPattern(ContextFilterConfiguration filter, string propertyName)
+    {
+        foreach (var pattern in filter.PropertyPatterns)
+        {
+            if (IsPatternMatch(propertyName, pattern))
+                return true;
+        }
+
+        return false;
     }
 
     private static void FilterStructuredProperties(LogEntry logEntry)

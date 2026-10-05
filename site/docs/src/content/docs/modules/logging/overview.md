@@ -11,8 +11,8 @@ privacy-aware redaction, an audit trail, context enrichment, an expression filte
 providers.
 
 > **Performance:** with every library writing into a sink that renders and reads the event, Pragmatic
-> is ahead of Serilog and NLog on simple, `[LoggerMessage]`, structured and high-volume calls, behind
-> both with the production preset's context enrichment, and behind ZLogger everywhere. See
+> is ahead of Serilog and NLog in every benchmarked scenario, the production preset with context
+> enrichment included, and behind ZLogger everywhere. See
 > [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the run, the machine and the reports.
 
 ## The Problem
