@@ -62,7 +62,8 @@ Providers are sorted by `Priority` in ascending order. When two providers supply
 
 A provider that reads the current request and leaves `IsStatic` at its default is asked once. Every entry then
 carries the request that happened to come first, or none at all if the first entry was written outside a
-request. When a per-call provider and a static one supply the same key, the per-call value is the one written.
+request. Whether a provider is static or per call does not change [which one wins](#priority-ordering): when two
+supply the same key, the lower `Priority` value wins either way.
 
 ### ContextProviderBase
 
@@ -475,7 +476,7 @@ When a log entry is produced, `PragmaticLoggerProviderBase.WriteLog()` enriches 
 
 1. **LogContextScope** -- Ambient properties pushed by middleware via `LogContextScope.PushContext()`. These are scoped to the current async flow and automatically pop when the scope is disposed.
 
-2. **ContextManager.Instance** -- The static providers' properties come from the manager's cache, merged in priority order when a provider was last registered or removed. The per-call providers are queried now, respecting `IsAvailable()`.
+2. **ContextManager.Instance** -- The static providers' properties come from the manager's cache, read when a provider was last registered or removed. The per-call providers are queried now, respecting `IsAvailable()`. The two are merged by priority, the lower value winning on a shared key.
 
 Both sources are filtered through the provider's `ContextFilterConfiguration` before being attached to the `LogEntry.Properties` dictionary. This means each provider can see a different subset of context properties, matching its output requirements.
 
