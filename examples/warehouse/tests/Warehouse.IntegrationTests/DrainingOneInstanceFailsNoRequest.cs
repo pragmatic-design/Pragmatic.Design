@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using Pragmatic.ControlPlane;
 using Pragmatic.Testing.Assertions;
@@ -33,7 +34,7 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
         using var manager = StockCalls.ThroughTheGateway(warehouse, StockCalls.Manager);
         using var desk = OrderCalls.ThroughTheGateway(warehouse);
 
-        var answers = new ConcurrentQueue<(string Call, HttpStatusCode Status)>();
+        var answers = new ConcurrentQueue<Answer>();
         using var stop = new CancellationTokenSource();
         var traffic = SteadyTrafficAsync(manager, desk, product, answers, stop.Token);
 
@@ -50,8 +51,13 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
         }
 
         answers.Should().NotBeEmpty();
+        // Each failure with its body and duration, and the services' own errors: the one time this failed
+        // in CI it said only "(place, ServiceUnavailable)", which is not enough to tell a drain defect from
+        // a stalled runner (#101).
         answers.Where(answer => (int)answer.Status >= 500).Should().BeEmpty(
-            "a drain leaves the rotation before the instance stops taking requests, so nothing is refused");
+            "a drain leaves the rotation before the instance stops taking requests, so nothing is refused. "
+            + $"Slowest place: {SlowestOf(answers, "place")}. Orders errors: {warehouse.Orders.Errors}. "
+            + $"Stock A errors: {warehouse.StockA.Errors}. Stock B errors: {warehouse.StockB.Errors}");
 
         // Drained: every read is A's.
         var reads = await ServedByAsync(manager, product.Id, 20);
@@ -105,31 +111,51 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
         }
     }
 
+    /// <summary>One call of the traffic: what it was, what came back, and how long it took.</summary>
+    private sealed record Answer(string Call, HttpStatusCode Status, TimeSpan Elapsed, string? Body)
+    {
+        public override string ToString() => $"{Call} {(int)Status} after {Elapsed.TotalMilliseconds:F0} ms: {Body}";
+    }
+
     /// <summary>Availability reads through the gateway, and orders placed through it — each placing reserves stock — until stopped.</summary>
     private static async Task SteadyTrafficAsync(
         HttpClient manager, HttpClient desk, (Guid Id, string Sku) product,
-        ConcurrentQueue<(string Call, HttpStatusCode Status)> answers, CancellationToken stop)
+        ConcurrentQueue<Answer> answers, CancellationToken stop)
     {
         var round = 0;
         while (!stop.IsCancellationRequested)
         {
+            var clock = Stopwatch.StartNew();
             using (var read = await manager.GetAsync($"api/levels?productId={product.Id}", CancellationToken.None))
-                answers.Enqueue(("read", read.StatusCode));
+                answers.Enqueue(await AnswerAsync("read", read, clock));
 
             if (round++ % 5 == 0)
             {
                 // Placing is the reservation: Orders asks Stock, over the broker, to hold the quantity.
+                clock.Restart();
                 using var drafted = await OrderCalls.DraftAsync(desk, (product.Sku, 1));
-                answers.Enqueue(("draft", drafted.StatusCode));
+                answers.Enqueue(await AnswerAsync("draft", drafted, clock));
                 if (drafted.IsSuccessStatusCode)
                 {
                     var order = System.Text.Json.JsonDocument.Parse(await drafted.Content.ReadAsStringAsync())
                         .RootElement.GetProperty("id").GetGuid();
+                    clock.Restart();
                     using var placed = await desk.PostAsync($"api/orders/{order}/place", null, CancellationToken.None);
-                    answers.Enqueue(("place", placed.StatusCode));
+                    answers.Enqueue(await AnswerAsync("place", placed, clock));
                 }
             }
         }
+    }
+
+    private static string SlowestOf(IEnumerable<Answer> answers, string call)
+        => answers.Where(answer => answer.Call == call).MaxBy(answer => answer.Elapsed)?.ToString() ?? "none";
+
+    /// <summary>The answer, with its body when it is a failure: a 5xx is only diagnosable by what it said.</summary>
+    private static async Task<Answer> AnswerAsync(string call, HttpResponseMessage response, Stopwatch clock)
+    {
+        var elapsed = clock.Elapsed;
+        var body = (int)response.StatusCode >= 500 ? await response.Content.ReadAsStringAsync() : null;
+        return new Answer(call, response.StatusCode, elapsed, body);
     }
 
     private static async Task<IReadOnlyList<string?>> ServedByAsync(HttpClient client, Guid productId, int count)
