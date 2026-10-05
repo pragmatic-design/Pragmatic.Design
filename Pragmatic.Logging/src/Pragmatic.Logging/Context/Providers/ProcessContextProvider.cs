@@ -27,14 +27,16 @@ public sealed class ProcessContextProvider() : ContextProviderBase("Process", pr
         // which has no source-generated equivalent. Resolved once, never on the logging hot path.
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
 
+        // No CommandLine: it is where secrets travel (a connection string, a token passed as an
+        // argument), and every entry would copy them into every sink, beyond the reach of declared
+        // redaction. An application that wants it adds it through a context provider of its own.
         return CreatePropertiesDictionary(
             ("ProcessId", process.Id),
             ("ProcessName", process.ProcessName),
             ("ApplicationName", assembly.GetName().Name),
             ("ApplicationVersion", assembly.GetName().Version?.ToString()),
             ("StartTime", process.StartTime),
-            ("WorkingDirectory", Environment.CurrentDirectory),
-            ("CommandLine", Environment.CommandLine)
+            ("WorkingDirectory", Environment.CurrentDirectory)
         );
     }
 }
