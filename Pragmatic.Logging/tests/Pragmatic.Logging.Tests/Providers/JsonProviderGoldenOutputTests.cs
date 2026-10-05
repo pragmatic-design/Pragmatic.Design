@@ -23,8 +23,8 @@ namespace Pragmatic.Logging.Tests.Providers;
 ///         them is a change to the output and has to be argued for as one.
 ///     </para>
 ///     <para>
-///         ⚠️ No scope here: inside a scope the provider writes <c>"@scopes":["RequestId":"req-1",…]</c>,
-///         which is not valid JSON, and a golden test would pin that defect. It is #90.
+///         The scope case was added with #90. Before it, the provider wrote
+///         <c>"@scopes":["RequestId":"req-1",…]</c>, which is not valid JSON.
 ///     </para>
 /// </remarks>
 public partial class JsonProviderGoldenOutputTests
@@ -57,6 +57,15 @@ public partial class JsonProviderGoldenOutputTests
     public void AnException()
         => Lines(logger => logger.LogError(new InvalidOperationException("boom"), "Failed {Step}", "pay"))
             .Should().Be("""{"@timestamp":"T","@level":"FAIL","@logger":"Golden","@message":"Failed pay","@exception":{"type":"System.InvalidOperationException","message":"boom","stackTrace":null},"@messageTemplate":"Failed {Step}","@properties":{"Step":"pay"}}""");
+
+    [Fact]
+    public void InsideAScope()
+        => Lines(logger =>
+            {
+                using (logger.BeginScope(new Dictionary<string, object?> { ["RequestId"] = "req-1", ["Tenant"] = 3 }))
+                    logger.LogInformation("Handled {Path}", "/orders");
+            })
+            .Should().Be("""{"@timestamp":"T","@level":"INFO","@logger":"Golden","@message":"Handled /orders","@messageTemplate":"Handled {Path}","@properties":{"Path":"/orders"},"@scopes":{"RequestId":"req-1","Tenant":3}}""");
 
     private static string Lines(Action<ILogger> log)
     {
