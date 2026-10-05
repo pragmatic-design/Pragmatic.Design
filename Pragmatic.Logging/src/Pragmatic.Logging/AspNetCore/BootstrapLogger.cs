@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,7 +25,7 @@ public static class BootstrapLogger
     public static ILogger<T> CreateLogger<T>()
     {
         // The underlying factory returns a non-generic ILogger (a CompositeLogger after the
-        // transition, a BootstrapLoggerImplementation before it). Casting that to ILogger<T>
+        // transition, the bootstrap provider's logger before it). Casting that to ILogger<T>
         // throws InvalidCastException. Wrap the active factory in the standard Logger<T>, which
         // derives the T-based category and delegates to the factory's CreateLogger(string).
         var factory = _transitionedFactory ?? _bootstrapFactory.Value;
@@ -74,7 +73,14 @@ public static class BootstrapLogger
     /// <summary>
     /// Creates a bootstrap logger factory with sensible defaults for early startup.
     /// </summary>
-    private static ILoggerFactory CreateBootstrapLoggerFactory()
+    /// <remarks>
+    /// ⚠️ Its provider has no <c>DeclaredRedactor</c>, and nothing can give it one: the redaction maps
+    /// are registered in the container, which does not exist yet, and the provider is never handed out.
+    /// A value whose type declared members as <c>[PersonalData]</c> or <c>[NotLogged]</c>, logged
+    /// through this logger before <see cref="TransitionToFullLogging" />, is written in clear. After the
+    /// transition every logger comes from the container's factory, whose providers carry the redactor.
+    /// </remarks>
+    internal static BootstrapLoggerFactory CreateBootstrapLoggerFactory()
     {
         var configuration = new PragmaticProviderConfiguration
         {
@@ -147,6 +153,9 @@ internal sealed class BootstrapLoggerFactory(PragmaticConsoleProvider consolePro
     private readonly ConcurrentDictionary<string, ILogger> _loggers = new();
     private bool _disposed;
 
+    /// <summary>The provider every bootstrap logger writes through.</summary>
+    internal PragmaticConsoleProvider Provider => consoleProvider;
+
     public void AddProvider(ILoggerProvider provider)
     {
         // Bootstrap factory is simple and doesn't support additional providers
@@ -157,7 +166,9 @@ internal sealed class BootstrapLoggerFactory(PragmaticConsoleProvider consolePro
     {
         ObjectDisposedException.ThrowIf(_disposed, nameof(BootstrapLoggerFactory));
 
-        return _loggers.GetOrAdd(categoryName, name => new BootstrapLoggerImplementation(name, consoleProvider));
+        // The provider's own logger, not one written for bootstrap: one path renders and redacts every
+        // Pragmatic entry, so a logger cannot be added that skips it.
+        return _loggers.GetOrAdd(categoryName, name => consoleProvider.CreateLogger(name));
     }
 
     public void Dispose()
@@ -168,52 +179,6 @@ internal sealed class BootstrapLoggerFactory(PragmaticConsoleProvider consolePro
             _loggers.Clear();
             _disposed = true;
         }
-    }
-}
-
-/// <summary>
-/// Simple logger implementation for bootstrap scenarios.
-/// </summary>
-internal sealed class BootstrapLoggerImplementation(string categoryName, PragmaticConsoleProvider provider) : ILogger
-{
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull
-    {
-        // Bootstrap logger has minimal scope support
-        return NullScope.Instance;
-    }
-
-    public bool IsEnabled(LogLevel logLevel)
-    {
-        return provider.IsEnabled(categoryName, logLevel);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-    {
-        if (!IsEnabled(logLevel))
-            return;
-
-        var logEntry = new LogEntry
-        {
-            Timestamp = DateTime.UtcNow,
-            LogLevel = logLevel,
-            EventId = eventId,
-            Category = categoryName,
-            Message = formatter(state, exception),
-            Exception = exception,
-            Properties = new Dictionary<string, object?>()
-        };
-
-        provider.WriteLog(logEntry);
-    }
-
-    /// <summary>
-    /// Null scope implementation for bootstrap scenarios.
-    /// </summary>
-    private sealed class NullScope : IDisposable
-    {
-        public static NullScope Instance { get; } = new();
-        public void Dispose() { }
     }
 }
 

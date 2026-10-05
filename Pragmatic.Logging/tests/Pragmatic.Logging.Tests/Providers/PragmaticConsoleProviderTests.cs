@@ -4,6 +4,7 @@ using Pragmatic.Logging.Providers;
 
 namespace Pragmatic.Logging.Tests.Providers;
 
+[Collection(ConsoleOutputCollection.Name)]
 public class PragmaticConsoleProviderTests
 {
     [Fact]
@@ -283,7 +284,6 @@ public class PragmaticConsoleProviderTests
     ///     A member a type declared must not be logged stays out of the console line: the message is
     ///     rendered from the masked value, not by the caller's formatter.
     /// </summary>
-    /// <remarks>In this class because it redirects <see cref="Console.Out" />, as the tests above do.</remarks>
     [Fact]
     public void LogMessage_WithADeclaredMember_WritesItMasked()
     {
