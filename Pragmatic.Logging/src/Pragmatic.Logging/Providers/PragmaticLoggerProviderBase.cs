@@ -37,6 +37,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
     private long _totalMessages;
     private long _droppedMessages;
     private long _failedMessages;
+    private long _redactedWithoutTemplate;
 
     // Fixed-size ring buffer for processing-time samples: zero allocation and O(1) per log call
     // (a ConcurrentQueue here allocated segments and its Count walk made every log call O(n)).
@@ -123,6 +124,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             TotalMessages = Interlocked.Read(ref _totalMessages),
             DroppedMessages = Interlocked.Read(ref _droppedMessages),
             FailedMessages = Interlocked.Read(ref _failedMessages),
+            RedactedWithoutTemplate = Interlocked.Read(ref _redactedWithoutTemplate),
             AverageProcessingTimeMs = avgProcessingTime,
             LastError = _lastError,
             LastErrorTime = _lastErrorTime,
@@ -547,6 +549,9 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
         var index = (Interlocked.Increment(ref _processingTimeIndex) - 1) & (ProcessingTimeWindow - 1);
         _processingTimes[index] = milliseconds;
     }
+
+    /// <summary>Counts an entry whose message was written as masked values because it had no template.</summary>
+    internal void RecordRedactedWithoutTemplate() => Interlocked.Increment(ref _redactedWithoutTemplate);
 
     private void RecordError(string error)
     {

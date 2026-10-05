@@ -45,11 +45,25 @@ internal sealed class PragmaticLogger(string categoryName, PragmaticLoggerProvid
             && state is IReadOnlyList<KeyValuePair<string, object?>> values
             && redactor.RedactState(values) is { } redacted)
         {
+            // Without a template the masked state renders as key=value pairs: nothing leaks, but the
+            // entry is shaped unlike every other one, so it is counted where an operator can see it.
+            if (!HasTemplate(values))
+                _provider.RecordRedactedWithoutTemplate();
+
             WriteEntry(logLevel, eventId, redacted, exception, redacted.ToString()!);
             return;
         }
 
         WriteEntry(logLevel, eventId, state, exception, formatter(state, exception));
+    }
+
+    private static bool HasTemplate(IReadOnlyList<KeyValuePair<string, object?>> values)
+    {
+        for (var i = 0; i < values.Count; i++)
+            if (values[i].Key == "{OriginalFormat}")
+                return true;
+
+        return false;
     }
 
     private void WriteEntry<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, string message)
