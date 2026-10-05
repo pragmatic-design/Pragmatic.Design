@@ -815,6 +815,7 @@
 
   <!-- ══════════════════════════════════════════════════════ BENCHMARKS -->
   <Folder Name="/Benchmarks/">
+    <Project Path="Pragmatic.Endpoints/benchmarks/Pragmatic.Endpoints.Benchmarks/Pragmatic.Endpoints.Benchmarks.csproj" />
     <Project Path="Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks/Pragmatic.Logging.Benchmarks.csproj" />
     <Project Path="Pragmatic.Result/benchmarks/Pragmatic.Result.Benchmarks/Pragmatic.Result.Benchmarks.csproj" />
   </Folder>
