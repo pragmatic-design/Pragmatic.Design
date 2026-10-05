@@ -42,6 +42,14 @@ or `[PersonalData]`, and the source generator emits an `IRedactionMap` per type,
 marked member, owned records and collections included. `DeclaredRedactor` walks those paths; nothing
 reflects over the payload.
 
+The value is serialized before it is masked, and it is written in camelCase, like every other complex
+value the JSON log providers write. Under Native AOT the serialization needs metadata: when the assembly
+emits a generated JSON context (`PublishAot` or `PragmaticGenerateJsonContext`), every type in its map is
+in that context, and the map hands it to the redactor. A type the generator cannot describe (an `object`
+member, a property without a public setter) has no metadata. Its value is then written as the mask,
+whole, and counted in `DeclaredRedactor.ValuesWithoutMetadata`; the entry is never lost and nothing goes
+out in clear.
+
 In a Pragmatic host this is wired for you: when any map exists the generated startup calls
 `AddDeclaredRedaction()`, which wraps the `ILoggerFactory` in a `RedactingLoggerFactory`, so every
 provider, including one a test adds later, receives the masked value.

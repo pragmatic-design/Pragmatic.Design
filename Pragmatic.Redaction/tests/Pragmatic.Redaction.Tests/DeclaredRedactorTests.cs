@@ -43,12 +43,18 @@ public class DeclaredRedactorTests
     ///     Masked, not omitted: a missing key reads as "the field was not set", which is a different
     ///     statement about what happened, and a false one.
     /// </summary>
+    /// <remarks>
+    ///     The key is camelCase, as every other complex value the JSON providers write, and as the
+    ///     generated JSON context writes it under Native AOT; the map still names the member in
+    ///     PascalCase, and the path is matched without regard to case.
+    /// </remarks>
     [Fact]
     public void TheKeySurvives_OnlyItsValueGoes()
     {
         var redactor = new DeclaredRedactor([new Map(typeof(Payload), "NegotiatedRate")]);
 
-        redactor.Serialize(Sample).Should().Contain("NegotiatedRate");
+        redactor.Serialize(Sample).Should().Be(
+            $$"""{"reference":"PO-4471","negotiatedRate":"{{PersonalDataPatterns.Mask}}"}""");
     }
 
     [Fact]

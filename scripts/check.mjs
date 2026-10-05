@@ -1120,6 +1120,7 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke.ps1',
     'examples/aot-smoke/publish-and-smoke-generated.ps1',
     'examples/aot-smoke/publish-and-smoke-web.ps1',
+    'examples/aot-smoke/publish-and-smoke-logging.ps1',
   ];
 
   let good = true;
@@ -2086,7 +2087,7 @@ const COUNTS_FILE = 'artifacts/gate-counts.json';
  * `Pragmatic.Authorization.Management`'s five are ten of the warnings counted here. That is surface
  * arriving, not a regression in code that already existed, and it is said in the commit that raises it.
  */
-const TRIM_WARNING_BUDGET = 194;
+const TRIM_WARNING_BUDGET = 174;
 
 /**
  * A ratchet on the OTHER trim family: warnings that say a reflective requirement is not DECLARED.

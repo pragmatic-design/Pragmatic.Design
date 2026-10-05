@@ -8,6 +8,9 @@
     <PackageTags>logging;structured-logging;redaction;observability;aot</PackageTags>
     <!-- CA2007/CA1822: prototype import — clean up in dedicated refactor pass -->
     <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>
+    <!-- Configure<PragmaticLoggingOptions>(section) binds through generated code, not reflection,
+         so binding the logging section works under Native AOT. -->
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Pragmatic.Logging.Providers;
 
 namespace Pragmatic.Logging.Privacy;
@@ -12,11 +13,10 @@ namespace Pragmatic.Logging.Privacy;
 public sealed class AuditTrail : IDisposable
 {
     private static readonly Lazy<AuditTrail> _instance = new(() => new AuditTrail());
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
+    // The audit context's metadata, indented: an export is read by a person.
+    private static readonly JsonTypeInfo<IReadOnlyList<AuditEntry>> _exportTypeInfo =
+        (JsonTypeInfo<IReadOnlyList<AuditEntry>>)new JsonSerializerOptions(AuditJsonContext.Default.Options) { WriteIndented = true }
+            .GetTypeInfo(typeof(IReadOnlyList<AuditEntry>));
     private readonly ConcurrentQueue<AuditEntry> _auditQueue = new();
     private readonly Timer _flushTimer;
     private volatile bool _disposed;
@@ -442,7 +442,7 @@ public sealed class AuditTrail : IDisposable
 
         return format switch
         {
-            AuditExportFormat.Json => JsonSerializer.Serialize(entries, _jsonSerializerOptions),
+            AuditExportFormat.Json => JsonSerializer.Serialize(entries, _exportTypeInfo),
             AuditExportFormat.Csv => ExportToCsv(entries),
             AuditExportFormat.Xml => ExportToXml(entries),
             _ => throw new ArgumentOutOfRangeException(nameof(format))

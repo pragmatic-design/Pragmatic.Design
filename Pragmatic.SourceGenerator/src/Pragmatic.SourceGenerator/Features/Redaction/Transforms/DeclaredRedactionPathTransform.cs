@@ -78,6 +78,30 @@ internal static class DeclaredRedactionPathTransform
     }
 
     /// <summary>
+    ///     Whether the map will carry an entry for <paramref name="type" />: a member it declares or
+    ///     inherits is classified, or one it reaches below its own face is.
+    /// </summary>
+    /// <remarks>
+    ///     The same three sources the map is built from, asked as a yes or no, so that whatever needs
+    ///     the set of redacted types (the JSON metadata the redactor serializes them with) cannot
+    ///     disagree with the map about which types those are.
+    /// </remarks>
+    public static bool IsRedacted(INamedTypeSymbol type, CancellationToken ct)
+    {
+        foreach (var property in OwnedMemberWalk.PropertiesIncludingInherited(type))
+        {
+            if (Reason(property) is not null)
+                return true;
+        }
+
+        var found = ImmutableArray.CreateBuilder<RedactedMemberModel>();
+        Walk(type, type, prefix: "", depth: 0,
+            ImmutableHashSet.Create(StringComparer.Ordinal, type.ToDisplayString()), found, ct);
+
+        return found.Count > 0;
+    }
+
+    /// <summary>
     ///     What the type itself inherits, filed under the type — not under the base that declared it.
     /// </summary>
     /// <remarks>

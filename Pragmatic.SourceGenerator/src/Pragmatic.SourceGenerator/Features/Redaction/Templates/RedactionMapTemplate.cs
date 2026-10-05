@@ -18,8 +18,15 @@ internal sealed class RedactionMapTemplate : CSharpTemplate
 
     private readonly ImmutableArray<(string TypeFqn, ImmutableArray<RedactedMemberModel> Members)> _entries;
     private readonly string _namespace;
+    private readonly string? _jsonContext;
 
-    public RedactionMapTemplate(ImmutableArray<RedactedMemberModel> members, string assemblyName)
+    /// <param name="members">The classified members, by the type that carries them.</param>
+    /// <param name="assemblyName">The compilation's assembly name.</param>
+    /// <param name="jsonContextEmitted">
+    ///     Whether this compilation emits the generated JSON context, which then covers every type in
+    ///     this map: the map hands it to the redactor as the metadata to serialize those types with.
+    /// </param>
+    public RedactionMapTemplate(ImmutableArray<RedactedMemberModel> members, string assemblyName, bool jsonContextEmitted)
     {
         _entries = members
             .GroupBy(m => m.ContainingTypeFqn, System.StringComparer.Ordinal)
@@ -32,6 +39,12 @@ internal sealed class RedactionMapTemplate : CSharpTemplate
             .ToImmutableArray();
 
         _namespace = NamespaceFor(assemblyName);
+
+        // The serialization feature emits its context into "{root}.Generated" with "Global" for a
+        // nameless assembly; the reference has to name the class it actually writes.
+        _jsonContext = jsonContextEmitted
+            ? $"global::{(string.IsNullOrEmpty(assemblyName) ? "Global" : assemblyName)}.Generated.PragmaticJsonContext"
+            : null;
     }
 
     public string Namespace => _namespace;
@@ -78,6 +91,13 @@ internal sealed class RedactionMapTemplate : CSharpTemplate
 
         if (_entries.Length > 0)
             AppendLine();
+
+        if (_jsonContext is not null)
+        {
+            XmlInheritDoc();
+            AppendLine($"public global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver => {_jsonContext}.Default;");
+            AppendLine();
+        }
 
         XmlInheritDoc();
         Method("TryGetRedactedMembers", () =>

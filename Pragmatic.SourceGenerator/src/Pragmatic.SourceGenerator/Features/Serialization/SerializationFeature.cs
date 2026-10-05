@@ -23,7 +23,8 @@ internal static class SerializationFeature
 
     /// <returns>
     ///     The JSON context registration this compilation generates, for a host whose serializable
-    ///     types are declared in the host project itself.
+    ///     types are declared in the host project itself; and whether it emits the context at all, for
+    ///     the features that hand it to a runtime component (the redaction map).
     /// </returns>
     /// <param name="context">The generator initialization context.</param>
     /// <param name="features">The features detected on the referenced assemblies.</param>
@@ -32,10 +33,16 @@ internal static class SerializationFeature
     ///     stays testable on its own; without them the context covers everything except request bodies,
     ///     which is what it did before they were threaded in.
     /// </param>
-    public static IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Register(
+    /// <param name="redactedTypes">
+    ///     The types the redaction map carries. The redactor serializes them inside the logger, where a
+    ///     reflection failure under Native AOT loses the entry.
+    /// </param>
+    public static (IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Registrations,
+        IncrementalValueProvider<bool> EmitsContext) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
-        IncrementalValueProvider<ImmutableArray<Endpoints.Models.EndpointModel>>? endpoints = null)
+        IncrementalValueProvider<ImmutableArray<Endpoints.Models.EndpointModel>>? endpoints = null,
+        IncrementalValueProvider<ImmutableArray<JsonRootContribution>>? redactedTypes = null)
     {
         // Opt-in: build property (<PragmaticGenerateJsonContext>/<PublishAot>) OR the assembly marker
         // attribute. The attribute makes the feature testable and works in project-ref scenarios where
@@ -136,7 +143,10 @@ internal static class SerializationFeature
             .Combine(mapFrom.Collect()).Select(static (p, _) => p.Left.AddRange(p.Right))
             .Combine(mapTo.Collect()).Select(static (p, _) => p.Left.AddRange(p.Right))
             .Combine(streamingItems.Collect()).Select(static (p, _) => p.Left.AddRange(p.Right))
-            .Combine(bodies).Select(static (p, _) => p.Left.AddRange(p.Right));
+            .Combine(bodies).Select(static (p, _) => p.Left.AddRange(p.Right))
+            .Combine(redactedTypes
+                     ?? context.CompilationProvider.Select(static (_, _) => ImmutableArray<JsonRootContribution>.Empty))
+            .Select(static (p, _) => p.Left.AddRange(p.Right));
 
         var rootNs = context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global");
 
@@ -158,7 +168,7 @@ internal static class SerializationFeature
         });
 
         // The host is told to call the registration under the same condition that emits it.
-        return pipeline.Select(static (tuple, _) =>
+        var registrations = pipeline.Select(static (tuple, _) =>
         {
             var (((contribs, ns), feats), optedIn) = tuple;
             if (!Generates(contribs, ns, feats, optedIn))
@@ -170,6 +180,15 @@ internal static class SerializationFeature
                     SchemaVersion,
                     GeneratedRegistrationNames.JsonContextFqn(ns)));
         });
+
+        // Under the same condition again, so a feature that names the context names one that exists.
+        var emitsContext = pipeline.Select(static (tuple, _) =>
+        {
+            var (((contribs, ns), feats), optedIn) = tuple;
+            return Generates(contribs, ns, feats, optedIn);
+        });
+
+        return (registrations, emitsContext);
     }
 
     /// <summary>Whether this compilation emits a generated JSON context (and therefore a registration).</summary>

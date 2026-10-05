@@ -141,7 +141,7 @@ logging.AddJson("logs/dev.json", PragmaticJsonConfiguration.ForPrettyJson());
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `PrettyPrint` | `bool` | `false` | Indent JSON output |
-| `SerializeComplexObjects` | `bool` | `true` | Serialize nested objects as JSON |
+| `SerializeComplexObjects` | `bool` | `true` | Serialize nested objects as JSON, from the application's JSON seam (see below) |
 | `SkipValidation` | `bool` | `true` | Skip JSON writer validation for speed |
 | `AutoFlush` | `bool` | `false` | Flush after each entry |
 | `MaxFileSizeBytes` | `long` | `500 MB` | File size before rolling |
@@ -152,6 +152,14 @@ logging.AddJson("logs/dev.json", PragmaticJsonConfiguration.ForPrettyJson());
 ```json
 {"@timestamp":"2025-03-22T10:30:00.000Z","@level":"INFO","@logger":"OrderService","@message":"Order processed","@properties":{"OrderId":42,"Total":199.99}}
 ```
+
+### Complex values and Native AOT
+
+A complex structured value is serialized with the metadata of the application's `PragmaticJsonOptions`:
+its generated and framework contexts, and on a JIT runtime its reflection fallback, so a JIT host writes
+what it always wrote. Under Native AOT only the contexts remain. A value whose type no context covers is
+written as its `ToString()` and counted in `ProviderMetrics.ComplexValuesWithoutMetadata`, instead of
+failing the entry. Register a context for the types you log whole, or log their fields.
 
 ---
 

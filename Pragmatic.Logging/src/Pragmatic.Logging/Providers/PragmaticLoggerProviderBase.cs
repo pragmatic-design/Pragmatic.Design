@@ -33,6 +33,34 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
     /// </remarks>
     public global::Pragmatic.Redaction.DeclaredRedactor? DeclaredRedactor { get; set; }
 
+    /// <summary>
+    ///     The application's JSON seam, whose metadata a complex structured value is serialized from.
+    /// </summary>
+    /// <remarks>
+    ///     Set by <c>AddPragmaticProvider</c> beside <see cref="DeclaredRedactor" />. Without it the
+    ///     provider uses a seam of its own, which knows the framework's types and, on a JIT runtime,
+    ///     reflects; under Native AOT it knows only what was generated.
+    /// </remarks>
+    public global::Pragmatic.Serialization.PragmaticJsonOptions? JsonOptions { get; set; }
+
+    private ComplexValueSerializer? _complexValues;
+
+    /// <summary>
+    ///     A complex structured value as JSON, written with <paramref name="providerOptions" /> from the
+    ///     seam's metadata, or as its <c>ToString()</c> (counted) when the seam has none for its type.
+    /// </summary>
+    private protected string SerializeComplexValue(object value, System.Text.Json.JsonSerializerOptions providerOptions)
+    {
+        var serializer = _complexValues;
+        if (serializer is null)
+        {
+            Interlocked.CompareExchange(ref _complexValues, new ComplexValueSerializer(providerOptions, JsonOptions), null);
+            serializer = _complexValues;
+        }
+
+        return serializer.Serialize(value);
+    }
+
     // Metrics tracking
     private long _totalMessages;
     private long _droppedMessages;
@@ -130,6 +158,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             DroppedMessages = Interlocked.Read(ref _droppedMessages),
             FailedMessages = Interlocked.Read(ref _failedMessages),
             RedactedWithoutTemplate = Interlocked.Read(ref _redactedWithoutTemplate),
+            ComplexValuesWithoutMetadata = _complexValues?.ValuesWithoutMetadata ?? 0,
             AverageProcessingTimeMs = avgProcessingTime,
             LastError = _lastError,
             LastErrorTime = _lastErrorTime,

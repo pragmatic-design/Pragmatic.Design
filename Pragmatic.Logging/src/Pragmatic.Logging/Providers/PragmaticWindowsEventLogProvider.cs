@@ -19,8 +19,7 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
     private readonly EventLog? _eventLog;
     private readonly bool _isSupported;
     private readonly object _lock = new();
-    private static readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
-    private static readonly JsonSerializerOptions _indentedJsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions _complexValueOptions = new() { WriteIndented = false };
 
     public PragmaticWindowsEventLogProvider(PragmaticWindowsEventLogConfiguration configuration)
         : base("WindowsEventLog", configuration)
@@ -109,6 +108,51 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
         }
     }
 
+    /// <remarks>
+    ///     Written by hand rather than by serializing the dictionary, which reflects over each value's
+    ///     runtime type and fails under Native AOT. Scalars are written as JSON scalars, a complex value
+    ///     as its JSON string, from the application's JSON seam.
+    /// </remarks>
+    private string SerializeStructuredData(IReadOnlyDictionary<string, object?> properties, bool indented)
+    {
+        var buffer = new System.Buffers.ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = indented }))
+        {
+            writer.WriteStartObject();
+            foreach (var (name, value) in properties)
+            {
+                writer.WritePropertyName(name);
+                WriteScalarOrString(writer, value);
+            }
+            writer.WriteEndObject();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    private void WriteScalarOrString(Utf8JsonWriter writer, object? value)
+    {
+        switch (value)
+        {
+            case null: writer.WriteNullValue(); break;
+            case string text: writer.WriteStringValue(text); break;
+            case bool flag: writer.WriteBooleanValue(flag); break;
+            case int number: writer.WriteNumberValue(number); break;
+            case long number: writer.WriteNumberValue(number); break;
+            case short number: writer.WriteNumberValue(number); break;
+            case byte number: writer.WriteNumberValue(number); break;
+            case uint number: writer.WriteNumberValue(number); break;
+            case ulong number: writer.WriteNumberValue(number); break;
+            case float number: writer.WriteNumberValue(number); break;
+            case double number: writer.WriteNumberValue(number); break;
+            case decimal number: writer.WriteNumberValue(number); break;
+            case DateTime moment: writer.WriteStringValue(moment); break;
+            case DateTimeOffset moment: writer.WriteStringValue(moment); break;
+            case Guid id: writer.WriteStringValue(id); break;
+            default: writer.WriteStringValue(SerializeComplexValue(value, _complexValueOptions)); break;
+        }
+    }
+
     private string FormatMessage(string message, Exception? exception, IReadOnlyDictionary<string, object?> properties)
     {
         var config = (PragmaticWindowsEventLogConfiguration)Configuration;
@@ -125,8 +169,7 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
         {
             try
             {
-                var jsonOptions = config.IndentStructuredData ? _indentedJsonOptions : _compactJsonOptions;
-                var structuredData = JsonSerializer.Serialize(properties, jsonOptions);
+                var structuredData = SerializeStructuredData(properties, config.IndentStructuredData);
                 formatted += Environment.NewLine + "Structured Data: " + structuredData;
             }
             catch (Exception ex)

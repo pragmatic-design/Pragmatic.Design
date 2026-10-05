@@ -166,6 +166,16 @@ public sealed class ProviderMetrics
     /// <remarks>Nothing leaks from such an entry, but it is shaped unlike every other one.</remarks>
     public long RedactedWithoutTemplate { get; set; }
 
+    /// <summary>
+    ///     Gets or sets the number of complex structured values written as their <c>ToString()</c>
+    ///     because the application's JSON seam had no metadata for their type.
+    /// </summary>
+    /// <remarks>
+    ///     Under Native AOT a type that no generated or framework context covers lands here instead of
+    ///     failing the entry.
+    /// </remarks>
+    public long ComplexValuesWithoutMetadata { get; set; }
+
     /// <summary>Gets or sets the current queue size.</summary>
     public int CurrentQueueSize { get; set; }
 

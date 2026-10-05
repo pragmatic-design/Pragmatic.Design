@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Pragmatic.Serialization;
 
 namespace Pragmatic.Redaction;
@@ -50,12 +51,56 @@ namespace Pragmatic.Redaction;
 ///         given, and a path that does not match the payload ends quietly.
 ///     </para>
 /// </remarks>
-public sealed class DeclaredRedactor(IEnumerable<IRedactionMap> maps)
+public sealed class DeclaredRedactor
 {
-    private readonly IRedactionMap[] _maps = maps as IRedactionMap[] ?? [.. maps];
+    private readonly IRedactionMap[] _maps;
+    private readonly JsonSerializerOptions _options;
+    private long _valuesWithoutMetadata;
+
+    /// <param name="maps">The generated maps, and any an application contributed.</param>
+    /// <remarks>
+    ///     <para>
+    ///         A value is serialized from the JSON metadata its map carries
+    ///         (<see cref="IRedactionMap.TypeInfoResolver" />): the generated context, which covers every
+    ///         type the map knows when the assembly emits one. After the maps comes the framework's own
+    ///         resolver chain, which on a JIT runtime ends in reflection and under Native AOT does not.
+    ///     </para>
+    ///     <para>
+    ///         Names are camelCase, the policy the JSON providers write every other complex value with,
+    ///         and the one the generated context bakes in. With any other policy the same value would be
+    ///         written one way by a JIT host and another by the same host published AOT.
+    ///     </para>
+    /// </remarks>
+    public DeclaredRedactor(IEnumerable<IRedactionMap> maps)
+    {
+        ArgumentNullException.ThrowIfNull(maps);
+        _maps = maps as IRedactionMap[] ?? [.. maps];
+
+        var resolvers = new List<IJsonTypeInfoResolver>();
+        foreach (var map in _maps)
+        {
+            if (map.TypeInfoResolver is { } resolver && !resolvers.Contains(resolver))
+                resolvers.Add(resolver);
+        }
+
+        if (new PragmaticJsonOptions().Build().TypeInfoResolver is { } framework)
+            resolvers.Add(framework);
+
+        _options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            TypeInfoResolver = JsonTypeInfoResolver.Combine([.. resolvers]),
+        };
+    }
 
     /// <summary>True when no map was contributed, so every call is a no-op.</summary>
     public bool IsEmpty => _maps.Length == 0;
+
+    /// <summary>
+    ///     How many values had declared members and could not be serialized: no JSON metadata for their
+    ///     type under Native AOT. Each one was written as the mask, whole, rather than lost or sent out.
+    /// </summary>
+    public long ValuesWithoutMetadata => Interlocked.Read(ref _valuesWithoutMetadata);
 
     /// <summary>
     ///     The value as it may be written out: unchanged when its type declared nothing, and the
@@ -128,17 +173,38 @@ public sealed class DeclaredRedactor(IEnumerable<IRedactionMap> maps)
     ///     <see cref="PersonalDataPatterns.Mask" />.
     /// </summary>
     /// <remarks>
-    ///     Masks rather than omits, deliberately: a missing key reads as "the field was not set",
-    ///     which is a different statement about what happened, and a false one.
+    ///     <para>
+    ///         Masks rather than omits, deliberately: a missing key reads as "the field was not set",
+    ///         which is a different statement about what happened, and a false one.
+    ///     </para>
+    ///     <para>
+    ///         ⚠️ A value whose type has no JSON metadata (Native AOT, an assembly that emits no generated
+    ///         context, a member type the context cannot describe) is written as the mask whole and
+    ///         counted in <see cref="ValuesWithoutMetadata" />. Throwing here is what used to happen: the
+    ///         exception landed in the provider's catch, and the entry carrying the value was lost.
+    ///     </para>
     /// </remarks>
-    public string Serialize(object? value, JsonSerializerOptions? options = null)
+    public string Serialize(object? value)
     {
         if (value is null)
             return "null";
 
-        var json = JsonSerializer.Serialize(value, options);
+        var type = value.GetType();
+        string json;
+        try
+        {
+            if (!_options.TryGetTypeInfo(type, out var typeInfo))
+                return WithoutMetadata(type);
 
-        if (!TryGetRedactedMembers(value.GetType(), out var members))
+            json = JsonSerializer.Serialize(value, typeInfo);
+        }
+        catch (NotSupportedException)
+        {
+            // Metadata for the type, none for one of its members: the serializer says so only here.
+            return WithoutMetadata(type);
+        }
+
+        if (!TryGetRedactedMembers(type, out var members))
             return json;
 
         if (JsonNode.Parse(json) is not JsonObject obj)
@@ -148,7 +214,13 @@ public sealed class DeclaredRedactor(IEnumerable<IRedactionMap> maps)
         foreach (var member in members)
             masked |= MaskPath(obj, member.Name);
 
-        return masked ? obj.ToJsonString(options) : json;
+        return masked ? obj.ToJsonString() : json;
+    }
+
+    private string WithoutMetadata(Type type)
+    {
+        Interlocked.Increment(ref _valuesWithoutMetadata);
+        return $"{PersonalDataPatterns.Mask} ({type.Name}: no JSON metadata)";
     }
 
     /// <summary>

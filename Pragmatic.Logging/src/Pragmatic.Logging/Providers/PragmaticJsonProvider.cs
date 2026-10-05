@@ -465,8 +465,8 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
                 // For complex objects, serialize to string representation
                 // Declared redaction already happened on the entry — see PragmaticLoggerProviderBase.
                 var stringRep = GetCustomProperty<bool>("SerializeComplexObjects", true)
-                    ? JsonSerializer.Serialize(value, _serializerOptions)
-                    : value?.ToString() ?? "null";
+                    ? SerializeComplexValue(value, _serializerOptions)
+                    : value.ToString() ?? "null";
                 writer.WriteStringValue(stringRep);
                 break;
         }

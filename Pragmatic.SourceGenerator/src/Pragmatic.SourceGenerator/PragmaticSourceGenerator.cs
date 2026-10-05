@@ -96,10 +96,6 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             programmaticMutations: resourceMutations, queries: queryModels, currentUsers: currentUsers);
         var patchManifestTypes = PatchFeature.Register(context, features);
 
-        // Declared redaction. Registered unconditionally and driven by the attributes rather than by
-        // a DetectedFeatures flag: [NotLogged] lives in Abstractions, which every module references,
-        // and a map gated on a feature being "on" would reintroduce the gap it exists to close.
-        var redactionRegistrations = Features.Redaction.RedactionFeature.Register(context);
 
         // Declared resilience. Registered unconditionally and driven by the attributes, for the
         // same reason as redaction above and one more: what it publishes is the answer to «did
@@ -154,9 +150,18 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var configurationRegistrations = ConfigurationFeature.Register(context, features);
         var messagingRegistrations = MessagingFeature.Register(context, features);
         // Endpoints are passed in for the request bodies this generator emits: they exist only as models,
-        // never as symbols, so the JSON context cannot find them on its own.
-        var serializationRegistrations =
-            Features.Serialization.SerializationFeature.Register(context, features, endpoints: endpointModels);
+        // never as symbols, so the JSON context cannot find them on its own. The redacted types too: the
+        // redactor serializes them inside the logger, where a reflection failure under Native AOT
+        // loses the entry.
+        var (serializationRegistrations, jsonContextEmitted) =
+            Features.Serialization.SerializationFeature.Register(context, features, endpoints: endpointModels,
+                redactedTypes: Features.Redaction.RedactionFeature.JsonRoots(context));
+
+        // Declared redaction. Registered unconditionally and driven by the attributes rather than by
+        // a DetectedFeatures flag: [NotLogged] lives in Abstractions, which every module references,
+        // and a map gated on a feature being "on" would reintroduce the gap it exists to close. After
+        // the JSON context, because the map hands that context to the redactor when it exists.
+        var redactionRegistrations = Features.Redaction.RedactionFeature.Register(context, jsonContextEmitted);
         // Endpoints are passed in because the conversion is keyed on the type that is
         // deserialized, and for an operation with body properties that is the generated {Trigger}Body
         // record rather than the operation the attribute sits on.

@@ -156,6 +156,12 @@ public static class PragmaticLoggingServiceCollectionExtensions
                     withRedaction.DeclaredRedactor =
                         serviceProvider.GetService(typeof(global::Pragmatic.Redaction.DeclaredRedactor))
                             as global::Pragmatic.Redaction.DeclaredRedactor;
+
+                    // The seam the application registered its generated contexts in: a complex value is
+                    // serialized from that metadata, which is what still works under Native AOT.
+                    withRedaction.JsonOptions =
+                        serviceProvider.GetService(typeof(global::Pragmatic.Serialization.PragmaticJsonOptions))
+                            as global::Pragmatic.Serialization.PragmaticJsonOptions;
                 }
 
                 return provider;

@@ -413,22 +413,63 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 
+    /// <remarks>
+    ///     The fields an anonymous object used to carry, in the same camelCase names and with nulls left
+    ///     out, written by hand: serializing an anonymous type reflects over it, which Native AOT
+    ///     refuses. A property value is written the way the NDJSON form writes it, a complex one as its
+    ///     JSON string.
+    /// </remarks>
     private string SerializeToJson(LogEntry logEntry)
     {
-        // Traditional JSON serialization (same as original implementation)
-        return JsonSerializer.Serialize(new
+        var (buffer, writer) = _ndjsonWriter.Value;
+        buffer.Clear();
+        writer.Reset(buffer);
+
+        writer.WriteStartObject();
+        writer.WriteString("timestamp", FormatTimestamp(logEntry.Timestamp));
+        writer.WriteString("level", GetLogLevelString(logEntry.LogLevel));
+        WriteStringIfPresent(writer, "category", logEntry.Category);
+        WriteStringIfPresent(writer, "message", logEntry.Message);
+
+        if (logEntry.EventId.Id != 0)
+            writer.WriteNumber("eventId", logEntry.EventId.Id);
+        if (!string.IsNullOrEmpty(logEntry.EventId.Name))
+            writer.WriteString("eventName", logEntry.EventId.Name);
+
+        WriteStringIfPresent(writer, "exception", logEntry.Exception?.ToString());
+        WriteStringIfPresent(writer, "messageTemplate", logEntry.MessageTemplate);
+
+        if (logEntry.Properties.Count > 0)
         {
-            Timestamp = FormatTimestamp(logEntry.Timestamp),
-            Level = GetLogLevelString(logEntry.LogLevel),
-            Category = logEntry.Category,
-            Message = logEntry.Message,
-            EventId = logEntry.EventId.Id != 0 ? (int?)logEntry.EventId.Id : null,
-            EventName = !string.IsNullOrEmpty(logEntry.EventId.Name) ? logEntry.EventId.Name : null,
-            Exception = logEntry.Exception?.ToString(),
-            MessageTemplate = logEntry.MessageTemplate,
-            Properties = logEntry.Properties.Count > 0 ? logEntry.Properties : null,
-            Scopes = logEntry.Scopes?.Count > 0 ? logEntry.Scopes : null
-        }, _serializerOptions);
+            writer.WriteStartObject("properties");
+            foreach (var kvp in logEntry.Properties)
+                WriteJsonValue(writer, kvp.Key, kvp.Value);
+            writer.WriteEndObject();
+        }
+
+        if (logEntry.Scopes?.Count > 0)
+        {
+            writer.WriteStartArray("scopes");
+            foreach (var scope in logEntry.Scopes)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("key", scope.Key);
+                WriteJsonValue(writer, "value", scope.Value);
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+        }
+
+        writer.WriteEndObject();
+        writer.Flush();
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    private static void WriteStringIfPresent(Utf8JsonWriter writer, string name, string? value)
+    {
+        if (value is not null)
+            writer.WriteString(name, value);
     }
 
     // File management methods (enhanced versions from original)
@@ -690,8 +731,8 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
                 // Declared redaction ([NotLogged] / [PersonalData]) already happened on the entry,
                 // in PragmaticLoggerProviderBase — one place, every provider, no flag.
                 var stringRep = GetCustomProperty<bool>("SerializeComplexObjects", true)
-                    ? JsonSerializer.Serialize(value, _serializerOptions)
-                    : value?.ToString() ?? "null";
+                    ? SerializeComplexValue(value, _serializerOptions)
+                    : value.ToString() ?? "null";
                 writer.WriteStringValue(stringRep);
                 break;
         }

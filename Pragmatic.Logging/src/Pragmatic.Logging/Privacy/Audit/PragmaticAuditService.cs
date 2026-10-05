@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Logging.Providers;
@@ -13,11 +14,10 @@ namespace Pragmatic.Logging.Privacy.Audit;
 /// </summary>
 public sealed class PragmaticAuditService : IDisposable, IHostedService
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
+    // The audit context's metadata, indented: an export is read by a person.
+    private static readonly JsonTypeInfo<IReadOnlyList<AuditEntry>> _exportTypeInfo =
+        (JsonTypeInfo<IReadOnlyList<AuditEntry>>)new JsonSerializerOptions(AuditJsonContext.Default.Options) { WriteIndented = true }
+            .GetTypeInfo(typeof(IReadOnlyList<AuditEntry>));
 
     private readonly IAuditStorage _storage;
     private readonly IAuditPolicy _policy;
@@ -291,7 +291,7 @@ public sealed class PragmaticAuditService : IDisposable, IHostedService
 
         return format switch
         {
-            AuditExportFormat.Json => System.Text.Json.JsonSerializer.Serialize(entries, _jsonSerializerOptions),
+            AuditExportFormat.Json => System.Text.Json.JsonSerializer.Serialize(entries, _exportTypeInfo),
             AuditExportFormat.Csv => ExportToCsv(entries),
             AuditExportFormat.Xml => ExportToXml(entries),
             _ => throw new ArgumentOutOfRangeException(nameof(format))
