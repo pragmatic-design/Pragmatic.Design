@@ -35,4 +35,15 @@ public interface IRedactionMap
     /// <param name="members">The members to redact; empty when this map does not know the type.</param>
     /// <returns><see langword="true" /> when this map knows the type and it has declared members.</returns>
     bool TryGetRedactedMembers(Type type, out IReadOnlyList<RedactedMember> members);
+
+    /// <summary>
+    ///     The JSON metadata for the types this map knows, or <see langword="null" /> when it has none.
+    /// </summary>
+    /// <remarks>
+    ///     The redactor serializes a value before masking it. Without metadata it can only reflect,
+    ///     which Native AOT refuses. The generated map returns the assembly's generated JSON context
+    ///     when the assembly emits one (<c>PublishAot</c> or <c>PragmaticGenerateJsonContext</c>), and
+    ///     that context covers every type in the map.
+    /// </remarks>
+    System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver => null;
 }

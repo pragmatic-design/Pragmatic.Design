@@ -38,8 +38,15 @@ internal static class RedactionFeature
     ///     <c>AddGeneratedJsonContext</c>, which does emit an entry, was called for each module. The
     ///     attributes were inert wherever they were used.
     /// </remarks>
+    /// <param name="context">The generator initialization context.</param>
+    /// <param name="jsonContextEmitted">
+    ///     Whether this compilation emits the generated JSON context, which then covers the redacted
+    ///     types (<see cref="JsonRoots" />). The map hands it to the redactor as the metadata to
+    ///     serialize them with; without it the redactor has only reflection, which Native AOT refuses.
+    /// </param>
     public static IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Register(
-        IncrementalGeneratorInitializationContext context)
+        IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<bool> jsonContextEmitted)
     {
         var notLogged = Collect(context, NotLoggedAttribute, RedactedMemberTransform.NotLogged);
         var personalData = Collect(context, PersonalDataAttribute, RedactedMemberTransform.PersonalData);
@@ -82,8 +89,9 @@ internal static class RedactionFeature
 
         var all = notLogged.Combine(personalData).Combine(positional).Combine(paths).Combine(target);
 
-        context.RegisterSourceOutputSafe(all, static (ctx, data) =>
+        context.RegisterSourceOutputSafe(all.Combine(jsonContextEmitted), static (ctx, input) =>
         {
+            var (data, contextEmitted) = input;
             var ((((fromNotLogged, fromPersonalData), fromRecords), fromPaths), target) = data;
 
             if (!target.CanEmit)
@@ -92,7 +100,7 @@ internal static class RedactionFeature
             var assembly = target.AssemblyName;
             var members = fromNotLogged.AddRange(fromPersonalData).AddRange(fromRecords).AddRange(fromPaths);
 
-            var template = new RedactionMapTemplate(members, assembly);
+            var template = new RedactionMapTemplate(members, assembly, contextEmitted);
             ctx.AddSource(template.RenderOutput());
 
             var registration = new RedactionRegistrationTemplate(template.Namespace, assembly);
@@ -122,6 +130,23 @@ internal static class RedactionFeature
                         Core.GeneratedRegistrationNames.RedactionFqn(mapNamespace, target.AssemblyName))));
         });
     }
+
+    /// <summary>
+    ///     The JSON shape of every type the map carries, as roots of the generated JSON context.
+    /// </summary>
+    /// <remarks>
+    ///     Separate from <see cref="Register" /> because the two run in opposite directions: these roots
+    ///     go into the JSON context, and whether that context is emitted comes back into the map.
+    /// </remarks>
+    public static IncrementalValueProvider<ImmutableArray<Serialization.Models.JsonRootContribution>> JsonRoots(
+        IncrementalGeneratorInitializationContext context)
+        => context.SyntaxProvider
+            .CreateSyntaxProvider(
+                DeclaredRedactionPathTransform.CouldHoldAClassifiedType,
+                RedactedTypeJsonTransform.Transform)
+            .Where(static root => root is not null)
+            .Select(static (root, _) => root!)
+            .Collect();
 
     /// <summary>Whether this compilation can see the types the generated map needs, and its name.</summary>
     private readonly record struct EmitTarget(string AssemblyName, bool CanEmit);

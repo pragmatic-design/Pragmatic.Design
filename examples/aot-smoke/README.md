@@ -1,6 +1,6 @@
 ﻿# Pragmatic AOT smoke
 
-Native AOT sanity checks for the serialization seam and the HTTP path. Three samples:
+Native AOT sanity checks for the serialization seam, the HTTP path and logging. Four samples:
 
 ## 1. Seam with a hand-authored context (`Pragmatic.Aot.Smoke`)
 
@@ -101,6 +101,30 @@ bind their own parameters.
 ⚠️ One non-AOT-safe `Map` call poisons the **whole** routing table, not just its own route:
 `EndpointRoutingMiddleware` builds every endpoint at once. There is no partial migration.
 
+## 4. Declared redaction under AOT (`Pragmatic.Aot.Logging`)
+
+```pwsh
+pwsh examples/aot-smoke/publish-and-smoke-logging.ps1
+```
+
+Logs two values through `PragmaticJsonProvider` with the generated redaction map, published Native AOT:
+
+- a `Customer` whose `[PersonalData]` e-mail must come out masked, with the reference kept;
+- a `Payment` whose `[PersonalData]` IBAN sits beside an `object` member. The generator cannot describe
+  that type, so there is no JSON metadata for it and nothing else may reflect over it. The entry must
+  still be written, with the whole value masked, and counted in `DeclaredRedactor.ValuesWithoutMetadata`.
+
+### What it caught
+
+When it was written, it failed: **nothing was written at all**. The redactor serialized the value with
+`JsonSerializer.Serialize(value, null)`, reflection-based, and `PublishAot` turns that off even under the
+JIT. The exception landed in the provider's catch, and only `LastError` said why. Every entry carrying a
+declared type was lost.
+
+The redacted types are now roots of the generated JSON context, and the generated map hands that context
+to the redactor (`IRedactionMap.TypeInfoResolver`). A redacted value is written in camelCase, like every
+other complex value the JSON providers write, on the JIT and under AOT alike.
+
 ## Requirements
 
 The native toolchain for the target RID:
@@ -127,6 +151,7 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | Remote boundary invokers are AOT-safe | ✅ typed `JsonTypeInfo`; the envelope is a named record |
 | Patch DTO converters, saga orchestrators | ✅ typed `JsonTypeInfo` |
 | String enums resolve without runtime codegen | ✅ generic converter, no `MakeGenericType` |
+| Declared redaction masks under AOT, and a type without metadata is masked whole, not lost | ✅ proven, sample 4 |
 | The JSON reflection fallback is **off by default** under AOT | ✅ proven, sample 1 — and the check is not vacuous |
 | Multi-error `Result<T, E1, …>` serializes AOT-safely | ✅ generated converter from `[assembly: JsonResultContract<…>]` |
 | Error schemas and discriminators reach OpenAPI without reflection | ✅ generated module initializers; the reflective enricher is gone |

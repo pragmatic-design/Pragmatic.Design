@@ -11,17 +11,11 @@ namespace Pragmatic.Logging.Privacy.Audit.Storage;
 public sealed class FileSystemAuditStorage : IAuditStorage, IAuditQuery
 {
     private readonly FileSystemAuditOptions _options;
-    private readonly JsonSerializerOptions _jsonOptions;
     private volatile bool _disposed;
 
     public FileSystemAuditStorage(FileSystemAuditOptions? options = null)
     {
         _options = options ?? new FileSystemAuditOptions();
-        _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
 
         EnsureDirectoryExists();
     }
@@ -261,7 +255,7 @@ public sealed class FileSystemAuditStorage : IAuditStorage, IAuditQuery
 
         foreach (var entry in entries)
         {
-            var json = JsonSerializer.Serialize(entry, _jsonOptions);
+            var json = JsonSerializer.Serialize(entry, AuditJsonContext.Default.AuditEntry);
             await writer.WriteLineAsync(json.AsMemory(), cancellationToken);
         }
     }
@@ -289,7 +283,7 @@ public sealed class FileSystemAuditStorage : IAuditStorage, IAuditQuery
 
                 try
                 {
-                    var entry = JsonSerializer.Deserialize<AuditEntry>(line, _jsonOptions);
+                    var entry = JsonSerializer.Deserialize(line, AuditJsonContext.Default.AuditEntry);
                     if (entry != null)
                         entries.Add(entry);
                 }

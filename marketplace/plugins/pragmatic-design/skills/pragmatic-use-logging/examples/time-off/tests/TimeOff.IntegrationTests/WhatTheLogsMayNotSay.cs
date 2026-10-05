@@ -31,6 +31,10 @@ namespace TimeOff.IntegrationTests;
 ///         <c>Privacy.EnableRedaction</c>. This one catches what was <em>declared</em>, has no environment
 ///         qualifier, and is what these tests are about.
 ///     </para>
+///     <para>
+///         The keys are camelCase: the redactor writes a redacted value the way the JSON providers write
+///         every other complex value, and the way the generated JSON context writes it under Native AOT.
+///     </para>
 /// </remarks>
 public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTestBase(database)
 {
@@ -44,8 +48,8 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
 
         var entry = await LoggedEmployeeAsync(hired.Id);
 
-        entry.Should().Contain("\"WorkEmail\":\"[redacted]\"", "WorkEmail is [PersonalData(Contact)]");
-        entry.Should().Contain("\"FullName\":\"[redacted]\"", "FullName is [PersonalData(Identity)]");
+        entry.Should().Contain("\"workEmail\":\"[redacted]\"", "WorkEmail is [PersonalData(Contact)]");
+        entry.Should().Contain("\"fullName\":\"[redacted]\"", "FullName is [PersonalData(Identity)]");
         entry.Should().NotContain(hired.Account.FullName, "and the value itself is gone");
     }
 
@@ -75,9 +79,9 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
 
         entry.Should().NotContain("$2",
             "a bcrypt hash starts with $2, and Identity.PasswordHash is [NotLogged]");
-        entry.Should().Contain("\"PasswordHash\":\"[redacted]\"",
+        entry.Should().Contain("\"passwordHash\":\"[redacted]\"",
             "masked rather than omitted, so the entry does not claim the field was unset");
-        entry.Should().Contain("\"SecurityStamp\":\"[redacted]\"");
+        entry.Should().Contain("\"securityStamp\":\"[redacted]\"");
     }
 
     /// <summary>
@@ -106,7 +110,7 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
 
         entry.Should().NotContain(hired.Account.WorkEmail,
             "the same address the face masked must not go out below it, through Identity.Email");
-        entry.Should().Contain("\"Email\":\"[redacted]\"",
+        entry.Should().Contain("\"email\":\"[redacted]\"",
             "masked rather than omitted, on the owned record as on the face");
     }
 
@@ -138,7 +142,7 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
 
         entry.Should().NotContain(Uri.EscapeDataString(hired.Account.WorkEmail),
             "the composed key escapes the address, which is the form that reached the log");
-        entry.Should().Contain("\"ExternalIdentityKey\":\"[redacted]\"",
+        entry.Should().Contain("\"externalIdentityKey\":\"[redacted]\"",
             "masked rather than omitted, like every other member the map names");
     }
 
@@ -192,7 +196,7 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
         });
 
         entry.Should().NotContain(secret, "the password is [NotLogged]");
-        entry.Should().Contain("\"Password\":\"[redacted]\"",
+        entry.Should().Contain("\"password\":\"[redacted]\"",
             "masked rather than omitted, so the entry does not claim no password was given");
         entry.Should().Contain("Ada Lovelace",
             "and the control: FullName declares nothing on this action and is still written");
@@ -230,7 +234,7 @@ public sealed class WhatTheLogsMayNotSay(PostgresFixture database) : TimeOffTest
 
         var entry = await LoggedEmployeeAsync(hired.Id);
 
-        entry.Should().Contain("WorkEmail", "the member is named, and its value is replaced");
+        entry.Should().Contain("\"workEmail\"", "the member is named, and its value is replaced");
     }
 
     /// <summary>
