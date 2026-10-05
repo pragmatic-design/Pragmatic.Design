@@ -91,7 +91,8 @@ public static class BootstrapLogger
             {
                 TimestampFormat = "HH:mm:ss.fff",
                 UseUtcTimestamp = false,
-                MessageTemplate = "{Timestamp} [{Level:u3}] {Category}: {Message}",
+                // The console provider replaces the literal tokens only: no Serilog-style specifiers.
+                MessageTemplate = "{Timestamp} [{Level}] {Category}: {Message}",
                 IncludeExceptionDetails = true,
                 MaxMessageLength = 0
             },
