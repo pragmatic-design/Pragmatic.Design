@@ -110,13 +110,43 @@ public static class PragmaticLoggingServiceCollectionExtensions
         /// <typeparam name="TProvider">The provider type</typeparam>
         /// <param name="factory">Factory function to create the provider</param>
         /// <returns>The service collection for chaining</returns>
+        /// <remarks>
+        ///     The one place every provider passes through, the built-in ones (through the overload with a
+        ///     configuration) and a custom one added with <c>AddProvider&lt;TProvider&gt;</c> alike. That is
+        ///     why the declared redactor and the JSON seam are attached here rather than threaded through
+        ///     each provider's constructor: a custom provider that went around this got neither, and outside
+        ///     the composed host nothing else masked the declared members it wrote.
+        /// </remarks>
         public IServiceCollection AddPragmaticProvider<TProvider>(Func<IServiceProvider, TProvider> factory)
             where TProvider : class, IPragmaticLoggerProvider
         {
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(factory);
 
-            services.AddSingleton<TProvider>(factory);
+            // One per container, built over whatever IRedactionMap the generators contributed.
+            // Registered here rather than in a separate Add* call because a provider is the only thing
+            // that consumes it, and a redactor nobody wires redacts nothing.
+            services.TryAddSingleton<global::Pragmatic.Redaction.DeclaredRedactor>();
+
+            services.AddSingleton<TProvider>(serviceProvider =>
+            {
+                var provider = factory(serviceProvider);
+
+                if (provider is Providers.PragmaticLoggerProviderBase withRedaction)
+                {
+                    withRedaction.DeclaredRedactor =
+                        serviceProvider.GetService(typeof(global::Pragmatic.Redaction.DeclaredRedactor))
+                            as global::Pragmatic.Redaction.DeclaredRedactor;
+
+                    // The seam the application registered its generated contexts in: a complex value is
+                    // serialized from that metadata, which is what still works under Native AOT.
+                    withRedaction.JsonOptions =
+                        serviceProvider.GetService(typeof(global::Pragmatic.Serialization.PragmaticJsonOptions))
+                            as global::Pragmatic.Serialization.PragmaticJsonOptions;
+                }
+
+                return provider;
+            });
 
             // Register the provider with the registry during container build
             services.AddSingleton<IPragmaticLoggerProvider>(serviceProvider =>
@@ -140,38 +170,7 @@ public static class PragmaticLoggingServiceCollectionExtensions
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentNullException.ThrowIfNull(factory);
 
-            // One per container, built over whatever IRedactionMap the generators contributed.
-            // Registered here rather than in a separate Add* call because a provider is the only thing
-            // that consumes it, and a redactor nobody wires redacts nothing.
-            services.TryAddSingleton<global::Pragmatic.Redaction.DeclaredRedactor>();
-
-            services.AddSingleton<TProvider>(serviceProvider =>
-            {
-                var provider = factory(serviceProvider, configuration);
-
-                // The one place every provider passes through, which is why the declared redactor is
-                // attached here rather than threaded through each provider's constructor.
-                if (provider is Providers.PragmaticLoggerProviderBase withRedaction)
-                {
-                    withRedaction.DeclaredRedactor =
-                        serviceProvider.GetService(typeof(global::Pragmatic.Redaction.DeclaredRedactor))
-                            as global::Pragmatic.Redaction.DeclaredRedactor;
-
-                    // The seam the application registered its generated contexts in: a complex value is
-                    // serialized from that metadata, which is what still works under Native AOT.
-                    withRedaction.JsonOptions =
-                        serviceProvider.GetService(typeof(global::Pragmatic.Serialization.PragmaticJsonOptions))
-                            as global::Pragmatic.Serialization.PragmaticJsonOptions;
-                }
-
-                return provider;
-            });
-
-            // Register the provider with the registry during container build
-            services.AddSingleton<IPragmaticLoggerProvider>(serviceProvider =>
-                serviceProvider.GetRequiredService<TProvider>());
-
-            return services;
+            return services.AddPragmaticProvider<TProvider>(serviceProvider => factory(serviceProvider, configuration));
         }
 
         /// <summary>
