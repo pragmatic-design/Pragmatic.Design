@@ -35,6 +35,9 @@
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Endpoints.Samples/Pragmatic.Endpoints.Samples.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Endpoints.Benchmarks/Pragmatic.Endpoints.Benchmarks.csproj" />
+  </Folder>
 
   <!-- Unified source generator -->
   <Project Path="../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />

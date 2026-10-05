@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress CA1822 for BenchmarkDotNet (requires instance methods) -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Benchmark comparison only: a tuned, non-generated writer to measure against (#51). -->
+    <PackageReference Include="CAPCOM.REDox" />
+  </ItemGroup>
+
+</Project>
