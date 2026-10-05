@@ -197,8 +197,17 @@ public sealed class ContextManager : IContextManager, IDisposable
         InvalidateCacheInternal();
     }
 
+    /// <summary>
+    ///     Changes whenever the aggregated properties may have, so a consumer that derived something from
+    ///     them (a provider's filtered copy) knows to derive it again.
+    /// </summary>
+    internal int CacheVersion => Volatile.Read(ref _cacheVersion);
+
+    private int _cacheVersion;
+
     private void InvalidateCacheInternal()
     {
+        Interlocked.Increment(ref _cacheVersion);
         _cacheInvalid = true;
         _cache.Clear();
         _asyncCache.Clear();
