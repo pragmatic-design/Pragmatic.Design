@@ -486,11 +486,46 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             }
         }
 
-        // Add context provider properties: the aggregate only changes when providers do, so the filtered
-        // copy is kept until the manager's version or this provider's configuration moves.
+        // Add context provider properties: the static aggregate only changes when providers do, so the
+        // filtered copy is kept until the manager's version or this provider's configuration moves.
         foreach (var kvp in FilteredContextProperties())
         {
             logEntry.Properties[kvp.Key] = kvp.Value;
+        }
+
+        // Per-call providers (the logging thread) describe this call, so they are read every time.
+        foreach (var provider in ContextManager.Instance.PerCallProviders)
+        {
+            WritePerCallProperties(provider, logEntry.Properties);
+        }
+    }
+
+    private Func<string, bool>? _includeContextProperty;
+
+    private void WritePerCallProperties(IContextProvider provider, IDictionary<string, object?> target)
+    {
+        try
+        {
+            if (!provider.IsAvailable())
+                return;
+
+            var include = _includeContextProperty ??= ShouldIncludeContextProperty;
+            if (provider is IPerCallContextWriter writer)
+            {
+                writer.WriteContextProperties(target, include);
+                return;
+            }
+
+            foreach (var kvp in provider.GetContextProperties())
+            {
+                if (include(kvp.Key))
+                    target[kvp.Key] = kvp.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            // As in the manager's aggregation: a failing context provider costs its properties, not the entry.
+            RecordError($"Context provider '{provider.Name}' failed: {ex.Message}");
         }
     }
 
@@ -506,7 +541,7 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
             return cached.Properties;
 
         var filtered = new List<KeyValuePair<string, object?>>();
-        foreach (var kvp in manager.GetContextProperties())
+        foreach (var kvp in manager.StaticContextProperties())
         {
             if (ShouldIncludeContextProperty(kvp.Key))
                 filtered.Add(kvp);

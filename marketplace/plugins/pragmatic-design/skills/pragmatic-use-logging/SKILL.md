@@ -114,11 +114,13 @@ mark it `[NotLogged]` (`pragmatic-use-privacy`).
 Correlation id, HTTP request data, machine and process come from built-in context providers. Add your
 own (the tenant, the plan) by extending `ContextProviderBase`, and read request state **when the line is
 written**, not in the constructor: the context manager is a singleton, so a provider that captured
-`ITenantContext` would stamp the first tenant it saw on every line for the life of the process.
+`ITenantContext` would stamp the first tenant it saw on every line for the life of the process. Declare
+it `IsStatic => false` too: a provider left static is asked once and its first answer is kept.
 
 ```csharp
 public sealed class TenantLogContext(IHttpContextAccessor http) : ContextProviderBase("Tenant", priority: 80)
 {
+    public override bool IsStatic => false;
     public override bool IsAvailable() => Current() is { IsResolved: true };
     public override IReadOnlyDictionary<string, object?> GetContextProperties()
         => CreatePropertiesDictionary(("TenantId", Current()?.TenantId));

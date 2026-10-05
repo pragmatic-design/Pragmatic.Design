@@ -21,6 +21,9 @@ public interface IContextProvider
     /// Priority order -- lower values are evaluated first.
     int Priority { get; }
 
+    /// True (the default) when the properties never change while the process runs.
+    bool IsStatic => true;
+
     /// Returns the context properties this provider can supply.
     IReadOnlyDictionary<string, object?> GetContextProperties();
 
@@ -42,6 +45,20 @@ Providers are sorted by `Priority` in ascending order. When two providers supply
 | 900-999 | Process-level providers |
 | 1000+ | Machine-level (static) providers |
 
+### Static and Per-Call Providers
+
+`IsStatic` decides when a provider is asked for its properties.
+
+- **Static** (the default): the context manager asks the provider once, keeps the aggregate, and asks it again only
+  after a provider is registered or removed. Machine and process information belong here.
+- **Per call** (`IsStatic => false`): the provider is asked, `IsAvailable()` included, every time an entry is
+  enriched, on the thread that writes it. Anything that describes the current thread, request, user or tenant
+  belongs here.
+
+A provider that reads the current request and leaves `IsStatic` at its default is asked once. Every entry then
+carries the request that happened to come first, or none at all if the first entry was written outside a
+request. When a per-call provider and a static one supply the same key, the per-call value is the one written.
+
 ### ContextProviderBase
 
 The `ContextProviderBase` abstract class provides a constructor that accepts `name` and `priority`, and a helper method `CreatePropertiesDictionary` for building read-only dictionaries from tuples. Most providers extend this base class rather than implementing the interface directly.
@@ -53,6 +70,7 @@ public abstract class ContextProviderBase : IContextProvider
 
     public string Name { get; }
     public int Priority { get; }
+    public virtual bool IsStatic => true;
 
     public abstract IReadOnlyDictionary<string, object?> GetContextProperties();
     public virtual bool IsAvailable() => true;
@@ -76,7 +94,7 @@ The `IContextManager` interface is the central registry that holds all providers
 | `RegisterProviders(providers)` | Bulk add (sorts once after all registrations) |
 | `UnregisterProvider(name)` | Remove a provider by name |
 | `GetProviders()` | Get all registered providers sorted by priority |
-| `GetContextProperties()` | Synchronous: collect from all available providers |
+| `GetContextProperties()` | Synchronous: the cached static properties, plus the per-call providers read now |
 | `GetAggregateContextAsync(ct)` | Async: collect from all providers including async-only ones |
 | `GetProviderContextAsync(name, ct)` | Get properties from a specific provider |
 | `GetContextPropertyAsync(provider, property, ct)` | Get a single property from a specific provider |
@@ -137,13 +155,13 @@ Pragmatic.Logging ships with five built-in context providers that cover the most
 
 ### Provider Summary
 
-| Provider | Name | Priority | Scope | Key Properties |
+| Provider | Name | Priority | Read | Key Properties |
 |----------|------|----------|-------|---------------|
-| `HttpContextProvider` | `HttpContext` | 100 | Per-request | RequestPath, RequestMethod, UserId, RemoteIpAddress |
-| `CorrelationIdProvider` | `CorrelationId` | 50 | Per-request | CorrelationId, TraceId, SpanId |
-| `ThreadContextProvider` | `Thread` | 500 | Per-call | ThreadId, ThreadName, IsBackground, Culture |
-| `ProcessContextProvider` | `Process` | 900 | Per-process | ProcessId, ProcessName, AppVersion, StartTime |
-| `MachineContextProvider` | `Machine` | 1000 | Per-machine | MachineName, OSVersion, CLRVersion, RuntimeIdentifier |
+| `HttpContextProvider` | `HttpContext` | 100 | Per call | RequestPath, RequestMethod, UserId, RemoteIpAddress |
+| `CorrelationIdProvider` | `CorrelationId` | 50 | Per call | CorrelationId, TraceId, SpanId |
+| `ThreadContextProvider` | `Thread` | 500 | Per call | ThreadId, ThreadName, IsBackground, Culture |
+| `ProcessContextProvider` | `Process` | 900 | Once (static) | ProcessId, ProcessName, AppVersion, StartTime |
+| `MachineContextProvider` | `Machine` | 1000 | Once (static) | MachineName, OSVersion, CLRVersion, RuntimeIdentifier |
 
 ### HttpContextProvider
 
@@ -198,7 +216,7 @@ Not the command line: it is where secrets travel (a connection string or a token
 
 ### ThreadContextProvider
 
-Provides per-call thread information. Unlike Machine and Process providers, this one is evaluated on every call because the logging thread can change between requests.
+Provides per-call thread information. Unlike Machine and Process providers, it is not static (`IsStatic` is false), so it is read on every call: the logging thread changes from one request to the next.
 
 **Properties provided:** `ThreadId`, `ThreadName`, `IsBackground`, `IsThreadPoolThread`, `CurrentCulture`, `CurrentUICulture`.
 
@@ -215,12 +233,16 @@ In a multi-tenant application, every log entry should carry the current tenant i
 The context manager is a singleton, and the tenant belongs to the request: a provider that took an
 `ITenantContext` in its constructor would hold the first tenant it saw for the life of the process (and,
 with scope validation on, fail to resolve at all). It reads the tenant of the current request on each call
-instead, through `IHttpContextAccessor`, the way the built-in `HttpContextProvider` reads the request.
+instead, through `IHttpContextAccessor`, the way the built-in `HttpContextProvider` reads the request, and
+says so with `IsStatic => false`: without it the manager would ask once and keep the first answer.
 
 ```csharp
 public sealed class TenantContextProvider(IHttpContextAccessor httpContextAccessor)
     : ContextProviderBase("Tenant", priority: 80) // High priority: tenant is critical context
 {
+    // The tenant changes with the request: read it on every call, not once.
+    public override bool IsStatic => false;
+
     public override bool IsAvailable() => CurrentTenant() is { IsResolved: true };
 
     public override IReadOnlyDictionary<string, object?> GetContextProperties()
@@ -448,7 +470,7 @@ When a log entry is produced, `PragmaticLoggerProviderBase.WriteLog()` enriches 
 
 1. **LogContextScope** -- Ambient properties pushed by middleware via `LogContextScope.PushContext()`. These are scoped to the current async flow and automatically pop when the scope is disposed.
 
-2. **ContextManager.Instance** -- All registered `IContextProvider` instances are queried (respecting `IsAvailable()`) and their properties are merged in priority order.
+2. **ContextManager.Instance** -- The static providers' properties come from the manager's cache, merged in priority order when a provider was last registered or removed. The per-call providers are queried now, respecting `IsAvailable()`.
 
 Both sources are filtered through the provider's `ContextFilterConfiguration` before being attached to the `LogEntry.Properties` dictionary. This means each provider can see a different subset of context properties, matching its output requirements.
 
