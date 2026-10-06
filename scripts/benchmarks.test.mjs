@@ -38,6 +38,15 @@ test('the averaging noise of a many-operation benchmark passes', () => {
   assert.deepEqual(result.regressions, []);
 });
 
+// Two runner runs of the endpoint benchmarks over a 2 MB document differed by 435 B (0.02%): buffer
+// growth averaged over a handful of operations, not a code change (#55).
+test('a large benchmark moves by a fraction of a per mille without failing, and fails beyond it', () => {
+  const baseline = { 'A.B.Canada': 2_092_381 };
+
+  assert.equal(compareAllocations({ 'A.B.Canada': 2_092_381 + 435 }, baseline).failed, false);
+  assert.equal(compareAllocations({ 'A.B.Canada': 2_092_381 + 4_000 }, baseline).failed, true);
+});
+
 test('a benchmark with no baseline fails, so a new one arrives with its baseline', () => {
   const result = compareAllocations({ 'A.B.New': 100 }, {});
 

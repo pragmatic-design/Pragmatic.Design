@@ -55,6 +55,21 @@ export const BASELINE = 'benchmarks/allocation-baseline.json';
  */
 export const TOLERANCE_BYTES = 16;
 
+/**
+ * The share of its baseline a large benchmark may move, when that is more than `TOLERANCE_BYTES`.
+ *
+ * Allocations are deterministic per code path, not per byte: serialising a 2 MB document grows pooled
+ * buffers by amounts that, averaged over a handful of operations, moved by 435 B (0.02%) between two
+ * runs on the runner. One per mille is five times that, and still fails on anything allocated
+ * per element of the document.
+ */
+export const TOLERANCE_SHARE = 0.001;
+
+/** The bytes a benchmark with this baseline may move without failing. */
+export function toleranceFor(base) {
+  return Math.max(TOLERANCE_BYTES, base * TOLERANCE_SHARE);
+}
+
 // ── Reading BenchmarkDotNet's output ────────────────────────────────────────────────────────────
 
 /** Every file under `dir` whose name ends with `suffix`, recursively. */
@@ -198,13 +213,13 @@ export function timesFromCsv(dir) {
  *   benchmark, so one that did not run is only visible here. A benchmark removed or renamed takes its
  *   baseline entry with it in the same change.
  */
-export function compareAllocations(measured, baseline, tolerance = TOLERANCE_BYTES) {
+export function compareAllocations(measured, baseline) {
   const result = { regressions: [], unbaselined: [], improvements: [], missing: [] };
   for (const [name, bytes] of Object.entries(measured).sort()) {
     const base = baseline[name];
     if (base === undefined) result.unbaselined.push({ name, bytes });
-    else if (bytes > base + tolerance) result.regressions.push({ name, bytes, base });
-    else if (bytes < base - tolerance) result.improvements.push({ name, bytes, base });
+    else if (bytes > base + toleranceFor(base)) result.regressions.push({ name, bytes, base });
+    else if (bytes < base - toleranceFor(base)) result.improvements.push({ name, bytes, base });
   }
   for (const name of Object.keys(baseline).sort()) {
     if (!(name in measured)) result.missing.push({ name, base: baseline[name] });
@@ -226,7 +241,7 @@ export function allocationReport(result, measuredCount) {
     ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
-      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B).`, '');
+      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
   table('In the baseline, did not run (fails)', result.missing);
