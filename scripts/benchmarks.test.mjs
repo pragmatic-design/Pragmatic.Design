@@ -52,10 +52,12 @@ test('allocating less passes and asks for the baseline to come down', () => {
   assert.deepEqual(result.improvements, [{ name: 'A.B.Log', bytes: 2000, base: 2368 }]);
 });
 
-test('a baselined benchmark that did not run is reported and does not fail', () => {
-  const result = compareAllocations({}, { 'A.B.Gone': 10 });
+// BenchmarkDotNet exits 0 when it cannot build a benchmark (seen on the first run of the workflow, #55):
+// a benchmark that failed to run is only visible as one missing from the measurements.
+test('a baselined benchmark that did not run fails, so a broken benchmark cannot pass by measuring nothing', () => {
+  const result = compareAllocations({ 'A.B.Log': 2368 }, { 'A.B.Log': 2368, 'A.B.Gone': 10 });
 
-  assert.equal(result.failed, false);
+  assert.equal(result.failed, true);
   assert.deepEqual(result.missing, [{ name: 'A.B.Gone', base: 10 }]);
 });
 

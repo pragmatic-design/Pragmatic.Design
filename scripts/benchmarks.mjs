@@ -17,8 +17,8 @@
  *   node scripts/benchmarks.mjs ab --base <dir> --head <dir>
  */
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -154,7 +154,9 @@ export function timesFromCsv(dir) {
  * - `regressions`: allocates more than the baseline, beyond the tolerance. Fails.
  * - `unbaselined`: measured, with no baseline. Fails: a new benchmark gets a baseline in the same change.
  * - `improvements`: allocates less, beyond the tolerance. Passes, and asks for the baseline to come down.
- * - `missing`: in the baseline, not measured. Passes, and is reported: a benchmark removed or renamed.
+ * - `missing`: in the baseline, not measured. Fails: BenchmarkDotNet exits 0 when it cannot build a
+ *   benchmark, so one that did not run is only visible here. A benchmark removed or renamed takes its
+ *   baseline entry with it in the same change.
  */
 export function compareAllocations(measured, baseline, tolerance = TOLERANCE_BYTES) {
   const result = { regressions: [], unbaselined: [], improvements: [], missing: [] };
@@ -167,7 +169,7 @@ export function compareAllocations(measured, baseline, tolerance = TOLERANCE_BYT
   for (const name of Object.keys(baseline).sort()) {
     if (!(name in measured)) result.missing.push({ name, base: baseline[name] });
   }
-  result.failed = result.regressions.length > 0 || result.unbaselined.length > 0;
+  result.failed = result.regressions.length > 0 || result.unbaselined.length > 0 || result.missing.length > 0;
   return result;
 }
 
@@ -181,12 +183,14 @@ export function allocationReport(result, measuredCount) {
   };
 
   lines.push(result.failed
-    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline.`
-    : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B).`, '');
+    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run.`
+    : measuredCount === 0
+      ? '**FAIL**: no benchmark was measured.'
+      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
+  table('In the baseline, did not run (fails)', result.missing);
   table('Allocates less: lower the baseline', result.improvements);
-  table('In the baseline, not measured', result.missing);
   return lines.join('\n');
 }
 
@@ -231,18 +235,29 @@ function formatNs(ns) {
 // ── Running the suites ──────────────────────────────────────────────────────────────────────────
 
 /**
- * Runs one suite of one checkout, in a directory of its own so that BenchmarkDotNet's artifacts land
- * there whatever the checkout's program does with its arguments.
+ * Runs one suite of one checkout from the project's own directory, then moves BenchmarkDotNet's
+ * artifacts into `workDir`.
+ *
+ * ⚠️ The working directory is not a choice: BenchmarkDotNet finds the project to build its boilerplate
+ * from by searching the working directory, and from anywhere else it builds nothing — and still exits 0
+ * (the first run of the workflow, #55). Nor can `--artifacts` put the reports elsewhere, since a base
+ * checkout's program may not pass its arguments on; moving them afterwards works for any checkout.
  */
 function runSuite(checkout, suite, workDir) {
   const project = resolve(checkout, suite.project);
   if (!existsSync(project)) return { ran: false, reason: 'not in this checkout' };
 
-  mkdirSync(workDir, { recursive: true });
+  const projectDir = dirname(project);
+  const artifacts = join(projectDir, 'BenchmarkDotNet.Artifacts');
+  rmSync(artifacts, { recursive: true, force: true });
+
   const r = spawnSync('dotnet', ['run', '-c', 'Release', '--project', project, '--', ...suite.args], {
-    cwd: workDir,
+    cwd: projectDir,
     stdio: 'inherit',
   });
+
+  mkdirSync(workDir, { recursive: true });
+  if (existsSync(artifacts)) renameSync(artifacts, join(workDir, 'BenchmarkDotNet.Artifacts'));
   return { ran: true, code: r.status ?? 1 };
 }
 

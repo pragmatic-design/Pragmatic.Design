@@ -235,8 +235,9 @@ harness, through `node scripts/benchmarks.mjs ci`. It judges two kinds of result
 - **Allocations fail the run.** Bytes allocated per operation are deterministic for a code path, so
   they hold on a shared runner. `benchmarks/allocation-baseline.json` holds one number per benchmark;
   a benchmark that allocates more than its baseline (by over 16 bytes, the averaging noise of a
-  many-operation benchmark) or has no baseline turns the run red. One that allocates less asks for
-  the baseline to come down.
+  many-operation benchmark), has no baseline, or has a baseline and did not run turns the run red.
+  The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
+  allocates less asks for the baseline to come down.
 - **Times never fail it.** A hosted runner varies by 10–20% from one run to the next, so times are
   not compared with a stored history: base and head run on the same VM, alternated suite by suite,
   and the job summary shows the ratio for each benchmark. For a branch, run the workflow on it with
