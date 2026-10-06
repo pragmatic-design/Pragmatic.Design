@@ -22,6 +22,12 @@ namespace Pragmatic;
 ///         it generates.
 ///     </para>
 ///     <para>
+///         <b>On a parameter of a <c>[LoggerMessage]</c> method</b> the Pragmatic generator writes the
+///         argument as the mask at the call site, in the message, the structured property and every
+///         other view of the state. That is the one place a loose parameter has the identity a contract
+///         needs: the call site itself. On any other parameter it does nothing, and the analyzer says so.
+///     </para>
+///     <para>
 ///         <b>What it does not do.</b> It does not rewrite your own <c>_logger.Log*</c> calls: a
 ///         value you interpolate into a message string yourself goes out as you wrote it, and no
 ///         attribute can intervene. It does not affect a generated <c>ToString()</c>, and it does not
@@ -51,10 +57,9 @@ namespace Pragmatic;
 ///         — the rate comes out masked. Interpolated into the message yourself, it does not.
 ///     </example>
 /// </remarks>
-// Property only. A loose parameter has no type identity a type-keyed map can intercept, so
-// [NotLogged] on one compiled and did nothing — the same lie in the type system the attribute
-// itself was accused of. Supporting it would take a second, invocation-keyed contract, which the
-// Pragmatic canon makes unnecessary: pipeline inputs are typed (mutation, query, message), and
-// their marked properties are covered.
-[AttributeUsage(AttributeTargets.Property)]
+// Property, and a parameter of a log call site. A loose parameter has no type identity a type-keyed
+// map can intercept, so [NotLogged] on one used to compile and do nothing. The generated call site is
+// the invocation-keyed contract that was missing; on any other parameter the attribute is still inert,
+// and PRAG2410 reports it rather than letting it compile as if it held.
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotLoggedAttribute : Attribute;

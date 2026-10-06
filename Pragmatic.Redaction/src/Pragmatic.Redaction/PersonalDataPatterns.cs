@@ -27,7 +27,7 @@ namespace Pragmatic.Redaction;
 public static partial class PersonalDataPatterns
 {
     /// <summary>What a redacted value is replaced with.</summary>
-    public const string Mask = "[redacted]";
+    public const string Mask = global::Pragmatic.Serialization.RedactionMask.Value;
 
     /// <summary>
     ///     The pattern strings, for callers that compile their own.
