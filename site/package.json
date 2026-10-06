@@ -13,6 +13,9 @@
     "preview:docs": "pnpm --filter @pragmatic/docs preview"
   },
   "pnpm": {
+    "overrides": {
+      "postcss-nested": "^7.0.2"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp"
