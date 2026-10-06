@@ -226,6 +226,29 @@ It needs the native toolchain (Windows: a Visual Studio C++ workload). When it i
 **fails** rather than skipping: a skip that reads as a pass is the failure mode this tier exists to
 prevent. See `examples/aot-smoke/README.md` for what each sample covers.
 
+## Benchmarks
+
+Performance is not in the gate. `.github/workflows/benchmarks.yml` runs the Logging, Result and
+Endpoints benchmarks nightly, on demand, and on a pull request that changes a benchmark or the
+harness, through `node scripts/benchmarks.mjs ci`. It judges two kinds of result differently:
+
+- **Allocations fail the run.** Bytes allocated per operation are deterministic for a code path, so
+  they hold on a shared runner. `benchmarks/allocation-baseline.json` holds one number per benchmark;
+  a benchmark that allocates more than its baseline, has no baseline, or has a baseline and did not
+  run turns the run red. "More" means beyond 16 bytes or 0.25% of the baseline, whichever is larger:
+  the first is the averaging noise of a many-operation benchmark, the second the pooled-buffer
+  growth of one that serialises a large document (up to 270 B on 483 KB over three runs).
+  The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
+  allocates less asks for the baseline to come down.
+- **Times never fail it.** A hosted runner varies by 10–20% from one run to the next, so times are
+  not compared with a stored history: base and head run on the same VM, alternated suite by suite,
+  and the job summary shows the ratio for each benchmark. For a branch, run the workflow on it with
+  `base` left at `main`.
+
+A new or lowered baseline is copied from the run, never measured on a laptop: every run uploads
+`allocation-baseline.proposed.json` with the reports. Allocations differ between operating systems,
+and the baseline is the runner's.
+
 
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you
 commit.

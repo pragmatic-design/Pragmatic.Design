@@ -2415,6 +2415,7 @@ if (tier === 'verify') {
     && nodeTestCases('scripts/commit-message-check.test.mjs', 'the commit-message check refuses what the public history must not carry')
     && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
     && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
+    && nodeTestCases('scripts/benchmarks.test.mjs', 'the allocation ratchet refuses one allocation more')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()
