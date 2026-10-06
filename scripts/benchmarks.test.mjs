@@ -76,6 +76,22 @@ test('allocations are read from the JSON reports, the larger of two jobs kept', 
   assert.deepEqual(allocationsFromJson(dir), { 'A.B.Log': 120 });
 });
 
+// ResponseSerializationBenchmarks<T> runs over three documents whose type is called Root; FullName says
+// `<Root>` for all three, and the ratchet watched the largest of them only (#55).
+test('a generic benchmark over two types of one name is kept apart by its report', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bench-generic-'));
+  const entry = (bytes) => ({
+    Namespace: 'A',
+    Type: 'B<Root>',
+    FullName: 'A.B<Root>.Write',
+    Memory: { BytesAllocatedPerOperation: bytes },
+  });
+  writeFileSync(join(dir, 'A.B_Twitter.Root_-report-full-compressed.json'), JSON.stringify({ Benchmarks: [entry(100)] }));
+  writeFileSync(join(dir, 'A.B_Canada.Root_-report-full-compressed.json'), JSON.stringify({ Benchmarks: [entry(900)] }));
+
+  assert.deepEqual(allocationsFromJson(dir), { 'A.B_Canada.Root_.Write': 900, 'A.B_Twitter.Root_.Write': 100 });
+});
+
 test('BenchmarkDotNet time cells are read in nanoseconds', () => {
   assert.equal(parseTime('559.2 μs'), 559_200);
   assert.equal(parseTime('1,093.9 μs'), 1_093_900);

@@ -79,13 +79,28 @@ export function allocationsFromJson(dir) {
   const measured = {};
   for (const file of filesEndingWith(dir, '-report-full-compressed.json')) {
     const report = JSON.parse(readFileSync(file, 'utf8'));
+    const reportName = basename(file, '-report-full-compressed.json');
     for (const b of report.Benchmarks ?? []) {
       const bytes = b.Memory?.BytesAllocatedPerOperation;
       if (typeof bytes !== 'number') continue;
-      measured[b.FullName] = Math.max(measured[b.FullName] ?? 0, bytes);
+      const name = benchmarkName(b, reportName);
+      measured[name] = Math.max(measured[name] ?? 0, bytes);
     }
   }
   return measured;
+}
+
+/**
+ * The benchmark's FullName, with the type named as its report file names it. The two agree for a plain
+ * class; for a generic one FullName carries only the type argument's simple name, so
+ * `ResponseSerializationBenchmarks<Root>` stood for three documents, and the report name
+ * (`ResponseSerializationBenchmarks_Twitter.Root_`) is what tells them apart.
+ */
+function benchmarkName(benchmark, reportName) {
+  const type = `${benchmark.Namespace}.${benchmark.Type}`;
+  return benchmark.FullName.startsWith(type)
+    ? reportName + benchmark.FullName.slice(type.length)
+    : benchmark.FullName;
 }
 
 const TIME_UNITS = { ns: 1, 'μs': 1e3, 'µs': 1e3, us: 1e3, ms: 1e6, s: 1e9 };
