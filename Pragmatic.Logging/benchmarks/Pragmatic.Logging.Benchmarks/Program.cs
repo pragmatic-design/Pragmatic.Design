@@ -94,19 +94,22 @@ public class Program
                 break;
 
             case "all":
+                // What follows "all" goes to BenchmarkDotNet: the CI workflow adds `--exporters json` for
+                // the allocation ratchet (scripts/benchmarks.mjs).
+                var passThrough = args.Length > 1 ? args[1..] : [];
                 Console.WriteLine("🚀 Complete benchmark suite");
                 Console.WriteLine("\n1/4 - Logging Library Comparison");
-                BenchmarkRunner.Run<LoggingBenchmarks>();
+                BenchmarkRunner.Run<LoggingBenchmarks>(null, passThrough);
 
                 Console.WriteLine("\n2/4 - Declared Redaction Overhead");
-                BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>();
+                BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>(null, passThrough);
 
                 Console.WriteLine("\n3/4 - Expression DSL Performance");
-                BenchmarkRunner.Run<ExpressionDslBenchmarks>();
+                BenchmarkRunner.Run<ExpressionDslBenchmarks>(null, passThrough);
 
                 Console.WriteLine("\n4/4 - Zero Allocation Tests");
-                BenchmarkRunner.Run<ZeroAllocationBenchmark>();
-                BenchmarkRunner.Run<AllocationComparisonBenchmark>();
+                BenchmarkRunner.Run<ZeroAllocationBenchmark>(null, passThrough);
+                BenchmarkRunner.Run<AllocationComparisonBenchmark>(null, passThrough);
                 break;
 
             default:

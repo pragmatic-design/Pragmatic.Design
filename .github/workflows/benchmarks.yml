@@ -1,0 +1,85 @@
+name: Benchmarks
+
+# Performance gets a signal here and nowhere else: not on every pull request, because the gate stays the
+# gate, and a benchmark run takes far longer than one.
+#
+# Two kinds of result, judged differently (scripts/benchmarks.mjs):
+# - allocations are deterministic for a code path, so they hold on a shared runner: a committed baseline
+#   per benchmark, and the run fails when one allocates more or has no baseline;
+# - times vary by 10-20% between runners, so they are never compared with a stored history: base and
+#   head run on this one VM, alternated, and the job summary reports the ratios. They never fail the run.
+#
+# A/B for a pull request: run this workflow on the branch, with `base` left at main.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: The ref the timings are compared against
+        required: true
+        default: main
+  schedule:
+    - cron: '0 3 * * *'   # nightly: main against main, the ratchet and the noise floor of the A/B
+  # A change to the harness or to a benchmark is proven by running it; nothing else here triggers it.
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/benchmarks.yml
+      - scripts/benchmarks.mjs
+      - benchmarks/**
+      - '*/benchmarks/**'
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    name: Allocation ratchet + A/B timings
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - name: Checkout head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: head
+
+      - name: Checkout base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.base || 'main' }}
+          path: base
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: head/global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Run base and head
+        run: node head/scripts/benchmarks.mjs ci --head head --base base --out results
+
+      # Uploaded on a red run too: the proposed baseline is how a new or lowered baseline gets committed,
+      # copied from this runner rather than typed in from a laptop.
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmark-reports
+          path: |
+            results/allocation-baseline.proposed.json
+            results/**/BenchmarkDotNet.Artifacts/results/
+          if-no-files-found: error
