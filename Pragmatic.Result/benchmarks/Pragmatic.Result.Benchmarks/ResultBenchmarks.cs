@@ -1,176 +1,245 @@
-// =============================================================================
-// Result Benchmarks
-// Measures performance of Result operations vs traditional approaches
-// =============================================================================
-
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 
 namespace Pragmatic.Result.Benchmarks;
 
+/// <summary>
+///     What the Result, VoidResult, Maybe and multi-error operations cost, each over a batch of
+///     <see cref="Batch" /> inputs.
+/// </summary>
+/// <remarks>
+///     <para>
+///         ⚠️ <b>Per batch, not per operation.</b> These operations are a few instructions each, and measured
+///         one at a time on inputs the JIT can see they came out at 0.0000 ns: <c>static readonly</c> fields
+///         built from constants are constants after tier-1, so the work was folded away and the timer
+///         measured an empty method. Here every benchmark walks arrays built in <see cref="Setup" />, which
+///         the JIT cannot fold, and writes its results to a field or returns their sum, which it cannot
+///         drop. A row's mean is the cost of <see cref="Batch" /> operations.
+///     </para>
+///     <para>
+///         <see cref="Setup" /> runs every benchmark once and stops the run unless each computed what it
+///         says (<see cref="VerifyEachComputesWhatItSays" />).
+///     </para>
+/// </remarks>
 [Config(typeof(Config))]
 [MemoryDiagnoser]
 // No explicit RuntimeMoniker: the job runs against the host process runtime, which is the project's
 // TargetFramework (net10.0). This tracks the module's target automatically instead of a pinned moniker.
 [SimpleJob]
-public class ResultBenchmarks
+public partial class ResultBenchmarks
 {
-    // =========================================================================
-    // Access Pattern Benchmarks
-    // =========================================================================
+    /// <summary>How many inputs each benchmark walks per invocation.</summary>
+    public const int Batch = 1024;
 
-    private static readonly Result<int, BenchmarkError> SuccessResult =
-        Result<int, BenchmarkError>.Success(42);
+    // Inputs: every fourth one a failure, so a branch on the outcome cannot be predicted away entirely.
+    private int[] _values = null!;
+    private Result<int, BenchmarkError>[] _results = null!;
+    private Result<int, BenchmarkError>[] _successes = null!;
+    private Maybe<int>[] _maybes = null!;
+    private Result<int, BenchmarkError, BenchmarkError2>[] _multi = null!;
 
-    private static readonly Result<int, BenchmarkError> FailureResult =
-        Result<int, BenchmarkError>.Failure(BenchmarkError.Instance);
+    // Where the creating benchmarks put what they create: a store to the heap is not dead code.
+    private Result<int, BenchmarkError>[] _resultSink = null!;
+    private Result<string, BenchmarkError>[] _stringSink = null!;
+    private VoidResult<BenchmarkError>[] _voidSink = null!;
+    private Maybe<int>[] _maybeSink = null!;
+    private Result<int, BenchmarkError, BenchmarkError2>[] _multiSink = null!;
 
-    // =========================================================================
-    // Maybe Benchmarks
-    // =========================================================================
+    [GlobalSetup]
+    public void Setup()
+    {
+        _values = new int[Batch];
+        _results = new Result<int, BenchmarkError>[Batch];
+        _successes = new Result<int, BenchmarkError>[Batch];
+        _maybes = new Maybe<int>[Batch];
+        _multi = new Result<int, BenchmarkError, BenchmarkError2>[Batch];
 
-    private static readonly Maybe<int> SomeMaybe = Maybe<int>.Some(42);
-    private static readonly Maybe<int> NoneMaybe = Maybe<int>.None();
+        for (var i = 0; i < Batch; i++)
+        {
+            var value = i * 7 % 1000 + 1;
+            var fails = i % 4 == 3;
+            _values[i] = value;
+            _successes[i] = Result<int, BenchmarkError>.Success(value);
+            _results[i] = fails
+                ? Result<int, BenchmarkError>.Failure(BenchmarkError.Instance)
+                : Result<int, BenchmarkError>.Success(value);
+            _maybes[i] = fails ? Maybe<int>.None() : Maybe<int>.Some(value);
+            _multi[i] = (i % 8) switch
+            {
+                3 => Result<int, BenchmarkError, BenchmarkError2>.Failure(BenchmarkError.Instance),
+                7 => Result<int, BenchmarkError, BenchmarkError2>.Failure(BenchmarkError2.Instance),
+                _ => Result<int, BenchmarkError, BenchmarkError2>.Success(value),
+            };
+        }
 
-    // =========================================================================
-    // Multi-Error Result Benchmarks
-    // =========================================================================
+        _resultSink = new Result<int, BenchmarkError>[Batch];
+        _stringSink = new Result<string, BenchmarkError>[Batch];
+        _voidSink = new VoidResult<BenchmarkError>[Batch];
+        _maybeSink = new Maybe<int>[Batch];
+        _multiSink = new Result<int, BenchmarkError, BenchmarkError2>[Batch];
 
-    private static readonly Result<int, BenchmarkError, BenchmarkError2> MultiSuccess =
-        Result<int, BenchmarkError, BenchmarkError2>.Success(42);
+        VerifyEachComputesWhatItSays();
+    }
 
-    // =========================================================================
-    // Result Creation Benchmarks
-    // =========================================================================
+    // ── Creation ──
 
     [Benchmark(Baseline = true)]
-    public Result<int, BenchmarkError> CreateSuccess()
+    public void CreateSuccess()
     {
-        return Result<int, BenchmarkError>.Success(42);
+        for (var i = 0; i < Batch; i++)
+            _resultSink[i] = Result<int, BenchmarkError>.Success(_values[i]);
     }
 
     [Benchmark]
-    public Result<int, BenchmarkError> CreateFailure()
+    public void CreateFailure()
     {
-        return Result<int, BenchmarkError>.Failure(BenchmarkError.Instance);
+        for (var i = 0; i < Batch; i++)
+            _resultSink[i] = Result<int, BenchmarkError>.Failure(BenchmarkError.Instance);
     }
 
     [Benchmark]
-    public Result<int, BenchmarkError> CreateSuccess_Implicit()
+    public void CreateSuccess_Implicit()
     {
-        return 42;
+        for (var i = 0; i < Batch; i++)
+            _resultSink[i] = _values[i];
     }
 
     [Benchmark]
-    public Result<int, BenchmarkError> CreateFailure_Implicit()
+    public void CreateFailure_Implicit()
     {
-        return BenchmarkError.Instance;
+        for (var i = 0; i < Batch; i++)
+            _resultSink[i] = BenchmarkError.Instance;
     }
 
+    // ── Access ──
+
     [Benchmark]
-    public bool IsSuccess_Check()
+    public int IsSuccess_Check()
     {
-        return SuccessResult.IsSuccess;
+        var successes = 0;
+        for (var i = 0; i < Batch; i++)
+            if (_results[i].IsSuccess)
+                successes++;
+        return successes;
     }
 
     [Benchmark]
     public int Value_DirectAccess()
     {
-        return SuccessResult.Value;
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _successes[i].Value;
+        return sum;
     }
 
     [Benchmark]
     public int TryGetValue_Pattern()
     {
-        return SuccessResult.TryGetValue(out var value) ? value : 0;
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _results[i].TryGetValue(out var value) ? value : 0;
+        return sum;
     }
 
     [Benchmark]
     public int Match_Pattern()
     {
-        return SuccessResult.Match(v => v, e => 0);
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _results[i].Match(v => v, _ => 0);
+        return sum;
     }
 
-    // =========================================================================
-    // Map/Bind Chain Benchmarks
-    // =========================================================================
+    // ── Map and Bind ──
 
     [Benchmark]
-    public Result<string, BenchmarkError> Map_SingleTransform()
+    public void Map_SingleTransform()
     {
-        return SuccessResult.Map(v => v.ToString());
-    }
-
-    [Benchmark]
-    public Result<string, BenchmarkError> Map_ChainedTransforms()
-    {
-        return SuccessResult
-            .Map(v => v * 2)
-            .Map(v => v + 10)
-            .Map(v => v.ToString());
+        for (var i = 0; i < Batch; i++)
+            _stringSink[i] = _results[i].Map(v => v.ToString());
     }
 
     [Benchmark]
-    public Result<int, BenchmarkError> Bind_SingleOperation()
+    public void Map_ChainedTransforms()
     {
-        return SuccessResult.Bind(v =>
-            Result<int, BenchmarkError>.Success(v * 2));
-    }
-
-    // =========================================================================
-    // VoidResult Benchmarks
-    // =========================================================================
-
-    [Benchmark]
-    public VoidResult<BenchmarkError> VoidResult_Success()
-    {
-        return VoidResult<BenchmarkError>.Success();
+        for (var i = 0; i < Batch; i++)
+            _stringSink[i] = _results[i].Map(v => v * 2).Map(v => v + 10).Map(v => v.ToString());
     }
 
     [Benchmark]
-    public VoidResult<BenchmarkError> VoidResult_Failure()
+    public void Bind_SingleOperation()
     {
-        return VoidResult<BenchmarkError>.Failure(BenchmarkError.Instance);
+        for (var i = 0; i < Batch; i++)
+            _resultSink[i] = _results[i].Bind(v => Result<int, BenchmarkError>.Success(v * 2));
+    }
+
+    // ── VoidResult ──
+
+    [Benchmark]
+    public void VoidResult_Success()
+    {
+        for (var i = 0; i < Batch; i++)
+            _voidSink[i] = VoidResult<BenchmarkError>.Success();
     }
 
     [Benchmark]
-    public Maybe<int> Maybe_CreateSome()
+    public void VoidResult_Failure()
     {
-        return Maybe<int>.Some(42);
+        for (var i = 0; i < Batch; i++)
+            _voidSink[i] = VoidResult<BenchmarkError>.Failure(BenchmarkError.Instance);
+    }
+
+    // ── Maybe ──
+
+    [Benchmark]
+    public void Maybe_CreateSome()
+    {
+        for (var i = 0; i < Batch; i++)
+            _maybeSink[i] = Maybe<int>.Some(_values[i]);
     }
 
     [Benchmark]
-    public Maybe<int> Maybe_CreateNone()
+    public void Maybe_CreateNone()
     {
-        return Maybe<int>.None();
+        for (var i = 0; i < Batch; i++)
+            _maybeSink[i] = Maybe<int>.None();
     }
 
     [Benchmark]
     public int Maybe_GetValueOrDefault()
     {
-        return SomeMaybe.GetValueOrDefault(0);
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _maybes[i].GetValueOrDefault(0);
+        return sum;
     }
 
     [Benchmark]
     public int Maybe_Match()
     {
-        return SomeMaybe.Match(v => v, () => 0);
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _maybes[i].Match(v => v, () => 0);
+        return sum;
     }
 
+    // ── Multi-error ──
+
     [Benchmark]
-    public Result<int, BenchmarkError, BenchmarkError2> MultiError_CreateSuccess()
+    public void MultiError_CreateSuccess()
     {
-        return Result<int, BenchmarkError, BenchmarkError2>.Success(42);
+        for (var i = 0; i < Batch; i++)
+            _multiSink[i] = Result<int, BenchmarkError, BenchmarkError2>.Success(_values[i]);
     }
 
     [Benchmark]
     public int MultiError_Match()
     {
-        return MultiSuccess.Match(
-            v => v,
-            e1 => 0,
-            e2 => 0);
+        var sum = 0;
+        for (var i = 0; i < Batch; i++)
+            sum += _multi[i].Match(v => v, _ => -1, _ => -2);
+        return sum;
     }
 
     private class Config : ManualConfig
@@ -182,31 +251,4 @@ public class ResultBenchmarks
             AddColumn(StatisticColumn.P95);
         }
     }
-}
-
-// Benchmark error types - singleton pattern for benchmarking
-public sealed record BenchmarkError : Error
-{
-    public static readonly BenchmarkError Instance = new();
-
-    private BenchmarkError()
-    {
-    }
-
-    public string Message { get; } = "Benchmark error";
-    public override string Code => "BENCH";
-    public override int StatusCode => 400;
-}
-
-public sealed record BenchmarkError2 : Error
-{
-    public static readonly BenchmarkError2 Instance = new();
-
-    private BenchmarkError2()
-    {
-    }
-
-    public string Message { get; } = "Benchmark error 2";
-    public override string Code => "BENCH2";
-    public override int StatusCode => 400;
 }
