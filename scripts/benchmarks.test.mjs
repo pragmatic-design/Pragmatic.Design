@@ -97,6 +97,34 @@ test('a CSV row keeps its parameters, so two rows of one method stay apart', () 
   ]);
 });
 
+// The separator is the culture's list separator: ';' on an Italian Windows, ',' on the Linux runner,
+// where a mean with a thousands separator is quoted. The first run on the runner paired nothing (#55).
+test('a comma-separated CSV with quoted cells is read as the runner writes it', () => {
+  const csv = [
+    'Method,Job,Mean,Error,Allocated',
+    'Serilog_Production,DefaultJob,"1,151.8 ns",12.94 ns,3000 B',
+    'Serilog_Simple,DefaultJob,312.5 ns,1.02 ns,528 B',
+  ].join('\n');
+
+  assert.deepEqual(rowsFromCsv(csv), [
+    { method: 'Serilog_Production', job: 'DefaultJob', meanNs: 1151.8 },
+    { method: 'Serilog_Simple', job: 'DefaultJob', meanNs: 312.5 },
+  ]);
+});
+
+// The Result benchmarks measure 0.0000 ns on the runner: below the timer, so their ratio is NaN or
+// Infinity, and one of them made the geometric mean of 80 benchmarks NaN (#55).
+test('a time below a nanosecond is listed apart and kept out of the ratios', () => {
+  const report = abReport(
+    { 'R | Empty | DefaultJob': 0, 'R | Log | DefaultJob': 200 },
+    { 'R | Empty | DefaultJob': 0.0097, 'R | Log | DefaultJob': 150 },
+  );
+
+  assert.match(report, /Geometric mean of the ratios over 1 benchmark\(s\): \*\*0\.750\*\*/);
+  assert.match(report, /1 benchmark\(s\) under 1 ns on a side, too fast to compare: `R \| Empty \| DefaultJob`/);
+  assert.doesNotMatch(report, /NaN|Infinity/);
+});
+
 test('the A/B report pairs a benchmark with itself across the two sides', () => {
   const write = (root, mean) => {
     mkdirSync(join(root, 'results'), { recursive: true });

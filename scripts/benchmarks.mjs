@@ -97,10 +97,36 @@ export function parseTime(cell) {
   return Number(m[1].replaceAll(',', '')) * TIME_UNITS[m[2]];
 }
 
+/**
+ * One CSV line in cells. BenchmarkDotNet separates with the culture's list separator (';' on an Italian
+ * Windows, ',' on the Linux runner) and quotes a cell that contains it, as in "1,151.8 ns".
+ */
+function splitCsvLine(line, separator) {
+  const cells = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quoted) {
+      if (c === '"' && line[i + 1] === '"') (cell += '"', i++);
+      else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === separator) (cells.push(cell), (cell = ''));
+    else cell += c;
+  }
+  cells.push(cell);
+  return cells;
+}
+
 /** The rows of a BenchmarkDotNet CSV summary: Method, Job and the mean in nanoseconds. */
 export function rowsFromCsv(text) {
-  const [header, ...lines] = text.split(/\r?\n/).filter((l) => l.length > 0);
-  const columns = header.split(';');
+  const [header, ...rest] = text.split(/\r?\n/).filter((l) => l.length > 0);
+  // The header is always "Method" and then the separator.
+  const separator = header?.charAt('Method'.length);
+  if (!separator) return [];
+  const columns = splitCsvLine(header, separator);
+  const lines = rest.map((line) => splitCsvLine(line, separator));
   const at = (name) => columns.indexOf(name);
   const [method, job, mean] = [at('Method'), at('Job'), at('Mean')];
   if (method < 0 || mean < 0) return [];
@@ -111,8 +137,7 @@ export function rowsFromCsv(text) {
     .map((name, i) => ({ name, i }))
     .filter(({ i }) => i > (job < 0 ? method : job) && i < mean && !JOB_COLUMNS.has(columns[i]));
 
-  return lines.map((line) => {
-    const cells = line.split(';');
+  return lines.map((cells) => {
     const params = parameters.map(({ name, i }) => `${name}=${cells[i]}`).join(',');
     return {
       method: cells[method] + (params ? `(${params})` : ''),
@@ -196,9 +221,17 @@ export function allocationReport(result, measuredCount) {
 
 // ── A/B timing ──────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Below this a mean is the timer's resolution, not the code: BenchmarkDotNet reports 0.0000 ns for a
+ * method it cannot tell from an empty one, and the ratio of two such means is noise, NaN or Infinity.
+ */
+const COMPARABLE_NS = 1;
+
 /** Head against base, as ratios: the markdown the job summary shows. Never a verdict. */
 export function abReport(baseTimes, headTimes) {
-  const keys = Object.keys(headTimes).filter((k) => k in baseTimes).sort();
+  const paired = Object.keys(headTimes).filter((k) => k in baseTimes).sort();
+  const tooFast = paired.filter((k) => baseTimes[k] < COMPARABLE_NS || headTimes[k] < COMPARABLE_NS);
+  const keys = paired.filter((k) => !tooFast.includes(k));
   const lines = [
     '## Timings, head against base',
     '',
@@ -207,8 +240,12 @@ export function abReport(baseTimes, headTimes) {
       + 'table never fails the job.',
     '',
   ];
+  const tooFastNote = tooFast.length > 0
+    ? [`${tooFast.length} benchmark(s) under ${COMPARABLE_NS} ns on a side, too fast to compare: ${tooFast.map((k) => `\`${k}\``).join(', ')}.`]
+    : [];
   if (keys.length === 0) {
-    lines.push('No benchmark ran on both sides.');
+    lines.push(paired.length === 0 ? 'No benchmark ran on both sides.' : 'No benchmark is slow enough on both sides to compare.');
+    if (tooFastNote.length > 0) lines.push('', ...tooFastNote);
     return lines.join('\n');
   }
 
@@ -220,6 +257,7 @@ export function abReport(baseTimes, headTimes) {
     lines.push(`| ${key} | ${formatNs(baseTimes[key])} | ${formatNs(headTimes[key])} | ${ratio.toFixed(2)} |`);
   }
   lines.push('', `Geometric mean of the ratios over ${keys.length} benchmark(s): **${Math.exp(logSum / keys.length).toFixed(3)}**.`);
+  if (tooFastNote.length > 0) lines.push('', ...tooFastNote);
 
   const onlyHead = Object.keys(headTimes).filter((k) => !(k in baseTimes));
   if (onlyHead.length > 0) lines.push('', `${onlyHead.length} benchmark(s) ran on the head only and are not compared.`);
