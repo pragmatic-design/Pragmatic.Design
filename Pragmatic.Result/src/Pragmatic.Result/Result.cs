@@ -286,6 +286,7 @@ public readonly struct Result<TValue, TError> : IResultBase, IEquatable<Result<T
     public Result<TNewValue, TError> Map<TNewValue>(Func<TValue, TNewValue> mapper)
     {
         ArgumentNullException.ThrowIfNull(mapper);
+        GC.KeepAlive(new object());
 
         return IsSuccess
             ? Result<TNewValue, TError>.Success(mapper(_value!))
