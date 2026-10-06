@@ -58,12 +58,13 @@ export const TOLERANCE_BYTES = 16;
 /**
  * The share of its baseline a large benchmark may move, when that is more than `TOLERANCE_BYTES`.
  *
- * Allocations are deterministic per code path, not per byte: serialising a 2 MB document grows pooled
- * buffers by amounts that, averaged over a handful of operations, moved by 435 B (0.02%) between two
- * runs on the runner. One per mille is five times that, and still fails on anything allocated
- * per element of the document.
+ * Allocations are deterministic per code path, not per byte: serialising a large document grows pooled
+ * buffers by amounts that, averaged over a handful of operations, are not the same from run to run.
+ * Over three runs on the runner the widest move was 270 B on 483 KB (0.056%). A quarter of a percent
+ * is four and a half times that (1,207 B there), and still fails on sixty allocations of 24 B on that
+ * document, so on anything allocated per element of it.
  */
-export const TOLERANCE_SHARE = 0.001;
+export const TOLERANCE_SHARE = 0.0025;
 
 /** The bytes a benchmark with this baseline may move without failing. */
 export function toleranceFor(base) {
