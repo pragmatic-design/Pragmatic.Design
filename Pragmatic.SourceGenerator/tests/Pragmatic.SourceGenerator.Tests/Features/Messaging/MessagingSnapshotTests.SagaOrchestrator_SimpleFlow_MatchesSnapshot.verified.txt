@@ -285,59 +285,884 @@ public partial class OrderSaga
             }
         }
         
-        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaStarting =
-            LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSagaStarting"), "Saga {SagaType} starting for correlation {CorrelationId}");
-        
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaStarting(string sagaType, string correlationId)
-            => __logSagaStarting(_logger, sagaType, correlationId, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Information,
+                new global::Microsoft.Extensions.Logging.EventId(24462393, "LogSagaStarting"),
+                new __LogSagaStartingLogState(sagaType, correlationId),
+                null,
+                __LogSagaStartingLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaStepExecuting =
-            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogSagaStepExecuting"), "Saga {SagaType} executing step {StepName} in state {CurrentState}");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaStartingLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaStartingLogState>
+        {
+            static __LogSagaStartingLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaStartingLogState>.Writer = default(__LogSagaStartingLogState);
+            
+            public static readonly global::System.Func<__LogSagaStartingLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("CorrelationId");
+            
+            private readonly string _sagaType;
+            private readonly string _correlationId;
+            
+            public __LogSagaStartingLogState(string sagaType, string correlationId)
+            {
+                _sagaType = sagaType;
+                _correlationId = correlationId;
+            }
+            
+            public string Template => "Saga {SagaType} starting for correlation {CorrelationId}";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 2;
+            
+            public int Count => 3;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("CorrelationId", _correlationId),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} starting for correlation {CorrelationId}"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " starting for correlation "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _correlationId)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _correlationId);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaStartingLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaStartingLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaStepExecuting(string sagaType, string stepName, string currentState)
-            => __logSagaStepExecuting(_logger, sagaType, stepName, currentState, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Debug,
+                new global::Microsoft.Extensions.Logging.EventId(1934191397, "LogSagaStepExecuting"),
+                new __LogSagaStepExecutingLogState(sagaType, stepName, currentState),
+                null,
+                __LogSagaStepExecutingLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaStepFailed =
-            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(0, "LogSagaStepFailed"), "Saga {SagaType} step {StepName} failed");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaStepExecutingLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaStepExecutingLogState>
+        {
+            static __LogSagaStepExecutingLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaStepExecutingLogState>.Writer = default(__LogSagaStepExecutingLogState);
+            
+            public static readonly global::System.Func<__LogSagaStepExecutingLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("CurrentState");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            private readonly string _currentState;
+            
+            public __LogSagaStepExecutingLogState(string sagaType, string stepName, string currentState)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+                _currentState = currentState;
+            }
+            
+            public string Template => "Saga {SagaType} executing step {StepName} in state {CurrentState}";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("CurrentState", _currentState),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} executing step {StepName} in state {CurrentState}"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " executing step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " in state "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _currentState)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+                writer.WriteString(__Name2, _currentState);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaStepExecutingLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaStepExecutingLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaStepFailed(string sagaType, string stepName, global::System.Exception ex)
-            => __logSagaStepFailed(_logger, sagaType, stepName, ex);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Error,
+                new global::Microsoft.Extensions.Logging.EventId(1509823226, "LogSagaStepFailed"),
+                new __LogSagaStepFailedLogState(sagaType, stepName),
+                ex,
+                __LogSagaStepFailedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaStepRejected =
-            LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(0, "LogSagaStepRejected"), "Saga {SagaType} step {StepName} rejected: {Reason}");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaStepFailedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaStepFailedLogState>
+        {
+            static __LogSagaStepFailedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaStepFailedLogState>.Writer = default(__LogSagaStepFailedLogState);
+            
+            public static readonly global::System.Func<__LogSagaStepFailedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            
+            public __LogSagaStepFailedLogState(string sagaType, string stepName)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+            }
+            
+            public string Template => "Saga {SagaType} step {StepName} failed";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 2;
+            
+            public int Count => 3;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} step {StepName} failed"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " failed"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaStepFailedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaStepFailedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaStepRejected(string sagaType, string stepName, string reason)
-            => __logSagaStepRejected(_logger, sagaType, stepName, reason, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Information,
+                new global::Microsoft.Extensions.Logging.EventId(739460093, "LogSagaStepRejected"),
+                new __LogSagaStepRejectedLogState(sagaType, stepName, reason),
+                null,
+                __LogSagaStepRejectedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensated =
-            LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSagaCompensated"), "Saga {SagaType} compensated step {StepName}");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaStepRejectedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaStepRejectedLogState>
+        {
+            static __LogSagaStepRejectedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaStepRejectedLogState>.Writer = default(__LogSagaStepRejectedLogState);
+            
+            public static readonly global::System.Func<__LogSagaStepRejectedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("Reason");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            private readonly string _reason;
+            
+            public __LogSagaStepRejectedLogState(string sagaType, string stepName, string reason)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+                _reason = reason;
+            }
+            
+            public string Template => "Saga {SagaType} step {StepName} rejected: {Reason}";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("Reason", _reason),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} step {StepName} rejected: {Reason}"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " rejected: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _reason)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+                writer.WriteString(__Name2, _reason);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaStepRejectedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaStepRejectedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaCompensated(string sagaType, string stepName)
-            => __logSagaCompensated(_logger, sagaType, stepName, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Information,
+                new global::Microsoft.Extensions.Logging.EventId(954638730, "LogSagaCompensated"),
+                new __LogSagaCompensatedLogState(sagaType, stepName),
+                null,
+                __LogSagaCompensatedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensationSkipped =
-            LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(0, "LogSagaCompensationSkipped"), "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaCompensatedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaCompensatedLogState>
+        {
+            static __LogSagaCompensatedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaCompensatedLogState>.Writer = default(__LogSagaCompensatedLogState);
+            
+            public static readonly global::System.Func<__LogSagaCompensatedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            
+            public __LogSagaCompensatedLogState(string sagaType, string stepName)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+            }
+            
+            public string Template => "Saga {SagaType} compensated step {StepName}";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 2;
+            
+            public int Count => 3;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} compensated step {StepName}"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " compensated step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaCompensatedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaCompensatedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaCompensationSkipped(string sagaType, string stepName)
-            => __logSagaCompensationSkipped(_logger, sagaType, stepName, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Warning,
+                new global::Microsoft.Extensions.Logging.EventId(431188717, "LogSagaCompensationSkipped"),
+                new __LogSagaCompensationSkippedLogState(sagaType, stepName),
+                null,
+                __LogSagaCompensationSkippedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, global::System.Exception?> __logSagaCompensationFailed =
-            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(0, "LogSagaCompensationFailed"), "Saga {SagaType} compensator for step {StepName} threw — continuing chain");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaCompensationSkippedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaCompensationSkippedLogState>
+        {
+            static __LogSagaCompensationSkippedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaCompensationSkippedLogState>.Writer = default(__LogSagaCompensationSkippedLogState);
+            
+            public static readonly global::System.Func<__LogSagaCompensationSkippedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            
+            public __LogSagaCompensationSkippedLogState(string sagaType, string stepName)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+            }
+            
+            public string Template => "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 2;
+            
+            public int Count => 3;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " compensator for step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " skipped — JSON seeding produced null"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaCompensationSkippedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaCompensationSkippedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaCompensationFailed(string sagaType, string stepName, global::System.Exception ex)
-            => __logSagaCompensationFailed(_logger, sagaType, stepName, ex);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Error,
+                new global::Microsoft.Extensions.Logging.EventId(984699786, "LogSagaCompensationFailed"),
+                new __LogSagaCompensationFailedLogState(sagaType, stepName),
+                ex,
+                __LogSagaCompensationFailedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logSagaTimedOut =
-            LoggerMessage.Define<string, string, string>(LogLevel.Warning, new EventId(0, "LogSagaTimedOut"), "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaCompensationFailedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaCompensationFailedLogState>
+        {
+            static __LogSagaCompensationFailedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaCompensationFailedLogState>.Writer = default(__LogSagaCompensationFailedLogState);
+            
+            public static readonly global::System.Func<__LogSagaCompensationFailedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("StepName");
+            
+            private readonly string _sagaType;
+            private readonly string _stepName;
+            
+            public __LogSagaCompensationFailedLogState(string sagaType, string stepName)
+            {
+                _sagaType = sagaType;
+                _stepName = stepName;
+            }
+            
+            public string Template => "Saga {SagaType} compensator for step {StepName} threw — continuing chain";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 2;
+            
+            public int Count => 3;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("StepName", _stepName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} compensator for step {StepName} threw — continuing chain"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " compensator for step "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _stepName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " threw — continuing chain"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _stepName);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaCompensationFailedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaCompensationFailedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaTimedOut(string sagaType, string correlationId, string state)
-            => __logSagaTimedOut(_logger, sagaType, correlationId, state, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Warning,
+                new global::Microsoft.Extensions.Logging.EventId(584734852, "LogSagaTimedOut"),
+                new __LogSagaTimedOutLogState(sagaType, correlationId, state),
+                null,
+                __LogSagaTimedOutLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, int, global::System.Exception?> __logSagaConflictRetrying =
-            LoggerMessage.Define<string, string, int>(LogLevel.Information, new EventId(0, "LogSagaConflictRetrying"), "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaTimedOutLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaTimedOutLogState>
+        {
+            static __LogSagaTimedOutLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaTimedOutLogState>.Writer = default(__LogSagaTimedOutLogState);
+            
+            public static readonly global::System.Func<__LogSagaTimedOutLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("CorrelationId");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("State");
+            
+            private readonly string _sagaType;
+            private readonly string _correlationId;
+            private readonly string _state;
+            
+            public __LogSagaTimedOutLogState(string sagaType, string correlationId, string state)
+            {
+                _sagaType = sagaType;
+                _correlationId = correlationId;
+                _state = state;
+            }
+            
+            public string Template => "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("CorrelationId", _correlationId),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("State", _state),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " timed out (correlation "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _correlationId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ", state "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _state)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ") — running compensation chain"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _correlationId);
+                writer.WriteString(__Name2, _state);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaTimedOutLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaTimedOutLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogSagaConflictRetrying(string sagaType, string correlationId, int attempt)
-            => __logSagaConflictRetrying(_logger, sagaType, correlationId, attempt, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Information,
+                new global::Microsoft.Extensions.Logging.EventId(1978437257, "LogSagaConflictRetrying"),
+                new __LogSagaConflictRetryingLogState(sagaType, correlationId, attempt),
+                null,
+                __LogSagaConflictRetryingLogState.Format);
+        }
+        
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogSagaConflictRetryingLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogSagaConflictRetryingLogState>
+        {
+            static __LogSagaConflictRetryingLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogSagaConflictRetryingLogState>.Writer = default(__LogSagaConflictRetryingLogState);
+            
+            public static readonly global::System.Func<__LogSagaConflictRetryingLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("SagaType");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("CorrelationId");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("Attempt");
+            
+            private readonly string _sagaType;
+            private readonly string _correlationId;
+            private readonly int _attempt;
+            
+            public __LogSagaConflictRetryingLogState(string sagaType, string correlationId, int attempt)
+            {
+                _sagaType = sagaType;
+                _correlationId = correlationId;
+                _attempt = attempt;
+            }
+            
+            public string Template => "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("SagaType", _sagaType),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("CorrelationId", _correlationId),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("Attempt", _attempt),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Saga "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _sagaType)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " (correlation "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _correlationId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ") was saved by another writer first; reading it again (attempt "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _attempt, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ")"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _sagaType);
+                writer.WriteString(__Name1, _correlationId);
+                writer.WriteNumber(__Name2, (int)_attempt);
+            }
+            
+            public bool TryFormatMessage(in __LogSagaConflictRetryingLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogSagaConflictRetryingLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
     }
     
 }

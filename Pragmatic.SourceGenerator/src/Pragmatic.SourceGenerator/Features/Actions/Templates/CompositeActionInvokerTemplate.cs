@@ -1,6 +1,8 @@
 ﻿using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Actions.Models;
+using Pragmatic.SourceGenerator.Features.Logging.Templates;
+using Pragmatic.SourceGenerator.Features.Logging.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Actions.Templates;
 
@@ -8,7 +10,10 @@ namespace Pragmatic.SourceGenerator.Features.Actions.Templates;
 ///     Generates a transactional invoker for [CompositeAction] DomainActions.
 ///     The invoker executes all mutation steps without saving, then commits atomically.
 /// </summary>
-internal sealed class CompositeActionInvokerTemplate : CSharpTemplate
+/// <remarks>
+///     Its one log line is a Pragmatic call site written into the invoker in this pass.
+/// </remarks>
+internal sealed class CompositeActionInvokerTemplate : LogCallSiteTemplateBase
 {
     private readonly CompositeActionModel _model;
 
@@ -116,6 +121,14 @@ internal sealed class CompositeActionInvokerTemplate : CSharpTemplate
         RenderConstructor();
         AppendLine();
         RenderExecuteAsync();
+        AppendLine();
+
+        var postCommitFailed = GeneratedLogCallSite.Create(
+            "LogPostCommitFailed", "private static", "logger", "Error",
+            "Composite action committed but a post-commit side effect (event dispatch / cache invalidation) threw — reported as success; the side effect failed",
+            [("global::Microsoft.Extensions.Logging.ILogger", "logger")],
+            exception: "ex");
+        RenderCallSite(postCommitFailed, StateName(postCommitFailed, new System.Collections.Generic.HashSet<string>()));
     }
 
     private void RenderConstructor()
@@ -283,15 +296,7 @@ internal sealed class CompositeActionInvokerTemplate : CSharpTemplate
                 AppendLine(
                     "var __loggerFactory = _serviceProvider.GetService<global::Microsoft.Extensions.Logging.ILoggerFactory>();");
                 AppendLine("if (__loggerFactory is not null)");
-                IncreaseIndent();
-                AppendLine("global::Microsoft.Extensions.Logging.LoggerExtensions.LogError(");
-                IncreaseIndent();
-                AppendLine("__loggerFactory.CreateLogger(\"Pragmatic.Actions.CompositeAction\"),");
-                AppendLine("__postCommitEx,");
-                AppendLine(
-                    "\"Composite action committed but a post-commit side effect (event dispatch / cache invalidation) threw — reported as success; the side effect failed\");");
-                DecreaseIndent();
-                DecreaseIndent();
+                AppendLine("    LogPostCommitFailed(__loggerFactory.CreateLogger(\"Pragmatic.Actions.CompositeAction\"), __postCommitEx);");
             });
             AppendLine();
 

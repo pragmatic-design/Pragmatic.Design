@@ -73,10 +73,7 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    ex,
-                    "Purge of ReservationAttachment {AttachmentId} left its stored files in place; the row is kept and will be retried.",
-                    attachment.Id);
+                LogFilesKept(attachment.Id, ex);
                 continue;
             }
             
@@ -90,10 +87,191 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
             {
                 await _db.SaveChangesAsync(ct).ConfigureAwait(false);
             }
-            _logger.LogInformation(
-                "Purged {PurgedCount} of {ExpiredCount} expired ReservationAttachment rows.",
-                purged, expired.Count);
+            LogPurged(purged, expired.Count);
         }
+    }
+    
+    [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
+    private void LogFilesKept(global::System.Guid attachmentId, global::System.Exception ex)
+    {
+        if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
+            return;
+        
+        _logger.Log(
+            global::Microsoft.Extensions.Logging.LogLevel.Warning,
+            new global::Microsoft.Extensions.Logging.EventId(1762328492, "LogFilesKept"),
+            new __LogFilesKeptLogState(attachmentId),
+            ex,
+            __LogFilesKeptLogState.Format);
+    }
+    
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+    private readonly struct __LogFilesKeptLogState
+        : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+          global::Pragmatic.Logging.CallSites.IUtf8LogState,
+          global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogFilesKeptLogState>
+    {
+        static __LogFilesKeptLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogFilesKeptLogState>.Writer = default(__LogFilesKeptLogState);
+        
+        public static readonly global::System.Func<__LogFilesKeptLogState, global::System.Exception?, string> Format =
+            static (state, _) => state.ToString();
+        
+        private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("AttachmentId");
+        
+        private readonly global::System.Guid _attachmentId;
+        
+        public __LogFilesKeptLogState(global::System.Guid attachmentId)
+        {
+            _attachmentId = attachmentId;
+        }
+        
+        public string Template => "Purge of ReservationAttachment {AttachmentId} left its stored files in place; the row is kept and will be retried.";
+        
+        public bool IsSelfContained => true;
+        
+        public int PropertyCount => 1;
+        
+        public int Count => 2;
+        
+        public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+        {
+            0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("AttachmentId", _attachmentId),
+            1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Purge of ReservationAttachment {AttachmentId} left its stored files in place; the row is kept and will be retried."),
+            _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+        };
+        
+        public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+        {
+            for (var i = 0; i < Count; i++)
+                yield return this[i];
+        }
+        
+        global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        
+        public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+        {
+            var written = 0;
+            if (
+                !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Purge of ReservationAttachment "u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _attachmentId, "")
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " left its stored files in place; the row is kept and will be retried."u8)
+            )
+            {
+                bytesWritten = 0;
+                return false;
+            }
+            
+            bytesWritten = written;
+            return true;
+        }
+        
+        public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+        {
+            global::Pragmatic.Logging.CallSites.Utf8LogFormat.WriteFormatted(writer, __Name0, _attachmentId, "D");
+        }
+        
+        public bool TryFormatMessage(in __LogFilesKeptLogState state, global::System.Span<byte> destination, out int bytesWritten)
+            => state.TryFormatMessage(destination, out bytesWritten);
+        
+        public void WriteProperties(in __LogFilesKeptLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+            => state.WriteProperties(writer);
+        
+        public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+    }
+    
+    [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
+    private void LogPurged(int purgedCount, int expiredCount)
+    {
+        if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
+            return;
+        
+        _logger.Log(
+            global::Microsoft.Extensions.Logging.LogLevel.Information,
+            new global::Microsoft.Extensions.Logging.EventId(391238444, "LogPurged"),
+            new __LogPurgedLogState(purgedCount, expiredCount),
+            null,
+            __LogPurgedLogState.Format);
+    }
+    
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+    private readonly struct __LogPurgedLogState
+        : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+          global::Pragmatic.Logging.CallSites.IUtf8LogState,
+          global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogPurgedLogState>
+    {
+        static __LogPurgedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogPurgedLogState>.Writer = default(__LogPurgedLogState);
+        
+        public static readonly global::System.Func<__LogPurgedLogState, global::System.Exception?, string> Format =
+            static (state, _) => state.ToString();
+        
+        private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("PurgedCount");
+        private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("ExpiredCount");
+        
+        private readonly int _purgedCount;
+        private readonly int _expiredCount;
+        
+        public __LogPurgedLogState(int purgedCount, int expiredCount)
+        {
+            _purgedCount = purgedCount;
+            _expiredCount = expiredCount;
+        }
+        
+        public string Template => "Purged {PurgedCount} of {ExpiredCount} expired ReservationAttachment rows.";
+        
+        public bool IsSelfContained => true;
+        
+        public int PropertyCount => 2;
+        
+        public int Count => 3;
+        
+        public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+        {
+            0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("PurgedCount", _purgedCount),
+            1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("ExpiredCount", _expiredCount),
+            2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Purged {PurgedCount} of {ExpiredCount} expired ReservationAttachment rows."),
+            _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+        };
+        
+        public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+        {
+            for (var i = 0; i < Count; i++)
+                yield return this[i];
+        }
+        
+        global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        
+        public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+        {
+            var written = 0;
+            if (
+                !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Purged "u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _purgedCount, "")
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " of "u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _expiredCount, "")
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " expired ReservationAttachment rows."u8)
+            )
+            {
+                bytesWritten = 0;
+                return false;
+            }
+            
+            bytesWritten = written;
+            return true;
+        }
+        
+        public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+        {
+            writer.WriteNumber(__Name0, (int)_purgedCount);
+            writer.WriteNumber(__Name1, (int)_expiredCount);
+        }
+        
+        public bool TryFormatMessage(in __LogPurgedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+            => state.TryFormatMessage(destination, out bytesWritten);
+        
+        public void WriteProperties(in __LogPurgedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+            => state.WriteProperties(writer);
+        
+        public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
     }
 }
 

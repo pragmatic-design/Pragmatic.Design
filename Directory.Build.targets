@@ -318,4 +318,15 @@
     </XmlPeek>
   </Target>
 
+  <!-- ============================================
+       Log call sites
+       The generator's package sets PragmaticLogCallSites and declares the [LoggerMessage] alias for every
+       project that references it (Pragmatic.SourceGenerator.props). A ProjectReference imports none of
+       that, so inside the repository a project opts in by setting the property, and gets the same alias
+       here. A project that does not set it keeps Microsoft's generator.
+       ============================================ -->
+  <ItemGroup Condition="'$(PragmaticLogCallSites)' == 'true'">
+    <Using Include="Pragmatic.Logging.CallSites.LoggerMessageAttribute" Alias="LoggerMessageAttribute" />
+  </ItemGroup>
+
 </Project>

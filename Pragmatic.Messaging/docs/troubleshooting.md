@@ -6,7 +6,7 @@
 
 - [ ] Class has `[MessageHandler]` attribute
 - [ ] Class implements `IMessageHandler<T>` (not just the method signature)
-- [ ] Class is `partial` (for `[LoggerMessage]` integration)
+- [ ] Class is `partial` (the generated pipeline is nested inside it)
 - [ ] Message type `T` matches the event being published
 - [ ] Module is referenced by the host project (SG runs per-project)
 - [ ] `dotnet clean && dotnet build` (stale SG cache)

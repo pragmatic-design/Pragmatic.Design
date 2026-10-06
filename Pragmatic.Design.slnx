@@ -30,6 +30,7 @@
   </Folder>
   <Folder Name="/docs/security/">
     <File Path="docs/security/owasp-coverage.md" />
+    <File Path="docs/security/supply-chain.md" />
     <File Path="docs/security/threat-model-compliance.md" />
   </Folder>
   <Folder Name="/Pragmatic.Abstractions/docs/">
@@ -293,6 +294,7 @@
   <Folder Name="/Pragmatic.Logging/docs/">
     <File Path="Pragmatic.Logging/README.md" />
     <File Path="Pragmatic.Logging/CHANGELOG.md" />
+    <File Path="Pragmatic.Logging/docs/call-sites.md" />
     <File Path="Pragmatic.Logging/docs/common-mistakes.md" />
     <File Path="Pragmatic.Logging/docs/concepts.md" />
     <File Path="Pragmatic.Logging/docs/context-enrichment.md" />

@@ -105,6 +105,42 @@ two properties are a second MEL scope. Pragmatic runs its production preset, wit
   `GetParameterValue(int)`, which boxes value types. Its typed and JSON accessors would avoid that, but
   the sink does not know the types any more than the other three do.
 
+## A JSON line: `JsonSinkBenchmarks`
+
+⚠️ **Not the machine of the rest of this page.** These numbers come from the benchmarks workflow run on
+the change that added the category, on the GitHub runner: AMD EPYC 7763 (4 logical cores), Ubuntu 24.04,
+.NET 10.0.12, BenchmarkDotNet 0.14.0, default job. The report is
+[`benchmarks/reports/…JsonSinkBenchmarks-report-github.md`](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md).
+Compare rows within this table, not with the tables above.
+
+The same call (`Order {OrderId} placed by {Customer} for {Amount}`: an int, a string, a decimal) written
+as a JSON line by each library's own JSON writer, on the logging thread, into a buffer that keeps only the
+line being written. Pragmatic logs through its generated call site; Microsoft's `[LoggerMessage]` goes
+through the Pragmatic JSON provider, Serilog's `JsonFormatter` and NLog's `JsonLayout`; ZLogger through its
+own `[ZLoggerMessage]` and JSON formatter. `GlobalSetup` stops the run unless every line carries the
+rendered message and the three values. Pragmatic's context enrichment is off, as nothing like it is
+configured for the others.
+
+| Library | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| ZLogger, `[ZLoggerMessage]` | 447.7 ns | 1.63× faster | 0 B |
+| **Pragmatic, generated call site** | **730.2 ns** | baseline | **0 B** |
+| Serilog, `[LoggerMessage]` | 1,562.4 ns | 2.14× slower | 1,448 B |
+| NLog, `[LoggerMessage]` | 1,674.0 ns | 2.29× slower | 1,704 B |
+| Pragmatic, `[LoggerMessage]` | 1,958.3 ns | 2.68× slower | 6,992 B |
+
+With an argument declared `[PersonalData]`, masked by the call site: **604.0 ns, 0 B**. It is faster than
+the call without one because the masked value is never formatted.
+
+- **The generated call site allocates nothing** through the JSON provider, masked argument or not; so
+  does ZLogger. The other three allocate per line.
+- **ZLogger is 1.63× faster.** It writes from a UTF-8 state of its own too. Where the difference goes
+  was not measured; the lines are not the same shape (Pragmatic's carries the event id and the message
+  template, for one), and this table does not say how much of the gap that accounts for.
+- **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row and the largest
+  allocation:** that is the classic path, which builds an entry, a message string and a dictionary. The
+  call-site path is 2.68× faster for the same line.
+
 ## Declared redaction overhead: `RedactionOverheadBenchmarks`
 
 Pragmatic only, because no other library in the comparison masks the members a type declares. The same
@@ -134,15 +170,13 @@ each value's type, finds nothing declared, and returns the value untouched.
 | String interpolation *(baseline)* | 63.76 ns | baseline | 240 B |
 | `ZeroAllocMessageFormatter.Format` | 75.97 ns | 1.19× slower | 176 B |
 | `string.Format` | 81.87 ns | 1.29× slower | 296 B |
-| `LogMessage.TryFormat` | 85.93 ns | 1.35× slower | 344 B |
-| `LogMessage.ToString` | 86.33 ns | 1.36× slower | 344 B |
 | `MessageFormatter.Format` (reflection-based) | 109.04 ns | 1.71× slower | 528 B |
 | Structured logging through `ILogger` | 170.68 ns | 2.68× slower | 904 B |
 
 - `ZeroAllocMessageFormatter.TryFormat`, into a caller-provided span, is the only path with 0 B. It runs
   at the speed of plain interpolation.
-- `LogMessage.TryFormat` is slower than the baseline and allocates 344 B, despite its name. Prefer
-  `ZeroAllocMessageFormatter.TryFormat` on a hot path.
+- The committed report also has two `LogMessage` rows: that type was removed with the generated log call
+  sites, which are the typed message it was meant to become.
 
 ## Bulk formatting, 1,000 messages: `AllocationComparisonBenchmark`
 

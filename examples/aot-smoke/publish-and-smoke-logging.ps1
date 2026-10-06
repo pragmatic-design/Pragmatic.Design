@@ -16,7 +16,9 @@ $proj = Join-Path $PSScriptRoot 'Pragmatic.Aot.Logging/Pragmatic.Aot.Logging.csp
 $rid = if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'win-x64' } elseif ($IsMacOS) { 'osx-x64' } else { 'linux-x64' }
 
 Write-Host "Publishing $proj for $rid (Native AOT)..."
-dotnet publish $proj -c Release -r $rid
+# IL2026/IL3050 as errors: the logging path, generated call sites included, is meant to need no unreferenced
+# or dynamic code, and a warning here would be the first sign it started to.
+dotnet publish $proj -c Release -r $rid -warnaserror:IL2026,IL3050
 if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.Logging.exe' } else { 'Pragmatic.Aot.Logging' }

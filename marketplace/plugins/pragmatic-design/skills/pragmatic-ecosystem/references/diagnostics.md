@@ -25,6 +25,7 @@ Prefer live code when in doubt. Search existing `*Diagnostics.cs` and tests befo
 | `PRAG2200-2249` | Patch |
 | `PRAG2300-2349` | Client (`Pragmatic.Client.SourceGenerator`) |
 | `PRAG2350-2399` | Testing (`Pragmatic.Testing.SourceGenerator`: mocks, comparers) |
+| `PRAG2400-2449` | Logging: `[LoggerMessage]` call sites, the alias guard, a masking attribute on a parameter nothing reads |
 | `PRAG2500-2549` | Jobs |
 | `PRAG2600-2699` | Traits and Resource (shared) |
 | `PRAG2700-2749` | Value objects |

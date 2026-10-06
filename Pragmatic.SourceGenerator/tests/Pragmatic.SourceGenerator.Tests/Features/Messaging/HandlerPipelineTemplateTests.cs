@@ -75,13 +75,15 @@ public class HandlerPipelineTemplateTests
         var model = BuildModel("MyHandler");
         var source = new HandlerPipelineTemplate(model).RenderOutput().Text;
 
-        // Written out with a body: the logging generator never sees this output, so a
-        // [LoggerMessage] partial would stay bodiless and every call to it would be compiled away.
+        // Written out with a body: no generator sees this output, so a [LoggerMessage] partial would stay
+        // bodiless and every call to it would be compiled away. Each method is a Pragmatic call site, its
+        // state written in the same pass.
         source.Should().NotContain("[LoggerMessage");
-        source.Should().Contain("LoggerMessage.Define<");
-        source.Should().Contain("LogHandlerStarted");
-        source.Should().Contain("LogHandlerCompleted");
-        source.Should().Contain("LogHandlerFailed");
+        source.Should().Contain("private void LogHandlerStarted(");
+        source.Should().Contain("private void LogHandlerCompleted(");
+        source.Should().Contain("private void LogHandlerFailed(");
+        source.Should().Contain("private readonly struct __LogHandlerFailedLogState");
+        source.Should().Contain("global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogHandlerFailedLogState>");
     }
 
     private static MessageHandlerModel BuildModel(string name) => new()

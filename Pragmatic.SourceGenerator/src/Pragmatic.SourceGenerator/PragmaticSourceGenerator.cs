@@ -233,6 +233,10 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         LifecycleEventsFeature.Register(context);
         ValueObjectFeature.Register(context);
 
+        // [LoggerMessage] call sites bound to the Pragmatic attribute. Standalone: the attribute is the
+        // whole activation condition, and nothing else in the run depends on the bodies it writes.
+        Features.Logging.LogCallSiteFeature.Register(context);
+
         // A declared Specification<TEntity> reaches the two surfaces it is consumed through. Standalone
         // and guarded by its own symbol lookup: no ordering relationship with anything above.
         SpecificationFeature.Register(context);

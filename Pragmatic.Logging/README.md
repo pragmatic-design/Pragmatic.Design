@@ -38,8 +38,10 @@ In a Pragmatic host the same builder is `app.UseLogging(logging => …)`. There 
 `Pragmatic.Logging.Extensions.PragmaticLoggingBuilder`; `ILoggingBuilder.AddPragmaticLogging()` no
 longer exists.
 
-Pair it with .NET's built-in `[LoggerMessage]` source generator on hot paths; structured properties,
-automatic PII/secret redaction, an audit trail, and context enrichment come built in.
+On hot paths, write `[LoggerMessage]` methods: with `Pragmatic.SourceGenerator` referenced they are
+[Pragmatic call sites](docs/call-sites.md), whose state writes itself as UTF-8 and masks a
+`[PersonalData]` argument at the call site. Structured properties, automatic PII/secret redaction, an
+audit trail, and context enrichment come built in.
 
 ## Installation
 
@@ -62,6 +64,7 @@ enrichment. See the [roadmap](../docs/ROADMAP.md).
 | [Providers](docs/providers.md) | The eight providers, choosing one, writing your own |
 | [Context Enrichment](docs/context-enrichment.md) | Correlation IDs, ambient context, scopes |
 | [Privacy & Security](docs/privacy-security.md) | PII/secret redaction, audit trail |
+| [Log call sites](docs/call-sites.md) | `[LoggerMessage]` with the Pragmatic generator: UTF-8 state, masking at the call site |
 | [Performance](docs/performance.md) | `[LoggerMessage]`, the zero-allocation formatter, rate limiting |
 | [Common Mistakes](docs/common-mistakes.md) | The most frequent logging pitfalls |
 | [Troubleshooting](docs/troubleshooting.md) | Problem/solution guide |

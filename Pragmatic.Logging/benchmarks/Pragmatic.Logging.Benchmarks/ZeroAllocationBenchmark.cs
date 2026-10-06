@@ -57,21 +57,6 @@ public class ZeroAllocationBenchmark
     }
 
     [Benchmark]
-    public string LogMessageToString()
-    {
-        var logMessage = new LogMessage<TestData>(LogLevel.Information, Template, _testData);
-        return logMessage.ToString();
-    }
-
-    [Benchmark]
-    public bool LogMessageTryFormat()
-    {
-        var logMessage = new LogMessage<TestData>(LogLevel.Information, Template, _testData);
-        Span<char> buffer = stackalloc char[200];
-        return logMessage.TryFormat(buffer, out _);
-    }
-
-    [Benchmark]
     public string StructuredLoggingWithILogger()
     {
         // Simulate what standard ILogger would do

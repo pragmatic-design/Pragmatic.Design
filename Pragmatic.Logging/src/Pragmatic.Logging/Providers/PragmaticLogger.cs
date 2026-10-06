@@ -127,8 +127,6 @@ internal sealed class PragmaticLogger(string categoryName, PragmaticLoggerProvid
                     }
                 }
                 break;
-
-                // Note: ILogMessage handling will be added when the message types are fully implemented
         }
     }
 

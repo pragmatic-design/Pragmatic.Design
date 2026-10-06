@@ -35,7 +35,7 @@ const RANGES = [
   [1000, 1099, "Identity / Authorization"], [1100, 1199, "Persistence.Ownership"],
   [1400, 1499, "DependencyInjection"], [1600, 1699, "Composition"], [1700, 1799, "Caching"],
   [1800, 1899, "Internationalization"], [1900, 1999, "Documents"], [2000, 2099, "Configuration"],
-  [2100, 2149, "Notifications"], [2200, 2249, "Patch"], [2300, 2349, "Client"], [2350, 2399, "Testing"], [2500, 2549, "Jobs"],
+  [2100, 2149, "Notifications"], [2200, 2249, "Patch"], [2300, 2349, "Client"], [2350, 2399, "Testing"], [2400, 2449, "Logging"], [2500, 2549, "Jobs"],
   [2600, 2699, "Traits + Resource"], [2700, 2749, "ValueObject"], [2750, 2799, "Lifecycle"],
   [2800, 2899, "Serialization / AOT"], [2900, 2999, "Privacy"], [9000, 9099, "Generator infrastructure"],
 ];

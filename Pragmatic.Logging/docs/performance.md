@@ -99,17 +99,19 @@ public bool IsEnabled(string categoryName, LogLevel logLevel)
 
 ### High-performance logging methods
 
-For low-overhead logging on hot paths, use .NET's built-in `[LoggerMessage]` source generator
-(`Microsoft.Extensions.Logging`). It emits an `IsEnabled`-guarded partial method backed by a cached
-delegate, avoiding string interpolation and boxing:
+For low-overhead logging on hot paths, declare `[LoggerMessage]` methods. With
+`Pragmatic.SourceGenerator` referenced they are [Pragmatic call sites](call-sites.md): an
+`IsEnabled`-guarded method that hands the logger a struct state, which the Pragmatic JSON provider
+writes as UTF-8 without building an entry or a message string:
 
 ```csharp
 [LoggerMessage(Level = LogLevel.Information, Message = "Processed {Count} items in {ElapsedMs}ms")]
 private partial void LogProcessed(int count, long elapsedMs);
 ```
 
-The provider-side hot path (formatting, buffering) uses the zero-allocation infrastructure below
-(`ZeroAllocMessageFormatter`, pooled buffers), independent of how the call site is written.
+Through the JSON provider such a call allocates nothing when the provider takes the call-site path;
+[call-sites.md](call-sites.md#how-a-provider-writes-it) lists when it does. The numbers against Serilog,
+NLog and ZLogger are in [BENCHMARK-RESULTS.md](../BENCHMARK-RESULTS.md).
 
 ---
 

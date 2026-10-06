@@ -3,7 +3,7 @@ title: "Context Enrichment"
 description: "A bare log entry like `\"Order placed\"` tells you what happened but not who triggered it, which HTTP request it belongs to, or what machine produced it. When you"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/context-enrichment.md
 sidebar:
-  order: 3
+  order: 4
 ---
 ## The Problem
 

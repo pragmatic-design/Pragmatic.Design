@@ -95,7 +95,7 @@ namespace Pragmatic.Logging.Providers;
 /// // Results in nested JSON structure preserving object hierarchy
 /// </code>
 /// </example>
-public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
+public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
 {
     private readonly JsonWriterOptions _jsonOptions;
 
@@ -314,6 +314,11 @@ public sealed class PragmaticJsonProvider : PragmaticLoggerProviderBase
             if (GetCustomProperty<bool>("AutoFlush", true))
             {
                 _textWriter.Flush();
+            }
+            else
+            {
+                // A generated call site's line goes to the stream itself; this one must reach it first.
+                _textPending = true;
             }
         }
     }

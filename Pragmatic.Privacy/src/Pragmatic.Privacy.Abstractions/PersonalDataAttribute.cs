@@ -15,9 +15,16 @@ namespace Pragmatic.Privacy;
 ///         legal basis for processing, not to the type: the same order is kept for ten years under a
 ///         fiscal obligation and until withdrawal under consent. Any default here is only a default.
 ///     </para>
+///     <para>
+///         <b>On a parameter of a <c>[LoggerMessage]</c> method</b> it says the argument is personal
+///         data in a log line, and the Pragmatic generator writes it as the mask at the call site. Only
+///         the category means anything there: a log argument is not stored, so erasure, retention and
+///         encryption have nothing to act on. On any other parameter the attribute is inert, and the
+///         analyzer reports it.
+///     </para>
 /// </remarks>
 /// <param name="category">What kind of personal data this is.</param>
-[AttributeUsage(AttributeTargets.Property, Inherited = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter, Inherited = false)]
 public sealed class PersonalDataAttribute(DataCategory category) : Attribute
 {
     /// <summary>What kind of personal data this is.</summary>

@@ -195,10 +195,11 @@ Each provider implements `WriteLogCore` and handles the specific output format a
 
 ## High-Performance Logging: [LoggerMessage]
 
-For hot paths, use .NET's built-in `[LoggerMessage]` source generator
-(`Microsoft.Extensions.Logging`, shipped with the SDK). Pragmatic.Logging works entirely through the
-standard `ILogger` abstraction, so this is the recommended pattern: there is no proprietary attribute
-to learn.
+For hot paths, declare `[LoggerMessage]` methods. Pragmatic.Logging works entirely through the
+standard `ILogger` abstraction, and the attribute is the one you know: in a project that references
+`Pragmatic.SourceGenerator` it binds to Pragmatic's, whose generated state writes itself as UTF-8 and
+masks a `[PersonalData]` or `[NotLogged]` argument at the call site. Without the generator it is
+Microsoft's. See [Log call sites](/modules/logging/call-sites/).
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -215,8 +216,10 @@ public partial class OrderService(ILogger<OrderService> logger)
 }
 ```
 
-The generated partial method performs an `IsEnabled` check before any work, uses a cached delegate,
-and avoids string interpolation entirely.
+The generated method performs an `IsEnabled` check before any work and hands the logger a struct
+state with no boxing. When the Pragmatic JSON provider writes it from that state — context enrichment,
+filters and pattern redaction off, no active scope — a call like this one allocates nothing; the
+[conditions](/modules/logging/call-sites/#how-a-provider-writes-it) are listed with the reasons.
 
 ### When to use which approach
 
