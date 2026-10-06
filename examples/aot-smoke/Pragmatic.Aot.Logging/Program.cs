@@ -5,6 +5,9 @@
 // The second entry is the case the generator cannot describe: a declared type with an `object` member
 // gets no JSON metadata, and under Native AOT nothing else can serialize it. The entry must still be
 // written, with the whole value masked and counted, rather than lost or sent out in clear.
+//
+// The third goes through a generated log call site with a [PersonalData] parameter: its state writes
+// itself as UTF-8 and masks the argument, with no serializer and no reflection anywhere on the path.
 
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -40,16 +43,30 @@ var paymentWritten = payment.Length > 0;
 var paymentLeaked = written.Contains("DE89370400440532013000", StringComparison.Ordinal);
 var paymentCounted = redactor.ValuesWithoutMetadata > 0;
 
-if (!masked || leaked || !kept || !paymentWritten || paymentLeaked || !paymentCounted)
+// Context enrichment off: with it on the entry is materialized, and the call-site path is the one under test.
+var callSiteOutput = new MemoryStream();
+var callSiteConfiguration = PragmaticJsonConfiguration.ForJson();
+callSiteConfiguration.IncludeContextEnrichment = false;
+var callSiteProvider = new PragmaticJsonProvider("aot-callsite", callSiteConfiguration, callSiteOutput);
+CallSiteLog.ReceiptSent(callSiteProvider.CreateLogger("Smoke"), 42, "alice@example.com");
+callSiteProvider.Dispose();
+
+var receipt = Encoding.UTF8.GetString(callSiteOutput.ToArray()).Trim();
+var receiptMasked = receipt.Contains("\"@message\":\"Receipt for 42 sent to [redacted]\"", StringComparison.Ordinal)
+                    && receipt.Contains("\"Email\":\"[redacted]\"", StringComparison.Ordinal);
+var receiptLeaked = receipt.Contains("alice@example.com", StringComparison.Ordinal);
+
+if (!masked || leaked || !kept || !paymentWritten || paymentLeaked || !paymentCounted || !receiptMasked || receiptLeaked)
 {
     Console.Error.WriteLine(
         $"AOT-LOGGING-FAIL: masked={masked} leaked={leaked} kept={kept} paymentWritten={paymentWritten} "
-        + $"paymentLeaked={paymentLeaked} paymentCounted={paymentCounted}; "
-        + $"last error={provider.GetMetrics().LastError ?? "(none)"}; written: {(written.Length == 0 ? "(nothing)" : written)}");
+        + $"paymentLeaked={paymentLeaked} paymentCounted={paymentCounted} receiptMasked={receiptMasked} receiptLeaked={receiptLeaked}; "
+        + $"last error={provider.GetMetrics().LastError ?? callSiteProvider.GetMetrics().LastError ?? "(none)"}; "
+        + $"written: {(written.Length == 0 ? "(nothing)" : written)} | {(receipt.Length == 0 ? "(nothing)" : receipt)}");
     return 1;
 }
 
-Console.WriteLine($"AOT-LOGGING-OK: {customer.Trim()} | {payment.Trim()}");
+Console.WriteLine($"AOT-LOGGING-OK: {customer.Trim()} | {payment.Trim()} | {receipt}");
 return 0;
 
 namespace Pragmatic.Aot.Logging
@@ -69,5 +86,12 @@ namespace Pragmatic.Aot.Logging
         public string Iban { get; set; } = "";
 
         public object? Note { get; set; }
+    }
+
+    /// <summary>A generated call site whose argument is personal data.</summary>
+    public static partial class CallSiteLog
+    {
+        [LoggerMessage(EventId = 3001, Level = LogLevel.Information, Message = "Receipt for {OrderId} sent to {Email}")]
+        public static partial void ReceiptSent(ILogger logger, int orderId, [PersonalData(DataCategory.Contact)] string email);
     }
 }

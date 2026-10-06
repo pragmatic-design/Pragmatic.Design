@@ -57,6 +57,29 @@ internal static class LogValueKinds
         return (LogValueKind.Object, "", "");
     }
 
+    /// <summary>
+    ///     The same decision for a call site a template writes, where there is a type name and no symbol.
+    ///     Only the names those templates use are known; anything else is an <see cref="LogValueKind.Object" />,
+    ///     which is correct for any type, only slower.
+    /// </summary>
+    public static (LogValueKind Kind, string JsonFormat, string NumberType) OfTypeName(string typeName)
+        => typeName.Replace("global::", "") switch
+        {
+            "string" or "System.String" => (LogValueKind.String, "", ""),
+            "bool" or "System.Boolean" => (LogValueKind.Boolean, "", ""),
+            "int" or "short" or "sbyte" => (LogValueKind.Number, "", "int"),
+            "uint" or "ushort" or "byte" => (LogValueKind.Number, "", "uint"),
+            "long" => (LogValueKind.Number, "", "long"),
+            "ulong" => (LogValueKind.Number, "", "ulong"),
+            "float" => (LogValueKind.Number, "", "float"),
+            "double" => (LogValueKind.Number, "", "double"),
+            "decimal" => (LogValueKind.Number, "", "decimal"),
+            "System.DateTime" or "System.DateTimeOffset" => (LogValueKind.Formattable, "O", ""),
+            "System.TimeSpan" => (LogValueKind.Formattable, "c", ""),
+            "System.Guid" => (LogValueKind.Formattable, "D", ""),
+            _ => (LogValueKind.Object, "", ""),
+        };
+
     private static bool IsRuntimeType(ITypeSymbol type)
     {
         var ns = type.ContainingNamespace?.ToDisplayString() ?? "";

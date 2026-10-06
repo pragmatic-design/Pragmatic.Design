@@ -168,41 +168,630 @@ public partial class ThrottledHandler
         }
         
         
-        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logHandlerStarted =
-            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogHandlerStarted"), "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})");
-        
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogHandlerStarted(string messageName, string handlerName, string messageId)
-            => __logHandlerStarted(_logger, handlerName, messageName, messageId, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Debug,
+                new global::Microsoft.Extensions.Logging.EventId(176877028, "LogHandlerStarted"),
+                new __LogHandlerStartedLogState(messageName, handlerName, messageId),
+                null,
+                __LogHandlerStartedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, double, global::System.Exception?> __logHandlerCompleted =
-            LoggerMessage.Define<string, string, double>(LogLevel.Debug, new EventId(0, "LogHandlerCompleted"), "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogHandlerStartedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogHandlerStartedLogState>
+        {
+            static __LogHandlerStartedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogHandlerStartedLogState>.Writer = default(__LogHandlerStartedLogState);
+            
+            public static readonly global::System.Func<__LogHandlerStartedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("MessageId");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly string _messageId;
+            
+            public __LogHandlerStartedLogState(string messageName, string handlerName, string messageId)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _messageId = messageId;
+            }
+            
+            public string Template => "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageId", _messageId),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Starting handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " for message "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " (id: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ")"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteString(__Name2, _messageId);
+            }
+            
+            public bool TryFormatMessage(in __LogHandlerStartedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogHandlerStartedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogHandlerCompleted(string messageName, string handlerName, double durationMs)
-            => __logHandlerCompleted(_logger, handlerName, messageName, durationMs, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Debug,
+                new global::Microsoft.Extensions.Logging.EventId(1791248016, "LogHandlerCompleted"),
+                new __LogHandlerCompletedLogState(messageName, handlerName, durationMs),
+                null,
+                __LogHandlerCompletedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, int, global::System.Exception?> __logHandlerFailed =
-            LoggerMessage.Define<string, string, int>(LogLevel.Error, new EventId(0, "LogHandlerFailed"), "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogHandlerCompletedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogHandlerCompletedLogState>
+        {
+            static __LogHandlerCompletedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogHandlerCompletedLogState>.Writer = default(__LogHandlerCompletedLogState);
+            
+            public static readonly global::System.Func<__LogHandlerCompletedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("DurationMs");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly double _durationMs;
+            
+            public __LogHandlerCompletedLogState(string messageName, string handlerName, double durationMs)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _durationMs = durationMs;
+            }
+            
+            public string Template => "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("DurationMs", _durationMs),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " completed for message "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " in "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _durationMs, "F1")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "ms"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteNumber(__Name2, (double)_durationMs);
+            }
+            
+            public bool TryFormatMessage(in __LogHandlerCompletedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogHandlerCompletedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogHandlerFailed(string messageName, string handlerName, int retryCount, global::System.Exception ex)
-            => __logHandlerFailed(_logger, handlerName, messageName, retryCount, ex);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Error,
+                new global::Microsoft.Extensions.Logging.EventId(1747548130, "LogHandlerFailed"),
+                new __LogHandlerFailedLogState(messageName, handlerName, retryCount),
+                ex,
+                __LogHandlerFailedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, string, global::System.Exception?> __logDuplicateSkipped =
-            LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(0, "LogDuplicateSkipped"), "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogHandlerFailedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogHandlerFailedLogState>
+        {
+            static __LogHandlerFailedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogHandlerFailedLogState>.Writer = default(__LogHandlerFailedLogState);
+            
+            public static readonly global::System.Func<__LogHandlerFailedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("RetryCount");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly int _retryCount;
+            
+            public __LogHandlerFailedLogState(string messageName, string handlerName, int retryCount)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _retryCount = retryCount;
+            }
+            
+            public string Template => "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("RetryCount", _retryCount),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " failed for message "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " (retry "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _retryCount, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ")"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteNumber(__Name2, (int)_retryCount);
+            }
+            
+            public bool TryFormatMessage(in __LogHandlerFailedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogHandlerFailedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogDuplicateSkipped(string messageName, string handlerName, string messageId)
-            => __logDuplicateSkipped(_logger, messageName, handlerName, messageId, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Debug,
+                new global::Microsoft.Extensions.Logging.EventId(1659290042, "LogDuplicateSkipped"),
+                new __LogDuplicateSkippedLogState(messageName, handlerName, messageId),
+                null,
+                __LogDuplicateSkippedLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, string, string, int, int, global::System.Exception?> __logRetryAttempt =
-            LoggerMessage.Define<string, string, int, int>(LogLevel.Warning, new EventId(0, "LogRetryAttempt"), "Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogDuplicateSkippedLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogDuplicateSkippedLogState>
+        {
+            static __LogDuplicateSkippedLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogDuplicateSkippedLogState>.Writer = default(__LogDuplicateSkippedLogState);
+            
+            public static readonly global::System.Func<__LogDuplicateSkippedLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("MessageId");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly string _messageId;
+            
+            public __LogDuplicateSkippedLogState(string messageName, string handlerName, string messageId)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _messageId = messageId;
+            }
+            
+            public string Template => "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 3;
+            
+            public int Count => 4;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageId", _messageId),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Duplicate message skipped: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " (id: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ")"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteString(__Name2, _messageId);
+            }
+            
+            public bool TryFormatMessage(in __LogDuplicateSkippedLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogDuplicateSkippedLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogRetryAttempt(string messageName, string handlerName, int attempt, int delayMs, global::System.Exception ex)
-            => __logRetryAttempt(_logger, handlerName, messageName, attempt, delayMs, ex);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Warning,
+                new global::Microsoft.Extensions.Logging.EventId(396557670, "LogRetryAttempt"),
+                new __LogRetryAttemptLogState(messageName, handlerName, attempt, delayMs),
+                ex,
+                __LogRetryAttemptLogState.Format);
+        }
         
-        private static readonly global::System.Action<ILogger, int, string, string, global::System.TimeSpan, global::System.Exception?> __logRedeliveryScheduled =
-            LoggerMessage.Define<int, string, string, global::System.TimeSpan>(LogLevel.Warning, new EventId(0, "LogRedeliveryScheduled"), "Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}");
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogRetryAttemptLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogRetryAttemptLogState>
+        {
+            static __LogRetryAttemptLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogRetryAttemptLogState>.Writer = default(__LogRetryAttemptLogState);
+            
+            public static readonly global::System.Func<__LogRetryAttemptLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("Attempt");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name3 = global::System.Text.Json.JsonEncodedText.Encode("DelayMs");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly int _attempt;
+            private readonly int _delayMs;
+            
+            public __LogRetryAttemptLogState(string messageName, string handlerName, int attempt, int delayMs)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _attempt = attempt;
+                _delayMs = delayMs;
+            }
+            
+            public string Template => "Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 4;
+            
+            public int Count => 5;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("Attempt", _attempt),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("DelayMs", _delayMs),
+                4 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Retrying handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " for "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ": attempt "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _attempt, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, ", delay "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _delayMs, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "ms"u8)
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteNumber(__Name2, (int)_attempt);
+                writer.WriteNumber(__Name3, (int)_delayMs);
+            }
+            
+            public bool TryFormatMessage(in __LogRetryAttemptLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogRetryAttemptLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
         
+        [global::System.CodeDom.Compiler.GeneratedCode("Pragmatic.SourceGenerator", "1.0")]
         private void LogRedeliveryScheduled(string messageName, string handlerName, int redelivery, global::System.TimeSpan delay)
-            => __logRedeliveryScheduled(_logger, redelivery, messageName, handlerName, delay, null);
+        {
+            if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
+                return;
+            
+            _logger.Log(
+                global::Microsoft.Extensions.Logging.LogLevel.Warning,
+                new global::Microsoft.Extensions.Logging.EventId(588530055, "LogRedeliveryScheduled"),
+                new __LogRedeliveryScheduledLogState(messageName, handlerName, redelivery, delay),
+                null,
+                __LogRedeliveryScheduledLogState.Format);
+        }
+        
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        private readonly struct __LogRedeliveryScheduledLogState
+            : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>,
+              global::Pragmatic.Logging.CallSites.IUtf8LogState,
+              global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<__LogRedeliveryScheduledLogState>
+        {
+            static __LogRedeliveryScheduledLogState() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<__LogRedeliveryScheduledLogState>.Writer = default(__LogRedeliveryScheduledLogState);
+            
+            public static readonly global::System.Func<__LogRedeliveryScheduledLogState, global::System.Exception?, string> Format =
+                static (state, _) => state.ToString();
+            
+            private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::System.Text.Json.JsonEncodedText.Encode("MessageName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::System.Text.Json.JsonEncodedText.Encode("HandlerName");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::System.Text.Json.JsonEncodedText.Encode("Redelivery");
+            private static readonly global::System.Text.Json.JsonEncodedText __Name3 = global::System.Text.Json.JsonEncodedText.Encode("Delay");
+            
+            private readonly string _messageName;
+            private readonly string _handlerName;
+            private readonly int _redelivery;
+            private readonly global::System.TimeSpan _delay;
+            
+            public __LogRedeliveryScheduledLogState(string messageName, string handlerName, int redelivery, global::System.TimeSpan delay)
+            {
+                _messageName = messageName;
+                _handlerName = handlerName;
+                _redelivery = redelivery;
+                _delay = delay;
+            }
+            
+            public string Template => "Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}";
+            
+            public bool IsSelfContained => true;
+            
+            public int PropertyCount => 4;
+            
+            public int Count => 5;
+            
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index] => index switch
+            {
+                0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("MessageName", _messageName),
+                1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("HandlerName", _handlerName),
+                2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("Redelivery", _redelivery),
+                3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("Delay", _delay),
+                4 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}"),
+                _ => throw new global::System.ArgumentOutOfRangeException(nameof(index)),
+            };
+            
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                for (var i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+            
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+            
+            public bool TryFormatMessage(global::System.Span<byte> destination, out int bytesWritten)
+            {
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, "Scheduled persistent redelivery "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _redelivery, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " of "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " for handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(destination, ref written, " in "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(destination, ref written, _delay, "")
+                )
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                
+                bytesWritten = written;
+                return true;
+            }
+            
+            public void WriteProperties(global::System.Text.Json.Utf8JsonWriter writer)
+            {
+                writer.WriteString(__Name0, _messageName);
+                writer.WriteString(__Name1, _handlerName);
+                writer.WriteNumber(__Name2, (int)_redelivery);
+                global::Pragmatic.Logging.CallSites.Utf8LogFormat.WriteFormatted(writer, __Name3, _delay, "c");
+            }
+            
+            public bool TryFormatMessage(in __LogRedeliveryScheduledLogState state, global::System.Span<byte> destination, out int bytesWritten)
+                => state.TryFormatMessage(destination, out bytesWritten);
+            
+            public void WriteProperties(in __LogRedeliveryScheduledLogState state, global::System.Text.Json.Utf8JsonWriter writer)
+                => state.WriteProperties(writer);
+            
+            public override string ToString() => global::Pragmatic.Logging.CallSites.Utf8LogFormat.Render(this);
+        }
     }
     
 }

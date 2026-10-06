@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **413** |
-| Distinct IDs | **413** |
+| Declared descriptors | **423** |
+| Distinct IDs | **423** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -561,6 +561,25 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 *Free inside the used span:* `PRAG2351`, `PRAG2354`, `PRAG2355`, `PRAG2356`, `PRAG2357`, `PRAG2358`, `PRAG2359`, `PRAG2362`.
 
 *First free after the last used:* `PRAG2364`.
+
+### Logging: 10 in use · range `PRAG2400`–`PRAG2449`
+
+| ID | Symbol | Severity | Title |
+|---|---|---|---|
+| `PRAG2400` | `WrongShape` | Error | A log call site must be a partial void method |
+| `PRAG2401` | `PlaceholderWithoutParameter` | Error | A placeholder names no parameter |
+| `PRAG2402` | `ParameterNotInTemplate` | Warning | A parameter is not in the message |
+| `PRAG2403` | `NoLogger` | Error | A log call site has no logger |
+| `PRAG2404` | `NoLevel` | Error | A log call site has no level |
+| `PRAG2405` | `DuplicateEventId` | Warning | Two log call sites share an event id |
+| `PRAG2406` | `MalformedTemplate` | Error | The message template is malformed |
+| `PRAG2407` | `ContainerNotPartial` | Error | The type of a log call site is not partial |
+| `PRAG2408` | `MicrosoftAttributeBound` | Error | [LoggerMessage] binds to Microsoft's attribute in a project that uses Pragmatic call sites |
+| `PRAG2410` | `MaskOutsideCallSite` | Error | [NotLogged] or [PersonalData] on a parameter does nothing here |
+
+*Free inside the used span:* `PRAG2409`.
+
+*First free after the last used:* `PRAG2411`.
 
 ### Jobs: 10 in use · range `PRAG2500`–`PRAG2549`
 

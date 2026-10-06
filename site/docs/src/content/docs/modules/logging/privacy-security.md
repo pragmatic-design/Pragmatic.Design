@@ -3,7 +3,7 @@ title: "Privacy and Security"
 description: "Production log streams inevitably capture sensitive data -- passwords embedded in connection strings, credit card numbers passed as query parameters, or persona"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/privacy-security.md
 sidebar:
-  order: 5
+  order: 6
 ---
 Production log streams inevitably capture sensitive data -- passwords embedded in connection strings, credit card numbers passed as query parameters, or personal identifiers logged during business operations. Pragmatic.Logging provides a layered defense that detects, redacts, and audits sensitive data before it reaches any output provider, so your logs stay compliant without requiring manual review of every log statement.
 

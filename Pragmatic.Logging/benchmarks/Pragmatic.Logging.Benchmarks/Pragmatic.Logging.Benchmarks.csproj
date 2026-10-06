@@ -8,6 +8,9 @@
     <!-- BenchmarkDotNet is auto-provided by Directory.Build.props for .Benchmarks projects -->
     <!-- CA1822/CA2007/CA2014: prototype import — clean up in dedicated refactor pass -->
     <NoWarn>$(NoWarn);CA1822;CA2007;CA2014</NoWarn>
+    <!-- [LoggerMessage] is Pragmatic's here, as in an application with the generator's package. The rows
+         that measure Microsoft's write it fully qualified. -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +24,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Logging\Pragmatic.Logging.csproj" />
+    <!-- [PersonalData] on a call-site parameter. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Abstractions\Pragmatic.Privacy.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator.Analyzers\Pragmatic.SourceGenerator.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

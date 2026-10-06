@@ -42,6 +42,12 @@ internal sealed record LogCallSiteModel
     public required bool SkipEnabledCheck { get; init; }
 
     /// <summary>
+    ///     Whether the method is the implementation part of a <c>partial</c> declaration the user wrote;
+    ///     false for a call site generated whole, inside a type another template writes.
+    /// </summary>
+    public bool IsPartialImplementation { get; init; } = true;
+
+    /// <summary>
     ///     Whether a body can be generated. When not, nothing is emitted and the analyzer reports why,
     ///     where the method is written.
     /// </summary>

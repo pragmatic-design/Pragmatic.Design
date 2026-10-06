@@ -10,7 +10,7 @@ namespace Pragmatic.SourceGenerator.Features.Logging.Templates;
 ///     pass it to the constructor. Nothing downstream can read what the state does not hold, a provider
 ///     that bypasses the interface included.
 /// </remarks>
-internal sealed partial class LogCallSitesTemplate
+internal abstract partial class LogCallSiteTemplateBase
 {
     private const string Format = "global::Pragmatic.Logging.CallSites.Utf8LogFormat";
     private const string Pair = "global::System.Collections.Generic.KeyValuePair<string, object?>";

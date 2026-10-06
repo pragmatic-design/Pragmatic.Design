@@ -3,7 +3,7 @@ title: "Performance and Zero-Allocation"
 description: "Logging sits on the hot path of every request. A single `logger.LogInformation(...)` call that allocates a few strings and a dictionary can, under high throughp"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/performance.md
 sidebar:
-  order: 4
+  order: 5
 ---
 Logging sits on the hot path of every request. A single `logger.LogInformation(...)` call that allocates a few strings and a dictionary can, under high throughput, generate enough GC pressure to cause visible latency spikes. Pragmatic.Logging provides zero-allocation formatting, object pooling, queue-based background processing, rate limiting, and batching -- all configurable through presets that match your deployment scenario.
 
@@ -104,17 +104,19 @@ public bool IsEnabled(string categoryName, LogLevel logLevel)
 
 ### High-performance logging methods
 
-For low-overhead logging on hot paths, use .NET's built-in `[LoggerMessage]` source generator
-(`Microsoft.Extensions.Logging`). It emits an `IsEnabled`-guarded partial method backed by a cached
-delegate, avoiding string interpolation and boxing:
+For low-overhead logging on hot paths, declare `[LoggerMessage]` methods. With
+`Pragmatic.SourceGenerator` referenced they are [Pragmatic call sites](/modules/logging/call-sites/): an
+`IsEnabled`-guarded method that hands the logger a struct state, which the Pragmatic JSON provider
+writes as UTF-8 without building an entry or a message string:
 
 ```csharp
 [LoggerMessage(Level = LogLevel.Information, Message = "Processed {Count} items in {ElapsedMs}ms")]
 private partial void LogProcessed(int count, long elapsedMs);
 ```
 
-The provider-side hot path (formatting, buffering) uses the zero-allocation infrastructure below
-(`ZeroAllocMessageFormatter`, pooled buffers), independent of how the call site is written.
+Through the JSON provider such a call allocates nothing when the provider takes the call-site path;
+[call-sites.md](/modules/logging/call-sites/#how-a-provider-writes-it) lists when it does. The numbers against Serilog,
+NLog and ZLogger are in [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md).
 
 ---
 

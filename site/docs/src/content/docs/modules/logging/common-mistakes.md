@@ -3,7 +3,7 @@ title: "Common Mistakes"
 description: "These are the most common issues developers encounter when using Pragmatic.Logging. Each section shows the wrong approach, the correct approach, and explains wh"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/common-mistakes.md
 sidebar:
-  order: 7
+  order: 8
 ---
 These are the most common issues developers encounter when using Pragmatic.Logging. Each section shows the wrong approach, the correct approach, and explains why.
 
@@ -26,12 +26,38 @@ logger.LogInformation("Order {OrderId} placed by {CustomerId} for {Total}",
 
 **Why:** String interpolation creates a new string on every call, even when the log level is disabled. Structured logging preserves parameter names as semantic properties, enabling search and filtering in log aggregators. The `$""` form allocates unconditionally and loses the structured property names.
 
-For hot paths, use .NET's built-in `[LoggerMessage]` source generator (`Microsoft.Extensions.Logging`):
+For hot paths, declare a `[LoggerMessage]` method; with `Pragmatic.SourceGenerator` referenced it is a
+[Pragmatic call site](/modules/logging/call-sites/):
 
 ```csharp
 [LoggerMessage(Level = LogLevel.Information, Message = "Order {OrderId} placed by {CustomerId}")]
 private partial void LogOrderPlaced(Guid orderId, string customerId);
 ```
+
+---
+
+## 1b. Marking a Parameter `[NotLogged]` Outside a Log Call Site
+
+**Wrong:**
+
+```csharp
+public void SignIn(string user, [NotLogged] string password) { /* … */ }
+public sealed record Login([NotLogged] string Password);
+```
+
+**Right:**
+
+```csharp
+[LoggerMessage(Level = LogLevel.Information, Message = "Sign-in for {User} with {Password}")]
+private partial void LogSignIn(string user, [NotLogged] string password);
+
+public sealed record Login([property: NotLogged] string Password);
+```
+
+**Why:** on a parameter, `[NotLogged]` and `[PersonalData]` are read only by the log call-site generator.
+Anywhere else they compile and change nothing, which is how a value believed masked reaches a log in
+clear. On a positional record the attribute has to target the property it declares. PRAG2410 reports
+both as errors.
 
 ---
 

@@ -688,52 +688,46 @@ internal sealed partial class SagaOrchestratorTemplate : LoggingTemplate
     private static readonly (string Type, string Name)[] SagaAndStep =
         [("string", "sagaType"), ("string", "stepName")];
 
-    private static readonly string[] SagaAndStepOrder = ["sagaType", "stepName"];
-
     private void RenderLoggerMessages()
     {
         RenderLogMethod("LogSagaStarting", "Information",
             "Saga {SagaType} starting for correlation {CorrelationId}",
-            [("string", "sagaType"), ("string", "correlationId")],
-            ["sagaType", "correlationId"]);
+            [("string", "sagaType"), ("string", "correlationId")]);
         AppendLine();
 
         RenderLogMethod("LogSagaStepExecuting", "Debug",
             "Saga {SagaType} executing step {StepName} in state {CurrentState}",
-            [..SagaAndStep, ("string", "currentState")],
-            [..SagaAndStepOrder, "currentState"]);
+            [..SagaAndStep, ("string", "currentState")]);
         AppendLine();
 
         RenderLogMethod("LogSagaStepFailed", "Error",
             "Saga {SagaType} step {StepName} failed",
-            SagaAndStep, SagaAndStepOrder, exception: "ex");
+            SagaAndStep, exception: "ex");
         AppendLine();
 
         RenderLogMethod("LogSagaStepRejected", "Information",
             "Saga {SagaType} step {StepName} rejected: {Reason}",
-            [..SagaAndStep, ("string", "reason")],
-            [..SagaAndStepOrder, "reason"]);
+            [..SagaAndStep, ("string", "reason")]);
         AppendLine();
 
         RenderLogMethod("LogSagaCompensated", "Information",
             "Saga {SagaType} compensated step {StepName}",
-            SagaAndStep, SagaAndStepOrder);
+            SagaAndStep);
         AppendLine();
 
         RenderLogMethod("LogSagaCompensationSkipped", "Warning",
             "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null",
-            SagaAndStep, SagaAndStepOrder);
+            SagaAndStep);
         AppendLine();
 
         RenderLogMethod("LogSagaCompensationFailed", "Error",
             "Saga {SagaType} compensator for step {StepName} threw — continuing chain",
-            SagaAndStep, SagaAndStepOrder, exception: "ex");
+            SagaAndStep, exception: "ex");
         AppendLine();
 
         RenderLogMethod("LogSagaTimedOut", "Warning",
             "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain",
-            [("string", "sagaType"), ("string", "correlationId"), ("string", "state")],
-            ["sagaType", "correlationId", "state"]);
+            [("string", "sagaType"), ("string", "correlationId"), ("string", "state")]);
         AppendLine();
 
         RenderConflictLoggerMessage();

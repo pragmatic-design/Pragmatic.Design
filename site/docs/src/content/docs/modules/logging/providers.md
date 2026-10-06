@@ -3,7 +3,7 @@ title: "Log Providers"
 description: "Pragmatic.Logging ships with a set of built-in log providers that cover the most common output targets. Each provider extends `PragmaticLoggerProviderBase`, inh"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/providers.md
 sidebar:
-  order: 6
+  order: 7
 ---
 Pragmatic.Logging ships with a set of built-in log providers that cover the most common output targets. Each provider extends `PragmaticLoggerProviderBase`, inheriting automatic metrics collection, health checks, context enrichment, privacy redaction, and configuration hot-reload. You pick the providers you need and compose them through the fluent `PragmaticLoggingBuilder`.
 

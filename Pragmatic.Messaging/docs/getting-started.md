@@ -68,7 +68,7 @@ public sealed partial class InvoiceApprovalHandler(
 Key points:
 - `[MessageHandler]`: SG discovers and generates a pipeline wrapper
 - `[Retry]`: generates a retry loop with exponential backoff + jitter (inline, no Polly)
-- `partial`: required for SG to add `[LoggerMessage]` stubs
+- `partial`: required for SG to nest the pipeline wrapper, with its log call sites, inside the handler
 - `IMessageHandler<T>`: the contract. `T` is your message type.
 
 ## Step 3: Publish a Message
@@ -135,7 +135,7 @@ Check generated files in `obj/Debug/net10.0/generated/`:
    - Idempotency check (if `EnableIdempotency()` configured)
    - Retry loop: attempt 1 → on failure, wait ~200ms → attempt 2 → wait ~600ms → attempt 3
    - Telemetry: Activity span, duration metric, handler counter
-   - Logging: started/completed/failed via `[LoggerMessage]`
+   - Logging: started/completed/failed through generated [log call sites](../../Pragmatic.Logging/docs/call-sites.md)
 3. On success: metrics recorded, activity closed
 4. On final failure: exception propagates, dead letter store captures message
 

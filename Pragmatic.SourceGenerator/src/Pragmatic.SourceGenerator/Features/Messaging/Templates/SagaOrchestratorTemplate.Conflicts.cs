@@ -59,7 +59,6 @@ internal sealed partial class SagaOrchestratorTemplate
     {
         RenderLogMethod("LogSagaConflictRetrying", "Information",
             "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})",
-            [("string", "sagaType"), ("string", "correlationId"), ("int", "attempt")],
-            ["sagaType", "correlationId", "attempt"]);
+            [("string", "sagaType"), ("string", "correlationId"), ("int", "attempt")]);
     }
 }

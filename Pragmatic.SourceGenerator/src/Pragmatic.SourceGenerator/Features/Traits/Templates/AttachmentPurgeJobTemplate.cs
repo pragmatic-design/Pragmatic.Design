@@ -1,5 +1,7 @@
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
+using Pragmatic.SourceGenerator.Features.Logging.Templates;
+using Pragmatic.SourceGenerator.Features.Logging.Transforms;
 using Pragmatic.SourceGenerator.Features.Traits.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
@@ -10,10 +12,17 @@ namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 ///     <c>[HasAttachments(PurgeDeletedAfterDays = N)]</c>.
 /// </summary>
 /// <remarks>
-///     Emitted only when the option is set: the default (0) must leave an existing consumer exactly as
-///     it was, with no background job that starts deleting its data.
+///     <para>
+///         Emitted only when the option is set: the default (0) must leave an existing consumer exactly as
+///         it was, with no background job that starts deleting its data.
+///     </para>
+///     <para>
+///         Its two log lines are Pragmatic call sites written into the job in this pass: Microsoft's
+///         generator would never see a <c>[LoggerMessage]</c> declared here, and the method would get no
+///         body.
+///     </para>
 /// </remarks>
-internal sealed class AttachmentPurgeJobTemplate : CSharpTemplate
+internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
 {
     private readonly AttachmentTraitModel _model;
 
@@ -95,6 +104,27 @@ internal sealed class AttachmentPurgeJobTemplate : CSharpTemplate
             + "second, for every expired attachment.");
         AppendLine("public async Task ExecuteAsync(JobContext context, CancellationToken ct)");
         Block(RenderExecuteBody);
+        AppendLine();
+        RenderLogMethods();
+    }
+
+    private void RenderLogMethods()
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        var filesKept = GeneratedLogCallSite.Create(
+            "LogFilesKept", "private", "_logger", "Warning",
+            $"Purge of {_model.AttachmentTypeName} {{AttachmentId}} left its stored files in place; the row is kept and will be retried.",
+            [("global::System.Guid", "attachmentId")],
+            exception: "ex");
+        RenderCallSite(filesKept, StateName(filesKept, names));
+        AppendLine();
+
+        var purged = GeneratedLogCallSite.Create(
+            "LogPurged", "private", "_logger", "Information",
+            $"Purged {{PurgedCount}} of {{ExpiredCount}} expired {_model.AttachmentTypeName} rows.",
+            [("int", "purgedCount"), ("int", "expiredCount")]);
+        RenderCallSite(purged, StateName(purged, names));
     }
 
     private void RenderExecuteBody()
@@ -155,14 +185,7 @@ internal sealed class AttachmentPurgeJobTemplate : CSharpTemplate
             AppendLine("catch (Exception ex)");
             Block(() =>
             {
-                // [LoggerMessage] cannot be used here: the logging generator does not see source
-                // emitted by this generator, so the partial method would never get a body.
-                AppendLine("_logger.LogWarning(");
-                IncreaseIndent();
-                AppendLine("ex,");
-                AppendLine($"\"Purge of {_model.AttachmentTypeName} {{AttachmentId}} left its stored files in place; the row is kept and will be retried.\",");
-                AppendLine("attachment.Id);");
-                DecreaseIndent();
+                AppendLine("LogFilesKept(attachment.Id, ex);");
                 AppendLine("continue;");
             });
             AppendLine();
@@ -179,11 +202,7 @@ internal sealed class AttachmentPurgeJobTemplate : CSharpTemplate
             // while the job reported success.
             AppendLine("using (global::Pragmatic.Persistence.Entity.SoftDeleteScope.Suspend())");
             Block(() => AppendLine("await _db.SaveChangesAsync(ct).ConfigureAwait(false);"));
-            AppendLine("_logger.LogInformation(");
-            IncreaseIndent();
-            AppendLine($"\"Purged {{PurgedCount}} of {{ExpiredCount}} expired {_model.AttachmentTypeName} rows.\",");
-            AppendLine("purged, expired.Count);");
-            DecreaseIndent();
+            AppendLine("LogPurged(purged, expired.Count);");
         });
     }
 }

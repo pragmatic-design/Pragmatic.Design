@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Practical problem/solution guide for Pragmatic.Logging. Each section covers a common issue, the likely causes, and the fix."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Logging/docs/troubleshooting.md
 sidebar:
-  order: 8
+  order: 9
 ---
 Practical problem/solution guide for Pragmatic.Logging. Each section covers a common issue, the likely causes, and the fix.
 

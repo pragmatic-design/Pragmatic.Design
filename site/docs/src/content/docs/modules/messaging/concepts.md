@@ -79,7 +79,7 @@ Handler_Pipeline (SG-generated):
   │   ├── Authorization bypass (ICallContext)
   │   └── Handler.HandleAsync() (your code)
   ├── Metrics (duration, success/failure)
-  └── Logging ([LoggerMessage])
+  └── Logging (generated log call sites)
 ```
 
 ### Handler Pipeline (SG-Generated)
@@ -94,7 +94,7 @@ For each `[MessageHandler]` class, the SG generates `{Handler}_Pipeline.g.cs`:
 | Timeout | `[Timeout]` present | Linked CancellationToken |
 | Auth Bypass | Authorization detected | `ICallContext.EnterInternalCall()` |
 | Telemetry | Always | Activity span + metrics counters |
-| Logging | Always | `[LoggerMessage]` partials |
+| Logging | Always | Generated log call sites, written in the same pass as the pipeline |
 
 ### Transport Architecture
 

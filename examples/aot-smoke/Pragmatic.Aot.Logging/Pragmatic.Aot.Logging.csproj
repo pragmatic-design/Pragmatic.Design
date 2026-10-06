@@ -12,6 +12,9 @@
     <!-- Prove that declared redaction masks a member when the logger runs Native AOT. -->
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- [LoggerMessage] is Pragmatic's: the third entry logs through a generated call site. -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <ItemGroup>

@@ -572,28 +572,24 @@ internal sealed class HandlerPipelineTemplate : LoggingTemplate
     {
         RenderLogMethod("LogHandlerStarted", "Debug",
             "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})",
-            [..MessageAndHandler, ("string", "messageId")],
-            ["handlerName", "messageName", "messageId"]);
+            [..MessageAndHandler, ("string", "messageId")]);
         AppendLine();
 
         RenderLogMethod("LogHandlerCompleted", "Debug",
             "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms",
-            [..MessageAndHandler, ("double", "durationMs")],
-            ["handlerName", "messageName", "durationMs"]);
+            [..MessageAndHandler, ("double", "durationMs")]);
         AppendLine();
 
         RenderLogMethod("LogHandlerFailed", "Error",
             "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})",
             [..MessageAndHandler, ("int", "retryCount")],
-            ["handlerName", "messageName", "retryCount"],
             exception: "ex");
         AppendLine();
 
         // Idempotency
         RenderLogMethod("LogDuplicateSkipped", "Debug",
             "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})",
-            [..MessageAndHandler, ("string", "messageId")],
-            ["messageName", "handlerName", "messageId"]);
+            [..MessageAndHandler, ("string", "messageId")]);
 
         // Retry
         if (_model.HasRetry)
@@ -602,7 +598,6 @@ internal sealed class HandlerPipelineTemplate : LoggingTemplate
             RenderLogMethod("LogRetryAttempt", "Warning",
                 "Retrying handler {HandlerName} for {MessageName}: attempt {Attempt}, delay {DelayMs}ms",
                 [..MessageAndHandler, ("int", "attempt"), ("int", "delayMs")],
-                ["handlerName", "messageName", "attempt", "delayMs"],
                 exception: "ex");
         }
 
@@ -612,8 +607,7 @@ internal sealed class HandlerPipelineTemplate : LoggingTemplate
             AppendLine();
             RenderLogMethod("LogCircuitOpen", "Warning",
                 "Circuit breaker OPEN for handler {HandlerName}, rejecting {MessageName}",
-                MessageAndHandler,
-                ["handlerName", "messageName"]);
+                MessageAndHandler);
         }
 
         // Redelivery
@@ -622,8 +616,7 @@ internal sealed class HandlerPipelineTemplate : LoggingTemplate
             AppendLine();
             RenderLogMethod("LogRedeliveryScheduled", "Warning",
                 "Scheduled persistent redelivery {Redelivery} of {MessageName} for handler {HandlerName} in {Delay}",
-                [..MessageAndHandler, ("int", "redelivery"), ("global::System.TimeSpan", "delay")],
-                ["redelivery", "messageName", "handlerName", "delay"]);
+                [..MessageAndHandler, ("int", "redelivery"), ("global::System.TimeSpan", "delay")]);
         }
     }
 }

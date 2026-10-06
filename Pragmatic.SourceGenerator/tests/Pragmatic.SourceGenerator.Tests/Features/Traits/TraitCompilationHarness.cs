@@ -196,6 +196,9 @@ internal static class TraitCompilationHarness
                      // Generated endpoints read their body through a JsonTypeInfo — ASP.NET cannot
                      // bind a generated handler under AOT, so the binding is ours and it is typed.
                      "System.Text.Json.dll",
+                     // The purge job logs through generated call sites, whose state pre-encodes its
+                     // property names with JsonEncodedText.Encode — an overload that names JavaScriptEncoder.
+                     "System.Text.Encodings.Web.dll",
                  })
         {
             Add(Path.Combine(runtimeDir, bcl));

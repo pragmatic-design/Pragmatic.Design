@@ -63,7 +63,7 @@ Optional HTTP middleware: `app.UsePragmaticLogging()` adds correlation ID and re
 
 ## Logging in code: use `[LoggerMessage]`
 
-For logs in domain code use the **standard .NET** `[LoggerMessage]` source generator (`Microsoft.Extensions.Logging`), which produces allocation-free logs at compile-time:
+For logs in domain code declare `[LoggerMessage]` methods. In a project that references `Pragmatic.SourceGenerator` the attribute binds, through a global alias the package declares, to Pragmatic's: the generated state writes itself as UTF-8 without boxing, and a parameter marked `[PersonalData]` or `[NotLogged]` is written as `[redacted]` by the call site itself:
 
 ```csharp
 public sealed partial class OrderService(ILogger<OrderService> logger)
@@ -81,7 +81,7 @@ public sealed partial class OrderService(ILogger<OrderService> logger)
 
 Never use interpolated logging (`logger.LogInformation($"...")`): it allocates and loses structure. `[LoggerMessage]` is the mandatory pattern.
 
-> `Pragmatic.Logging` works entirely through the standard `ILogger`; there is no proprietary logging-method attribute. Use Microsoft's `[LoggerMessage]` for source-generated hot-path logging.
+> The declaration is Microsoft's shape and stays the standard `ILogger` transport; what changes is the generated body. `[Microsoft.Extensions.Logging.LoggerMessage]` written fully qualified hands one method to Microsoft's generator on purpose. If the alias is lost, PRAG2408 fails the build rather than letting the masking stop silently. Details: `Pragmatic.Logging/docs/call-sites.md`.
 
 ## Observability
 
@@ -100,11 +100,13 @@ Two mechanisms, governed differently on purpose:
 | Switch | none: wired by the generated host whenever a map exists, in every environment | `EnableDataRedaction(…)` / the compliance presets on the logging builder |
 | Guarantee | exact, for what is declared | a floor: it cannot recognise a name, an address, or a sentence about someone's health |
 
-⚠️ **Declared redaction acts on a structured argument whose type carries the declaration.** Logging an
-`Order` whose `CustomerEmail` is `[NotLogged]` masks it; logging `order.CustomerEmail` as a `string`
-parameter does not: a string has no declared type, and only the patterns stand between it and the
-file. Log identifiers, not values: `LogOrderConfirmed(order.Id)`, never the e-mail. Scopes
-(`BeginScope`) are not redacted.
+⚠️ **Declared redaction acts on a structured argument whose type carries the declaration, or on a
+call-site parameter that carries it.** Logging an `Order` whose `CustomerEmail` is `[NotLogged]` masks
+it. Logging `order.CustomerEmail` as a plain `string` argument does not: a string has no declared type,
+and only the patterns stand between it and the file — unless the `[LoggerMessage]` parameter itself is
+marked `[PersonalData]` or `[NotLogged]`, which the call site masks. Better still, log identifiers, not
+values: `LogOrderConfirmed(order.Id)`, never the e-mail. Scopes (`BeginScope`) are not redacted.
+On any parameter other than a call site's the attribute does nothing, and PRAG2410 says so.
 
 Free text (a note, a description) is not personal data to classify; it is text that may contain some:
 mark it `[NotLogged]` (`pragmatic-use-privacy`).
@@ -164,7 +166,7 @@ them cannot answer "who did this"); the **tenant**; and the identifier of the th
 |---|---|
 | `app.UseLogging(...)` with at least one provider | Leaving logging unconfigured (defaults to stock ASP.NET logging) |
 | `AddConsole` in dev, `AddFile`/`AddNdjsonAsync` in prod | `AddConsole` as the only provider in production |
-| `[LoggerMessage]` (Microsoft) for logs in code | Hand-written `LoggerMessage.Define(...)` boilerplate |
+| `[LoggerMessage]` for logs in code (a Pragmatic call site with the generator) | Hand-written `LoggerMessage.Define(...)` boilerplate |
 | `app.UsePragmaticLogging()` for correlation ID | Interpolated logging `$"..."` |
 
 ## Build verification

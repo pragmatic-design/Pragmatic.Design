@@ -42,6 +42,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG2000-2099` | Configuration | [`Features/Configuration/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Configuration/Diagnostics/ConfigurationDiagnostics.cs) |
 | `PRAG2100-2149` | Notifications | [`Features/Notifications/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Notifications/Diagnostics/NotificationsDiagnostics.cs) |
 | `PRAG2200-2249` | Patch | [`Features/Patch/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Patch/Diagnostics/PatchDiagnostics.cs) |
+| `PRAG2400-2449` | Logging (call sites) | [`Pragmatic.SourceGenerator.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator.Analyzers/LogCallSiteDescriptors.cs) |
 | `PRAG2500-2549` | Jobs | [`Features/Jobs/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Jobs/Diagnostics/JobsDiagnostics.cs) |
 | `PRAG2600-2699` | Traits and Resource (shared range) | [`Features/Traits/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Traits/Diagnostics/TraitDiagnostics.cs), [`Features/Resource/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Resource/Diagnostics/ResourceDiagnostics.cs) |
 | `PRAG2700-2749` | Value objects | [`Features/ValueObject/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/ValueObject/Diagnostics/ValueObjectDiagnostics.cs) |
@@ -530,6 +531,23 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG2360` | Warning | `[GenerateComparer<T>]` names a type with no readable public property, so no comparer was generated: one would report every pair as equivalent, which is worse than not having it. |
 | `PRAG2361` | Warning | A comparer for the same type is declared more than once; the extra declarations are ignored. |
 | `PRAG2363` | Info | Half of a state-transition contract has no walk: no declared transition of the entity reaches a state from which the target is legal (or illegal), so that half is not generated, and not emitted as a skipped test either. Expose the transition that leads there, or write the contract by hand in the partial test class. |
+
+### Logging call sites: `PRAG2400-2410`
+
+Reported by the analyzer where a `[LoggerMessage]` method is written. A method with any Error here gets no generated body.
+
+| ID | Severity | Meaning and fix |
+|----|----------|-----------------|
+| `PRAG2400` | Error | A `[LoggerMessage]` method is not a non-generic `partial void` declaration whose parameters are passed by value, so no body can be written for it. Change the declaration to that shape. |
+| `PRAG2401` | Error | A placeholder in the message names no parameter. Placeholders match parameters by name, ignoring case and a leading `@`: rename one of the two, or add the parameter. |
+| `PRAG2402` | Warning | A parameter is not named in the message. It is still logged as a structured property; usually a placeholder is missing. |
+| `PRAG2403` | Error | The method has no logger. A static method takes an `ILogger` parameter; an instance method finds exactly one `ILogger` parameter, field, property or primary-constructor parameter. With two, pass the one to use as a parameter. |
+| `PRAG2404` | Error | The attribute sets no `Level` and no parameter is a `LogLevel`. Set one or the other. |
+| `PRAG2405` | Warning | Two call sites of one type share an event id, so an operator cannot tell their entries apart. Set distinct ids; a call site that sets none gets one derived from its event name. |
+| `PRAG2406` | Error | The message template does not parse, or a placeholder sets an alignment (`{Name,8}`). Placeholders are `{Name}` or `{Name:format}`; a literal brace is `{{` or `}}`. |
+| `PRAG2407` | Error | A type that encloses the method is not `partial`. The generated body is written into it, and C# reopens only a partial type. |
+| `PRAG2408` | Error | In a project that uses Pragmatic call sites, a `[LoggerMessage]` written by its simple name binds to Microsoft's attribute: the global alias that selects Pragmatic's did not arrive, so Microsoft's generator owns the method and its `[NotLogged]`/`[PersonalData]` parameters are not masked. Restore the alias (`Pragmatic.SourceGenerator` declares it through MSBuild), or write `[Microsoft.Extensions.Logging.LoggerMessage]` to hand that method to Microsoft's generator on purpose. |
+| `PRAG2410` | Error | `[NotLogged]` or `[PersonalData]` on a parameter that is not a `[LoggerMessage]` method's. Only a log call site reads the attribute on a parameter; anywhere else it changes nothing. On a positional record, write `[property: NotLogged]` so it reaches the property. |
 
 ### Jobs: `PRAG2500-2509`
 

@@ -63,6 +63,16 @@ public class Program
                 comparison.Setup();
                 comparison.Cleanup();
                 Console.WriteLine("✅ Every sink consumed the same event in every scenario.");
+
+                var json = new Json.JsonSinkBenchmarks();
+                json.Setup();
+                json.Cleanup();
+                Console.WriteLine("✅ Every JSON sink wrote the same call, and the personal data was masked.");
+                break;
+
+            case "json":
+                Console.WriteLine("🧾 The same call written as a JSON line by each library");
+                BenchmarkRunner.Run<Json.JsonSinkBenchmarks>(null, args[1..]);
                 break;
 
             case "quick":
@@ -100,6 +110,7 @@ public class Program
                 Console.WriteLine("🚀 Complete benchmark suite");
                 Console.WriteLine("\n1/4 - Logging Library Comparison");
                 BenchmarkRunner.Run<LoggingBenchmarks>(null, passThrough);
+                BenchmarkRunner.Run<Json.JsonSinkBenchmarks>(null, passThrough);
 
                 Console.WriteLine("\n2/4 - Declared Redaction Overhead");
                 BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>(null, passThrough);
