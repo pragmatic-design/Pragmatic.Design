@@ -9,24 +9,15 @@ using Pragmatic.SourceGenerator.Features.Logging.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Logging.Transforms;
 
-/// <summary>Reads a <c>[LoggerMessage]</c> method into the model its body is written from.</summary>
+/// <summary>Turns a <c>[LoggerMessage]</c> method into the model its body is written from.</summary>
 /// <remarks>
-///     <para>
-///         The rules are Microsoft's, so a call site moves from its generator to this one unchanged: a
-///         static method takes the logger as a parameter, an instance method finds it in a parameter, a
-///         field, a property or a primary-constructor parameter; the level is the attribute's or a
-///         <c>LogLevel</c> parameter's; the first <c>Exception</c> parameter is the entry's exception;
-///         placeholders match parameters by name, ignoring case and a leading <c>@</c>.
-///     </para>
-///     <para>
-///         An invalid method is still returned, marked so: the template emits nothing for it, and the
-///         analyzer, which has the locations, says why.
-///     </para>
+///     The rules — where the logger is, which parameter is the level, what a placeholder names — are
+///     <see cref="LogCallSiteReader" />'s, shared with the analyzer. A method the reader finds a blocking
+///     problem with is still returned, marked invalid: nothing is emitted for it, and the analyzer says
+///     why, where it is written.
 /// </remarks>
 internal static class LogCallSiteTransform
 {
-    private const string LoggerFqn = "Microsoft.Extensions.Logging.ILogger";
-    private const string LogLevelFqn = "Microsoft.Extensions.Logging.LogLevel";
     private const string LevelMemberPrefix = "global::Microsoft.Extensions.Logging.LogLevel.";
 
     private static readonly SymbolDisplayFormat TypeFormat = SymbolDisplayFormat.FullyQualifiedFormat
@@ -41,52 +32,23 @@ internal static class LogCallSiteTransform
             return null;
 
         var compilation = context.SemanticModel.Compilation;
-        var loggerType = compilation.GetTypeByMetadataName(LoggerFqn);
-        var levelType = compilation.GetTypeByMetadataName(LogLevelFqn);
-        var exceptionType = compilation.GetTypeByMetadataName("System.Exception");
-        if (loggerType is null || levelType is null || exceptionType is null)
+        if (LogCallSiteReader.Read(method, context.Attributes[0], compilation) is not { } shape)
             return null;
 
-        var attribute = context.Attributes[0];
-        var settings = ReadAttribute(attribute);
-
-        var valid = method.IsPartialDefinition
-                    && method.ReturnsVoid
-                    && !method.IsGenericMethod
-                    && method.Parameters.All(p => p.RefKind == RefKind.None);
-
-        var segments = LogTemplateParser.Parse(settings.Message, out _);
-        if (segments is null || segments.Any(s => s.IsPlaceholder && s.Alignment is not null))
-            valid = false;
-
-        // Roles first: a logger, a level and an exception are not properties by default.
-        var loggerParameter = method.Parameters.FirstOrDefault(p => IsLogger(p.Type, loggerType));
-        var levelParameter = settings.Level is null
-            ? method.Parameters.FirstOrDefault(p => SymbolEqualityComparer.Default.Equals(p.Type, levelType))
-            : null;
-        var exceptionParameter = method.Parameters.FirstOrDefault(p => DerivesFrom(p.Type, exceptionType));
-
-        var loggerExpression = loggerParameter?.Name ?? (method.IsStatic ? null : FindLogger(method.ContainingType, loggerType));
-        if (loggerExpression is null)
-            valid = false;
-
-        var levelExpression = settings.Level is { } level
-            ? LevelMemberPrefix + LevelName(level)
-            : levelParameter?.Name;
-        if (levelExpression is null)
-            valid = false;
-
-        var placeholders = segments?.Where(s => s.IsPlaceholder).ToList() ?? [];
+        var placeholders = shape.Segments?.Where(s => s.IsPlaceholder).ToList() ?? [];
 
         var parameters = ImmutableArray.CreateBuilder<LogParameterModel>();
         foreach (var parameter in method.Parameters)
         {
             ct.ThrowIfCancellationRequested();
 
-            var role = SymbolEqualityComparer.Default.Equals(parameter, loggerParameter) ? LogParameterRole.Logger
-                : SymbolEqualityComparer.Default.Equals(parameter, levelParameter) ? LogParameterRole.Level
-                : SymbolEqualityComparer.Default.Equals(parameter, exceptionParameter) ? LogParameterRole.Exception
-                : LogParameterRole.Property;
+            var role = LogCallSiteReader.RoleOf(parameter, shape) switch
+            {
+                "logger" => LogParameterRole.Logger,
+                "level" => LogParameterRole.Level,
+                "exception" => LogParameterRole.Exception,
+                _ => LogParameterRole.Property,
+            };
 
             var placeholder = placeholders.FirstOrDefault(s =>
                 string.Equals(s.MatchName, parameter.Name, System.StringComparison.OrdinalIgnoreCase));
@@ -97,9 +59,8 @@ internal static class LogCallSiteTransform
             parameters.Add(Parameter(parameter, role, isProperty, placeholder?.Text ?? parameter.Name, compilation));
         }
 
-        // Every placeholder names a property parameter.
         var parts = ImmutableArray.CreateBuilder<LogMessagePart>();
-        foreach (var segment in segments ?? [])
+        foreach (var segment in shape.Segments ?? [])
         {
             if (!segment.IsPlaceholder)
             {
@@ -107,46 +68,30 @@ internal static class LogCallSiteTransform
                 continue;
             }
 
-            var index = IndexOfProperty(parameters, segment.MatchName);
-            if (index < 0)
-            {
-                valid = false;
-                continue;
-            }
-
-            parts.Add(new LogMessagePart(null, index, segment.Format ?? ""));
+            var named = LogCallSiteReader.PropertyNamed(method, shape, segment.MatchName);
+            var index = named is null ? -1 : method.Parameters.IndexOf(named);
+            if (index >= 0)
+                parts.Add(new LogMessagePart(null, index, segment.Format ?? ""));
         }
 
-        var eventName = settings.EventName ?? method.Name;
+        var eventName = shape.EventName ?? method.Name;
 
         return new LogCallSiteModel
         {
             Namespace = method.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : "",
             Containers = Containers(method.ContainingType, ct),
             MethodName = method.Name,
-            Modifiers = Modifiers(syntax),
+            Modifiers = string.Join(" ", syntax.Modifiers.Select(m => m.Text).Where(m => m != "partial")),
             Parameters = parameters.ToImmutable(),
-            Template = settings.Message,
+            Template = shape.Message,
             Parts = parts.ToImmutable(),
-            LoggerExpression = loggerExpression ?? "",
-            LevelExpression = levelExpression ?? "",
-            EventId = settings.EventId >= 0 ? settings.EventId : LogEventIds.Derive(eventName),
+            LoggerExpression = shape.LoggerParameter?.Name ?? shape.LoggerMember ?? "",
+            LevelExpression = shape.Level is { } level ? LevelMemberPrefix + LevelName(level) : shape.LevelParameter?.Name ?? "",
+            EventId = shape.EventId >= 0 ? shape.EventId : LogEventIds.Derive(eventName),
             EventName = eventName,
-            SkipEnabledCheck = settings.SkipEnabledCheck,
-            IsValid = valid && Containers(method.ContainingType, ct).All(c => c.IsPartial),
+            SkipEnabledCheck = shape.SkipEnabledCheck,
+            IsValid = shape.IsGeneratable,
         };
-    }
-
-    private static int IndexOfProperty(ImmutableArray<LogParameterModel>.Builder parameters, string name)
-    {
-        for (var i = 0; i < parameters.Count; i++)
-        {
-            if (parameters[i].Role is LogParameterRole.Property or LogParameterRole.Exception
-                && string.Equals(parameters[i].Name, name, System.StringComparison.OrdinalIgnoreCase))
-                return i;
-        }
-
-        return -1;
     }
 
     private static LogParameterModel Parameter(
@@ -189,58 +134,6 @@ internal static class LogCallSiteTransform
         return false;
     }
 
-    private static bool IsLogger(ITypeSymbol type, INamedTypeSymbol logger)
-        => SymbolEqualityComparer.Default.Equals(type, logger)
-           || type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, logger));
-
-    private static bool DerivesFrom(ITypeSymbol type, INamedTypeSymbol baseType)
-    {
-        for (var current = type; current is not null; current = current.BaseType)
-            if (SymbolEqualityComparer.Default.Equals(current, baseType))
-                return true;
-
-        return false;
-    }
-
-    /// <summary>
-    ///     The logger an instance method writes to: a field or a property of the type or a base, then a
-    ///     primary-constructor parameter. One of each kind, or none: two loggers is a choice the
-    ///     generator does not make.
-    /// </summary>
-    private static string? FindLogger(INamedTypeSymbol type, INamedTypeSymbol logger)
-    {
-        for (var current = type; current is not null; current = current.BaseType)
-        {
-            var members = current.GetMembers()
-                .Where(m => !m.IsStatic && (SymbolEqualityComparer.Default.Equals(current, type) || m.DeclaredAccessibility != Accessibility.Private))
-                .Where(m => m switch
-                {
-                    IFieldSymbol f => !f.IsImplicitlyDeclared && IsLogger(f.Type, logger),
-                    IPropertySymbol p => IsLogger(p.Type, logger),
-                    _ => false,
-                })
-                .ToList();
-
-            if (members.Count == 1)
-                return "this." + members[0].Name;
-            if (members.Count > 1)
-                return null;
-        }
-
-        var primary = type.InstanceConstructors
-            .SelectMany(c => c.Parameters)
-            .Where(p => IsLogger(p.Type, logger)
-                        && p.DeclaringSyntaxReferences.Any(r => r.GetSyntax() is ParameterSyntax { Parent.Parent: TypeDeclarationSyntax }))
-            .ToList();
-
-        return primary.Count == 1 ? primary[0].Name : null;
-    }
-
-    private static string Modifiers(MethodDeclarationSyntax syntax)
-        => string.Join(" ", syntax.Modifiers
-            .Select(m => m.Text)
-            .Where(m => m != "partial"));
-
     private static EquatableArray<LogContainerModel> Containers(INamedTypeSymbol type, CancellationToken ct)
     {
         var chain = new List<LogContainerModel>();
@@ -276,64 +169,4 @@ internal static class LogCallSiteTransform
 
     private static string LevelName(int level)
         => level >= 0 && level < LevelNames.Length ? LevelNames[level] : "None";
-
-    private static Settings ReadAttribute(AttributeData attribute)
-    {
-        var settings = new Settings();
-        var arguments = attribute.ConstructorArguments;
-
-        // The five constructors: (), (int, LogLevel, string), (LogLevel, string), (LogLevel), (string).
-        foreach (var argument in arguments)
-        {
-            switch (argument.Value)
-            {
-                case int id when argument.Type?.SpecialType == SpecialType.System_Int32:
-                    settings.EventId = id;
-                    break;
-                case int level:
-                    settings.Level = level;
-                    break;
-                case string message:
-                    settings.Message = message;
-                    break;
-            }
-        }
-
-        foreach (var named in attribute.NamedArguments)
-        {
-            switch (named.Key)
-            {
-                case "EventId" when named.Value.Value is int id:
-                    settings.EventId = id;
-                    break;
-                case "EventName" when named.Value.Value is string name:
-                    settings.EventName = name;
-                    break;
-                case "Level" when named.Value.Value is int level:
-                    settings.Level = level;
-                    break;
-                case "Message" when named.Value.Value is string message:
-                    settings.Message = message;
-                    break;
-                case "SkipEnabledCheck" when named.Value.Value is bool skip:
-                    settings.SkipEnabledCheck = skip;
-                    break;
-            }
-        }
-
-        // LogLevel.None is the attribute's "not set": the level is a parameter then.
-        if (settings.Level == 6)
-            settings.Level = null;
-
-        return settings;
-    }
-
-    private sealed class Settings
-    {
-        public int EventId { get; set; } = -1;
-        public string? EventName { get; set; }
-        public int? Level { get; set; }
-        public string Message { get; set; } = "";
-        public bool SkipEnabledCheck { get; set; }
-    }
 }

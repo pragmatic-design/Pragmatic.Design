@@ -1,4 +1,5 @@
-namespace Pragmatic.SourceGenerator.Features.Logging.Transforms;
+// ReSharper disable once CheckNamespace
+namespace Pragmatic.SourceGen;
 
 /// <summary>The event id of a call site that does not set one.</summary>
 /// <remarks>

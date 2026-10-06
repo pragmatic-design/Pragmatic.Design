@@ -37,9 +37,20 @@ public class TheGeneratedStateTests
 
             [LoggerMessage(Level = LogLevel.Information, Message = "Shipped {Parcel}")]
             public static partial void Shipped(ILogger logger, Parcel parcel);
+
+            [LoggerMessage(Level = LogLevel.Information, Message = "Paid from {Account}")]
+            public static partial void Paid(ILogger logger, Iban account);
         }
 
         public sealed record Parcel(string Code);
+
+        // An application type that formats itself: it could declare [PersonalData] members of its own.
+        public readonly struct Iban(string value) : IUtf8SpanFormattable
+        {
+            public bool TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+                => System.Text.Encoding.UTF8.TryGetBytes(value, destination, out bytesWritten);
+            public override string ToString() => value;
+        }
         """;
 
     private static readonly CompiledCallSites CallSites = new(Source);
@@ -128,7 +139,7 @@ public class TheGeneratedStateTests
         logger.Exception.Should().BeSameAs(error);
         logger.Message.Should().Be("Payment for 6f9619ff-8b86-d011-b42d-00cf4fc964ff failed {retrying}");
         // No EventId set: derived from the event name, the same on every build.
-        logger.EventId.Id.Should().Be(Pragmatic.SourceGenerator.Features.Logging.Transforms.LogEventIds.Derive("PaymentFailed"));
+        logger.EventId.Id.Should().Be(StableEventId("PaymentFailed"));
     }
 
     [Fact]
@@ -155,7 +166,42 @@ public class TheGeneratedStateTests
         logger.Message.Should().Be("Shipped Parcel { Code = PX-1 }");
     }
 
+    /// <summary>
+    ///     Only the runtime's formattable types write themselves. An application's could hold a member it
+    ///     declared personal; through the list view the declared redactor sees it.
+    /// </summary>
+    [Fact]
+    public void AnApplicationTypeThatFormatsItself_IsNotWrittenByTheState()
+    {
+        var logger = new CapturingLogger();
+        var account = Activator.CreateInstance(CallSitesType("Sample.Orders.Iban"), "IT60X0542811101000000123456");
+
+        CallSites.Call("Sample.Orders.OrderLog", "Paid", logger, account);
+
+        ((IUtf8LogState)logger.State!).IsSelfContained.Should().BeFalse();
+    }
+
     private static Type CallSitesType(string name) => CallSites.Type(name);
+
+    /// <summary>
+    ///     FNV-1a over the name's UTF-16 code units, written out here rather than called: the test states
+    ///     the id a call site gets, so a change to the derivation shows up as a red test, not as a new
+    ///     expectation that follows it.
+    /// </summary>
+    private static int StableEventId(string name)
+    {
+        unchecked
+        {
+            var hash = 2166136261u;
+            foreach (var c in name)
+            {
+                hash ^= c;
+                hash *= 16777619u;
+            }
+
+            return (int)(hash & 0x7FFFFFFF);
+        }
+    }
 
     private static string Utf8Message(IUtf8LogState state)
     {

@@ -58,6 +58,9 @@
          has the compiler's absolute path, and would have to fall back to the bare file name — an
          absolute build path must never reach a generated file. -->
     <CompilerVisibleProperty Include="ProjectDir" />
+    <!-- Whether [LoggerMessage] is Pragmatic's here; read by PRAG2408. The alias that goes with it is in
+         Directory.Build.targets, because a project sets the property after this file is read. -->
+    <CompilerVisibleProperty Include="PragmaticLogCallSites" />
   </ItemGroup>
 
   <!-- ============================================

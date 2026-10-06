@@ -23,9 +23,14 @@ internal sealed partial class LogCallSitesTemplate
         AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
         AppendLine($"private readonly struct {stateName}");
         AppendLine($"    : global::System.Collections.Generic.IReadOnlyList<{Pair}>,");
-        AppendLine("      global::Pragmatic.Logging.CallSites.IUtf8LogState");
+        AppendLine("      global::Pragmatic.Logging.CallSites.IUtf8LogState,");
+        AppendLine($"      global::Pragmatic.Logging.CallSites.IUtf8LogStateWriter<{stateName}>");
         Block(() =>
         {
+            // The type initializer runs before the call site's first read of Format, so the writer is in
+            // place before any provider looks for it. One box, here, instead of one per call.
+            AppendLine($"static {stateName}() => global::Pragmatic.Logging.CallSites.Utf8LogStateWriters<{stateName}>.Writer = default({stateName});");
+            AppendLine();
             AppendLine($"public static readonly global::System.Func<{stateName}, global::System.Exception?, string> Format =");
             AppendLine("    static (state, _) => state.ToString();");
             AppendLine();
@@ -62,12 +67,21 @@ internal sealed partial class LogCallSitesTemplate
             RenderProperties(callSite, properties, stateName);
             AppendLine();
 
+            AppendLine($"public bool TryFormatMessage(in {stateName} state, global::System.Span<byte> destination, out int bytesWritten)");
+            AppendLine("    => state.TryFormatMessage(destination, out bytesWritten);");
+            AppendLine();
+            AppendLine($"public void WriteProperties(in {stateName} state, global::System.Text.Json.Utf8JsonWriter writer)");
+            AppendLine("    => state.WriteProperties(writer);");
+            AppendLine();
+
             AppendLine($"public override string ToString() => {Format}.Render(this);");
         });
     }
 
     private void RenderList(LogCallSiteModel callSite, System.Collections.Generic.List<LogParameterModel> properties)
     {
+        AppendLine($"public int PropertyCount => {properties.Count};");
+        AppendLine();
         AppendLine($"public int Count => {properties.Count + 1};");
         AppendLine();
         AppendLine($"public {Pair} this[int index] => index switch");

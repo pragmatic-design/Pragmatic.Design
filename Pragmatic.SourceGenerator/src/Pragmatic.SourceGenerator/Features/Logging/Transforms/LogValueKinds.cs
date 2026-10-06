@@ -45,11 +45,22 @@ internal static class LogValueKinds
         if (type.TypeKind == TypeKind.Enum)
             return (LogValueKind.Enum, "", "");
 
+        // ⚠️ The runtime's own formattable types only. An application type that formats itself can also
+        // declare [PersonalData] members, and writing it through its TryFormat would put them out past the
+        // declared redactor; as an Object it goes through the list view, where the redactor masks them.
         var formattable = compilation.GetTypeByMetadataName("System.IUtf8SpanFormattable");
-        if (formattable is not null && type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, formattable)))
+        if (formattable is not null
+            && IsRuntimeType(type)
+            && type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, formattable)))
             return (LogValueKind.Formattable, JsonFormatOf(type), "");
 
         return (LogValueKind.Object, "", "");
+    }
+
+    private static bool IsRuntimeType(ITypeSymbol type)
+    {
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
+        return ns == "System" || ns.StartsWith("System.", System.StringComparison.Ordinal);
     }
 
     /// <summary>The format the Pragmatic JSON provider writes these types with, so both paths agree.</summary>

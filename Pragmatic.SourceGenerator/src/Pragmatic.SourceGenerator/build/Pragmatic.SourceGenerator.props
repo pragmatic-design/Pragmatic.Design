@@ -19,6 +19,29 @@
     <!-- Not an opt-in: the use-case catalog uses it to record a project-relative path instead of the
          compiler's absolute one. Missing, the catalog falls back to the bare file name. -->
     <CompilerVisibleProperty Include="ProjectDir" />
+    <!-- Read by PRAG2408: a [LoggerMessage] that binds to Microsoft's attribute here means the alias below
+         did not arrive. -->
+    <CompilerVisibleProperty Include="PragmaticLogCallSites" />
+  </ItemGroup>
+
+  <!--
+    [LoggerMessage] call sites get their body from this generator. The alias is what makes an existing
+    [LoggerMessage] bind to Pragmatic's attribute without a source change; without it the name is ambiguous
+    in any file that imports Microsoft.Extensions.Logging, or binds to Microsoft's and loses the masking.
+
+    It is an MSBuild item and not something the generator emits: a generator never sees generator output,
+    its own included, so an alias it wrote would be invisible both to Microsoft's generator, which would
+    still write the body, and to this one. The SDK turns <Using> items into GlobalUsings.g.cs before
+    compilation, whatever ImplicitUsings says, so every generator sees it.
+
+    <PragmaticLogCallSites>false</PragmaticLogCallSites> hands [LoggerMessage] back to Microsoft's generator.
+  -->
+  <PropertyGroup>
+    <PragmaticLogCallSites Condition="'$(PragmaticLogCallSites)' == ''">true</PragmaticLogCallSites>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PragmaticLogCallSites)' == 'true'">
+    <Using Include="Pragmatic.Logging.CallSites.LoggerMessageAttribute" Alias="LoggerMessageAttribute" />
   </ItemGroup>
 
 </Project>

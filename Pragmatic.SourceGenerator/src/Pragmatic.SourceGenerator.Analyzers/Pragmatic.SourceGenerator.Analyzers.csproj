@@ -13,4 +13,18 @@
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
+  <!-- The log call-site rules the generator applies, read by the same code here: two readers would be
+       two answers to whether a call site is valid. Linked one by one because analyzers do not take the
+       whole shared folder the generators do. -->
+  <ItemGroup>
+    <Compile Include="$(SharedSourceGenPath)Polyfills.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogTemplateParser.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogTemplateSegment.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogCallSiteReader.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogCallSiteShape.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogCallSiteProblem.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogCallSiteProblemKind.cs" LinkBase="Shared" />
+    <Compile Include="$(SharedSourceGenPath)LogEventIds.cs" LinkBase="Shared" />
+  </ItemGroup>
+
 </Project>

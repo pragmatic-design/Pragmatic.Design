@@ -13,7 +13,7 @@ namespace Pragmatic.Logging.Providers;
 /// Base class for Pragmatic.Logging providers that implements common functionality
 /// like batching, configuration management, and metrics collection.
 /// </summary>
-public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
+public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
 {
     private readonly ConcurrentDictionary<string, ILogger> _loggers = new();
     private readonly object _configLock = new();
@@ -230,6 +230,28 @@ public abstract class PragmaticLoggerProviderBase : IPragmaticLoggerProvider
     {
         if (_disposed)
             return true; // swallow, same as WriteLog
+
+        // A generated call site's state writes itself, with its masking already applied: declared
+        // redaction has nothing left to do for it, so a non-empty declared redactor does not stop it the
+        // way it stops the generic path below. Reached through the writer its type registered, so the
+        // state is never boxed.
+        if (SupportsUtf8State
+            && CallSites.Utf8LogStateWriters<TState>.Writer is { } writer
+            && CanWriteUtf8State(writer))
+        {
+            try
+            {
+                WriteUtf8State(logLevel, eventId, writer, in state, exception, category);
+                Interlocked.Increment(ref _totalMessages);
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref _failedMessages);
+                RecordError($"Failed to write log: {ex.Message}");
+            }
+
+            return true;
+        }
 
         // Declared redaction needs the state's values before anything renders them, which the
         // deferred path would hand to the sink untouched.
