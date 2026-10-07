@@ -88,7 +88,9 @@ caller.
 ### Hot paths and observability
 
 `readonly struct` for value types, `Span<T>` for buffers, no LINQ on a hot path. Logging goes through
-`[LoggerMessage]`, never an interpolated string. Activities are named `{Module}.{Operation}`.
+`[LoggerMessage]`, never an interpolated string; in a project that references the generator the
+attribute is Pragmatic's, which writes the state as UTF-8 and masks a `[PersonalData]` argument at the
+call site (`Pragmatic.Logging/docs/call-sites.md`). Activities are named `{Module}.{Operation}`.
 
 ## Source generators
 

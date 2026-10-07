@@ -85,7 +85,9 @@ an installed copy of the skills updates only when that number moves.
 ## Conventions worth knowing before your first change
 
 - Attributes are generic: `[MapFrom<Order>]`, never `[MapFrom(typeof(Order))]`.
-- Logging goes through `[LoggerMessage]`, never an interpolated string.
+- Logging goes through `[LoggerMessage]`, never an interpolated string. With the generator referenced
+  the attribute is Pragmatic's (a global alias); inside this repository a project gets it by setting
+  `<PragmaticLogCallSites>true</PragmaticLogCallSites>`.
 - Diagnostic IDs are `PRAG####`, one range per module — check the whole repository before claiming a
   new one, since analyzers outside the generator emit some of them.
 - History is linear: rebase, never merge.
