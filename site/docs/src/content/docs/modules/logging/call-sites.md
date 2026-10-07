@@ -45,6 +45,11 @@ so `[LoggerMessage]` binds to `Pragmatic.Logging.CallSites.LoggerMessageAttribut
 constructors and properties as Microsoft's. `<PragmaticLogCallSites>false</PragmaticLogCallSites>`
 turns it off for a project.
 
+Inside this repository a `ProjectReference` imports none of the package's props, so a project opts in
+with `<PragmaticLogCallSites>true</PragmaticLogCallSites>` and `Directory.Build.targets` adds the same
+alias. The reference applications under `examples/` set it, so they log the way an application that
+installs the package does.
+
 To hand one method to Microsoft's generator, write the attribute fully qualified:
 `[Microsoft.Extensions.Logging.LoggerMessage(...)]`.
 
