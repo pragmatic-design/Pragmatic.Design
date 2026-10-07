@@ -61,8 +61,9 @@ public static class CompliancePatterns
             @".*[Tt]elephone.*",
             @".*[Aa]ddress.*",
             @".*[Pp]ostal.*",
-            @".*[Zz]ip.*",
-            @".*[Ss]sn.*",
+            // Short terms as words (PropertyNameWord): as substrings they masked "Unzip" and "ProcessName".
+            PropertyNameWord.Pattern("zip"),
+            PropertyNameWord.Pattern("ssn"),
             @".*[Ss]ocial.*",
             @".*[Ii]ban.*",
             @".*[Cc]redit[Cc]ard.*",
@@ -120,13 +121,14 @@ public static class CompliancePatterns
         /// </summary>
         public static string[] PropertyNamePatterns => new[]
         {
-            @".*[Ss]sn.*",
+            // Short terms as words (PropertyNameWord): as substrings they masked "ProcessName" and "Adobe".
+            PropertyNameWord.Pattern("ssn"),
             @".*[Ss]ocial.*",
             @".*[Mm]edical.*[Rr]ecord.*",
-            @".*[Mm]rn.*",
+            PropertyNameWord.Pattern("mrn"),
             @".*[Hh]ealth.*[Pp]lan.*",
             @".*[Dd]ate.*[Bb]irth.*",
-            @".*[Dd]ob.*",
+            PropertyNameWord.Pattern("dob"),
             @".*[Pp]atient.*[Ii]d.*",
             @".*[Dd]iagnosis.*",
             @".*[Tt]reatment.*"
@@ -186,11 +188,13 @@ public static class CompliancePatterns
         {
             @".*[Cc]redit[Cc]ard.*",
             @".*[Cc]ard[Nn]umber.*",
-            @".*[Pp]an.*",
+            // Short terms as words (PropertyNameWord): as substrings they masked "Company", "Span" and
+            // "TrackingNumber".
+            PropertyNameWord.Pattern("pan"),
             @".*[Cc]vv.*",
             @".*[Cc]vc.*",
             @".*[Ee]xpir.*",
-            @".*[Tt]rack.*",
+            PropertyNameWord.Pattern("track"),
             @".*[Pp]ayment.*"
         };
 

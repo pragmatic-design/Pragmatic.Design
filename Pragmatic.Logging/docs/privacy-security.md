@@ -123,6 +123,15 @@ redactorConfig.EnableDeepRedaction = false;
 var redactor = new PragmaticDataRedactor(redactorConfig);
 ```
 
+**How the shipped name patterns match.** The defaults (`CreateDefault`, `CreateGdprCompliant`, the
+compliance templates and `CompliancePatterns`) match a short term as a *word* of the property name,
+not as letters inside another word: `ssn` masks `Ssn`, `CustomerSsn` and `CUSTOMER_SSN`, but not
+`ProcessName`; `pin` masks `UserPin` but not `Shipping`; `ip` masks `ClientIP` but not `Description`.
+Words are split at case changes, `_` and `-`. Long, unambiguous terms (`password`, `secret`, `token`,
+`email`) are still matched anywhere in the name, so an all-lowercase name such as `accesstoken` is
+caught; compounds like `apikey` are listed explicitly. Patterns you write yourself are used as written,
+compiled case-insensitively: `.*pin.*` still masks `Shipping`.
+
 ### Redaction Modes
 
 The `RedactionMode` enum on `PrivacyConfiguration` controls the aggressiveness of automatic redaction.
