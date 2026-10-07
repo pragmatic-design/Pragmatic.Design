@@ -23,4 +23,10 @@ internal enum LogValueKind
     ///     self-contained and a Pragmatic provider renders it from the list view.
     /// </summary>
     Object,
+
+    /// <summary>
+    ///     An application type whose members declare redaction and whose JSON shape the generator can
+    ///     describe: written by a generated UTF-8 writer, with the mask in place, in every view.
+    /// </summary>
+    Json,
 }

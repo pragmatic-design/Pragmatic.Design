@@ -59,6 +59,7 @@ internal sealed record LogCallSiteModel
         get
         {
             foreach (var parameter in Parameters)
+                // A Json value is written by its generated writer, so it does not count against this.
                 if (parameter.IsProperty && parameter.Kind == LogValueKind.Object && !parameter.IsMasked)
                     return false;
 

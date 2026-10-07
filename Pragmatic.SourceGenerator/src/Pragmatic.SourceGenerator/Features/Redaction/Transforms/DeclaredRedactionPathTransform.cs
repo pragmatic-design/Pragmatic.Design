@@ -102,6 +102,34 @@ internal static class DeclaredRedactionPathTransform
     }
 
     /// <summary>
+    ///     Every path the map will carry for <paramref name="type" />: the members it declares or inherits,
+    ///     and those it reaches below its own face.
+    /// </summary>
+    /// <remarks>
+    ///     The map's entry for the type, asked of the symbol rather than of the emitted map: a generated writer
+    ///     that masks these paths writes what the declared redactor would have, because both read them from
+    ///     here. Empty when the type declares nothing.
+    /// </remarks>
+    public static ImmutableArray<string> PathsOf(INamedTypeSymbol type, CancellationToken ct)
+    {
+        var paths = ImmutableArray.CreateBuilder<string>();
+        foreach (var property in OwnedMemberWalk.PropertiesIncludingInherited(type))
+        {
+            if (Reason(property) is not null)
+                paths.Add(RedactionNaming.SerializedName(property));
+        }
+
+        var found = ImmutableArray.CreateBuilder<RedactedMemberModel>();
+        Walk(type, type, prefix: "", depth: 0,
+            ImmutableHashSet.Create(StringComparer.Ordinal, type.ToDisplayString()), found, ct);
+
+        foreach (var member in found)
+            paths.Add(member.SerializedName);
+
+        return paths.ToImmutable();
+    }
+
+    /// <summary>
     ///     What the type itself inherits, filed under the type — not under the base that declared it.
     /// </summary>
     /// <remarks>

@@ -39,4 +39,11 @@ internal sealed record LogParameterModel
 
     /// <summary>The <c>Utf8JsonWriter.WriteNumber</c> argument type a <see cref="LogValueKind.Number" /> is widened to, or empty.</summary>
     public required string NumberType { get; init; }
+
+    /// <summary>The delegate that writes a <see cref="LogValueKind.Json" /> value, or empty.</summary>
+    public string JsonWriter { get; init; } = "";
+
+    /// <summary>Every writer method a <see cref="LogValueKind.Json" /> value needs, for the assembly's writer file.</summary>
+    public SourceGen.EquatableArray<Serialization.Models.JsonWriterMethodModel> JsonWriterMethods { get; init; }
+        = SourceGen.EquatableArray<Serialization.Models.JsonWriterMethodModel>.Empty;
 }
