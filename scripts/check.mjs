@@ -56,7 +56,7 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { runAsync, runPool } from './lib/spawn-async.mjs';
 import { acquire as acquireRunLock, describeHolder } from './lib/run-lock.mjs';
-import { record as recordFailureRun, failureDetails, failureLines } from './lib/failure-record.mjs';
+import { record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail } from './lib/failure-record.mjs';
 import { TESTCONTAINERS_LABEL, ownTestHosts } from './lib/gate-ownership.mjs';
 import { measureCoverage } from './lib/example-coverage.mjs';
 import {
@@ -2302,6 +2302,9 @@ function recordFailures(failed) {
         // file and line. Six runs of a four-minute container suite bought eleven words before this
         // existed, and the cause was a stack frame away.
         details: failureDetails(r.out ?? ''),
+        // A failure the runner counts but no [FAIL] line names (a cleanup that throws): without this
+        // the record says "1 failed" and nothing else, and a green rerun erases the rest.
+        unnamed: unnamedFailureTail(r.out ?? '', r.failed),
       })),
     });
 

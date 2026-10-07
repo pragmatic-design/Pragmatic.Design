@@ -129,6 +129,26 @@ export function failureDetails(out, { maxLines = DETAIL_LINES } = {}) {
   });
 }
 
+/** Lines of a suite's output kept when its failure has no name. The end of the run, where the summary is. */
+export const UNNAMED_TAIL_LINES = 80;
+
+/**
+ * The end of a suite's output, when the runner counts a failure that no `[FAIL]` line names; null
+ * otherwise.
+ *
+ * ⚠️ Every name comes from a `[FAIL]` line ({@link failedTestNames}), and a failure can be counted
+ * without one: a class or collection cleanup that throws, an exception after the test returned. On
+ * 2026-10-07 that left a record with `"tests": []` beside `failed: 1`, and the rerun was green — the
+ * same "printed, not kept" this file exists for, one layer down. A named failure keeps no tail: its
+ * detail already says why, and a tail beside it would be noise.
+ */
+export function unnamedFailureTail(out, failed, { maxLines = UNNAMED_TAIL_LINES } = {}) {
+  if (failed <= 0 || failedTestNames(out).length > 0) return null;
+
+  const tail = out.replace(/\s+$/, '').split(/\r?\n/).slice(-maxLines).join('\n');
+  return tail.length > 0 ? tail : null;
+}
+
 const PREFIX = 'failures-';
 
 /** A filename-safe instant. */
