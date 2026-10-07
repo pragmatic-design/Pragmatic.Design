@@ -138,12 +138,15 @@ public static class ComplianceTemplates
                 @".*[Pp]assword.*",
                 @".*[Ss]ecret.*",
                 @".*[Tt]oken.*",
-                @".*[Kk]ey.*",
-                @".*[Aa]uth.*",
                 @".*[Ee]mail.*",
                 @".*[Pp]hone.*",
                 @".*[Aa]ddress.*",
-                @".*[Ii]p.*"
+                // Short terms as words (PropertyNameWord): as substrings "ip" masked "Shipping",
+                // "Description" and "Recipient", "key" masked "Monkey", "auth" masked "Author".
+                @"(?i).*(?:api|private|access|signing)[_-]?key.*",
+                PropertyNameWord.Pattern("key"),
+                PropertyNameWord.Pattern("auth"),
+                PropertyNameWord.Pattern("ip")
             },
             MessageRedactionPatterns = new[]
             {
@@ -234,7 +237,8 @@ public static class ComplianceTemplates
                 @".*[Pp]assword.*",
                 @".*[Ss]ecret.*",
                 @".*[Tt]oken.*",
-                @".*[Kk]ey.*"
+                @"(?i).*(?:api|private|access|signing)[_-]?key.*",
+                PropertyNameWord.Pattern("key")
             },
             MessageRedactionPatterns = Array.Empty<string>(), // No message redaction in dev
             RedactionPlaceholder = "[DEV-REDACTED]",

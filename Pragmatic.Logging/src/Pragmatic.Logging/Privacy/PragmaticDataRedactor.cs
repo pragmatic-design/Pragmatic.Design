@@ -398,24 +398,29 @@ public sealed class PragmaticDataRedactorConfiguration
                 "birthdate", "dob", "salary", "income", "tax", "vat"
             },
 
+            // Long, unambiguous terms stay substrings, so an all-lowercase name ("accesstoken") is still
+            // caught. Short terms are matched as words (PropertyNameWord): as substrings they masked
+            // "Shipping" (pin), "ProcessName" (ssn), "Monkey" (key), "Author" (auth). The compounds a
+            // word rule cannot see in an all-lowercase name are listed explicitly.
             PropertyNamePatterns = new[]
             {
                 @"(?i).*password.*",
                 @"(?i).*secret.*",
-                @"(?i).*key.*",
                 @"(?i).*token.*",
-                @"(?i).*auth.*",
                 @"(?i).*credential.*",
-                @"(?i).*ssn.*",
                 @"(?i).*social.*",
                 @"(?i).*credit.*",
-                @"(?i).*card.*",
                 @"(?i).*cvv.*",
-                @"(?i).*pin.*",
-                @"(?i).*account.*",
                 @"(?i).*email.*",
                 @"(?i).*phone.*",
-                @"(?i).*mobile.*"
+                @"(?i).*mobile.*",
+                @"(?i).*(?:api|private|access|signing)[_-]?key.*",
+                PropertyNameWord.Pattern("key"),
+                PropertyNameWord.Pattern("auth"),
+                PropertyNameWord.Pattern("ssn"),
+                PropertyNameWord.Pattern("card"),
+                PropertyNameWord.Pattern("pin"),
+                PropertyNameWord.Pattern("account")
             },
 
             MessageRedactionPatterns = new[]
@@ -468,7 +473,7 @@ public sealed class PragmaticDataRedactorConfiguration
             @"(?i).*address.*",
             @"(?i).*location.*",
             @"(?i).*birth.*",
-            @"(?i).*age.*",
+            PropertyNameWord.Pattern("age"), // as a substring it masked "Message", "Language", "Page"
             @"(?i).*gender.*",
             @"(?i).*nationality.*",
             @"(?i).*citizenship.*",
