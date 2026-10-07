@@ -8,9 +8,10 @@ namespace Pragmatic.Logging.Samples.Samples;
 /// <summary>
 ///     Demonstrates redaction end-to-end: category/provider filters drop the noise,
 ///     then an explicit <c>EnableRedaction()</c> on the console provider masks
-///     sensitive structured properties (email, apiKey) and sensitive fragments in
-///     the message itself (email regex). Without <c>EnableRedaction()</c> the sink
-///     emits the values in the clear — toggling the call makes the effect visible.
+///     sensitive structured properties by name (email, apiKey) in the property and in
+///     the message rendered from the template, and sensitive fragments a pattern
+///     recognises anywhere in the message (email regex). Without <c>EnableRedaction()</c>
+///     the sink emits the values in the clear — toggling the call makes the effect visible.
 /// </summary>
 public static class RedactionSample
 {
