@@ -22,16 +22,18 @@ public static class RedactionExtensions
             if (redactor == null)
                 return logEntry;
 
+            var properties = redactor.RedactProperties(logEntry.Properties);
+
             return new LogEntry
             {
                 Timestamp = logEntry.Timestamp,
                 LogLevel = logEntry.LogLevel,
                 Category = logEntry.Category,
                 EventId = logEntry.EventId,
-                Message = redactor.RedactMessage(logEntry.Message),
+                Message = redactor.RedactMessage(MessageOfRedactedValues(logEntry, properties, redactor)),
                 MessageTemplate = logEntry.MessageTemplate,
                 Exception = logEntry.Exception, // Note: Could also redact exception messages
-                Properties = redactor.RedactProperties(logEntry.Properties),
+                Properties = properties,
                 Scopes = RedactScopes(logEntry.Scopes, redactor)
             };
         }
@@ -91,6 +93,35 @@ public static class RedactionExtensions
 
             return false;
         }
+    }
+
+    /// <summary>
+    ///     The message rendered from the redacted values when a value its template names was masked by its
+    ///     property name; otherwise the message as the caller's formatter rendered it.
+    /// </summary>
+    /// <remarks>
+    ///     The message reaches the pipeline already rendered from the original values, so masking only the
+    ///     property left it in clear in the line (<c>apiKey=sk_live_…</c> beside <c>ApiKey="[REDACTED]"</c>).
+    ///     The message patterns catch only what a regex recognises; a value masked by name has to be
+    ///     masked where its name is, which is the template. An entry with nothing masked keeps its own
+    ///     rendering, so its other values are not formatted differently.
+    /// </remarks>
+    private static string MessageOfRedactedValues(
+        LogEntry logEntry, Dictionary<string, object?> redactedProperties, IDataRedactor redactor)
+    {
+        if (logEntry.MessageTemplate is not { } template || !logEntry.HasProperties)
+            return logEntry.Message;
+
+        foreach (var property in logEntry.Properties)
+        {
+            if (redactor.ShouldRedact(property.Key, Attributes.PropertyCharacteristics.None)
+                && template.Contains("{" + property.Key, StringComparison.Ordinal))
+            {
+                return global::Pragmatic.Redaction.LogMessageTemplate.Render(template, redactedProperties);
+            }
+        }
+
+        return logEntry.Message;
     }
 
     /// <summary>
