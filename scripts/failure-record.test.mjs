@@ -14,7 +14,8 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  record, prune, failedTestNames, failureDetails, failureLines, KEEP, TERMINAL_CAP,
+  record, prune, failedTestNames, failureDetails, failureLines, unnamedFailureTail, KEEP, TERMINAL_CAP,
+  UNNAMED_TAIL_LINES,
 } from './lib/failure-record.mjs';
 
 function dir() {
@@ -233,6 +234,49 @@ test('the detail is capped, so one runaway stack cannot be the whole record', ()
 test('a green run has no details, and a build failure has no detail to find', () => {
   assert.deepEqual(failureDetails(''), []);
   assert.deepEqual(failureDetails('[xUnit.net 00:00:00.01]     A.B.C [FAIL]'), [{ test: 'A.B.C', detail: null }]);
+});
+
+// ── A failure the runner counts but does not name (#118) ─────────────────────────────
+
+/**
+ * ⚠️ What happened on 2026-10-07: `Pragmatic.Logging.Tests — 1 failed, 519 passed`, and a record with
+ * `"tests": [], "details": []`. Every name comes from a `[FAIL]` line, so a failure reported any other
+ * way (a cleanup that throws, an exception after the test returned) left nothing to read, and the
+ * rerun was green. This output is written, not captured: the real one was not kept, which is the
+ * defect. Its shape is the summary of a run with a failed count and no `[FAIL]` marker.
+ */
+const COUNTED_NOT_NAMED = [
+  '[xUnit.net 00:00:00.05]   Discovering: Pragmatic.Logging.Tests',
+  '[xUnit.net 00:00:00.10]   Starting:    Pragmatic.Logging.Tests',
+  '[xUnit.net 00:00:02.40]     [Test Class Cleanup Failure (Pragmatic.Logging.Tests.Some.Fixture)]: System.ObjectDisposedException : Cannot access a disposed object.',
+  '[xUnit.net 00:00:02.41]   Finished:    Pragmatic.Logging.Tests',
+  'Non superato! - Non superati:     1. Superati:   519. Ignorati:     0. Totale:   520.',
+].join('\n');
+
+test('a failure counted with no test named keeps the tail of the output', () => {
+  assert.deepEqual(failedTestNames(COUNTED_NOT_NAMED), [], 'no [FAIL] line names a test');
+
+  const tail = unnamedFailureTail(COUNTED_NOT_NAMED, 1);
+
+  assert.ok(tail, 'something is kept when the count says red and no name says why');
+  assert.match(tail, /Test Class Cleanup Failure/, 'and it is the part that says what failed');
+});
+
+test('a named failure keeps no tail: its detail already says why', () => {
+  assert.equal(unnamedFailureTail(RED, 2), null);
+});
+
+test('a green suite keeps no tail', () => {
+  assert.equal(unnamedFailureTail(COUNTED_NOT_NAMED, 0), null);
+});
+
+test('the tail is capped, so a long run cannot be the whole record', () => {
+  const long = Array.from({ length: UNNAMED_TAIL_LINES * 3 }, (_, i) => `line ${i}`).join('\n');
+
+  const tail = unnamedFailureTail(long, 1);
+
+  assert.equal(tail.split('\n').length, UNNAMED_TAIL_LINES);
+  assert.match(tail, new RegExp(`line ${UNNAMED_TAIL_LINES * 3 - 1}$`), 'the end of the run, where the summary is');
 });
 
 test('the record holds the detail beside the capped line, and stays a file a person can read', () => {
