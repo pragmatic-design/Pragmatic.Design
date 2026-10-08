@@ -138,6 +138,7 @@ caching, and the DomainAction/Query/Mutation integration. See the [roadmap](http
 | [Idempotency](/modules/endpoints/idempotency/) | `[Idempotent]`: safe retries with Idempotency-Key, replay, caching rules |
 | [SSE Streaming](/modules/endpoints/sse-streaming/) | `StreamingEndpoint`, typed mid-stream errors, backpressure, heartbeat |
 | [Request Constraints](/modules/endpoints/request-constraints/) | `[MaxBodySize]`, antiforgery, OpenAPI examples, HEAD/OPTIONS |
+| [Generated Response Writers](/modules/endpoints/response-writers/) | JSON responses written by a generated UTF-8 writer, when it is used, what keeps the serializer |
 | [MCP Tools](/modules/endpoints/mcp/) | `[McpTool]`: expose endpoints to AI agents via Model Context Protocol |
 
 ### Help

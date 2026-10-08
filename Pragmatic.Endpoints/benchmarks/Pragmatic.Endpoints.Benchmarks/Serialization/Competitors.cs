@@ -15,13 +15,21 @@ internal static class Competitors
     ///     point sets (<c>PragmaticEntryTemplate.RenderJsonDefaults</c>).
     /// </summary>
     /// <remarks>
-    ///     camelCase, nulls left out, enums by name through <see cref="JsonStringEnumConverter" />, cycles
-    ///     ignored, and the resolver of the <see cref="PragmaticJsonOptions" /> seam. The converter and the
-    ///     reference handling are each enough on their own to keep STJ off its serialization handler.
+    ///     <para>
+    ///         camelCase, nulls left out, enums by name through <see cref="JsonStringEnumConverter" />, cycles
+    ///         ignored, and the resolver of the <see cref="PragmaticJsonOptions" /> seam. The converter and the
+    ///         reference handling are each enough on their own to keep STJ off its serialization handler.
+    ///     </para>
+    ///     <para>
+    ///         ⚠️ Built on ASP.NET's <c>JsonOptions</c>, not on <c>JsonSerializerDefaults.Web</c>: the two differ in
+    ///         the encoder. ASP.NET's leaves non-ASCII text and the HTML-sensitive characters unescaped, and the
+    ///         first run of this benchmark (2026-10-05) measured the host with the default one, escaping every
+    ///         non-ASCII character of twitter.json as <c>\uXXXX</c>.
+    ///     </para>
     /// </remarks>
     public static JsonSerializerOptions Host(IJsonTypeInfoResolver resolver)
     {
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        var options = new JsonSerializerOptions(new Microsoft.AspNetCore.Http.Json.JsonOptions().SerializerOptions)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,

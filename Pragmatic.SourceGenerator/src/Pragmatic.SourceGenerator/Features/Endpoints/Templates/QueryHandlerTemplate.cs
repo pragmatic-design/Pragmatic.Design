@@ -163,7 +163,7 @@ internal sealed partial class QueryHandlerTemplate : CSharpTemplate
                 // there" and "there but empty" are different answers to a client. The 404 comes from the
                 // executor's failure, which the refusal check above already turned into a response.
                 RenderAccessRecording();
-                AppendLine("return Microsoft.AspNetCore.Http.Results.Ok(__outcome.Value);");
+                AppendLine($"return {GeneratedResponseRenderer.Render(_model, "__outcome.Value", 200) ?? "Microsoft.AspNetCore.Http.Results.Ok(__outcome.Value)"};");
             }
             else if (_model.QueryIsPaged)
             {
@@ -179,7 +179,7 @@ internal sealed partial class QueryHandlerTemplate : CSharpTemplate
                 DecreaseIndent();
                 AppendLine();
                 RenderAccessRecording();
-                AppendLine("return Microsoft.AspNetCore.Http.Results.Ok(result);");
+                AppendLine($"return {GeneratedResponseRenderer.Render(_model, "result", 200) ?? "Microsoft.AspNetCore.Http.Results.Ok(result)"};");
             }
             else
             {
@@ -189,7 +189,7 @@ internal sealed partial class QueryHandlerTemplate : CSharpTemplate
                 AppendLine("var items = __outcome.Value!;");
                 AppendLine();
                 RenderAccessRecording();
-                AppendLine("return Microsoft.AspNetCore.Http.Results.Ok(items);");
+                AppendLine($"return {GeneratedResponseRenderer.Render(_model, "items", 200) ?? "Microsoft.AspNetCore.Http.Results.Ok(items)"};");
             }
         });
 

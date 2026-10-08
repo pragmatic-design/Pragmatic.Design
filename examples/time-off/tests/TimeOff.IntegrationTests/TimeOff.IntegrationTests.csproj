@@ -20,4 +20,9 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
 
+  <!-- Every generated response writer against the serializer (#51), shared by the reference applications. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\shared\Testing\*.cs" LinkBase="Shared\Testing" />
+  </ItemGroup>
+
 </Project>

@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using BenchmarkDotNet.Attributes;
@@ -29,10 +31,14 @@ namespace Pragmatic.Endpoints.Benchmarks;
 [GenericTypeArguments(typeof(ReservationPage))]
 public class ResponseSerializationBenchmarks<T>
 {
+    private readonly ArrayBufferWriter<byte> _buffer = new(64 * 1024);
     private T _root = default!;
     private JsonTypeInfo<T> _hostReflection = null!;
     private JsonTypeInfo<T> _hostGeneratedMetadata = null!;
     private JsonTypeInfo<T> _fastPath = null!;
+    private Action<Utf8JsonWriter, T>? _generated;
+    private Utf8JsonWriter _writer = null!;
+    private Utf8JsonWriter _defaultEncoderWriter = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -41,6 +47,15 @@ public class ResponseSerializationBenchmarks<T>
         _hostReflection = (JsonTypeInfo<T>)Competitors.HostReflection.GetTypeInfo(typeof(T));
         _hostGeneratedMetadata = (JsonTypeInfo<T>)Competitors.HostGeneratedMetadata.GetTypeInfo(typeof(T));
         _fastPath = (JsonTypeInfo<T>)FastPathContext.Default.GetTypeInfo(typeof(T))!;
+        _generated = GeneratedWriters.For<T>();
+
+        // As GeneratedJsonResponse writes a response: the encoder the host's options carry, no validation.
+        _writer = new Utf8JsonWriter(_buffer, new JsonWriterOptions
+        {
+            Encoder = Pragmatic.Serialization.GeneratedJsonDefaults.ResponseEncoder,
+            SkipValidation = true,
+        });
+        _defaultEncoderWriter = new Utf8JsonWriter(_buffer, new JsonWriterOptions { SkipValidation = true });
 
         VerifySameDocument();
     }
@@ -61,10 +76,61 @@ public class ResponseSerializationBenchmarks<T>
     [Benchmark]
     public byte[] REDox() => global::REDox.Json.JsonSerializer.SerializeToUtf8Bytes(_root, Competitors.REDox);
 
-    /// <summary>Throws unless every competitor wrote the document the host writes.</summary>
+    /// <summary>
+    ///     The generated UTF-8 writer of the type, into a buffer and a writer kept across calls, as a response is
+    ///     written; copied out at the end, as <c>SerializeToUtf8Bytes</c> copies its pooled buffer.
+    /// </summary>
+    /// <remarks>
+    ///     A workload the generator refused has no writer, and the case reports NA with the reason rather than a
+    ///     number for something else.
+    /// </remarks>
+    [Benchmark]
+    public byte[] Generated_Writer()
+    {
+        var write = _generated
+                    ?? throw new NotSupportedException($"The generator wrote no writer for {typeof(T).FullName}; PRAG0555 says why.");
+
+        _buffer.ResetWrittenCount();
+        _writer.Reset(_buffer);
+        write(_writer, _root);
+        _writer.Flush();
+        return _buffer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    ///     The same generated writer with the encoder <see cref="Stj_FastPath" /> writes with: STJ's default, which
+    ///     the writer checks through a static table rather than the encoder's virtual method.
+    /// </summary>
+    /// <remarks>
+    ///     Not what a host answers with — its options carry ASP.NET's relaxed encoder, so the bytes differ wherever
+    ///     there is non-ASCII text — but the one comparison with the fast path where both escape alike: what the
+    ///     writer costs, apart from what the host's encoder costs.
+    /// </remarks>
+    [Benchmark]
+    public byte[] Generated_Writer_DefaultEncoder()
+    {
+        var write = _generated
+                    ?? throw new NotSupportedException($"The generator wrote no writer for {typeof(T).FullName}; PRAG0555 says why.");
+
+        _buffer.ResetWrittenCount();
+        _defaultEncoderWriter.Reset(_buffer);
+        write(_defaultEncoderWriter, _root);
+        _defaultEncoderWriter.Flush();
+        return _buffer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    ///     Throws unless every competitor wrote the document the host writes, and the generated writer wrote the
+    ///     host's very bytes.
+    /// </summary>
     public void VerifySameDocument()
     {
-        var expected = JsonNode.Parse(Host_Reflection());
+        var host = Host_Reflection();
+        if (_generated is not null && !Generated_Writer().AsSpan().SequenceEqual(host))
+            throw new InvalidOperationException(
+                $"{nameof(Generated_Writer)} does not write the host's bytes for {typeof(T).FullName}.");
+
+        var expected = JsonNode.Parse(host);
 
         foreach (var (name, bytes) in new[]
                  {

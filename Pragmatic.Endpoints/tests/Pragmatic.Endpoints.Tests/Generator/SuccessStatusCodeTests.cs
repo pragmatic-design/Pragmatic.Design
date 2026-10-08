@@ -41,8 +41,8 @@ public class SuccessStatusCodeTests : EndpointsGeneratorTestBase
 
         var handlerSource = GetGeneratedSource(result, "Endpoint");
         handlerSource.Should().NotBeNull();
-        // Body preserved with the configured status code...
-        handlerSource.Should().Contain("Results.Json(success, statusCode: 202)");
+        // Body preserved with the configured status code, through the type's generated writer...
+        handlerSource.Should().Contain("GeneratedJsonResponse<global::TestApp.Jobs.JobDto>(success!, 202,");
         // ...and NOT the payload-dropping bare-status result.
         handlerSource.Should().NotContain("TypedResults.StatusCode(202)");
     }

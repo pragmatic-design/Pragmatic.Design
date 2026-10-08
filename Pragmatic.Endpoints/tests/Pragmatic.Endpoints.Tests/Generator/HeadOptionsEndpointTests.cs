@@ -99,6 +99,7 @@ public class HeadOptionsEndpointTests : EndpointsGeneratorTestBase
         var generated = GetGeneratedSource(result, "FullHealthEndpoint");
         generated.Should().Contain("Results.StatusCode(200)", "the HEAD response body must be suppressed");
         generated.Should().NotContain("Results.Ok(success)");
+        generated.Should().NotContain("GeneratedJsonResponse<");
     }
 
     [Fact]

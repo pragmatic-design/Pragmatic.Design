@@ -395,6 +395,29 @@ internal sealed partial record EndpointModel
     public Serialization.Models.JsonRootContribution? JsonContribution { get; init; }
 
     /// <summary>
+    ///     The generated UTF-8 writer of what this endpoint answers with, or <c>null</c> when the response
+    ///     keeps the serializer (see <see cref="ResponseWriterRefusal" />).
+    /// </summary>
+    public Serialization.Models.JsonResponseWriterPlan? ResponseWriter { get; init; }
+
+    /// <summary>
+    ///     The expression that names <see cref="ResponseWriter" />'s delegate in the generated writer class.
+    /// </summary>
+    public string? ResponseWriterDelegate { get; init; }
+
+    /// <summary>
+    ///     The expression that names the <c>GeneratedJsonShape</c> emitted beside <see cref="ResponseWriter" />: what
+    ///     the response asks the host's converters about before it uses the writer.
+    /// </summary>
+    public string? ResponseWriterShape { get; init; }
+
+    /// <summary>
+    ///     Why a response type the generator could resolve has no writer, for PRAG0555; <c>null</c> when it has
+    ///     one, or when there is nothing to say (no body, a file, a type this generator writes itself).
+    /// </summary>
+    public string? ResponseWriterRefusal { get; init; }
+
+    /// <summary>
     ///     The group this endpoint belongs to.
     /// </summary>
     public EndpointGroupModel? Group { get; init; }

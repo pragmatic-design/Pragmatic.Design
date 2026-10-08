@@ -3,7 +3,7 @@ title: "Common Mistakes"
 description: "These are the most common issues developers encounter when using Pragmatic.Endpoints. Each section shows the wrong approach, the correct approach, and explains "
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Endpoints/docs/common-mistakes.md
 sidebar:
-  order: 17
+  order: 18
 ---
 These are the most common issues developers encounter when using Pragmatic.Endpoints. Each section shows the wrong approach, the correct approach, and explains why.
 

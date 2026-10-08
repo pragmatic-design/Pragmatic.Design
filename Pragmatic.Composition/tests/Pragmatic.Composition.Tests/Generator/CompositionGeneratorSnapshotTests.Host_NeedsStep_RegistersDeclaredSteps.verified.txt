@@ -157,6 +157,12 @@ public static class PragmaticApp
                 {
                     jsonOptions.SerializerOptions.TypeInfoResolver = resolver;
                 }
+                
+                // What this configuration wrote, so a generated response writer is used only while it still holds:
+                // anything configured after this line that changes the bytes sends responses back to the serializer.
+                global::Pragmatic.Serialization.GeneratedJsonDefaults.Mark(
+                    jsonOptions.SerializerOptions, pragmaticJson,
+                    excludesInfrastructure: false);
             });
         
         // Call ConfigureServices on all pipeline steps (business wiring)

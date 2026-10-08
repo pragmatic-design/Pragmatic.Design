@@ -64,6 +64,7 @@ public class ADeleteAnswersNoContentTests : EndpointsGeneratorTestBase
         handler.Should().Contain("Results.NoContent()");
         handler.Should().NotContain("Results.Ok(success)");
         handler.Should().NotContain("Results.Json(success");
+        handler.Should().NotContain("GeneratedJsonResponse<");
     }
 
     /// <summary>The control: a delete that declares a DTO answers it.</summary>

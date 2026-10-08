@@ -175,21 +175,21 @@ internal sealed partial class DomainActionHandlerTemplate
 
             var successCode = _model.ComputedSuccessStatusCode;
             if (successCode == 200)
-                AppendLine("(success) => Microsoft.AspNetCore.Http.Results.Ok(success),");
+                AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", 200) ?? "Microsoft.AspNetCore.Http.Results.Ok(success)"},");
             else if (successCode == 201)
             {
             // [CreatedAt] template → real Location header; otherwise 201 with Location: null (B20).
             var location = _model.CreatedAtTemplate is { } template
                 ? CreatedAtLocationRenderer.Render(template, "success")
                 : "(string?)null";
-            AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Created({location}, success),");
+            AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", 201, location) ?? $"Microsoft.AspNetCore.Http.Results.Created({location}, success)"},");
         }
             else if (successCode == 204)
                 // 204 has no body by definition.
                 AppendLine("(success) => Microsoft.AspNetCore.Http.Results.NoContent(),");
             else
                 // Preserve the response body for non-standard success codes (e.g. 202 Accepted).
-                AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Json(success, statusCode: {successCode}),");
+                AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", successCode) ?? $"Microsoft.AspNetCore.Http.Results.Json(success, statusCode: {successCode})"},");
 
             AppendLine("(global::Pragmatic.Result.IError error) => MapError(error, httpContext)");
             DecreaseIndent();

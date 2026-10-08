@@ -33,4 +33,9 @@
     <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
   </ItemGroup>
 
+  <!-- Every generated response writer against the serializer (#51), shared by the reference applications. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\shared\Testing\*.cs" LinkBase="Shared\Testing" />
+  </ItemGroup>
+
 </Project>

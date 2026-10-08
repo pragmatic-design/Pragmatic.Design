@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Practical problem/solution guide for Pragmatic.Endpoints. Each section covers a common issue, the likely causes, and the fix."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Endpoints/docs/troubleshooting.md
 sidebar:
-  order: 18
+  order: 19
 ---
 Practical problem/solution guide for Pragmatic.Endpoints. Each section covers a common issue, the likely causes, and the fix.
 

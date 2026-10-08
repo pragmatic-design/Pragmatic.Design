@@ -35,6 +35,25 @@ public class TemporalJsonModifierTests
         public DateTimeOffset CreatedAt { get; set; }
     }
 
+    /// <summary>
+    ///     The modifier says it touches a type exactly when a behavior is registered for it: the scope it is
+    ///     registered on the seam with, which keeps the generated response writers of every other type in use.
+    /// </summary>
+    [Fact]
+    public void Touches_IsTheTypesWithARegisteredBehavior()
+    {
+        TemporalJsonBehaviorRegistry.Register<ToClientDto>(
+            nameof(ToClientDto.CreatedAt), TemporalJsonBehavior.ToClientTimezone);
+
+        Assert.True(TemporalJsonModifier.Touches(typeof(ToClientDto)));
+        Assert.False(TemporalJsonModifier.Touches(typeof(UntouchedDto)));
+    }
+
+    private sealed class UntouchedDto
+    {
+        public DateTimeOffset At { get; set; }
+    }
+
     [Fact]
     public void ToClientTimezone_ConvertsOutboundValueToClientZone()
     {

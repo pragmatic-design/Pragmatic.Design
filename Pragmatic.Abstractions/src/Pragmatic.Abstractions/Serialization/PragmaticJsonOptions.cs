@@ -36,6 +36,7 @@ public sealed class PragmaticJsonOptions
     private readonly List<IJsonTypeInfoResolver> _contexts = [PragmaticCommonJsonContext.Default];
     private readonly List<JsonConverter> _converters = [];
     private readonly List<Action<JsonTypeInfo>> _modifiers = [];
+    private readonly List<Func<Type, bool>?> _modifierScopes = [];
     // Guards _contexts/_converters/_built: configuration happens at startup, but Build() runs on the
     // first serialization — without the lock a concurrent AddContext could mutate the list mid-copy.
     private readonly Lock _lock = new();
@@ -157,14 +158,32 @@ public sealed class PragmaticJsonOptions
     ///         for modifiers that touch different properties.
     ///     </para>
     /// </remarks>
-    public PragmaticJsonOptions AddModifier(Action<JsonTypeInfo> modifier)
+    public PragmaticJsonOptions AddModifier(Action<JsonTypeInfo> modifier) => AddModifier(modifier, touches: null);
+
+    /// <summary>
+    ///     Registers a <see cref="JsonTypeInfo" /> modifier that changes only the types it says it touches.
+    /// </summary>
+    /// <param name="modifier">The modifier, applied to every type the resolver is asked for.</param>
+    /// <param name="touches">
+    ///     Whether the modifier changes how a type is written; null when it cannot say, which is the same as every
+    ///     type.
+    /// </param>
+    /// <remarks>
+    ///     A generated response writer reproduces what the serializer writes without the serializer, so it is used
+    ///     only where no modifier changes a type it writes. A modifier that says which types it touches leaves the
+    ///     writers of every other type in place; one that does not say keeps every response on the serializer.
+    /// </remarks>
+    public PragmaticJsonOptions AddModifier(Action<JsonTypeInfo> modifier, Func<Type, bool>? touches)
     {
         ArgumentNullException.ThrowIfNull(modifier);
         lock (_lock)
         {
             EnsureNotBuilt();
             if (!_modifiers.Contains(modifier))
+            {
                 _modifiers.Add(modifier);
+                _modifierScopes.Add(touches);
+            }
         }
 
         return this;
@@ -174,6 +193,11 @@ public sealed class PragmaticJsonOptions
     ///     The registered modifiers, in registration order.
     /// </summary>
     public IReadOnlyList<Action<JsonTypeInfo>> Modifiers => _modifiers;
+
+    /// <summary>
+    ///     For each of <see cref="Modifiers" />, the types it says it touches, or null when it did not say.
+    /// </summary>
+    public IReadOnlyList<Func<Type, bool>?> ModifierScopes => _modifierScopes;
 
     /// <summary>
     ///     Turns off the reflection-based catch-all resolver. Required for a fully AOT-safe

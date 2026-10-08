@@ -3,7 +3,7 @@ title: "API Versioning"
 description: "APIs evolve. You add fields, change behavior, deprecate features. But existing clients depend on the current contract. Breaking changes cause client failures. A"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Endpoints/docs/versioning.md
 sidebar:
-  order: 16
+  order: 17
 ---
 ## The Problem
 

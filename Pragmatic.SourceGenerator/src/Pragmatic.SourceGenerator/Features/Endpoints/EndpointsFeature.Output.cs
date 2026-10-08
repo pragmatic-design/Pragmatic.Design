@@ -75,6 +75,34 @@ internal static partial class EndpointsFeature
     }
 
     /// <summary>
+    ///     Generates the UTF-8 writers of every response the assembly's endpoints answer with, in one class.
+    /// </summary>
+    /// <remarks>
+    ///     A type two endpoints answer with is planned twice into the same methods; the template writes each
+    ///     method once.
+    /// </remarks>
+    private static void GenerateResponseWriters(
+        SourceProductionContext context, ImmutableArray<EndpointModel> endpoints, string assemblyName)
+    {
+        var methods = endpoints
+            .Where(e => e.ResponseWriter is not null)
+            .SelectMany(e => e.ResponseWriter!.Methods)
+            .ToList();
+
+        if (methods.Count == 0)
+            return;
+
+        var artifact = new Serialization.Templates.Utf8JsonWritersTemplate(
+                Redaction.Templates.RedactionMapTemplate.NamespaceFor(assemblyName),
+                methods,
+                Serialization.Models.JsonWriterProfile.Response)
+            .RenderOutput();
+
+        if (!artifact.IsEmpty)
+            context.AddSource(artifact);
+    }
+
+    /// <summary>
     ///     Generates the autocomplete endpoint handler class.
     /// </summary>
     /// <remarks>

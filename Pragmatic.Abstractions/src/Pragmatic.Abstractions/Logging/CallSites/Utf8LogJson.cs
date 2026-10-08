@@ -1,7 +1,5 @@
 using System.Buffers;
-using System.Buffers.Text;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
@@ -134,18 +132,9 @@ public static class Utf8LogJson
 
     /// <summary>Writes a <see cref="TimeSpan" /> as System.Text.Json does: a string in the constant (<c>c</c>) format.</summary>
     public static void WriteTimeSpan(Utf8JsonWriter writer, TimeSpan value)
-    {
-        ArgumentNullException.ThrowIfNull(writer);
-
-        Span<byte> buffer = stackalloc byte[32];
-        Utf8Formatter.TryFormat(value, buffer, out var count, 'c');
-        writer.WriteStringValue(buffer[..count]);
-    }
+        => Pragmatic.Serialization.Utf8JsonValues.WriteTimeSpan(writer, value);
 
     /// <summary>Writes a <see cref="char" /> as System.Text.Json does: a one-character string.</summary>
     public static void WriteChar(Utf8JsonWriter writer, char value)
-    {
-        ArgumentNullException.ThrowIfNull(writer);
-        writer.WriteStringValue(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
-    }
+        => Pragmatic.Serialization.Utf8JsonValues.WriteChar(writer, value);
 }

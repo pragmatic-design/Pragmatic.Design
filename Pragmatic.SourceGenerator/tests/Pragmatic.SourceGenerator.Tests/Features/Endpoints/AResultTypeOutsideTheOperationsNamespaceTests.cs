@@ -129,8 +129,11 @@ public class AResultTypeOutsideTheOperationsNamespaceTests
             if (hint.StartsWith("TestApp.Dtos.", StringComparison.Ordinal))
                 continue;
 
-            // Remove the qualified form first: whatever still says the name says it bare.
+            // Remove the qualified form first: whatever still says the name says it bare. A response writer's
+            // method is named after the type it writes (Write_TestApp_Dtos_CallerDto): an identifier, not a type
+            // reference, so it goes too — the compiler, in TheGeneratedFiles_Compile, is the oracle for that file.
             var rest = text.Replace("global::TestApp.Dtos.CallerDto", string.Empty, StringComparison.Ordinal);
+            rest = System.Text.RegularExpressions.Regex.Replace(rest, @"\w+_CallerDto\w*", string.Empty);
             if (rest.Contains("CallerDto", StringComparison.Ordinal))
                 unqualified.Add(hint);
         }
@@ -255,6 +258,7 @@ public class AResultTypeOutsideTheOperationsNamespaceTests
            || path.Contains("Customer.Projections", StringComparison.Ordinal)
            || path.Contains("_Boundary.", StringComparison.Ordinal)
            || path.Contains("_Infra.Endpoints.EndpointContracts", StringComparison.Ordinal)
+           || path.Contains("_Infra.Serialization.Utf8ResponseWriters", StringComparison.Ordinal)
            || path.Contains("_Infra.Actions.", StringComparison.Ordinal);
 
     private static bool IsCode(string hintName)

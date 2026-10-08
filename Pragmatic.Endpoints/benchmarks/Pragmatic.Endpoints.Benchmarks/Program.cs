@@ -18,5 +18,8 @@ BenchmarkSwitcher.FromAssembly(typeof(ResponseSerializationBenchmarks<>).Assembl
 static void Verify<T>()
 {
     new ResponseSerializationBenchmarks<T>().Setup();
-    Console.WriteLine($"{typeof(T).FullName}: the four competitors write the same document.");
+    Console.WriteLine($"{typeof(T).FullName}: the competitors write the same document"
+                      + (Pragmatic.Endpoints.Benchmarks.Serialization.GeneratedWriters.For<T>() is null
+                          ? "; the generator wrote no writer for it."
+                          : ", and the generated writer the host's very bytes."));
 }

@@ -237,6 +237,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0551` | Warning | Versioned methods (`ExecuteV2`, `HandleAsyncV2`, …) need the `Asp.Versioning.Http` package. Without it only the default version is generated. |
 | `PRAG0552` | Error | A property a form field cannot carry, on an operation that carries a file. A file makes the request `multipart/form-data`, so there is no JSON body and every value travels as a form field: the scalars are bound from the form whether or not `[FromForm]` is written on them, and a nested object has nowhere to go. Make it a scalar, take it as JSON in one value, or move the file to an operation of its own. |
 | `PRAG0554` | Warning | A shared `[ResponseCache]` (the default location) on an endpoint that requires authentication. The output cache never keeps a request that carries credentials, so the attribute keeps nothing. Mark the endpoint `[AllowAnonymous]` if its answer is the same for everybody, use `Location = ResponseCacheLocation.Client` for a per-browser cache, or remove it. |
+| `PRAG0555` | Info | The endpoint's response is written by `System.Text.Json`, not by a generated UTF-8 writer, because the writer could not reproduce what the serializer writes for its type; the message names the part of the type that decided it (a `[JsonConverter]`, a member typed `object`, a type that reaches itself, …). Nothing is wrong with the response. To get the generated path, change that part of the type. |
 
 ### Persistence: `PRAG0600-0690`
 

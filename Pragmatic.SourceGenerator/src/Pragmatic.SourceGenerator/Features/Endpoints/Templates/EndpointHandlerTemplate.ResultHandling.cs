@@ -65,14 +65,14 @@ internal sealed partial class EndpointHandlerTemplate
                 // HTTP forbids a response body on HEAD (PRAG0514 warns at compile time).
                 AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.StatusCode({successCode}),");
             else if (successCode == 200)
-                AppendLine("(success) => Microsoft.AspNetCore.Http.Results.Ok(success),");
+                AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", 200) ?? "Microsoft.AspNetCore.Http.Results.Ok(success)"},");
             else if (successCode == 201)
             {
             // [CreatedAt] template → real Location header; otherwise 201 with Location: null (B20).
             var location = _model.CreatedAtTemplate is { } template
                 ? CreatedAtLocationRenderer.Render(template, "success")
                 : "(string?)null";
-            AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Created({location}, success),");
+            AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", 201, location) ?? $"Microsoft.AspNetCore.Http.Results.Created({location}, success)"},");
         }
             else if (successCode == 204)
                 // 204 has no body by definition.
@@ -80,7 +80,7 @@ internal sealed partial class EndpointHandlerTemplate
             else
                 // Preserve the response body for non-standard success codes (e.g. 202 Accepted):
                 // TypedResults.StatusCode would drop the payload despite the declared return type.
-                AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Json(success, statusCode: {successCode}),");
+                AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, "success", successCode) ?? $"Microsoft.AspNetCore.Http.Results.Json(success, statusCode: {successCode})"},");
 
             // Error handlers - typed or generic
             if (hasTypedErrors)
