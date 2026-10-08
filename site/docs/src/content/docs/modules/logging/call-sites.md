@@ -89,18 +89,29 @@ uses the classic path, with the same output:
 | An ambient scope is active | Scopes are written beside the properties by the classic path |
 | An argument the state cannot write itself | See below |
 
-## Arguments the state does not write
+## Arguments of an application type
 
-An argument of an application type (a record, a value object, even one that formats itself) is left
-to the provider: the state says so (`IsSelfContained` is false), and the provider reads the list view,
-where the members that type declared `[PersonalData]` or `[NotLogged]` are masked by the declared
-redactor. Only the runtime's own formattable types write themselves, because an application type that
-formats itself could put a member it declared personal into the line.
+An argument of an application type whose members declare `[PersonalData]` or `[NotLogged]` (on the type
+itself or on something it owns) is written by a **generated UTF-8 writer**: the members the type's JSON
+shape describes, with the mask at the declared paths, into the same `Utf8JsonWriter` the rest of the
+state writes into. The call site stays self-contained and allocates nothing for it through the JSON
+provider. Every view carries the masked rendering, the list view included, so a provider that knows
+nothing of Pragmatic gets `{"reference":"C-42","email":"[redacted]",…}` rather than the object and its
+`ToString()`. The line is the one the declared redactor writes for the same value.
+
+The writer exists only where the generator can describe the type: the same rule as the generated JSON
+context. A type with a dictionary member, a polymorphic or abstract type, or a member without a public
+setter is left to the provider: the state says so (`IsSelfContained` is false), and the provider reads
+the list view, where the declared redactor masks it.
+
+An application type that declares nothing is also left to the provider. Only the runtime's own
+formattable types write themselves, because an application type that formats itself could put a member
+it declared personal into the line.
 
 ⚠️ A provider that knows nothing of Pragmatic calls the formatter and reads the list. A masked
-**parameter** is masked there too. The members of an application **type** are masked only by the
-Pragmatic providers, which apply the declared redactor; a third-party provider writes that argument as
-its `ToString()` would.
+**parameter** is masked there too, and so is a type with a generated writer. The members of an
+application type **without** one are masked only by the Pragmatic providers, which apply the declared
+redactor; a third-party provider writes that argument as its `ToString()` would.
 
 ## Diagnostics
 

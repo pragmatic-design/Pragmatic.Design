@@ -38,14 +38,31 @@ internal static class LogCallSiteFeature
             .Select(static (m, _) => m!)
             .Collect();
 
-        context.RegisterSourceOutputSafe(callSites, static (ctx, all) =>
+        var assemblyName = context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "");
+
+        context.RegisterSourceOutputSafe(callSites.Combine(assemblyName), static (ctx, input) =>
         {
+            var (all, assembly) = input;
             foreach (var type in all.GroupBy(static c => c.TypeKey, System.StringComparer.Ordinal))
             {
                 var artifact = new LogCallSitesTemplate(type.ToList()).RenderOutput();
                 if (!artifact.IsEmpty)
                     ctx.AddSource(artifact);
             }
+
+            // The writers the call sites name, once for the assembly: two call sites logging the same type
+            // share its methods. In the namespace the call sites were told, the redaction map's.
+            var writers = all
+                .SelectMany(static c => c.Parameters)
+                .SelectMany(static p => p.JsonWriterMethods)
+                .ToList();
+            if (writers.Count == 0)
+                return;
+
+            var file = new Serialization.Templates.Utf8JsonWritersTemplate(
+                Redaction.Templates.RedactionMapTemplate.NamespaceFor(assembly), writers).RenderOutput();
+            if (!file.IsEmpty)
+                ctx.AddSource(file);
         });
     }
 }

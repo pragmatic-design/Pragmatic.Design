@@ -15,6 +15,7 @@ internal abstract partial class LogCallSiteTemplateBase
     private const string Format = "global::Pragmatic.Logging.CallSites.Utf8LogFormat";
     private const string Pair = "global::System.Collections.Generic.KeyValuePair<string, object?>";
     private const string Mask = "global::Pragmatic.Serialization.RedactionMask.Value";
+    private const string Json = "global::Pragmatic.Logging.CallSites.Utf8LogJson";
 
     private void RenderState(LogCallSiteModel callSite, string stateName)
     {
@@ -89,7 +90,14 @@ internal abstract partial class LogCallSiteTemplateBase
         IncreaseIndent();
         for (var i = 0; i < properties.Count; i++)
         {
-            var value = properties[i].IsMasked ? Mask : Field(properties[i]);
+            // A Json value goes out as its masked rendering: a provider that knows nothing of Pragmatic reads
+            // this view, and the object itself would print every member through its ToString().
+            var value = properties[i] switch
+            {
+                { IsMasked: true } => Mask,
+                { Kind: LogValueKind.Json } json => $"{Json}.ToJsonString({Field(json)}, {json.JsonWriter})",
+                var plain => Field(plain),
+            };
             AppendLine($"{i} => new {Pair}({Literal(properties[i].Key)}, {value}),");
         }
 
@@ -155,6 +163,7 @@ internal abstract partial class LogCallSiteTemplateBase
             LogValueKind.Enum => $"{Format}.TryAppendEnum(destination, ref written, {field}, {formatArgument})",
             LogValueKind.Number or LogValueKind.Formattable =>
                 $"{Format}.TryAppendFormatted(destination, ref written, {field}, {formatArgument})",
+            LogValueKind.Json => $"{Json}.TryAppend(destination, ref written, {field}, {parameter.JsonWriter})",
             _ => $"{Format}.TryAppendObject(destination, ref written, {field})",
         };
     }
@@ -193,6 +202,7 @@ internal abstract partial class LogCallSiteTemplateBase
                 $"if ({field}.HasValue) writer.WriteNumber({name}, ({parameter.NumberType}){field}.Value); else writer.WriteNull({name})",
             LogValueKind.Number => $"writer.WriteNumber({name}, ({parameter.NumberType}){field})",
             LogValueKind.Enum => $"{Format}.WriteEnum(writer, {name}, {field})",
+            LogValueKind.Json => $"{Json}.Write(writer, {name}, {field}, {parameter.JsonWriter})",
             _ => $"{Format}.WriteFormatted(writer, {name}, {field}, {Literal(parameter.JsonFormat)})",
         };
     }

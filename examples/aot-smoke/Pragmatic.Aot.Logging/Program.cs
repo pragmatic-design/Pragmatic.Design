@@ -8,6 +8,9 @@
 //
 // The third goes through a generated log call site with a [PersonalData] parameter: its state writes
 // itself as UTF-8 and masks the argument, with no serializer and no reflection anywhere on the path.
+//
+// The fourth is a call site whose argument is the record itself: a generated writer writes it, with the
+// declared member masked, still with no serializer.
 
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -49,24 +52,33 @@ var callSiteConfiguration = PragmaticJsonConfiguration.ForJson();
 callSiteConfiguration.IncludeContextEnrichment = false;
 var callSiteProvider = new PragmaticJsonProvider("aot-callsite", callSiteConfiguration, callSiteOutput);
 CallSiteLog.ReceiptSent(callSiteProvider.CreateLogger("Smoke"), 42, "alice@example.com");
+CallSiteLog.Registered(callSiteProvider.CreateLogger("Smoke"), new Customer("C-77", "bob@example.com"));
 callSiteProvider.Dispose();
 
-var receipt = Encoding.UTF8.GetString(callSiteOutput.ToArray()).Trim();
+var callSiteLines = Encoding.UTF8.GetString(callSiteOutput.ToArray()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+var receipt = callSiteLines.FirstOrDefault(l => l.Contains("Receipt", StringComparison.Ordinal))?.Trim() ?? "";
 var receiptMasked = receipt.Contains("\"@message\":\"Receipt for 42 sent to [redacted]\"", StringComparison.Ordinal)
                     && receipt.Contains("\"Email\":\"[redacted]\"", StringComparison.Ordinal);
 var receiptLeaked = receipt.Contains("alice@example.com", StringComparison.Ordinal);
 
-if (!masked || leaked || !kept || !paymentWritten || paymentLeaked || !paymentCounted || !receiptMasked || receiptLeaked)
+var registered = callSiteLines.FirstOrDefault(l => l.Contains("Registered", StringComparison.Ordinal))?.Trim() ?? "";
+var registeredMasked = registered.Contains("C-77", StringComparison.Ordinal)
+                       && registered.Contains(PersonalDataPatterns.Mask, StringComparison.Ordinal);
+var registeredLeaked = registered.Contains("bob@example.com", StringComparison.Ordinal);
+
+if (!masked || leaked || !kept || !paymentWritten || paymentLeaked || !paymentCounted || !receiptMasked || receiptLeaked
+    || !registeredMasked || registeredLeaked)
 {
     Console.Error.WriteLine(
         $"AOT-LOGGING-FAIL: masked={masked} leaked={leaked} kept={kept} paymentWritten={paymentWritten} "
-        + $"paymentLeaked={paymentLeaked} paymentCounted={paymentCounted} receiptMasked={receiptMasked} receiptLeaked={receiptLeaked}; "
+        + $"paymentLeaked={paymentLeaked} paymentCounted={paymentCounted} receiptMasked={receiptMasked} receiptLeaked={receiptLeaked} "
+        + $"registeredMasked={registeredMasked} registeredLeaked={registeredLeaked}; "
         + $"last error={provider.GetMetrics().LastError ?? callSiteProvider.GetMetrics().LastError ?? "(none)"}; "
-        + $"written: {(written.Length == 0 ? "(nothing)" : written)} | {(receipt.Length == 0 ? "(nothing)" : receipt)}");
+        + $"written: {(written.Length == 0 ? "(nothing)" : written)} | {string.Join(" | ", callSiteLines)}");
     return 1;
 }
 
-Console.WriteLine($"AOT-LOGGING-OK: {customer.Trim()} | {payment.Trim()} | {receipt}");
+Console.WriteLine($"AOT-LOGGING-OK: {customer.Trim()} | {payment.Trim()} | {receipt} | {registered}");
 return 0;
 
 namespace Pragmatic.Aot.Logging
@@ -93,5 +105,8 @@ namespace Pragmatic.Aot.Logging
     {
         [LoggerMessage(EventId = 3001, Level = LogLevel.Information, Message = "Receipt for {OrderId} sent to {Email}")]
         public static partial void ReceiptSent(ILogger logger, int orderId, [PersonalData(DataCategory.Contact)] string email);
+
+        [LoggerMessage(EventId = 3002, Level = LogLevel.Information, Message = "Registered {Customer}")]
+        public static partial void Registered(ILogger logger, Customer customer);
     }
 }

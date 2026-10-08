@@ -56,7 +56,7 @@ internal static class LogCallSiteTransform
             var isProperty = role == LogParameterRole.Property
                              || (role == LogParameterRole.Exception && placeholder is not null);
 
-            parameters.Add(Parameter(parameter, role, isProperty, placeholder?.Text ?? parameter.Name, compilation));
+            parameters.Add(Parameter(parameter, role, isProperty, placeholder?.Text ?? parameter.Name, compilation, ct));
         }
 
         var parts = ImmutableArray.CreateBuilder<LogMessagePart>();
@@ -95,15 +95,16 @@ internal static class LogCallSiteTransform
     }
 
     private static LogParameterModel Parameter(
-        IParameterSymbol parameter, LogParameterRole role, bool isProperty, string key, Compilation compilation)
+        IParameterSymbol parameter, LogParameterRole role, bool isProperty, string key, Compilation compilation, CancellationToken ct)
     {
         var nullable = parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapped
             ? wrapped.TypeArguments[0]
             : null;
 
         var (kind, jsonFormat, numberType) = LogValueKinds.Of(nullable ?? parameter.Type, compilation);
+        var isMasked = IsMasked(parameter);
 
-        return new LogParameterModel
+        var model = new LogParameterModel
         {
             Name = parameter.Name,
             Type = parameter.Type.ToDisplayString(TypeFormat),
@@ -112,9 +113,42 @@ internal static class LogCallSiteTransform
             Key = key,
             Kind = kind,
             IsNullableValueType = nullable is not null,
-            IsMasked = IsMasked(parameter),
+            IsMasked = isMasked,
             JsonFormat = jsonFormat,
             NumberType = numberType,
+        };
+
+        return kind == LogValueKind.Object && isProperty && !isMasked && nullable is null
+               && parameter.Type is INamedTypeSymbol named
+               && WithGeneratedWriter(model, named, compilation, ct) is { } written
+            ? written
+            : model;
+    }
+
+    /// <summary>
+    ///     The parameter written by a generated UTF-8 writer, when its type declares redaction and the writer
+    ///     can describe it; null otherwise, and it stays an <see cref="LogValueKind.Object" />.
+    /// </summary>
+    /// <remarks>
+    ///     Only a type that declares something: one that declares nothing has nothing to hide, and planning a
+    ///     writer for every logged object would widen this past what it was built and measured for. The
+    ///     mask paths are the redaction map's entry for the type, so the writer masks what the declared
+    ///     redactor would have.
+    /// </remarks>
+    private static LogParameterModel? WithGeneratedWriter(
+        LogParameterModel model, INamedTypeSymbol type, Compilation compilation, CancellationToken ct)
+    {
+        var paths = Redaction.Transforms.DeclaredRedactionPathTransform.PathsOf(type, ct);
+        if (paths.Length == 0
+            || !Serialization.Analysis.JsonWriterPlanner.TryPlan(type, paths, out var entry, out var methods))
+            return null;
+
+        var writers = Redaction.Templates.RedactionMapTemplate.NamespaceFor(compilation.AssemblyName ?? "");
+        return model with
+        {
+            Kind = LogValueKind.Json,
+            JsonWriter = Serialization.Templates.Utf8JsonWritersTemplate.DelegateFor(writers, entry),
+            JsonWriterMethods = methods,
         };
     }
 
