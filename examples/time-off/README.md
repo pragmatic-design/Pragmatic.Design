@@ -32,7 +32,8 @@ deployment uses.
 node scripts/check.mjs --tier docker --only TimeOff.IntegrationTests   # from the repository root
 ```
 
-68 tests, around two minutes (1m 55s–2m 10s over several runs). Each test boots the real
+**165 passed and none skipped**, in 4m 27s on one run (2026-10-08); the count is the number to rely on
+and the duration is the machine's. Each test boots the real
 host and talks HTTP to it: PostgreSQL in a container, signing in as a client does, no test-only
 authentication. The suite is part of the gate's docker tier, and CI runs that tier.
 

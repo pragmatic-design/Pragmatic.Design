@@ -53,8 +53,8 @@ and belongs to no tenant), because `RequireKnownTenant` answers **404** to an id
 node scripts/check.mjs --tier docker --only Casework.IntegrationTests   # from the repository root
 ```
 
-**113 passed and none skipped, in 2m 53s** inside a `--tier all` run; the command above pays its own
-clean build on top. The suite
+**115 passed and none skipped, in 2m 54s** on the command above (2026-10-08), the clean build it pays
+for not counted. The suite
 waits for delivery in several places, so the outbox polling interval — two seconds on this host against
 the framework's five (`Casework.Intake.Host/Program.cs`) — is a test-duration decision as much as a
 tuning one. **All but thirteen of them boot both hosts, a real RabbitMQ and N PostgreSQL databases** and
@@ -88,7 +88,7 @@ for real. What would make it cheaper, said as numbers rather than as an intentio
   default stays 1 on purpose; that is a tier-wide decision, documented in `docs/TESTING.md`, not this
   suite's to make.
 
-**80 of the 113 tests are hand-written and 33 are generated** by
+**82 of the 115 tests are hand-written and 33 are generated** by
 `Pragmatic.Testing.SourceGenerator` from the endpoints — 26 authorization contracts on Intake, 3 CRUD,
 2 authorization contracts on Verify and 2 state transitions, counted as the
 `FactAttribute` occurrences in `obj/Debug/net10.0/generated/Pragmatic.Testing.SourceGenerator/` right

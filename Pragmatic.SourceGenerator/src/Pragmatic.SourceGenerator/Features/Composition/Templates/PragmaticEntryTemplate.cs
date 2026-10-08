@@ -737,6 +737,14 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
 
         DecreaseIndent();
         AppendLine("}");
+        AppendLine();
+        Comment("What this configuration wrote, so a generated response writer is used only while it still holds:");
+        Comment("anything configured after this line that changes the bytes sends responses back to the serializer.");
+        AppendLine("global::Pragmatic.Serialization.GeneratedJsonDefaults.Mark(");
+        AppendLine("    jsonOptions.SerializerOptions, pragmaticJson,");
+        AppendLine(_model.HasPersistenceSerialization
+            ? "    excludesInfrastructure: resolver is not null);"
+            : "    excludesInfrastructure: false);");
         DecreaseIndent();
         AppendLine("});");
         DecreaseIndent();

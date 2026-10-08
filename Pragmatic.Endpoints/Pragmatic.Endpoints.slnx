@@ -18,6 +18,7 @@
     <File Path="docs/rate-limiting.md" />
     <File Path="docs/request-constraints.md" />
     <File Path="docs/response-caching.md" />
+    <File Path="docs/response-writers.md" />
     <File Path="docs/sse-streaming.md" />
     <File Path="docs/troubleshooting.md" />
     <File Path="docs/versioning.md" />

@@ -138,7 +138,7 @@ public class QueryHandlerFailureHandlingTests : EndpointsGeneratorTestBase
         handler.Should().Contain("ErrorExtensions.ToResult(__outcome.Error!, httpContext)",
             "a missing row must answer 404 through the same ProblemDetails path the mutations use — the "
             + "executor's failure now travels out of the invoker as the outcome's error");
-        handler.Should().Contain("Results.Ok(__outcome.Value)",
+        handler.Should().Contain("(__outcome.Value!, 200,",
             "the body is the row itself, not a wrapper");
     }
 }

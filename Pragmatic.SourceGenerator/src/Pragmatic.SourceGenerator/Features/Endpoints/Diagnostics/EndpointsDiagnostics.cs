@@ -589,4 +589,29 @@ internal static class EndpointsDiagnostics
         DiagnosticSeverity.Info,
         true,
         "The name belongs to tenancy, ownership, the concurrency token or the persistence key, which no response carries.");
+
+    /// <summary>
+    ///     PRAG0555: an endpoint's response keeps the serializer, because its generated writer could not
+    ///     reproduce what the serializer writes for it.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         A response type gets a generated UTF-8 writer when the generator can tell, from the declaration,
+    ///         every byte the serializer would write under the host's options. Where it cannot — a converter it
+    ///         cannot see into, a type that reaches itself, a member typed <c>object</c> — the response is written
+    ///         by the serializer, as before, and this says which part of the type decided it.
+    ///     </para>
+    ///     <para>
+    ///         Info: nothing is wrong with the response, it is only not on the faster path. A Warning would fail
+    ///         the build over a choice the author made for good reasons.
+    ///     </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor ResponseKeepsTheSerializer = new(
+        "PRAG0555",
+        "A response is written by the serializer",
+        "The response of '{0}' is written by System.Text.Json rather than by a generated writer: {1}",
+        Category,
+        DiagnosticSeverity.Info,
+        true,
+        "The generated writer is used only where it writes exactly what the serializer would.");
 }

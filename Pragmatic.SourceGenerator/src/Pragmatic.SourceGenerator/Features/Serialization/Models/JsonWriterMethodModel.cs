@@ -2,7 +2,7 @@ using Pragmatic.SourceGen;
 
 namespace Pragmatic.SourceGenerator.Features.Serialization.Models;
 
-/// <summary>A generated method that writes one type as a JSON object to a <c>Utf8JsonWriter</c>.</summary>
+/// <summary>A generated method that writes one type to a <c>Utf8JsonWriter</c>: as a JSON object, or as one value.</summary>
 /// <param name="Name">The method's name, unique in the assembly's writer class.</param>
 /// <param name="TypeExpr">The type it writes, fully qualified.</param>
 /// <param name="Members">What it writes, in the order the type's JSON shape gives.</param>
@@ -19,4 +19,17 @@ internal sealed record JsonWriterMethodModel(
     string Name,
     string TypeExpr,
     EquatableArray<JsonWriterMemberModel> Members,
-    bool IsEntryPoint);
+    bool IsEntryPoint)
+{
+    /// <summary>
+    ///     The value the method writes when its type is not an object — a list a query answers with, a number
+    ///     an action returns; null for an object, which is written from <see cref="Members" />.
+    /// </summary>
+    public JsonWriterValueModel? Root { get; init; }
+
+    /// <summary>
+    ///     What the writer writes, for the entry method of a response; null for every other method, and for the
+    ///     writers of logged types, which no host option can change.
+    /// </summary>
+    public JsonWriterShapeModel? Shape { get; init; }
+}

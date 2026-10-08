@@ -35,6 +35,11 @@
     <Content Include="..\..\README.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Every generated response writer against the serializer (#51), shared by the reference applications. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\shared\Testing\*.cs" LinkBase="Shared\Testing" />
+  </ItemGroup>
+
   <!-- The contract tests the Testing generator writes for this application: the harness (base class,
        identity, assertions) plus the generator as an analyzer, which scans the referenced boundaries for
        [Endpoint] and emits a test per create — including the one that proves tenant isolation.

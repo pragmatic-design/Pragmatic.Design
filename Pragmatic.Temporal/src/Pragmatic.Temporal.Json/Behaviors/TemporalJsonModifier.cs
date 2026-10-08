@@ -24,6 +24,17 @@ namespace Pragmatic.Temporal.Json.Behaviors;
 /// </remarks>
 public static class TemporalJsonModifier
 {
+    /// <summary>
+    ///     Whether <see cref="Apply" /> changes how <paramref name="type" /> is written: it has a behavior
+    ///     registered for one of its properties.
+    /// </summary>
+    /// <remarks>
+    ///     What the modifier says about itself when it is registered on the shared seam, so that a generated
+    ///     response writer of a type it leaves alone stays in use. The registry is filled at startup, before
+    ///     a request is answered.
+    /// </remarks>
+    public static bool Touches(Type type) => TemporalJsonBehaviorRegistry.GetBehaviors(type) is not null;
+
     /// <summary>Applies registered timezone behaviors to the type's properties.</summary>
     public static void Apply(JsonTypeInfo typeInfo)
     {

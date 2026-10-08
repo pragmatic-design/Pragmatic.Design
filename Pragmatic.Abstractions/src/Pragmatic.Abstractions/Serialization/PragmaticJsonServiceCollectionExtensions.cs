@@ -36,10 +36,21 @@ public static class PragmaticJsonServiceCollectionExtensions
     ///     reaches the object the host actually builds from.
     /// </remarks>
     public static IServiceCollection AddPragmaticJsonModifier(this IServiceCollection services, Action<JsonTypeInfo> modifier)
+        => services.AddPragmaticJsonModifier(modifier, touches: null);
+
+    /// <summary>
+    ///     Contributes a <see cref="JsonTypeInfo"/> modifier that changes only the types it says it touches.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="modifier">The modifier.</param>
+    /// <param name="touches">Whether the modifier changes how a type is written; null when it cannot say.</param>
+    /// <remarks>See <see cref="PragmaticJsonOptions.AddModifier(Action{JsonTypeInfo}, Func{Type, bool})" />.</remarks>
+    public static IServiceCollection AddPragmaticJsonModifier(
+        this IServiceCollection services, Action<JsonTypeInfo> modifier, Func<Type, bool>? touches)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(modifier);
-        GetOrAddOptions(services).AddModifier(modifier);
+        GetOrAddOptions(services).AddModifier(modifier, touches);
         return services;
     }
 

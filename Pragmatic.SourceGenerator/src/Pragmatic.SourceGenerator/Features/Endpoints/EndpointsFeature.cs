@@ -187,8 +187,18 @@ internal static partial class EndpointsFeature
 
                     return programmatic.Where(p =>
                         !manualRoutes.Contains($"{p.HttpMethod}:{p.Route}")).ToImmutableArray();
-                });
+                })
+                // The response writer of an endpoint assembled here: its model carries type text, not a symbol,
+                // so the type is resolved against the compilation, as the request bodies of the same endpoints are.
+                .Combine(context.CompilationProvider)
+                .Select(static (pair, _) =>
+                {
+                    var (endpoints, compilation) = pair;
+                    if (endpoints.IsDefaultOrEmpty) return endpoints;
 
+                    var resolver = new Serialization.Analysis.JsonTypeExpressionResolver(compilation);
+                    return endpoints.Select(e => EndpointResponseWriter.With(e, compilation, resolver)).ToImmutableArray();
+                });
         }
 
         // Every Single read of the compilation, for the Location of a Create that answers at its route.
@@ -241,6 +251,11 @@ internal static partial class EndpointsFeature
 
         // Generate assembly-level endpoint contracts (route, method, error types, permissions)
         context.RegisterSourceOutputSafe(allEndpoints, GenerateEndpointContracts);
+
+        // The UTF-8 writers the handlers answer through, one file for the assembly.
+        context.RegisterSourceOutputSafe(
+            allEndpoints.Combine(context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "")),
+            static (ctx, pair) => GenerateResponseWriters(ctx, pair.Left, pair.Right));
 
         // Generate ApiRoutes (compile-time route constants + typed URL builders per boundary)
         var routesInput = allEndpoints.Combine(
@@ -392,6 +407,13 @@ internal static partial class EndpointsFeature
             context.ReportDiagnostic(Diagnostic.Create(
                 EndpointsDiagnostics.DeclaredStatusContradictsTheError, model.Location,
                 error.SimpleName, error.StatusCode, error.ContradictedStatusCode!.Value));
+        }
+
+        // PRAG0555: the response keeps the serializer, and which part of its type decided it.
+        if (model.ResponseWriterRefusal is { } refusal)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                EndpointsDiagnostics.ResponseKeepsTheSerializer, model.Location, model.TypeName, refusal));
         }
 
         // PRAG0527: a field the generator cannot classify is not injected — say so.

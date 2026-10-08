@@ -32,7 +32,7 @@ internal sealed partial class MutationHandlerTemplate
         };
 
         if (successCode == 200)
-            AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Ok({body}),");
+            AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, body, 200) ?? $"Microsoft.AspNetCore.Http.Results.Ok({body})"},");
         else if (successCode == 201)
         {
             // [CreatedAt] template → that Location. Without one, a Create whose Single read answers at its
@@ -47,14 +47,14 @@ internal sealed partial class MutationHandlerTemplate
                     "$\"{(httpContext.Request.PathBase + httpContext.Request.Path).Value?.TrimEnd('/')}/{success.PersistenceId:D}\"",
                 _ => "(string?)null"
             };
-            AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Created({location}, {body}),");
+            AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, body, 201, location) ?? $"Microsoft.AspNetCore.Http.Results.Created({location}, {body})"},");
         }
         else if (successCode == 204)
             // 204 has no body by definition.
             AppendLine("(success) => Microsoft.AspNetCore.Http.Results.NoContent(),");
         else
             // Preserve the response body for non-standard success codes (e.g. 202 Accepted).
-            AppendLine($"(success) => Microsoft.AspNetCore.Http.Results.Json({body}, statusCode: {successCode}),");
+            AppendLine($"(success) => {GeneratedResponseRenderer.Render(_model, body, successCode) ?? $"Microsoft.AspNetCore.Http.Results.Json({body}, statusCode: {successCode})"},");
 
         AppendLine("(global::Pragmatic.Result.IError error) => MapError(error, httpContext)");
         DecreaseIndent();

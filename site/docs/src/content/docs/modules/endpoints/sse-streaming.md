@@ -3,7 +3,7 @@ title: "Server-Sent Events (streaming endpoints)"
 description: "`StreamingEndpoint<TItem>` streams items to the client as SSE (`text/event-stream`):"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Endpoints/docs/sse-streaming.md
 sidebar:
-  order: 15
+  order: 16
 ---
 `StreamingEndpoint<TItem>` streams items to the client as SSE (`text/event-stream`):
 one `data:` event per item, flushed immediately.

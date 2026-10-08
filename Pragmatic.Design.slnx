@@ -207,6 +207,7 @@
     <File Path="Pragmatic.Endpoints/docs/rate-limiting.md" />
     <File Path="Pragmatic.Endpoints/docs/request-constraints.md" />
     <File Path="Pragmatic.Endpoints/docs/response-caching.md" />
+    <File Path="Pragmatic.Endpoints/docs/response-writers.md" />
     <File Path="Pragmatic.Endpoints/docs/sse-streaming.md" />
     <File Path="Pragmatic.Endpoints/docs/troubleshooting.md" />
     <File Path="Pragmatic.Endpoints/docs/versioning.md" />

@@ -113,8 +113,18 @@ public class QueryValidationTests : EndpointsGeneratorTestBase
             "a refused input must not be answered with rows");
 
         var refusalIndex = generated!.IndexOf("__outcome.IsFailure", StringComparison.Ordinal);
-        var okIndex = generated.IndexOf("Results.Ok", StringComparison.Ordinal);
 
+        // The rows are answered through the serializer or through the type's generated writer.
+        var okIndex = new[]
+            {
+                generated.IndexOf("Results.Ok", StringComparison.Ordinal),
+                generated.IndexOf("GeneratedJsonResponse<", StringComparison.Ordinal),
+            }
+            .Where(i => i >= 0)
+            .DefaultIfEmpty(-1)
+            .Min();
+
+        okIndex.Should().BeGreaterThan(-1, "the handler answers the rows somewhere");
         refusalIndex.Should().BeLessThan(okIndex,
             "answering the rows and then the error is not refusing");
     }

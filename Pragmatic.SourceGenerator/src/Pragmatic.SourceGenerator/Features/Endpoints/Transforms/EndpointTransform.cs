@@ -408,7 +408,8 @@ internal static partial class EndpointTransform
 
         // Asked of the finished model, so which body records exist — and what they are called — is
         // answered in one place for the templates that emit them and the context that must cover them.
-        return model with
+        // The response writer likewise: it is planned for the type the finished model answers with.
+        return EndpointResponseWriter.With(model with
         {
             JsonContribution = Serialization.Models.JsonRootContribution.Merge(
                 Serialization.Models.JsonRootContribution.Merge(
@@ -417,7 +418,7 @@ internal static partial class EndpointTransform
                         JsonResponseShape.For(symbol)),
                     JsonComplexFilterShape.For(symbol)),
                 mutationKeyResponse?.Json),
-        };
+        }, context.SemanticModel.Compilation);
     }
 
     /// <summary>

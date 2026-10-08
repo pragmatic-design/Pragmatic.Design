@@ -51,6 +51,7 @@ public class StreamingEndpointGeneratorTests : EndpointsGeneratorTestBase
         generated.Should().Contain("SseStreamEvent<global::Test.Api.TickDto>.FromItem(");
         generated.Should().Contain(".WithMetadata(new global::Microsoft.AspNetCore.Http.ProducesResponseTypeMetadata(200, typeof(global::Test.Api.TickDto), new[] { \"text/event-stream\" }));");
         generated.Should().NotContain("Results.Ok(");
+        generated.Should().NotContain("GeneratedJsonResponse<");
     }
 
     [Fact]

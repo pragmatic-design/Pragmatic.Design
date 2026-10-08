@@ -124,6 +124,6 @@ public class FileResponseProducesTests : EndpointsGeneratorTestBase
     {
         var handler = GetGeneratedSource(RunGenerator(EndpointOfLookalikeType), "Endpoint");
 
-        handler.Should().Contain("Results.Ok(success)");
+        handler.Should().Contain("GeneratedJsonResponse<global::TestApp.FileResponse>(success!, 200,");
     }
 }

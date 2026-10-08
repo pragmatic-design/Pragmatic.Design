@@ -64,8 +64,8 @@ a single host, without an Agent or a gateway, provided `Jwt:Key` is set.
 node scripts/check.mjs --tier docker --only Warehouse.IntegrationTests   # from the repository root
 ```
 
-**70 passed and none skipped in 1m 34s**, or **2m 16s** including the clean build the command pays for,
-measured with the command above. Every test boots the whole application: PostgreSQL, RabbitMQ
+**77 passed and none skipped in 1m 34s**, or **2m 07s** including the clean build the command pays for,
+measured with the command above (2026-10-08). Every test boots the whole application: PostgreSQL, RabbitMQ
 and Redis in containers, **five Agent daemons** started as the processes they are in a deployment and
 joined into one cluster, Orders, Stock twice and Shipping on real ports, and the real gateway in front of
 them. No in-memory transport, no test double for the broker or the Agent, and no test-only

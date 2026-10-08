@@ -265,6 +265,7 @@ public class MutationEndpointTests : EndpointsGeneratorTestBase
         handlerSource.Should().NotBeNull();
         handlerSource.Should().Contain("Results.NoContent()");
         handlerSource.Should().NotContain("Results.Ok(success)");
+        handlerSource.Should().NotContain("GeneratedJsonResponse<");
         handlerSource.Should().Contain("MapError(error, httpContext)");
     }
 
@@ -300,7 +301,7 @@ public class MutationEndpointTests : EndpointsGeneratorTestBase
             RunGenerator(ItemMutation("Update", "Put", "/items/{id}", ", ReturnType = MutationReturnType.Entity")), "Endpoint");
 
         handlerSource.Should().NotBeNull();
-        handlerSource.Should().Contain("Results.Ok(success)");
+        handlerSource.Should().Contain("GeneratedJsonResponse<global::TestApp.Items.Item>(success!, 200,");
         handlerSource.Should().Contain("ProducesResponseTypeMetadata(200, typeof(global::TestApp.Items.Item))");
     }
 

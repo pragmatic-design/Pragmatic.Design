@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **423** |
-| Distinct IDs | **423** |
+| Declared descriptors | **424** |
+| Distinct IDs | **424** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -175,7 +175,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0469`.
 
-### Endpoints: 36 in use · range `PRAG0500`–`PRAG0599`
+### Endpoints: 37 in use · range `PRAG0500`–`PRAG0599`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -215,10 +215,11 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0551` | `VersioningRequiresAspVersioning` | Warning | Versioned methods require Asp.Versioning.Http |
 | `PRAG0552` | `MultipartCannotCarryComplexProperty` | Error | A multipart request cannot carry this property |
 | `PRAG0554` | `SharedResponseCacheOnAuthenticatedEndpoint` | Warning | A shared [ResponseCache] on an endpoint that requires authentication keeps nothing |
+| `PRAG0555` | `ResponseKeepsTheSerializer` | Info | A response is written by the serializer |
 
 *Free inside the used span:* `PRAG0506`, `PRAG0508`, `PRAG0509`, `PRAG0510`, `PRAG0511`, `PRAG0519`, `PRAG0530`, `PRAG0539`, `PRAG0540`, `PRAG0541`, `PRAG0542`, `PRAG0543`, `PRAG0544`, `PRAG0545`, `PRAG0546`, `PRAG0547`, `PRAG0548`, `PRAG0549`, `PRAG0553`.
 
-*First free after the last used:* `PRAG0555`.
+*First free after the last used:* `PRAG0556`.
 
 ### Persistence.EFCore: 44 in use · range `PRAG0600`–`PRAG0699`
 

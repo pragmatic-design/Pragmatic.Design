@@ -736,9 +736,9 @@ public class EndpointsAttributesGeneratorTests : EndpointsGeneratorTestBase
         handlerSource.Should().NotBeNull();
         // The [CreatedAt] template becomes a real Location: tokens read from the success value,
         // URL-escaped and invariant-formatted — no more "Location: null" on 201 (B20).
-        handlerSource.Should().Contain("Results.Created($\"/items/{(global::System.Uri.EscapeDataString(");
+        handlerSource.Should().Contain("201, $\"/items/{(global::System.Uri.EscapeDataString(");
         handlerSource.Should().Contain("success.Id");
-        handlerSource.Should().NotContain("Created((string?)null");
+        handlerSource.Should().NotContain("201, (string?)null");
     }
 
     [Fact]
@@ -772,6 +772,6 @@ public class EndpointsAttributesGeneratorTests : EndpointsGeneratorTestBase
         var result = RunGenerator(source);
 
         var handlerSource = GetGeneratedSource(result, "Endpoint");
-        handlerSource.Should().Contain("Created((string?)null");
+        handlerSource.Should().Contain("201, (string?)null");
     }
 }

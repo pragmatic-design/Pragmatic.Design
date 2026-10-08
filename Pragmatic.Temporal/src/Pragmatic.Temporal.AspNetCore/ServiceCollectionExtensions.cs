@@ -66,7 +66,9 @@ public static class ServiceCollectionExtensions
         // here worked only until something assigned a resolver afterwards, which the generated host
         // does; the wrap was then discarded and nothing said so, because a modifier that does not run
         // produces a well-formed payload with the wrong values.
-        services.AddPragmaticJsonModifier(TemporalJsonModifier.Apply);
+        //
+        // It says which types it touches, so a generated response writer of any other type stays in use.
+        services.AddPragmaticJsonModifier(TemporalJsonModifier.Apply, TemporalJsonModifier.Touches);
 
         // Add model binder providers: temporal types first, then attribute-driven
         // DateTimeOffset/DateTime conversion (both must precede the MVC defaults).
