@@ -143,10 +143,16 @@ configured for the others.
 | NLog, `[LoggerMessage]` | 1,006.4 ns | 3.92× slower | 1,704 B |
 | Pragmatic, `[LoggerMessage]` | 1,150.0 ns | 4.47× slower | 6,992 B |
 
-- **The generated call site is the fastest row and allocates nothing**, ahead of ZLogger even where ZLogger
-  writes fewer fields into a buffer and pays for no stream. The run's standard deviation is about 20 ns on
-  every row: the 49 ns against the even comparison is outside it, the 23 ns against the buffer is not by
-  much.
+- **On this machine the generated call site is the fastest row and allocates nothing**, ahead of ZLogger
+  even where ZLogger writes fewer fields into a buffer and pays for no stream. The run's standard deviation
+  is about 20 ns on every row: the 49 ns against the even comparison is outside it, the 23 ns against the
+  buffer is not by much.
+- ⚠️ **On the GitHub runner it is level, not first.** The benchmarks workflow on the change of #109 (AMD EPYC,
+  Ubuntu 24.04, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md) and
+  [base](benchmarks/reports/runner-109-base_JsonSinkBenchmarks-report-github.md)): the call site 263.5 ns,
+  down from 405.8 on the base; ZLogger with the same fields to a stream 264.2, to a stream 251.0, into a
+  buffer 224.0. Level on the even comparison, behind where ZLogger writes fewer fields. Taking the lead there
+  too is #129.
 - **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row and the largest
   allocation:** that is the classic path, which builds an entry, a message string and a dictionary.
 
@@ -184,7 +190,8 @@ What was not kept: the event name and template encoded once but still written by
 the deviation; the message written raw, slower; one `IsEnabled` instead of two, 3.7 ns in all.
 
 In one run, [`probe-final`](benchmarks/reports/probe-final_ProbeBenchmarks-report-github.md): the path
-before #109 **446 ns**, the provider now **257 ns**, ZLogger with the same fields and sink **303 ns**.
+before #109 **446 ns**, the provider now **257 ns**, ZLogger with the same fields and sink **303 ns**. On the
+runner the same change measured 405.8 → 263.5 ns against ZLogger's 264.2 (above).
 
 ## Declared redaction overhead: `RedactionOverheadBenchmarks`
 
