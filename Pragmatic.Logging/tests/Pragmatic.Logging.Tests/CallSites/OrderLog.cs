@@ -27,4 +27,21 @@ internal static partial class OrderLog
 
     [LoggerMessage(EventId = 1005, Level = LogLevel.Information, Message = "Booked {Ledger}")]
     public static partial void Booked(ILogger logger, Ledger ledger);
+
+    public const string FailedTemplate = "Payment for {OrderId} failed";
+
+    [LoggerMessage(EventId = 1006, Level = LogLevel.Error, Message = FailedTemplate)]
+    public static partial void Failed(ILogger logger, Exception exception, int orderId);
+
+    public const string StockLowTemplate = "Stock low for {Sku}";
+
+    // EventId = 0 on purpose: without it the generator derives one from the name, and a line with no event is
+    // the case this call site is for.
+    [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = StockLowTemplate)]
+    public static partial void StockLow(ILogger logger, string sku);
+
+    public const string QuotedTemplate = "Café \"{Name}\" <ok> & ünïcode";
+
+    [LoggerMessage(EventId = 1007, Level = LogLevel.Information, Message = QuotedTemplate)]
+    public static partial void Quoted(ILogger logger, string name);
 }
