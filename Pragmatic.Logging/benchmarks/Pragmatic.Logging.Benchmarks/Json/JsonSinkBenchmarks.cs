@@ -9,6 +9,7 @@ using Pragmatic.Logging.Extensions;
 using Pragmatic.Logging.Providers;
 using Serilog.Extensions.Logging;
 using ZLogger;
+using ZLogger.Formatters;
 
 namespace Pragmatic.Logging.Benchmarks.Json;
 
@@ -53,6 +54,10 @@ public class JsonSinkBenchmarks
     private ILogger _serilog = null!;
     private ILogger _nlog = null!;
     private ILogger _zlogger = null!;
+    private readonly LastLineStream _zloggerStreamOutput = new();
+    private ILogger _zloggerStream = null!;
+    private readonly LastLineStream _zloggerSameFieldsOutput = new();
+    private ILogger _zloggerSameFields = null!;
 
     private readonly List<IDisposable> _owned = [];
 
@@ -66,7 +71,11 @@ public class JsonSinkBenchmarks
         _pragmaticClassic = Pragmatic(_pragmaticClassicStream);
         _serilog = Serilog();
         _nlog = NLog();
-        _zlogger = ZLogger();
+        _zlogger = ZLogger(options => _zloggerProcessor = new ZLoggerJsonProcessor(options.CreateFormatter()));
+        _zloggerStream = ZLogger(options => new ZLoggerJsonStreamProcessor(options.CreateFormatter(), _zloggerStreamOutput));
+        _zloggerSameFields = ZLogger(
+            options => new ZLoggerJsonStreamProcessor(options.CreateFormatter(), _zloggerSameFieldsOutput),
+            PragmaticFields);
 
         VerifySameWork();
     }
@@ -95,6 +104,19 @@ public class JsonSinkBenchmarks
 
     [Benchmark, BenchmarkCategory("Json")]
     public void ZLogger_ZLoggerMessage() => ZLoggerJsonLog.OrderPlaced(_zlogger, _orderId, _customer, _amount);
+
+    /// <summary>ZLogger with the sink Pragmatic's provider has: a stream, under a lock, flushed per line.</summary>
+    [Benchmark, BenchmarkCategory("Json")]
+    public void ZLogger_ZLoggerMessage_Stream() => ZLoggerJsonLog.OrderPlaced(_zloggerStream, _orderId, _customer, _amount);
+
+    /// <summary>
+    ///     ZLogger writing the fields Pragmatic's line has, under the same names, through the same sink: event id
+    ///     and name, a UTC timestamp, the arguments under <c>@properties</c>. All but the template, which its
+    ///     formatter has no field for.
+    /// </summary>
+    [Benchmark, BenchmarkCategory("Json")]
+    public void ZLogger_ZLoggerMessage_SameFields_Stream() =>
+        ZLoggerJsonLog.OrderPlaced(_zloggerSameFields, _orderId, _customer, _amount);
 
     // ── JsonPersonalData: an argument declared personal data, masked by the call site ──
 
@@ -144,7 +166,7 @@ public class JsonSinkBenchmarks
         return Owned(services.BuildServiceProvider()).GetRequiredService<ILoggerFactory>().CreateLogger("Benchmark");
     }
 
-    private ILogger ZLogger()
+    private ILogger ZLogger(Func<ZLoggerOptions, IAsyncLogProcessor> processor, Action<SystemTextJsonZLoggerFormatter>? formatter = null)
     {
         var services = new ServiceCollection();
         services.AddLogging(builder =>
@@ -153,11 +175,28 @@ public class JsonSinkBenchmarks
             builder.SetMinimumLevel(LogLevel.Information);
             builder.AddZLoggerLogProcessor(options =>
             {
-                options.UseJsonFormatter();
-                return _zloggerProcessor = new ZLoggerJsonProcessor(options.CreateFormatter());
+                options.UseJsonFormatter(formatter);
+                return processor(options);
             });
         });
         return Owned(services.BuildServiceProvider()).GetRequiredService<ILoggerFactory>().CreateLogger("Benchmark");
+    }
+
+    internal static void PragmaticFields(SystemTextJsonZLoggerFormatter formatter)
+    {
+        formatter.IncludeProperties = IncludeProperties.Default | IncludeProperties.EventIdValue | IncludeProperties.EventIdName;
+        formatter.UseUtcTimestamp = true;
+        formatter.PropertyKeyValuesObjectName = JsonEncodedText.Encode("@properties");
+        formatter.JsonPropertyNames = JsonPropertyNames.Default with
+        {
+            Timestamp = JsonEncodedText.Encode("@timestamp"),
+            LogLevel = JsonEncodedText.Encode("@level"),
+            Category = JsonEncodedText.Encode("@logger"),
+            Message = JsonEncodedText.Encode("@message"),
+            EventId = JsonEncodedText.Encode("@eventId"),
+            EventIdName = JsonEncodedText.Encode("@eventName"),
+            LogLevelInformation = JsonEncodedText.Encode("INFO"),
+        };
     }
 
     private T Owned<T>(T disposable) where T : IDisposable
@@ -181,6 +220,8 @@ public class JsonSinkBenchmarks
             ("Serilog", Serilog_LoggerMessage, () => _serilogSink.LastLine),
             ("NLog", NLog_LoggerMessage, () => _nlogTarget.LastLine),
             ("ZLogger", ZLogger_ZLoggerMessage, () => _zloggerProcessor.LastLine),
+            ("ZLogger, stream", ZLogger_ZLoggerMessage_Stream, () => _zloggerStreamOutput.LastLine),
+            ("ZLogger, same fields", ZLogger_ZLoggerMessage_SameFields_Stream, () => _zloggerSameFieldsOutput.LastLine),
         };
 
         var failures = new List<string>();
@@ -193,6 +234,14 @@ public class JsonSinkBenchmarks
             var hasMessage = values.Any(v => v.Replace("\"", "", StringComparison.Ordinal) == Message);
             if (!hasMessage || !values.Contains("42") || !values.Contains("jane") || !values.Contains("19.99"))
                 failures.Add($"  {library,-26} {written}");
+        }
+
+        // The row that claims Pragmatic's fields must write them, or it compares against a shorter line.
+        var sameFields = _zloggerSameFieldsOutput.LastLine;
+        foreach (var field in new[] { "\"@timestamp\":", "\"@level\":\"INFO\"", "\"@logger\":", "\"@message\":", "\"@eventId\":2001", "\"@eventName\":", "\"@properties\":{" })
+        {
+            if (!sameFields.Contains(field, StringComparison.Ordinal))
+                failures.Add($"  {"ZLogger, same fields",-26} has no {field}: {sameFields}");
         }
 
         Pragmatic_CallSite_PersonalData();

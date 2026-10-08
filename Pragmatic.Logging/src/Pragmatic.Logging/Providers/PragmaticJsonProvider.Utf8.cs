@@ -39,6 +39,8 @@ public sealed partial class PragmaticJsonProvider
     private ArrayBufferWriter<byte>? _line;
     private Utf8JsonWriter? _lineWriter;
     private byte[] _message = new byte[1024];
+    private string? _timestampFormat;
+    private TimestampLayout? _timestampLayout;
 
     // Set by the classic path when it leaves a line in the text writer's buffer.
     private bool _textPending;
@@ -72,22 +74,43 @@ public sealed partial class PragmaticJsonProvider
 
             writer.WriteStartObject();
             WriteTimestamp(writer, timestamp);
-            writer.WriteString(LevelProperty, GetLogLevelString(logLevel));
-            writer.WriteString(LoggerProperty, category);
-            writer.WriteString(MessageProperty, message);
 
-            if (eventId.Id != 0)
+            if (WritesBlocks && LevelAndLoggerBlock(logLevel, category) is { } levelAndLogger)
             {
-                writer.WriteNumber(EventIdProperty, eventId.Id);
-                if (!string.IsNullOrEmpty(eventId.Name))
-                    writer.WriteString(EventNameProperty, eventId.Name);
+                // The writer's bytes go to the line first; the block follows them, and the writer's next
+                // property brings its own comma.
+                writer.Flush();
+                line.Write(levelAndLogger);
+            }
+            else
+            {
+                writer.WriteString(LevelProperty, GetLogLevelString(logLevel));
+                writer.WriteString(LoggerProperty, category);
             }
 
-            if (exception != null)
-                WriteExceptionDetails(writer, exception);
+            writer.WriteString(MessageProperty, message);
 
-            if (!string.IsNullOrEmpty(utf8.Template))
-                writer.WriteString(TemplateProperty, utf8.Template);
+            // The exception sits between the event and the template, so with one the block cannot be used.
+            if (WritesBlocks && exception is null)
+            {
+                writer.Flush();
+                line.Write(EventBlock(eventId, utf8));
+            }
+            else
+            {
+                if (eventId.Id != 0)
+                {
+                    writer.WriteNumber(EventIdProperty, eventId.Id);
+                    if (!string.IsNullOrEmpty(eventId.Name))
+                        writer.WriteString(EventNameProperty, eventId.Name);
+                }
+
+                if (exception != null)
+                    WriteExceptionDetails(writer, exception);
+
+                if (!string.IsNullOrEmpty(utf8.Template))
+                    writer.WriteString(TemplateProperty, utf8.Template);
+            }
 
             if (Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0)
             {
@@ -120,8 +143,18 @@ public sealed partial class PragmaticJsonProvider
         var formatting = Configuration.Formatting;
         var effective = formatting.UseUtcTimestamp ? timestamp.ToUniversalTime() : timestamp.ToLocalTime();
 
+        // The format is read once per format string, not on every line; the configuration can be replaced,
+        // so the layout follows the string it was read from.
+        if (!ReferenceEquals(_timestampFormat, formatting.TimestampFormat))
+        {
+            _timestampLayout = TimestampLayout.Parse(formatting.TimestampFormat);
+            _timestampFormat = formatting.TimestampFormat;
+        }
+
         Span<byte> buffer = stackalloc byte[64];
-        if (effective.TryFormat(buffer, out var written, formatting.TimestampFormat, CultureInfo.InvariantCulture))
+        if (_timestampLayout is { } layout && layout.TryFormat(effective, buffer, out var laidOut))
+            writer.WriteString(TimestampProperty, buffer[..laidOut]);
+        else if (effective.TryFormat(buffer, out var written, formatting.TimestampFormat, CultureInfo.InvariantCulture))
             writer.WriteString(TimestampProperty, buffer[..written]);
         else
             writer.WriteString(TimestampProperty, effective.ToString(formatting.TimestampFormat, CultureInfo.InvariantCulture));

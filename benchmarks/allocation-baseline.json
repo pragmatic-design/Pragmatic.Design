@@ -48,6 +48,8 @@
   "Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks.Pragmatic_LoggerMessage": 6992,
   "Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks.Serilog_LoggerMessage": 1448,
   "Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks.ZLogger_ZLoggerMessage": 0,
+  "Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks.ZLogger_ZLoggerMessage_SameFields_Stream": 0,
+  "Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks.ZLogger_ZLoggerMessage_Stream": 0,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.NLog_CallSite": 1408,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.NLog_Exception": 776,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.NLog_HighVolume": 759,

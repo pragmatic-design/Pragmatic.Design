@@ -1,6 +1,7 @@
 # Pragmatic.Logging: Benchmark Results
 
-Every number on this page comes from one run, on 2026-10-05, of:
+Every number on this page, except the JSON line's section, which says where its own come from, comes from
+one run, on 2026-10-05, of:
 
 ```bash
 cd Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks
@@ -107,39 +108,83 @@ two properties are a second MEL scope. Pragmatic runs its production preset, wit
 
 ## A JSON line: `JsonSinkBenchmarks`
 
-⚠️ **Not the machine of the rest of this page.** These numbers come from the benchmarks workflow run on
-the change that added the category, on the GitHub runner: AMD EPYC 7763 (4 logical cores), Ubuntu 24.04,
-.NET 10.0.12, BenchmarkDotNet 0.14.0, default job. The report is
-[`benchmarks/reports/…JsonSinkBenchmarks-report-github.md`](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md).
-Compare rows within this table, not with the tables above.
+⚠️ **Not the run of the rest of this page.** These numbers come from runs on 2026-10-08 on the machine
+above, after the changes of #109. The report is
+[`benchmarks/reports/local-109_JsonSinkBenchmarks-report-github.md`](benchmarks/reports/local-109_JsonSinkBenchmarks-report-github.md).
+The run before #109 on the GitHub runner put ZLogger 1.63× ahead (447.7 ns against 730.2,
+[report](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md)); the
+benchmarks workflow measures head against base on that runner for every change. Compare rows within this
+table, not with the tables above.
 
 The same call (`Order {OrderId} placed by {Customer} for {Amount}`: an int, a string, a decimal) written
-as a JSON line by each library's own JSON writer, on the logging thread, into a buffer that keeps only the
-line being written. Pragmatic logs through its generated call site; Microsoft's `[LoggerMessage]` goes
-through the Pragmatic JSON provider, Serilog's `JsonFormatter` and NLog's `JsonLayout`; ZLogger through its
-own `[ZLoggerMessage]` and JSON formatter. `GlobalSetup` stops the run unless every line carries the
-rendered message and the three values. Pragmatic's context enrichment is off, as nothing like it is
+as a JSON line by each library's own JSON writer, on the logging thread. Pragmatic logs through its
+generated call site; Microsoft's `[LoggerMessage]` goes through the Pragmatic JSON provider, Serilog's
+`JsonFormatter` and NLog's `JsonLayout`; ZLogger through its own `[ZLoggerMessage]` and JSON formatter, in
+three shapes:
+
+- **into a buffer**, as the other sinks here: no lock, no stream, the formatter's default fields;
+- **to a stream**, with the sink Pragmatic's provider has: under a lock, a line break after the line, a flush
+  per line;
+- **the same fields, to a stream**: also the event id and name, a UTC timestamp, the arguments under
+  `@properties`, under Pragmatic's names. Everything Pragmatic's line has but the message template, which
+  ZLogger's formatter has no field for. This is the even comparison.
+
+`GlobalSetup` stops the run unless every line carries the rendered message and the three values, and the
+same-fields line every field it claims. Pragmatic's context enrichment is off, as nothing like it is
 configured for the others.
 
 | Library | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| ZLogger, `[ZLoggerMessage]` | 447.7 ns | 1.63× faster | 0 B |
-| **Pragmatic, generated call site** | **730.2 ns** | baseline | **0 B** |
-| Serilog, `[LoggerMessage]` | 1,562.4 ns | 2.14× slower | 1,448 B |
-| NLog, `[LoggerMessage]` | 1,674.0 ns | 2.29× slower | 1,704 B |
-| Pragmatic, `[LoggerMessage]` | 1,958.3 ns | 2.68× slower | 6,992 B |
+| **Pragmatic, generated call site** | **258.6 ns** | baseline | **0 B** |
+| ZLogger, `[ZLoggerMessage]`, into a buffer | 281.9 ns | 1.10× slower | 0 B |
+| ZLogger, to a stream | 302.8 ns | 1.18× slower | 0 B |
+| ZLogger, the same fields, to a stream | 307.4 ns | 1.20× slower | 0 B |
+| Serilog, `[LoggerMessage]` | 863.8 ns | 3.36× slower | 1,448 B |
+| NLog, `[LoggerMessage]` | 1,006.4 ns | 3.92× slower | 1,704 B |
+| Pragmatic, `[LoggerMessage]` | 1,150.0 ns | 4.47× slower | 6,992 B |
 
-With an argument declared `[PersonalData]`, masked by the call site: **604.0 ns, 0 B**. It is faster than
-the call without one because the masked value is never formatted.
-
-- **The generated call site allocates nothing** through the JSON provider, masked argument or not; so
-  does ZLogger. The other three allocate per line.
-- **ZLogger is 1.63× faster.** It writes from a UTF-8 state of its own too. Where the difference goes
-  was not measured; the lines are not the same shape (Pragmatic's carries the event id and the message
-  template, for one), and this table does not say how much of the gap that accounts for.
+- **The generated call site is the fastest row and allocates nothing**, ahead of ZLogger even where ZLogger
+  writes fewer fields into a buffer and pays for no stream. The run's standard deviation is about 20 ns on
+  every row: the 49 ns against the even comparison is outside it, the 23 ns against the buffer is not by
+  much.
 - **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row and the largest
-  allocation:** that is the classic path, which builds an entry, a message string and a dictionary. The
-  call-site path is 2.68× faster for the same line.
+  allocation:** that is the classic path, which builds an entry, a message string and a dictionary.
+
+### Where the time went, and what #109 changed
+
+Measured by subtraction with `ProbeBenchmarks` (`dotnet run -c Release -- probe`): the provider's UTF-8 path
+written field by field, one thing taken out or done differently per row, every row checked to write the
+bytes it claims, against ZLogger with the same fields and sink in the same run. From
+[`probe-subtraction`](benchmarks/reports/probe-subtraction_ProbeBenchmarks-report-github.md), against the
+provider of that run (276 ns, the timestamp already read once):
+
+| Taken out, or done differently | Change |
+|---|---:|
+| The timestamp format parsed on every line, as before #109 | **+90 ns** |
+| No `@messageTemplate` (the field ZLogger cannot write) | −20 ns |
+| The timestamp written by `Utf8JsonWriter` (STJ's text, not the configured one) | −10 ns |
+| No lock; no stream; `AutoFlush` read once | within the run's deviation |
+| The message written once, straight into the JSON string | +6 ns: slower |
+| Nothing written at all: the call before formatting | 23 ns (ZLogger's: 51 ns) |
+
+What was kept, each by its row:
+
+1. **The timestamp format read once** (`TimestampLayout`), and the default format written in a straight line.
+   Alone, [`timestamp`](benchmarks/reports/timestamp_TimestampBenchmarks-report-github.md): `DateTime.TryFormat`
+   with the format string 85.5 ns, the layout 16.0 ns, `Utf8Formatter` with `O` (STJ's and ZLogger's) 10.9 ns.
+2. **The constant parts of the line copied as blocks encoded once** (`JsonLineBlock`): level and logger
+   together per logger, event id, event name and template per call site. In the quiet run
+   [`probe-run2`](benchmarks/reports/probe-run2_ProbeBenchmarks-report-github.md) (deviation 1–2 ns) the
+   blocks took the line from 259 to 209 ns, while the provider, then copying level and logger as two blocks
+   and finding the logger's by category, was at 223. With one block per logger and level it times as the
+   probe does: 257.20 against 257.32 ns in `probe-final`.
+
+What was not kept: the event name and template encoded once but still written by the writer — 6 ns in
+[`probe-encoded-fields`](benchmarks/reports/probe-encoded-fields_ProbeBenchmarks-report-github.md), within
+the deviation; the message written raw, slower; one `IsEnabled` instead of two, 3.7 ns in all.
+
+In one run, [`probe-final`](benchmarks/reports/probe-final_ProbeBenchmarks-report-github.md): the path
+before #109 **446 ns**, the provider now **257 ns**, ZLogger with the same fields and sink **303 ns**.
 
 ## Declared redaction overhead: `RedactionOverheadBenchmarks`
 
@@ -245,6 +290,9 @@ cd Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks
 dotnet run -c Release -- all         # every suite, as above
 dotnet run -c Release -- logging     # the library comparison
 dotnet run -c Release -- verify      # the comparison's equivalence check alone, nothing timed
+dotnet run -c Release -- json        # a JSON line, every library
+dotnet run -c Release -- probe       # where a JSON line's time goes, by subtraction (not in `all`)
+dotnet run -c Release -- timestamp   # the JSON line's timestamp alone (not in `all`)
 dotnet run -c Release -- redaction   # declared redaction overhead
 dotnet run -c Release -- expression  # filter DSL
 dotnet run -c Release -- zero        # formatting internals and bulk formatting
