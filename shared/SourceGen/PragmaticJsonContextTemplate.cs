@@ -228,6 +228,8 @@ internal sealed class PragmaticJsonContextTemplate : CSharpTemplate
                 AppendLine($"p{i}.Set = static (o, v) => Set_{obj.MethodToken}_{prop.ClrName}(({prop.DeclaringTypeExpr})o, {cast});");
             else
                 AppendLine($"p{i}.Set = static (o, v) => (({obj.TypeExpr})o).{prop.ClrName} = {cast};");
+            if (ShouldSerialize(prop) is { } shouldSerialize)
+                AppendLine($"p{i}.ShouldSerialize = {shouldSerialize};");
             AppendLine($"info.Properties.Add(p{i});");
             i++;
         }
@@ -238,6 +240,20 @@ internal sealed class PragmaticJsonContextTemplate : CSharpTemplate
 
         RenderUnsafeAccessors(obj);
     }
+
+    /// <summary>
+    ///     The <c>ShouldSerialize</c> that reproduces a property's <c>[JsonIgnore(Condition = …)]</c>, or null when the
+    ///     host's <c>DefaultIgnoreCondition</c> decides, as it does under reflection.
+    /// </summary>
+    private static string? ShouldSerialize(JsonPropertyModel prop) => prop.Ignore switch
+    {
+        JsonPropertyIgnore.Never => "static (_, _) => true",
+        JsonPropertyIgnore.WhenWritingNull => "static (_, v) => v is not null",
+        JsonPropertyIgnore.WhenWritingDefault when prop.IsValueType =>
+            $"static (_, v) => !global::System.Collections.Generic.EqualityComparer<{prop.TypeExpr}>.Default.Equals(({prop.TypeExpr})v!, default)",
+        JsonPropertyIgnore.WhenWritingDefault => "static (_, v) => v is not null",
+        _ => null,
+    };
 
     /// <summary>
     ///     Emits the <c>[UnsafeAccessor]</c> members backing an object's construction and init-only

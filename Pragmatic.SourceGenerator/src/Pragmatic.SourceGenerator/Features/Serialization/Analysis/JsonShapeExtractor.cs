@@ -201,6 +201,12 @@ internal static class JsonShapeExtractor
 
         foreach (var prop in PropertyAnalyzer.GetAllProperties(type))
         {
+            // [JsonIgnore] first: reflection leaves an always-ignored property out entirely, so it must not keep
+            // the type out of the context by failing a requirement below.
+            var ignore = IgnoreOf(prop);
+            if (ignore is null)
+                continue;
+
             // Require a public setter (a regular one, or an init accessor — init-only props are assigned
             // through an [UnsafeAccessor] setter). Init-only on a value type isn't supported (boxed copy).
             var isInitOnly = PropertyAnalyzer.IsInitOnly(prop);
@@ -216,7 +222,8 @@ internal static class JsonShapeExtractor
             // [UnsafeAccessor] setter must target it — not the derived object type.
             var declaringType = (prop.SetMethod?.ContainingType ?? prop.ContainingType).ToDisplayString(Fq);
             props.Add(new JsonPropertyModel(
-                prop.Name, WireName(prop), prop.Type.ToDisplayString(Fq), prop.Type.IsValueType, isInitOnly, declaringType));
+                prop.Name, WireName(prop), prop.Type.ToDisplayString(Fq), prop.Type.IsValueType, isInitOnly, declaringType,
+                ignore.Value));
         }
 
         // An abstract polymorphic base may legitimately have no serializable properties of its own.
@@ -488,11 +495,37 @@ internal static class JsonShapeExtractor
                 return name;
         }
 
-        return CamelCase(property.Name);
+        return JsonWireNames.CamelCase(property.Name);
     }
 
-    private static string CamelCase(string name)
-        => string.IsNullOrEmpty(name) || char.IsLower(name[0])
-            ? name
-            : char.ToLowerInvariant(name[0]) + name.Substring(1);
+    /// <summary>
+    ///     The property's <c>[JsonIgnore]</c> condition, or null when it is always ignored and the context must leave
+    ///     it out, as reflection does.
+    /// </summary>
+    private static JsonPropertyIgnore? IgnoreOf(IPropertySymbol property)
+    {
+        foreach (var attribute in property.GetAttributes())
+        {
+            if (attribute.AttributeClass is not { Name: "JsonIgnoreAttribute" } declaration
+                || declaration.ContainingNamespace?.ToDisplayString() != "System.Text.Json.Serialization")
+                continue;
+
+            // JsonIgnoreCondition: Never = 0, Always = 1, WhenWritingDefault = 2, WhenWritingNull = 3. No condition
+            // named is Always.
+            var condition = 1;
+            foreach (var argument in attribute.NamedArguments)
+                if (argument is { Key: "Condition", Value.Value: int value })
+                    condition = value;
+
+            return condition switch
+            {
+                0 => JsonPropertyIgnore.Never,
+                2 => JsonPropertyIgnore.WhenWritingDefault,
+                3 => JsonPropertyIgnore.WhenWritingNull,
+                _ => null,
+            };
+        }
+
+        return JsonPropertyIgnore.None;
+    }
 }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Features.Mapping.Analysis;
 using Pragmatic.SourceGenerator.Features.Serialization.Models;
 
@@ -96,39 +97,8 @@ internal static class JsonResponseMemberReader
         return members.OrderBy(m => m.Order).ThenBy(m => m.Index).Select(m => m.Member).ToImmutableArray();
     }
 
-    /// <summary>
-    ///     <c>JsonNamingPolicy.CamelCase</c>, reproduced: the leading run of capitals is lowered, except the last of
-    ///     a run that a lower-case letter follows (<c>URLPath</c> → <c>urlPath</c>).
-    /// </summary>
-    /// <remarks>
-    ///     Not "lower the first letter": that is what the generated JSON context writes, and the two differ on every
-    ///     name that starts with an acronym. <c>TheCamelCaseIsSystemTextJsonsTests</c> compares this with the policy
-    ///     itself.
-    /// </remarks>
-    public static string CamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name) || !char.IsUpper(name[0]))
-            return name;
-
-        var chars = name.ToCharArray();
-        for (var i = 0; i < chars.Length; i++)
-        {
-            if (i == 1 && !char.IsUpper(chars[i]))
-                break;
-
-            var hasNext = i + 1 < chars.Length;
-            if (i > 0 && hasNext && !char.IsUpper(chars[i + 1]))
-            {
-                if (chars[i + 1] == ' ')
-                    chars[i] = char.ToLowerInvariant(chars[i]);
-                break;
-            }
-
-            chars[i] = char.ToLowerInvariant(chars[i]);
-        }
-
-        return new string(chars);
-    }
+    /// <summary><c>JsonNamingPolicy.CamelCase</c>, reproduced (<see cref="JsonWireNames.CamelCase" />).</summary>
+    public static string CamelCase(string name) => JsonWireNames.CamelCase(name);
 
     /// <summary>Whether a value of the type can be null at runtime: a reference type, or a <c>Nullable&lt;T&gt;</c>.</summary>
     public static bool CanBeNull(ITypeSymbol type)

@@ -61,7 +61,8 @@ internal static class ClientJsonContextBuilder
 
                 properties.Add(new JsonPropertyModel(
                     property.Name,
-                    CamelCase(property.Name),
+                    // The server writes the name its policy gives it; the client reads under that name.
+                    JsonWireNames.CamelCase(property.Name),
                     propertyType,
                     IsValueType: IsValueTypeName(property.Type),
                     IsInitOnly: true,
@@ -255,9 +256,4 @@ internal static class ClientJsonContextBuilder
             .Replace("global::", "")
             .Replace('.', '_').Replace('+', '_').Replace('<', '_').Replace('>', '_')
             .Replace(',', '_').Replace(' ', '_').Replace("[]", "Array").Replace('?', '_');
-
-    private static string CamelCase(string name)
-        => string.IsNullOrEmpty(name) || char.IsLower(name[0])
-            ? name
-            : char.ToLowerInvariant(name[0]) + name.Substring(1);
 }
