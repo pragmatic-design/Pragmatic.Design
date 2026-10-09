@@ -74,7 +74,7 @@ internal static class JsonBodyDtoShape
                 // The record carries [JsonPropertyName] when the operation's property did, so the
                 // context has to agree with it. Without this the two disagree and the payload depends on
                 // whether the application was published AOT.
-                properties.Add((property.Name, property.JsonName ?? CamelCase(property.Name), type));
+                properties.Add((property.Name, property.JsonName ?? JsonWireNames.CamelCase(property.Name), type));
             }
 
             // All or nothing per record: a body missing a field is worse than a body the context does
@@ -118,10 +118,4 @@ internal static class JsonBodyDtoShape
 
         return byName;
     }
-
-    /// <summary>The default wire name, matching what the shape extractor derives for everything else.</summary>
-    private static string CamelCase(string name)
-        => string.IsNullOrEmpty(name) || char.IsLower(name[0])
-            ? name
-            : char.ToLowerInvariant(name[0]) + name.Substring(1);
 }

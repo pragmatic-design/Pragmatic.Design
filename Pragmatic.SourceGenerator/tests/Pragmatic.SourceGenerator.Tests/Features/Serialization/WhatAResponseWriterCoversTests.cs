@@ -114,15 +114,41 @@ public class WhatAResponseWriterCoversTests
     }
 
     /// <summary>
-    ///     A type the generated JSON context can describe and would name differently — it lowers only the first
-    ///     letter — is refused: which of the two writes it depends on what the host registered.
+    ///     A type the generated JSON context describes with an acronym-led name and a <c>[JsonIgnore]</c> member is
+    ///     planned: the context names it and leaves the member out as reflection does
+    ///     (<c>TheContextWritesWhatReflectionWritesTests</c>), so whichever of the two the host registered writes the
+    ///     same document.
     /// </summary>
     [Fact]
-    public void ATypeTheContextWouldNameDifferently_IsRefused()
+    public void ATypeTheContextNamesAndIgnoresAsReflectionDoes_IsPlanned()
     {
         var compiled = CompiledResponseWriter.For(Usings + """
             namespace App;
-            public sealed class Dto { public string URL { get; set; } = ""; }
+            public sealed class Dto
+            {
+                public string URL { get; set; } = "";
+                [System.Text.Json.Serialization.JsonIgnore] public string Secret { get; set; } = "";
+            }
+            """, CompiledResponseWriter.Named("App.Dto"));
+
+        compiled.Rejection.Should().BeNull();
+    }
+
+    /// <summary>
+    ///     A type the context can describe but would order differently is still refused: the context does not read
+    ///     <c>[JsonPropertyOrder]</c>, reflection does, and which of the two writes it depends on what the host
+    ///     registered.
+    /// </summary>
+    [Fact]
+    public void ATypeTheContextWouldOrderDifferently_IsRefused()
+    {
+        var compiled = CompiledResponseWriter.For(Usings + """
+            namespace App;
+            public sealed class Dto
+            {
+                public string First { get; set; } = "";
+                [System.Text.Json.Serialization.JsonPropertyOrder(-1)] public string Second { get; set; } = "";
+            }
             """, CompiledResponseWriter.Named("App.Dto"));
 
         compiled.Plan.Should().BeNull();

@@ -19,11 +19,11 @@ namespace Pragmatic.SourceGenerator.Features.Serialization.Analysis;
 ///     </para>
 ///     <para>
 ///         <b>Reflection's rules, and the generated context's where it could answer.</b> A type is written by the
-///         generated JSON context when its module opted in and the context covers it, by reflection otherwise, and
-///         the two do not always agree (the context lowers only the first letter of a name and does not read
-///         <c>[JsonIgnore]</c>). The planner follows reflection, and refuses an object type the context could also
-///         describe and would describe differently: which of the two answers is decided at run time by what the
-///         host registered, and a writer that matched one would be wrong under the other.
+///         generated JSON context when its module opted in and the context covers it, by reflection otherwise. The two
+///         agree on names and <c>[JsonIgnore]</c> (<c>TheContextWritesWhatReflectionWritesTests</c>), not on everything:
+///         the context does not read <c>[JsonPropertyOrder]</c>. The planner follows reflection, and refuses an object
+///         type the context could also describe and would describe differently: which of the two answers is decided at
+///         run time by what the host registered, and a writer that matched one would be wrong under the other.
 ///     </para>
 ///     <para>
 ///         <b>A cycle is refused, not cut.</b> <c>IgnoreCycles</c> writes a reference to an object already being
