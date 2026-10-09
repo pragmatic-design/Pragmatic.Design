@@ -167,7 +167,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         lock (_writeLock)
         {
@@ -178,7 +178,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
                 EnsureFileCreated();
             }
 
-            WriteJsonLogEntry(logEntry);
+            WriteJsonLogEntry(logEvent);
         }
     }
 
@@ -250,7 +250,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         return metrics;
     }
 
-    private void WriteJsonLogEntry(LogEntry logEntry)
+    private void WriteJsonLogEntry(LogEvent logEvent)
     {
         _stringBuilder.Clear();
 
@@ -260,40 +260,40 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         writer.WriteStartObject();
 
         // Core fields
-        writer.WriteString("@timestamp", FormatTimestamp(logEntry.Timestamp));
-        writer.WriteString("@level", GetLogLevelString(logEntry.LogLevel));
-        writer.WriteString("@logger", logEntry.Category);
-        writer.WriteString("@message", logEntry.Message);
+        writer.WriteString("@timestamp", FormatTimestamp(logEvent.Timestamp));
+        writer.WriteString("@level", GetLogLevelString(logEvent.LogLevel));
+        writer.WriteString("@logger", logEvent.Category);
+        writer.WriteString("@message", logEvent.Message);
 
         // Event ID if present
-        if (logEntry.EventId.Id != 0)
+        if (logEvent.EventId.Id != 0)
         {
-            writer.WriteNumber("@eventId", logEntry.EventId.Id);
-            if (!string.IsNullOrEmpty(logEntry.EventId.Name))
+            writer.WriteNumber("@eventId", logEvent.EventId.Id);
+            if (!string.IsNullOrEmpty(logEvent.EventId.Name))
             {
-                writer.WriteString("@eventName", logEntry.EventId.Name);
+                writer.WriteString("@eventName", logEvent.EventId.Name);
             }
         }
 
         // Exception details if present
-        if (logEntry.Exception != null)
+        if (logEvent.Exception != null)
         {
-            WriteExceptionDetails(writer, logEntry.Exception);
+            WriteExceptionDetails(writer, logEvent.Exception);
         }
 
         // Message template if available
-        if (!string.IsNullOrEmpty(logEntry.MessageTemplate))
+        if (!string.IsNullOrEmpty(logEvent.MessageTemplate))
         {
-            writer.WriteString("@messageTemplate", logEntry.MessageTemplate);
+            writer.WriteString("@messageTemplate", logEvent.MessageTemplate);
         }
 
         // Structured properties
-        WriteStructuredProperties(writer, logEntry.Properties);
+        WriteStructuredProperties(writer, logEvent.Properties);
 
         // Scope information
-        if (logEntry.Scopes?.Count > 0)
+        if (logEvent.Scopes.Count > 0)
         {
-            WriteScopeInformation(writer, logEntry.Scopes);
+            WriteScopeInformation(writer, logEvent.Scopes);
         }
 
         writer.WriteEndObject();
@@ -352,7 +352,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         writer.WriteEndObject();
     }
 
-    private void WriteStructuredProperties(Utf8JsonWriter writer, Dictionary<string, object?> properties)
+    private void WriteStructuredProperties(Utf8JsonWriter writer, LogEventValues properties)
     {
         if (properties.Count == 0)
             return;

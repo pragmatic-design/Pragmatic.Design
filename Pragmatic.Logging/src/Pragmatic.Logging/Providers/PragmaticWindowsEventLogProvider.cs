@@ -83,16 +83,16 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
         }
     }
 
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         if (!_isSupported || _eventLog == null)
             return;
 
         try
         {
-            var eventLogEntryType = MapLogLevelToEventLogEntryType(logEntry.LogLevel);
-            var eventLogEventId = DetermineEventId(logEntry.EventId, logEntry.LogLevel);
-            var fullMessage = FormatMessage(logEntry.Message, logEntry.Exception, logEntry.Properties);
+            var eventLogEntryType = MapLogLevelToEventLogEntryType(logEvent.LogLevel);
+            var eventLogEventId = DetermineEventId(logEvent.EventId, logEvent.LogLevel);
+            var fullMessage = FormatMessage(logEvent.Message, logEvent.Exception, logEvent.Properties);
 
             lock (_lock)
             {
@@ -113,7 +113,7 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
     ///     runtime type and fails under Native AOT. Scalars are written as JSON scalars, a complex value
     ///     as its JSON string, from the application's JSON seam.
     /// </remarks>
-    private string SerializeStructuredData(IReadOnlyDictionary<string, object?> properties, bool indented)
+    private string SerializeStructuredData(LogEventValues properties, bool indented)
     {
         var buffer = new System.Buffers.ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = indented }))
@@ -153,7 +153,7 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
         }
     }
 
-    private string FormatMessage(string message, Exception? exception, IReadOnlyDictionary<string, object?> properties)
+    private string FormatMessage(string message, Exception? exception, LogEventValues properties)
     {
         var config = (PragmaticWindowsEventLogConfiguration)Configuration;
 
@@ -165,7 +165,7 @@ public class PragmaticWindowsEventLogProvider : PragmaticLoggerProviderBase
         var formatted = message;
 
         // Add structured data if enabled
-        if (config.IncludeStructuredData && properties.Any())
+        if (config.IncludeStructuredData && properties.Count > 0)
         {
             try
             {

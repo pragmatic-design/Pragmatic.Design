@@ -151,9 +151,12 @@ public abstract class BatchingProvider : PragmaticLoggerProviderBase, IAsyncFlus
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         Interlocked.Increment(ref _totalEntriesReceived);
+
+        // The channel keeps the event past the call, which reuses it.
+        var logEntry = logEvent.ToEntry();
 
         var priority = CalculatePriority(logEntry);
         var prioritizedEntry = new PrioritizedLogEntry(logEntry, priority);

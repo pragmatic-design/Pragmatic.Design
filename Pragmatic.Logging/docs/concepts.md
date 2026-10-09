@@ -91,24 +91,26 @@ await PragmaticApp.RunAsync(args, app =>
 ### Performance
 
 Benchmarked on .NET 10 against Serilog, NLog and ZLogger, each writing into a sink that renders the
-message and reads every property (per call, 2026-10-05):
+message and reads every property (per call, 2026-10-09):
 
 | Scenario | Pragmatic | ZLogger | NLog | Serilog |
 |----------|-----------|---------|------|---------|
-| `[LoggerMessage]` call site | 201.6 ns / 544 B | 149.1 ns / 192 B | 382.8 ns / 1,416 B | 302.2 ns / 800 B |
-| Simple logging | 214.5 ns / 592 B | 164.7 ns / 216 B | 220.5 ns / 760 B | 259.5 ns / 528 B |
-| Structured (with scope) | 517.5 ns / 1,176 B | 432.6 ns / 520 B | 671.5 ns / 1,328 B | 813.2 ns / 1,912 B |
-| Exception logging | 233.2 ns / 608 B | 175.7 ns / 232 B | 240.2 ns / 776 B | 268.5 ns / 528 B |
-| Production (context + scope) | 747.5 ns / 2,368 B | 519.8 ns / 832 B | 968.0 ns / 2,872 B | 1,007.9 ns / 3,000 B |
+| `[LoggerMessage]` call site | 132.2 ns / 128 B | 156.9 ns / 192 B | 389.7 ns / 1,416 B | 329.5 ns / 800 B |
+| Simple logging | 147.0 ns / 168 B | 170.0 ns / 216 B | 237.7 ns / 760 B | 276.2 ns / 528 B |
+| Structured (with scope) | 378.9 ns / 464 B | 432.8 ns / 520 B | 674.2 ns / 1,328 B | 860.5 ns / 1,912 B |
+| Exception logging | 208.8 ns / 184 B | 218.9 ns / 232 B | 316.2 ns / 776 B | 367.0 ns / 528 B |
+| Production (context + scope) | 695.5 ns / 864 B | 589.9 ns / 832 B | 1,065.9 ns / 2,872 B | 1,299.4 ns / 3,000 B |
 
-Pragmatic is ahead of Serilog and NLog in every scenario, the production preset with context enrichment
-included; ZLogger is ahead of all three throughout.
+Pragmatic is ahead of Serilog and NLog in every scenario, and allocates the least of the four everywhere
+but Production. Against ZLogger it is faster in every scenario but Production; on exception logging the
+lead is within the run's deviation. Production is ZLogger's, and the request context is why: see the
+results page.
 
-The **deferred pipeline** (the typed state handed to the sink with no `LogEntry` and no eager
-rendering) applies only to a provider that declares `SupportsDeferredWrite`, and the only one that does
-today is `PragmaticNullProvider`, which discards the entry. A provider that writes anywhere takes the
-materialized pipeline measured above. See [BENCHMARK-RESULTS.md](../BENCHMARK-RESULTS.md) for the run,
-the machine and the reports.
+A provider writes a call from its state: the properties read where the call put them, the scopes from the
+ambient stack, no `LogEntry` and no dictionary. A call builds an entry only for what needs one — an
+advanced filter, the pattern redactor, declared redaction. See
+[BENCHMARK-RESULTS.md](../BENCHMARK-RESULTS.md) for the run, the machine, the reports, and where the bytes
+went.
 
 ---
 
@@ -654,13 +656,16 @@ Implement `IPragmaticLoggerProvider` or extend `PragmaticLoggerProviderBase` for
 ```csharp
 public sealed class SlackAlertProvider : PragmaticLoggerProviderBase
 {
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
-        if (logEntry.LogLevel < LogLevel.Error) return;
+        if (logEvent.LogLevel < LogLevel.Error) return;
         // Send to Slack webhook
     }
 }
 ```
+
+The `LogEvent` is reused by the next call on the thread: a provider that keeps it past the call keeps
+`logEvent.ToEntry()`. See [Providers](providers.md#creating-a-custom-provider).
 
 ---
 

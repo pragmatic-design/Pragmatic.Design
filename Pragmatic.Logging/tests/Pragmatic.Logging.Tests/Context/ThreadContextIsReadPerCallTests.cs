@@ -40,6 +40,30 @@ public class ThreadContextIsReadPerCallTests
         threadIds.Should().BeEquivalentTo([(object?)first, second]);
     }
 
+    /// <summary>
+    ///     The filter's choice among the thread's properties is decided once, by position: each property the
+    ///     filter names is written under its own name, and the others are not.
+    /// </summary>
+    [Fact]
+    public void AnIncludeFilter_WritesTheThreadPropertiesItNamesAndNoOther()
+    {
+        ContextManager.Instance.RegisterProvider(new ThreadContextProvider());
+        var config = PragmaticMemoryConfiguration.ForMemory();
+        config.IncludeContextEnrichment = true;
+        config.ContextFilter.Mode = ContextFilterMode.Include;
+        config.ContextFilter.PropertyNames = ["IsBackground", "CurrentUICulture"];
+        using var provider = new PragmaticMemoryProvider("memory", config);
+
+        provider.CreateLogger("Threads").LogInformation("filtered");
+
+        var properties = provider.GetLogEntries().Should().ContainSingle().Which.Properties;
+        properties["IsBackground"].Should().Be(Thread.CurrentThread.IsBackground);
+        properties["CurrentUICulture"].Should().Be(Thread.CurrentThread.CurrentUICulture.Name);
+        properties.Keys.Should().NotContain("ThreadId");
+        properties.Keys.Should().NotContain("IsThreadPoolThread");
+        properties.Keys.Should().NotContain("CurrentCulture");
+    }
+
     [Fact]
     public void ManyEntries_TheStaticProviderIsAskedOnce()
     {

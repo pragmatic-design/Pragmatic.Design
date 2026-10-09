@@ -2,35 +2,33 @@ using Pragmatic.Logging.Providers;
 
 namespace Pragmatic.Logging.Benchmarks.Comparison;
 
-/// <summary>A Pragmatic provider that consumes every entry it is given; see <see cref="EventConsumer" />.</summary>
+/// <summary>A Pragmatic provider that consumes every event it is given; see <see cref="EventConsumer" />.</summary>
 /// <remarks>
-///     Synchronous and not deferred, so the call takes the full pipeline: the message rendered, the
-///     structured properties extracted, the scopes captured — what a provider that writes anywhere needs.
+///     Written as the shipped providers are, from <see cref="LogEvent" />: the message rendered, the structured
+///     properties read out of the call's state, the scopes from the ambient stack — what a provider that writes
+///     anywhere needs.
 /// </remarks>
 internal sealed class PragmaticConsumingProvider(string name, IPragmaticProviderConfiguration configuration, EventConsumer consumer)
     : PragmaticLoggerProviderBase(name, configuration)
 {
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         consumer.Begin();
-        consumer.Message(logEntry.Message);
+        consumer.Message(logEvent.Message);
 
-        foreach (var property in logEntry.Properties)
+        foreach (var property in logEvent.Properties)
         {
             if (!EventConsumer.IsLibraryMetadata(property.Key))
                 consumer.Property(property.Key, property.Value);
         }
 
-        if (logEntry.Scopes is { } scopes)
+        foreach (var property in logEvent.Scopes)
         {
-            foreach (var property in scopes)
-            {
-                if (!EventConsumer.IsLibraryMetadata(property.Key))
-                    consumer.Property(property.Key, property.Value);
-            }
+            if (!EventConsumer.IsLibraryMetadata(property.Key))
+                consumer.Property(property.Key, property.Value);
         }
 
-        consumer.Exception(logEntry.Exception);
+        consumer.Exception(logEvent.Exception);
         consumer.Complete();
     }
 }

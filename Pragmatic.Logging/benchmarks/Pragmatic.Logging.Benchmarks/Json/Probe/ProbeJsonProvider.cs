@@ -74,7 +74,7 @@ internal sealed partial class ProbeJsonProvider : PragmaticLoggerProviderBase
 
     protected internal override bool SupportsUtf8State => true;
 
-    protected override void WriteLogCore(LogEntry logEntry) =>
+    protected override void WriteLogCore(LogEvent logEvent) =>
         throw new InvalidOperationException("The probe measures the generated call site's path only.");
 
     protected override void WriteUtf8State<TState>(

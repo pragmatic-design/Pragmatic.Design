@@ -36,10 +36,10 @@ public class DeferredWritePathTests
             }, AmbientScopesSeenDuringDeferredWrite);
         }
 
-        protected override void WriteLogCore(LogEntry logEntry)
+        protected override void WriteLogCore(LogEvent logEvent)
         {
             MaterializedWrites++;
-            LastEntry = logEntry;
+            LastEntry = logEvent.ToEntry();
         }
     }
 

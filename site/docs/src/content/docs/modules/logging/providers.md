@@ -399,13 +399,13 @@ public sealed class SlackAlertProvider : PragmaticLoggerProviderBase
         _httpClient = new HttpClient();
     }
 
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         // Only send alerts for Error and Critical
-        if (logEntry.LogLevel < LogLevel.Error)
+        if (logEvent.LogLevel < LogLevel.Error)
             return;
 
-        var payload = new { text = $"[{logEntry.LogLevel}] {logEntry.Category}: {logEntry.Message}" };
+        var payload = new { text = $"[{logEvent.LogLevel}] {logEvent.Category}: {logEvent.Message}" };
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -419,6 +419,12 @@ public sealed class SlackAlertProvider : PragmaticLoggerProviderBase
     }
 }
 ```
+
+`WriteLogCore` receives a `LogEvent`: the call as the provider writes it, its properties read out of the
+call's state and its scopes from the ambient stack, with no `LogEntry` or dictionary built for it. The
+instance is reused by the next call on the thread, so a provider that keeps the event beyond the call — a
+queue, a buffer, an in-memory store — keeps `logEvent.ToEntry()`, which copies it. The example above keeps
+only strings, which outlive the call.
 
 Register the custom provider through the builder:
 

@@ -44,7 +44,7 @@ public sealed class PragmaticNullProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         // Null provider discards all messages without any processing
         // This provides the absolute minimum overhead for benchmarking

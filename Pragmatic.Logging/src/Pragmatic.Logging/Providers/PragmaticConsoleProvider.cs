@@ -155,7 +155,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         var writeStart = Stopwatch.GetTimestamp();
 
@@ -163,8 +163,8 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         {
             try
             {
-                var formattedMessage = FormatLogEntry(logEntry);
-                WriteToConsole(logEntry.LogLevel, formattedMessage, logEntry);
+                var formattedMessage = FormatLogEntry(logEvent);
+                WriteToConsole(logEvent.LogLevel, formattedMessage, logEvent);
 
                 // Update performance metrics
                 var writeTime = Stopwatch.GetElapsedTime(writeStart).TotalMilliseconds;
@@ -223,7 +223,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         return metrics;
     }
 
-    private string FormatLogEntry(LogEntry logEntry)
+    private string FormatLogEntry(LogEvent logEvent)
     {
         _stringBuilder.Clear();
 
@@ -233,15 +233,15 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
 
         if (useRichFormatting && ShouldUseColors())
         {
-            return FormatWithColors(logEntry, template, config);
+            return FormatWithColors(logEvent, template, config);
         }
         else
         {
-            return FormatPlain(logEntry, template, config);
+            return FormatPlain(logEvent, template, config);
         }
     }
 
-    private string FormatWithColors(LogEntry logEntry, string template, FormattingConfiguration config)
+    private string FormatWithColors(LogEvent logEvent, string template, FormattingConfiguration config)
     {
         var parts = new List<(string text, ConsoleColor? color, string? ansiColor)>();
 
@@ -249,7 +249,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         var formatted = template;
 
         // Timestamp
-        var timestamp = logEntry.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp);
+        var timestamp = logEvent.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp);
         if (_supportsAnsiColors)
         {
             formatted = formatted.Replace("{Timestamp}", $"{_colorScheme.AnsiTimestampColor}{timestamp}{_colorScheme.AnsiReset}");
@@ -261,9 +261,9 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
 
         // Level
-        var level = GetLevelDisplayName(logEntry.LogLevel);
-        var levelColor = GetLogLevelColor(logEntry.LogLevel);
-        var levelAnsiColor = GetLogLevelAnsiColor(logEntry.LogLevel);
+        var level = GetLevelDisplayName(logEvent.LogLevel);
+        var levelColor = GetLogLevelColor(logEvent.LogLevel);
+        var levelAnsiColor = GetLogLevelAnsiColor(logEvent.LogLevel);
 
         if (_supportsAnsiColors)
         {
@@ -276,7 +276,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
 
         // Category
-        var category = TruncateCategory(logEntry.Category);
+        var category = TruncateCategory(logEvent.Category);
         if (_supportsAnsiColors)
         {
             formatted = formatted.Replace("{Category}", $"{_colorScheme.AnsiCategoryColor}{category}{_colorScheme.AnsiReset}");
@@ -288,24 +288,24 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
 
         // Message
-        var message = FormatMessage(logEntry);
+        var message = FormatMessage(logEvent);
         formatted = formatted.Replace("{Message}", message);
 
         // Add structured properties if enabled
-        if (Configuration.IncludeStructuredProperties && logEntry.Properties.Count > 0)
+        if (Configuration.IncludeStructuredProperties && logEvent.Properties.Count > 0)
         {
             _stringBuilder.Append(formatted);
-            AppendStructuredPropertiesWithColors(logEntry);
+            AppendStructuredPropertiesWithColors(logEvent);
             formatted = _stringBuilder.ToString();
             _stringBuilder.Clear();
         }
 
         // Add exception details if present
-        if (logEntry.Exception != null && config.IncludeExceptionDetails)
+        if (logEvent.Exception != null && config.IncludeExceptionDetails)
         {
             _stringBuilder.Append(formatted);
             _stringBuilder.AppendLine();
-            AppendExceptionWithColors(logEntry.Exception);
+            AppendExceptionWithColors(logEvent.Exception);
             formatted = _stringBuilder.ToString();
             _stringBuilder.Clear();
         }
@@ -313,29 +313,29 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         return formatted;
     }
 
-    private string FormatPlain(LogEntry logEntry, string template, FormattingConfiguration config)
+    private string FormatPlain(LogEvent logEvent, string template, FormattingConfiguration config)
     {
         var formatted = template
-            .Replace("{Timestamp}", logEntry.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp))
-            .Replace("{Level}", GetLevelDisplayName(logEntry.LogLevel))
-            .Replace("{Category}", TruncateCategory(logEntry.Category))
-            .Replace("{Message}", FormatMessage(logEntry));
+            .Replace("{Timestamp}", logEvent.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp))
+            .Replace("{Level}", GetLevelDisplayName(logEvent.LogLevel))
+            .Replace("{Category}", TruncateCategory(logEvent.Category))
+            .Replace("{Message}", FormatMessage(logEvent));
 
         // Add structured properties if enabled
-        if (Configuration.IncludeStructuredProperties && logEntry.Properties.Count > 0)
+        if (Configuration.IncludeStructuredProperties && logEvent.Properties.Count > 0)
         {
             _stringBuilder.Append(formatted);
-            AppendStructuredProperties(logEntry);
+            AppendStructuredProperties(logEvent);
             formatted = _stringBuilder.ToString();
             _stringBuilder.Clear();
         }
 
         // Add exception details if present
-        if (logEntry.Exception != null && config.IncludeExceptionDetails)
+        if (logEvent.Exception != null && config.IncludeExceptionDetails)
         {
             _stringBuilder.Append(formatted);
             _stringBuilder.AppendLine();
-            AppendException(logEntry.Exception);
+            AppendException(logEvent.Exception);
             formatted = _stringBuilder.ToString();
             _stringBuilder.Clear();
         }
@@ -343,9 +343,9 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         return formatted;
     }
 
-    private void AppendStructuredPropertiesWithColors(LogEntry logEntry)
+    private void AppendStructuredPropertiesWithColors(LogEvent logEvent)
     {
-        if (logEntry.Properties.Count == 0)
+        if (logEvent.Properties.Count == 0)
             return;
 
         if (_supportsAnsiColors)
@@ -359,7 +359,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
 
         var first = true;
 
-        foreach (var kvp in logEntry.Properties)
+        foreach (var kvp in logEvent.Properties)
         {
             if (!first)
                 _stringBuilder.Append(", ");
@@ -432,15 +432,15 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
     }
 
-    private void AppendStructuredProperties(LogEntry logEntry)
+    private void AppendStructuredProperties(LogEvent logEvent)
     {
-        if (logEntry.Properties.Count == 0)
+        if (logEvent.Properties.Count == 0)
             return;
 
         _stringBuilder.Append(" [");
         var first = true;
 
-        foreach (var kvp in logEntry.Properties)
+        foreach (var kvp in logEvent.Properties)
         {
             if (!first)
                 _stringBuilder.Append(", ");
@@ -495,14 +495,14 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
     }
 
-    private string FormatMessage(LogEntry logEntry)
+    private string FormatMessage(LogEvent logEvent)
     {
-        var message = logEntry.Message;
+        var message = logEvent.Message;
 
         var customFormatters = Configuration.Formatting.CustomFormatters;
-        if (customFormatters.Count > 0 && logEntry.Properties.Count > 0)
+        if (customFormatters.Count > 0 && logEvent.Properties.Count > 0)
         {
-            foreach (var kvp in logEntry.Properties)
+            foreach (var kvp in logEvent.Properties)
             {
                 if (kvp.Value != null && customFormatters.TryGetValue(kvp.Value.GetType(), out var formatter))
                 {
@@ -518,7 +518,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         return message;
     }
 
-    private void WriteToConsole(LogLevel logLevel, string message, LogEntry logEntry)
+    private void WriteToConsole(LogLevel logLevel, string message, LogEvent logEvent)
     {
         var useStdErrorForErrors = GetCustomProperty<bool>("UseStdErrorForErrors", false);
         var adaptToConsoleWidth = GetCustomProperty<bool>("AdaptToConsoleWidth", true);
