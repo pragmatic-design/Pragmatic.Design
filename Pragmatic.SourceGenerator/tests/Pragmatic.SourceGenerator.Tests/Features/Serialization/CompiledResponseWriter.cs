@@ -94,7 +94,7 @@ internal sealed class CompiledResponseWriter
 
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, global::Pragmatic.Serialization.GeneratedJsonDefaults.ResponseWriterOptions))
-            write.DynamicInvoke(writer, value);
+            write.DynamicInvoke(writer, value, HostOptions(Plan.NeedsInfrastructureExclusion));
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
@@ -109,6 +109,10 @@ internal sealed class CompiledResponseWriter
     ///     how every non-ASCII and HTML-sensitive character is written.
     /// </remarks>
     public static string Serialize(object value, Type declared, bool excludesInfrastructure)
+        => JsonSerializer.Serialize(value, declared, HostOptions(excludesInfrastructure));
+
+    /// <summary>The host's options, as <see cref="Serialize" /> describes them.</summary>
+    private static JsonSerializerOptions HostOptions(bool excludesInfrastructure)
     {
         IJsonTypeInfoResolver resolver = new DefaultJsonTypeInfoResolver();
         if (excludesInfrastructure)
@@ -120,8 +124,7 @@ internal sealed class CompiledResponseWriter
         options.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.TypeInfoResolver = resolver;
         options.Converters.Add(new JsonStringEnumConverter());
-
-        return JsonSerializer.Serialize(value, declared, options);
+        return options;
     }
 
     /// <summary>

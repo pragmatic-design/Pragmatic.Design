@@ -81,10 +81,13 @@ internal sealed partial class Utf8JsonWritersTemplate
                 AppendLine($"writer.WriteBase64StringValue({expression});");
                 break;
             case JsonWriterValueKind.Object:
-                AppendLine($"{value.Method}(writer, {expression});");
+                AppendLine($"{value.Method}(writer, {expression}{OptionsArgument});");
                 break;
             case JsonWriterValueKind.Mask:
                 AppendLine($"writer.WriteStringValue({Mask});");
+                break;
+            case JsonWriterValueKind.Untyped:
+                AppendLine($"{Values}.WriteUntyped(writer, {expression}, options);");
                 break;
             case JsonWriterValueKind.Collection:
                 var element = "e" + _locals++;

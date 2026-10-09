@@ -6318,9 +6318,9 @@ public static class PragmaticRollUpRuleRegistration
 
 ## _Infra.Serialization.Utf8ResponseWriters.g.cs
 internal static class GeneratedUtf8ResponseWriters
-    internal static readonly Action<Utf8JsonWriter, RelationChildWithParentDto> Write_Inventory_RelationChildWithParentDtoDelegate
+    internal static readonly Action<Utf8JsonWriter, RelationChildWithParentDto, JsonSerializerOptions> Write_Inventory_RelationChildWithParentDtoDelegate
     internal static readonly GeneratedJsonShape Write_Inventory_RelationChildWithParentDtoShape
-    internal static void Write_Inventory_RelationChildWithParentDto(Utf8JsonWriter writer, RelationChildWithParentDto value)
+    internal static void Write_Inventory_RelationChildWithParentDto(Utf8JsonWriter writer, RelationChildWithParentDto value, JsonSerializerOptions options)
 
 ## _Metadata.ActionPermissions.g.cs
     [assembly: global::Pragmatic.Composition.Attributes.PragmaticMetadataAttribute]

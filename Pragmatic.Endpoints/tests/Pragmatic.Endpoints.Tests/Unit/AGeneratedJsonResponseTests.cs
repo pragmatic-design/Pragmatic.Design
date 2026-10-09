@@ -28,7 +28,7 @@ public class AGeneratedJsonResponseTests
     private const string ByTheWriter = """{"via":"writer"}""";
     private const string ByTheSerializer = """{"title":"x"}""";
 
-    private static readonly Action<Utf8JsonWriter, Card> Writer = static (writer, _) =>
+    private static readonly Action<Utf8JsonWriter, Card, JsonSerializerOptions> Writer = static (writer, _, _) =>
     {
         writer.WriteStartObject();
         writer.WriteString("via", "writer");
@@ -171,10 +171,33 @@ public class AGeneratedJsonResponseTests
     {
         var options = HostOptions();
         var response = new GeneratedJsonResponse<Shape>(new Circle { Name = "c", Radius = 2 }, 200, null,
-            static (writer, _) => writer.WriteStringValue("writer"),
+            static (writer, _, _) => writer.WriteStringValue("writer"),
             new GeneratedJsonShape([typeof(Shape), typeof(string)], [], [], needsInfrastructureExclusion: false));
 
         (await Run(response, options)).Body.Should().Be("""{"radius":2,"name":"c"}""");
+    }
+
+    /// <summary>
+    ///     The writer is handed the very options the host answers with, which is what it writes a member typed
+    ///     <c>object</c> with (#130).
+    /// </summary>
+    [Fact]
+    public async Task TheWriter_IsGivenTheHostsOwnOptions()
+    {
+        var options = HostOptions();
+        JsonSerializerOptions? given = null;
+        var response = new GeneratedJsonResponse<Card>(new Card("x"), 200, null,
+            (writer, _, received) =>
+            {
+                given = received;
+                writer.WriteStartObject();
+                writer.WriteEndObject();
+            },
+            CardShape(needsExclusion: false));
+
+        await Run(response, options);
+
+        ReferenceEquals(given, options.SerializerOptions).Should().BeTrue();
     }
 
     [Fact]

@@ -233,14 +233,14 @@ namespace TestAssembly.Generated;
 /// </summary>
 [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
 internal static class GeneratedUtf8ResponseWriters {
-    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Orders.ImportResult> Write_TestApp_Orders_ImportResultDelegate = Write_TestApp_Orders_ImportResult;
+    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Orders.ImportResult, global::System.Text.Json.JsonSerializerOptions> Write_TestApp_Orders_ImportResultDelegate = Write_TestApp_Orders_ImportResult;
     internal static readonly global::Pragmatic.Serialization.GeneratedJsonShape Write_TestApp_Orders_ImportResultShape = new(
         [typeof(global::TestApp.Orders.ImportResult), typeof(int)],
         [],
         [],
         needsInfrastructureExclusion: false);
     
-    internal static void Write_TestApp_Orders_ImportResult(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.ImportResult value)
+    internal static void Write_TestApp_Orders_ImportResult(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.ImportResult value, global::System.Text.Json.JsonSerializerOptions options)
     {
         var run = global::Pragmatic.Serialization.Utf8JsonRun.Start();
         Run_TestApp_Orders_ImportResult(ref run, value);

@@ -239,14 +239,14 @@ namespace TestAssembly.Generated;
 /// </summary>
 [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
 internal static class GeneratedUtf8ResponseWriters {
-    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Users.UserResponse[]> Write_TestApp_Users_UserResponse__Delegate = Write_TestApp_Users_UserResponse__;
+    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Users.UserResponse[], global::System.Text.Json.JsonSerializerOptions> Write_TestApp_Users_UserResponse__Delegate = Write_TestApp_Users_UserResponse__;
     internal static readonly global::Pragmatic.Serialization.GeneratedJsonShape Write_TestApp_Users_UserResponse__Shape = new(
         [typeof(global::TestApp.Users.UserResponse), typeof(global::TestApp.Users.UserResponse[]), typeof(int), typeof(string)],
         [],
         [],
         needsInfrastructureExclusion: false);
     
-    internal static void Write_TestApp_Users_UserResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse value)
+    internal static void Write_TestApp_Users_UserResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse value, global::System.Text.Json.JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         writer.WriteNumber(__Name0, (int)value.@Id);
@@ -261,7 +261,7 @@ internal static class GeneratedUtf8ResponseWriters {
         writer.WriteEndObject();
     }
     
-    internal static void Write_TestApp_Users_UserResponse__(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse[] value)
+    internal static void Write_TestApp_Users_UserResponse__(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse[] value, global::System.Text.Json.JsonSerializerOptions options)
     {
         if (value is { } v2)
         {
@@ -270,7 +270,7 @@ internal static class GeneratedUtf8ResponseWriters {
             {
                 if (e3 is { } v4)
                 {
-                    Write_TestApp_Users_UserResponse(writer, v4);
+                    Write_TestApp_Users_UserResponse(writer, v4, options);
                 }
                 else
                 {

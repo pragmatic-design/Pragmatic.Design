@@ -19,7 +19,7 @@ public abstract class ResponseProbeHarness<T>
     private readonly ArrayBufferWriter<byte> _buffer = new(64 * 1024);
     private JsonTypeInfo<T> _hostReflection = null!;
     private JsonTypeInfo<T> _fastPath = null!;
-    private Action<Utf8JsonWriter, T> _generated = null!;
+    private Action<Utf8JsonWriter, T, JsonSerializerOptions> _generated = null!;
 
     protected T Root { get; private set; } = default!;
 
@@ -44,7 +44,14 @@ public abstract class ResponseProbeHarness<T>
 
     protected byte[] FastPath() => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(Root, _fastPath);
 
-    protected byte[] Generated() => Run(Writer, _generated);
+    protected byte[] Generated()
+    {
+        _buffer.ResetWrittenCount();
+        Writer.Reset(_buffer);
+        _generated(Writer, Root, Competitors.HostReflection);
+        Writer.Flush();
+        return _buffer.WrittenSpan.ToArray();
+    }
 
     protected byte[] Run(Utf8JsonWriter writer, Action<Utf8JsonWriter, T> write)
     {

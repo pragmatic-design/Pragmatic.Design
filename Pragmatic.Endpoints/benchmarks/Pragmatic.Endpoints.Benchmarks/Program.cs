@@ -13,6 +13,7 @@ if (args is ["verify"])
     new Pragmatic.Endpoints.Benchmarks.Probe.CitmProbeBenchmarks().Setup();
     new Pragmatic.Endpoints.Benchmarks.Probe.PageProbeBenchmarks().Setup();
     new Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks().Setup();
+    new Pragmatic.Endpoints.Benchmarks.Probe.TwitterStringProbeBenchmarks().Setup();
     Console.WriteLine("The probes' candidates write the host's very bytes.");
     return;
 }

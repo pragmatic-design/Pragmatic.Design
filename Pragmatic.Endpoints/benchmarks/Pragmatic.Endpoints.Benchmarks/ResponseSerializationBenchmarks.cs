@@ -36,7 +36,7 @@ public class ResponseSerializationBenchmarks<T>
     private JsonTypeInfo<T> _hostReflection = null!;
     private JsonTypeInfo<T> _hostGeneratedMetadata = null!;
     private JsonTypeInfo<T> _fastPath = null!;
-    private Action<Utf8JsonWriter, T>? _generated;
+    private Action<Utf8JsonWriter, T, JsonSerializerOptions>? _generated;
     private Utf8JsonWriter _writer = null!;
     private Utf8JsonWriter _defaultEncoderWriter = null!;
 
@@ -92,7 +92,7 @@ public class ResponseSerializationBenchmarks<T>
 
         _buffer.ResetWrittenCount();
         _writer.Reset(_buffer);
-        write(_writer, _root);
+        write(_writer, _root, Competitors.HostReflection);
         _writer.Flush();
         return _buffer.WrittenSpan.ToArray();
     }
@@ -114,7 +114,7 @@ public class ResponseSerializationBenchmarks<T>
 
         _buffer.ResetWrittenCount();
         _defaultEncoderWriter.Reset(_buffer);
-        write(_defaultEncoderWriter, _root);
+        write(_defaultEncoderWriter, _root, Competitors.HostReflection);
         _defaultEncoderWriter.Flush();
         return _buffer.WrittenSpan.ToArray();
     }

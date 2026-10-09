@@ -62,4 +62,10 @@ internal enum JsonWriterValueKind
 
     /// <summary>The redaction mask, in place of a value the type declared must not be logged.</summary>
     Mask,
+
+    /// <summary>
+    ///     A member typed <c>object</c>: the serializer writes it as whatever it holds at run time, so the writer can
+    ///     know nothing of it but whether it is null.
+    /// </summary>
+    Untyped,
 }

@@ -240,14 +240,14 @@ namespace TestAssembly.Generated;
 /// </summary>
 [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
 internal static class GeneratedUtf8ResponseWriters {
-    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Orders.OrderResponse> Write_TestApp_Orders_OrderResponseDelegate = Write_TestApp_Orders_OrderResponse;
+    internal static readonly global::System.Action<global::System.Text.Json.Utf8JsonWriter, global::TestApp.Orders.OrderResponse, global::System.Text.Json.JsonSerializerOptions> Write_TestApp_Orders_OrderResponseDelegate = Write_TestApp_Orders_OrderResponse;
     internal static readonly global::Pragmatic.Serialization.GeneratedJsonShape Write_TestApp_Orders_OrderResponseShape = new(
         [typeof(global::TestApp.Orders.OrderResponse), typeof(int), typeof(string)],
         [],
         [],
         needsInfrastructureExclusion: false);
     
-    internal static void Write_TestApp_Orders_OrderResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.OrderResponse value)
+    internal static void Write_TestApp_Orders_OrderResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.OrderResponse value, global::System.Text.Json.JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         writer.WriteNumber(__Name0, (int)value.@Id);

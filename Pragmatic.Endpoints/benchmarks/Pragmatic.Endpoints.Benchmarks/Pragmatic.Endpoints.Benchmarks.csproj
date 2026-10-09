@@ -3,6 +3,8 @@
   <PropertyGroup>
     <!-- Suppress CA1822 for BenchmarkDotNet (requires instance methods) -->
     <NoWarn>$(NoWarn);CA1822</NoWarn>
+    <!-- The string probe of #130 calls TextEncoder.FindFirstCharacterToEncode, which takes a char*. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
