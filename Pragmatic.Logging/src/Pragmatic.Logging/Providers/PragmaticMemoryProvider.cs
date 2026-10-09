@@ -160,10 +160,10 @@ public sealed class PragmaticMemoryProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
-        // Create a copy to avoid reference issues
-        var entryCopy = logEntry.Clone();
+        // The event is reused by the next call: the store keeps a copy.
+        var entryCopy = logEvent.ToEntry();
 
         _logEntries.Enqueue(entryCopy);
 

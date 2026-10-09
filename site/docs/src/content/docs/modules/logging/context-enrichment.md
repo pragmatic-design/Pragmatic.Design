@@ -472,13 +472,13 @@ logging.AddFile("logs/app.log", config =>
 
 ## How Context Flows Through the Pipeline
 
-When a log entry is produced, `PragmaticLoggerProviderBase.WriteLog()` enriches it with context from two sources before passing it to `WriteLogCore`:
+When a call is written, `PragmaticLoggerProviderBase` enriches it with context from two sources before passing it to `WriteLogCore`:
 
 1. **LogContextScope** -- Ambient properties pushed by middleware via `LogContextScope.PushContext()`. These are scoped to the current async flow and automatically pop when the scope is disposed.
 
-2. **ContextManager.Instance** -- The static providers' properties come from the manager's cache, read when a provider was last registered or removed. The per-call providers are queried now, respecting `IsAvailable()`. The two are merged by priority, the lower value winning on a shared key.
+2. **ContextManager.Instance** -- The static providers' properties come from the manager's cache, read when a provider was last registered or removed. The per-call providers are queried now, respecting `IsAvailable()`; one whose every property the filter refuses is not queried at all. The two are merged by priority, the lower value winning on a shared key.
 
-Both sources are filtered through the provider's `ContextFilterConfiguration` before being attached to the `LogEntry.Properties` dictionary. This means each provider can see a different subset of context properties, matching its output requirements.
+Both sources are filtered through the provider's `ContextFilterConfiguration` before being added to the event's properties (`LogEvent.Properties`). The filter decides once per property name and configuration, not on every call. This means each provider can see a different subset of context properties, matching its output requirements.
 
 ---
 

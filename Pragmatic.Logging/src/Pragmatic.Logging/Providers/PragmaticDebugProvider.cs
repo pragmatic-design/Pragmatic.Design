@@ -33,18 +33,18 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
         // Skip if category doesn't match filter
         if (!string.IsNullOrEmpty(_categoryFilter) &&
-            !logEntry.Category.Contains(_categoryFilter, StringComparison.OrdinalIgnoreCase))
+            !logEvent.Category.Contains(_categoryFilter, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         lock (_writeLock)
         {
-            var formattedMessage = FormatDebugMessage(logEntry);
+            var formattedMessage = FormatDebugMessage(logEvent);
 
             // Use System.Diagnostics.Trace so output reaches attached TraceListeners
             // in both Debug and Release builds. Debug.WriteLine is conditional on the
@@ -99,7 +99,7 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
         // It should work in any scenario, even without a debugger
     }
 
-    private string FormatDebugMessage(LogEntry logEntry)
+    private string FormatDebugMessage(LogEvent logEvent)
     {
         var sb = new StringBuilder();
 
@@ -107,7 +107,7 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
         if (_includeTimestamp)
         {
             sb.Append('[');
-            sb.Append(logEntry.FormatTimestamp(Configuration.Formatting.TimestampFormat, Configuration.Formatting.UseUtcTimestamp));
+            sb.Append(logEvent.FormatTimestamp(Configuration.Formatting.TimestampFormat, Configuration.Formatting.UseUtcTimestamp));
             sb.Append("] ");
         }
 
@@ -119,25 +119,25 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
 
         // Add log level with color-coded indicators for debug visibility
         sb.Append('[');
-        sb.Append(GetDebugLevelIndicator(logEntry.LogLevel));
+        sb.Append(GetDebugLevelIndicator(logEvent.LogLevel));
         sb.Append("] ");
 
         // Add category if enabled
         if (_includeCategory)
         {
-            sb.Append(logEntry.Category);
+            sb.Append(logEvent.Category);
             sb.Append(": ");
         }
 
         // Add the main message
-        sb.Append(logEntry.Message);
+        sb.Append(logEvent.Message);
 
         // Add structured properties if available and enabled
-        if (Configuration.IncludeStructuredProperties && logEntry.Properties.Count > 0)
+        if (Configuration.IncludeStructuredProperties && logEvent.Properties.Count > 0)
         {
             sb.Append(" {");
             var first = true;
-            foreach (var prop in logEntry.Properties)
+            foreach (var prop in logEvent.Properties)
             {
                 if (!first)
                     sb.Append(", ");
@@ -150,11 +150,11 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
         }
 
         // Add exception details if present
-        if (logEntry.Exception != null && Configuration.Formatting.IncludeExceptionDetails)
+        if (logEvent.Exception != null && Configuration.Formatting.IncludeExceptionDetails)
         {
             sb.AppendLine();
             sb.Append("Exception: ");
-            sb.Append(logEntry.Exception.ToString());
+            sb.Append(logEvent.Exception.ToString());
         }
 
         return sb.ToString();

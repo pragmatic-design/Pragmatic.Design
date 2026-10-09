@@ -208,9 +208,10 @@ public sealed class PragmaticFileProvider : PragmaticLoggerProviderBase, IAsyncD
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
-        // Non-blocking async write
+        // Non-blocking async write; the channel keeps the event past the call, which reuses it.
+        var logEntry = logEvent.ToEntry();
         var request = new LogWriteRequest(logEntry);
 
         if (!_channelWriter.TryWrite(request))

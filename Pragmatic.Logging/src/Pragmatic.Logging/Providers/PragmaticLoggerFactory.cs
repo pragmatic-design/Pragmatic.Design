@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Logging.Extensions;
 
 namespace Pragmatic.Logging.Providers;
@@ -160,16 +161,30 @@ internal sealed class CompositeLogger(string categoryName, ILogger standardLogge
 {
     private readonly string _categoryName = categoryName;
 
+    // What Microsoft's loggers return for a scope when no provider of their own takes one: a shared instance
+    // that disposes nothing, one in the abstractions (NullLogger, what an empty container gets) and another
+    // in LoggerFactory. Recognised so that they do not force a composite around the one real scope; if a
+    // later version allocated instead, the comparison fails and the composite is built, as before.
+    private static readonly IDisposable? NoStandardScope = CreateNoStandardScope();
+    private static readonly IDisposable? NoNullLoggerScope = NullLogger.Instance.BeginScope(0);
+
     /// <inheritdoc />
+    /// <remarks>
+    ///     The only scope, usually the Pragmatic one, is returned as it is: a composite, and the list it holds,
+    ///     are built only when there are two scopes to close.
+    /// </remarks>
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        var scopes = new List<IDisposable?>();
+        IDisposable? single = null;
+        List<IDisposable?>? scopes = null;
 
         try
         {
             var standardScope = standardLogger.BeginScope(state);
-            if (standardScope != null)
-                scopes.Add(standardScope);
+            if (standardScope != null
+                && !ReferenceEquals(standardScope, NoStandardScope)
+                && !ReferenceEquals(standardScope, NoNullLoggerScope))
+                single = standardScope;
         }
         catch (ObjectDisposedException) { }
 
@@ -178,13 +193,24 @@ internal sealed class CompositeLogger(string categoryName, ILogger standardLogge
             try
             {
                 var scope = logger.BeginScope(state);
-                if (scope != null)
-                    scopes.Add(scope);
+                if (scope == null)
+                    continue;
+
+                if (single == null)
+                    single = scope;
+                else
+                    (scopes ??= [single]).Add(scope);
             }
             catch (ObjectDisposedException) { }
         }
 
-        return scopes.Count == 0 ? null : new CompositeDisposable(scopes);
+        return scopes != null ? new CompositeDisposable(scopes) : single;
+    }
+
+    private static IDisposable? CreateNoStandardScope()
+    {
+        using var factory = new LoggerFactory();
+        return factory.CreateLogger(nameof(CompositeLogger)).BeginScope(0);
     }
 
     /// <inheritdoc />

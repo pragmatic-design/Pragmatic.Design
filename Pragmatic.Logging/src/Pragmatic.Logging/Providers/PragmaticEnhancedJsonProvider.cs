@@ -96,8 +96,10 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
     }
 
     /// <inheritdoc />
-    protected override void WriteLogCore(LogEntry logEntry)
+    protected override void WriteLogCore(LogEvent logEvent)
     {
+        // The queue keeps the event past the call, and the synchronous path shares its serializer.
+        var logEntry = logEvent.ToEntry();
         if (_enableAsyncBuffering)
         {
             // Queue for async processing

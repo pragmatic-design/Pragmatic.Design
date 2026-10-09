@@ -8,21 +8,24 @@ namespace Pragmatic.Logging.Context;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Properties are copy-on-write: a write publishes a new dictionary, and a read sees an immutable snapshot
-/// that is safe to enumerate while another flow writes. A context is typically created per request and
-/// written a handful of times, then read on every log call. It used to be a <c>ConcurrentDictionary</c>,
-/// whose construction alone allocates a lock object per processor, paid on every context created.
+/// Properties are copy-on-write: a write publishes a new immutable array by compare-and-swap, and a read sees
+/// one that is safe to walk while another flow writes. A context is typically created per request and written
+/// a handful of times, then read on every log call. It used to be a <c>ConcurrentDictionary</c>, whose
+/// construction alone allocates a lock object per processor, and then a dictionary copied under a lock on
+/// every write.
 /// </para>
 /// <para>
-/// <see cref="Properties" /> returns that snapshot: a reference held across a later write does not see it.
+/// <see cref="Properties" /> returns a snapshot (<see cref="LogContextProperties" />): a reference held across a
+/// later write does not see it.
 /// </para>
 /// </remarks>
 public sealed class LogContext : IMutableLogContext, IDisposable
 {
-    private static readonly IReadOnlyDictionary<string, object?> NoProperties = new Dictionary<string, object?>();
+    private KeyValuePair<string, object?>[] _items = [];
 
-    private readonly Lock _writeLock = new();
-    private volatile Dictionary<string, object?>? _properties;
+    // The dictionary view of _items last handed out, kept while _items is the array it reads.
+    private LogContextProperties? _view;
+
     private readonly LogContext? _parent;
     private bool _disposed;
 
@@ -49,20 +52,40 @@ public sealed class LogContext : IMutableLogContext, IDisposable
         {
             ThrowIfDisposed();
 
-            var own = _properties;
+            var own = Volatile.Read(ref _items);
             if (_parent == null)
-                return own ?? NoProperties;
+            {
+                if (Volatile.Read(ref _view) is { } view && ReferenceEquals(view.Items, own))
+                    return view;
+
+                var fresh = new LogContextProperties(own);
+                Volatile.Write(ref _view, fresh);
+                return fresh;
+            }
 
             // Merge parent and current properties, with current taking precedence
             var merged = new Dictionary<string, object?>(_parent.Properties);
-            if (own != null)
-            {
-                foreach (var kvp in own)
-                {
-                    merged[kvp.Key] = kvp.Value;
-                }
-            }
+            foreach (var property in own)
+                merged[property.Key] = property.Value;
             return merged;
+        }
+    }
+
+    /// <summary>
+    ///     Writes the properties <see cref="Properties" /> holds into <paramref name="target" />, those
+    ///     <paramref name="include" /> accepts, without building the merged dictionary: the parent's first, this
+    ///     context's over them.
+    /// </summary>
+    internal void WriteProperties(IDictionary<string, object?> target, Func<string, bool> include)
+    {
+        ThrowIfDisposed();
+
+        _parent?.WriteProperties(target, include);
+
+        foreach (var property in Volatile.Read(ref _items))
+        {
+            if (include(property.Key))
+                target[property.Key] = property.Value;
         }
     }
 
@@ -72,8 +95,9 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        if (_properties is { } own && own.TryGetValue(name, out var value))
-            return value;
+        var own = Volatile.Read(ref _items);
+        if (LogContextProperties.IndexOf(own, name) is var index and >= 0)
+            return own[index].Value;
 
         return _parent?.GetProperty(name);
     }
@@ -92,7 +116,7 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        return (_properties?.ContainsKey(name) ?? false) || (_parent?.HasProperty(name) ?? false);
+        return LogContextProperties.IndexOf(Volatile.Read(ref _items), name) >= 0 || (_parent?.HasProperty(name) ?? false);
     }
 
     /// <inheritdoc />
@@ -100,13 +124,14 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        lock (_writeLock)
+        // Two flows writing at once: the one whose array was replaced under it builds again on the new one.
+        var current = Volatile.Read(ref _items);
+        while (true)
         {
-            var copy = _properties is { } own
-                ? new Dictionary<string, object?>(own)
-                : new Dictionary<string, object?>(capacity: 4);
-            copy[name] = value;
-            _properties = copy;
+            var observed = Interlocked.CompareExchange(ref _items, LogContextProperties.With(current, name, value), current);
+            if (ReferenceEquals(observed, current))
+                return;
+            current = observed;
         }
     }
 
@@ -115,15 +140,17 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
 
-        lock (_writeLock)
+        var current = Volatile.Read(ref _items);
+        while (true)
         {
-            if (_properties is not { } own || !own.ContainsKey(name))
+            var next = LogContextProperties.Without(current, name);
+            if (ReferenceEquals(next, current))
                 return false;
 
-            var copy = new Dictionary<string, object?>(own);
-            copy.Remove(name);
-            _properties = copy;
-            return true;
+            var observed = Interlocked.CompareExchange(ref _items, next, current);
+            if (ReferenceEquals(observed, current))
+                return true;
+            current = observed;
         }
     }
 
@@ -131,7 +158,7 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     public void Clear()
     {
         ThrowIfDisposed();
-        _properties = null;
+        Volatile.Write(ref _items, []);
     }
 
     /// <summary>

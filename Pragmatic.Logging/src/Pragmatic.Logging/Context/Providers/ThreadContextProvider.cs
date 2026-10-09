@@ -26,21 +26,27 @@ public sealed class ThreadContextProvider() : ContextProviderBase("Thread", prio
         );
     }
 
-    void IPerCallContextWriter.WriteContextProperties(IDictionary<string, object?> target, Func<string, bool> include)
+    // In the order of the bits WriteContextProperties reads.
+    private static readonly string[] Names =
+        ["ThreadId", "ThreadName", "IsBackground", "IsThreadPoolThread", "CurrentCulture", "CurrentUICulture"];
+
+    IReadOnlyList<string> IPerCallContextWriter.PropertyNames => Names;
+
+    void IPerCallContextWriter.WriteContextProperties(IDictionary<string, object?> target, ulong included)
     {
         var currentThread = Thread.CurrentThread;
 
-        if (include("ThreadId"))
+        if ((included & 1UL << 0) != 0)
             target["ThreadId"] = currentThread.ManagedThreadId;
-        if (currentThread.Name is { } name && include("ThreadName"))
+        if ((included & 1UL << 1) != 0 && currentThread.Name is { } name)
             target["ThreadName"] = name;
-        if (include("IsBackground"))
+        if ((included & 1UL << 2) != 0)
             target["IsBackground"] = currentThread.IsBackground;
-        if (include("IsThreadPoolThread"))
+        if ((included & 1UL << 3) != 0)
             target["IsThreadPoolThread"] = currentThread.IsThreadPoolThread;
-        if (include("CurrentCulture"))
+        if ((included & 1UL << 4) != 0)
             target["CurrentCulture"] = currentThread.CurrentCulture.Name;
-        if (include("CurrentUICulture"))
+        if ((included & 1UL << 5) != 0)
             target["CurrentUICulture"] = currentThread.CurrentUICulture.Name;
     }
 }

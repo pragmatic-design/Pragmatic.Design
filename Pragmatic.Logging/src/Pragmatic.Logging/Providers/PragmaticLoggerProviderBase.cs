@@ -253,12 +253,11 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
             return true;
         }
 
-        // Declared redaction needs the state's values before anything renders them, which the
-        // deferred path would hand to the sink untouched.
-        if (!SupportsDeferredWrite ||
-            _dataRedactor != null ||
+        // Declared redaction needs the state's values before anything renders them, which both paths
+        // below would hand to the provider untouched; an advanced filter and the pattern redactor work
+        // on an entry. Those calls build one.
+        if (_dataRedactor != null ||
             DeclaredRedactor is { IsEmpty: false } ||
-            _configuration.IncludeContextEnrichment ||
             _configuration.Filters.Filters.Count > 0)
         {
             return false;
@@ -266,8 +265,15 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
 
         try
         {
-            WriteLogCoreDeferred(logLevel, eventId, state, exception, formatter, category);
-            Interlocked.Increment(ref _totalMessages);
+            if (SupportsDeferredWrite && !_configuration.IncludeContextEnrichment)
+            {
+                WriteLogCoreDeferred(logLevel, eventId, state, exception, formatter, category);
+                Interlocked.Increment(ref _totalMessages);
+            }
+            else if (WriteState(logLevel, eventId, state, exception, formatter, category))
+            {
+                Interlocked.Increment(ref _totalMessages);
+            }
         }
         catch (Exception ex)
         {
@@ -321,9 +327,9 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
         try
         {
             // Enrich with context if enabled. Mode None asks for no context property: nothing to walk.
-            if (_configuration.IncludeContextEnrichment && _configuration.ContextFilter.Mode != ContextFilterMode.None)
+            if (EnrichesWithContext)
             {
-                EnrichWithContext(logEntry);
+                EnrichWithContext(logEntry.Properties);
             }
 
             // Filter structured properties if needed
@@ -340,13 +346,19 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
             ApplyDeclaredRedaction(logEntry);
 
             // Apply the pattern heuristic if enabled
-            if (_dataRedactor != null && logEntry.TryApplyRedaction(_dataRedactor, out var redactedEntry))
+            var written = _dataRedactor != null && logEntry.TryApplyRedaction(_dataRedactor, out var redactedEntry)
+                ? redactedEntry
+                : logEntry;
+
+            var logEvent = RentEvent();
+            try
             {
-                WriteLogCore(redactedEntry);
+                logEvent.From(written);
+                WriteLogCore(logEvent);
             }
-            else
+            finally
             {
-                WriteLogCore(logEntry);
+                ReturnEvent(logEvent);
             }
 
             Interlocked.Increment(ref _totalMessages);
@@ -397,10 +409,13 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
     }
 
     /// <summary>
-    /// Core method for writing log entries. Must be implemented by derived classes.
+    ///     Writes one log call. Must be implemented by derived classes.
     /// </summary>
-    /// <param name="logEntry">The log entry to write</param>
-    protected abstract void WriteLogCore(LogEntry logEntry);
+    /// <param name="logEvent">
+    ///     The call, valid only for the duration of this method: a provider that keeps it keeps
+    ///     <see cref="LogEvent.ToEntry" />.
+    /// </param>
+    protected abstract void WriteLogCore(LogEvent logEvent);
 
     /// <summary>
     /// Called when configuration is updated. Override to handle configuration changes.
@@ -522,20 +537,14 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
     /// </summary>
     protected virtual string? GetCorrelationId(object httpContext) => null;
 
-    private void EnrichWithContext(LogEntry logEntry)
+    // Mode None asks for no context property: nothing to walk.
+    private bool EnrichesWithContext
+        => _configuration.IncludeContextEnrichment && _configuration.ContextFilter.Mode != ContextFilterMode.None;
+
+    private void EnrichWithContext(IDictionary<string, object?> target)
     {
         // Add current context properties
-        var currentContext = LogContextScope.Current;
-        if (currentContext != null)
-        {
-            foreach (var kvp in currentContext.Properties)
-            {
-                if (ShouldIncludeContextProperty(kvp.Key))
-                {
-                    logEntry.Properties[kvp.Key] = kvp.Value;
-                }
-            }
-        }
+        LogContextScope.Current?.WriteProperties(target, _includeContextProperty ??= ShouldIncludeContextProperty);
 
         // Add context provider properties, layer over layer so the lowest priority value is written last
         // and wins. Static layers only change when providers do, so their filtered copy is kept until the
@@ -546,31 +555,34 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
             if (layer.StaticProperties is { } properties)
             {
                 foreach (var kvp in properties)
-                    logEntry.Properties[kvp.Key] = kvp.Value;
+                    target[kvp.Key] = kvp.Value;
             }
             else
             {
-                WritePerCallProperties(layer.Provider, logEntry.Properties);
+                WritePerCallProperties(layer, target);
             }
         }
     }
 
     private Func<string, bool>? _includeContextProperty;
 
-    private void WritePerCallProperties(IContextProvider provider, IDictionary<string, object?> target)
+    private void WritePerCallProperties(ContextLayer layer, IDictionary<string, object?> target)
     {
+        var provider = layer.Provider;
         try
         {
+            // A writer whose every property the filter refuses is not read at all.
+            if (provider is IPerCallContextWriter writer)
+            {
+                if (layer.PerCallIncluded != 0 && provider.IsAvailable())
+                    writer.WriteContextProperties(target, layer.PerCallIncluded);
+                return;
+            }
+
             if (!provider.IsAvailable())
                 return;
 
             var include = _includeContextProperty ??= ShouldIncludeContextProperty;
-            if (provider is IPerCallContextWriter writer)
-            {
-                writer.WriteContextProperties(target, include);
-                return;
-            }
-
             foreach (var kvp in provider.GetContextProperties())
             {
                 if (include(kvp.Key))
@@ -601,7 +613,9 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
         {
             if (source[i].StaticProperties is not { } properties)
             {
-                layers[i] = source[i];
+                layers[i] = source[i].Provider is IPerCallContextWriter writer
+                    ? source[i] with { PerCallIncluded = IncludedPerCallProperties(writer) }
+                    : source[i];
                 continue;
             }
 
@@ -617,6 +631,23 @@ public abstract partial class PragmaticLoggerProviderBase : IPragmaticLoggerProv
 
         _filteredContext = new FilteredContext(version, configuration, layers);
         return layers;
+    }
+
+    // The filter's decision on each property the writer names, bit by position.
+    private ulong IncludedPerCallProperties(IPerCallContextWriter writer)
+    {
+        var names = writer.PropertyNames;
+        if (names.Count > 64)
+            throw new InvalidOperationException($"A per-call context writer names at most 64 properties; '{writer.GetType().Name}' names {names.Count}.");
+
+        var included = 0UL;
+        for (var i = 0; i < names.Count; i++)
+        {
+            if (ShouldIncludeContextProperty(names[i]))
+                included |= 1UL << i;
+        }
+
+        return included;
     }
 
     /// <summary>The context layers with their static properties filtered by this provider, for one manager version.</summary>
