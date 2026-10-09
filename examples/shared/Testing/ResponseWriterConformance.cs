@@ -64,7 +64,7 @@ internal static class ResponseWriterConformance
     private static string Write(Delegate write, object value)
     {
         var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = Pragmatic.Serialization.GeneratedJsonDefaults.ResponseEncoder }))
+        using (var writer = new Utf8JsonWriter(buffer, Pragmatic.Serialization.GeneratedJsonDefaults.ResponseWriterOptions))
             write.DynamicInvoke(writer, value);
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);

@@ -24,8 +24,8 @@ namespace Pragmatic.SourceGenerator.Features.Serialization.Templates;
 ///     </para>
 ///     <para>
 ///         ⚠️ A run of members starts with a name, written where the writer expects one: the writer must skip
-///         validation, as the one <c>GeneratedJsonResponse</c> writes with does. The response writers have no other
-///         caller.
+///         validation. Every caller writes with <c>GeneratedJsonDefaults.ResponseWriterOptions</c>, which does —
+///         <c>GeneratedJsonResponse</c>, and the tests that compare a writer with the serializer.
 ///     </para>
 /// </remarks>
 internal sealed partial class Utf8JsonWritersTemplate

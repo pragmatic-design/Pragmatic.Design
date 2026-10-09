@@ -93,11 +93,7 @@ internal sealed class CompiledResponseWriter
         var write = (Delegate)writers.GetField(Plan!.EntryMethod + "Delegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
 
         var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions
-               {
-                   Encoder = global::Pragmatic.Serialization.GeneratedJsonDefaults.ResponseEncoder,
-                   SkipValidation = true,
-               }))
+        using (var writer = new Utf8JsonWriter(buffer, global::Pragmatic.Serialization.GeneratedJsonDefaults.ResponseWriterOptions))
             write.DynamicInvoke(writer, value);
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);

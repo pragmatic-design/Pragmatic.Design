@@ -104,13 +104,7 @@ public sealed class GeneratedJsonResponse<T> : IResult, IStatusCodeHttpResult
     /// <summary>Writes the document synchronously, on one thread, with the writer that thread keeps.</summary>
     private void Write(IBufferWriter<byte> body)
     {
-        // Validation is the serializer's to skip as well: the writer is generated from the type, so the shape is right
-        // by construction. The encoder is the one the options the writer is used under carry.
-        var writer = t_writer ??= new Utf8JsonWriter(body, new JsonWriterOptions
-        {
-            Encoder = GeneratedJsonDefaults.ResponseEncoder,
-            SkipValidation = true,
-        });
+        var writer = t_writer ??= new Utf8JsonWriter(body, GeneratedJsonDefaults.ResponseWriterOptions);
         writer.Reset(body);
         try
         {
