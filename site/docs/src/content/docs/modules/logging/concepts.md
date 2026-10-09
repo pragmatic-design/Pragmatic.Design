@@ -107,9 +107,9 @@ message and reads every property (per call, 2026-10-09):
 | Production (context + scope) | 695.5 ns / 864 B | 589.9 ns / 832 B | 1,065.9 ns / 2,872 B | 1,299.4 ns / 3,000 B |
 
 Pragmatic is ahead of Serilog and NLog in every scenario, and allocates the least of the four everywhere
-but Production. Against ZLogger it is faster in every scenario but Production; on exception logging the
-lead is within the run's deviation. Production is ZLogger's, and the request context is why: see the
-results page.
+but Production. Against ZLogger it is faster in every scenario but Production: on exception logging the
+lead is within this run's deviation, and beyond it on the CI runner, whose deviation is ten times smaller.
+Production is ZLogger's, by 4% on the runner, and the request context is why: see the results page.
 
 A provider writes a call from its state: the properties read where the call put them, the scopes from the
 ambient stack, no `LogEntry` and no dictionary. A call builds an entry only for what needs one — an

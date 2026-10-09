@@ -102,13 +102,30 @@ two properties are a second MEL scope. Pragmatic runs its production preset, wit
 | NLog | 1,065.9 ns | 1.54× slower | 0.23 | 2,872 B |
 | Serilog | 1,299.4 ns | 1.88× slower | 0.24 | 3,000 B |
 
+### On the CI runner
+
+The pull request's benchmarks job ran the same suite on the runner (AMD EPYC, Ubuntu 24.04), on the base
+and on the change, one after the other: [head](benchmarks/reports/runner-128_LoggingBenchmarks-report-github.md)
+and [base](benchmarks/reports/runner-128-base_LoggingBenchmarks-report-github.md). Its deviation is 0.00–0.02,
+an order below this machine's.
+
+| Category | Pragmatic before | Pragmatic after | ZLogger | Ratio after |
+|---|---:|---:|---:|---:|
+| Simple | 463.5 ns, 592 B | 309.2 ns, 168 B | 375.6 ns, 216 B | 1.21× slower |
+| Source-generated | 467.8 ns, 544 B | 287.9 ns, 128 B | 337.4 ns, 192 B | 1.17× slower |
+| Generated call site | 424.8 ns, 536 B | 272.1 ns, 128 B | 320.3 ns, 184 B | 1.18× slower |
+| Structured | 1,096.5 ns, 1,176 B | 819.6 ns, 464 B | 967.5 ns, 520 B | 1.18× slower |
+| Exception | 468.5 ns, 608 B | 328.3 ns, 184 B | 390.4 ns, 232 B | 1.19× slower |
+| High volume | 435.4 ns, 591 B | 299.2 ns, 167 B | 384.8 ns, 215 B | 1.29× slower |
+| Production | 1,886.2 ns, 2,368 B | 1,175.5 ns, 864 B | 1,132.0 ns, 832 B | **1.04× faster** |
+
 ### What the comparison says
 
-- **Pragmatic allocates the least in six categories of seven, and is the fastest in the same six.** The lead is
-  beyond the run's deviation in Simple, both call-site categories and Structured; in Exception (1.05×,
-  deviation 0.12) it is a tie, and in High volume (1.19×, deviation 0.18) at the edge of one.
-- **Production is ZLogger's: 1.19× faster, 32 B less.** The cause is measured below; it is the request
-  context, not the call.
+- **Pragmatic is first in six categories of seven, on time and allocation.** On the runner every one of the
+  six leads is beyond the deviation, Exception and High volume included. On this machine those two read as a
+  tie and as the edge of one: its deviation is ten times larger.
+- **Production is ZLogger's: 1.04× faster on the runner, 1.19× here, and 32 B less.** The cause is measured
+  below; it is the request context, not the call.
 - **Pragmatic is ahead of Serilog and NLog in every category**, by 1.52× to 3.30×, and allocates less than
   both everywhere.
 - ZLogger's row is, if anything, pessimistic: the sink reads its property values with
