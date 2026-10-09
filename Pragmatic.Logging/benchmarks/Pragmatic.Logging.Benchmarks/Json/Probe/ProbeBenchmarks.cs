@@ -42,6 +42,14 @@ public partial class ProbeBenchmarks
         ProbeVariant.ConstantBlocks | ProbeVariant.BuiltInTimestamp,
         ProbeVariant.ConstantBlocks | ProbeVariant.NoLock,
         ProbeVariant.ConstantBlocks | ProbeVariant.NoStream,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandTwice,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce,
+        ProbeVariant.ConstantBlocks | ProbeVariant.NoMessage,
+        ProbeVariant.ConstantBlocks | ProbeVariant.NoProperties,
+        ProbeVariant.ConstantBlocks | ProbeVariant.OneStreamWrite,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.OneStreamWrite,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.HandRaw,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.HandRaw | ProbeVariant.AllRaw,
     ];
 
     // The rows that claim the line Same writes: the setup holds them to it, timestamp aside.
@@ -50,6 +58,12 @@ public partial class ProbeBenchmarks
         ProbeVariant.ParsedEachLine, ProbeVariant.EncodedEventFields, ProbeVariant.EncodedConstants,
         ProbeVariant.NoLock, ProbeVariant.AutoFlushOnce, ProbeVariant.ConstantBlocks,
         ProbeVariant.ConstantBlocks | ProbeVariant.EventBlockOnly,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandTwice,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce,
+        ProbeVariant.ConstantBlocks | ProbeVariant.OneStreamWrite,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.OneStreamWrite,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.HandRaw,
+        ProbeVariant.ConstantBlocks | ProbeVariant.HandOnce | ProbeVariant.HandRaw | ProbeVariant.AllRaw,
     ];
 
     private readonly int _orderId = 42;
@@ -61,6 +75,7 @@ public partial class ProbeBenchmarks
     private ILogger _real = null!;
     private ILogger _zloggerSameFields = null!;
     private ILogger _zloggerEmpty = null!;
+    private ILogger _zloggerBuffer = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -104,6 +119,7 @@ public partial class ProbeBenchmarks
             options => new ZLoggerJsonStreamProcessor(options.CreateFormatter(), new LastLineStream()),
             JsonSinkBenchmarks.PragmaticFields);
         _zloggerEmpty = ZLoggerWith(_ => new ZLoggerEmptyProcessor());
+        _zloggerBuffer = ZLoggerWith(options => new ZLoggerJsonProcessor(options.CreateFormatter()));
     }
 
     [GlobalCleanup]
@@ -168,7 +184,35 @@ public partial class ProbeBenchmarks
     public void Blocks_NoStream() => Call(16);
 
     [Benchmark]
+    public void Blocks_HandTwice() => Call(17);
+
+    [Benchmark]
+    public void Blocks_HandOnce() => Call(18);
+
+    [Benchmark]
+    public void Blocks_NoMessage() => Call(19);
+
+    [Benchmark]
+    public void Blocks_NoProperties() => Call(20);
+
+    [Benchmark]
+    public void Blocks_OneStreamWrite() => Call(21);
+
+    [Benchmark]
+    public void Blocks_HandOnce_OneStreamWrite() => Call(22);
+
+    [Benchmark]
+    public void Blocks_HandRaw() => Call(23);
+
+    [Benchmark]
+    public void AllRaw() => Call(24);
+
+    [Benchmark]
     public void ZLogger_SameFields_Stream() => ZLoggerJsonLog.OrderPlaced(_zloggerSameFields, _orderId, _customer, _amount);
+
+    /// <summary>ZLogger's default fields into a buffer: no lock, no stream, no event or template.</summary>
+    [Benchmark]
+    public void ZLogger_Buffer() => ZLoggerJsonLog.OrderPlaced(_zloggerBuffer, _orderId, _customer, _amount);
 
     [Benchmark]
     public void ZLogger_Empty() => ZLoggerJsonLog.OrderPlaced(_zloggerEmpty, _orderId, _customer, _amount);

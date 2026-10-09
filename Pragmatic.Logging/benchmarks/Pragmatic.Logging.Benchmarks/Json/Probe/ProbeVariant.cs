@@ -55,4 +55,40 @@ internal enum ProbeVariant
 
     /// <summary>With <see cref="ConstantBlocks" />: only the call site's event block; level and logger as today.</summary>
     EventBlockOnly = 1 << 12,
+
+    /// <summary>
+    ///     The benchmark's call written by hand as the generated state writes it today: each value formatted into the
+    ///     message, then formatted again for <c>@properties</c>. Must time like the generated state, or the hand
+    ///     rows say nothing about what the generator would gain.
+    /// </summary>
+    HandTwice = 1 << 13,
+
+    /// <summary>
+    ///     The same call with each value formatted once: the message built from the bytes, the numbers written raw
+    ///     from the same bytes, the string from its UTF-8 bytes. What a generator that knows the two are one value
+    ///     could emit.
+    /// </summary>
+    HandOnce = 1 << 14,
+
+    /// <summary>An empty message: what rendering and writing the message costs.</summary>
+    NoMessage = 1 << 15,
+
+    /// <summary>No <c>@properties</c>: what the arguments' properties cost.</summary>
+    NoProperties = 1 << 16,
+
+    /// <summary>The line break in the buffer, the line written to the stream in one call instead of two.</summary>
+    OneStreamWrite = 1 << 17,
+
+    /// <summary>
+    ///     With <see cref="HandOnce" />: the whole <c>@properties</c> object written as bytes into the line, its
+    ///     names encoded once, the numbers from the message's bytes, the string only escaped — no writer call per
+    ///     property. What a generator could emit for a call site whose names and types it knows.
+    /// </summary>
+    HandRaw = 1 << 18,
+
+    /// <summary>
+    ///     With <see cref="HandRaw" />: the whole line as bytes, no <c>Utf8JsonWriter</c> at all — the timestamp, the
+    ///     blocks, the message copied when the encoder would escape nothing in it, the properties.
+    /// </summary>
+    AllRaw = 1 << 19,
 }

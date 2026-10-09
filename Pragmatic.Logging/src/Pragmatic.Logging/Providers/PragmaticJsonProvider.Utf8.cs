@@ -35,10 +35,12 @@ public sealed partial class PragmaticJsonProvider
     private static readonly JsonEncodedText PropertiesProperty = JsonEncodedText.Encode("@properties");
 
     private static readonly byte[] NewLine = Encoding.UTF8.GetBytes(Environment.NewLine);
+    private static ReadOnlySpan<byte> PropertiesOpening => ",\"@properties\":{"u8;
 
     private ArrayBufferWriter<byte>? _line;
     private Utf8JsonWriter? _lineWriter;
     private byte[] _message = new byte[1024];
+    private byte[] _json = new byte[1024];
     private string? _timestampFormat;
     private TimestampLayout? _timestampLayout;
 
@@ -56,7 +58,24 @@ public sealed partial class PragmaticJsonProvider
 
         lock (_writeLock)
         {
-            var message = Message(utf8, in state);
+            // A call site that writes its properties as JSON renders them with the message, each value once.
+            ReadOnlySpan<byte> message;
+            ReadOnlySpan<byte> properties = default;
+            bool propertiesAsBytes;
+            if (WritesBlocks
+                && Configuration.IncludeStructuredProperties
+                && utf8.PropertyCount > 0
+                && utf8.WritesJsonProperties
+                && MessageAndJson(utf8, in state, out message, out properties))
+            {
+                propertiesAsBytes = true;
+            }
+            else
+            {
+                propertiesAsBytes = false;
+                message = Message(utf8, in state);
+            }
+
             if (message.IsEmpty && exception is null)
                 return;
 
@@ -69,6 +88,17 @@ public sealed partial class PragmaticJsonProvider
 
             var line = _line ??= new ArrayBufferWriter<byte>(1024);
             line.ResetWrittenCount();
+
+            var hasProperties = Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0;
+            if (WritesBlocks
+                && exception is null
+                && (propertiesAsBytes || !hasProperties)
+                && TryWriteLine(line, logLevel, eventId, utf8, category, timestamp, message, hasProperties, properties))
+            {
+                WriteLine(line.WrittenSpan);
+                return;
+            }
+
             var writer = _lineWriter ??= new Utf8JsonWriter(line, _jsonOptions);
             writer.Reset(line);
 
@@ -112,7 +142,14 @@ public sealed partial class PragmaticJsonProvider
                     writer.WriteString(TemplateProperty, utf8.Template);
             }
 
-            if (Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0)
+            if (propertiesAsBytes)
+            {
+                writer.Flush();
+                line.Write(PropertiesOpening);
+                line.Write(properties);
+                line.Write("}"u8);
+            }
+            else if (Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0)
             {
                 writer.WriteStartObject(PropertiesProperty);
                 utf8.WriteProperties(in state, writer);
@@ -126,8 +163,37 @@ public sealed partial class PragmaticJsonProvider
         }
     }
 
+    /// <summary>
+    ///     The message and the properties' JSON, rendered together into the provider's buffers, which grow when they
+    ///     do not fit. False when the call's properties are for the writer: a value the encoder would escape.
+    /// </summary>
+    private bool MessageAndJson<TState>(
+        IUtf8LogStateWriter<TState> utf8, scoped in TState state, out ReadOnlySpan<byte> message, out ReadOnlySpan<byte> json)
+    {
+        while (true)
+        {
+            switch (utf8.TryFormatMessageAndJson(in state, _message, _json, out var messageWritten, out var jsonWritten))
+            {
+                case Utf8LogJsonStatus.Written:
+                    message = _message.AsSpan(0, messageWritten);
+                    json = _json.AsSpan(0, jsonWritten);
+                    return true;
+
+                case Utf8LogJsonStatus.BufferTooSmall:
+                    _message = new byte[_message.Length * 2];
+                    _json = new byte[_json.Length * 2];
+                    continue;
+
+                default:
+                    message = default;
+                    json = default;
+                    return false;
+            }
+        }
+    }
+
     /// <summary>The message rendered into the provider's buffer, which grows when a message does not fit.</summary>
-    private ReadOnlySpan<byte> Message<TState>(IUtf8LogStateWriter<TState> utf8, in TState state)
+    private ReadOnlySpan<byte> Message<TState>(IUtf8LogStateWriter<TState> utf8, scoped in TState state)
     {
         while (true)
         {
@@ -138,21 +204,30 @@ public sealed partial class PragmaticJsonProvider
         }
     }
 
+    private DateTime EffectiveTimestamp(DateTime timestamp)
+        => Configuration.Formatting.UseUtcTimestamp ? timestamp.ToUniversalTime() : timestamp.ToLocalTime();
+
+    // The format is read once per format string, not on every line; the configuration can be replaced, so the
+    // layout follows the string it was read from. Null for a format the layout does not read.
+    private TimestampLayout? CurrentTimestampLayout()
+    {
+        var format = Configuration.Formatting.TimestampFormat;
+        if (!ReferenceEquals(_timestampFormat, format))
+        {
+            _timestampLayout = TimestampLayout.Parse(format);
+            _timestampFormat = format;
+        }
+
+        return _timestampLayout;
+    }
+
     private void WriteTimestamp(Utf8JsonWriter writer, DateTime timestamp)
     {
         var formatting = Configuration.Formatting;
-        var effective = formatting.UseUtcTimestamp ? timestamp.ToUniversalTime() : timestamp.ToLocalTime();
-
-        // The format is read once per format string, not on every line; the configuration can be replaced,
-        // so the layout follows the string it was read from.
-        if (!ReferenceEquals(_timestampFormat, formatting.TimestampFormat))
-        {
-            _timestampLayout = TimestampLayout.Parse(formatting.TimestampFormat);
-            _timestampFormat = formatting.TimestampFormat;
-        }
+        var effective = EffectiveTimestamp(timestamp);
 
         Span<byte> buffer = stackalloc byte[64];
-        if (_timestampLayout is { } layout && layout.TryFormat(effective, buffer, out var laidOut))
+        if (CurrentTimestampLayout() is { } layout && layout.TryFormat(effective, buffer, out var laidOut))
             writer.WriteString(TimestampProperty, buffer[..laidOut]);
         else if (effective.TryFormat(buffer, out var written, formatting.TimestampFormat, CultureInfo.InvariantCulture))
             writer.WriteString(TimestampProperty, buffer[..written]);

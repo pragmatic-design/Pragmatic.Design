@@ -108,9 +108,9 @@ two properties are a second MEL scope. Pragmatic runs its production preset, wit
 
 ## A JSON line: `JsonSinkBenchmarks`
 
-⚠️ **Not the run of the rest of this page.** These numbers come from runs on 2026-10-08 on the machine
-above, after the changes of #109. The report is
-[`benchmarks/reports/local-109_JsonSinkBenchmarks-report-github.md`](benchmarks/reports/local-109_JsonSinkBenchmarks-report-github.md).
+⚠️ **Not the run of the rest of this page.** These numbers come from a run on 2026-10-09 on the machine
+above, after the changes of #109 and #129. The report is
+[`benchmarks/reports/local-129_JsonSinkBenchmarks-report-github.md`](benchmarks/reports/local-129_JsonSinkBenchmarks-report-github.md).
 The run before #109 on the GitHub runner put ZLogger 1.63× ahead (447.7 ns against 730.2,
 [report](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md)); the
 benchmarks workflow measures head against base on that runner for every change. Compare rows within this
@@ -135,24 +135,23 @@ configured for the others.
 
 | Library | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| **Pragmatic, generated call site** | **258.6 ns** | baseline | **0 B** |
-| ZLogger, `[ZLoggerMessage]`, into a buffer | 281.9 ns | 1.10× slower | 0 B |
-| ZLogger, to a stream | 302.8 ns | 1.18× slower | 0 B |
-| ZLogger, the same fields, to a stream | 307.4 ns | 1.20× slower | 0 B |
-| Serilog, `[LoggerMessage]` | 863.8 ns | 3.36× slower | 1,448 B |
-| NLog, `[LoggerMessage]` | 1,006.4 ns | 3.92× slower | 1,704 B |
-| Pragmatic, `[LoggerMessage]` | 1,150.0 ns | 4.47× slower | 6,992 B |
+| **Pragmatic, generated call site** | **166.9 ns** | baseline | **0 B** |
+| ZLogger, `[ZLoggerMessage]`, into a buffer | 281.6 ns | 1.71× slower | 0 B |
+| ZLogger, to a stream | 304.0 ns | 1.84× slower | 0 B |
+| ZLogger, the same fields, to a stream | 297.2 ns | 1.80× slower | 0 B |
+| Serilog, `[LoggerMessage]` | 885.4 ns | 5.36× slower | 1,448 B |
+| NLog, `[LoggerMessage]` | 998.3 ns | 6.05× slower | 1,704 B |
+| Pragmatic, `[LoggerMessage]` | 1,176.5 ns | 7.13× slower | 6,992 B |
 
-- **On this machine the generated call site is the fastest row and allocates nothing**, ahead of ZLogger
-  even where ZLogger writes fewer fields into a buffer and pays for no stream. The run's standard deviation
-  is about 20 ns on every row: the 49 ns against the even comparison is outside it, the 23 ns against the
-  buffer is not by much.
-- ⚠️ **On the GitHub runner it is level, not first.** The benchmarks workflow on the change of #109 (AMD EPYC,
-  Ubuntu 24.04, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md) and
+- **The generated call site is the fastest row and allocates nothing**, ahead of ZLogger in all three
+  shapes, the lighter ones included. The run's standard deviation is about 20 ns on every row; the lead is
+  115 ns and more.
+- **On the GitHub runner, after #109 alone, it was level, not first.** The benchmarks workflow on that change
+  (AMD EPYC, Ubuntu 24.04, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md) and
   [base](benchmarks/reports/runner-109-base_JsonSinkBenchmarks-report-github.md)): the call site 263.5 ns,
   down from 405.8 on the base; ZLogger with the same fields to a stream 264.2, to a stream 251.0, into a
-  buffer 224.0. Level on the even comparison, behind where ZLogger writes fewer fields. Taking the lead there
-  too is #129.
+  buffer 224.0. #129 is what was meant to take the lead there; its own runner numbers are in its pull
+  request's benchmarks job.
 - **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row and the largest
   allocation:** that is the classic path, which builds an entry, a message string and a dictionary.
 
@@ -190,8 +189,43 @@ What was not kept: the event name and template encoded once but still written by
 the deviation; the message written raw, slower; one `IsEnabled` instead of two, 3.7 ns in all.
 
 In one run, [`probe-final`](benchmarks/reports/probe-final_ProbeBenchmarks-report-github.md): the path
-before #109 **446 ns**, the provider now **257 ns**, ZLogger with the same fields and sink **303 ns**. On the
-runner the same change measured 405.8 → 263.5 ns against ZLogger's 264.2 (above).
+before #109 **446 ns**, the provider after it **257 ns**, ZLogger with the same fields and sink **303 ns**. On
+the runner the same change measured 405.8 → 263.5 ns against ZLogger's 264.2 (above).
+
+### What #129 changed
+
+After #109 the arguments' properties were the largest part left: each value formatted a second time for
+`@properties` and written by a writer call with its escaping. Measured by subtraction and by emulation — the
+benchmark's call written by hand as the generator would emit it — in one run,
+[`probe-129-subtraction`](benchmarks/reports/probe-129-subtraction_ProbeBenchmarks-report-github.md), against
+the provider after #109 (261.8 ns):
+
+| Row | Mean |
+|---|---:|
+| By hand, as the generated state writes it after #109 (checks the emulation) | 260.5 ns |
+| No message written | 260.8 ns |
+| **No `@properties` at all** | **191.0 ns** |
+| Each value formatted once, still through the writer | 251.9 ns |
+| The properties as bytes, each value formatted once | 206.2 ns |
+| The whole line as bytes | 150.0 ns |
+| **The provider now** | **160.7 ns** |
+| ZLogger into a buffer / with the same fields and sink | 280.9 / 300.1 ns |
+
+Kept, for real:
+
+1. **The properties as JSON bytes, each value formatted once.** The generated state renders the message and
+   the properties' JSON in one pass (`TryFormatMessageAndJson`): a number or a string the message renders
+   without a format lends its bytes to the property; names are encoded at compile time. Only for numbers
+   (integers and decimal), strings, booleans and masked values, and a string the encoder would escape sends
+   the call back to the writer, so the escaping is the writer's own.
+2. **The whole line as bytes, without `Utf8JsonWriter`**, when nothing in it needs the writer: the timestamp
+   from its layout, the blocks of #109, the message when the encoder escapes nothing in it, the properties of
+   (1). An exception, a message to escape, properties for the writer, a timestamp format the layout does not
+   read, an indented line: the writer, as before.
+
+In one run, [`probe-129`](benchmarks/reports/probe-129_ProbeBenchmarks-report-github.md): the provider after
+#109 **259.0 ns**, the provider now **158.0 ns**; ZLogger into a buffer 275.7, with the same fields and sink
+298.8. The line is unchanged byte for byte.
 
 ## Declared redaction overhead: `RedactionOverheadBenchmarks`
 

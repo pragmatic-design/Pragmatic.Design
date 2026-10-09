@@ -37,4 +37,11 @@ public interface IUtf8LogStateWriter<TState>
 
     /// <inheritdoc cref="IUtf8LogState.WriteProperties" />
     void WriteProperties(in TState state, Utf8JsonWriter writer);
+
+    /// <inheritdoc cref="IUtf8LogState.WritesJsonProperties" />
+    bool WritesJsonProperties { get; }
+
+    /// <inheritdoc cref="IUtf8LogState.TryFormatMessageAndJson" />
+    Utf8LogJsonStatus TryFormatMessageAndJson(
+        in TState state, Span<byte> message, Span<byte> json, out int messageWritten, out int jsonWritten);
 }
