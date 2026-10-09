@@ -40,6 +40,18 @@ internal static partial class OrderLog
     [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = StockLowTemplate)]
     public static partial void StockLow(ILogger logger, string sku);
 
+    // A number with a format, whose message bytes are not its JSON; a boolean; a nullable number.
+    public const string BatchTemplate = "Batch {Count:D4} done {Ok} retries {Retries} total {Total}";
+
+    [LoggerMessage(EventId = 1008, Level = LogLevel.Information, Message = BatchTemplate)]
+    public static partial void Batch(ILogger logger, int count, bool ok, int? retries, decimal total);
+
+    // Quotes in the template, none in the value: a message to escape, a property that is not.
+    public const string SaidTemplate = "Said \"{Word}\"";
+
+    [LoggerMessage(EventId = 1009, Level = LogLevel.Information, Message = SaidTemplate)]
+    public static partial void Said(ILogger logger, string word);
+
     public const string QuotedTemplate = "Café \"{Name}\" <ok> & ünïcode";
 
     [LoggerMessage(EventId = 1007, Level = LogLevel.Information, Message = QuotedTemplate)]

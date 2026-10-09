@@ -67,6 +67,8 @@ internal abstract partial class LogCallSiteTemplateBase
             AppendLine();
             RenderProperties(callSite, properties, stateName);
             AppendLine();
+            RenderJson(callSite, properties, stateName);
+            AppendLine();
 
             AppendLine($"public bool TryFormatMessage(in {stateName} state, global::System.Span<byte> destination, out int bytesWritten)");
             AppendLine("    => state.TryFormatMessage(destination, out bytesWritten);");
@@ -150,21 +152,21 @@ internal abstract partial class LogCallSiteTemplateBase
         });
     }
 
-    private static string AppendValue(LogParameterModel parameter, string format)
+    private static string AppendValue(LogParameterModel parameter, string format, string destination = "destination")
     {
         if (parameter.IsMasked)
-            return $"{Format}.TryAppendMask(destination, ref written)";
+            return $"{Format}.TryAppendMask({destination}, ref written)";
 
         var field = Field(parameter);
         var formatArgument = Literal(format);
         return parameter.Kind switch
         {
-            LogValueKind.String or LogValueKind.Boolean => $"{Format}.TryAppend(destination, ref written, {field})",
-            LogValueKind.Enum => $"{Format}.TryAppendEnum(destination, ref written, {field}, {formatArgument})",
+            LogValueKind.String or LogValueKind.Boolean => $"{Format}.TryAppend({destination}, ref written, {field})",
+            LogValueKind.Enum => $"{Format}.TryAppendEnum({destination}, ref written, {field}, {formatArgument})",
             LogValueKind.Number or LogValueKind.Formattable =>
-                $"{Format}.TryAppendFormatted(destination, ref written, {field}, {formatArgument})",
-            LogValueKind.Json => $"{Json}.TryAppend(destination, ref written, {field}, {parameter.JsonWriter})",
-            _ => $"{Format}.TryAppendObject(destination, ref written, {field})",
+                $"{Format}.TryAppendFormatted({destination}, ref written, {field}, {formatArgument})",
+            LogValueKind.Json => $"{Json}.TryAppend({destination}, ref written, {field}, {parameter.JsonWriter})",
+            _ => $"{Format}.TryAppendObject({destination}, ref written, {field})",
         };
     }
 

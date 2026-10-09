@@ -261,6 +261,58 @@ public partial class ThrottledHandler
                 writer.WriteString(__Name2, _messageId);
             }
             
+            public bool WritesJsonProperties => true;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                int __at0 = 0, __length0 = 0;
+                int __at1 = 0, __length1 = 0;
+                int __at2 = 0, __length2 = 0;
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "Starting handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at0, out __length0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " for message "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at1, out __length1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " (id: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at2, out __length2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, ")"u8)
+                )
+                {
+                    return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                messageWritten = written;
+                var needsWriter = false;
+                var j = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, "\"MessageName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageName, message.Slice(__at1, __length1), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"HandlerName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _handlerName, message.Slice(__at0, __length0), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"MessageId\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageId, message.Slice(__at2, __length2), ref needsWriter)
+                )
+                {
+                    messageWritten = 0;
+                    return needsWriter ? global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter : global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                jsonWritten = j;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.Written;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogHandlerStartedLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
+            
             public bool TryFormatMessage(in __LogHandlerStartedLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);
             
@@ -362,6 +414,18 @@ public partial class ThrottledHandler
                 writer.WriteString(__Name1, _handlerName);
                 writer.WriteNumber(__Name2, (double)_durationMs);
             }
+            
+            public bool WritesJsonProperties => false;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogHandlerCompletedLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
             
             public bool TryFormatMessage(in __LogHandlerCompletedLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);
@@ -465,6 +529,58 @@ public partial class ThrottledHandler
                 writer.WriteNumber(__Name2, (int)_retryCount);
             }
             
+            public bool WritesJsonProperties => true;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                int __at0 = 0, __length0 = 0;
+                int __at1 = 0, __length1 = 0;
+                int __at2 = 0, __length2 = 0;
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "Handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at0, out __length0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " failed for message "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at1, out __length1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " (retry "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(message, ref written, _retryCount, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at2, out __length2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, ")"u8)
+                )
+                {
+                    return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                messageWritten = written;
+                var needsWriter = false;
+                var j = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, "\"MessageName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageName, message.Slice(__at1, __length1), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"HandlerName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _handlerName, message.Slice(__at0, __length0), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"RetryCount\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, message.Slice(__at2, __length2))
+                )
+                {
+                    messageWritten = 0;
+                    return needsWriter ? global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter : global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                jsonWritten = j;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.Written;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogHandlerFailedLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
+            
             public bool TryFormatMessage(in __LogHandlerFailedLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);
             
@@ -566,6 +682,58 @@ public partial class ThrottledHandler
                 writer.WriteString(__Name1, _handlerName);
                 writer.WriteString(__Name2, _messageId);
             }
+            
+            public bool WritesJsonProperties => true;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                int __at0 = 0, __length0 = 0;
+                int __at1 = 0, __length1 = 0;
+                int __at2 = 0, __length2 = 0;
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "Duplicate message skipped: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at0, out __length0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at1, out __length1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " (id: "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageId)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at2, out __length2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, ")"u8)
+                )
+                {
+                    return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                messageWritten = written;
+                var needsWriter = false;
+                var j = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, "\"MessageName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageName, message.Slice(__at0, __length0), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"HandlerName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _handlerName, message.Slice(__at1, __length1), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"MessageId\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageId, message.Slice(__at2, __length2), ref needsWriter)
+                )
+                {
+                    messageWritten = 0;
+                    return needsWriter ? global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter : global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                jsonWritten = j;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.Written;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogDuplicateSkippedLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
             
             public bool TryFormatMessage(in __LogDuplicateSkippedLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);
@@ -676,6 +844,65 @@ public partial class ThrottledHandler
                 writer.WriteNumber(__Name3, (int)_delayMs);
             }
             
+            public bool WritesJsonProperties => true;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                int __at0 = 0, __length0 = 0;
+                int __at1 = 0, __length1 = 0;
+                int __at2 = 0, __length2 = 0;
+                int __at3 = 0, __length3 = 0;
+                var written = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "Retrying handler "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _handlerName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at0, out __length0)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " for "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, _messageName)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at1, out __length1)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, ": attempt "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(message, ref written, _attempt, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at2, out __length2)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, ", delay "u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at3)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(message, ref written, _delayMs, "")
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at3, out __length3)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "ms"u8)
+                )
+                {
+                    return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                messageWritten = written;
+                var needsWriter = false;
+                var j = 0;
+                if (
+                    !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, "\"MessageName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _messageName, message.Slice(__at1, __length1), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"HandlerName\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.TryAppendJsonString(json, ref j, _handlerName, message.Slice(__at0, __length0), ref needsWriter)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"Attempt\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, message.Slice(__at2, __length2))
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"DelayMs\":"u8)
+                    || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, message.Slice(__at3, __length3))
+                )
+                {
+                    messageWritten = 0;
+                    return needsWriter ? global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter : global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+                }
+                
+                jsonWritten = j;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.Written;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogRetryAttemptLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
+            
             public bool TryFormatMessage(in __LogRetryAttemptLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);
             
@@ -783,6 +1010,18 @@ public partial class ThrottledHandler
                 writer.WriteNumber(__Name2, (int)_redelivery);
                 global::Pragmatic.Logging.CallSites.Utf8LogFormat.WriteFormatted(writer, __Name3, _delay, "c");
             }
+            
+            public bool WritesJsonProperties => false;
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            {
+                messageWritten = 0;
+                jsonWritten = 0;
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter;
+            }
+            
+            public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogRedeliveryScheduledLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+                => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
             
             public bool TryFormatMessage(in __LogRedeliveryScheduledLogState state, global::System.Span<byte> destination, out int bytesWritten)
                 => state.TryFormatMessage(destination, out bytesWritten);

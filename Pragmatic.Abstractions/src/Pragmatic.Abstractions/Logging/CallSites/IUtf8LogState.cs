@@ -47,4 +47,19 @@ public interface IUtf8LogState
 
     /// <summary>Writes each structured property as a JSON property of the object the writer is in.</summary>
     void WriteProperties(Utf8JsonWriter writer);
+
+    /// <summary>
+    ///     Whether <see cref="TryFormatMessageAndJson" /> can write this call site's properties as JSON bytes: every
+    ///     argument a number, a string, a boolean or masked, every name one no encoder escapes.
+    /// </summary>
+    /// <remarks>A constant of the call site: the generator decides it from the parameter types and names.</remarks>
+    bool WritesJsonProperties { get; }
+
+    /// <summary>
+    ///     Renders the message as <see cref="TryFormatMessage" /> does, and the structured properties as the members
+    ///     of a JSON object without its braces — <c>"Name":value,…</c> — each value formatted once for both: the bytes
+    ///     a <see cref="Utf8JsonWriter" /> with <see cref="System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping" />
+    ///     writes for them.
+    /// </summary>
+    Utf8LogJsonStatus TryFormatMessageAndJson(Span<byte> message, Span<byte> json, out int messageWritten, out int jsonWritten);
 }

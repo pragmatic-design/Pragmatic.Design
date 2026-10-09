@@ -170,6 +170,18 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
             global::Pragmatic.Logging.CallSites.Utf8LogFormat.WriteFormatted(writer, __Name0, _attachmentId, "D");
         }
         
+        public bool WritesJsonProperties => false;
+        
+        public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+        {
+            messageWritten = 0;
+            jsonWritten = 0;
+            return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter;
+        }
+        
+        public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogFilesKeptLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
+        
         public bool TryFormatMessage(in __LogFilesKeptLogState state, global::System.Span<byte> destination, out int bytesWritten)
             => state.TryFormatMessage(destination, out bytesWritten);
         
@@ -264,6 +276,51 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
             writer.WriteNumber(__Name0, (int)_purgedCount);
             writer.WriteNumber(__Name1, (int)_expiredCount);
         }
+        
+        public bool WritesJsonProperties => true;
+        
+        public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+        {
+            messageWritten = 0;
+            jsonWritten = 0;
+            int __at0 = 0, __length0 = 0;
+            int __at1 = 0, __length1 = 0;
+            var written = 0;
+            if (
+                !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, "Purged "u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at0)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(message, ref written, _purgedCount, "")
+                || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at0, out __length0)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " of "u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written, out __at1)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppendFormatted(message, ref written, _expiredCount, "")
+                || !global::Pragmatic.Logging.CallSites.Utf8LogJsonValues.Mark(written - __at1, out __length1)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(message, ref written, " expired ReservationAttachment rows."u8)
+            )
+            {
+                return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+            }
+            
+            messageWritten = written;
+            var needsWriter = false;
+            var j = 0;
+            if (
+                !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, "\"PurgedCount\":"u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, message.Slice(__at0, __length0))
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, ",\"ExpiredCount\":"u8)
+                || !global::Pragmatic.Logging.CallSites.Utf8LogFormat.TryAppend(json, ref j, message.Slice(__at1, __length1))
+            )
+            {
+                messageWritten = 0;
+                return needsWriter ? global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.NeedsWriter : global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.BufferTooSmall;
+            }
+            
+            jsonWritten = j;
+            return global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus.Written;
+        }
+        
+        public global::Pragmatic.Logging.CallSites.Utf8LogJsonStatus TryFormatMessageAndJson(in __LogPurgedLogState state, global::System.Span<byte> message, global::System.Span<byte> json, out int messageWritten, out int jsonWritten)
+            => state.TryFormatMessageAndJson(message, json, out messageWritten, out jsonWritten);
         
         public bool TryFormatMessage(in __LogPurgedLogState state, global::System.Span<byte> destination, out int bytesWritten)
             => state.TryFormatMessage(destination, out bytesWritten);

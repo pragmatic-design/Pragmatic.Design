@@ -16,13 +16,14 @@ namespace Pragmatic.Logging.Benchmarks.Json.Probe;
 /// <remarks>
 ///     <para>
 ///         <see cref="ProbeVariant.Same" /> is the path with the timestamp read once and every field written by
-///         the writer; <see cref="ProbeVariant.ParsedEachLine" /> is the path as it was before #109, and
-///         <see cref="ProbeVariant.ConstantBlocks" /> the path the provider has now, which the
-///         <c>RealProvider</c> row times. The setup holds every one of them to the same bytes.
+///         the writer; <see cref="ProbeVariant.ParsedEachLine" /> is the path as it was before #109,
+///         <see cref="ProbeVariant.ConstantBlocks" /> the path after #109, and <see cref="ProbeVariant.HandRaw" />
+///         the benchmark's call written as the provider writes it since #129, which the <c>RealProvider</c> row
+///         times. The setup holds every one of them to the same bytes.
 ///     </para>
 ///     <para>A change to <c>PragmaticJsonProvider.WriteUtf8State</c> is a change here too.</para>
 /// </remarks>
-internal sealed class ProbeJsonProvider : PragmaticLoggerProviderBase
+internal sealed partial class ProbeJsonProvider : PragmaticLoggerProviderBase
 {
     private static readonly JsonEncodedText TimestampProperty = JsonEncodedText.Encode("@timestamp");
     private static readonly JsonEncodedText LevelProperty = JsonEncodedText.Encode("@level");
@@ -100,10 +101,34 @@ internal sealed class ProbeJsonProvider : PragmaticLoggerProviderBase
     private void Write<TState>(
         LogLevel logLevel, EventId eventId, IUtf8LogStateWriter<TState> utf8, in TState state, string category, DateTime timestamp)
     {
-        var message = Has(ProbeVariant.RawMessage) ? default : Message(utf8, in state);
+        var message = Has(ProbeVariant.RawMessage | ProbeVariant.HandTwice | ProbeVariant.HandOnce)
+            ? default
+            : Message(utf8, in state);
 
         var line = _line ??= new ArrayBufferWriter<byte>(1024);
         line.ResetWrittenCount();
+
+        if (Has(ProbeVariant.AllRaw))
+        {
+            var formatting = Configuration.Formatting;
+            if (!ReferenceEquals(_timestampFormat, formatting.TimestampFormat))
+            {
+                _timestampLayout = TimestampLayout.Parse(formatting.TimestampFormat);
+                _timestampFormat = formatting.TimestampFormat;
+            }
+
+            Span<byte> stamp = stackalloc byte[64];
+            _timestampLayout!.TryFormat(timestamp.ToUniversalTime(), stamp, out var stampLength);
+            HandAllRaw(line, stamp[..stampLength], LevelAndLogger(logLevel, category), EventBlock(eventId, utf8));
+            Lines++;
+
+            _output.Write(line.WrittenSpan);
+            _output.Write(NewLine);
+            if (AutoFlush())
+                _output.Flush();
+            return;
+        }
+
         var writer = _lineWriter ??= new Utf8JsonWriter(line, _options);
         writer.Reset(line);
 
@@ -126,7 +151,12 @@ internal sealed class ProbeJsonProvider : PragmaticLoggerProviderBase
                 line.Write(LevelAndLogger(logLevel, category));
             }
 
-            writer.WriteString(MessageProperty, message);
+            if (Has(ProbeVariant.HandOnce))
+                message = HandMessageOnce();
+            else if (Has(ProbeVariant.HandTwice))
+                message = HandMessageTwice();
+
+            writer.WriteString(MessageProperty, Has(ProbeVariant.NoMessage) ? default : message);
             writer.Flush();
             line.Write(EventBlock(eventId, utf8));
             WritePropertiesAndEnd(writer, utf8, in state);
@@ -182,10 +212,20 @@ internal sealed class ProbeJsonProvider : PragmaticLoggerProviderBase
 
     private void WritePropertiesAndEnd<TState>(Utf8JsonWriter writer, IUtf8LogStateWriter<TState> utf8, in TState state)
     {
-        if (Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0)
+        if (Has(ProbeVariant.HandRaw))
+        {
+            writer.Flush();
+            HandRawProperties(_line!);
+        }
+        else if (Configuration.IncludeStructuredProperties && utf8.PropertyCount > 0 && !Has(ProbeVariant.NoProperties))
         {
             writer.WriteStartObject(PropertiesProperty);
-            utf8.WriteProperties(in state, writer);
+            if (Has(ProbeVariant.HandOnce))
+                HandPropertiesOnce(writer);
+            else if (Has(ProbeVariant.HandTwice))
+                HandPropertiesTwice(writer);
+            else
+                utf8.WriteProperties(in state, writer);
             writer.WriteEndObject();
         }
 
@@ -196,8 +236,18 @@ internal sealed class ProbeJsonProvider : PragmaticLoggerProviderBase
         if (Has(ProbeVariant.NoStream))
             return;
 
-        _output.Write(_line!.WrittenSpan);
-        _output.Write(NewLine);
+        if (Has(ProbeVariant.OneStreamWrite))
+        {
+            var line = _line!;
+            line.Write(NewLine);
+            _output.Write(line.WrittenSpan);
+        }
+        else
+        {
+            _output.Write(_line!.WrittenSpan);
+            _output.Write(NewLine);
+        }
+
         if (Has(ProbeVariant.AutoFlushOnce) ? _autoFlush : AutoFlush())
             _output.Flush();
     }

@@ -49,6 +49,32 @@ public partial class AGeneratedCallSitesJsonLineIsTheClassicOneTests
         generated.Should().Contain("\\\"").And.Be(classic);
     }
 
+    /// <summary>
+    ///     A formatted number (its message bytes, 0042, are not its JSON, 42), a boolean (True in the message, true in
+    ///     JSON), a nullable number with and without a value, a decimal with trailing zeros.
+    /// </summary>
+    [Theory]
+    [InlineData(3)]
+    [InlineData(null)]
+    public void WithAFormattedNumberABooleanAndANullable(int? retries)
+    {
+        var generated = JsonLine(PragmaticJsonConfiguration.ForJson(), "Batches", logger => OrderLog.Batch(logger, 42, true, retries, 19.90m));
+        var classic = JsonLine(PragmaticJsonConfiguration.ForJson(), "Batches", logger => logger.Log(
+            LogLevel.Information, new EventId(1008, "Batch"), OrderLog.BatchTemplate, 42, true, retries, 19.90m));
+
+        generated.Should().Contain("\"Count\":42").And.Contain("\"Ok\":true").And.Be(classic);
+    }
+
+    [Fact]
+    public void WithAMessageToEscape_AndAPropertyThatIsNot()
+    {
+        var generated = JsonLine(PragmaticJsonConfiguration.ForJson(), "Talk", logger => OrderLog.Said(logger, "hi"));
+        var classic = JsonLine(PragmaticJsonConfiguration.ForJson(), "Talk", logger => logger.Log(
+            LogLevel.Information, new EventId(1009, "Said"), OrderLog.SaidTemplate, "hi"));
+
+        generated.Should().Contain("\"@message\":\"Said \\\"hi\\\"\"").And.Be(classic);
+    }
+
     [Fact]
     public void PrettyPrinted()
     {
