@@ -82,13 +82,18 @@ internal sealed class CompiledResponseWriter
             .Invoke(null, null)!;
 
     /// <summary>What the generated writer writes for the value.</summary>
+    /// <remarks>
+    ///     With the options <c>GeneratedJsonResponse</c> writes with, validation skipped included: a run of members
+    ///     starts with a name where the writer expects one. The bytes are compared with the serializer's, which is the
+    ///     check validation would have been.
+    /// </remarks>
     public string Write(object value)
     {
         var writers = _assembly!.GetType(AssemblyName + ".Generated." + Utf8JsonWritersTemplate.ResponseClassName, throwOnError: true)!;
         var write = (Delegate)writers.GetField(Plan!.EntryMethod + "Delegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
 
         var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = global::Pragmatic.Serialization.GeneratedJsonDefaults.ResponseEncoder }))
+        using (var writer = new Utf8JsonWriter(buffer, global::Pragmatic.Serialization.GeneratedJsonDefaults.ResponseWriterOptions))
             write.DynamicInvoke(writer, value);
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);

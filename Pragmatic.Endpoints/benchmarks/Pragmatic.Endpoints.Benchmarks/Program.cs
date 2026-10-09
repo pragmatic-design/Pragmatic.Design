@@ -10,6 +10,10 @@ if (args is ["verify"])
     Verify<CitmCatalog.Root>();
     Verify<Canada.Root>();
     Verify<ReservationPage>();
+    new Pragmatic.Endpoints.Benchmarks.Probe.CitmProbeBenchmarks().Setup();
+    new Pragmatic.Endpoints.Benchmarks.Probe.PageProbeBenchmarks().Setup();
+    new Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks().Setup();
+    Console.WriteLine("The probes' candidates write the host's very bytes.");
     return;
 }
 

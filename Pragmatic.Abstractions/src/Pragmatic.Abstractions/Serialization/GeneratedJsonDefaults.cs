@@ -53,6 +53,21 @@ public static class GeneratedJsonDefaults
     public static System.Text.Encodings.Web.JavaScriptEncoder ResponseEncoder
         => System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
+    /// <summary>
+    ///     The options a generated response writer is called with: the response encoder, and no validation.
+    /// </summary>
+    /// <remarks>
+    ///     The writer is generated from the type, so its shape is right by construction, and it relies on that: a run
+    ///     of members (<see cref="Utf8JsonRun" />) starts with a name where a validating writer expects one, and is
+    ///     refused there. <c>GeneratedJsonResponse</c> writes with these, and so does anything that calls a writer to
+    ///     compare it with the serializer.
+    /// </remarks>
+    public static JsonWriterOptions ResponseWriterOptions => new()
+    {
+        Encoder = ResponseEncoder,
+        SkipValidation = true,
+    };
+
     /// <summary>A property name or an enum name, encoded once as a response writes it.</summary>
     public static JsonEncodedText Encode(string text) => JsonEncodedText.Encode(text, ResponseEncoder);
 
