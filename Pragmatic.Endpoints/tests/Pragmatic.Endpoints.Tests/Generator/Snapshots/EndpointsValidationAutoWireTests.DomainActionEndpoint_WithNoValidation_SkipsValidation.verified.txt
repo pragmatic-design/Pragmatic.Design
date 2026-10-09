@@ -242,12 +242,23 @@ internal static class GeneratedUtf8ResponseWriters {
     
     internal static void Write_TestApp_Orders_ImportResult(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.ImportResult value)
     {
-        writer.WriteStartObject();
-        writer.WriteNumber(__Name0, (int)value.@ProcessedCount);
-        writer.WriteEndObject();
+        var run = global::Pragmatic.Serialization.Utf8JsonRun.Start();
+        Run_TestApp_Orders_ImportResult(ref run, value);
+        if (!run.IsEmpty)
+            writer.WriteRawValue(run.Written, skipInputValidation: true);
+        run.Dispose();
+    }
+    
+    internal static void Run_TestApp_Orders_ImportResult(ref global::Pragmatic.Serialization.Utf8JsonRun run, global::TestApp.Orders.ImportResult value)
+    {
+        run.StartObject();
+        run.PropertyName(__RawName0);
+        run.NumberValue((int)value.@ProcessedCount);
+        run.EndObject();
     }
     
     private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("processedCount");
+    private static readonly byte[] __RawName0 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name0);
 }
 ,
   _Metadata.Endpoints.g.cs:

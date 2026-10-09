@@ -139,17 +139,30 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
         {
             if (method.Root is { } root)
             {
-                RenderValue(root, "value");
+                if (WritesRuns && IsEncoderFree(root))
+                    RenderRun(() => RenderRunValue(root, "value"));
+                else
+                    RenderValue(root, "value");
+                return;
+            }
+
+            if (WritesRuns && IsEncoderFree(method.Name))
+            {
+                RenderRun(() => AppendLine($"{RunMethodName(method.Name)}(ref run, value);"));
                 return;
             }
 
             AppendLine("writer.WriteStartObject();");
-            foreach (var member in method.Members)
-                // `@` so a member named after a keyword still reads as a member.
-                RenderMember(member, "value.@" + member.ClrName);
-
+            // `@` in each member access, so a member named after a keyword still reads as a member.
+            RenderMembers(method);
             AppendLine("writer.WriteEndObject();");
         });
+
+        if (WritesRuns && method.Root is null && IsEncoderFree(method.Name))
+        {
+            AppendLine();
+            RenderRunMethod(method);
+        }
     }
 
     private void RenderMember(JsonWriterMemberModel member, string expression)
@@ -237,5 +250,7 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
         AppendLine();
         foreach (var name in _names)
             AppendLine($"private static readonly {EncodedText} {name.Value} = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode(\"{StringHelper.CSharpLiteral(name.Key)}\");");
+
+        RenderRawNameFields();
     }
 }
