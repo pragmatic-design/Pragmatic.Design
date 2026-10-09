@@ -194,9 +194,24 @@ the runner the same change measured 405.8 → 263.5 ns against ZLogger's 264.2 (
 
 ### What #129 changed
 
-After #109 the arguments' properties were the largest part left (the probe's `Blocks_NoProperties` row):
-each value formatted a second time for `@properties` and written by a writer call with its escaping.
-Measured by emulation first, the benchmark's call written by hand as the generator would emit it, then for real:
+After #109 the arguments' properties were the largest part left: each value formatted a second time for
+`@properties` and written by a writer call with its escaping. Measured by subtraction and by emulation — the
+benchmark's call written by hand as the generator would emit it — in one run,
+[`probe-129-subtraction`](benchmarks/reports/probe-129-subtraction_ProbeBenchmarks-report-github.md), against
+the provider after #109 (261.8 ns):
+
+| Row | Mean |
+|---|---:|
+| By hand, as the generated state writes it after #109 (checks the emulation) | 260.5 ns |
+| No message written | 260.8 ns |
+| **No `@properties` at all** | **191.0 ns** |
+| Each value formatted once, still through the writer | 251.9 ns |
+| The properties as bytes, each value formatted once | 206.2 ns |
+| The whole line as bytes | 150.0 ns |
+| **The provider now** | **160.7 ns** |
+| ZLogger into a buffer / with the same fields and sink | 280.9 / 300.1 ns |
+
+Kept, for real:
 
 1. **The properties as JSON bytes, each value formatted once.** The generated state renders the message and
    the properties' JSON in one pass (`TryFormatMessageAndJson`): a number or a string the message renders
