@@ -1,8 +1,9 @@
 # Pragmatic.Endpoints: Benchmark Results
 
 What writing one response body costs: the host as it answers through `System.Text.Json`, STJ's fastest path,
-RE:Dox, and the generated UTF-8 writer of the response type (#51, #131). The numbers come from runs on
-2026-10-08 (before #131) and 2026-10-09 (the subtraction probes and the final run of #131) of:
+RE:Dox, and the generated UTF-8 writer of the response type (#51, #131, #130). The numbers come from runs on
+2026-10-08 (before #131), 2026-10-09 (the subtraction probes and the final run of #131, the string probes and
+the final run of #130) of:
 
 ```bash
 cd Pragmatic.Endpoints/benchmarks/Pragmatic.Endpoints.Benchmarks
@@ -16,9 +17,10 @@ dotnet run -c Release -- --filter "*ProbeBenchmarks*"       # the subtraction pr
 | Runtime | .NET 10.0.12, SDK 10.0.303, X64 RyuJIT AVX-512 |
 | Harness | BenchmarkDotNet 0.14.0, default job, `[MemoryDiagnoser]` |
 
-The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-131_*` for the current
-numbers, `probe-131-*` for the subtraction probes, and the per-workload and `ab-*` files of 2026-10-08 for
-the numbers before #131. A number here that does not appear there is a mistake.
+The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-130_*` for the current
+numbers, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
+and `ab-*` files of 2026-10-08 for the numbers before #131. A number here that does not appear there is a
+mistake.
 
 ## What is compared
 
@@ -46,14 +48,44 @@ Before anything is timed, `GlobalSetup` refuses to run unless every competitor w
 
 | Workload | What | Generated writer |
 |---|---|---|
-| `twitter.json` | public `simdjson-data` document, downloaded at setup, never committed | **none**: it declares members typed `object`, which the serializer writes as whatever they hold at run time. PRAG0555 says so on `TwitterEndpoint`. |
+| `twitter.json` | public `simdjson-data` document, downloaded at setup, never committed | yes since #130: its members typed `object` (all null in the document) go to the serializer, the rest to the writer |
 | `citm_catalog.json` | same | yes (dictionaries keyed by integer) |
 | `canada.json` | same | yes (nested arrays of doubles) |
 | `ReservationPage` | fifty items in the shape of Showcase's `ReservationSummaryDto` | yes |
 
 ## Results
 
-### Current: runs of what the encoder cannot change (#131)
+### Current: every workload has a writer (#130)
+
+Per serialization; lower is better; ± is the run's standard deviation. The four workloads run together on an
+idle machine, 2026-10-09 (`final-130_*`), late in the evening: every competitor is faster than in the run of
+#131 below, which is the machine and not the code, so compare within a row.
+
+| Workload | Host_Reflection | Stj_FastPath | REDox | Generated_Writer | Allocated, writer vs fast path |
+|---|---:|---:|---:|---:|---|
+| `twitter.json` | 383.7 μs | 433.3 μs ±3.4 | **248.4 μs** ±3.6 | 272.6 μs ±4.6 | 419.23 KB vs 551.63 KB |
+| `citm_catalog.json` | 760.9 μs | 343.6 μs ±4.3 | 428.5 μs | **180.0 μs** ±2.5 | 468.81 KB vs 471.07 KB |
+| `canada.json` | 7.770 ms | 6.901 ms ±0.023 | 7.169 ms | **6.384 ms** ±0.025 | 1.99 MB vs 1.99 MB |
+| `ReservationPage` | 12.482 μs | 10.505 μs ±0.049 | 11.202 μs | **7.703 μs** ±0.123 | 19.59 KB vs 19.76 KB |
+
+**Twitter**: the writer is 29% faster than the host and 37% faster than the fast path, and 10% behind RE:Dox.
+The document is text, and writing its 4,754 strings is about half of the writer's time
+(`probe-130-strings-*`: 171–176 μs with `WriteStringValue`, 31–38 μs with every string empty). Three ways of
+writing the same strings without the writer, with its very bytes, were measured over four runs:
+
+| Row | Run 1 | Run 2 | Run 3 | Run 4 |
+|---|---:|---:|---:|---:|
+| `Writer_WriteStringValue` | 171.4 | 172.8 | 173.0 | 176.3 |
+| `Raw_CheckedCopy` (the encoder checking the UTF-8) | 233.4 | 238.5 | 232.0 | 289.9 |
+| `Raw_AsciiCopy` (ASCII with nothing to escape copied) | — | 159.4 | 159.6 | 198.1 |
+| `Raw_AsciiOrEncoded` (everything else escaped by the encoder) | — | — | 225.6 | 251.1 |
+| `Raw_AsciiOrUtf8Check` | — | — | — | 247.7 |
+| `Raw_AsciiOrUtf16Check` (checked on the UTF-16, as the writer checks it) | — | — | — | 193.7 |
+
+None is ahead of the writer in every run: `Utf8JsonWriter`'s string path is as fast as anything built on the
+same encoder calls. What is left is a string path of our own, transcoding and checking in one pass: #152.
+
+### Runs of what the encoder cannot change (#131)
 
 Per serialization; lower is better; ± is the run's standard deviation. The three workloads with a writer, run
 together on an idle machine, 2026-10-09 (`final-131_*`).
@@ -65,8 +97,7 @@ together on an idle machine, 2026-10-09 (`final-131_*`).
 | `ReservationPage` | 15.822 μs | 12.965 μs ±0.16 | 13.776 μs | **9.436 μs** ±0.15 | 19.59 KB vs 19.76 KB |
 
 The writer is ahead of the fast path by 48% on CITM, 10% on Canada and 27% on the page, each beyond both
-sides' deviation, and allocates no more than it on any of them. Twitter is unchanged: the writer does not
-apply.
+sides' deviation, and allocates no more than it on any of them. Twitter had no writer before #130.
 
 ### Measured by subtraction
 

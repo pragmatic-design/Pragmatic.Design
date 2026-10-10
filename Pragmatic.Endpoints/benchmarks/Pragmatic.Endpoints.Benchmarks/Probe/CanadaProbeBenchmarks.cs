@@ -54,7 +54,7 @@ public class CanadaProbeBenchmarks : ResponseProbeHarness<Canada.Root>
     {
         _rented.Reset(16 * 1024);
         _rentedWriter.Reset(_rented);
-        Pragmatic.Endpoints.Benchmarks.Serialization.GeneratedWriters.For<Canada.Root>()!(_rentedWriter, Root);
+        Pragmatic.Endpoints.Benchmarks.Serialization.GeneratedWriters.For<Canada.Root>()!(_rentedWriter, Root, Pragmatic.Endpoints.Benchmarks.Serialization.Competitors.HostReflection);
         _rentedWriter.Flush();
         return _rented.WrittenSpan.ToArray();
     }

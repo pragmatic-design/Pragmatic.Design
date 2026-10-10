@@ -41,15 +41,18 @@ public sealed class GeneratedJsonResponse<T> : IResult, IStatusCodeHttpResult
 
     private readonly T _value;
     private readonly string? _location;
-    private readonly Action<Utf8JsonWriter, T> _write;
+    private readonly Action<Utf8JsonWriter, T, JsonSerializerOptions> _write;
     private readonly GeneratedJsonShape _shape;
 
     /// <param name="value">The response.</param>
     /// <param name="statusCode">The status it answers with.</param>
     /// <param name="location">The <c>Location</c> of a <c>201</c>, or null.</param>
-    /// <param name="write">The generated writer of <typeparamref name="T" />.</param>
+    /// <param name="write">
+    ///     The generated writer of <typeparamref name="T" />, given the host's options for the values only the serializer
+    ///     can write: a member typed <c>object</c>.
+    /// </param>
     /// <param name="shape">What the writer writes, emitted beside it.</param>
-    public GeneratedJsonResponse(T value, int statusCode, string? location, Action<Utf8JsonWriter, T> write, GeneratedJsonShape shape)
+    public GeneratedJsonResponse(T value, int statusCode, string? location, Action<Utf8JsonWriter, T, JsonSerializerOptions> write, GeneratedJsonShape shape)
     {
         Pragmatic.Ensure.Ensure.ThrowIfNull(write);
         Pragmatic.Ensure.Ensure.ThrowIfNull(shape);
@@ -70,7 +73,7 @@ public sealed class GeneratedJsonResponse<T> : IResult, IStatusCodeHttpResult
     {
         Pragmatic.Ensure.Ensure.ThrowIfNull(httpContext);
 
-        if (!WritesItself(httpContext))
+        if (WritesItself(httpContext) is not { } options)
         {
             EndpointResponseMetrics.JsonResponses.Add(1, new KeyValuePair<string, object?>(EndpointResponseMetrics.WriterTag, "serializer"));
             return Fallback(httpContext).ExecuteAsync(httpContext);
@@ -85,30 +88,31 @@ public sealed class GeneratedJsonResponse<T> : IResult, IStatusCodeHttpResult
         response.StatusCode = StatusCode;
         response.ContentType = ContentType;
 
-        Write(response.BodyWriter);
+        Write(response.BodyWriter, options);
         return response.BodyWriter.FlushAsync(httpContext.RequestAborted).AsTask();
     }
 
-    private bool WritesItself(HttpContext httpContext)
+    /// <summary>The host's options when the writer writes this response, or null when the serializer does.</summary>
+    private JsonSerializerOptions? WritesItself(HttpContext httpContext)
     {
         if (_value is null)
-            return false;
+            return null;
 
         if (!typeof(T).IsSealed && !typeof(T).IsValueType && !typeof(T).IsInterface && _value.GetType() != typeof(T))
-            return false;
+            return null;
 
         var options = httpContext.RequestServices.GetService<IOptions<JsonOptions>>()?.Value.SerializerOptions;
-        return options is not null && GeneratedJsonDefaults.AllowGeneratedWriters(options, _shape);
+        return options is not null && GeneratedJsonDefaults.AllowGeneratedWriters(options, _shape) ? options : null;
     }
 
     /// <summary>Writes the document synchronously, on one thread, with the writer that thread keeps.</summary>
-    private void Write(IBufferWriter<byte> body)
+    private void Write(IBufferWriter<byte> body, JsonSerializerOptions options)
     {
         var writer = t_writer ??= new Utf8JsonWriter(body, GeneratedJsonDefaults.ResponseWriterOptions);
         writer.Reset(body);
         try
         {
-            _write(writer, _value);
+            _write(writer, _value, options);
             writer.Flush();
         }
         finally

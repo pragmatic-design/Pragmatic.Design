@@ -64,6 +64,32 @@ public static class Utf8JsonValues
         writer.WritePropertyName(buffer[..count]);
     }
 
+    /// <summary>
+    ///     A value held by a member typed <c>object</c>: written by the serializer, under the options the response is
+    ///     answered with, as it writes such a member — as whatever the value is at run time.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Through the options' own metadata for <see cref="object" />, the converter a member declared
+    ///         <c>object</c> gets, so a converter the host registered for the runtime type applies here too.
+    ///     </para>
+    ///     <para>
+    ///         ⚠️ One difference the writer cannot avoid: the serializer starts again at this value, so reference
+    ///         handling and the depth limit count from here. A value that reaches an object the writer is still writing
+    ///         around it is written once more where the host would write <c>null</c> for the cycle; a graph deeper than
+    ///         the limit only from the root fits. Neither is in a shape the planner accepts on its own: both need the
+    ///         <c>object</c> member to lead back into its own response.
+    ///     </para>
+    /// </remarks>
+    public static void WriteUntyped(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(options);
+
+        JsonSerializer.Serialize(writer, value, options.GetTypeInfo(typeof(object)));
+    }
+
     /// <summary>A <see cref="TimeOnly" />: its time of day in the constant (<c>c</c>) format of a time span.</summary>
     public static void WriteTimeOnly(Utf8JsonWriter writer, TimeOnly value)
     {

@@ -26,6 +26,12 @@ namespace Pragmatic.SourceGenerator.Features.Serialization.Analysis;
 ///         run time by what the host registered, and a writer that matched one would be wrong under the other.
 ///     </para>
 ///     <para>
+///         <b>A member typed <c>object</c> is the serializer's, one value at a time.</b> The writer leaves it out when
+///         it is null and hands what it holds to the serializer, under the options the response is answered with
+///         (<c>Utf8JsonValues.WriteUntyped</c>), so the rest of the type keeps its writer. The type is named in the
+///         shape, so a converter the host registers for <c>object</c> sends the whole response back to the serializer.
+///     </para>
+///     <para>
 ///         <b>A cycle is refused, not cut.</b> <c>IgnoreCycles</c> writes a reference to an object already being
 ///         written as <c>null</c>; a writer generated for an acyclic type graph never meets one, and a cyclic
 ///         graph is left to the serializer.
@@ -169,6 +175,9 @@ internal sealed class JsonResponseWriterPlanner
             return Value(nullable.TypeArguments[0]) is { } underlying
                 ? underlying with { IsNullableValueType = true, CanBeNull = true }
                 : null;
+
+        if (type.SpecialType == SpecialType.System_Object)
+            return new JsonWriterValueModel(JsonWriterValueKind.Untyped, "", "", null, false, CanBeNull: true);
 
         if (Leaf(type) is { } leaf)
             return leaf;

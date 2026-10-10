@@ -287,7 +287,8 @@ public class QueryFilterTests(PostgresFixture fixture) : IntegrationTestBase(fix
         {
             propertyId,
             name,
-            code = $"RT{Guid.NewGuid():N}"[..4],
+            // Unique within the property, and a test creates two or three: two hex digits collided one run in 256.
+            code = $"RT{Guid.NewGuid():N}"[..12],
             baseRate,
             totalRooms = 5
         };

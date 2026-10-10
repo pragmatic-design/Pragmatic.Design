@@ -33,6 +33,7 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
 
     private const string Writer = "global::System.Text.Json.Utf8JsonWriter";
     private const string EncodedText = "global::System.Text.Json.JsonEncodedText";
+    private const string Options = "global::System.Text.Json.JsonSerializerOptions";
 
     private readonly string _namespace;
     private readonly JsonWriterProfile _profile;
@@ -110,7 +111,7 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
         Block(() =>
         {
             foreach (var method in _methods.Where(m => m.IsEntryPoint))
-                AppendLine($"internal static readonly global::System.Action<{Writer}, {method.TypeExpr}> {method.Name}Delegate = {method.Name};");
+                AppendLine($"internal static readonly global::System.Action<{Writer}, {method.TypeExpr}{OptionsTypeArgument}> {method.Name}Delegate = {method.Name};");
 
             foreach (var method in _methods.Where(m => m is { IsEntryPoint: true, Shape: not null }))
                 RenderShape(method.Name, method.Shape!);
@@ -132,9 +133,19 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
         }, $"internal static class {WriterClass}");
     }
 
+    /// <summary>
+    ///     A response writer takes the options the response is answered with, for the values only the serializer can
+    ///     write (a member typed <c>object</c>) and the nested writers that pass them on; a log writer takes none.
+    /// </summary>
+    private string OptionsParameter => _profile == JsonWriterProfile.Response ? $", {Options} options" : "";
+
+    private string OptionsArgument => _profile == JsonWriterProfile.Response ? ", options" : "";
+
+    private string OptionsTypeArgument => _profile == JsonWriterProfile.Response ? $", {Options}" : "";
+
     private void RenderMethod(JsonWriterMethodModel method)
     {
-        AppendLine($"internal static void {method.Name}({Writer} writer, {method.TypeExpr} value)");
+        AppendLine($"internal static void {method.Name}({Writer} writer, {method.TypeExpr} value{OptionsParameter})");
         Block(() =>
         {
             if (method.Root is { } root)

@@ -52,7 +52,7 @@ internal static class ResponseWriterConformance
                     continue;
 
                 var serializer = Encoding.UTF8.GetString(JsonSerializer.SerializeToUtf8Bytes(value, type, host));
-                var writer = Write(write, value);
+                var writer = Write(write, value, host);
                 if (writer != serializer)
                     mismatches.Add($"{type.FullName} ({sample}):\n  writer:     {writer}\n  serializer: {serializer}");
             }
@@ -61,11 +61,11 @@ internal static class ResponseWriterConformance
         return mismatches;
     }
 
-    private static string Write(Delegate write, object value)
+    private static string Write(Delegate write, object value, JsonSerializerOptions host)
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, Pragmatic.Serialization.GeneratedJsonDefaults.ResponseWriterOptions))
-            write.DynamicInvoke(writer, value);
+            write.DynamicInvoke(writer, value, host);
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
@@ -86,6 +86,7 @@ internal static class ResponseWriterConformance
             {
                 var method = field.Name[..^"Delegate".Length];
                 var shape = (Pragmatic.Serialization.GeneratedJsonShape)writers.GetField(method + "Shape", statics)!.GetValue(null)!;
+                // Action<Utf8JsonWriter, TResponse, JsonSerializerOptions>: the response type is the second argument.
                 yield return (field.FieldType.GetGenericArguments()[1], (Delegate)field.GetValue(null)!, shape);
             }
         }

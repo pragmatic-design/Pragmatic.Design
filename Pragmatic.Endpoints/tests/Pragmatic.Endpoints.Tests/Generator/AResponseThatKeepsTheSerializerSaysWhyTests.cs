@@ -29,17 +29,31 @@ public class AResponseThatKeepsTheSerializerSaysWhyTests : EndpointsGeneratorTes
         """;
 
     [Fact]
-    public void AMemberTypedObject_KeepsTheSerializer_AndIsReported()
+    public void AMemberTypedJsonElement_KeepsTheSerializer_AndIsReported()
     {
-        var result = RunGenerator(Endpoint + "public sealed class NoteDto { public object? Payload { get; init; } }");
+        var result = RunGenerator(Endpoint + "public sealed class NoteDto { public System.Text.Json.JsonElement Payload { get; init; } }");
 
         var reported = GetDiagnosticsById(result, "PRAG0555").ToList();
         reported.Should().ContainSingle();
-        reported[0].GetMessage().Should().Contain("GetNote").And.Contain("of type object");
+        reported[0].GetMessage().Should().Contain("GetNote").And.Contain("JsonElement");
 
         var handler = GetGeneratedSource(result, "Endpoint");
         handler.Should().Contain("Results.Ok(success)");
         handler.Should().NotContain("GeneratedJsonResponse<");
+    }
+
+    /// <summary>
+    ///     A member typed <c>object</c> no longer sends the response to the serializer (#130): the writer writes the
+    ///     type, the member's value goes to the serializer, and nothing is reported.
+    /// </summary>
+    [Fact]
+    public void AMemberTypedObject_IsWrittenByTheWriter_ThroughTheSerializer()
+    {
+        var result = RunGenerator(Endpoint + "public sealed class NoteDto { public object? Payload { get; init; } }");
+
+        GetDiagnosticsById(result, "PRAG0555").Should().BeEmpty();
+        GetGeneratedSource(result, "Endpoint").Should().Contain("GeneratedJsonResponse<global::TestApp.Notes.NoteDto>(success!, 200,");
+        GetGeneratedSource(result, "Utf8ResponseWriters").Should().Contain("Utf8JsonValues.WriteUntyped(writer, v0, options);");
     }
 
     /// <summary>The control: a type the writer reproduces is written by it, and nothing is reported.</summary>

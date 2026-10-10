@@ -99,7 +99,6 @@ public class WhatAResponseWriterCoversTests
     [InlineData("public sealed class Dto { [JsonConverter(typeof(JsonStringEnumConverter))] public int X { get; init; } }", "[JsonConverter]")]
     [InlineData("[JsonConverter(typeof(JsonStringEnumConverter))] public sealed class Dto { public int X { get; init; } }", "[JsonConverter]")]
     [InlineData("public sealed class Dto { [JsonExtensionData] public Dictionary<string, object>? Extra { get; init; } }", "[JsonExtensionData]")]
-    [InlineData("public sealed class Dto { public object? Anything { get; init; } }", "of type object")]
     [InlineData("public sealed class Dto { public Dictionary<Guid, string> ById { get; init; } = new(); }", "keyed by Guid")]
     [InlineData("public sealed class Dto { public Access Access { get; init; } } [Flags] public enum Access { Read = 1, Write = 2 }", "flags enum")]
     [InlineData("public sealed class Dto { public Alias Alias { get; init; } } public enum Alias { One = 1, Uno = 1 }", "two names to one value")]
