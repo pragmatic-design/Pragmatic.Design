@@ -1,5 +1,8 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Auto detect text files, store them with LF and check them out with LF on every platform.
+# Without eol=lf, Git for Windows (core.autocrlf=true by default) checked out CRLF: raw string
+# literals in the tests then carried "\r\n", and a test removing a line ending in "\n" removed
+# nothing on Windows while CI, on Linux, stayed green.
+* text=auto eol=lf
 
 # Source code
 *.cs text diff=csharp

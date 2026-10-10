@@ -98,7 +98,13 @@ public class AConstructorArgumentIsConvertedTests : MappingGeneratorTestBase
     [Fact]
     public void WithoutTheAttribute_TheSameConstructorIsChosenAndConverted()
     {
-        var result = RunGenerator(Declared.Replace("            [MapConstructor]\n", ""));
+        // The attribute alone is removed, not its line: the raw string carries the line endings of the
+        // checkout, CRLF on Windows, where a pattern ending in "\n" removed nothing and this case ran
+        // with the attribute still there.
+        var withoutAttribute = Declared.Replace("[MapConstructor]", "");
+        withoutAttribute.Should().NotContain("MapConstructor");
+
+        var result = RunGenerator(withoutAttribute);
 
         HasCompilationErrors(result).Should().BeFalse(
             string.Join("\n", GetCompilationErrors(result).Select(d => d.ToString())));
