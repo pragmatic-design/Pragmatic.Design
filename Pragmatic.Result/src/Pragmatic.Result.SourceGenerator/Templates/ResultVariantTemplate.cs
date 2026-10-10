@@ -254,17 +254,20 @@ internal sealed class ResultVariantTemplate : CSharpTemplate
         for (var i = 1; i <= _errorCount; i++)
             funcParams.Add(new MethodParameter($"Func<TError{i}, TResult>", $"onError{i}"));
 
+        // A chain of tests, success first, rather than a switch on the index: with three cases or more the JIT
+        // compiles the switch to a jump table, one indirect jump per call, where the chain is direct branches.
+        // MultiError_Match against its hand-written twin (#132) is the row that decides it.
         GenericMethod("Match", ["TResult"], () =>
             {
-                AppendLine("return _index switch");
-                Block(() =>
+                AppendLine("if (_index == 0)");
+                AppendLine("    return onSuccess(_value!);");
+                for (var i = 1; i <= _errorCount; i++)
                 {
-                    AppendLine("0 => onSuccess(_value!),");
-                    for (var i = 1; i <= _errorCount; i++)
-                        AppendLine($"{i} => onError{i}(_error{i}!),");
-                    AppendLine("_ => throw new InvalidOperationException(\"Invalid result state\")");
-                });
-                AppendLine(";");
+                    AppendLine($"if (_index == {i})");
+                    AppendLine($"    return onError{i}(_error{i}!);");
+                }
+
+                AppendLine("throw new InvalidOperationException(\"Invalid result state\");");
             }, "TResult", funcParams,
             attribute: "MethodImpl(MethodImplOptions.AggressiveInlining)");
 

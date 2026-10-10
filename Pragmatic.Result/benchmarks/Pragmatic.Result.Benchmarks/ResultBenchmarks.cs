@@ -78,8 +78,10 @@ public partial class ResultBenchmarks
         _voidSink = new VoidResult<BenchmarkError>[Batch];
         _maybeSink = new Maybe<int>[Batch];
         _multiSink = new Result<int, BenchmarkError, BenchmarkError2>[Batch];
+        SetupTwins();
 
         VerifyEachComputesWhatItSays();
+        VerifyEachTwinDoesItsRowsWork();
     }
 
     // ── Creation ──
