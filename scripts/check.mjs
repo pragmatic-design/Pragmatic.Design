@@ -44,6 +44,7 @@
  *   node scripts/check.mjs --tier full     # clean build --warnaserror + ALL hermetic tests
  *   node scripts/check.mjs --tier aot      # publish the AOT smokes and run them
  *   node scripts/check.mjs --tier docker   # the container suites, sequentially
+ *   node scripts/check.mjs --tier docker --shard 2/3   # one CI job's part of them (docker-shards.mjs)
  *   node scripts/check.mjs --tier all      # full, then aot, then docker  ← the real gate
  *   node scripts/check.mjs --tier verify   # only check that CI-referenced paths exist
  *
@@ -72,6 +73,7 @@ import { zipEntries } from './package-markdown-links.mjs';
 import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
+import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -109,6 +111,15 @@ const keepGoing = args.includes('--keep-going');
 const only = flag('--only', null);
 
 /**
+ *     Run one CI job's part of the container suites: `--tier docker --shard k/n`.
+ *
+ * Unlike `--only`, a shard run is the gate for its part: the union of the shards is every container
+ * suite, and the full tier fails when a suite is in no shard (docker-shards.mjs). Locally, `--tier docker`
+ * without it still runs them all.
+ */
+const shard = flag('--shard', null);
+
+/**
  * How many hermetic suites run at once. **Eight** by default, not one per core.
  *
  * ⚠️ Not `cpus().length - 2` — thirty on a large machine — because each of those thirty is a test
@@ -144,7 +155,7 @@ const dockerJobs = Math.max(1, Number(flag('--docker-jobs', 1)));
  * or for `--verify` — the flag is `--tier verify` — would compile the solution. A gate that runs when you asked it not to is a gate you
  * stop trusting with anything.
  */
-const known = new Set(['--tier', '--jobs', '--docker-jobs', '--keep-going', '--only']);
+const known = new Set(['--tier', '--jobs', '--docker-jobs', '--keep-going', '--only', '--shard']);
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
   if (!arg.startsWith('--')) continue; // a value belonging to the flag before it
@@ -153,7 +164,14 @@ for (let i = 0; i < args.length; i++) {
     continue;
   }
   console.error(`unknown option '${arg}'\n`);
-  console.error('usage: node scripts/check.mjs [--tier fast|full|aot|docker|all|verify] [--jobs N] [--keep-going] [--only <substring>]');
+  console.error('usage: node scripts/check.mjs [--tier fast|full|aot|docker|all|verify] [--jobs N] [--keep-going] [--only <substring>] [--shard k/n]');
+  process.exit(2);
+}
+
+// A shard only means something for the container suites, and narrowing it further with --only would make
+// a run that calls itself the gate for its part run less than that part.
+if (shard !== null && (tier !== 'docker' || only !== null)) {
+  console.error('--shard goes with --tier docker, and not with --only');
   process.exit(2);
 }
 
@@ -1798,6 +1816,28 @@ function silentDropRuleHolds() {
   return nodeTestCases('scripts/silent-drops.test.mjs', 'the silent-drop rule knows a carrier');
 }
 
+/**
+ * Every container suite in exactly one CI shard (docker-shards.mjs).
+ *
+ * CI runs the container suites as three `--shard` jobs. A suite added with `<RequiresDocker>` and left out
+ * of the map would run in none of them, and every job would be green: here, not in a shard job, is where
+ * that has to fail, because the full tier is what every change runs.
+ */
+function dockerShardsAreWhole() {
+  process.stdout.write('  every container suite in one CI shard … ');
+  const problems = shardProblems(DOCKER_SHARDS, findTestProjects().filter(requiresDocker).map((p) => basename(p, '.csproj')));
+
+  if (problems.length === 0) {
+    console.log(`${ok('ok')} ${dim(`(${DOCKER_SHARDS.flat().length} suites in ${DOCKER_SHARDS.length} shards)`)}`);
+    return true;
+  }
+
+  console.log(bad('FAIL'));
+  for (const p of problems) console.log(`    ${p}`);
+  console.log(dim('    scripts/docker-shards.mjs: put the suite in the shard its duration balances'));
+  return false;
+}
+
 function suiteRunnerOverlaps() {
   return nodeTestCases('scripts/spawn-async.test.mjs', 'the suite runner overlaps when asked');
 }
@@ -2346,7 +2386,27 @@ const everyHermetic = all.filter((p) => !everyDocker.includes(p));
 // those are the half a suite cannot see.
 const matchesOnly = (proj) =>
   !only || basename(proj, '.csproj').toLowerCase().includes(String(only).toLowerCase());
-const docker = everyDocker.filter(matchesOnly);
+const suiteName = (proj) => basename(proj, '.csproj');
+
+// A shard is read against a whole map: running part of a map that has lost a suite would be green and
+// leave that suite unrun in every job.
+let shardNames = null;
+if (shard !== null) {
+  const problems = shardProblems(DOCKER_SHARDS, everyDocker.map(suiteName));
+  if (problems.length > 0) {
+    console.error(bad('scripts/docker-shards.mjs does not cover the container suites:'));
+    for (const p of problems) console.error(`  ${p}`);
+    process.exit(2);
+  }
+  try {
+    shardNames = parseShard(shard, DOCKER_SHARDS).names;
+  } catch (err) {
+    console.error(bad(err.message));
+    process.exit(2);
+  }
+}
+
+const docker = everyDocker.filter(matchesOnly).filter((p) => shardNames === null || shardNames.includes(suiteName(p)));
 const hermetic = everyHermetic.filter(matchesOnly);
 
 console.log(`\n${dim(`${all.length} test projects — ${hermetic.length} hermetic, ${docker.length} require Docker`)}\n`);
@@ -2400,7 +2460,10 @@ if (tier === 'verify') {
 } else if (tier === 'full' || tier === 'all') {
   const fullStartedAt = performance.now();
   console.log('full — clean build --warnaserror + every hermetic suite');
-  good = verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject() && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet() && buildSolution({ clean: true })
+  good = verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject()
+    && dockerShardsAreWhole()
+    && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
+    && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet() && buildSolution({ clean: true })
     && onlyPragmaticPackagesArePacked()
     && noReflectionJsonInGeneratedCode() && trimWarningRatchet() && undeclaredReflectionRatchet()
     && reflectionSourceRatchet()
@@ -2483,7 +2546,7 @@ if (tier === 'verify') {
   }
 } else if (tier === 'docker') {
   const dockerStartedAt = performance.now();
-  console.log(`docker — ${docker.length} container suites, ${dockerPace()}`);
+  console.log(`docker — ${docker.length} container suites, ${dockerPace()}${shard ? `, shard ${shard} of scripts/docker-shards.mjs` : ''}`);
   if (!dockerAvailable()) {
     console.log(bad('  Docker is not reachable — these suites cannot run. NOT a pass.'));
     good = false;
