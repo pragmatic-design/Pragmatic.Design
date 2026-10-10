@@ -55,10 +55,7 @@ And an operation on it, an HTTP endpoint that checks a permission, loads the res
 [RequirePermission(BookingPermissions.Reservation.Update)]
 [Mutation(Mode = MutationMode.Update)]
 [TransitionsTo<ReservationStatus>(ReservationStatus.Confirmed)]
-public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError>
-{
-    public required Guid Id { get; init; }
-}
+public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError> { }
 ```
 
 The generator writes everything else:

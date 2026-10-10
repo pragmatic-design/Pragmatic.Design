@@ -15,7 +15,4 @@ namespace Showcase.Booking.Reservations.Mutations;
 [TransitionsTo<ReservationStatus>(ReservationStatus.Confirmed)]
 [UseCase("BKG-CONFIRM", Title = "Confirm a pending reservation")]
 [Rule("Only a pending reservation can be confirmed")]
-public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError>
-{
-    public required Guid Id { get; init; }
-}
+public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError> { }
