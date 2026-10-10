@@ -86,9 +86,15 @@ public class RecordAccessDiagnosticTests
     {
         // Guards the suite: a diagnostic that fires on everything would make the assertions above pass
         // without the attribute having anything to do with it.
+        // The attribute alone is removed, not its line: the raw string carries the line endings of the
+        // checkout, CRLF on Windows, so a pattern ending in "\n" removed nothing there and the attribute
+        // stayed.
+        var subject = Subject.Replace("[RecordAccess]", string.Empty);
+        subject.Should().NotContain("RecordAccess");
+
         var withoutAttribute = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(
             PrivacyTestSources.Stubs + PrivacyTestSources.AdapterStubs
-            + PrivacyTestSources.OperationStubs + Subject.Replace("    [RecordAccess]\n", string.Empty),
+            + PrivacyTestSources.OperationStubs + subject,
             []);
 
         GeneratorTestHelper.HasDiagnostic(withoutAttribute, "PRAG2910").Should().BeFalse();

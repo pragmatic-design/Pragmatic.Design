@@ -119,9 +119,14 @@ public class ReadContractsReachTheHostTests
     [Fact]
     public void AHostWithNoPublishedQuery_BindsNothing()
     {
+        // The attribute alone is removed, not its line: the raw string carries the line endings of the
+        // checkout, CRLF on Windows, where a pattern ending in "\n" removed nothing.
+        var unpublished = ModuleWithAPublishedQuery.Replace("[Published(ContractName = \"ICatalogReads\")]", "");
+        unpublished.Should().NotContain("[Published");
+
         var module = GeneratorTestHelper.RunGeneratorAsReference<PragmaticSourceGenerator>(
             "Catalog.Module",
-            ModuleWithAPublishedQuery.Replace("[Published(ContractName = \"ICatalogReads\")]\n", ""),
+            unpublished,
             References);
 
         var result = GeneratorTestHelper.RunGeneratorAsHost<PragmaticSourceGenerator>(
