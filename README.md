@@ -91,10 +91,7 @@ has no body, because every one of those steps is declared:
 [RequirePermission(BookingPermissions.Reservation.Update)]
 [Mutation(Mode = MutationMode.Update)]
 [TransitionsTo<ReservationStatus>(ReservationStatus.Confirmed)]
-public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError>
-{
-    public required Guid Id { get; init; }
-}
+public partial class ConfirmReservationMutation : Mutation<Reservation, ConflictError> { }
 ```
 
 A body is for what is not declarable: a rule of your own, a domain method writing more than the state.
@@ -132,10 +129,10 @@ Those three classes are all the Showcase writes for them. Build it, and this is 
 | `Reservation` | Its own partials: the `Create()` factory, typed setters, the repository, relations and includes, the SQL projections of `NightsCount`, the state machine, the soft-delete and ownership filters, the lifecycle event, the `RES-…` number generator, the validator of `[FutureDate]` and `[GreaterThanProperty]` | 22 |
 | `[HasComments]` `[HasTags]` `[HasAttachments]` | Three child entities with their EF configuration, DTOs and a filter that shows each child only where its reservation is visible; **14 endpoints** (add, read, edit and delete a comment, add and remove a tag, upload, download, preview and delete an attachment, list each), every one with its invoker; the job that purges deleted attachments after 30 days | 71 |
 | `[Resource(…)]` | A read and a list query with their invokers, two DTOs with their mappings, **2 endpoints** | 14 |
-| `ConfirmReservationMutation` | The endpoint, the mutation invoker, the request mapping, the validator and its metadata | 5 |
+| `ConfirmReservationMutation` | The `Id` bound from the route, the endpoint, the mutation invoker, the request mapping, the validator and its metadata | 6 |
 | `SearchReservationsQuery` | The query, its invoker, the endpoint | 3 |
 
-That is **115 files from three classes**. In the host, the generator adds what only the host can
+That is **116 files from three classes**. In the host, the generator adds what only the host can
 know: the EF Core configuration of every entity, one DbContext per database, the DI registration of
 every module and the route table.
 
@@ -229,7 +226,7 @@ cost moves rather than disappears.
 An agent will happily write the repository, the endpoint, the validator and the registration for
 your entity, and again for the next one, a little differently each time. Every copy is code you own,
 and code you have to review before you trust it: plumbing does not stop being plumbing because a
-machine typed it. It just arrives faster than anyone can read it. The 115 files above are 115 files
+machine typed it. It just arrives faster than anyone can read it. The 116 files above are 116 files
 to check, for every slice of the application, every time the model has a different idea.
 
 A generator writes them the same way every time, from one implementation that is tested once, for

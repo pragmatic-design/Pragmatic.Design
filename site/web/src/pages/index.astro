@@ -80,10 +80,7 @@ import Footer from "@/components/Footer.astro";
 <span class="text-[#c678dd]">[Mutation</span>(Mode = <span class="text-[#e5c07b]">MutationMode</span>.Update)<span class="text-[#c678dd]">]</span>
 <span class="text-[#c678dd]">[TransitionsTo</span>&lt;<span class="text-[#e5c07b]">ReservationStatus</span>&gt;(<span class="text-[#e5c07b]">ReservationStatus</span>.Confirmed)<span class="text-[#c678dd]">]</span>
 <span class="text-[#c678dd]">public partial class</span> <span class="text-[#e5c07b]">ConfirmReservationMutation</span>
-    : <span class="text-[#e5c07b]">Mutation</span>&lt;<span class="text-[#e5c07b]">Reservation</span>, <span class="text-[#e5c07b]">ConflictError</span>&gt;
-&#123;
-    <span class="text-[#c678dd]">public required</span> <span class="text-[#e5c07b]">Guid</span> <span class="text-[#61afef]">Id</span> &#123; <span class="text-[#c678dd]">get</span>; <span class="text-[#c678dd]">init</span>; &#125;
-&#125;
+    : <span class="text-[#e5c07b]">Mutation</span>&lt;<span class="text-[#e5c07b]">Reservation</span>, <span class="text-[#e5c07b]">ConflictError</span>&gt; &#123; &#125;
 
 <span class="text-text-muted">// No body: load, permission, transition, commit</span>
 <span class="text-text-muted">// and the 409 are all declared.</span></code></pre>
