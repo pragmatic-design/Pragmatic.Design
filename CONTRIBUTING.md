@@ -59,14 +59,33 @@ describing:
 - Your proposed approach
 - Which modules are affected
 
+### Taking an Issue
+
+Every issue somebody is working on is assigned to them, maintainers included: an assigned issue is
+taken, an unassigned one is free.
+
+1. **Ask on the issue.** Comment that you would like to work on it; for anything beyond a small fix, add
+   a line on how you would approach it.
+2. **Wait for the assignment.** A maintainer replies either way: they assign the issue to you, or say
+   why they are keeping it (it may already be planned, or depend on other work). Work started before
+   the assignment may overlap with somebody else's.
+3. **Keep it moving.** Once assigned, the issue is yours. A draft pull request early, or a comment with
+   where you are, is what tells everybody else it is still taken.
+4. **Quiet means free again.** After **14 days** without a comment or a pull request from you, a
+   maintainer asks for an update; with no reply **7 days** later, the issue is unassigned so somebody
+   else can take it. Saying you cannot carry on is always fine, and frees it at once.
+
+A pull request for an issue assigned to somebody else is not merged ahead of them.
+
 ### Submitting Pull Requests
 
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Follow the code conventions below
-4. Add tests for new functionality
-5. Ensure the gate is green (`node scripts/check.mjs --tier all`)
-6. Submit a PR with a clear description
+1. Take the issue the change closes, as above (a typo or a broken link needs no issue)
+2. Fork the repository
+3. Create a feature branch from `main`
+4. Follow the code conventions below
+5. Add tests for new functionality
+6. Ensure the gate is green (`node scripts/check.mjs --tier all`)
+7. Submit a PR with a clear description
 
 ### Code Conventions
 
