@@ -13,18 +13,17 @@
       (KvStore, AesSecretEncryptor, AgentSocketServer, SWIM gossip) live in the
       Pragmatic.Agent *daemon* assembly and are `internal`, so a separate console
       app cannot reach them and should not spin up a daemon. The runnable surface
-      is the PUBLIC wire protocol (Pragmatic.Agent.Protocol) and the client
-      configuration type (Pragmatic.Agent.Client):
+      is the PUBLIC wire protocol (Pragmatic.Agent.Protocol):
         1. Wire-format serialize/deserialize roundtrip (JSON — the live format)
         2. FrameCodec length-prefixed framing roundtrip (in-memory stream)
         3. AgentMessage + MessageType + typed payload roundtrip
-        4. AgentOptions configuration defaults
+      No reference to Pragmatic.Agent.Client: with it, Bitdefender quarantined this
+      executable as Gen:Variant.MSILHeracles (see README.md).
     -->
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Agent.Protocol\Pragmatic.Agent.Protocol.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Agent.Client\Pragmatic.Agent.Client.csproj" />
   </ItemGroup>
 
 </Project>
