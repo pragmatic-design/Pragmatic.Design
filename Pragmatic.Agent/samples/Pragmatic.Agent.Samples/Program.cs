@@ -10,7 +10,9 @@ using Pragmatic.Agent.Samples;
 //   1. WireFormatSample   — JSON + MessagePack serialize/deserialize roundtrip
 //   2. FrameCodecSample   — length-prefixed framing roundtrip over a MemoryStream
 //   3. AgentMessageSample — AgentMessage + MessageType + typed payload roundtrip
-//   4. AgentOptionsSample — client configuration defaults
+//
+// The client options (AgentOptions) are not shown here: referencing Pragmatic.Agent.Client from
+// this small executable made Bitdefender quarantine it (see the README).
 //
 // The daemon-only subsystems (KvStore CAS/watch, KvSecretProtector at-rest
 // encryption, AgentSocketServer, gossip membership) are `internal` to the
@@ -19,12 +21,11 @@ using Pragmatic.Agent.Samples;
 
 Console.WriteLine("Pragmatic.Agent Samples");
 Console.WriteLine("=======================");
-Console.WriteLine("(In-process protocol + client config only — no daemon, no socket.)");
+Console.WriteLine("(In-process protocol only — no daemon, no socket.)");
 Console.WriteLine();
 
 WireFormatSample.Run();
 await FrameCodecSample.RunAsync();
 AgentMessageSample.Run();
-AgentOptionsSample.Run();
 
 Console.WriteLine("All samples completed.");
