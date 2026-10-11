@@ -50,11 +50,21 @@ public class Program
                 actions.Setup();
                 actions.Cleanup();
                 Console.WriteLine("✅ Both generators' Actions call sites wrote the same line, and nothing below the level.");
+
+                var messaging = new Modules.MessagingLogBenchmarks();
+                messaging.Setup();
+                messaging.Cleanup();
+                Console.WriteLine("✅ Both generators' Messaging call sites wrote the same lines, and nothing below the level.");
                 break;
 
             case "actions":
                 Console.WriteLine("🧩 Pragmatic.Actions' invoker logging, Microsoft's generator against call sites");
                 BenchmarkRunner.Run<Modules.ActionsLogBenchmarks>(null, args[1..]);
+                break;
+
+            case "messaging":
+                Console.WriteLine("📨 Pragmatic.Messaging's per-message logging, Microsoft's generator against call sites");
+                BenchmarkRunner.Run<Modules.MessagingLogBenchmarks>(null, args[1..]);
                 break;
 
             case "json":
@@ -117,6 +127,7 @@ public class Program
                     typeof(LoggingBenchmarks),
                     typeof(Json.JsonSinkBenchmarks),
                     typeof(Modules.ActionsLogBenchmarks),
+                    typeof(Modules.MessagingLogBenchmarks),
                     typeof(Redaction.RedactionOverheadBenchmarks),
                     typeof(ExpressionDslBenchmarks),
                     typeof(ZeroAllocationBenchmark),
