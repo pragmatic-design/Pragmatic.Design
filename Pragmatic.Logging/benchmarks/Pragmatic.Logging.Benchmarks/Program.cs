@@ -68,6 +68,16 @@ public class Program
                 json.Setup();
                 json.Cleanup();
                 Console.WriteLine("✅ Every JSON sink wrote the same call, and the personal data was masked.");
+
+                var actions = new Modules.ActionsLogBenchmarks();
+                actions.Setup();
+                actions.Cleanup();
+                Console.WriteLine("✅ Both generators' Actions call sites wrote the same line, and nothing below the level.");
+                break;
+
+            case "actions":
+                Console.WriteLine("🧩 Pragmatic.Actions' invoker logging, Microsoft's generator against call sites");
+                BenchmarkRunner.Run<Modules.ActionsLogBenchmarks>(null, args[1..]);
                 break;
 
             case "json":
@@ -123,6 +133,7 @@ public class Program
                 Console.WriteLine("\n1/4 - Logging Library Comparison");
                 BenchmarkRunner.Run<LoggingBenchmarks>(null, passThrough);
                 BenchmarkRunner.Run<Json.JsonSinkBenchmarks>(null, passThrough);
+                BenchmarkRunner.Run<Modules.ActionsLogBenchmarks>(null, passThrough);
 
                 Console.WriteLine("\n2/4 - Declared Redaction Overhead");
                 BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>(null, passThrough);
