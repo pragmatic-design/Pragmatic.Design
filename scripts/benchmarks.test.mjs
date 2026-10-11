@@ -70,6 +70,26 @@ test('a baselined benchmark that did not run fails, so a broken benchmark cannot
   assert.deepEqual(result.missing, [{ name: 'A.B.Gone', base: 10 }]);
 });
 
+// A pull request runs only the classes its change reaches (#172): the baseline of the others is not
+// missing, nothing was asked of it.
+test('on a partial run only the classes that ran are judged against the baseline', () => {
+  const baseline = { 'A.B.Log': 2368, 'A.B.Gone': 10, 'A.Other.Write': 50 };
+
+  const result = compareAllocations({ 'A.B.Log': 2368 }, baseline, ['A.B']);
+
+  assert.deepEqual(result.missing, [{ name: 'A.B.Gone', base: 10 }]);
+  assert.equal(result.failed, true);
+  assert.equal(compareAllocations({ 'A.B.Log': 2368, 'A.B.Gone': 10 }, baseline, ['A.B']).failed, false);
+});
+
+// A new class has no baseline entry to go missing from: if it builds nothing, only this sees it.
+test('on a partial run a selected class that measured nothing fails', () => {
+  const result = compareAllocations({ 'A.B.Log': 2368 }, { 'A.B.Log': 2368 }, ['A.B', 'A.New']);
+
+  assert.equal(result.failed, true);
+  assert.deepEqual(result.notRun, [{ name: 'A.New' }]);
+});
+
 test('allocations are read from the JSON reports, the larger of two jobs kept', () => {
   const dir = mkdtempSync(join(tmpdir(), 'bench-json-'));
   mkdirSync(join(dir, 'results'));

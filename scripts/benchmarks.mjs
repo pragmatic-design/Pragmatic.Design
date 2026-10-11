@@ -12,7 +12,7 @@
  * a warmed-up one does not (21.55 KB cold against 20.17 KB warmed, measured on the endpoint benchmark),
  * and a ratchet fed that would fail on the warmup rather than on the code.
  *
- *   node scripts/benchmarks.mjs ci --head <checkout> --base <checkout> --out <dir>
+ *   node scripts/benchmarks.mjs ci --head <checkout> --base <checkout> --out <dir> [--changed-only]
  *   node scripts/benchmarks.mjs allocations --results <dir> [--update]
  *   node scripts/benchmarks.mjs ab --base <dir> --head <dir>
  */
@@ -20,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { belongsTo, classesFromList, filtersFor, readCheckout, selectBenchmarks } from './benchmark-selection.mjs';
 
 /**
  * What runs. Each suite with its own jobs, so that a base checkout that knows nothing of this script
@@ -30,19 +31,24 @@ export const SUITES = [
   {
     name: 'Logging',
     project: 'Pragmatic.Logging/benchmarks/Pragmatic.Logging.Benchmarks/Pragmatic.Logging.Benchmarks.csproj',
-    args: ['all', '--exporters', 'json'],
+    command: ['all'],
   },
   {
     name: 'Result',
     project: 'Pragmatic.Result/benchmarks/Pragmatic.Result.Benchmarks/Pragmatic.Result.Benchmarks.csproj',
-    args: ['--filter', '*', '--exporters', 'json'],
+    command: [],
   },
   {
     name: 'Endpoints',
     project: 'Pragmatic.Endpoints/benchmarks/Pragmatic.Endpoints.Benchmarks/Pragmatic.Endpoints.Benchmarks.csproj',
-    args: ['--filter', '*', '--exporters', 'json'],
+    command: [],
   },
 ];
+
+/** A suite's arguments to BenchmarkDotNet, for every benchmark (`*`) or the filters of a selection. */
+export function suiteArgs(suite, filters = ['*']) {
+  return [...suite.command, '--filter', ...filters, '--exporters', 'json'];
+}
 
 export const BASELINE = 'benchmarks/allocation-baseline.json';
 
@@ -213,19 +219,31 @@ export function timesFromCsv(dir) {
  * - `missing`: in the baseline, not measured. Fails: BenchmarkDotNet exits 0 when it cannot build a
  *   benchmark, so one that did not run is only visible here. A benchmark removed or renamed takes its
  *   baseline entry with it in the same change.
+ * - `notRun`: on a partial run, a selected class the suite lists that measured nothing. Fails, for the
+ *   same reason, and it also catches a new class that has no baseline to go missing from.
+ *
+ * `classes`, on a partial run, are the classes that ran: the baseline of every other class is not
+ * looked at, since nothing measured it.
  */
-export function compareAllocations(measured, baseline) {
-  const result = { regressions: [], unbaselined: [], improvements: [], missing: [] };
+export function compareAllocations(measured, baseline, classes = null) {
+  const result = { regressions: [], unbaselined: [], improvements: [], missing: [], notRun: [] };
+  const judged = classes === null
+    ? baseline
+    : Object.fromEntries(Object.entries(baseline).filter(([name]) => classes.some((c) => belongsTo(name, c))));
   for (const [name, bytes] of Object.entries(measured).sort()) {
-    const base = baseline[name];
+    const base = judged[name];
     if (base === undefined) result.unbaselined.push({ name, bytes });
     else if (bytes > base + toleranceFor(base)) result.regressions.push({ name, bytes, base });
     else if (bytes < base - toleranceFor(base)) result.improvements.push({ name, bytes, base });
   }
-  for (const name of Object.keys(baseline).sort()) {
-    if (!(name in measured)) result.missing.push({ name, base: baseline[name] });
+  for (const name of Object.keys(judged).sort()) {
+    if (!(name in measured)) result.missing.push({ name, base: judged[name] });
   }
-  result.failed = result.regressions.length > 0 || result.unbaselined.length > 0 || result.missing.length > 0;
+  for (const c of classes ?? []) {
+    if (!Object.keys(measured).some((name) => belongsTo(name, c))) result.notRun.push({ name: c });
+  }
+  result.failed = result.regressions.length > 0 || result.unbaselined.length > 0 || result.missing.length > 0
+    || result.notRun.length > 0;
   return result;
 }
 
@@ -239,13 +257,14 @@ export function allocationReport(result, measuredCount) {
   };
 
   lines.push(result.failed
-    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run.`
+    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} selected class(es) measured nothing.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
       : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
   table('In the baseline, did not run (fails)', result.missing);
+  table('Selected, measured nothing (fails)', result.notRun);
   table('Allocates less: lower the baseline', result.improvements);
   return lines.join('\n');
 }
@@ -312,7 +331,7 @@ function formatNs(ns) {
  * (the first run of the workflow, #55). Nor can `--artifacts` put the reports elsewhere, since a base
  * checkout's program may not pass its arguments on; moving them afterwards works for any checkout.
  */
-function runSuite(checkout, suite, workDir) {
+function runSuite(checkout, suite, workDir, filters) {
   const project = resolve(checkout, suite.project);
   if (!existsSync(project)) return { ran: false, reason: 'not in this checkout' };
 
@@ -320,7 +339,7 @@ function runSuite(checkout, suite, workDir) {
   const artifacts = join(projectDir, 'BenchmarkDotNet.Artifacts');
   rmSync(artifacts, { recursive: true, force: true });
 
-  const r = spawnSync('dotnet', ['run', '-c', 'Release', '--project', project, '--', ...suite.args], {
+  const r = spawnSync('dotnet', ['run', '-c', 'Release', '--project', project, '--', ...suiteArgs(suite, filters)], {
     cwd: projectDir,
     stdio: 'inherit',
   });
@@ -330,17 +349,71 @@ function runSuite(checkout, suite, workDir) {
   return { ran: true, code: r.status ?? 1 };
 }
 
+/**
+ * The selected classes the head's suite actually runs, from BenchmarkDotNet's `--list flat`: a class
+ * the change reaches may be one the suite never runs (Logging's probes), and one the suite runs must
+ * then measure something.
+ */
+function listSuite(checkout, suite, filters) {
+  const project = resolve(checkout, suite.project);
+  const r = spawnSync('dotnet', ['run', '-c', 'Release', '--project', project, '--', ...suite.command, '--list', 'flat', '--filter', ...filters], {
+    cwd: dirname(project),
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (r.status !== 0) process.stderr.write(r.stdout + r.stderr);
+  return { code: r.status ?? 1, classes: classesFromList(r.stdout ?? '') };
+}
+
+/** Per suite, the filters to run with: `null` for a suite with nothing to run. */
+function plan(options, notes) {
+  const everything = Object.fromEntries(SUITES.map((s) => [s.name, ['*']]));
+  if (!options['changed-only']) return { filters: everything, classes: null };
+
+  const selection = selectBenchmarks(readCheckout(options.head, SUITES), readCheckout(options.base, SUITES), SUITES);
+  if (selection.all) {
+    notes.push(`Every benchmark runs: ${selection.all}.`);
+    return { filters: everything, classes: null };
+  }
+
+  const filters = {};
+  const classes = [];
+  for (const suite of SUITES) {
+    const s = selection.suites[suite.name];
+    if (s.all) {
+      notes.push(`${suite.name}: every benchmark runs, ${s.all}.`);
+      filters[suite.name] = ['*'];
+      // Every class of the suite is judged: listing everything names them.
+      classes.push(...listSuite(options.head, suite, ['*']).classes);
+      continue;
+    }
+    const listed = s.classes.length === 0 ? { code: 0, classes: [] } : listSuite(options.head, suite, filtersFor(s.classes));
+    if (listed.code !== 0) throw new Error(`${suite.name}: listing the selected benchmarks exited ${listed.code}.`);
+    const skipped = s.classes.filter((c) => !listed.classes.includes(c));
+    if (skipped.length > 0) notes.push(`${suite.name}: reached, but not in the suite's run: ${skipped.map((c) => `\`${c}\``).join(', ')}.`);
+    filters[suite.name] = listed.classes.length > 0 ? filtersFor(listed.classes) : null;
+    classes.push(...listed.classes);
+    notes.push(listed.classes.length > 0
+      ? `${suite.name}: runs ${listed.classes.map((c) => `\`${c}\``).join(', ')}.`
+      : `${suite.name}: nothing this change reaches.`);
+  }
+  notes.unshift('Partial run, for a pull request: only the classes the change reaches. The nightly run measures everything.');
+  return { filters, classes };
+}
+
 function ci(options) {
   const out = resolve(options.out);
   const notes = [];
   let headFailed = false;
+  const { filters, classes } = plan(options, notes);
 
   SUITES.forEach((suite, i) => {
+    if (filters[suite.name] === null) return;
     // Alternated between suites, so that a runner warming up or slowing down over the job does not
     // land on one side every time.
     const order = i % 2 === 0 ? ['base', 'head'] : ['head', 'base'];
     for (const side of order) {
-      const r = runSuite(options[side], suite, join(out, side, suite.name));
+      const r = runSuite(options[side], suite, join(out, side, suite.name), filters[suite.name]);
       if (!r.ran) notes.push(`${suite.name} on ${side}: ${r.reason}.`);
       else if (r.code !== 0) {
         notes.push(`${suite.name} on ${side}: exited ${r.code}.`);
@@ -353,17 +426,23 @@ function ci(options) {
   const baseline = existsSync(join(options.head, BASELINE))
     ? JSON.parse(readFileSync(join(options.head, BASELINE), 'utf8'))
     : {};
-  const allocations = compareAllocations(measured, baseline);
+  const allocations = compareAllocations(measured, baseline, classes);
+  const nothingToRun = classes !== null && classes.length === 0;
 
   // What the baseline would be if this run were accepted: uploaded with the reports, so a new or
-  // lowered baseline is copied from a run on the runner rather than typed in from a laptop.
-  writeFileSync(join(out, 'allocation-baseline.proposed.json'), JSON.stringify(sorted(measured), null, 2) + '\n');
+  // lowered baseline is copied from a run on the runner rather than typed in from a laptop. On a
+  // partial run it is the committed baseline with the classes that ran replaced, so it is whole.
+  const proposed = classes === null
+    ? measured
+    : { ...Object.fromEntries(Object.entries(baseline).filter(([name]) => !classes.some((c) => belongsTo(name, c)))), ...measured };
+  mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, 'allocation-baseline.proposed.json'), JSON.stringify(sorted(proposed), null, 2) + '\n');
 
   const summary = [
     '# Benchmarks',
     '',
     ...(notes.length > 0 ? ['Runs:', '', ...notes.map((n) => `- ${n}`), ''] : []),
-    allocationReport(allocations, Object.keys(measured).length),
+    nothingToRun ? '## Allocations\n\n**ok**: the change reaches no benchmark the suites run.' : allocationReport(allocations, Object.keys(measured).length),
     '',
     abReport(timesFromCsv(join(out, 'base')), timesFromCsv(join(out, 'head'))),
     '',
@@ -372,6 +451,7 @@ function ci(options) {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
   console.log(summary);
 
+  if (nothingToRun) return 0;
   return headFailed || allocations.failed || Object.keys(measured).length === 0 ? 1 : 0;
 }
 
@@ -396,7 +476,12 @@ function main(argv) {
 
   switch (command) {
     case 'ci':
-      return ci({ head: resolve(options.head ?? '.'), base: resolve(options.base ?? '.'), out: options.out ?? 'artifacts/benchmarks' });
+      return ci({
+        head: resolve(options.head ?? '.'),
+        base: resolve(options.base ?? '.'),
+        out: options.out ?? 'artifacts/benchmarks',
+        'changed-only': options['changed-only'] === true,
+      });
 
     case 'allocations': {
       const measured = allocationsFromJson(options.results);

@@ -1,29 +1,6 @@
-using BenchmarkDotNet.Columns;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Exporters;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Order;
-using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 
 namespace Pragmatic.Logging.Benchmarks;
-
-/// <summary>
-/// Shared config used by benchmark classes that don't need a custom ManualConfig.
-/// Adds the default-style Markdown report to the HTML, GitHub Markdown and CSV the default config writes.
-/// </summary>
-public class DefaultExportConfig : ManualConfig
-{
-    public DefaultExportConfig()
-    {
-        AddJob(Job.Default);
-        AddColumnProvider(DefaultColumnProviders.Instance);
-        // HTML, GitHub Markdown and CSV come from the default config BenchmarkDotNet merges in.
-        AddExporter(MarkdownExporter.Default);
-        WithSummaryStyle(SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend));
-        WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest));
-    }
-}
 
 public class Program
 {
@@ -127,23 +104,26 @@ public class Program
 
             case "all":
                 // What follows "all" goes to BenchmarkDotNet: the CI workflow adds `--exporters json` for
-                // the allocation ratchet (scripts/benchmarks.mjs).
+                // the allocation ratchet, and on a pull request a `--filter` per class the change reaches
+                // (scripts/benchmarks.mjs). These are the classes the ratchet watches. A switcher per
+                // class: BenchmarkRunner.Run<T> throws when a filter leaves T with nothing, and one
+                // switcher over all of them stops every class when one fails validation.
                 var passThrough = args.Length > 1 ? args[1..] : [];
+                if (!passThrough.Contains("--filter") && !passThrough.Contains("-f"))
+                    passThrough = [.. passThrough, "--filter", "*"];
                 Console.WriteLine("🚀 Complete benchmark suite");
-                Console.WriteLine("\n1/4 - Logging Library Comparison");
-                BenchmarkRunner.Run<LoggingBenchmarks>(null, passThrough);
-                BenchmarkRunner.Run<Json.JsonSinkBenchmarks>(null, passThrough);
-                BenchmarkRunner.Run<Modules.ActionsLogBenchmarks>(null, passThrough);
-
-                Console.WriteLine("\n2/4 - Declared Redaction Overhead");
-                BenchmarkRunner.Run<Redaction.RedactionOverheadBenchmarks>(null, passThrough);
-
-                Console.WriteLine("\n3/4 - Expression DSL Performance");
-                BenchmarkRunner.Run<ExpressionDslBenchmarks>(null, passThrough);
-
-                Console.WriteLine("\n4/4 - Zero Allocation Tests");
-                BenchmarkRunner.Run<ZeroAllocationBenchmark>(null, passThrough);
-                BenchmarkRunner.Run<AllocationComparisonBenchmark>(null, passThrough);
+                Type[] suite =
+                [
+                    typeof(LoggingBenchmarks),
+                    typeof(Json.JsonSinkBenchmarks),
+                    typeof(Modules.ActionsLogBenchmarks),
+                    typeof(Redaction.RedactionOverheadBenchmarks),
+                    typeof(ExpressionDslBenchmarks),
+                    typeof(ZeroAllocationBenchmark),
+                    typeof(AllocationComparisonBenchmark),
+                ];
+                foreach (var type in suite)
+                    BenchmarkSwitcher.FromTypes([type]).Run(passThrough);
                 break;
 
             default:

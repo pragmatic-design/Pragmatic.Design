@@ -2522,6 +2522,7 @@ if (tier === 'verify') {
     && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
     && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
     && nodeTestCases('scripts/benchmarks.test.mjs', 'the allocation ratchet refuses one allocation more')
+    && nodeTestCases('scripts/benchmark-selection.test.mjs', 'a pull request runs every benchmark its change reaches')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()
