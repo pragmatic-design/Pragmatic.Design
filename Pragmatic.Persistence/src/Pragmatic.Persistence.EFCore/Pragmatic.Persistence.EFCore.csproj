@@ -7,6 +7,9 @@
     <RootNamespace>Pragmatic.Persistence.EFCore</RootNamespace>
     <Description>Entity Framework Core implementation for Pragmatic.Persistence. DbContext, Repository implementations, and EF-specific features.</Description>
     <PackageTags>pragmatic;persistence;entityframework;efcore;repository</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the unit of work logs every save and the executor every query, and a
+         generated call site writes its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +32,13 @@
          Pragmatic.Result.EFCore.<Provider> sharpens it. -->
     <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+  </ItemGroup>
+
+  <!-- The generator, for the log call sites. It also writes what it writes for every assembly that runs it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!-- EF Core -->
