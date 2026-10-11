@@ -3,6 +3,9 @@
   <PropertyGroup>
     <Description>DomainAction pattern with Pipeline, Filters, and Boundary support. Zero reflection, compile-time safe, source-generated.</Description>
     <PackageTags>ddd;domain;domain-action;cqrs;pipeline;filter;source-generator</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the invoker logs on every operation, and a generated call site writes
+         its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <!-- Expose internals to test project -->
