@@ -138,8 +138,8 @@ public class TheGeneratedStateTests
         logger.Level.Should().Be(LogLevel.Error);
         logger.Exception.Should().BeSameAs(error);
         logger.Message.Should().Be("Payment for 6f9619ff-8b86-d011-b42d-00cf4fc964ff failed {retrying}");
-        // No EventId set: derived from the event name, the same on every build.
-        logger.EventId.Id.Should().Be(StableEventId("PaymentFailed"));
+        // No EventId set: derived from the event name, the id Microsoft's generator gives PaymentFailed.
+        logger.EventId.Id.Should().Be(391231696);
     }
 
     [Fact]
@@ -182,26 +182,6 @@ public class TheGeneratedStateTests
     }
 
     private static Type CallSitesType(string name) => CallSites.Type(name);
-
-    /// <summary>
-    ///     FNV-1a over the name's UTF-16 code units, written out here rather than called: the test states
-    ///     the id a call site gets, so a change to the derivation shows up as a red test, not as a new
-    ///     expectation that follows it.
-    /// </summary>
-    private static int StableEventId(string name)
-    {
-        unchecked
-        {
-            var hash = 2166136261u;
-            foreach (var c in name)
-            {
-                hash ^= c;
-                hash *= 16777619u;
-            }
-
-            return (int)(hash & 0x7FFFFFFF);
-        }
-    }
 
     private static string Utf8Message(IUtf8LogState state)
     {

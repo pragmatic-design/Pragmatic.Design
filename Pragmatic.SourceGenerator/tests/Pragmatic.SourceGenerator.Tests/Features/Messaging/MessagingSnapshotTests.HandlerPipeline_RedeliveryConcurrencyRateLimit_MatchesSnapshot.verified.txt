@@ -176,7 +176,7 @@ public partial class ThrottledHandler
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(176877028, "LogHandlerStarted"),
+                new global::Microsoft.Extensions.Logging.EventId(1970606620, "LogHandlerStarted"),
                 new __LogHandlerStartedLogState(messageName, handlerName, messageId),
                 null,
                 __LogHandlerStartedLogState.Format);
@@ -444,7 +444,7 @@ public partial class ThrottledHandler
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Error,
-                new global::Microsoft.Extensions.Logging.EventId(1747548130, "LogHandlerFailed"),
+                new global::Microsoft.Extensions.Logging.EventId(399935518, "LogHandlerFailed"),
                 new __LogHandlerFailedLogState(messageName, handlerName, retryCount),
                 ex,
                 __LogHandlerFailedLogState.Format);
@@ -598,7 +598,7 @@ public partial class ThrottledHandler
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(1659290042, "LogDuplicateSkipped"),
+                new global::Microsoft.Extensions.Logging.EventId(488193606, "LogDuplicateSkipped"),
                 new __LogDuplicateSkippedLogState(messageName, handlerName, messageId),
                 null,
                 __LogDuplicateSkippedLogState.Format);
@@ -752,7 +752,7 @@ public partial class ThrottledHandler
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Warning,
-                new global::Microsoft.Extensions.Logging.EventId(396557670, "LogRetryAttempt"),
+                new global::Microsoft.Extensions.Logging.EventId(1750925978, "LogRetryAttempt"),
                 new __LogRetryAttemptLogState(messageName, handlerName, attempt, delayMs),
                 ex,
                 __LogRetryAttemptLogState.Format);

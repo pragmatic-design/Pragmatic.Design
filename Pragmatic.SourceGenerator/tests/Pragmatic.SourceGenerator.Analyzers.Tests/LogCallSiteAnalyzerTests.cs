@@ -248,6 +248,30 @@ public class LogCallSiteAnalyzerTests
         duplicate.GetMessage().Should().Contain("'Stopped' uses event id 7").And.Contain("'Started'");
     }
 
+    /// <summary>
+    ///     LogStart's name hashes negative; Microsoft's generator gives it 1092114269, the id the generated
+    ///     call site logs. The check derives the same one, so a set id equal to it is a collision.
+    /// </summary>
+    [Fact]
+    public async Task ASetEventIdEqualToTheIdAnotherCallSiteDerives()
+    {
+        var diagnostics = await RunAsync("""
+            using Microsoft.Extensions.Logging;
+            namespace App;
+            public static partial class Log
+            {
+                [LoggerMessage(EventId = 1092114269, Level = LogLevel.Information, Message = "Started")]
+                public static partial void Started(ILogger logger);
+
+                [LoggerMessage(Level = LogLevel.Information, Message = "Start")]
+                public static partial void LogStart(ILogger logger);
+            }
+            """);
+
+        var duplicate = diagnostics.Should().ContainSingle(d => d.Id == "PRAG2405").Which;
+        duplicate.GetMessage().Should().Contain("'LogStart' uses event id 1092114269").And.Contain("'Started'");
+    }
+
     // ── A masking attribute nothing reads ───────────────────────────────────────────────────────────
 
     [Fact]
