@@ -77,6 +77,38 @@ public class ACustomProviderGetsWhatEveryProviderGetsTests
             .Should().BeSameAs(services.GetRequiredService<PragmaticJsonOptions>());
     }
 
+    /// <summary>
+    ///     A factory that gives its provider a redactor of its own keeps it: the container's fills a gap, it
+    ///     does not replace a choice.
+    /// </summary>
+    /// <remarks>
+    ///     The container's redactor is built over the <c>IRedactionMap</c>s registered in it. Replacing a
+    ///     redactor the factory set with that one silently swapped a redactor that masks for one that masks
+    ///     nothing when no map was registered, which is how the redaction benchmark never ran (#173).
+    /// </remarks>
+    [Fact]
+    public void AddProvider_ARedactorTheFactorySetIsKept()
+    {
+        var own = new DeclaredRedactor([new Map()]);
+        var services = new ServiceCollection();
+        services.AddPragmaticLoggingBuilder(logging => logging.AddProvider(_ =>
+            new PragmaticMemoryProvider("memory", PragmaticMemoryConfiguration.ForTesting()) { DeclaredRedactor = own }));
+        using var built = services.BuildServiceProvider();
+        var provider = built.GetRequiredService<PragmaticMemoryProvider>();
+
+        provider.DeclaredRedactor.Should().BeSameAs(own);
+        provider.WriteLog(new LogEntry
+        {
+            Timestamp = DateTimeOffset.UnixEpoch.UtcDateTime,
+            LogLevel = Microsoft.Extensions.Logging.LogLevel.Information,
+            Category = "Test",
+            Message = "handling {Payload}",
+            Properties = new Dictionary<string, object?> { ["Payload"] = new Payload("PO-1", "sk-live-secret") },
+        });
+        provider.GetLogEntries().Single().Properties["Payload"]!.ToString()
+            .Should().NotContain("sk-live-secret").And.Contain("PO-1");
+    }
+
     [Fact]
     public void AddConsole_TheBuiltInProviderHasBoth()
     {

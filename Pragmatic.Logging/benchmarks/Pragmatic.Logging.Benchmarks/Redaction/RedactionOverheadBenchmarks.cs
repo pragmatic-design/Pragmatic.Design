@@ -33,13 +33,14 @@ public class RedactionOverheadBenchmarks
         _redacting = Logger(new DeclaredRedactor([new CustomerRedactionMap()]));
 
         // The row is only worth timing if the redactor actually masks: the member must be gone from the
-        // whole entry, message and properties both.
+        // whole entry, message and properties both, and only that member — the reference stays readable.
         var sink = new EventConsumer { Capture = true };
         var probe = Logger(new DeclaredRedactor([new CustomerRedactionMap()]), sink);
         probe.LogInformation("Registered {Customer}", _customer);
         var consumed = sink.TakeLast()?.ToString() ?? "(nothing reached the sink)";
         if (consumed.Contains("jane@example.com", StringComparison.Ordinal)
-            || !consumed.Contains(PersonalDataPatterns.Mask, StringComparison.Ordinal))
+            || !consumed.Contains(PersonalDataPatterns.Mask, StringComparison.Ordinal)
+            || !consumed.Contains("C-42", StringComparison.Ordinal))
             throw new InvalidOperationException($"The redacting logger did not mask the declared member: {consumed}");
     }
 

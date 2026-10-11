@@ -131,6 +131,8 @@
   "Pragmatic.Logging.Benchmarks.Modules.MessagingLogBenchmarks.Messaging_Disabled_LoggerMessage": 0,
   "Pragmatic.Logging.Benchmarks.Modules.MessagingLogBenchmarks.Messaging_ErrorJson_CallSite": 2816,
   "Pragmatic.Logging.Benchmarks.Modules.MessagingLogBenchmarks.Messaging_ErrorJson_LoggerMessage": 10865,
+  "Pragmatic.Logging.Benchmarks.Redaction.RedactionOverheadBenchmarks.WithDeclaredRedaction": 2352,
+  "Pragmatic.Logging.Benchmarks.Redaction.RedactionOverheadBenchmarks.WithoutRedaction": 1624,
   "Pragmatic.Result.Benchmarks.ResultBenchmarks.Bind_SingleOperation": 0,
   "Pragmatic.Result.Benchmarks.ResultBenchmarks.CreateFailure": 0,
   "Pragmatic.Result.Benchmarks.ResultBenchmarks.CreateFailure_Implicit": 0,
