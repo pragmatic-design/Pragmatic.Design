@@ -97,6 +97,6 @@ public static class McpJsonSchemaBuilder
         return (lastDot >= 0 ? s[(lastDot + 1)..] : s).ToLowerInvariant();
     }
 
-    internal static string CamelCase(string name)
-        => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+    // The name the server writes and reads for a property nothing renames: the host's JsonNamingPolicy.CamelCase.
+    internal static string CamelCase(string name) => Pragmatic.SourceGen.JsonWireNames.CamelCase(name);
 }

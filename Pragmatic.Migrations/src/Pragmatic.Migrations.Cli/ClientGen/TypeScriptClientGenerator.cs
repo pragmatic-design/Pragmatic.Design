@@ -124,7 +124,7 @@ public sealed class TypeScriptClientGenerator(ClientManifest manifest, string pa
                 {
                     var tsType = MapToTsType(p.Type, p.IsNullable, p.IsEnum);
                     var optional = p.IsNullable ? "?" : "";
-                    sb.AppendLine($"  {ToCamelCase(p.Name ?? "unknown")}{optional}: {tsType};");
+                    sb.AppendLine($"  {WireName(p.Name ?? "unknown")}{optional}: {tsType};");
                 }
                 sb.AppendLine("}");
                 sb.AppendLine();
@@ -170,7 +170,7 @@ public sealed class TypeScriptClientGenerator(ClientManifest manifest, string pa
                     if (p.Name is null) continue;
                     var tsType = MapToTsType(p.Type, p.IsNullable, p.IsEnum);
                     var optional = p.IsRequired ? "" : "?";
-                    sb.AppendLine($"  {ToCamelCase(p.Name)}{optional}: {tsType};");
+                    sb.AppendLine($"  {WireName(p.Name)}{optional}: {tsType};");
                 }
                 sb.AppendLine("}");
                 sb.AppendLine();
@@ -411,6 +411,10 @@ public sealed class TypeScriptClientGenerator(ClientManifest manifest, string pa
     private static bool IsPrimitiveTsType(string tsType)
         => tsType is "string" or "number" or "boolean" or "unknown" or "void";
 
+    // A property on the wire: the name the server writes and reads, the host's JsonNamingPolicy.CamelCase.
+    private static string WireName(string name) => Pragmatic.SourceGen.JsonWireNames.CamelCase(name);
+
+    // A TypeScript identifier: a method or a parameter name, which only has to read as camel case.
     private static string ToCamelCase(string name)
     {
         if (string.IsNullOrEmpty(name)) return name;

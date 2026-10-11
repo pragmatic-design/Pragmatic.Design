@@ -456,8 +456,8 @@ internal static partial class OpenApiJsonGenerator
         _ => "Error",
     };
 
-    private static string ToCamelCase(string s) =>
-        string.IsNullOrEmpty(s) ? s : char.ToLowerInvariant(s[0]) + s.Substring(1);
+    // The name the server writes for a property nothing renames: the host's JsonNamingPolicy.CamelCase.
+    private static string ToCamelCase(string s) => JsonWireNames.CamelCase(s);
 
     // DTOs
     private sealed class ManifestDocDto

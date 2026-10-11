@@ -541,6 +541,42 @@ public class OpenApiJsonGeneratorTests
     }
 
     /// <summary>
+    ///     A property whose name starts with an acronym is published under the name the server writes.
+    /// </summary>
+    /// <remarks>
+    ///     The host's policy is <c>JsonNamingPolicy.CamelCase</c>, which lowers the whole leading acronym:
+    ///     <c>URL</c> is <c>url</c>, <c>IOStream</c> is <c>ioStream</c>. Lowering only the first letter gives
+    ///     <c>uRL</c> and <c>iOStream</c>, names the server never writes, so a client generated from the
+    ///     document reads nothing (#146).
+    /// </remarks>
+    [Fact]
+    public void Generate_AnAcronymLedProperty_IsPublishedAsTheServerWritesIt()
+    {
+        using var doc = Generate(Manifest("""
+            [{ "operationId": "Catalog.GetLink", "httpMethod": "GET", "fullRoute": "/links/{id}",
+               "successStatusCode": 200, "isVoid": false, "response": { "type": "Catalogue.Dtos.LinkDto" } },
+             { "operationId": "Catalog.CreateLink", "httpMethod": "POST", "fullRoute": "/links",
+               "successStatusCode": 201, "isVoid": true,
+               "requestBody": { "properties": [
+                 { "name": "URL", "type": "string", "isRequired": true, "isNullable": false }] } }]
+            """,
+            """
+            [{ "type": "Catalogue.Dtos.LinkDto", "simpleName": "LinkDto", "kind": "dto",
+               "properties": [
+                 { "name": "URL", "type": "string", "isRequired": true, "isNullable": false },
+                 { "name": "IOStream", "type": "string", "isRequired": true, "isNullable": false }] }]
+            """));
+        var schemas = doc.RootElement.GetProperty("components").GetProperty("schemas");
+
+        var response = schemas.GetProperty("LinkDto").GetProperty("properties");
+        response.EnumerateObject().Select(p => p.Name).Should().Equal("url", "ioStream");
+
+        var request = schemas.GetProperty("CreateLinkRequest");
+        request.GetProperty("properties").EnumerateObject().Select(p => p.Name).Should().Equal("url");
+        request.GetProperty("required").EnumerateArray().Select(e => e.GetString()).Should().Equal("url");
+    }
+
+    /// <summary>
     ///     Every <c>$ref</c> the document writes points at a component the document emits.
     /// </summary>
     /// <remarks>
