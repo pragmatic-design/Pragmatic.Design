@@ -74,6 +74,7 @@ import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
+import { lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -1838,6 +1839,34 @@ function dockerShardsAreWhole() {
   return false;
 }
 
+/**
+ * Every project CI restores has a NuGet lock file, and every CI restore is locked to it (lock-files.mjs).
+ */
+function everyRestoreIsLocked() {
+  process.stdout.write('  every restore locked to a packages.lock.json … ');
+  const tracked = (pattern) => execSync(`git ls-files "${pattern}"`, { encoding: 'utf-8' }).trim().split('\n').filter(Boolean);
+  const workflows = tracked('.github/workflows/*.yml').map((path) => ({ path, text: readFileSync(path, 'utf-8') }));
+  const projects = solutionProjects(readFileSync(SLN, 'utf-8'));
+
+  const problems = lockFileProblems({
+    projects,
+    lockFiles: tracked('*packages.lock.json'),
+    workflows,
+    buildProps: readFileSync('Directory.Build.props', 'utf-8'),
+  });
+
+  if (problems.length === 0) {
+    console.log(`${ok('ok')} ${dim(`(${projects.length} projects)`)}`);
+    return true;
+  }
+
+  console.log(bad(`FAIL (${problems.length})`));
+  for (const p of problems.slice(0, 20)) console.log(`    ${p}`);
+  if (problems.length > 20) console.log(dim(`    … and ${problems.length - 20} more`));
+  console.log(dim(`    regenerate with: dotnet restore ${SLN} --force-evaluate, and commit the lock files`));
+  return false;
+}
+
 function suiteRunnerOverlaps() {
   return nodeTestCases('scripts/spawn-async.test.mjs', 'the suite runner overlaps when asked');
 }
@@ -2463,6 +2492,8 @@ if (tier === 'verify') {
   good = verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject()
     && dockerShardsAreWhole()
     && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
+    && everyRestoreIsLocked()
+    && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
     && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet() && buildSolution({ clean: true })
     && onlyPragmaticPackagesArePacked()
     && noReflectionJsonInGeneratedCode() && trimWarningRatchet() && undeclaredReflectionRatchet()

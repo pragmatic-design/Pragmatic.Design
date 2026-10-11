@@ -428,6 +428,30 @@ The consequence worth knowing before it surprises you: **`--tier full` and `--ti
 access** on any run where the graph changed or the scan aged out. Offline with an unchanged graph the
 cached answer stands; offline with a changed one, the gate says it could not run, which is not a pass.
 
+### Lock files
+
+Central package management fixes the versions a project asks for, not what a restore brings back: a
+package re-published under the same version, or a transitive version resolved differently, restores
+something else with no change in the repository. So every project in the solution commits a
+`packages.lock.json`, which records each package's content hash, and **CI restores in locked mode**: a
+resolution that differs from the committed file fails the restore instead of building something else.
+
+`Directory.Build.props` turns the lock files on everywhere and locked mode on when `CI` is `true`
+(GitHub Actions sets it), which also reaches the restores `dotnet build` and `dotnet test` run on their
+own; the workflows' `dotnet restore` lines say `--locked-mode` as well. Locally a restore is not locked
+and updates the files. After changing a package in `Directory.Packages.props`, regenerate them and commit
+them with the change:
+
+```bash
+dotnet restore Pragmatic.Design.slnx --force-evaluate
+```
+
+`--tier full` fails when a project in the solution has no lock file, a lock file has no project, or a
+workflow restores without `--locked-mode` (**`every restore locked to a packages.lock.json`**,
+`scripts/lock-files.mjs`). The AOT smoke projects and the consumer samples are outside the solution and
+write no lock file: CI does not restore them, the smoke scripts restore for a runtime identifier, and the
+consumer samples do not inherit the repository's build properties at all.
+
 ## Notes
 
 - Some suites are load-sensitive without needing Docker (`Pragmatic.Jobs.Tests` uses lease-based

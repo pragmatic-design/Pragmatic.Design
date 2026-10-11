@@ -51,7 +51,7 @@ jobs:
           node-version: '22'
 
       - name: Restore
-        run: dotnet restore Pragmatic.Design.slnx
+        run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       - name: Gate
         run: node scripts/check.mjs --tier full --keep-going
@@ -121,7 +121,7 @@ jobs:
           node-version: '22'
 
       - name: Restore
-        run: dotnet restore Pragmatic.Design.slnx
+        run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       - name: Container suites
         run: node scripts/check.mjs --tier docker --shard ${{ matrix.shard }}/3 --keep-going

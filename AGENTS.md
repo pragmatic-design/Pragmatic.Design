@@ -31,6 +31,11 @@ failing tests that pass alone. [docs/TESTING.md](docs/TESTING.md) has the detail
 
 To run one suite: `dotnet test <module>/tests/<project>/<project>.csproj --filter "..."`.
 
+After changing a package version in `Directory.Packages.props`, regenerate the NuGet lock files and
+commit them with the change: `dotnet restore Pragmatic.Design.slnx --force-evaluate`. CI restores in
+locked mode, so a stale `packages.lock.json` fails the build there
+([docs/TESTING.md](docs/TESTING.md#lock-files)).
+
 ## The five things most likely to be got wrong
 
 1. **Generated code comes from a template class, never a `StringBuilder`.** Every generator output
