@@ -11,12 +11,15 @@ best practices.
 
 ## Recommended flow
 
-1. `pragmatic-nuget-feed`: local NuGet feed, if you use preview packages.
-2. `pragmatic-new-app`: scaffold the host and the first boundary library.
-3. `pragmatic-architecture`: split into modules, boundaries, databases.
-4. `pragmatic-choose-modules`: select the packages for each feature.
-5. `pragmatic-use-persistence`, `pragmatic-use-actions-endpoints`: domain modeling.
-6. `pragmatic-use-authorization`, `-messaging`, `-jobs`, `-caching`, `-logging`: cross-cutting.
+1. `pragmatic-new-app`: scaffold the host and the first boundary library.
+2. `pragmatic-architecture`: split into modules, boundaries, databases.
+3. `pragmatic-choose-modules`: select the packages for each feature.
+4. `pragmatic-use-persistence`, `pragmatic-use-actions-endpoints`: domain modeling.
+5. The other `pragmatic-use-*` skills, one per feature the application takes up.
+
+The packages are on nuget.org as prereleases (`dotnet add package … --prerelease`).
+`pragmatic-nuget-feed` is only for a restore that fails, or for consuming builds that are not on
+nuget.org yet through a local feed.
 
 `pragmatic-ecosystem` is the hub: it holds the reference index (`references/`) and the blessed
 patterns map.
@@ -32,9 +35,10 @@ skills/
 ├── pragmatic-choose-modules/
 ├── pragmatic-new-app/
 ├── pragmatic-nuget-feed/
-└── pragmatic-use-*/           # composition, persistence, actions-endpoints, foundation,
-                               # authorization, messaging, jobs, caching, logging
+└── pragmatic-use-*/           # one skill per feature module
 ```
+
+The folder list under `skills/` is the complete set.
 
 The `pragmatic-use-*` skills point to the dense references under
 `pragmatic-ecosystem/references/` via plugin-internal relative paths, so the folders are installed
