@@ -276,7 +276,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
 
         // Category
-        var category = TruncateCategory(logEvent.Category);
+        var category = LogLineText.Escape(TruncateCategory(logEvent.Category));
         if (_supportsAnsiColors)
         {
             formatted = formatted.Replace("{Category}", $"{_colorScheme.AnsiCategoryColor}{category}{_colorScheme.AnsiReset}");
@@ -288,7 +288,7 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         }
 
         // Message
-        var message = FormatMessage(logEvent);
+        var message = LogLineText.Escape(FormatMessage(logEvent));
         formatted = formatted.Replace("{Message}", message);
 
         // Add structured properties if enabled
@@ -318,8 +318,8 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
         var formatted = template
             .Replace("{Timestamp}", logEvent.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp))
             .Replace("{Level}", GetLevelDisplayName(logEvent.LogLevel))
-            .Replace("{Category}", TruncateCategory(logEvent.Category))
-            .Replace("{Message}", FormatMessage(logEvent));
+            .Replace("{Category}", LogLineText.Escape(TruncateCategory(logEvent.Category)))
+            .Replace("{Message}", LogLineText.Escape(FormatMessage(logEvent)));
 
         // Add structured properties if enabled
         if (Configuration.IncludeStructuredProperties && logEvent.Properties.Count > 0)
@@ -373,11 +373,11 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
             }
             else if (kvp.Value is string stringValue)
             {
-                _stringBuilder.Append('"').Append(stringValue).Append('"');
+                _stringBuilder.Append('"').Append(LogLineText.Escape(stringValue)).Append('"');
             }
             else
             {
-                _stringBuilder.Append(kvp.Value);
+                _stringBuilder.Append(LogLineText.Escape(kvp.Value.ToString()));
             }
 
             first = false;
@@ -454,11 +454,11 @@ public sealed class PragmaticConsoleProvider : PragmaticLoggerProviderBase
             }
             else if (kvp.Value is string stringValue)
             {
-                _stringBuilder.Append('"').Append(stringValue).Append('"');
+                _stringBuilder.Append('"').Append(LogLineText.Escape(stringValue)).Append('"');
             }
             else
             {
-                _stringBuilder.Append(kvp.Value);
+                _stringBuilder.Append(LogLineText.Escape(kvp.Value.ToString()));
             }
 
             first = false;

@@ -620,13 +620,13 @@ public sealed class PragmaticFileProvider : PragmaticLoggerProviderBase, IAsyncD
         var config = Configuration.Formatting;
         var template = config.MessageTemplate;
 
-        // Replace template placeholders. Category and Message may carry caller-controlled
-        // data: collapse embedded CR/LF so a single entry cannot forge extra log lines.
+        // Category, Message and the property values may carry caller-controlled data: escaped so a
+        // single entry cannot forge extra log lines (LogLineText).
         var formatted = template
             .Replace("{Timestamp}", logEntry.FormatTimestamp(config.TimestampFormat, config.UseUtcTimestamp))
             .Replace("{Level}", GetLevelDisplayName(logEntry.LogLevel))
-            .Replace("{Category}", SanitizeLogLine(logEntry.Category))
-            .Replace("{Message}", SanitizeLogLine(FormatMessage(logEntry)));
+            .Replace("{Category}", LogLineText.Escape(logEntry.Category))
+            .Replace("{Message}", LogLineText.Escape(FormatMessage(logEntry)));
 
         // Add structured properties if enabled
         if (Configuration.IncludeStructuredProperties && logEntry.Properties.Count > 0)
@@ -659,23 +659,6 @@ public sealed class PragmaticFileProvider : PragmaticLoggerProviderBase, IAsyncD
         }
 
         return formatted;
-    }
-
-    /// <summary>
-    ///     Collapses embedded carriage-return and line-feed characters into their visible
-    ///     escaped forms so caller-controlled data cannot inject forged log lines
-    ///     (log-forging / CRLF injection). Exception details are formatted separately
-    ///     and intentionally remain multi-line.
-    /// </summary>
-    private static string SanitizeLogLine(string? value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value ?? string.Empty;
-
-        if (value.IndexOf('\r') < 0 && value.IndexOf('\n') < 0)
-            return value;
-
-        return value.Replace("\r", "\\r").Replace("\n", "\\n");
     }
 
     private string FormatMessage(LogEntry logEntry)
@@ -724,11 +707,11 @@ public sealed class PragmaticFileProvider : PragmaticLoggerProviderBase, IAsyncD
             }
             else if (kvp.Value is string stringValue)
             {
-                sb.Append('"').Append(stringValue).Append('"');
+                sb.Append('"').Append(LogLineText.Escape(stringValue)).Append('"');
             }
             else
             {
-                sb.Append(kvp.Value);
+                sb.Append(LogLineText.Escape(kvp.Value.ToString()));
             }
 
             first = false;

@@ -125,12 +125,12 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
         // Add category if enabled
         if (_includeCategory)
         {
-            sb.Append(logEvent.Category);
+            sb.Append(LogLineText.Escape(logEvent.Category));
             sb.Append(": ");
         }
 
         // Add the main message
-        sb.Append(logEvent.Message);
+        sb.Append(LogLineText.Escape(logEvent.Message));
 
         // Add structured properties if available and enabled
         if (Configuration.IncludeStructuredProperties && logEvent.Properties.Count > 0)
@@ -179,10 +179,10 @@ public sealed class PragmaticDebugProvider : PragmaticLoggerProviderBase
         return value switch
         {
             null => "null",
-            string s => $"\"{s}\"",
+            string s => $"\"{LogLineText.Escape(s)}\"",
             DateTime dt => dt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
             TimeSpan ts => ts.ToString(),
-            _ => value.ToString() ?? "null"
+            _ => LogLineText.Escape(value.ToString() ?? "null")
         };
     }
 
