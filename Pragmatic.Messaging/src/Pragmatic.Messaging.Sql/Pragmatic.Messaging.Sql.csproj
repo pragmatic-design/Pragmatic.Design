@@ -3,6 +3,9 @@
   <PropertyGroup>
     <Description>SQL transport for Pragmatic.Messaging: durable queues on PostgreSQL or SQL Server tables (no broker), with native delayed messages, restart-safe schedule cancellation and optional pg_notify low-latency wakeups.</Description>
     <PackageTags>messaging;sql;postgresql;sqlserver;transport;queue;no-broker</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the transport logs per delivery, and a generated call site writes
+         its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <!-- Expose internals to test project -->
@@ -13,6 +16,13 @@
   <!-- Core dependencies -->
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The generator, for the log call sites. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

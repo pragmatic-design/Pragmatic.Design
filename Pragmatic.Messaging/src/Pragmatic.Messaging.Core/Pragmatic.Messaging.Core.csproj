@@ -4,6 +4,9 @@
     <RootNamespace>Pragmatic.Messaging</RootNamespace>
     <Description>Core messaging abstractions: IMessageBus, handlers, middleware, routing, serialization. Zero dependency on Events, EFCore, or Actions.</Description>
     <PackageTags>messaging;core;handler;pipeline;middleware;routing</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the bus logs every publish and every handler, and a generated call
+         site writes its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <!-- Expose internals to bridge and sibling packages -->
@@ -23,6 +26,14 @@
     <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
+  </ItemGroup>
+
+  <!-- The generator, for the log call sites. It also writes what it writes for every assembly that runs it,
+       here an empty redaction map: no type in this project declares [NotLogged] or [PersonalData]. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

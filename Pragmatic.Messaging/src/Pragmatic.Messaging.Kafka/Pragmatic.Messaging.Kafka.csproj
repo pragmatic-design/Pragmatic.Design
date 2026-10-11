@@ -3,6 +3,9 @@
   <PropertyGroup>
     <Description>Apache Kafka message transport for Pragmatic.Messaging. Consumer groups, partition assignment, exactly-once semantics.</Description>
     <PackageTags>messaging;kafka;transport;streaming;consumer-groups;distributed</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the transport logs per delivery, and a generated call site writes
+         its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +14,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The generator, for the log call sites. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
