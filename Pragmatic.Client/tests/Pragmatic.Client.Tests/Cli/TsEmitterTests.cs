@@ -96,6 +96,48 @@ public class TsEmitterTests
         files["client.ts"].Should().Contain("body: { url: string }");
     }
 
+    /// <summary>
+    ///     An endpoint with no response type is in the client, returning <c>ApiResult&lt;void&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The manifest writes <c>response</c> only when the endpoint has a response type, and the filter
+    ///     was a nested property pattern (<c>Response.IsStream: not true</c>), which never matches a null
+    ///     <c>Response</c>: every such endpoint was left out of the client (#179).
+    /// </remarks>
+    [Fact]
+    public void Emit_AnEndpointWithNoResponseType_IsAnOperationReturningVoid()
+    {
+        const string json = """
+            {
+              "assembly": "Acme.Catalog",
+              "endpoints": [{ "operationId": "Catalog.DeleteLink", "httpMethod": "DELETE", "fullRoute": "/links/{id}",
+                              "isVoid": true,
+                              "parameters": [{ "name": "id", "in": "path", "type": "System.Guid", "isRequired": true }] }]
+            }
+            """;
+
+        var client = TsEmitter.Emit(ManifestJson.Read(json)[0], json)["client.ts"];
+
+        client.Should().Contain("deleteLink(id: string): Promise<ApiResult<void>> {");
+    }
+
+    /// <summary>Control: a streaming endpoint is still not a request-response operation of the client.</summary>
+    [Fact]
+    public void Emit_AStreamingEndpoint_IsLeftOut()
+    {
+        const string json = """
+            {
+              "assembly": "Acme.Catalog",
+              "endpoints": [{ "operationId": "Catalog.WatchLinks", "httpMethod": "GET", "fullRoute": "/links/watch",
+                              "isVoid": false, "response": { "type": "System.String", "isStream": true } }]
+            }
+            """;
+
+        var client = TsEmitter.Emit(ManifestJson.Read(json)[0], json)["client.ts"];
+
+        client.Should().NotContain("watchLinks(");
+    }
+
     [Fact]
     public void Emit_Paging_DefinesPagedResult()
     {
