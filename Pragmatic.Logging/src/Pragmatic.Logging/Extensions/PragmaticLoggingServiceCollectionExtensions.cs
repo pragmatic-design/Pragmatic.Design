@@ -134,7 +134,10 @@ public static class PragmaticLoggingServiceCollectionExtensions
 
                 if (provider is Providers.PragmaticLoggerProviderBase withRedaction)
                 {
-                    withRedaction.DeclaredRedactor =
+                    // Fills a gap, never replaces a choice: a factory that gave its provider a redactor of its
+                    // own keeps it. The container's is built over the maps registered in it, and with none
+                    // registered it masks nothing (#173).
+                    withRedaction.DeclaredRedactor ??=
                         serviceProvider.GetService(typeof(global::Pragmatic.Redaction.DeclaredRedactor))
                             as global::Pragmatic.Redaction.DeclaredRedactor;
 
