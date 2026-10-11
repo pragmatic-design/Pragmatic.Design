@@ -446,8 +446,14 @@ them with the change:
 dotnet restore Pragmatic.Design.slnx --force-evaluate
 ```
 
-`--tier full` fails when a project in the solution has no lock file, a lock file has no project, or a
-workflow restores without `--locked-mode` (**`every restore locked to a packages.lock.json`**,
+The SDK is part of what a lock file records: it adds `Microsoft.NET.ILLink.Tasks` to the trimmable
+projects at the version of the runtime it bundles, so a newer SDK patch writes different lock files. So
+`global.json` pins the patch (`rollForward: patch`), and updating the SDK means changing it and
+regenerating the lock files in the same commit.
+
+`--tier full` fails when a project in the solution has no lock file, a lock file has no project, a
+workflow restores without `--locked-mode`, `global.json` does not pin the patch, or the lock files resolve
+ILLink.Tasks at more than one version (**`every restore locked to a packages.lock.json`**,
 `scripts/lock-files.mjs`). The AOT smoke projects and the consumer samples are outside the solution and
 write no lock file: CI does not restore them, the smoke scripts restore for a runtime identifier, and the
 consumer samples do not inherit the repository's build properties at all.

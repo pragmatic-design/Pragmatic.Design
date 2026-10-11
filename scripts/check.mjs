@@ -74,7 +74,7 @@ import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
-import { lockFileProblems, solutionProjects } from './lock-files.mjs';
+import { ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -1847,12 +1847,21 @@ function everyRestoreIsLocked() {
   const tracked = (pattern) => execSync(`git ls-files "${pattern}"`, { encoding: 'utf-8' }).trim().split('\n').filter(Boolean);
   const workflows = tracked('.github/workflows/*.yml').map((path) => ({ path, text: readFileSync(path, 'utf-8') }));
   const projects = solutionProjects(readFileSync(SLN, 'utf-8'));
+  const lockFiles = tracked('*packages.lock.json');
+
+  const ilLinkVersions = new Map();
+  for (const lockFile of lockFiles) {
+    const version = ilLinkVersion(readFileSync(lockFile, 'utf-8'));
+    if (version) ilLinkVersions.set(version, (ilLinkVersions.get(version) ?? 0) + 1);
+  }
 
   const problems = lockFileProblems({
     projects,
-    lockFiles: tracked('*packages.lock.json'),
+    lockFiles,
     workflows,
     buildProps: readFileSync('Directory.Build.props', 'utf-8'),
+    globalJson: readFileSync('global.json', 'utf-8'),
+    ilLinkVersions,
   });
 
   if (problems.length === 0) {

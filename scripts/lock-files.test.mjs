@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lockFileProblems, solutionProjects } from './lock-files.mjs';
+import { ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 const PROPS = `<Project>
   <PropertyGroup>
@@ -19,6 +19,8 @@ const WHOLE = {
   lockFiles: ['A/src/A/packages.lock.json', 'A/tests/A.Tests/packages.lock.json'],
   workflows: [{ path: '.github/workflows/ci.yml', text: '      - run: dotnet restore X.slnx --locked-mode\n' }],
   buildProps: PROPS,
+  globalJson: '{ "sdk": { "version": "10.0.303", "rollForward": "patch" } }',
+  ilLinkVersions: new Map([['10.0.11', 2]]),
 };
 
 test('every project locked, every restore locked: nothing to report', () => {
@@ -61,6 +63,33 @@ test('locked mode everywhere, not only in CI, is not what is asked: a developer 
   assert.deepEqual(lockFileProblems({ ...WHOLE, buildProps: props }), [
     "Directory.Build.props does not set RestoreLockedMode when '$(CI)' is true",
   ]);
+});
+
+test('an SDK that rolls forward to the latest patch is reported: the next patch moves every lock file', () => {
+  const globalJson = '{ "sdk": { "version": "10.0.302", "rollForward": "latestPatch" } }';
+  assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
+    "global.json rolls forward to 'latestPatch': a newer SDK patch would move every lock file",
+  ]);
+});
+
+test('no rollForward at all is reported: the pin has to be written, not left to the default', () => {
+  const globalJson = '{ "sdk": { "version": "10.0.303" } }';
+  assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
+    "global.json names no rollForward: say 'patch', so the SDK that wrote the lock files is the one used",
+  ]);
+});
+
+test('lock files that resolve two ILLink.Tasks versions are reported: two SDKs wrote them', () => {
+  const ilLinkVersions = new Map([['10.0.11', 200], ['10.0.12', 1]]);
+  assert.deepEqual(lockFileProblems({ ...WHOLE, ilLinkVersions }), [
+    'the lock files resolve Microsoft.NET.ILLink.Tasks at more than one version (10.0.11 in 200, 10.0.12 in 1): written by different SDKs',
+  ]);
+});
+
+test('the ILLink.Tasks version a lock file resolves, or null without it', () => {
+  const lock = (deps) => JSON.stringify({ version: 2, dependencies: { 'net10.0': deps } });
+  assert.equal(ilLinkVersion(lock({ 'Microsoft.NET.ILLink.Tasks': { type: 'Direct', resolved: '10.0.11' } })), '10.0.11');
+  assert.equal(ilLinkVersion(lock({ MinVer: { type: 'Direct', resolved: '6.0.0' } })), null);
 });
 
 test('the projects of a .slnx, with forward slashes', () => {

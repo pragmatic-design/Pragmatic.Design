@@ -11,7 +11,13 @@
  * run on their own. The workflows' explicit `dotnet restore` lines say `--locked-mode` as well, so the step that
  * restores reads as locked where it is written.
  *
- * Regenerate after changing a package: `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
+ * The SDK is part of what a lock file records. It adds `Microsoft.NET.ILLink.Tasks` to the trimmable projects at the
+ * version of the runtime it bundles, so a newer SDK patch resolves a newer one and every locked restore fails. So
+ * `global.json` pins the patch (`rollForward: patch`, the exact version when it is installed, which `setup-dotnet`
+ * does), and every lock file has to agree on one ILLink version: two of them mean the files were written by two SDKs.
+ *
+ * Regenerate after changing a package, or the SDK in `global.json`:
+ * `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
  */
 
 /**
@@ -24,10 +30,13 @@
  *   lockFiles: string[],
  *   workflows: { path: string, text: string }[],
  *   buildProps: string,
- * }} input paths with forward slashes, relative to the repository root
+ *   globalJson: string,
+ *   ilLinkVersions: Map<string, number>,
+ * }} input paths with forward slashes, relative to the repository root; `ilLinkVersions` counts the lock files
+ *   per ILLink.Tasks version they resolve
  * @returns {string[]}
  */
-export function lockFileProblems({ projects, lockFiles, workflows, buildProps }) {
+export function lockFileProblems({ projects, lockFiles, workflows, buildProps, globalJson, ilLinkVersions }) {
   const problems = [];
   const dir = (path) => path.slice(0, path.lastIndexOf('/'));
   const projectDirs = new Set(projects.map(dir));
@@ -51,7 +60,34 @@ export function lockFileProblems({ projects, lockFiles, workflows, buildProps })
   if (!/<RestoreLockedMode\s+Condition="'\$\(CI\)'\s*==\s*'true'">\s*true\s*<\/RestoreLockedMode>/.test(buildProps))
     problems.push("Directory.Build.props does not set RestoreLockedMode when '$(CI)' is true");
 
+  // Required in so many words: an absent policy leaves the reader to know the SDK's default.
+  const rollForward = JSON.parse(globalJson).sdk?.rollForward;
+  if (rollForward === undefined)
+    problems.push("global.json names no rollForward: say 'patch', so the SDK that wrote the lock files is the one used");
+  else if (rollForward !== 'patch' && rollForward !== 'disable')
+    problems.push(`global.json rolls forward to '${rollForward}': a newer SDK patch would move every lock file`);
+
+  if (ilLinkVersions.size > 1) {
+    const counts = [...ilLinkVersions].map(([version, n]) => `${version} in ${n}`).join(', ');
+    problems.push(`the lock files resolve Microsoft.NET.ILLink.Tasks at more than one version (${counts}): written by different SDKs`);
+  }
+
   return problems;
+}
+
+/**
+ * The version of `Microsoft.NET.ILLink.Tasks` a lock file resolves, or null when the project does not reference it.
+ *
+ * @param {string} lockFile the file's text
+ * @returns {string | null}
+ */
+export function ilLinkVersion(lockFile) {
+  const targets = JSON.parse(lockFile).dependencies ?? {};
+  for (const packages of Object.values(targets)) {
+    const resolved = packages['Microsoft.NET.ILLink.Tasks']?.resolved;
+    if (resolved) return resolved;
+  }
+  return null;
 }
 
 /**
