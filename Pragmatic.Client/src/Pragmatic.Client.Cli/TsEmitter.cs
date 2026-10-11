@@ -123,7 +123,9 @@ public static class TsEmitter
         sb.AppendLine("  ) {}");
 
         foreach (var endpoint in (module.Endpoints ?? [])
-                     .Where(e => e is { OperationId: not null, FullRoute: not null, Response.IsStream: not true })
+                     // Not a nested `Response.IsStream` pattern: that never matches a null Response, and the
+                     // manifest writes none for an endpoint without a response type (#179).
+                     .Where(e => e is { OperationId: not null, FullRoute: not null } && e.Response?.IsStream != true)
                      .OrderBy(e => e.OperationId, StringComparer.Ordinal))
             EmitOperation(sb, endpoint, module);
 
