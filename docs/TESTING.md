@@ -12,6 +12,7 @@ node scripts/check.mjs --tier fast     # dev loop: build + hermetic tests of cha
 node scripts/check.mjs --tier full     # clean build --warnaserror + ALL hermetic suites
 node scripts/check.mjs --tier aot      # publish the AOT smokes Native AOT and run them
 node scripts/check.mjs --tier docker   # the container suites, one at a time
+node scripts/check.mjs --tier docker --shard 2/3   # one CI job's part of them (scripts/docker-shards.mjs)
 node scripts/check.mjs --tier all      # full, then aot, then docker  ← before a commit series or a publish
 node scripts/check.mjs --tier verify   # only: does every path CI names exist?
 ```
@@ -19,7 +20,9 @@ node scripts/check.mjs --tier verify   # only: does every path CI names exist?
 Options: `--jobs N` (hermetic parallelism, default cores−2), `--keep-going` (don't stop at the first
 red suite), `--only <substring>` (run only the suites whose name contains it; **narrows the suites and
 nothing else**: the clean build and every ratchet still run, and the run declares itself NOT the gate,
-at the top and again at the end).
+at the top and again at the end), `--shard k/n` (with `--tier docker` only: the `k`-th of the `n` parts
+of the container suites in `scripts/docker-shards.mjs`; unlike `--only` it is the gate for its part,
+because the union of the shards is every container suite).
 
 ## Which tier, when
 
@@ -59,7 +62,13 @@ generator regression.
 story is what makes people abandon the gate for a bare `dotnet test`, which is the incremental-build
 trap this script exists to close.
 
-CI already splits it this way: `ci.yml` runs `--tier full` and `--tier docker` as two jobs.
+CI splits it further: `ci.yml` runs `--tier full` beside three `--tier docker --shard k/3` jobs, all
+four at once. The suites stay one at a time **within** a job, and the jobs run on separate runners, which
+do not share a Docker. The shards are an explicit map in `scripts/docker-shards.mjs`, balanced by each
+suite's duration on the CI runner, and the full tier fails when a container suite is in no shard or a
+shard names one that does not exist: a suite added with `<RequiresDocker>` has to be placed, or no CI job
+would run it. Before the split, one container job ran ~28 minutes after a gate of 10–17, 38–45 minutes
+per pull request.
 
 ⚠️ **Where the container tier's time goes is not where it looks.** Dividing a suite's wall clock by
 its test count measures the scaffolding, not the tests: Migrations averages "445 ms per test" while its
