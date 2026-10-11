@@ -106,6 +106,56 @@ public class TypeScriptClientGeneratorTests : IDisposable
         types.Should().Contain("displayName?: string | null;");
     }
 
+    /// <summary>
+    ///     A property whose name starts with an acronym is read and sent under the name the server writes.
+    /// </summary>
+    /// <remarks>
+    ///     The host's policy is <c>JsonNamingPolicy.CamelCase</c>: <c>URL</c> is <c>url</c>, <c>IOStream</c>
+    ///     is <c>ioStream</c>. A DTO interface that says <c>uRL</c> reads <c>undefined</c> from every
+    ///     response, and a request interface that says <c>uRL</c> is what <c>JSON.stringify</c> sends (#146).
+    /// </remarks>
+    [Fact]
+    public void Generate_AnAcronymLedProperty_IsNamedAsTheServerWritesIt()
+    {
+        var manifest = new ClientManifest
+        {
+            Assembly = "Acme.Catalog",
+            Types =
+            [
+                new ClientType
+                {
+                    SimpleName = "LinkDto",
+                    Kind = "dto",
+                    Properties =
+                    [
+                        new ClientProperty { Name = "URL", Type = "System.String" },
+                        new ClientProperty { Name = "IOStream", Type = "System.String" },
+                    ],
+                }
+            ],
+            Endpoints =
+            [
+                new ClientEndpoint
+                {
+                    OperationId = "Catalog.CreateLink",
+                    HttpMethod = "POST",
+                    FullRoute = "/links",
+                    IsVoid = true,
+                    RequestBody = new ClientBody
+                    {
+                        Properties = [new ClientProperty { Name = "URL", Type = "System.String", IsRequired = true }],
+                    },
+                }
+            ],
+        };
+
+        new TypeScriptClientGenerator(manifest, "@acme/catalog", _outDir).Generate();
+
+        var types = Read("src", "types.ts");
+        types.Should().Contain("export interface LinkDto {\n  url: string;\n  ioStream: string;\n}".ReplaceLineEndings());
+        types.Should().Contain("export interface CreateLinkRequest {\n  url: string;\n}".ReplaceLineEndings());
+    }
+
     [Fact]
     public void Generate_AlwaysEmitsResultTypesAndBarrelExport()
     {

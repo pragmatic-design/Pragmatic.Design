@@ -21,4 +21,10 @@
     <!-- Configuration.Json and EnvironmentVariables are provided by the ASP.NET Core shared framework -->
   </ItemGroup>
 
+  <!-- The name a property carries on the wire, the same file the generators compile: the TypeScript client
+       must read and send what the server writes (#146). -->
+  <ItemGroup>
+    <Compile Include="$(SharedSourceGenPath)JsonWireNames.cs" LinkBase="Shared" />
+  </ItemGroup>
+
 </Project>

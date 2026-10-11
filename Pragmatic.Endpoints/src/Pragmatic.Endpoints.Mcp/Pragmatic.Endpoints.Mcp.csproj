@@ -16,6 +16,12 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 
+  <!-- The name a property carries on the wire, the same file the generators compile: a tool's schema must
+       ask for what the server reads (#146). -->
+  <ItemGroup>
+    <Compile Include="$(SharedSourceGenPath)JsonWireNames.cs" LinkBase="Shared" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

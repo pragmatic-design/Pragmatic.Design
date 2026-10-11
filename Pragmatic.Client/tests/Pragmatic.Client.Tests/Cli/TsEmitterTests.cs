@@ -65,6 +65,37 @@ public class TsEmitterTests
         errors.Should().Contain("export interface ApiError {");
     }
 
+    /// <summary>
+    ///     A property whose name starts with an acronym is read and sent under the name the server writes.
+    /// </summary>
+    /// <remarks>
+    ///     The host's policy is <c>JsonNamingPolicy.CamelCase</c>: <c>URL</c> is <c>url</c>, <c>IOStream</c>
+    ///     is <c>ioStream</c>. An interface that says <c>uRL</c> reads <c>undefined</c> from every response,
+    ///     and a body that says <c>uRL</c> sends a field the server binds to nothing case-sensitively (#146).
+    /// </remarks>
+    [Fact]
+    public void Emit_AnAcronymLedProperty_IsNamedAsTheServerWritesIt()
+    {
+        const string json = """
+            {
+              "assembly": "Acme.Catalog",
+              "endpoints": [{ "operationId": "Catalog.CreateLink", "httpMethod": "POST", "fullRoute": "/links",
+                              "isVoid": false, "response": { "type": "Acme.Catalog.LinkDto" },
+                              "requestBody": { "properties": [{ "name": "URL", "type": "string", "isRequired": true }] } }],
+              "types": [{ "simpleName": "LinkDto", "kind": "dto",
+                          "properties": [{ "name": "URL", "type": "string", "isRequired": true },
+                                         { "name": "IOStream", "type": "string", "isRequired": true }] }]
+            }
+            """;
+
+        var files = TsEmitter.Emit(ManifestJson.Read(json)[0], json);
+
+        files["types.ts"].Should().Contain("  url: string;");
+        files["types.ts"].Should().Contain("  ioStream: string;");
+        files["types.ts"].Should().NotContain("uRL");
+        files["client.ts"].Should().Contain("body: { url: string }");
+    }
+
     [Fact]
     public void Emit_Paging_DefinesPagedResult()
     {

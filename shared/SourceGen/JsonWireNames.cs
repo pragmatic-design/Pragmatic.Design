@@ -15,6 +15,11 @@ namespace Pragmatic.SourceGen;
 ///         <c>url</c>, <c>IOStream</c> is <c>ioStream</c>). <c>WhatAResponseWriterCoversTests</c> compares this with
 ///         the policy itself.
 ///     </para>
+///     <para>
+///         Also linked as source into what is not a generator but publishes the same names: the MCP tool schemas
+///         (<c>Pragmatic.Endpoints.Mcp</c>) and the two TypeScript client CLIs (<c>Pragmatic.Client.Cli</c>,
+///         <c>Pragmatic.Migrations.Cli</c>). One file, so the rule cannot drift between them (#146).
+///     </para>
 /// </remarks>
 internal static class JsonWireNames
 {

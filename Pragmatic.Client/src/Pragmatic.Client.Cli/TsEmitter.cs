@@ -51,7 +51,7 @@ public static class TsEmitter
                     foreach (var prop in type.Properties.Where(p => p.Name is not null))
                     {
                         var optional = prop.IsNullable || !prop.IsRequired ? "?" : "";
-                        sb.Append("  ").Append(CamelCase(prop.Name!)).Append(optional).Append(": ")
+                        sb.Append("  ").Append(WireName(prop.Name!)).Append(optional).Append(": ")
                             .Append(TsType(prop.Type, module)).AppendLine(";");
                     }
 
@@ -165,7 +165,7 @@ public static class TsEmitter
         if (hasBody)
             args.Add($"body: {{ {string.Join("; ", endpoint.RequestBody!.Properties!
                 .Where(p => p.Name is not null)
-                .Select(p => $"{CamelCase(p.Name!)}{(p.IsRequired ? "" : "?")}: {TsType(p.Type, module)}"))} }}");
+                .Select(p => $"{WireName(p.Name!)}{(p.IsRequired ? "" : "?")}: {TsType(p.Type, module)}"))} }}");
         if (queryParams.Count > 0)
             args.Add($"query?: {{ {string.Join("; ", queryParams
                 .Select(p => $"{CamelCase(p.Name!)}?: {TsType(p.Type, module)}"))} }}");
@@ -255,6 +255,10 @@ public static class TsEmitter
         return lastDot >= 0 ? type[(lastDot + 1)..] : type;
     }
 
+    // A TypeScript identifier: a method or a parameter name, which only has to read as camel case.
     private static string CamelCase(string name)
         => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+
+    // A property on the wire: the name the server writes and reads, the host's JsonNamingPolicy.CamelCase.
+    private static string WireName(string name) => Pragmatic.SourceGen.JsonWireNames.CamelCase(name);
 }
