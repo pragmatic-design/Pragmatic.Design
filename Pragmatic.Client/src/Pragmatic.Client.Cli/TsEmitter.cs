@@ -51,7 +51,7 @@ public static class TsEmitter
                     foreach (var prop in type.Properties.Where(p => p.Name is not null))
                     {
                         var optional = prop.IsNullable || !prop.IsRequired ? "?" : "";
-                        sb.Append("  ").Append(WireName(prop.Name!)).Append(optional).Append(": ")
+                        sb.Append("  ").Append(WireName(prop)).Append(optional).Append(": ")
                             .Append(TsType(prop.Type, module)).AppendLine(";");
                     }
 
@@ -167,7 +167,7 @@ public static class TsEmitter
         if (hasBody)
             args.Add($"body: {{ {string.Join("; ", endpoint.RequestBody!.Properties!
                 .Where(p => p.Name is not null)
-                .Select(p => $"{WireName(p.Name!)}{(p.IsRequired ? "" : "?")}: {TsType(p.Type, module)}"))} }}");
+                .Select(p => $"{WireName(p)}{(p.IsRequired ? "" : "?")}: {TsType(p.Type, module)}"))} }}");
         if (queryParams.Count > 0)
             args.Add($"query?: {{ {string.Join("; ", queryParams
                 .Select(p => $"{CamelCase(p.Name!)}?: {TsType(p.Type, module)}"))} }}");
@@ -261,6 +261,8 @@ public static class TsEmitter
     private static string CamelCase(string name)
         => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
-    // A property on the wire: the name the server writes and reads, the host's JsonNamingPolicy.CamelCase.
-    private static string WireName(string name) => Pragmatic.SourceGen.JsonWireNames.CamelCase(name);
+    // A property on the wire: the name the server writes and reads — the [JsonPropertyName] the manifest
+    // carries, or, for a property nothing renames, the host's JsonNamingPolicy.CamelCase.
+    private static string WireName(ManifestJson.PropDoc property)
+        => property.WireName ?? Pragmatic.SourceGen.JsonWireNames.CamelCase(property.Name!);
 }

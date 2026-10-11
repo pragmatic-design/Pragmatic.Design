@@ -38,4 +38,26 @@ public class TheToolSchemaNamesAsTheServerReadsTests
         schema.RootElement.GetProperty("required").EnumerateArray().Select(e => e.GetString())
             .Should().Equal("url");
     }
+
+    /// <summary>
+    ///     A body property renamed with <c>[JsonPropertyName]</c> is asked for under its wire name, which the
+    ///     manifest carries as <c>wireName</c> (#180).
+    /// </summary>
+    [Fact]
+    public void ARenamedBodyProperty_IsNamedByItsWireName()
+    {
+        // Read as the manifest reader reads it, so the test exercises the manifest's own key.
+        var endpoint = JsonSerializer.Deserialize<ManifestEndpoint>("""
+            { "requestBody": { "properties": [
+                { "name": "Name", "wireName": "label", "type": "string", "isRequired": true },
+                { "name": "Weight", "type": "int" } ] } }
+            """, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        using var schema = JsonDocument.Parse(McpJsonSchemaBuilder.Build(endpoint));
+
+        schema.RootElement.GetProperty("properties").EnumerateObject().Select(p => p.Name)
+            .Should().Equal("label", "weight");
+        schema.RootElement.GetProperty("required").EnumerateArray().Select(e => e.GetString())
+            .Should().Equal("label");
+    }
 }

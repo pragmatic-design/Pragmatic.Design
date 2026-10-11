@@ -138,6 +138,33 @@ public class TsEmitterTests
         client.Should().NotContain("watchLinks(");
     }
 
+    /// <summary>
+    ///     A property renamed with <c>[JsonPropertyName]</c> is read and sent under its wire name, which the
+    ///     manifest carries as <c>wireName</c> (#180).
+    /// </summary>
+    [Fact]
+    public void Emit_ARenamedProperty_IsNamedByItsWireName()
+    {
+        const string json = """
+            {
+              "assembly": "Acme.Catalog",
+              "endpoints": [{ "operationId": "Catalog.CreateThing", "httpMethod": "POST", "fullRoute": "/things",
+                              "isVoid": true,
+                              "requestBody": { "properties": [{ "name": "Name", "wireName": "label", "type": "string", "isRequired": true }] } }],
+              "types": [{ "simpleName": "ThingDto", "kind": "dto",
+                          "properties": [{ "name": "Name", "wireName": "label", "type": "string", "isRequired": true },
+                                         { "name": "Weight", "type": "int", "isRequired": true }] }]
+            }
+            """;
+
+        var files = TsEmitter.Emit(ManifestJson.Read(json)[0], json);
+
+        files["types.ts"].Should().Contain("  label: string;");
+        files["types.ts"].Should().Contain("  weight: number;");
+        files["types.ts"].Should().NotContain("  name: string;");
+        files["client.ts"].Should().Contain("body: { label: string }");
+    }
+
     [Fact]
     public void Emit_Paging_DefinesPagedResult()
     {

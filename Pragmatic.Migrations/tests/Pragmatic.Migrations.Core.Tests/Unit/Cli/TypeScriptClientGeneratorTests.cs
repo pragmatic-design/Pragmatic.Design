@@ -156,6 +156,33 @@ public class TypeScriptClientGeneratorTests : IDisposable
         types.Should().Contain("export interface CreateLinkRequest {\n  url: string;\n}".ReplaceLineEndings());
     }
 
+    /// <summary>
+    ///     A property renamed with <c>[JsonPropertyName]</c> is read and sent under its wire name, which the
+    ///     manifest carries as <c>wireName</c> (#180).
+    /// </summary>
+    [Fact]
+    public void Generate_ARenamedProperty_IsNamedByItsWireName()
+    {
+        // Read from JSON as the CLI reads the manifest, so the test exercises the manifest's own key.
+        var manifest = System.Text.Json.JsonSerializer.Deserialize<ClientManifest>("""
+            {
+              "assembly": "Acme.Catalog",
+              "types": [{ "simpleName": "ThingDto", "kind": "dto",
+                          "properties": [{ "name": "Name", "wireName": "label", "type": "System.String" },
+                                         { "name": "Weight", "type": "System.Int32" }] }],
+              "endpoints": [{ "operationId": "Catalog.CreateThing", "httpMethod": "POST", "fullRoute": "/things",
+                              "isVoid": true,
+                              "requestBody": { "properties": [{ "name": "Name", "wireName": "label", "type": "System.String", "isRequired": true }] } }]
+            }
+            """, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        new TypeScriptClientGenerator(manifest, "@acme/catalog", _outDir).Generate();
+
+        var types = Read("src", "types.ts");
+        types.Should().Contain("export interface ThingDto {\n  label: string;\n  weight: number;\n}".ReplaceLineEndings());
+        types.Should().Contain("export interface CreateThingRequest {\n  label: string;\n}".ReplaceLineEndings());
+    }
+
     [Fact]
     public void Generate_AlwaysEmitsResultTypesAndBarrelExport()
     {

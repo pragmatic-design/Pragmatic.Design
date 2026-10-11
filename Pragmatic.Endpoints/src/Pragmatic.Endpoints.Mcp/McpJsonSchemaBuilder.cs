@@ -33,9 +33,9 @@ public static class McpJsonSchemaBuilder
             foreach (var property in endpoint.RequestBody?.Properties ?? [])
             {
                 if (property.Name is null) continue;
-                WriteProperty(writer, CamelCase(property.Name), property.Type, maxLength: property.MaxLength);
+                WriteProperty(writer, WireName(property), property.Type, maxLength: property.MaxLength);
                 if (property.IsRequired)
-                    required.Add(CamelCase(property.Name));
+                    required.Add(WireName(property));
             }
 
             writer.WriteEndObject(); // properties
@@ -97,6 +97,8 @@ public static class McpJsonSchemaBuilder
         return (lastDot >= 0 ? s[(lastDot + 1)..] : s).ToLowerInvariant();
     }
 
-    // The name the server writes and reads for a property nothing renames: the host's JsonNamingPolicy.CamelCase.
-    internal static string CamelCase(string name) => Pragmatic.SourceGen.JsonWireNames.CamelCase(name);
+    // The name the server writes and reads: the [JsonPropertyName] the manifest carries, or, for a property
+    // nothing renames, the host's JsonNamingPolicy.CamelCase.
+    internal static string WireName(ManifestProperty property)
+        => property.WireName ?? Pragmatic.SourceGen.JsonWireNames.CamelCase(property.Name!);
 }

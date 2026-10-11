@@ -80,7 +80,7 @@ public sealed class McpToolExecutor(
             foreach (var property in tool.BodyProperties)
             {
                 if (property.Name is null) continue;
-                var jsonName = McpJsonSchemaBuilder.CamelCase(property.Name);
+                var jsonName = McpJsonSchemaBuilder.WireName(property);
                 if (args.TryGetValue(jsonName, out var value) ||
                     args.TryGetValue(property.Name, out value))
                 {
