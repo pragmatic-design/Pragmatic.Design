@@ -29,6 +29,14 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <Deterministic>true</Deterministic>
 
+    <!-- NuGet lock files. Central package management fixes the versions, not what a restore brings
+         back: packages.lock.json records each package's content hash. CI (which sets CI=true) restores
+         locked, so a resolution that differs from the committed file fails instead of building something
+         else; locally a restore updates the file, to be committed with the package change. The command
+         that regenerates them is in scripts/lock-files.mjs (an XML comment cannot spell its option). -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+
     <!-- Build Settings -->
     <!-- Pinned, not "latest". C# 14 is the version that ships with .NET 10, which is what every
          runtime project here targets. Left at "latest", the language version is decided by whichever

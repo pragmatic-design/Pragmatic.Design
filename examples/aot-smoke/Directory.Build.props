@@ -1,0 +1,12 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- No NuGet lock files here. These projects are outside the solution, CI never restores them, and the
+       publish-and-smoke scripts restore them for a runtime identifier: a lock file written by a plain
+       restore lacks that graph, so each smoke run would rewrite it (docs/TESTING.md, "Lock files"). -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,786 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[10.0.11, )",
+        "resolved": "10.0.11",
+        "contentHash": "IBf7lbovvjGWVWXZX5cJ/cO0WXbId0Zq4BuSeT94mGZuOAP66oMeH9PTBZ9Jpp3Jb6jtK0qm/NyUbPRo1gC/wQ=="
+      },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[6.0.0, )",
+        "resolved": "6.0.0",
+        "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL": {
+        "type": "Direct",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "E2+uSWxSB8LdsUVwPaqRWOcGOP92biry2JEwc0KJMdLJF+aZdczeIdEXVwEyv4nSVMQJH0o8tLhyAMiR6VF0lw==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.0, 11.0.0)",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.0, 11.0.0)",
+          "Npgsql": "10.0.0"
+        }
+      },
+      "Asp.Versioning.Abstractions": {
+        "type": "Transitive",
+        "resolved": "8.1.0",
+        "contentHash": "mpeNZyMdvrHztJwR1sXIUQ+3iioEU97YMBnFA9WLbsPOYhGwDJnqJMmEd8ny7kcmS9OjTHoEuX/bSXXY3brIFA=="
+      },
+      "Microsoft.EntityFrameworkCore.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "bOzrFCl6uZCjaSh2bG1ToRQRdx+iXvxosCg9hFyG9OWeAzOFI4xev9OqKeWfKf/kAHyox2JnbcvLVf2ceA7sqA=="
+      },
+      "Microsoft.EntityFrameworkCore.Analyzers": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "2gLDordUCGf3aNOOuqtTbP5mxhiP9nk6TnvGiE3RnqT891O+Zf/qKu1PIREubs1M16A0SImr4vULBfU5BTDs1Q=="
+      },
+      "OpenTelemetry.Api": {
+        "type": "Transitive",
+        "resolved": "1.15.3",
+        "contentHash": "fX+fkCysfPut+qCcT3bKqyX4QN9Saf4CgX8HLOHywEVD+Xr7sULtfuypITpoDysjx8R59dn/3mWhgimMH8cm/g=="
+      },
+      "OpenTelemetry.Api.ProviderBuilderExtensions": {
+        "type": "Transitive",
+        "resolved": "1.15.3",
+        "contentHash": "SYn0lqYDwLMWhv/zlNGsQcl2yX++yTumanX46bmOZE/ZDOd1WjPBO2kZaZgKLEZTZk48pavIFGJ6vOvxXgWVFQ==",
+        "dependencies": {
+          "OpenTelemetry.Api": "1.15.3"
+        }
+      },
+      "pragmatic.abstractions": {
+        "type": "Project"
+      },
+      "pragmatic.actions": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Authorization": "[1.0.0, )",
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )"
+        }
+      },
+      "pragmatic.attachments": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Storage": "[1.0.0, )"
+        }
+      },
+      "pragmatic.audit": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Redaction": "[1.0.0, )"
+        }
+      },
+      "pragmatic.audit.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Audit": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization.management": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Authorization": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence.EFCore": "[1.0.0, )"
+        }
+      },
+      "pragmatic.caching": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.8.0, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.comments": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.composition": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Composition.Host": "[1.0.0, )"
+        }
+      },
+      "pragmatic.composition.host": {
+        "type": "Project",
+        "dependencies": {
+          "OpenTelemetry.Exporter.Console": "[1.15.3, )",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.15.3, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
+          "OpenTelemetry.Instrumentation.AspNetCore": "[1.15.2, )",
+          "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.15.1-beta.1, )",
+          "OpenTelemetry.Instrumentation.Http": "[1.15.1, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Redaction": "[1.0.0, )"
+        }
+      },
+      "pragmatic.configuration": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.configuration.management": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Audit": "[1.0.0, )",
+          "Pragmatic.Configuration": "[1.0.0, )"
+        }
+      },
+      "pragmatic.discovery": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Composition": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.csv": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.email": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Email.Model": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.markup": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Email": "[1.0.0, )",
+          "Pragmatic.Documents.Templates": "[1.0.0, )",
+          "Pragmatic.Documents.Templating.I18N": "[1.0.0, )",
+          "Pragmatic.Email.Templates": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.model": {
+        "type": "Project"
+      },
+      "pragmatic.documents.ooxml": {
+        "type": "Project"
+      },
+      "pragmatic.documents.pdf": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Model": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.spreadsheet": {
+        "type": "Project"
+      },
+      "pragmatic.documents.templates": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Model": "[1.0.0, )",
+          "Pragmatic.Documents.Templating": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.templating": {
+        "type": "Project"
+      },
+      "pragmatic.documents.templating.i18n": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Templating": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.xlsx": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Ooxml": "[1.0.0, )",
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      },
+      "pragmatic.email": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "System.Security.Cryptography.Pkcs": "[9.0.3, )"
+        }
+      },
+      "pragmatic.email.model": {
+        "type": "Project"
+      },
+      "pragmatic.email.templates": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Templating": "[1.0.0, )",
+          "Pragmatic.Email.Model": "[1.0.0, )"
+        }
+      },
+      "pragmatic.endpoints": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.endpoints.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )"
+        }
+      },
+      "pragmatic.ensure": {
+        "type": "Project"
+      },
+      "pragmatic.events": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.featureflags": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Privacy.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.identity.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Composition": "[1.0.0, )",
+          "Pragmatic.Endpoints.AspNetCore": "[1.0.0, )",
+          "Pragmatic.Identity": "[1.0.0, )"
+        }
+      },
+      "pragmatic.identity.local": {
+        "type": "Project",
+        "dependencies": {
+          "BCrypt.Net-Next": "[4.0.3, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Identity": "[1.0.0, )",
+          "Pragmatic.Privacy.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.identity.persistence": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Authorization": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )"
+        }
+      },
+      "pragmatic.imaging": {
+        "type": "Project"
+      },
+      "pragmatic.internationalization": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.internationalization.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Composition": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Result.AspNetCore": "[1.0.0, )"
+        }
+      },
+      "pragmatic.jobs": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )"
+        }
+      },
+      "pragmatic.logging": {
+        "type": "Project",
+        "dependencies": {
+          "OpenTelemetry": "[1.15.3, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Redaction": "[1.0.0, )"
+        }
+      },
+      "pragmatic.mapping": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.mapping.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.auditing": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Audit": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.core": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Messaging": "[1.0.0, )",
+          "Pragmatic.Messaging.Auditing": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.saga": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
+        }
+      },
+      "pragmatic.multitenancy": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.multitenancy.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Composition": "[1.0.0, )",
+          "Pragmatic.MultiTenancy": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notes": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Email": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Notifications": "[1.0.0, )"
+        }
+      },
+      "pragmatic.patch": {
+        "type": "Project"
+      },
+      "pragmatic.persistence": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )",
+          "Pragmatic.Specification": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Audit.EFCore": "[1.0.0, )",
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Mapping.EFCore": "[0.1.0-preview, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Result.EFCore": "[1.0.0, )"
+        }
+      },
+      "pragmatic.privacy.abstractions": {
+        "type": "Project"
+      },
+      "pragmatic.redaction": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.resilience": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.result": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )"
+        }
+      },
+      "pragmatic.result.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": "[10.0.10, )",
+          "Microsoft.OpenApi": "[2.7.5, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.result.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.specification": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.storage": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.tags": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.temporal": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.temporal.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Composition": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )",
+          "Pragmatic.Temporal.Json": "[1.0.0, )"
+        }
+      },
+      "pragmatic.temporal.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Pragmatic.Temporal": "[1.0.0, )"
+        }
+      },
+      "pragmatic.temporal.json": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Temporal": "[1.0.0, )"
+        }
+      },
+      "pragmatic.validation": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "showcase.accounts": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Authorization.Management": "[1.0.0, )",
+          "Pragmatic.Configuration.Management": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Identity.Local": "[1.0.0, )",
+          "Pragmatic.Identity.Persistence": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.EFCore": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "showcase.billing": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Documents.Csv": "[1.0.0, )",
+          "Pragmatic.Documents.Markup": "[1.0.0, )",
+          "Pragmatic.Documents.Pdf": "[1.0.0, )",
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )",
+          "Pragmatic.Documents.Xlsx": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )",
+          "Pragmatic.Endpoints.AspNetCore": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Imaging": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Messaging": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.EFCore": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )",
+          "Showcase.Booking": "[1.0.0, )"
+        }
+      },
+      "showcase.booking": {
+        "type": "Project",
+        "dependencies": {
+          "Asp.Versioning.Http": "[8.1.1, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Attachments": "[1.0.0, )",
+          "Pragmatic.Comments": "[1.0.0, )",
+          "Pragmatic.Documents.Markup": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )",
+          "Pragmatic.Endpoints.AspNetCore": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Imaging": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Jobs": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Messaging": "[1.0.0, )",
+          "Pragmatic.Messaging.EFCore": "[1.0.0, )",
+          "Pragmatic.Messaging.Saga": "[1.0.0, )",
+          "Pragmatic.Notes": "[1.0.0, )",
+          "Pragmatic.Notifications": "[1.0.0, )",
+          "Pragmatic.Notifications.EFCore": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.EFCore": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )",
+          "Pragmatic.Specification": "[1.0.0, )",
+          "Pragmatic.Tags": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )",
+          "Pragmatic.Temporal.Json": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )",
+          "Showcase.Accounts": "[1.0.0, )",
+          "Showcase.Catalog": "[1.0.0, )"
+        }
+      },
+      "showcase.catalog": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )",
+          "Pragmatic.Endpoints.AspNetCore": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Patch": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.EFCore": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )",
+          "Pragmatic.Specification": "[1.0.0, )",
+          "Pragmatic.Storage": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )"
+        }
+      },
+      "Asp.Versioning.Http": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.1, )",
+        "resolved": "8.1.1",
+        "contentHash": "1D/Mzq1MSUSQe1eCY6GeEsu+tIlpzoWZxZkhlcw/uvtVoTrwO+BMl0fSj/XX8oZN1DutWTZqHDHgyDRq+IeSdQ==",
+        "dependencies": {
+          "Asp.Versioning.Abstractions": "8.1.0"
+        }
+      },
+      "BCrypt.Net-Next": {
+        "type": "CentralTransitive",
+        "requested": "[4.0.3, )",
+        "resolved": "4.0.3",
+        "contentHash": "W+U9WvmZQgi5cX6FS5GDtDoPzUCV4LkBLkywq/kRZhuDwcbavOzcDAr3LXJFqHUi952Yj3LEYoWW0jbEUQChsA=="
+      },
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "d4Atx9IHq7JgX0F/h7Db+m9zAUzC+cKdI9k+OWnnyQIOUQtfvjIEuhvbjPigVMkAmPUgCbJ8Yp6M9ghUqHtJSQ==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
+      "Microsoft.EntityFrameworkCore": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "a0V7zj/VbYP6dTdWpUgE/r2PuLKtUGe2aJ0lVKkn/wP9ZhaxUz2kQydVfvOjCv2SKxlrqdBfHhPD4Cvlf+4ffA==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.10",
+          "Microsoft.EntityFrameworkCore.Analyzers": "10.0.10"
+        }
+      },
+      "Microsoft.EntityFrameworkCore.Relational": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "wNonj40aZxia+GtuBiiD6ZqVh4h6y5Nje1bGdmzZ8/ui0QRsAN+S0SIrLHFCEGbG9cDbeaE40sh+Lr7o9rRs6g==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.10"
+        }
+      },
+      "Microsoft.Extensions.Caching.Hybrid": {
+        "type": "CentralTransitive",
+        "requested": "[10.8.0, )",
+        "resolved": "10.8.0",
+        "contentHash": "RCtCTK3eqKXx8LXqd7B8GjbTkIp4k3EgKeunaCmBJ+WA55Nva83CI2I+wVyp0S9jTG+aT6AYWQbkKOfvFOlmLA=="
+      },
+      "Microsoft.OpenApi": {
+        "type": "CentralTransitive",
+        "requested": "[2.7.5, )",
+        "resolved": "2.7.5",
+        "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w=="
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "xZAYhPOU2rUIFpV48xsqhCx9vXs6Y+0jX2LCoSEfDFYMw9jtAOUk3iQsCnDLrFIv9NT3JGMihn7nnuZsPKqJmA=="
+      },
+      "OpenTelemetry": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "N0i6WjPoHPbZyms1ugbDIFAJFuGlpeExJMU/+XSL0lQRUkg/D0utFkDoLXf8Z1km5B+xVZ2GyMXXiX8qdeNmPg==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Exporter.Console": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "QBGOoPwLHDXX+hXeUpspOjsqEn4vMkLw672QN+MzVWFBzjf625DdxLxhzowS1J/dRtW93U34rRbJec+4808fkg==",
+        "dependencies": {
+          "OpenTelemetry": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "FEXJepcseTGbATiCkUfP7ipoFEYYfl/0UmmUwi0KxCPg9PaUA8ab2P1LGopK+/HExasJ1ZutFhZrN6WvUIR23g==",
+        "dependencies": {
+          "OpenTelemetry": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "u8n/W8yIlqv0BXZmvId1iVaeWXG42tGKdTkuLYg5g57Y/r9CeUNzqtrSHNdG5IoO8iPX79w3v+WsbAHgUQbfeg==",
+        "dependencies": {
+          "OpenTelemetry": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Instrumentation.AspNetCore": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.2, )",
+        "resolved": "1.15.2",
+        "contentHash": "2nPd7r0ug/gd6/CNFL6Rlu+RSQ9WYGSGHAYQ1ssbSqyzKJpqTunfx2I/1O0WB5k+L0cyXbG4XVZpoSoUc3M7wg==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
+      "OpenTelemetry.Instrumentation.EntityFrameworkCore": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.1-beta.1, )",
+        "resolved": "1.15.1-beta.1",
+        "contentHash": "NmtYLk3HJUUkV0g2VnFLs67/PGIVbI8JXtu0g4f9bk2ZaInp211/AL2+Qcbgkb9ih/uOi8loN6E1Aw2o0YIWag==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
+      "OpenTelemetry.Instrumentation.Http": {
+        "type": "CentralTransitive",
+        "requested": "[1.15.1, )",
+        "resolved": "1.15.1",
+        "contentHash": "vFO4Fj/dXkoVNGo/nhoGpO2zYQmZwr4jTID7oRGo+XlQ8LqksyZjUXQ4p39RfUvTID7IzzL8Qe71tW7CcAFymA==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
+      "System.Security.Cryptography.Pkcs": {
+        "type": "CentralTransitive",
+        "requested": "[9.0.3, )",
+        "resolved": "9.0.3",
+        "contentHash": "4XYeGOYBYtvaF2bH+cps+vPWjI5jQCWR7R1B4dI9I1Da9JQrXYP7mxdci+zKV2Ie4JafaOnOoNaDtzxkaXUxCg=="
+      }
+    }
+  }
+}

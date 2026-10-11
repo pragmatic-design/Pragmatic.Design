@@ -38,7 +38,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore Pragmatic.Design.slnx
+        run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       # Build, then pack what was built — the order scripts/publish-local.mjs uses. Runtime libraries set
       # GeneratePackageOnBuild (Directory.Build.props), and with it `dotnet pack` does not run the build

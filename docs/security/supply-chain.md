@@ -60,23 +60,27 @@ from there; a Dependabot alert for the same advisory is dismissed with the same 
 
 ## Decisions
 
-### No `packages.lock.json`
+### `packages.lock.json` for every project, and the SDK pinned to the patch
 
-OpenSSF Scorecard counts a `dotnet restore` as pinned only with `--locked-mode`, which needs a lockfile
-per project. Measured on 2026-10-03, with the solution as it was:
+Every project in the solution commits a lockfile, and CI restores in locked mode (`docs/TESTING.md`,
+"Lock files"). Central package management fixes the versions a project asks for, not what a restore
+brings back; a lockfile records each package's content hash, and a locked restore fails when what it
+would resolve differs. OpenSSF Scorecard counts a `dotnet restore` as pinned only with `--locked-mode`.
 
-- 371 lockfiles, 4.6 MB, about 118,000 lines.
+This was first decided the other way (2026-10-03), and the costs measured then still hold:
+
+- 372 lockfiles, about 118,000 lines.
 - A version bump rewrites a large share of them: `Microsoft.Extensions.DependencyInjection.Abstractions`
-  269, xunit 128, `Microsoft.EntityFrameworkCore` 98.
-- 174 of them record `Microsoft.NET.ILLink.Tasks`, whose version follows the installed SDK. `global.json`
-  rolls forward to the latest patch, so two machines on different SDK patches write different lockfiles,
-  and `--locked-mode` fails on one of them. Making it hold means pinning the SDK exactly for every
-  contributor and rewriting those 174 files on every SDK update.
+  269, xunit 128, `Microsoft.EntityFrameworkCore` 98. They are generated, and the rewrite is one command.
+- The trimmable projects record `Microsoft.NET.ILLink.Tasks`, whose version follows the SDK's bundled
+  runtime. With `global.json` rolling forward to the latest patch, a runner image or a contributor on a
+  newer patch writes different lockfiles and every locked restore fails. So `global.json` now pins the
+  patch (`rollForward: patch`): an SDK update is a change of its own that rewrites those files in the same
+  commit, and the full tier fails when the lockfiles disagree on the ILLink version or the pin is loosened.
 
-What a lockfile would add is a content hash for every package and transitive changes visible in a diff.
-The first is largely covered by restoring from nuget.org alone, where every package carries the
-registry's signature; the second does not pay for the cost above. Revisit if the SDK is pinned exactly
-for another reason, or after a supply-chain incident on NuGet.
+The decision moved (2026-10-10) because a content hash per package is what makes a restore reproducible,
+which the registry signature alone is not: a signature says who published a package, not that it is the
+one this commit built against.
 
 ### Minimum versions, not exact ones
 

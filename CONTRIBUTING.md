@@ -6,7 +6,9 @@ Thank you for considering contributing to Pragmatic.Design! This document explai
 
 ### Prerequisites
 
-- .NET 10.0 SDK (see `global.json` for exact version)
+- .NET 10.0 SDK, the exact version in `global.json`. A newer patch also builds, but its restore rewrites
+  the NuGet lock files, which CI would then reject
+  ([docs/TESTING.md](docs/TESTING.md#lock-files)).
 - Git
 
 ### Getting the source

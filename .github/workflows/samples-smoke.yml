@@ -59,7 +59,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj
+        run: dotnet restore ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj --locked-mode
 
       - name: Build
         run: dotnet build ${{ matrix.sample }}/samples/${{ matrix.sample }}.Samples/${{ matrix.sample }}.Samples.csproj --configuration Release --no-restore
