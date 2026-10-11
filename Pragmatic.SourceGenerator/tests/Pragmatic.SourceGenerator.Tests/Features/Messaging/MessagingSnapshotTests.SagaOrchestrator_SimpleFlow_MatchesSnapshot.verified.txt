@@ -431,7 +431,7 @@ public partial class OrderSaga
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(1934191397, "LogSagaStepExecuting"),
+                new global::Microsoft.Extensions.Logging.EventId(213292251, "LogSagaStepExecuting"),
                 new __LogSagaStepExecutingLogState(sagaType, stepName, currentState),
                 null,
                 __LogSagaStepExecutingLogState.Format);
@@ -583,7 +583,7 @@ public partial class OrderSaga
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Error,
-                new global::Microsoft.Extensions.Logging.EventId(1509823226, "LogSagaStepFailed"),
+                new global::Microsoft.Extensions.Logging.EventId(637660422, "LogSagaStepFailed"),
                 new __LogSagaStepFailedLogState(sagaType, stepName),
                 ex,
                 __LogSagaStepFailedLogState.Format);
@@ -723,7 +723,7 @@ public partial class OrderSaga
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(739460093, "LogSagaStepRejected"),
+                new global::Microsoft.Extensions.Logging.EventId(1408023555, "LogSagaStepRejected"),
                 new __LogSagaStepRejectedLogState(sagaType, stepName, reason),
                 null,
                 __LogSagaStepRejectedLogState.Format);
@@ -875,7 +875,7 @@ public partial class OrderSaga
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(954638730, "LogSagaCompensated"),
+                new global::Microsoft.Extensions.Logging.EventId(1192844918, "LogSagaCompensated"),
                 new __LogSagaCompensatedLogState(sagaType, stepName),
                 null,
                 __LogSagaCompensatedLogState.Format);
@@ -1447,7 +1447,7 @@ public partial class OrderSaga
             
             _logger.Log(
                 global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(1978437257, "LogSagaConflictRetrying"),
+                new global::Microsoft.Extensions.Logging.EventId(169046391, "LogSagaConflictRetrying"),
                 new __LogSagaConflictRetryingLogState(sagaType, correlationId, attempt),
                 null,
                 __LogSagaConflictRetryingLogState.Format);

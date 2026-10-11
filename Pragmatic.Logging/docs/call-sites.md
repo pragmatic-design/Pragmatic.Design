@@ -62,7 +62,8 @@ The same as Microsoft's, so a call site moves between the two unchanged:
 - the first `Exception` parameter is the entry's exception;
 - a placeholder matches a parameter by name, ignoring case and a leading `@`; a format (`{Amount:F2}`)
   is honoured, an alignment (`{Name,8}`) is reported;
-- an event id left unset is derived from the event name, the same on every build.
+- an event id left unset is derived from the event name, the same on every build, and is the id
+  Microsoft's generator gives the same declaration: moving a method to a call site keeps its event id.
 
 What does not fit is reported where the method is written: PRAG2400–PRAG2407.
 

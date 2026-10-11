@@ -99,7 +99,7 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
         
         _logger.Log(
             global::Microsoft.Extensions.Logging.LogLevel.Warning,
-            new global::Microsoft.Extensions.Logging.EventId(1762328492, "LogFilesKept"),
+            new global::Microsoft.Extensions.Logging.EventId(385155156, "LogFilesKept"),
             new __LogFilesKeptLogState(attachmentId),
             ex,
             __LogFilesKeptLogState.Format);

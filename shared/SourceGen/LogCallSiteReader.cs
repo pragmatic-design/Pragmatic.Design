@@ -183,7 +183,9 @@ internal static class LogCallSiteReader
                 case "EventId" when named.Value.Value is int id:
                     shape.EventId = id;
                     break;
-                case "EventName" when named.Value.Value is string name:
+                // A blank name is no name, as for Microsoft's generator: the method's name is used, for the
+                // event and for its derived id.
+                case "EventName" when named.Value.Value is string name && !string.IsNullOrWhiteSpace(name):
                     shape.EventName = name;
                     break;
                 case "Level" when named.Value.Value is int level:
