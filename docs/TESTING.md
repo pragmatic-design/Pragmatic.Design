@@ -258,6 +258,15 @@ A new or lowered baseline is copied from the run, never measured on a laptop: ev
 `allocation-baseline.proposed.json` with the reports. Allocations differ between operating systems,
 and the baseline is the runner's.
 
+**A pull request runs only the benchmark classes its change reaches** (`scripts/benchmark-selection.mjs`):
+a class whose file changed, a class that uses a changed helper (through as many helpers as it takes),
+and a class whose baseline entry changed. A change to a project or lock file runs that whole suite,
+and a change to the harness runs everything. The ratchet then judges only the classes that ran. It
+fails one that measured nothing, which also catches a new class that cannot fail as missing from the
+baseline. The proposed baseline is still the whole file. The nightly run measures every benchmark, so
+a class that a pull request leaves out, and the effect of a change outside the benchmark projects, are
+checked there.
+
 
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you
 commit.

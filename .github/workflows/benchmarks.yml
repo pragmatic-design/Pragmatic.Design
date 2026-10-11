@@ -10,6 +10,10 @@ name: Benchmarks
 #   head run on this one VM, alternated, and the job summary reports the ratios. They never fail the run.
 #
 # A/B for a pull request: run this workflow on the branch, with `base` left at main.
+#
+# On a pull request only the benchmark classes the change reaches run, on both sides (#172): running all
+# of them took 2h15m to prove one new class. A change to the harness still runs everything, and the
+# nightly run is where every benchmark is measured.
 
 on:
   workflow_dispatch:
@@ -26,6 +30,7 @@ on:
     paths:
       - .github/workflows/benchmarks.yml
       - scripts/benchmarks.mjs
+      - scripts/benchmark-selection.mjs
       - benchmarks/**
       - '*/benchmarks/**'
 
@@ -70,7 +75,7 @@ jobs:
           node-version: '22'
 
       - name: Run base and head
-        run: node head/scripts/benchmarks.mjs ci --head head --base base --out results
+        run: node head/scripts/benchmarks.mjs ci --head head --base base --out results ${{ github.event_name == 'pull_request' && '--changed-only' || '' }}
 
       # Uploaded on a red run too: the proposed baseline is how a new or lowered baseline gets committed,
       # copied from this runner rather than typed in from a laptop.
