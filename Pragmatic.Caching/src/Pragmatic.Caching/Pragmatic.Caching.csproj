@@ -3,6 +3,9 @@
   <PropertyGroup>
     <Description>Source-generated caching with typed keys, automatic invalidation, and HybridCache integration. Zero magic strings.</Description>
     <PackageTags>caching;source-generator;hybridcache;redis;typed-keys</PackageTags>
+    <!-- [LoggerMessage] is Pragmatic's: the stack logs every read and write, and a generated call site writes
+         its state to a UTF-8 provider without rendering a string first (#114). -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
   </PropertyGroup>
 
   <ItemGroup>
