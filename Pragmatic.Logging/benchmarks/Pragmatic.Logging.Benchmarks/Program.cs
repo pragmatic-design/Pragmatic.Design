@@ -60,6 +60,11 @@ public class Program
                 efCore.Setup();
                 efCore.Cleanup();
                 Console.WriteLine("✅ Both generators' EF Core call sites wrote the same lines, and nothing below the level.");
+
+                var caching = new Modules.CachingLogBenchmarks();
+                caching.Setup();
+                caching.Cleanup();
+                Console.WriteLine("✅ Both generators' Caching call sites wrote the same lines, and nothing below the level.");
                 break;
 
             case "actions":
@@ -75,6 +80,11 @@ public class Program
             case "efcore":
                 Console.WriteLine("🗄️ Pragmatic.Persistence.EFCore's per-query logging, Microsoft's generator against call sites");
                 BenchmarkRunner.Run<Modules.EfCoreLogBenchmarks>(null, args[1..]);
+                break;
+
+            case "caching":
+                Console.WriteLine("🗃️ Pragmatic.Caching's per-read logging, Microsoft's generator against call sites");
+                BenchmarkRunner.Run<Modules.CachingLogBenchmarks>(null, args[1..]);
                 break;
 
             case "json":
@@ -139,6 +149,7 @@ public class Program
                     typeof(Modules.ActionsLogBenchmarks),
                     typeof(Modules.MessagingLogBenchmarks),
                     typeof(Modules.EfCoreLogBenchmarks),
+                    typeof(Modules.CachingLogBenchmarks),
                     typeof(Redaction.RedactionOverheadBenchmarks),
                     typeof(ExpressionDslBenchmarks),
                     typeof(ZeroAllocationBenchmark),
