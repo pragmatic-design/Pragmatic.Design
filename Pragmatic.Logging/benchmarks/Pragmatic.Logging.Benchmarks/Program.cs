@@ -55,6 +55,11 @@ public class Program
                 messaging.Setup();
                 messaging.Cleanup();
                 Console.WriteLine("✅ Both generators' Messaging call sites wrote the same lines, and nothing below the level.");
+
+                var efCore = new Modules.EfCoreLogBenchmarks();
+                efCore.Setup();
+                efCore.Cleanup();
+                Console.WriteLine("✅ Both generators' EF Core call sites wrote the same lines, and nothing below the level.");
                 break;
 
             case "actions":
@@ -65,6 +70,11 @@ public class Program
             case "messaging":
                 Console.WriteLine("📨 Pragmatic.Messaging's per-message logging, Microsoft's generator against call sites");
                 BenchmarkRunner.Run<Modules.MessagingLogBenchmarks>(null, args[1..]);
+                break;
+
+            case "efcore":
+                Console.WriteLine("🗄️ Pragmatic.Persistence.EFCore's per-query logging, Microsoft's generator against call sites");
+                BenchmarkRunner.Run<Modules.EfCoreLogBenchmarks>(null, args[1..]);
                 break;
 
             case "json":
@@ -128,6 +138,7 @@ public class Program
                     typeof(Json.JsonSinkBenchmarks),
                     typeof(Modules.ActionsLogBenchmarks),
                     typeof(Modules.MessagingLogBenchmarks),
+                    typeof(Modules.EfCoreLogBenchmarks),
                     typeof(Redaction.RedactionOverheadBenchmarks),
                     typeof(ExpressionDslBenchmarks),
                     typeof(ZeroAllocationBenchmark),
