@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Authorization;
@@ -18,9 +19,13 @@ public sealed partial class PermissionAuthorizationFilter(
     ILogger<PermissionAuthorizationFilter> logger,
     IPermissionRequirementRegistry permissionRegistry) : IActionFilter
 {
-    // Static cache: PermissionRequirement metadata is keyed by Type and immutable once resolved,
-    // so sharing it across DI scopes is safe and avoids re-parsing attributes on every resolution.
-    private static readonly ConcurrentDictionary<Type, PermissionRequirement?> _requirementCache = new();
+    // One cache per registry: a requirement is what the CALLING host's registry declares, so a cache keyed by
+    // type alone let the first host to ask decide it for every host in the process — two test hosts, a host
+    // and its integration tests, a modular monolith with more than one container (#140). The registry is a
+    // singleton per host, so this still resolves each type once per host; the weak table lets a disposed
+    // host's registry and its cache be collected.
+    private static readonly ConditionalWeakTable<IPermissionRequirementRegistry, ConcurrentDictionary<Type, PermissionRequirement?>>
+        _requirementCaches = new();
     private ICurrentUser? _currentUser;
     private ICurrentUser CurrentUser => _currentUser ??= serviceProvider.GetService(typeof(ICurrentUser)) as ICurrentUser
                                                          ?? AnonymousUser.Instance;
@@ -88,7 +93,7 @@ public sealed partial class PermissionAuthorizationFilter(
         if (isInternalCall)
             return VoidResult<IError>.Success();
 
-        var requirement = _requirementCache.GetOrAdd(type, t => ResolveRequirementFromRegistry(t, registry));
+        var requirement = RequirementFor(type, registry);
 
         if (requirement is null)
             return VoidResult<IError>.Success();
@@ -129,10 +134,16 @@ public sealed partial class PermissionAuthorizationFilter(
         if (isInternalCall)
             return Task.FromResult(VoidResult<IError>.Success());
 
-        var requirement = _requirementCache.GetOrAdd(type, t => ResolveRequirementFromRegistry(t, registry));
+        var requirement = RequirementFor(type, registry);
 
         return CheckRequirementAsync(requirement, type, currentUser, ct);
     }
+
+    // Static lambdas with the registry passed as state: a check whose requirement is cached allocates nothing.
+    private static PermissionRequirement? RequirementFor(Type type, IPermissionRequirementRegistry registry)
+        => _requirementCaches
+            .GetValue(registry, static _ => new ConcurrentDictionary<Type, PermissionRequirement?>())
+            .GetOrAdd(type, static (t, r) => ResolveRequirementFromRegistry(t, r), registry);
 
     /// <summary>
     ///     Decides on a requirement that has already been found, wherever it was found.
