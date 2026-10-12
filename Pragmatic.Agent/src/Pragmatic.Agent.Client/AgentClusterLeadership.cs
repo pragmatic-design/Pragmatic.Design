@@ -58,7 +58,7 @@ public sealed class AgentClusterLeadership : IClusterLeadership, IAsyncDisposabl
 
         var lease = new LeaseRecord { HostId = _hostId, LeaseUntil = now + LeaseTtl };
         var (newVersion, _) = await _connection
-            .KvSetAsync(key, JsonSerializer.Serialize(lease), expectedVersion: version, ct: ct)
+            .KvSetAsync(key, JsonSerializer.Serialize(lease, AgentLeaseJsonContext.Default.LeaseRecord), expectedVersion: version, ct: ct)
             .ConfigureAwait(false);
 
         if (newVersion < 0)
@@ -127,7 +127,7 @@ public sealed class AgentClusterLeadership : IClusterLeadership, IAsyncDisposabl
 
         var lease = new LeaseRecord { HostId = _hostId, LeaseUntil = DateTimeOffset.UtcNow + LeaseTtl };
         var (newVersion, _) = await _connection
-            .KvSetAsync(Key(scope), JsonSerializer.Serialize(lease), expectedVersion: state.Version, ct: ct)
+            .KvSetAsync(Key(scope), JsonSerializer.Serialize(lease, AgentLeaseJsonContext.Default.LeaseRecord), expectedVersion: state.Version, ct: ct)
             .ConfigureAwait(false);
 
         if (newVersion < 0)
@@ -167,7 +167,7 @@ public sealed class AgentClusterLeadership : IClusterLeadership, IAsyncDisposabl
             return null;
         try
         {
-            return JsonSerializer.Deserialize<LeaseRecord>(json);
+            return JsonSerializer.Deserialize(json, AgentLeaseJsonContext.Default.LeaseRecord);
         }
         catch (JsonException)
         {
@@ -177,7 +177,8 @@ public sealed class AgentClusterLeadership : IClusterLeadership, IAsyncDisposabl
 
     private readonly record struct LeaseState(long Version, DateTimeOffset LeaseUntil);
 
-    private sealed class LeaseRecord
+    // Internal, not private: AgentLeaseJsonContext generates its metadata.
+    internal sealed class LeaseRecord
     {
         [JsonPropertyName("hostId")]
         public required string HostId { get; init; }

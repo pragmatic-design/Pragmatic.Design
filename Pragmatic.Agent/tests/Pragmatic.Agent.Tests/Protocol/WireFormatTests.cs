@@ -1,4 +1,6 @@
 using Pragmatic.Testing.Assertions;
+using Pragmatic.Agent.Protocol;
+using Pragmatic.Agent.Protocol.Payloads;
 using Pragmatic.Agent.Protocol.Serialization;
 using Xunit;
 
@@ -6,9 +8,9 @@ namespace Pragmatic.Agent.Tests.Protocol;
 
 /// <summary>
 ///     Serialization round-trip coverage for <see cref="JsonWireFormat" />, the live wire format used by
-///     <see cref="Pragmatic.Agent.Protocol.FrameCodec" /> on the socket and gossip. It serializes plain
-///     POCOs via property reflection, so it is exercised with a rich object (nested collections, nullable
-///     members). <see cref="IWireFormat" /> is internal, so it is never exposed on a public test signature.
+///     <see cref="Pragmatic.Agent.Protocol.FrameCodec" /> on the socket and gossip. It writes the protocol's own
+///     types through generated metadata (#142), so it is exercised with them: a populated payload, a null member,
+///     an empty collection, and a type outside the protocol.
 /// </summary>
 /// <remarks>
 ///     A binary (MessagePack) format was prototyped but removed — the message model is JSON-native
@@ -18,13 +20,10 @@ namespace Pragmatic.Agent.Tests.Protocol;
 /// </remarks>
 public class WireFormatTests
 {
-    public sealed class Sample
+    /// <summary>Not a protocol type: the format has no metadata for it.</summary>
+    public sealed class NotAProtocolType
     {
         public string Name { get; set; } = "";
-        public int Count { get; set; }
-        public bool Flag { get; set; }
-        public string? Optional { get; set; }
-        public List<string> Items { get; set; } = [];
     }
 
     [Fact]
@@ -32,37 +31,29 @@ public class WireFormatTests
         new JsonWireFormat().FormatName.Should().Be("json");
 
     [Fact]
-    public void JsonWireFormat_PopulatedObject_RoundTrips()
+    public void JsonWireFormat_PopulatedPayload_RoundTrips()
     {
         IWireFormat format = new JsonWireFormat();
-        var original = new Sample
-        {
-            Name = "node-1",
-            Count = 42,
-            Flag = true,
-            Optional = "present",
-            Items = ["a", "b", "c"]
-        };
+        var original = new KvEntryPayload { Key = "config/x", Value = "42", Version = 7, Found = true };
 
-        var decoded = format.Deserialize<Sample>(format.Serialize(original));
+        var decoded = format.Deserialize<KvEntryPayload>(format.Serialize(original));
 
         decoded.Should().NotBeNull();
-        decoded!.Name.Should().Be("node-1");
-        decoded.Count.Should().Be(42);
-        decoded.Flag.Should().BeTrue();
-        decoded.Optional.Should().Be("present");
-        decoded.Items.Should().Equal("a", "b", "c");
+        decoded!.Key.Should().Be("config/x");
+        decoded.Value.Should().Be("42");
+        decoded.Version.Should().Be(7L);
+        decoded.Found.Should().BeTrue();
     }
 
     [Fact]
-    public void JsonWireFormat_NullOptional_RoundTrips()
+    public void JsonWireFormat_NullMember_RoundTrips()
     {
         IWireFormat format = new JsonWireFormat();
 
-        var decoded = format.Deserialize<Sample>(format.Serialize(new Sample { Name = "x", Optional = null }));
+        var decoded = format.Deserialize<KvEntryPayload>(format.Serialize(new KvEntryPayload { Key = "x", Value = null }));
 
         decoded.Should().NotBeNull();
-        decoded!.Optional.Should().BeNull();
+        decoded!.Value.Should().BeNull();
     }
 
     [Fact]
@@ -70,10 +61,29 @@ public class WireFormatTests
     {
         IWireFormat format = new JsonWireFormat();
 
-        var decoded = format.Deserialize<Sample>(format.Serialize(new Sample { Name = "x", Items = [] }));
+        var decoded = format.Deserialize<KvEntriesPayload>(format.Serialize(new KvEntriesPayload { Entries = [] }));
 
         decoded.Should().NotBeNull();
-        decoded!.Items.Should().BeEmpty();
+        decoded!.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void JsonWireFormat_Frame_RoundTrips()
+    {
+        IWireFormat format = new JsonWireFormat();
+        var frame = new AgentMessage
+        {
+            Type = MessageType.Response,
+            Id = "c-1",
+            Success = true,
+            Payload = AgentPayloads.ToElement(new KvSetResultPayload { Version = 3 }),
+        };
+
+        var decoded = format.Deserialize<AgentMessage>(format.Serialize(frame));
+
+        decoded.Should().NotBeNull();
+        decoded!.Id.Should().Be("c-1");
+        AgentPayloads.From<KvSetResultPayload>(decoded.Payload!.Value)!.Version.Should().Be(3L);
     }
 
     [Fact]
@@ -84,10 +94,19 @@ public class WireFormatTests
         format.Deserialize<string>(format.Serialize("hello")).Should().Be("hello");
     }
 
+    /// <summary>
+    ///     The boundary of generated metadata: a type the protocol does not declare is refused, naming it, rather
+    ///     than reflected at run time.
+    /// </summary>
     [Fact]
-    public void JsonWireFormat_Serialize_ProducesNonEmptyPayload()
+    public void JsonWireFormat_ATypeOutsideTheProtocol_IsRefused()
     {
-        new JsonWireFormat().Serialize(new Sample { Name = "x" }).Should().NotBeEmpty();
+        IWireFormat format = new JsonWireFormat();
+
+        var thrown = Record.Exception(() => format.Serialize(new NotAProtocolType { Name = "x" }));
+
+        thrown.Should().BeOfType<NotSupportedException>();
+        thrown!.Message.Should().Contain(nameof(NotAProtocolType));
     }
 
     [Fact]

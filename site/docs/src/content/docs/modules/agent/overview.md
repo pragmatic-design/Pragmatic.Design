@@ -73,6 +73,8 @@ dotnet run --project Pragmatic.Agent/src/Pragmatic.Agent/Pragmatic.Agent.csproj 
 
 `Pragmatic.Agent.Protocol` frames are length-prefixed: `[4-byte big-endian length][payload]`, capped at 16 MB (`FrameCodec`). The body serializer sits behind `IWireFormat`, and the one implementation is `JsonWireFormat` (`FrameCodec.DefaultFormat`: System.Text.Json, camelCase, null-omitting). `DefaultFormat` is immutable; a format is passed per call to `FrameCodec.Encode`/`ReadFrameAsync`/`WriteFrameAsync`, never swapped globally.
 
+No JSON in the Agent and its client packages is reflected: each shape has a generated `JsonSerializerContext` declared with the options it is written with — the frame (`AgentWireJsonContext`), the payloads and KV values (`AgentPayloadJsonContext`, through `AgentPayloads` where a call site is generic over the type), the gossip datagram, the KV snapshot file, the control-plane commands and events. `JsonWireFormat` therefore writes the protocol's own types and refuses any other with `NotSupportedException`, and the packages analyse clean for trimming and Native AOT.
+
 There is no TLS layer, and none is needed on the two links that exist:
 
 - **App ↔ daemon** is local IPC: a Unix socket, owner-only (file 0600, directory 0700), or a named pipe on Windows. Nothing crosses the network.

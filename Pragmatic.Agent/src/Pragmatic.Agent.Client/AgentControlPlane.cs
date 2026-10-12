@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Agent.Protocol.Payloads;
+using Pragmatic.Agent.Protocol.Serialization;
 using Pragmatic.ControlPlane;
 
 namespace Pragmatic.Agent.Client;
@@ -118,7 +119,7 @@ public sealed class AgentControlPlane : IControlPlane, IDisposable
             return null;
         try
         {
-            return JsonSerializer.Deserialize<HostDescriptorPayload>(json);
+            return AgentPayloads.FromJson<HostDescriptorPayload>(json);
         }
         catch (JsonException)
         {
@@ -137,7 +138,7 @@ public sealed class AgentControlPlane : IControlPlane, IDisposable
             return null;
         try
         {
-            return JsonSerializer.Deserialize<ControlPlaneEvent>(json);
+            return JsonSerializer.Deserialize(json, AgentClientJsonContext.Default.ControlPlaneEvent);
         }
         catch (JsonException)
         {
@@ -269,7 +270,7 @@ public sealed class AgentControlPlane : IControlPlane, IDisposable
             CommandType = command.CommandTypeName,
             CommandId = command.CommandId,
             TargetHostId = targetHostId,
-            Data = JsonSerializer.SerializeToElement<HostCommand>(command),
+            Data = JsonSerializer.SerializeToElement(command, AgentClientJsonContext.Default.HostCommand),
         };
 
         // The target is an instance — the HostId GetAllHostsAsync lists — and the Agent delivers
@@ -277,7 +278,7 @@ public sealed class AgentControlPlane : IControlPlane, IDisposable
         // can map commands-ack/{targetHostId}/{commandId} straight back to this key for cleanup.
         var commandKey = $"commands/{targetHostId}/{command.CommandId}";
         var (_, casConflict) = await _connection
-            .KvSetAsync(commandKey, JsonSerializer.Serialize(envelope), ct: ct).ConfigureAwait(false);
+            .KvSetAsync(commandKey, AgentPayloads.ToJson(envelope), ct: ct).ConfigureAwait(false);
         return casConflict ? ControlPlaneError.CommandFailed("Command write conflict") : null;
     }
 
@@ -362,7 +363,7 @@ public sealed class AgentControlPlane : IControlPlane, IDisposable
         // the [JsonPolymorphic] $type discriminator plus every field of the concrete event. The previous
         // anonymous {type,sourceHostId,timestamp} shape dropped OldState/NewState/Reason (and the whole
         // of ConfigChangedEvent) and could not be read back into a typed event at all.
-        var eventJson = JsonSerializer.Serialize(evt);
+        var eventJson = JsonSerializer.Serialize(evt, AgentClientJsonContext.Default.ControlPlaneEvent);
 
         await _connection.KvSetAsync(eventKey, eventJson, ct: ct).ConfigureAwait(false);
     }

@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using Pragmatic.Agent.KV;
 using Pragmatic.Agent.Protocol;
 using Pragmatic.Agent.Protocol.Payloads;
+using Pragmatic.Agent.Protocol.Serialization;
 
 namespace Pragmatic.Agent.Socket;
 
@@ -68,7 +69,7 @@ internal sealed class KvChangeBroadcaster : IDisposable
                 var message = new AgentMessage
                 {
                     Type = MessageType.KvChanged,
-                    Payload = JsonSerializer.SerializeToElement(payload),
+                    Payload = AgentPayloads.ToElement(payload),
                 };
 
                 // Bound each broadcast so a single client that stopped reading its socket cannot wedge

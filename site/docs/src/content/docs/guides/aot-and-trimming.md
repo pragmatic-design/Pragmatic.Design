@@ -28,7 +28,6 @@ A `dotnet build` produces a sizeable number of `IL*` warnings:
 
 The warnings are not uniform. The areas with reflection-dependent code today:
 
-- **`Pragmatic.Agent.Protocol`**: `JsonWireFormat` uses `JsonSerializer` without a source-gen context (`IL2026`/`IL3050`).
 - **`Pragmatic.Logging`**: `PragmaticWindowsEventLogProvider` serializes to JSON through reflection (`IL2026`/`IL3050`).
 - **`Pragmatic.Abstractions`, `Pragmatic.Storage`, `Pragmatic.Authorization`, `Pragmatic.Logging`**: DI extensions with unannotated generics (`IL2091` etc.) for `decorator`, `UseStorage<T>`, `AddPermissionProvider<T>`, `UseStorage` audit.
 
