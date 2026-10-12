@@ -23,7 +23,12 @@ namespace Pragmatic.Endpoints.Tests.Unit;
 ///         sharing a process with an authenticated one publishes schemes for operations it does not
 ///         have — the same symptom the compile-time document had, one registry along.
 ///     </para>
+///     <para>
+///         ⚠️ Two cases read the registry twice and compare, so nothing may write it in between: they share
+///         <see cref="TheProcessWideOpenApiRegistryCollection" /> with the cases that load a generated assembly.
+///     </para>
 /// </remarks>
+[Collection(TheProcessWideOpenApiRegistryCollection.Name)]
 public class TheManifestBelongsToTheHostThatWasAskedTests
 {
     /// <summary>A host whose every operation is anonymous.</summary>

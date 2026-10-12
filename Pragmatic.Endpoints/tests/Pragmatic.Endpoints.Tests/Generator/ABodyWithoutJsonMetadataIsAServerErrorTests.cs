@@ -31,6 +31,7 @@ namespace Pragmatic.Endpoints.Tests.Generator;
 ///         the action's invoker is resolved, so nothing else needs registering.
 ///     </para>
 /// </remarks>
+[Collection(Unit.TheProcessWideOpenApiRegistryCollection.Name)]   // loading the endpoint registers its manifest
 public class ABodyWithoutJsonMetadataIsAServerErrorTests : EndpointsGeneratorTestBase
 {
     // ⚠️ The global using stands in for the host's implicit usings: the generated endpoint registration calls
