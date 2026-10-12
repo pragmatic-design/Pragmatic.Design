@@ -341,8 +341,8 @@ the caller's entity after validation and the permission check, and writes that m
 property (`{ get; private set; }`), which is never a request parameter. `[FromCurrentUser]` without a
 member binds `ICurrentUser.Id` to a `string`. That is how a "my …" read is written: not a
 `DomainAction` looking the caller up by hand, and not `ICurrentUser` injected into the query, which the
-cache key cannot see. **PRAG0730** / **PRAG0731** hold the form; see `pragmatic-use-persistence` →
-*Reading by the caller*.
+cache key cannot see. **PRAG0730** / **PRAG0731** hold the form; see
+`../pragmatic-use-persistence/references/queries.md` → *Reading by the caller*.
 
 An operation that needs the caller's entity to **decide** something (a mutation checking who approves,
 an action exporting the caller's data) injects the resolver: it is registered like a `[Service]` of the

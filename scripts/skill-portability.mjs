@@ -14,7 +14,9 @@
  *   fifty, shorter still with more. No length survives every setup, so the order does: a description
  *   starts with "Use when", and a cut takes the detail, not the trigger. What the skill covers in full
  *   is in its body, under the title, where nothing is cut. 300 keeps most setups whole;
- * - an unquoted value containing ": ", which is not valid YAML and fails a strict parser.
+ * - an unquoted value containing ": ", which is not valid YAML and fails a strict parser;
+ * - a SKILL.md over 500 lines: every agent loads the whole file when the skill activates, and the
+ *   specification keeps it under 500 with the detail in references/ (progressive disclosure).
  *
  * Fields that only tune Claude Code's own UI (`argument-hint`, `shell`, `user-invocable`) are
  * allowed: another agent ignores them and loses nothing it needed.
@@ -29,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SKILLS = join('marketplace', 'plugins', 'pragmatic-design', 'skills');
 const DESCRIPTION_LIMIT = 300;
+const LINE_LIMIT = 500;
 const SPEC_FIELDS = ['name', 'description', 'license', 'compatibility', 'metadata', 'allowed-tools'];
 const CLAUDE_UI_FIELDS = ['argument-hint', 'shell', 'user-invocable', 'disable-model-invocation'];
 
@@ -66,6 +69,12 @@ export function skillProblems(folder, text) {
 
   if (fields.has('when_to_use'))
     problems.push('when_to_use is read by Claude Code only: fold it into the description');
+
+  // The whole file loads when the skill activates; the specification puts the limit at 500 lines and
+  // the detail in references/, which load only when a task reaches them.
+  const lineCount = text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
+  if (lineCount > LINE_LIMIT)
+    problems.push(`SKILL.md is ${lineCount} lines; keep it at most ${LINE_LIMIT} and move the detail into references/`);
 
   for (const key of fields.keys())
     if (!SPEC_FIELDS.includes(key) && !CLAUDE_UI_FIELDS.includes(key) && key !== 'when_to_use')

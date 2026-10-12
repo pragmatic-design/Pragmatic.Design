@@ -58,6 +58,19 @@ test('Claude Code UI fields are allowed: another agent ignores them and loses no
   assert.deepEqual(skillProblems('pragmatic-use-demo', skill(ui)), []);
 });
 
+test('a SKILL.md over 500 lines is refused: the whole file loads when the skill activates', () => {
+  const long = skill(good, '# Body\n' + 'line\n'.repeat(500));
+  assert.match(skillProblems('pragmatic-use-demo', long).join('\n'), /lines; keep it at most 500/);
+});
+
+test('the control: a SKILL.md of exactly 500 lines passes', () => {
+  const header = skill(good, '');
+  const used = header.split('\n').length - 1;
+  const edge = header + 'line\n'.repeat(500 - used);
+  assert.equal(edge.split('\n').length - 1, 500);
+  assert.deepEqual(skillProblems('pragmatic-use-demo', edge), []);
+});
+
 test('an unknown field is refused', () => {
   assert.match(skillProblems('pragmatic-use-demo', skill(`${good}\ntriggers: X`)).join('\n'), /"triggers"/);
 });
