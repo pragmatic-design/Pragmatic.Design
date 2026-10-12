@@ -34,10 +34,7 @@ namespace Pragmatic.Endpoints.Tests.Generator;
 [Collection(Unit.TheProcessWideOpenApiRegistryCollection.Name)]   // loading the endpoint registers its manifest
 public class ABodyWithoutJsonMetadataIsAServerErrorTests : EndpointsGeneratorTestBase
 {
-    // ⚠️ The global using stands in for the host's implicit usings: the generated endpoint registration calls
-    // LastOrDefault by its short name (#202). Remove it with that fix.
     private const string Source = """
-        global using System.Linq;
         using System.Threading;
         using System.Threading.Tasks;
         using Pragmatic.Actions.Abstractions;

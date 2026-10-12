@@ -720,6 +720,8 @@ internal sealed partial class PragmaticHostTemplate
 
     private void RenderCallConfigureServicesMethod()
     {
+        // OrderBy below: declared, not left to the consumer's implicit usings (#202).
+        AddUsing("System.Linq");
         XmlSummary("Calls ConfigureServices on all discovered IStartupStep implementations.");
 
         var configureParams = new List<MethodParameter>
@@ -748,6 +750,7 @@ internal sealed partial class PragmaticHostTemplate
 
     private void RenderConfigurePipelineMethod()
     {
+        AddUsing("System.Linq");   // OrderBy / ThenBy below (#202)
         XmlSummary("Configures all middleware from discovered IStartupStep implementations.");
 
         var configureParams = new List<MethodParameter>
@@ -777,6 +780,7 @@ internal sealed partial class PragmaticHostTemplate
     private void RenderValidateConfigurationMethod()
     {
         AddUsing("Microsoft.Extensions.Configuration");
+        AddUsing("System.Linq");   // missing.Select below (#202)
 
         XmlSummary("Validates that all required configuration sections are present. Call before building the host.");
         XmlParam("configuration", "The application configuration.");

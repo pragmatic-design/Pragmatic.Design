@@ -29,6 +29,7 @@ internal sealed class CascadeHandlerTemplate : CSharpTemplate
     {
         AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Events");
+        AddUsing("System.Linq");   // .Where below: declared, not left to the consumer's implicit usings (#202)
 
         AppendNamespace(_model.Namespace);
         AppendLine();

@@ -42,6 +42,7 @@ internal sealed class UserResolverTemplate : CSharpTemplate
         AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Identity");
         AddUsing("Pragmatic.Persistence.Repository");
+        AddUsing("System.Linq");   // the synchronous Resolve's FirstOrDefault: declared, not implicit (#202)
 
         if (!string.IsNullOrEmpty(_model.Namespace))
             AppendNamespace(_model.Namespace);

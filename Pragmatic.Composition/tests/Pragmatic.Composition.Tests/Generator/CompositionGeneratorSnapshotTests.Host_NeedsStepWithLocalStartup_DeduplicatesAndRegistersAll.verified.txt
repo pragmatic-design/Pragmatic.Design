@@ -264,6 +264,7 @@ using Microsoft.Extensions.Hosting;
 using Pragmatic.Composition.Abstractions;
 using Microsoft.AspNetCore.RateLimiting;
 using Pragmatic.Events.Extensions;
+using System.Linq;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http;
 

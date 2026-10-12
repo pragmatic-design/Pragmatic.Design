@@ -84,7 +84,7 @@ internal sealed partial class DomainActionHandlerTemplate
             AppendLine($"    $\"File '{propertyName}' exceeds the maximum allowed size of {{__fileOpts.MaxUploadFileSize.Value / (1024 * 1024)}} MB.\",");
             AppendLine("    statusCode: 413);");
         });
-        AppendLine($"if (__fileOpts.DefaultAllowedContentTypes is {{ Length: > 0 }} __allowedTypes && !__allowedTypes.Any(t => t.Contains(\"*\") ? {varName}.ContentType.StartsWith(t.Replace(\"*\", \"\")) : string.Equals(t, {varName}.ContentType, System.StringComparison.OrdinalIgnoreCase)))");
+        AppendLine($"if (__fileOpts.DefaultAllowedContentTypes is {{ Length: > 0 }} __allowedTypes && !global::System.Linq.Enumerable.Any(__allowedTypes, t => t.Contains(\"*\") ? {varName}.ContentType.StartsWith(t.Replace(\"*\", \"\")) : string.Equals(t, {varName}.ContentType, System.StringComparison.OrdinalIgnoreCase)))");
         Block(() =>
         {
             AppendLine("return Microsoft.AspNetCore.Http.Results.Problem(");

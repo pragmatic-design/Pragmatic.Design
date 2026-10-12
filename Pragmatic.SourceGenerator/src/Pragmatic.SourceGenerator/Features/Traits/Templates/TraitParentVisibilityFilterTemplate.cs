@@ -106,7 +106,9 @@ internal sealed class TraitParentVisibilityFilterTemplate : CSharpTemplate
         // visible either — so no null-forgiving shortcut that would let an orphan through.
         var nav = $"entity.{_model.ParentNavigationName}";
         var owned = $"{nav} != null && {nav}.OwnerId == userId";
-        var scoped = $"{nav} != null && {nav}.AccessScopes.Any(s => userScopes.Contains(s))";
+        // Any qualified: the file declares no using, and a short-name call compiled only under the consumer's
+        // implicit usings (#202). The expression tree is the same either way. Contains is IReadOnlySet's own.
+        var scoped = $"{nav} != null && global::System.Linq.Enumerable.Any({nav}.AccessScopes, s => userScopes.Contains(s))";
 
         var predicate = (_model.IsOwned, _model.IsScoped) switch
         {

@@ -51,7 +51,7 @@ public class TraitParentVisibilityTests
     private static string Source(string protection) => Template.Replace("__PROTECTION__", protection);
 
     [Theory]
-    [InlineData("[HasAccessScopes]", "AccessScopes.Any(s => userScopes.Contains(s))")]
+    [InlineData("[HasAccessScopes]", "global::System.Linq.Enumerable.Any(entity.CaseFile.AccessScopes, s => userScopes.Contains(s))")]
     [InlineData("[HasOwner]", "OwnerId == userId")]
     public void RowRestrictedParent_GetsAFilterCarryingTheParentPredicate(string protection, string expected)
     {
