@@ -39,6 +39,10 @@ function checkout() {
     [`${DIR}Json/LineBuffer.cs`, 'namespace L.Benchmarks.Json;\ninternal sealed class LineBuffer { }'],
     [`${DIR}Modules/ActionsBenchmarks.cs`, 'namespace L.Benchmarks.Modules;\n[Config(typeof(SharedConfig))]\npublic partial class ActionsBenchmarks { [Benchmark(Baseline = true)] public void Log() {} }'],
     [`${DIR}Modules/ActionsBenchmarks.Verification.cs`, 'namespace L.Benchmarks.Modules;\npublic partial class ActionsBenchmarks { void Verify() {} }'],
+    // Rows in an abstract class, run by classes that only derive from it, one per BenchmarkDotNet job (#215).
+    [`${DIR}Probe/ProbeRows.cs`, 'namespace L.Benchmarks.Probe;\npublic abstract class ProbeRows { [Benchmark] public void Row() {} }'],
+    [`${DIR}Probe/ProbeTiered.cs`, 'namespace L.Benchmarks.Probe;\n[SimpleJob(iterationCount: 60)]\npublic class ProbeTiered : ProbeRows;'],
+    [`${DIR}Probe/ProbeNoTiering.cs`, 'namespace L.Benchmarks.Probe;\n[Config(typeof(NoTiering))]\npublic class ProbeNoTiering : Probe.ProbeRows;'],
     ['R/benchmarks/R.Benchmarks/ResultBenchmarks.cs', 'namespace R.Benchmarks;\npublic class ResultBenchmarks { [Benchmark] public void Map() {} }'],
     ['R/benchmarks/reports/old-report-github.md', 'a report'],
   ]);
@@ -91,6 +95,29 @@ test('a helper declared next to the entry point selects the classes that use it'
   const selection = changed({ [`${DIR}Program.cs`]: 'namespace L.Benchmarks;\npublic class Program { }\npublic class SharedConfig { int _jobs; }' });
 
   assert.deepEqual(selection.suites.Logging.classes, ['L.Benchmarks.Modules.ActionsBenchmarks']);
+});
+
+// The file of a class that only derives holds no [Benchmark]; read as a helper, it reached nothing, and
+// #214's probe ran no benchmark on its pull request while the job reported ok.
+test('a class whose benchmarks are inherited is a benchmark class', () => {
+  const selection = changed({ [`${DIR}Probe/ProbeTiered.cs`]: 'namespace L.Benchmarks.Probe;\n[SimpleJob(iterationCount: 90)]\npublic class ProbeTiered : ProbeRows;' });
+
+  assert.deepEqual(selection.suites.Logging.classes, ['L.Benchmarks.Probe.ProbeTiered']);
+});
+
+test('a changed base selects every class that derives from it', () => {
+  const selection = changed({ [`${DIR}Probe/ProbeRows.cs`]: 'namespace L.Benchmarks.Probe;\npublic abstract class ProbeRows { [Benchmark] public void Row2() {} }' });
+
+  assert.deepEqual(selection.suites.Logging.classes,
+    ['L.Benchmarks.Probe.ProbeNoTiering', 'L.Benchmarks.Probe.ProbeRows', 'L.Benchmarks.Probe.ProbeTiered']);
+});
+
+test('a class two derivations away from the rows is a benchmark class too', () => {
+  const selection = changed({
+    [`${DIR}Probe/ProbeTieredLonger.cs`]: 'namespace L.Benchmarks.Probe;\npublic sealed class ProbeTieredLonger : ProbeTiered;',
+  });
+
+  assert.deepEqual(selection.suites.Logging.classes, ['L.Benchmarks.Probe.ProbeTieredLonger']);
 });
 
 test('a changed baseline entry selects the class it belongs to', () => {
