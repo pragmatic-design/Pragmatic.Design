@@ -111,6 +111,27 @@ public sealed class TheContractIsPublishedWhereTheEnvironmentAllowsTests
     }
 
     /// <summary>
+    ///     The reference belongs to no tenant, as the document it renders does: a browser opening it sends no
+    ///     tenant header, and a host that requires one answered it with an empty 400.
+    /// </summary>
+    /// <remarks>
+    ///     Asserted on the metadata the tenant middleware reads, which is how the document stays reachable
+    ///     too (<c>MapPragmaticOpenApi</c> attaches the same marker). The middleware's side of it, a marked
+    ///     route served without a tenant, is the MultiTenancy suite's.
+    /// </remarks>
+    [Fact]
+    public void TheReference_BelongsToNoTenant()
+    {
+        using var app = Build(Environments.Development);
+
+        ApiDocumentationMapper.Map(app, Reference);
+
+        var reference = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).OfType<RouteEndpoint>()
+            .Single(endpoint => endpoint.RoutePattern.RawText == "/scalar/{documentName?}");
+        reference.Metadata.GetMetadata<global::Pragmatic.MultiTenancy.TenantAgnosticEndpoint>().Should().NotBeNull();
+    }
+
+    /// <summary>
     ///     The reference is an HTML page that runs scripts, and the host's default policy for an API denies
     ///     every script: the reference states its own, which the security headers leave in place.
     /// </summary>
