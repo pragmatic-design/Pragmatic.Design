@@ -112,19 +112,23 @@ the default, and then the request decides, as before.
 | `AddLocalizationProvider<TProvider>()` | registers an `ILocalizationProvider` (singleton) |
 | `AddLocalizationProvider(ILocalizationProvider)` | registers a provider instance |
 | `AddJsonTranslations(basePath?, watchForChanges)` | registers `JsonLocalizationProvider` (default path: `I18NOptions.TranslationsPath`, `"translations"`) |
+| `LocalizeProblemDetails()` | replaces `IErrorMessageResolver` with `LocalizedErrorMessageResolver` |
 
 ### How a culture finds its file
 
-`JsonLocalizationProvider` reads `{culture}.json` from the base path, and falls back one
-subtag at a time when there is none: `zh-Hant-CN` asks `zh-Hant.json`, then `zh.json`. So a
-host that declares `en-US` and ships `en.json` resolves, and one that ships both keeps the
-more specific file - the exact name always wins.
+A culture with no translation of its own falls back one subtag at a time: `zh-Hant-CN` asks
+`zh-Hant`, then `zh`. So a host that declares `en-US` and ships `en.json` resolves, and one
+that ships both keeps the more specific file - the exact name always wins.
+
+The walk is in `CompositeLocalizationProvider`, which `IStringLocalizer` and the error resolver
+both read: it asks every provider for the
+exact culture before any of them for its parent. So it holds for the translations the
+generator embeds in a module (`TTranslations`, which looks a culture up exactly) as much as for
+`JsonLocalizationProvider`, which also walks its own files.
 
 A declared culture that nothing covers, not even through its language, is reported once as a
-warning when the provider loads. It is a warning and not a failure: a host that supports four
-languages and ships three is wrong about one of them, not unable to start.
-
-| `LocalizeProblemDetails()` | replaces `IErrorMessageResolver` with `LocalizedErrorMessageResolver` |
+warning when the JSON provider loads. It is a warning and not a failure: a host that supports
+four languages and ships three is wrong about one of them, not unable to start.
 
 ## Configuration Providers (per-tenant / per-user culture)
 

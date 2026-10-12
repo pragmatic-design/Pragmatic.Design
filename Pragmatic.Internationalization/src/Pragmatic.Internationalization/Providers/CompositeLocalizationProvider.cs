@@ -27,29 +27,64 @@ public sealed class CompositeLocalizationProvider : ILocalizationProvider
     public int ProviderCount => _providers.Count;
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     <para>
+    ///         The culture first, in every provider, then its parent one subtag at a time
+    ///         (<c>en-US</c>, then <c>en</c>): a module ships <c>en.json</c> and its host answers in
+    ///         <c>en-US</c>. Without the walk the providers that look a culture up exactly (the one the
+    ///         generator embeds in a module among them) answer nothing, and every caller that asks the
+    ///         composite directly (the error resolver above all) gets the key instead of the sentence.
+    ///     </para>
+    ///     <para>
+    ///         Every provider is asked for the exact culture before any is asked for the parent, so a
+    ///         translation written for the region always wins over one written for the language,
+    ///         whichever provider holds it.
+    ///     </para>
+    /// </remarks>
     public string? GetString(string key, string culture)
     {
-        foreach (var provider in _providers)
+        foreach (var candidate in CultureAndParents(culture))
         {
-            var value = provider.GetString(key, culture);
-            if (value is not null)
-                return value;
+            foreach (var provider in _providers)
+            {
+                var value = provider.GetString(key, candidate);
+                if (value is not null)
+                    return value;
+            }
         }
 
         return null;
     }
 
     /// <inheritdoc />
+    /// <remarks>Walks the culture's parents as <see cref="GetString" /> does.</remarks>
     public PluralString? GetPlural(string key, string culture)
     {
-        foreach (var provider in _providers)
+        foreach (var candidate in CultureAndParents(culture))
         {
-            var value = provider.GetPlural(key, culture);
-            if (value is not null)
-                return value;
+            foreach (var provider in _providers)
+            {
+                var value = provider.GetPlural(key, candidate);
+                if (value is not null)
+                    return value;
+            }
         }
 
         return null;
+    }
+
+    /// <summary>The culture, then each parent down to the language: <c>zh-Hant-CN</c>, <c>zh-Hant</c>, <c>zh</c>.</summary>
+    private static IEnumerable<string> CultureAndParents(string culture)
+    {
+        var current = culture;
+        while (true)
+        {
+            yield return current;
+            var lastSubtag = current.LastIndexOf('-');
+            if (lastSubtag <= 0)
+                yield break;
+            current = current[..lastSubtag];
+        }
     }
 
     /// <inheritdoc />
