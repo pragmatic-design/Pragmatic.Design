@@ -486,32 +486,34 @@ function took(startedAt) {
  * Builds the solution, or only `projects` and what they reference.
  *
  * A container shard runs a handful of suites, and building the whole solution for them cost a CI job
- * 4m 51s of its ~13 (#197): one `dotnet build` per suite builds that suite's graph, and the second finds
- * what the first already built. The gate's own clean build still compiles everything.
+ * 4m 51s of its ~13 (#197). The subset is one MSBuild invocation over a solution filter, not one
+ * `dotnet build` per project: built one after another, a shard of 12 suites took 5m 40s, longer than the
+ * whole solution, because each invocation re-evaluated the graph and none ran beside another. The gate's
+ * own clean build still compiles everything.
  */
 function buildSolution({ clean, projects = null }) {
   lastBuildStartedAt = Date.now();
-  if (projects) {
-    const label = `build --warnaserror (${projects.length} project${projects.length === 1 ? '' : 's'} and their references)`;
-    process.stdout.write(`  ${label} … `);
-    const startedAt = performance.now();
-    let warnings = 0;
-    for (const project of projects) {
-      const built = buildOne(project, { clean });
-      if (!built.ok) return false;
-      warnings += built.warnings;
-    }
-    console.log(`${ok('ok')} ${dim(`(${warnings} warnings, ${took(startedAt)})`)}`);
-    return true;
-  }
-
-  const label = clean ? 'clean build --warnaserror' : 'build --warnaserror';
+  const target = projects ? solutionFilter(projects) : SLN;
+  const label = projects
+    ? `build --warnaserror (${projects.length} project${projects.length === 1 ? '' : 's'} and their references)`
+    : clean ? 'clean build --warnaserror' : 'build --warnaserror';
   process.stdout.write(`  ${label} … `);
   const startedAt = performance.now();
-  const built = buildOne(SLN, { clean });
+  const built = buildOne(target, { clean });
   if (!built.ok) return false;
   console.log(`${ok('ok')} ${dim(`(${built.warnings} warnings, ${took(startedAt)})`)}`);
   return true;
+}
+
+/**
+ * Writes a solution filter over `projects` into the gate's own folder and returns its path. A filter's
+ * project paths are relative to the solution, which sits at the repository root, as the suites' paths are.
+ */
+function solutionFilter(projects) {
+  const path = join('artifacts', 'gate', 'subset.slnf');
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify({ solution: { path: join('..', '..', SLN), projects } }, null, 2)}\n`, 'utf8');
+  return path;
 }
 
 function buildOne(target, { clean }) {
