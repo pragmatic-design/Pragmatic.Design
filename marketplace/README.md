@@ -21,6 +21,13 @@ claude plugin install pragmatic-design@pragmatic-design
 Skills are then called by the agent when a task needs them, or by name:
 `/pragmatic-design:pragmatic-new-app`.
 
+**With many plugins installed.** Claude Code lists every skill to the model with its description,
+within a budget of 1% of the context window. Over budget, it drops descriptions, starting with the
+skills used least. A fresh install loses them first, and the agent can then match those skills by name
+only. `/doctor` estimates what the listing costs; to raise the budget, set
+`"skillListingBudgetFraction": 0.02` in your Claude Code settings. Calling a skill by name works either
+way.
+
 ### Codex
 
 ```bash
