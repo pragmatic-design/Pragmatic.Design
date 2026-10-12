@@ -26,7 +26,7 @@ The consumer project should not use `ProjectReference` to Pragmatic sources. It 
 
 ## Troubleshooting
 
-- "There are no stable versions available" from `dotnet add package`: every version is a prerelease, so add `--prerelease`. The same cause in a restore is `NU1103`, from a stable range such as `1.*`: name the version (`1.0.0-alpha.1`).
+- "There are no stable versions available" from `dotnet add package`: every version is a prerelease, so add `--prerelease`. The same cause in a restore is `NU1103`, from a stable range such as `1.*`: name the version (`1.0.0-alpha.2`).
 - `NU1301` or feed unreachable: verify `docker ps` and `http://localhost:5555/v3/index.json`.
 - Package not found: pack and push from the monorepo, then restore again.
 - Old package behavior: `dotnet nuget locals all --clear`.
