@@ -14,8 +14,8 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  record, prune, failedTestNames, failureDetails, failureLines, unnamedFailureTail, KEEP, TERMINAL_CAP,
-  UNNAMED_TAIL_LINES,
+  record, prune, failedTestNames, failureDetails, failureLines, unnamedFailureTail, abortedRun, KEEP,
+  TERMINAL_CAP, UNNAMED_TAIL_LINES,
 } from './lib/failure-record.mjs';
 
 function dir() {
@@ -298,4 +298,31 @@ test('the record holds the detail beside the capped line, and stays a file a per
   } finally {
     rmSync(d, { recursive: true, force: true });
   }
+});
+
+/**
+ * Real captures of a test host stopped by `--blame-hang-timeout`, in the CI runner's language and in
+ * this machine's.
+ *
+ * ⚠️ Captured, not written: a test that never returns was added to a suite for the run and removed
+ * after. What makes them worth keeping is what they do NOT say: no "Failed:" line and a total of
+ * "Unknown", beside "Passed: 330". Read for counts alone, a hung suite is a green one.
+ */
+const HANG_EN = readFileSync(new URL('./fixtures/dotnet-test-hang-en.txt', import.meta.url), 'utf-8');
+const HANG_IT = readFileSync(new URL('./fixtures/dotnet-test-hang-it-IT.txt', import.meta.url), 'utf-8');
+const HUNG_TEST = 'Pragmatic.Ensure.Tests.HangProbe.NeverEnds';
+
+test('a run whose test host was stopped is aborted, and names the test that was running', () => {
+  for (const [label, out] of [['en', HANG_EN], ['it-IT', HANG_IT]]) {
+    assert.deepEqual(abortedRun(out), { aborted: true, running: [HUNG_TEST] }, label);
+  }
+});
+
+test('the aborted reading does not depend on the line endings the runner used', () => {
+  assert.deepEqual(abortedRun(HANG_EN.replace(/\n/g, '\r\n')), { aborted: true, running: [HUNG_TEST] });
+});
+
+test('a run that finished, red or green, is not aborted', () => {
+  assert.deepEqual(abortedRun(RED), { aborted: false, running: [] });
+  assert.deepEqual(abortedRun(RED_SECONDS), { aborted: false, running: [] });
 });

@@ -1,0 +1,21 @@
+  Superato Pragmatic.Ensure.Tests.Is.IsTests.IsNotNull_ReferenceType_WithValue_ReturnsTrue [< 1 ms]
+  Superato Pragmatic.Ensure.Tests.Is.IsTests.IsNotDefault_Int_WithDefault_ReturnsFalse [< 1 ms]
+  Superato Pragmatic.Ensure.Tests.Is.IsTests.IsNotNullOrEmpty_Collection_WithItems_ReturnsTrue [< 1 ms]
+  Superato Pragmatic.Ensure.Tests.Is.IsTests.HasNoDuplicates_EmptyCollection_ReturnsTrue [< 1 ms]
+  Superato Pragmatic.Ensure.Tests.Is.IsTests.HasNoDuplicates_WithNull_ReturnsTrue [< 1 ms]
+Messaggio 'Blame' dell'agente di raccolta dati: Il tempo di inattività specificato di 15 secondi è scaduto. Verranno raccolti i dump in sospeso da testhost e dai relativi processi figlio.
+
+Totale test: sconosciuto
+     Superati: 330
+ Tempo totale: 16,3345 Secondi
+
+
+Allegati:
+  C:\Pragmatic\Pragmatic.Design\Pragmatic.Ensure\tests\Pragmatic.Ensure.Tests\TestResults\af0d93ed-d3ed-45dd-bcb5-2893d9f487c6\Sequence_e9b93b45e70c4917b7fe7323c672d05c.xml
+L'esecuzione dei test attivi è stata interrotta. Motivo: Arresto anomalo del processo host di test
+Esecuzione dei test interrotta.
+L'esecuzione dei test attiva è stata interrotta perché il processo host è stato terminato in modo imprevisto. Esaminare lo stack di chiamate in alto, se disponibile, per ottenere altre informazioni sull'origine dell'eccezione.
+Test in esecuzione quando si è verificato l'arresto anomalo:
+Pragmatic.Ensure.Tests.HangProbe.NeverEnds
+
+Il test potrebbe essere l'origine dell'arresto anomalo.
