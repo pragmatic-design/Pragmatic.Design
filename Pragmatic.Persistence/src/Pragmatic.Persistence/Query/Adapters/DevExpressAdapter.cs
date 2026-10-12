@@ -224,19 +224,19 @@ public static class DevExpressAdapter
 
             // Coerce the value to the property type (handles JsonElement and type mismatches)
             var coerced = CoerceValue(value, property.Type);
-            var constant = Expression.Constant(coerced, property.Type);
+            var operand = QueryParameter.Of(coerced, property.Type);
 
             Expression body = op.ToLowerInvariant() switch
             {
-                "=" or "==" => Expression.Equal(property, constant),
-                "<>" or "!=" => Expression.NotEqual(property, constant),
-                ">" => Expression.GreaterThan(property, constant),
-                ">=" => Expression.GreaterThanOrEqual(property, constant),
-                "<" => Expression.LessThan(property, constant),
-                "<=" => Expression.LessThanOrEqual(property, constant),
-                "contains" => CreateStringContains(property, constant),
-                "startswith" => CreateStringStartsWith(property, constant),
-                "endswith" => CreateStringEndsWith(property, constant),
+                "=" or "==" => Expression.Equal(property, operand),
+                "<>" or "!=" => Expression.NotEqual(property, operand),
+                ">" => Expression.GreaterThan(property, operand),
+                ">=" => Expression.GreaterThanOrEqual(property, operand),
+                "<" => Expression.LessThan(property, operand),
+                "<=" => Expression.LessThanOrEqual(property, operand),
+                "contains" => CreateStringContains(property, operand),
+                "startswith" => CreateStringStartsWith(property, operand),
+                "endswith" => CreateStringEndsWith(property, operand),
                 _ => null!
             };
 
@@ -320,13 +320,13 @@ public static class DevExpressAdapter
         };
     }
 
-    private static Expression CreateStringContains(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringContains(MemberExpression property, Expression value)
         => Expression.Call(property, StringContainsMethod, value);
 
-    private static Expression CreateStringStartsWith(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringStartsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringStartsWithMethod, value);
 
-    private static Expression CreateStringEndsWith(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringEndsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringEndsWithMethod, value);
 
     private static Expression<Func<TEntity, object>>? CreateSortExpression<

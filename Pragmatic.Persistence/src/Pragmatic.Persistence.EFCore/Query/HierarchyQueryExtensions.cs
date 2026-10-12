@@ -107,7 +107,10 @@ public static class HierarchyQueryExtensions
         // Build the Where predicate: e => subtreeIds.Contains(e.NodeId)
         var parameter = entityNodeSelector.Parameters[0];
         var nodeIdAccess = entityNodeSelector.Body;
-        var containsCall = Expression.Call(Expression.Constant(subtreeIds), ContainsMethodCache<TKey>.Method, nodeIdAccess);
+        // The set as a captured value, which EF Core parameterizes as one collection: as a constant it inlined
+        // the ids into the SQL and the query-cache key, one compiled query per distinct subtree (#138).
+        Expression<Func<HashSet<TKey>>> captured = () => subtreeIds;
+        var containsCall = Expression.Call(captured.Body, ContainsMethodCache<TKey>.Method, nodeIdAccess);
         var predicate = Expression.Lambda<Func<TEntity, bool>>(containsCall, parameter);
 
         return query.Where(predicate);

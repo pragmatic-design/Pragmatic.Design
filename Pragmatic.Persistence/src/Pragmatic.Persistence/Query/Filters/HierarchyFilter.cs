@@ -126,7 +126,8 @@ public static class HierarchyFilter
         Expression<Func<T, TKey>> selector, TKey value)
     {
         var parameter = selector.Parameters[0];
-        var body = Expression.Equal(selector.Body, Expression.Constant(value, typeof(TKey)));
+        // A parameter, not a constant: one compiled query whatever the root (#138).
+        var body = Expression.Equal(selector.Body, QueryParameter.Of(value));
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }
 
@@ -138,7 +139,9 @@ public static class HierarchyFilter
         var parameter = selector.Parameters[0];
         Expression<Func<bool>> containsStub = () => Queryable.Contains(values, default(TKey)!);
         var containsMethod = ((MethodCallExpression)containsStub.Body).Method;
-        var body = Expression.Call(containsMethod, Expression.Constant(values), selector.Body);
+        // Captured, not a constant, as a LINQ query captures a subquery: EF Core inlines it either way, but a
+        // constant puts this call's IQueryable instance into the query-cache key, one compiled query per call.
+        var body = Expression.Call(containsMethod, QueryParameter.Of(values), selector.Body);
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }
 }
