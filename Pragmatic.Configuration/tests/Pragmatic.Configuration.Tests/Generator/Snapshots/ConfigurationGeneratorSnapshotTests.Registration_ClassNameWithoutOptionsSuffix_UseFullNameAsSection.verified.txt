@@ -21,6 +21,8 @@ public static partial class SmtpSettingsConfigurationExtensions
             .Bind(configuration.GetSection("SmtpSettings"))
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.SmtpSettings>, global::MyApp.Config.SmtpSettingsTenantBinder>(services);
+        
         return services;
     }
     

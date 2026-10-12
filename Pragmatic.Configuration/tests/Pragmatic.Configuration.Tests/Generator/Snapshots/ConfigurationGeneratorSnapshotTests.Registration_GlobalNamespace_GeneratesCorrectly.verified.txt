@@ -20,6 +20,8 @@ public static partial class GlobalOptionsConfigurationExtensions
             .Bind(configuration.GetSection("Global"))
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::GlobalOptions>, global::GlobalOptionsTenantBinder>(services);
+        
         return services;
     }
     

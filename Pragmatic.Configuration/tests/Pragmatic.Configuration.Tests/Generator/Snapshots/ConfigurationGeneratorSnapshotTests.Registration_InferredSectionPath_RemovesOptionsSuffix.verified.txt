@@ -21,6 +21,8 @@ public static partial class DatabaseOptionsConfigurationExtensions
             .Bind(configuration.GetSection("Database"))
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.DatabaseOptions>, global::MyApp.DatabaseOptionsTenantBinder>(services);
+        
         return services;
     }
     

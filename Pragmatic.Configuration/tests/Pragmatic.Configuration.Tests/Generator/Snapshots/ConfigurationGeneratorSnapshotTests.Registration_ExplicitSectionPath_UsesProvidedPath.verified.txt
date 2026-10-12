@@ -21,6 +21,8 @@ public static partial class PaymentOptionsConfigurationExtensions
             .Bind(configuration.GetSection("Services:Payment"))
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.PaymentOptions>, global::MyApp.Config.PaymentOptionsTenantBinder>(services);
+        
         return services;
     }
     

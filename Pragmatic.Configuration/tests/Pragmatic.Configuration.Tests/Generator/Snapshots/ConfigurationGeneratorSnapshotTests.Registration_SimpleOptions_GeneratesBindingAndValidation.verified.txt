@@ -22,6 +22,8 @@ public static partial class BookingOptionsConfigurationExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.BookingOptions>, global::MyApp.Config.BookingOptionsTenantBinder>(services);
+        
         return services;
     }
     

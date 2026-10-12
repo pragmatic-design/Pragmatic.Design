@@ -21,6 +21,8 @@ public static partial class SimpleOptionsConfigurationExtensions
             .Bind(configuration.GetSection("Simple"))
             .ValidateOnStart();
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.SimpleOptions>, global::MyApp.Config.SimpleOptionsTenantBinder>(services);
+        
         return services;
     }
     
