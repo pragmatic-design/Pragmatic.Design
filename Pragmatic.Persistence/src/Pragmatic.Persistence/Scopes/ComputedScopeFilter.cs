@@ -26,9 +26,7 @@ public sealed class ComputedScopeFilter<T>(
 
     public Expression<Func<T, bool>> GetFilter()
     {
-        // Resolve scopes synchronously via a dedicated sync-safe method to avoid deadlocks.
-        // IUserScopeResolver implementations must expose ResolveAccessScopes or support
-        // synchronous resolution. Fall back to empty set when only async is available.
+        // Synchronous: a filter builds an expression, where nothing can be awaited.
         var userScopes = scopeResolver.ResolveAccessScopes(currentUser);
 
         // Collect rules where: strategy is Computed or Hybrid AND the user has the scope

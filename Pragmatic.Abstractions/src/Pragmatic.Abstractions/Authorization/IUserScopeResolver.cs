@@ -19,13 +19,16 @@ public interface IUserScopeResolver
     Task<IReadOnlySet<string>> ResolveAccessScopesAsync(ICurrentUser user, CancellationToken ct = default);
 
     /// <summary>
-    ///     Synchronous variant for use inside expression-building paths (e.g., EF Core filter expressions)
-    ///     where async is not supported. Implementations that perform I/O should override this to run
-    ///     the work on a thread-pool thread via <c>Task.Run</c> to avoid ASP.NET Core deadlocks.
+    ///     Synchronous variant, called by every generated data filter while it builds the query's expression,
+    ///     where async is not supported: once per query over an entity with scopes.
     /// </summary>
+    /// <remarks>
+    ///     No default, on purpose. The one this interface used to carry ran the asynchronous method with
+    ///     <c>Task.Run</c> and blocked on it: two thread-pool threads per query, for implementations whose scopes
+    ///     come from the principal already in memory. An implementation decides how it answers synchronously, and
+    ///     one that must reach I/O should compute the scopes once per request rather than per query.
+    /// </remarks>
     /// <param name="user">The current user context.</param>
     /// <returns>A set of scope identifiers the user has access to.</returns>
-    IReadOnlySet<string> ResolveAccessScopes(ICurrentUser user)
-        // Default: run on thread-pool to avoid sync-context deadlock, then block
-        => Task.Run(() => ResolveAccessScopesAsync(user)).GetAwaiter().GetResult();
+    IReadOnlySet<string> ResolveAccessScopes(ICurrentUser user);
 }
