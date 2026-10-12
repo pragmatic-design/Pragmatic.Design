@@ -17,10 +17,13 @@ public static partial class LazyOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddLazyOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                      global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Lazy");
         services.AddOptions<global::MyApp.Config.LazyOptions>()
-            .Bind(configuration.GetSection("Lazy"))
+            .Configure(options => new global::MyApp.Config.LazyOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateDataAnnotations()
             ;
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::MyApp.Config.LazyOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::MyApp.Config.LazyOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.LazyOptions>, global::MyApp.Config.LazyOptionsTenantBinder>(services);
         

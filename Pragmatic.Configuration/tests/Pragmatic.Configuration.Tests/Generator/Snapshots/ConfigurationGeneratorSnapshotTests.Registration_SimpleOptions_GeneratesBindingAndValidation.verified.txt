@@ -17,10 +17,13 @@ public static partial class BookingOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddBookingOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                         global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Booking");
         services.AddOptions<global::MyApp.Config.BookingOptions>()
-            .Bind(configuration.GetSection("Booking"))
+            .Configure(options => new global::MyApp.Config.BookingOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::MyApp.Config.BookingOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::MyApp.Config.BookingOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.BookingOptions>, global::MyApp.Config.BookingOptionsTenantBinder>(services);
         

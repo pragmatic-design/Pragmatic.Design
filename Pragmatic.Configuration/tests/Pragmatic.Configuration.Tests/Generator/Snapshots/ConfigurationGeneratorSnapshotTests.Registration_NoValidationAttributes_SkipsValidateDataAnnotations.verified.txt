@@ -17,9 +17,12 @@ public static partial class SimpleOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddSimpleOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                        global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Simple");
         services.AddOptions<global::MyApp.Config.SimpleOptions>()
-            .Bind(configuration.GetSection("Simple"))
+            .Configure(options => new global::MyApp.Config.SimpleOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateOnStart();
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::MyApp.Config.SimpleOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::MyApp.Config.SimpleOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.SimpleOptions>, global::MyApp.Config.SimpleOptionsTenantBinder>(services);
         

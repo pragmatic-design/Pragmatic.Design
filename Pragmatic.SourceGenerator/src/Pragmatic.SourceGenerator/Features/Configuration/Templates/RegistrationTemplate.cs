@@ -64,9 +64,16 @@ internal sealed class RegistrationTemplate : CSharpTemplate
 
     private void RenderMethodBody()
     {
+        // Not OptionsBuilder.Bind: it binds by reflection, and it lives in Microsoft.Extensions.Options.ConfigurationExtensions,
+        // which Pragmatic.Configuration does not depend on, so a host without the ASP.NET Core shared framework did
+        // not compile this (#195). A class with a generated binder is bound through it; any other keeps the
+        // reflective ConfigurationBinder, from a package this module does depend on.
+        AppendLine($"var section = configuration.GetSection(\"{_model.SectionPath}\");");
         AppendLine($"services.AddOptions<global::{_model.FullTypeName}>()");
         IncreaseIndent();
-        AppendLine($".Bind(configuration.GetSection(\"{_model.SectionPath}\"))");
+        AppendLine(_binderType is { Length: > 0 } typed
+            ? $".Configure(options => new {typed}().Bind(options, key => section[key]))"
+            : ".Configure(options => global::Microsoft.Extensions.Configuration.ConfigurationBinder.Bind(section, options))");
 
         if (_model.HasValidation)
             AppendLine(".ValidateDataAnnotations()");
@@ -78,6 +85,13 @@ internal sealed class RegistrationTemplate : CSharpTemplate
             AppendLine(";");
 
         DecreaseIndent();
+
+        AppendLine();
+        // What OptionsBuilder.Bind also registered: IOptionsMonitor<T> rebuilds the options when the section reloads.
+        AppendLine(
+            "global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton" +
+            $"<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::{_model.FullTypeName}>>(services, " +
+            $"new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::{_model.FullTypeName}>(section));");
 
         if (_validatorType is { Length: > 0 } validator)
         {

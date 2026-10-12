@@ -17,9 +17,12 @@ public static partial class DatabaseOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddDatabaseOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                          global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Database");
         services.AddOptions<global::MyApp.DatabaseOptions>()
-            .Bind(configuration.GetSection("Database"))
+            .Configure(options => new global::MyApp.DatabaseOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateOnStart();
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::MyApp.DatabaseOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::MyApp.DatabaseOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.DatabaseOptions>, global::MyApp.DatabaseOptionsTenantBinder>(services);
         

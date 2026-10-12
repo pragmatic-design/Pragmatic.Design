@@ -25,9 +25,15 @@ public abstract class ConfigurationGeneratorTestBase
     }
 
     /// <summary>
-    ///     With the assemblies the generated registration calls into, so the output compiles: what
-    ///     <see cref="RunGenerator" /> leaves out, because most tests read the generated text and never compile it.
+    ///     With the assemblies Pragmatic.Configuration itself depends on, so the output compiles as it does for a
+    ///     consumer that references nothing else: what <see cref="RunGenerator" /> leaves out, because most tests
+    ///     read the generated text and never compile it.
     /// </summary>
+    /// <remarks>
+    ///     <c>Microsoft.Extensions.Options.ConfigurationExtensions</c> is deliberately absent: it is not in the
+    ///     package's dependency graph, only in the ASP.NET Core shared framework, so generated code that needs it
+    ///     does not compile in a worker or console host (#195).
+    /// </remarks>
     protected static SourceGenRunResult RunGeneratorToCompile(string source)
     {
         MetadataReference[] runtime =
@@ -37,8 +43,8 @@ public abstract class ConfigurationGeneratorTestBase
             GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Configuration.ConfigurationBinder)),
             GeneratorTestHelper.FromType<Microsoft.Extensions.DependencyInjection.IServiceCollection>(),
             GeneratorTestHelper.FromType<Microsoft.Extensions.Options.OptionsBuilder<object>>(),
-            GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Options.ConfigurationChangeTokenSource<>)),
             GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Options.DataAnnotationValidateOptions<>)),
+            GeneratorTestHelper.FromType<Microsoft.Extensions.Primitives.IChangeToken>(),
         ];
         return GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(source, [.. GetConfigurationReferences(), .. runtime]);
     }
