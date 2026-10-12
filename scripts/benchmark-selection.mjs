@@ -37,7 +37,10 @@ export function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
-/** The namespace of a C# file and the names of the types it declares. */
+/**
+ * The namespace of a C# file, the names of the types it declares, and the classes each class derives
+ * from or implements (`bases`, by simple name: `Ns.Base<T>` reads as `Base`).
+ */
 export function declarations(source) {
   const code = stripComments(source);
   const namespace = /\bnamespace\s+([\w.]+)/.exec(code)?.[1] ?? '';
@@ -46,7 +49,32 @@ export function declarations(source) {
     // `where T : class` followed by another constraint.
     if (m[1] !== 'where') types.add(m[1]);
   }
-  return { namespace, types: [...types], benchmark: /\[Benchmark\b/.test(code), code };
+
+  // A class header up to its base list: name, type parameters, a primary constructor, then `:`. The list
+  // ends at the body, at the `;` of a class with none, or at its constraints.
+  const bases = {};
+  for (const m of code.matchAll(/\bclass\s+([A-Za-z_]\w*)\s*(?:<[^>{;:]*>)?\s*(?:\([^)]*\))?\s*:\s*([^{;]+?)\s*(?:\bwhere\b|[{;])/g)) {
+    bases[m[1]] = splitTopLevel(m[2]).map((b) => b.replace(/<.*$/s, '').trim().split('.').pop()).filter(Boolean);
+  }
+
+  return { namespace, types: [...types], bases, benchmark: /\[Benchmark\b/.test(code), code };
+}
+
+/** A base list split at its top-level commas: `Base<A, B>, IFoo` is two entries, not three. */
+function splitTopLevel(list) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i] === '<') depth++;
+    else if (list[i] === '>') depth--;
+    else if (list[i] === ',' && depth === 0) {
+      parts.push(list.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(list.slice(start));
+  return parts;
 }
 
 /**
@@ -79,6 +107,26 @@ export function selectBenchmarks(head, base, suites) {
     for (const f of files.filter((f) => f.benchmark)) {
       for (const t of f.types) benchmarkClasses.set(t, f.namespace ? `${f.namespace}.${t}` : t);
     }
+
+    // A class that derives from a benchmark class runs its benchmarks, and its own file need not hold a
+    // [Benchmark] (#215): rows in an abstract class, run by one derived class per job. Closed over as
+    // many derivations as there are.
+    const derived = new Map();
+    for (const f of files) {
+      for (const [t, bases] of Object.entries(f.bases)) {
+        for (const b of bases) derived.set(b, [...(derived.get(b) ?? []), [t, f.namespace]]);
+      }
+    }
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const name of [...benchmarkClasses.keys()]) {
+        for (const [t, namespace] of derived.get(name) ?? []) {
+          if (benchmarkClasses.has(t)) continue;
+          benchmarkClasses.set(t, namespace ? `${namespace}.${t}` : t);
+          grew = true;
+        }
+      }
+    }
     const selected = new Set();
 
     // A partial benchmark class split over files without [Benchmark] is reached through any of them.
@@ -94,7 +142,12 @@ export function selectBenchmarks(head, base, suites) {
         for (const t of f.types) if (!reached.has(t)) (reached.add(t), (grew = true));
       }
     }
-    for (const t of reached) if (benchmarkClasses.has(t)) selected.add(benchmarkClasses.get(t));
+    // A selected class carries the classes that derive from it: they run what it declares.
+    const inheriting = [...reached].filter((t) => benchmarkClasses.has(t));
+    for (let i = 0; i < inheriting.length; i++) {
+      for (const [t] of derived.get(inheriting[i]) ?? []) if (!inheriting.includes(t)) inheriting.push(t);
+    }
+    for (const t of inheriting) selected.add(benchmarkClasses.get(t));
 
     for (const key of changedEntries) {
       for (const full of benchmarkClasses.values()) if (belongsTo(key, full)) selected.add(full);
