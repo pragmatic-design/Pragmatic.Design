@@ -101,6 +101,12 @@ using var pipe = ImagePipeline.Load(fileStream);    // reads the whole stream (b
 
 `LoadAsync(ReadOnlyMemory<byte>, ct, options)` and `LoadAsync(Stream, ct, options)` offload the CPU-bound decode to the thread pool.
 
+### What a call holds in memory
+
+- **Decoded pixels:** width × height × 4 bytes of native memory per live pipeline, released on dispose.
+- **Encoded input read from a `Stream`:** `Load(Stream)`, `LoadAsync(Stream)` and `ImageInfo.FromStream` read the encoded bytes into a buffer rented from `ArrayPool<byte>.Shared` and return it once decoded. A seekable stream sizes the buffer from its remaining length; otherwise the buffer starts at 80 KB and doubles, up to `MaxInputBytes` (or `maxBytes` for `FromStream`). So the input is held once, for the duration of the decode, and is not a fresh allocation each call.
+- **Encoded output:** `EncodeTo(stream)` and `QrCode.GeneratePng(text, stream)` write straight from the encoder's native buffer, without a managed copy. `Encode` and `GeneratePng(text)` return a `byte[]`, which is one copy of the encoded image. `EncodeToStreamAsync` goes through `EncodeAsync`, so it makes that copy too.
+
 ### Inspecting without decoding
 
 When you only need dimensions and format, use `ImageInfo`: it parses the header instead of decoding the whole image.

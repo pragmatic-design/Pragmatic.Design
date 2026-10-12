@@ -166,6 +166,21 @@ public sealed partial class ImagePipeline : IDisposable, IAsyncDisposable
     /// <param name="quality">Quality for JPEG (1-100). WebP/AVIF use library defaults. Ignored for lossless formats.</param>
     public byte[] Encode(ImageFormat format = ImageFormat.Png, byte quality = 90)
     {
+        using var buffer = EncodeNative(format, quality);
+        return buffer.ToArray();
+    }
+
+    /// <summary>Encode and write to a stream.</summary>
+    /// <remarks>Writes straight from the encoder's native buffer, without a managed copy of the image.</remarks>
+    public void EncodeTo(Stream output, ImageFormat format = ImageFormat.Png, byte quality = 90)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        using var buffer = EncodeNative(format, quality);
+        output.Write(buffer.AsSpan());
+    }
+
+    private NativeBuffer EncodeNative(ImageFormat format, byte quality)
+    {
         ThrowIfDisposed();
 
         unsafe
@@ -182,14 +197,9 @@ public sealed partial class ImagePipeline : IDisposable, IAsyncDisposable
             }
             finally { ReleasePin(pin); }
 
-            using var buffer = new NativeBuffer(outData, outLen);
-            return buffer.ToArray();
+            return new NativeBuffer(outData, outLen);
         }
     }
-
-    /// <summary>Encode and write to a stream.</summary>
-    public void EncodeTo(Stream output, ImageFormat format = ImageFormat.Png, byte quality = 90)
-        => output.Write(Encode(format, quality));
 
     /// <summary>Encode asynchronously.</summary>
     public Task<byte[]> EncodeAsync(ImageFormat format = ImageFormat.Png, byte quality = 90, CancellationToken ct = default)

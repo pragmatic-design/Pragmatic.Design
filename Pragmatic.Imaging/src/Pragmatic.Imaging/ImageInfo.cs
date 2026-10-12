@@ -1,3 +1,4 @@
+using System.Buffers;
 using Pragmatic.Imaging.Native;
 
 namespace Pragmatic.Imaging;
@@ -32,17 +33,15 @@ public readonly record struct ImageInfo(uint Width, uint Height, ImageFormat For
     /// </summary>
     public static ImageInfo FromStream(Stream stream, long maxBytes = 65536)
     {
-        using var ms = new MemoryStream();
-        var buffer = new byte[8192];
-        long total = 0;
-        int read;
-        while (total < maxBytes && (read = stream.Read(buffer, 0, (int)Math.Min(buffer.Length, maxBytes - total))) > 0)
+        var buffer = RentedStreamReader.Read(stream, maxBytes, overLimitThrows: false, out var length);
+        try
         {
-            ms.Write(buffer, 0, read);
-            total += read;
+            return FromBytes(buffer.AsSpan(0, length));
         }
-        // Use GetBuffer() to avoid a second allocation — slice to actual written length.
-        return FromBytes(ms.GetBuffer().AsSpan(0, (int)ms.Length));
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     /// <summary>
@@ -52,16 +51,15 @@ public readonly record struct ImageInfo(uint Width, uint Height, ImageFormat For
     /// </summary>
     public static async Task<ImageInfo> FromStreamAsync(Stream stream, long maxBytes = 65536, CancellationToken ct = default)
     {
-        using var ms = new MemoryStream();
-        var buffer = new byte[8192];
-        long total = 0;
-        int read;
-        while (total < maxBytes && (read = await stream.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, maxBytes - total)), ct).ConfigureAwait(false)) > 0)
+        var (buffer, length) = await RentedStreamReader.ReadAsync(stream, maxBytes, overLimitThrows: false, ct).ConfigureAwait(false);
+        try
         {
-            ms.Write(buffer, 0, read);
-            total += read;
+            // FromBytes is a fast native header-read; no Task.Run overhead needed.
+            return FromBytes(buffer.AsSpan(0, length));
         }
-        // FromBytes is a fast native header-read; no Task.Run overhead needed.
-        return FromBytes(ms.GetBuffer().AsSpan(0, (int)ms.Length));
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }
