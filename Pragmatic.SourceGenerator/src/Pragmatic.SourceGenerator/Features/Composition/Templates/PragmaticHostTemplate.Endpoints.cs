@@ -37,7 +37,7 @@ internal sealed partial class PragmaticHostTemplate
             // Resolve PragmaticEndpointsOptions (registered as a singleton before this runs)
             // by reading the descriptor directly — same approach as library AddPragmaticEndpoints.
             Comment("Read PragmaticEndpointsOptions from the registered descriptor (no BuildServiceProvider).");
-            AppendLine("var __optsDescriptor = services.LastOrDefault(d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);");
+            AppendLine("var __optsDescriptor = global::System.Linq.Enumerable.LastOrDefault(services, d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);");
             AppendLine("var __opts = __optsDescriptor?.ImplementationInstance as global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions;");
             AppendLine();
 

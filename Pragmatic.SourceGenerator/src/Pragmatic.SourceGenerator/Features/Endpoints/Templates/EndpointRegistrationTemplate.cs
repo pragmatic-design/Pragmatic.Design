@@ -86,7 +86,9 @@ internal sealed partial class EndpointRegistrationTemplate : CSharpTemplate
     {
         Comment("Read PragmaticEndpointsOptions that was registered by a prior AddPragmaticEndpoints() call.");
         Comment("We avoid BuildServiceProvider() (which creates a second root container) by reading the descriptor directly.");
-        AppendLine("var __optsDescriptor = services.LastOrDefault(d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);");
+        // Qualified, as everything generated: the file declares no using, and a short-name extension call
+        // compiled only under the consumer's implicit usings (#202).
+        AppendLine("var __optsDescriptor = global::System.Linq.Enumerable.LastOrDefault(services, d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);");
         AppendLine("var __opts = __optsDescriptor?.ImplementationInstance as global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions;");
         AppendLine();
 

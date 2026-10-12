@@ -94,7 +94,7 @@ public static class PragmaticEndpointsRegistrationExtensions
     {
         // Read PragmaticEndpointsOptions that was registered by a prior AddPragmaticEndpoints() call.
         // We avoid BuildServiceProvider() (which creates a second root container) by reading the descriptor directly.
-        var __optsDescriptor = services.LastOrDefault(d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);
+        var __optsDescriptor = global::System.Linq.Enumerable.LastOrDefault(services, d => d.ServiceType == typeof(global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions) && d.Lifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton);
         var __opts = __optsDescriptor?.ImplementationInstance as global::Pragmatic.Endpoints.Configuration.PragmaticEndpointsOptions;
         
         global::Pragmatic.Endpoints.ApiExplorer.PragmaticApiDescriptionExtensions.AddPragmaticApiDescriptions(services);

@@ -40,6 +40,7 @@ internal sealed partial class QueryHandlerTemplate : CSharpTemplate
         AddUsing("Microsoft.AspNetCore.Http");
         AddUsing("Microsoft.AspNetCore.Routing");
         AddUsing("Microsoft.Extensions.DependencyInjection");
+        AddUsing("System.Linq");   // the ?.ToList() a collection parameter is converted with: declared, not implicit (#202)
 
         AppendNamespace(_model.Namespace);
         AppendLine();
