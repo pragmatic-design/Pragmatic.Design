@@ -122,113 +122,19 @@ are the ones that usually want this interface.
 ⚠️ **`[Boundary(Visibility = Internal)]` is a different thing**: it hides the *whole boundary*, and a
 boundary hidden that way cannot be consumed remotely either. `Internal` on an operation hides *one*.
 
-### Handing a mutation a row you already hold
+### Handing a mutation a row you already hold, and writing across boundaries
 
-The internal interface publishes a second shape for every non-`Create` mutation that names an entity:
+Both are in **[references/cross-boundary.md](references/cross-boundary.md)**:
 
-```csharp
-// You read the row through the repository; the query filters have already had their say.
-var candidate = await _candidates.GetByIdAsync(id, ct);
+- the internal interface takes a mutation **with the row you already loaded**, so the mutation does not
+  read it again (internal interface only, never for a `Create`);
+- writing into two boundaries in one invocation is not atomic: **PRAG0424** asks you to record
+  `[UndoWith<T>]` or `[AcceptsPartialWrites("why")]`; an undo is best effort, in-request, and never runs
+  behind a `[RemoteBoundary<T>]` (**PRAG1689**).
 
-// Hand it over. Without this overload the mutation would load it again: GetByIdAsync is a query,
-// not a FindAsync answering from the identity map, so the second read is real.
-await _knowledge.Candidates.SettleCandidate(mutation, candidate, ct);
-```
-
-⚠️ **On the internal interface only, and that is not a compromise.** The public one is implemented
-over HTTP as well, and a tracked entity does not cross a process boundary: publishing it there would
-force a remote method whose only outcome is a throw. ⚠️ And never for a `Create`: supplying an entity
-to a mutation whose mode is to create one contradicts it.
-
-⚠️ **A grouped boundary gets a twin per group.** `I{Boundary}{Group}InternalActions` extends the
-group's public interface, and the root's internal interface re-declares the property with `new` and
-the twin's type, so `boundary.Group.Operation(mutation, entity, ct)` and the ordinary
-`boundary.Group.Operation(mutation, ct)` are both on one seam. A group with nothing to add gets no
-twin, and "nothing to add" is stricter than it sounds: an ordinary update mutation supplies a
-preloaded shape by itself, so only a group whose every member creates ends up without one.
-
-⚠️ **The group's public interface and its twin are two different objects, deliberately.** The public
-one resolves to the *guarded* implementation, which lets the invoked operation's own permission be
-asked; the twin resolves to the unguarded one the root holds. On a group the distinction is drawn by
-which instance answers, not by which interface you inject, so injecting the public group interface
-from a caller with no principal fails a permission check rather than skipping it, which is the
-opposite of what the shorter name suggests.
-
-⚠️ **Public and internal members of a sub-boundary both sit under the group.** If a call does not
-resolve, look at the generated `_Boundary.{Boundary}.Definition.g.cs` rather than guessing: it is the
-answer, and it is inspectable.
-
-⚠️ **No endpoint does not mean unreachable from another process.** The host generates a
-`/_pragmatic/invoke` dispatcher that routes by action type, so an exported operation with no route is
-still callable across a `[RemoteBoundary<T>]`.
-
-⚠️ **Writing your own `ITermExtraction`-style service instead is the mistake to avoid.** It duplicates
-a contract that already exists, it does not survive the boundary being split out, and (the part that
-bites) a hand-written service has no invoker, so it loses the permission check, validation, the unit
-of work and the audit entry that the generated path applies. The symptom is a service full of
-`entity.SetXxx(…)` doing by hand what a mutation maps by name.
-
-A hand-written interface is still right for **data** another boundary needs to read (`ISupplierDirectory`
-returning contacts). The generated ones are for **operations**.
-
-The generated facade carries `[BoundaryActions<TBoundary>]`. You never write it: it is the marker that
-makes a cross-boundary call recognisable to the analyzer instead of matching an `I{X}Actions` name the
-compiler cannot check.
-
-#### Writing across boundaries: PRAG0424
-
-Reading across boundaries is a join; writing across them is not. Each boundary owns a `DbContext` and
-saves it separately, inner first, so a caller that fails **after** the inner call leaves the inner
-writes committed. Measured on a real application: five rows survived a failure, pointing at a parent
-row that was never written.
-
-`PRAG0424` warns when one invocation commits into more than one store (not on any cross-boundary
-call, which alone is atomic) and asks for a decision. Two ways to record it:
-
-```csharp
-// Repair: the inner step knows how to undo itself.
-[DomainAction]
-[UndoWith<RemoveIngestedText>]
-public partial class IngestTextAction : DomainAction<IngestResult>;
-
-public sealed class RemoveIngestedText(IRepository<Term> terms) : ICompensates<IngestResult>
-{
-    public Task<VoidResult<IError>> Undo(IngestResult committed, CancellationToken ct = default) { … }
-}
-
-// Accept: the leftovers are harmless, and the reason says why.
-[DomainAction]
-[AcceptsPartialWrites("The glossary keeps unreferenced candidates; a nightly job prunes them.")]
-public partial class WriteStoryAction : DomainAction<WriteStoryResult>;
-```
-
-`[UndoWith<T>]` registers the undo **after** the inner commit succeeds; a later failure in the same
-request runs the registered undos in reverse. `T` is an ordinary scoped service (the generator
-registers it) implementing `ICompensates<TReturn>` (or `ICompensatesVoid`), and `PRAG0425` is an
-error when it does not.
-
-⚠️ **Best effort, in-request, and that is the whole guarantee.** A crash between the inner commit and
-the undo leaves the work committed: nothing is durable, nothing is retried. That is where a saga
-starts, and note Messaging has its own `[CompensateWith<TAction>]` for saga steps, which is the
-durable one and a different attribute.
-
-`PRAG0429` says exactly that, at `Info`, on the call: **an undo across a boundary is a saga's
-compensating step without a saga's durability.** It does not ask for a change (the decision was made
-and recorded, and warning twice would be nagging); it makes sure whoever reads the call knows what they
-are looking at without reading the framework.
-
-⚠️ **Behind a `[RemoteBoundary<T>]` the compensator never runs at all.** It executes in the process that
-owns the action; the caller holds an HTTP proxy. Only the host can see this (the module compiles the
-same whether it is hosted or called), so the host reports it as `PRAG1689`. Publish an event or model
-the undo as a saga; there is no attribute that makes an undo cross a process.
-
-A compensator that itself fails is logged at `Error` and returned to the caller as
-`COMPENSATION_FAILED`, carrying both errors: the response says the system is inconsistent, not merely
-that the operation failed. Each facade method whose action declares an undo is marked
-`[CompensableStep]`, and PRAG0424 goes quiet for callers that invoke those steps, per method, so a
-caller never has to compensate what it does not call.
-
-The diagnostic reads the **calls**, not the fields: a facade held and never invoked commits nothing.
+⚠️ Do not hand-write a service (`ITermExtraction`-style) for an operation another boundary calls: it
+loses the invoker's permission check, validation, unit of work and audit entry. Inject the generated
+`I{Boundary}Actions` (or `I{Boundary}InternalActions` from your own module).
 
 ### 2. Mutation
 
@@ -272,56 +178,11 @@ public partial class SubmitOrderMutation : Mutation<Order>
 
 #### How many transactions a shape costs
 
-Measured, not preferred (`CommitCountTests`, `NestedMutationEventsTests`, Showcase, PostgreSQL):
-
-| Shape | `SaveChanges` |
-|---|---|
-| Three mutations invoked as independent roots | **3**, one each |
-| Mutations invoked from inside an action of the **same** boundary | **1**, the action's |
-| `[CompositeAction]` with 2 steps | **1** |
-| A `DomainAction` that builds N entities with setters | **1** |
-| A step in **another** boundary | **its own**: nobody else can save its `DbContext` |
-
-The rule behind the numbers: **the outermost invoker that owns a unit of work commits it, once.**
-Anything nested inside it holding the same unit of work stages its writes and defers its events; the
-root saves and then flushes them. It is decided by unit of work identity at runtime, so it holds
-however the chain is written: through a service, a helper, a loop.
-
-So the choice is about meaning, not cost:
-
-- **A mutation** for one entity written from named inputs: property mapping, L1/L2 validation,
-  permissions, events and the endpoint, for free. Invoking one in a loop from an action is a normal
-  thing to do and costs one transaction; see `CancelReservationsForPropertyAction`.
-- **`[CompositeAction]`** when the steps are known at compile time and must be atomic as a set. The
-  steps may be **mutations, actions or void actions**, in any mix; each is a property typed as the step
-  type, and the generated invoker runs them in order. **Declare the steps and nothing else**: the base
-  demands an `Execute` and a composite has no use for one, so the generator writes it. (It throws:
-  being called would mean the composite was invoked around its own invoker.) Write one yourself and it
-  is left alone.
-  - It commits **once**, by construction, which is what a composite is. `[CommitStrategy(PerStep)]` on
-    one contradicts that and is `PRAG0430`.
-  - `[Transactional]` **is** honoured on a composite, and buys the one thing a plain composite cannot
-    give: a step that reads what an earlier step wrote. Without it the steps merely stage, so a step
-    whose logic is a *query* sees the store as it was before the composite began, and reports success
-    having done nothing.
-  - ⚠️⚠️ **Exposed with `[Endpoint]`, it must declare its own `[RequirePermission]`.** The steps run as
-    internal calls and their permissions are deliberately **not** re-checked: the composite is the
-    authorization boundary. A composite without one answers **`204` to a caller holding no permissions
-    at all** and writes every row, where each step's own endpoint would have answered `403`. Nothing
-    **`PRAG0440`** refuses it; `[AllowAnonymous]` is how a composite says it is deliberately public.
-    `RequireAuthorizationByDefault` does not cover this: it demands only that the caller be
-    authenticated.
-  - ⚠️ **A collection is not a set of steps.** Steps are read one property at a time, and a property
-    whose type is not itself a mutation or an action (`List<TMutation>`, an array, anything wrapping
-    them) is skipped with no diagnostic (`PRAG0427` fires only at *zero* steps). A variable number of
-    children arriving in one nested DTO is `[PartOf<TParent>]` with a `CollectionStrategy`, not this.
-  - Over HTTP a step property is an ordinary body property, so the generated request body **nests one
-    JSON object per step** and the nested step type is registered in the generated
-    `JsonSerializerContext`; the path is AOT-safe. ⚠️ It nests the *mutation type*, not the
-    `{Mutation}Body` its own endpoint uses, so what that body would have excluded (the implicit `Id` of
-    an `Update` step) is on the wire.
-- **Setters inside one action** when the rows are one fact and no step deserves its own name,
-  validation or event.
+**The outermost invoker that owns a unit of work commits it, once.** Mutations invoked from an action
+of the same boundary, a `[CompositeAction]`, and setters inside one action all cost **one**
+`SaveChanges`; a step in another boundary commits on its own. The measured table, and what a
+`[CompositeAction]` demands (its own `[RequirePermission]` when exposed, **PRAG0440**; steps as typed
+properties, never a collection), are in **[references/transactions.md](references/transactions.md)**.
 
 #### Raising a domain event: `[Raises<TEvent>]`
 
@@ -354,55 +215,12 @@ outbox is the answer.
 
 #### Composing, and saying how it commits: PRAG0428
 
-An action that invokes other actions or mutations has **three** possible outcomes, and none of them is
-implied by the code. `PRAG0428` asks which one, and only of an action that actually composes; one that
-invokes nothing is a single transaction whatever the default and is never questioned.
-
-| Declaration | What it means |
-|---|---|
-| `[Transactional]` | One database transaction, and **each step saves as it goes**, so a later step reads what an earlier one wrote. Costs a round trip per step. |
-| `[CommitStrategy(CommitMode.Once)]` | One commit at the end. Atomic, but the steps cannot see each other: a query in step 2 runs against the store as it was before step 1. |
-| `[CommitStrategy(CommitMode.PerStep)]` | Independent steps, each committing on its own. A failure keeps what came before. |
-
-⚠️ **A `[Transactional]` operation can run twice.** The generated host turns on `EnableRetryOnFailure()` for
-SQL Server, PostgreSQL and MySQL. A retrying strategy refuses a transaction opened outside it, so the invoker runs
-the whole invocation inside it. On a transient failure before the commit (a dropped connection, a failover),
-**the operation runs again**: filters, loading, the body and the save, from a cleared change tracker.
-
-- A body must have **no effect outside its transaction**. Mail, messages and events go through the outbox,
-  which is transactional.
-- A direct HTTP call, a file write, or a call into another boundary (which commits on its own) runs again.
-- What follows the commit (events, cache invalidation, after-filters) runs once.
-
-No diagnostic checks this: whether a body reaches outside is not something the generator can read off it.
-An application can change the retry, or turn it off, with `AddBoundary<T>(cfg => cfg.UseDatabase(…))`,
-which is applied after the generated provider call.
-
-**Say it once on the boundary** when the answer never varies:
-
-```csharp
-[Boundary]
-[CommitStrategy(CommitMode.Once)]
-public partial class KnowledgeBoundary;
-```
-
-Every composing action of that boundary inherits it, and an action that needs something else still says
-so; the nearer declaration wins. A boundary *is* a transaction boundary, so this is a sentence it can
-say; `[Transactional]` is not (`PRAG0431`), because a transaction is opened per invocation and as a
-boundary-wide default it would buy a round trip on every action, including the ones that write nothing.
-
-⚠️ Both attributes act on the invoker's **unit of work**, and there is one only when the action belongs
-to a boundary. The boundary is inferred from the entity behind an `IRepository` field, which an action
-that *only* composes does not have. Name it: `[BelongsTo<TBoundary>]`. Without it the attribute parses
-and does nothing, which is `PRAG0432`.
-
-⚠️ A commit strategy governs **one** unit of work. A step in another boundary commits through its own
-whatever you write, because no invoker can save a `DbContext` it does not hold. Crossing that line is
-what `PRAG0424` reports and `[UndoWith<T>]` or a saga answers.
-
-⚠️ `BatchContext` defers the unit of work you name (`new BatchContext(unitOfWork)`) and **performs no
-commit itself**: you save. Opening one also stops the invoker from claiming the commit, which is the
-point. The parameterless form still covers every unit of work, including boundaries you cannot save.
+An action that invokes other operations declares how it commits: `[Transactional]` (one transaction,
+each step saves and the next one sees it), `[CommitStrategy(CommitMode.Once)]` or
+`[CommitStrategy(CommitMode.PerStep)]`, on the action or once on the boundary. ⚠️ A `[Transactional]`
+operation can **run twice** on a transient failure, so its body must have no effect outside its
+transaction. The details, **PRAG0431**/**PRAG0432** and `BatchContext`, are in
+**[references/transactions.md](references/transactions.md)**.
 
 ### 3. DomainAction
 
@@ -530,8 +348,8 @@ action pipeline for something that only needed a repository call.
 is not a `DomainAction` that looks the caller up by hand and passes the value to a query. Declare
 it as a `[Query]` whose property is `[FromCurrentUser]` (or `[FromCurrentUser(nameof(Employee.Id))]`,
 a member of the `[PragmaticUser]` entity): the query's invoker fills it after validation and the
-permission check, and it is never a request parameter. See `pragmatic-use-persistence` → *Reading by
-the caller*.
+permission check, and it is never a request parameter. See
+`../pragmatic-use-persistence/references/queries.md` → *Reading by the caller*.
 
 - `HttpVerb`: `Get | Post | Put | Patch | Delete | Head | Options`.
 - Property binding: `[FromRoute]`, `[FromQuery]`, `[FromBody]`, `[FromForm]`, `[FromHeader]`, `[FromClaim("sub")]`. Without an attribute → implicit bind to body (**PRAG0512** info).
@@ -591,87 +409,16 @@ endpoint (**PRAG0503**).
 
 `[ExposeEndpoint<TLoginAction>(HttpVerb.Post, "login")]` goes on the `[Module]` (not on the action). Its usual source is an action folded in by `[UsePackage<T>]`, which carries no `[Endpoint]` of its own; nothing restricts it to those, and a module's own action is mapped on the host root instead of the package prefix; see `pragmatic-use-composition`. `[ExposeEndpoint<TAction, TGroup>]` maps it inside an endpoint group instead (prefix and `ConfigureGroup` options); a `TGroup` that is not an `[EndpointGroup("…")]` is PRAG1682.
 
-### 9. Three endpoints you do not write
+### 9. Generated endpoints and the published contract
 
-An endpoint does not always come from a class of yours. Three attributes generate the whole thing,
-and reaching for them is almost always better than hand-rolling the equivalent.
+Three attributes generate a whole endpoint: **`[Autocomplete]`** (search-as-you-type from one
+property, gated on a derived read permission: **PRAG1692** on an anonymous host), **`[Sse]`** (a
+`text/event-stream` feed) and **`[McpTool]`** (the operation as an MCP tool). `[FromCookie]` and
+`[RequireAntiforgery]` complete the binding attributes.
 
-**`[Autocomplete]`: search-as-you-type, from one property.**
-
-```csharp
-public partial class Guest : Entity
-{
-    [Autocomplete] public string Email { get; private set; } = "";
-    [Autocomplete(Route = "api/guests/by-code", DefaultLimit = 20)] public string Code { get; private set; } = "";
-}
-```
-
-Generates `GET {entity}/autocomplete/{property}` returning `AutocompleteItem<TKey>` (the typed id
-plus the display text, serialized as **`value`**, not `label`), capped at `DefaultLimit` (10).
-`[Autocomplete<TDto>]` projects into your own DTO instead, provided it carries `[MapFrom<TEntity>]`;
-the response is then the list of DTOs, not `AutocompleteItem`. Nothing else to write: no query, no
-endpoint, no DTO.
-
-⚠️ **The route is gated on a derived read permission** (`{boundary}.{entity}.read`), which you never
-declared and cannot turn off; the attribute has no knob for it. So it needs a host where somebody can
-hold a permission: a host that declares `[AnonymousHost]` publishes this route and answers **403** to
-everyone, and the generator says so with **PRAG1692**. Either give the host an authentication method,
-or write the search endpoint by hand. A host that has none at all is refused earlier, by **PRAG1695**.
-
-ℹ️ The boundary library itself needs nothing for this: not `Identity.AspNetCore`, not anything else.
-Whether anyone can authenticate is the host's fact, and the host is where it is checked.
-
-**`[Sse]`: a feed the server pushes.**
-
-```csharp
-[Endpoint(HttpVerb.Get, "api/ticks")]
-[Sse(HeartbeatSeconds = 15)]
-public partial class TickStream : StreamingEndpoint<Tick> { /* ... */ }
-```
-
-Turns the endpoint into `text/event-stream`. The heartbeat keeps proxies from closing an idle
-connection. Use it when the client must learn about a change it did not ask for (a board that
-refreshes itself) rather than polling.
-
-**`[McpTool]`: the same operation, callable by a model.**
-
-```csharp
-[Endpoint(HttpVerb.Post, "api/booking-notes")]
-[McpTool(Description = "Stores a short booking note (max 256-byte request).")]
-public partial class CreateBookingNoteEndpoint : Endpoint<NoteDto> { /* ... */ }
-```
-
-Publishes the endpoint as an MCP tool. `Name` overrides the derived one; `Description` is what the
-model reads to decide whether to call it, so write it for that reader.
-
-Binding also has two attributes the list above does not mention: `[FromCookie]`, and
-`[RequireAntiforgery]` on an endpoint that accepts a browser form post.
-
-### The published contract
-
-A host that references `Pragmatic.Endpoints.OpenApi` publishes it at `/openapi/v1.json` in Development without being asked (with Scalar at `/scalar` when `Scalar.AspNetCore` is referenced); `app.UseApiDocumentation()` publishes it in every environment. Do not write a startup step for it. It is an OpenAPI 3.1 document built at compile time from the same attributes the endpoints come from: operation ids, tags, parameters, request and response schemas, the error codes each operation can actually answer, and `summary` taken from `[ApiSummary]` or, failing that, from the XML doc comment above the class.
-
-`components.schemas` holds only what an operation can reach: the manifest carries entities for other consumers, and publishing them all put internal shapes in the public contract.
-
-**Authentication is the one thing the generator does not decide.** Which operations require it is known at compile time (`[AllowAnonymous]`); what the requirement looks like on the wire is chosen in `Program.cs`, so whoever configures it describes it:
-
-```csharp
-app.DescribeSecurityScheme(new OpenApiSecurityScheme
-{
-    Name = "apiKey",
-    Type = "apiKey",
-    ParameterName = "X-Api-Key",
-    In = "header",
-});
-```
-
-The three JWT entry points (`UseJwtAuthentication`, `UseKeycloakAuthentication`, `UseOidcAuthentication`) already do it, with `OpenApiSecurityScheme.Bearer()`, and so does `UseDevelopmentIdentity`. An application that installs an authentication of its own calls `DescribeSecurityScheme` once per way in; one that must compute the scheme registers an `IOpenApiSecuritySchemeContributor`.
-
-⚠️ If nothing is registered and operations do require authentication, the document **says nothing** and the application logs it. That is deliberate: a guessed scheme published as a contract fails in the integrator's application, not in yours.
-
-ASP.NET's own document (`AddOpenApi()` + `MapOpenApi()`) lists the generated endpoints too, beside the ones the application maps by hand: the generated registration adds the description provider, nothing to call. `EnableOpenApi = false` takes them out of both documents. ⚠️ That document cannot hold a schema nesting past 64 levels (an operation answering with an **entity** reaches it through the navigations), so such a response is published there as JSON without a schema, with a warning naming it. Answer with a DTO.
-
-⚠️ `servers` is absent by design: a document without it means "relative to where you fetched it", which is the right answer behind a gateway or a CDN, where the application cannot see its own public address.
+A host that references `Pragmatic.Endpoints.OpenApi` publishes `/openapi/v1.json` in Development
+without being asked. Authentication is described in `Program.cs` with `app.DescribeSecurityScheme(…)`
+(the JWT entry points already do it). Both in full: **[references/generated-endpoints.md](references/generated-endpoints.md)**.
 
 ## Most frequent diagnostics
 
