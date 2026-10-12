@@ -4,13 +4,18 @@
 
 ## Quick Start
 
+From `examples/showcase`:
+
 ```bash
+docker compose up -d                     # PostgreSQL 17 on localhost:5433: showcase_app, showcase_financial
 dotnet run --project src/Showcase.Host
-# Open http://localhost:5000/scalar  (Scalar API UI)
+# Open http://localhost:5000/scalar/v1  (Scalar API UI)
 ```
 
-> No database setup needed — uses InMemory EF Core.
-> Demo data (3 hotels + 2 guests) is seeded automatically at startup.
+> The host creates the schema of both databases at startup (`UsePragmaticMigrations`). The databases
+> start empty: create a property, a room type and a guest before a reservation (see [ENV.md](ENV.md)).
+> In Development the caller is whoever the `X-User-Id` and `X-User-Permissions` headers say, and every
+> request names its tenant in `X-Tenant-Id`.
 
 ## Architecture
 
@@ -23,23 +28,23 @@ Showcase.Host      →  ASP.NET Core host, Pipeline, DI wiring, Demo seeding
 
 ### Database Topology
 
-Two InMemory databases demonstrating compliance separation:
+Two PostgreSQL databases demonstrating compliance separation:
 
 | Database | Modules | Purpose |
 |----------|---------|---------|
-| `ShowcaseAppDatabase` | Catalog + Booking | Operational — shared for SQL joins |
-| `ShowcaseFinancialDatabase` | Billing | Financial — isolated for audit/compliance |
+| `ShowcaseAppDatabase` (`showcase_app`) | Accounts + Catalog + Booking | Operational — shared for SQL joins |
+| `ShowcaseFinancialDatabase` (`showcase_financial`) | Billing | Financial — isolated for audit/compliance |
 
 Billing receives data via **domain events** (`ReservationConfirmed → CreateInvoice`), never via SQL join.
 
 ### Demo Flow
 
 ```
-POST /api/guests                         → Register a guest (or use seeded ones)
+POST /api/guests                         → Register a guest
 POST /api/reservations                   → CreateReservationAction
 POST /api/reservations/{id}/confirm      → Confirmed → auto-creates Invoice
 POST /api/invoices/{id}/pay              → MarkInvoicePaid → InvoicePaid event
-POST /api/reservations/{id}/checkin      → CheckedIn (ICurrentUser audit)
+POST /api/reservations/{id}/check-in     → CheckedIn (ICurrentUser audit)
 POST /api/properties/{id}/photos            → Upload photo (IFileStorage demo)
 ```
 
@@ -152,8 +157,9 @@ This is an intentional simplification for the demo. A real system would:
 - Reference only IDs across boundaries
 
 ### Shared Database
-All modules share a single InMemory database for demo simplicity. Production deployments
-should use separate schemas or databases per boundary to enforce data isolation.
+Accounts, Catalog and Booking share one PostgreSQL database (`showcase_app`) for demo simplicity;
+only Billing has its own. Production deployments should use separate schemas or databases per
+boundary to enforce data isolation.
 
 ## Dev Environment
 

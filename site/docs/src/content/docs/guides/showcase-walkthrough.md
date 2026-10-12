@@ -88,19 +88,9 @@ The SG auto-generates `HttpInvoker` classes for each Billing action (e.g., `Crea
 
 ## 3. How to Run
 
-### 3.1 InMemory Mode (Zero Setup)
+### 3.1 PostgreSQL
 
-```bash
-dotnet run --project examples/showcase/src/Showcase.Host
-```
-
-Open http://localhost:5000/scalar for the Scalar API UI.
-
-This mode uses EF Core InMemory provider. Demo data (3 hotels, 2 guests) is seeded automatically at startup.
-
-### 3.2 PostgreSQL Mode
-
-Start the database:
+The Showcase runs on PostgreSQL only. Start the database:
 
 ```bash
 docker compose -f examples/showcase/docker-compose.yml up -d
@@ -119,9 +109,13 @@ This spins up PostgreSQL 17 on port **5433** (not the default 5432, to avoid con
 }
 ```
 
-Then run with `dotnet run --project examples/showcase/src/Showcase.Host`.
+Then run with `dotnet run --project examples/showcase/src/Showcase.Host`, and open
+http://localhost:5000/scalar/v1 for the Scalar API UI. The host creates the schema of both databases at
+startup (`UsePragmaticMigrations`); they start empty, with no demo data. In Development the caller comes
+from the `X-User-Id` and `X-User-Permissions` headers and the tenant from `X-Tenant-Id`:
+`examples/showcase/ENV.md` has a first reservation, created and confirmed with `curl`.
 
-### 3.3 With RabbitMQ (Messaging)
+### 3.2 With RabbitMQ (Messaging)
 
 ```bash
 docker compose -f examples/showcase/docker-compose.messaging.yml up -d
@@ -129,7 +123,7 @@ docker compose -f examples/showcase/docker-compose.messaging.yml up -d
 
 RabbitMQ 3.13-management runs on port 5672 (AMQP) / 15672 (management UI). Without RabbitMQ, Showcase falls back to Channel-based in-process transport.
 
-### 3.4 Running Tests
+### 3.3 Running Tests
 
 Unit tests (no external dependencies):
 
@@ -152,31 +146,31 @@ The core business flow from guest registration to payment:
 ### Step 1: Register a Guest
 
 ```http
-POST /api/v1/guests
+POST /api/guests
 Content-Type: application/json
 
 {
   "firstName": "John",
   "lastName": "Doe",
   "email": "john@example.com",
-  "phoneNumber": "+1234567890"
+  "phone": "+1234567890"
 }
 ```
 
-Returns the guest `Guid`. (Or use a seeded guest -- the app seeds two at startup.)
+Returns the guest, with its `id`. The database starts empty: no guest or hotel is seeded.
 
 ### Step 2: Browse Properties
 
 ```http
-GET /api/v1/properties?api-version=1.0
+GET /api/properties/search
 ```
 
-Returns hotel properties from the Catalog boundary. Each property has room types with base rates and max occupancy.
+Returns hotel properties from the Catalog boundary, paged. Each property has room types with base rates and max occupancy. A new database has none: create one with `POST /api/properties` and its room types with `POST /api/room-types` (`examples/showcase/ENV.md` has both).
 
 ### Step 3: Create a Reservation
 
 ```http
-POST /api/v1/reservations?api-version=1.0
+POST /api/reservations?api-version=1.0
 Content-Type: application/json
 
 {
@@ -200,7 +194,7 @@ This triggers `CreateReservationAction`, which:
 ### Step 4: Confirm the Reservation
 
 ```http
-POST /api/v1/reservations/{id}/confirm?api-version=1.0
+POST /api/reservations/{id}/confirm?api-version=1.0
 ```
 
 The `ConfirmReservationMutation` calls `Reservation.Confirm()`, which:
@@ -222,7 +216,7 @@ public sealed partial class ReservationConfirmedHandler(
 ### Step 5: Pay the Invoice
 
 ```http
-POST /api/v1/invoices/{id}/pay?api-version=1.0
+POST /api/invoices/{id}/pay?api-version=1.0
 Content-Type: application/json
 
 { "paymentMethod": "CreditCard", "amount": 450.00 }
@@ -233,7 +227,7 @@ Content-Type: application/json
 ### Step 6: Check In
 
 ```http
-POST /api/v1/reservations/{id}/checkin?api-version=1.0
+POST /api/reservations/{id}/check-in?api-version=1.0
 ```
 
 `CheckInGuestMutation` validates `Confirmed -> CheckedIn` (or `PaymentReceived -> CheckedIn`) via the state machine, records who checked the guest in, and raises `GuestCheckedIn`.
