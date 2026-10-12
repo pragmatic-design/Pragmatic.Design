@@ -15,8 +15,8 @@ Writing the code yourself? Start at [Installation](/getting-started/installation
 
 - **The skills.** They are written for a project that consumes the packages, without the framework's
   source at hand. Installing them is the one step below.
-- **The packages.** During the alpha they come from a local NuGet feed; the `pragmatic-nuget-feed` skill
-  sets it up.
+- **The packages.** They are on nuget.org as prereleases, with no feed to configure; the
+  `pragmatic-nuget-feed` skill covers a restore that fails.
 - **Optionally, the index.** [`llms.txt`](/llms.txt) lists every page of this site for an agent that
   fetches documentation.
 
