@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [main]
     types: [opened, edited, synchronize, reopened]
+  # The merge queue needs this required check on its merge-group commit too. There is nothing new to check
+  # there: the squash message is the pull request's title and description, and its commits, both checked
+  # on the pull request, so the steps below run on pull_request only and the job passes in the queue.
+  merge_group:
 
 permissions:
   contents: read
@@ -31,12 +35,14 @@ jobs:
           node-version: '22'
 
       - name: Pull request title and description (the squash commit)
+        if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
         run: node scripts/commit-message-check.mjs --text "$TITLE"$'\n\n'"$BODY"
 
       - name: Commits in the pull request
+        if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}

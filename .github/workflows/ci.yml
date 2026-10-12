@@ -12,6 +12,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:     # the merge queue runs the gate on the pull request as it will land (#197)
   workflow_call:   # release.yml runs the gate before it publishes
   workflow_dispatch:
 
@@ -53,6 +54,20 @@ jobs:
       - name: Restore
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
+      # The SBOM and the clean vulnerability verdict of the newest green run. supply-chain.mjs decides
+      # whether they stand: the SBOM while the dependency graph is the same, the verdict while the graph
+      # is the same AND it is less than 12 hours old. Without this every run regenerated both, about
+      # three minutes of the gate (#197). Saved under this run's id, so a newer verdict is never kept
+      # out by an older key, and restored by prefix, so the newest one is what the next run sees.
+      - name: Restore the supply-chain verdict
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            artifacts/supply-chain.cache.json
+            artifacts/sbom
+          key: supply-chain-${{ github.run_id }}
+          restore-keys: supply-chain-
+
       - name: Gate
         run: node scripts/check.mjs --tier full --keep-going
 
@@ -86,6 +101,11 @@ jobs:
   # it: `needs: gate` shared nothing, since every job checks out, restores and builds on its own. One job
   # of twenty suites ran ~28 minutes after a gate of 10–17; the run is now the longest of the four jobs.
   # A suite in no shard fails the gate's full tier, so none can stop running here unnoticed.
+  #
+  # A shard builds its own suites and what they reference, not the solution: the whole build took 4m 51s
+  # of a 12m 42s job, for projects no suite of the shard runs (#197). The gate's clean build still compiles
+  # all of them. A fourth shard was measured and not added: TimeOff alone is 6m 11s of suites, so it would
+  # take the longest shard from about 6m 47s of suites to 6m 11s, a runner for 36 seconds.
   container-suites:
     name: Container suites (${{ matrix.shard }}/3)
     runs-on: ubuntu-latest

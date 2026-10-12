@@ -36,10 +36,11 @@ const CACHE_FILE = 'artifacts/supply-chain.cache.json';
  * dependency change already gave; longer and a session can outrun an advisory published while it was
  * open.
  *
- * ⚠️ It bounds a LOCAL window only. `artifacts/` is gitignored and no workflow caches it, so CI has
- * no cached verdict and always scans. What CI does not do is run on a schedule - `ci.yml` triggers on
- * push to main and on pull requests - so a repository nobody touches is not scanned at all, and no
- * value of this constant changes that.
+ * ⚠️ It bounds CI's window too. `ci.yml` restores the newest green run's cache file and SBOMs (#197), so
+ * a pull request on an unchanged graph reuses a verdict younger than this, and rescans once it is older.
+ * What CI does not do is run on a schedule - `ci.yml` triggers on push to main, on pull requests and in
+ * the merge queue - so a repository nobody touches is not scanned at all, and no value of this constant
+ * changes that.
  */
 export const SCAN_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 

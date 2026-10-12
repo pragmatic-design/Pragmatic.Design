@@ -11,8 +11,8 @@ closure — that `ProjectReference` in the in-tree samples cannot catch.
 ## When to run
 
 After any change that touches packaging (`Directory.Build.props`, generator
-csproj, NuGet-related targets). The `samples-smoke.yml` CI matrix runs the
-in-tree ProjectReference samples; running these consumer samples locally
+csproj, NuGet-related targets). The gate runs the in-tree ProjectReference
+samples (`scripts/run-samples.mjs`); running these consumer samples locally
 is the cheap way to prove the packaging is still clean before publishing.
 
 ## Running locally
