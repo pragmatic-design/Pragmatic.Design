@@ -9,13 +9,14 @@ Unknown processor
 Categories=Production  
 
 ```
-| Method                             | Mean      | Error     | StdDev    | Ratio         | RatioSD | Gen0   | Allocated | Alloc Ratio |
-|----------------------------------- |----------:|----------:|----------:|--------------:|--------:|-------:|----------:|------------:|
-| Classic_Production                 | 561.25 ns | 11.176 ns | 25.226 ns |      baseline |         | 0.0477 |     800 B |             |
-| Classic_Production_ContextOnly     |  54.31 ns |  1.109 ns |  2.679 ns | 10.36x faster |   0.67x | 0.0200 |     336 B |  2.38x less |
-| Classic_Production_NoContext       | 411.47 ns |  8.106 ns | 14.408 ns |  1.37x faster |   0.08x | 0.0257 |     432 B |  1.85x less |
-| Classic_Production_ContextAndScope | 105.69 ns |  2.127 ns |  4.669 ns |  5.32x faster |   0.33x | 0.0339 |     568 B |  1.41x less |
-| Classic_Production_ScopeOnly       |  40.90 ns |  0.805 ns |  1.767 ns | 13.75x faster |   0.85x | 0.0119 |     200 B |  4.00x less |
-| ZLogger_Production_ContextAndScope |  72.47 ns |  1.441 ns |  3.796 ns |  7.77x faster |   0.52x | 0.0291 |     488 B |  1.64x less |
-| ZLogger_Production                 | 549.36 ns | 10.768 ns | 30.372 ns |  1.02x faster |   0.07x | 0.0458 |     768 B |  1.04x less |
-| ZLogger_Production_ContextOnly     |  47.96 ns |  0.983 ns |  2.317 ns | 11.73x faster |   0.77x | 0.0157 |     264 B |  3.03x less |
+| Method                                   | Mean      | Error     | StdDev    | Median    | Ratio         | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|----------------------------------------- |----------:|----------:|----------:|----------:|--------------:|--------:|-------:|----------:|------------:|
+| Classic_Production                       | 530.39 ns | 10.081 ns | 18.179 ns | 526.02 ns |      baseline |         | 0.0477 |     800 B |             |
+| Classic_Production_ContextOnly           |  53.55 ns |  1.068 ns |  2.579 ns |  53.26 ns |  9.93x faster |   0.57x | 0.0200 |     336 B |  2.38x less |
+| Classic_Production_ContextFromProperties |  43.71 ns |  0.883 ns |  1.939 ns |  43.24 ns | 12.16x faster |   0.67x | 0.0157 |     264 B |  3.03x less |
+| Classic_Production_NoContext             | 434.29 ns | 11.285 ns | 33.274 ns | 431.67 ns |  1.23x faster |   0.10x | 0.0257 |     432 B |  1.85x less |
+| Classic_Production_ContextAndScope       | 109.69 ns |  3.963 ns | 11.496 ns | 106.35 ns |  4.88x faster |   0.50x | 0.0339 |     568 B |  1.41x less |
+| Classic_Production_ScopeOnly             |  45.80 ns |  1.874 ns |  5.408 ns |  44.45 ns | 11.73x faster |   1.36x | 0.0119 |     200 B |  4.00x less |
+| ZLogger_Production_ContextAndScope       | 101.96 ns |  5.321 ns | 15.688 ns | 105.66 ns |  5.34x faster |   0.94x | 0.0291 |     488 B |  1.64x less |
+| ZLogger_Production                       | 579.23 ns | 18.145 ns | 52.929 ns | 571.65 ns |  1.09x slower |   0.11x | 0.0458 |     768 B |  1.04x less |
+| ZLogger_Production_ContextOnly           |  57.65 ns |  4.124 ns | 12.160 ns |  59.48 ns |  9.67x faster |   2.30x | 0.0157 |     264 B |  3.03x less |
