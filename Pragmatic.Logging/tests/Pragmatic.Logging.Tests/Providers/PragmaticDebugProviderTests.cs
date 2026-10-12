@@ -5,6 +5,7 @@ using Pragmatic.Logging.Providers;
 
 namespace Pragmatic.Logging.Tests.Providers;
 
+[Collection(ConsoleOutputCollection.Name)]
 public class PragmaticDebugProviderTests
 {
     [Fact]
