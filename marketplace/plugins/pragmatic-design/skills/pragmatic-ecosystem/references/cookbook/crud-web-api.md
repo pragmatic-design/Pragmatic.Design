@@ -252,7 +252,9 @@ public partial class OrderDto
 }
 ```
 
-The query endpoint returns a paged result (`items`, `totalCount`, `page`, `pageSize`, `totalPages`).
+With `Paged = true` the query endpoint returns a paged result (`items`, `totalCount`, `page`,
+`pageSize`, `totalPages`). Without it, a list query answers a bare JSON array (`[{…}, {…}]`), every
+row there is: fine for a short list, and a client written against one shape breaks on the other.
 
 ### Do not hand-write a version into the route
 

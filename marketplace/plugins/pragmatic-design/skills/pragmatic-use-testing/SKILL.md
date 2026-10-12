@@ -127,10 +127,21 @@ public sealed class ContractAppFixture : IAsyncLifetime
 public sealed class ContractTestCollection : ICollectionFixture<ContractAppFixture>;
 ```
 
+`PragmaticContractHost.Client` is any `HttpClient`, not only a `WebApplicationFactory`'s: the client of
+the built host running as its own process (the restart recipe's `ServiceProcess`) runs them too, so one
+test project can hold the restart tests and the contract tests.
+
+⚠️ The generator reads the endpoints from the host the test project **references**. A
+`ProjectReference` with `ReferenceOutputAssembly="false"` hides them, and the project gets no contract
+tests and no `Api` client, without a warning: keep the reference plain.
+
 What you get, per boundary: **authorization** (without the permission → rejected, with it → not
 forbidden), **CRUD** (create, validation, tenant isolation), **state transitions** (legal → 2xx,
 illegal → 409, for operations declaring `[TransitionsTo<TState>]`), and a typed client.
 
+- **A read gets no CRUD contract**: nothing generated checks a query's 200 or a `Single = true`
+  query's 404, and with no permission either a query is listed in `ContractCoverage.Uncovered`. Those
+  are hand-written tests.
 - An operation with **no `[RequirePermission]`** gets no authorization contract: nothing refuses it.
   Read `ContractCoverage.Operations` and pin `ContractCoverage.Uncovered` in a test of your own: the
   generated suite reports what it wrote, never what it skipped.
@@ -163,7 +174,7 @@ Assert on the response the way a client would see it (`ShouldBeOk()`, `ShouldBeC
 `ShouldBeNoContent()`, `ShouldBeBadRequest()`, `ShouldBeUnprocessable()`, `ShouldBeNotFound()`,
 `ShouldBeConflict()`, `ShouldBeForbidden()`, `ShouldHaveStatus(code)`) and read the body.
 `ShouldNotBeForbidden()` also passes a 500; `ShouldIdentifyTheCreatedAsync()` reads the id a 201
-points at.
+points at, as a `string`: `Guid.Parse(await created.Raw.ShouldIdentifyTheCreatedAsync())` for a Guid key.
 
 ## Assertions
 

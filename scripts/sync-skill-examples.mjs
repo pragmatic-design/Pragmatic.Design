@@ -5,7 +5,8 @@
  * A skill is read outside this repository, so its examples have to live in its own folder — and an
  * example written by hand ages like the prose around it: nothing compiles it and nothing runs it. These
  * are copies of files that compile and are tested (scripts/skill-examples.json says which, and which
- * suite covers them), byte for byte, so the only way an example changes is its source changing.
+ * suite covers them), byte for byte, so the only way an example changes is its source changing. The one
+ * rewrite is in a project file, whose references into the framework become packages (asConsumerProject).
  *
  *   node scripts/sync-skill-examples.mjs           writes the copies and each examples/README.md
  *   node scripts/sync-skill-examples.mjs --check   exits 1 when a copy differs from its source, a
@@ -37,7 +38,11 @@ for (const [skill, entry] of Object.entries(manifest.skills)) {
       drift.push(`${skill}: source missing — ${entry.source}/${file}`);
       continue;
     }
-    expected.set(file, { bytes: readFileSync(from), description });
+    const bytes = readFileSync(from);
+    expected.set(file, {
+      bytes: file.endsWith('.csproj') ? Buffer.from(asConsumerProject(bytes.toString('utf8')), 'utf8') : bytes,
+      description,
+    });
   }
 
   expected.set('README.md', { bytes: Buffer.from(readme(skill, entry), 'utf8') });
@@ -77,6 +82,34 @@ if (check) {
   process.exit(1);
 }
 
+/**
+ * A project file as an application that consumes the packages writes it.
+ *
+ * In the repository an example application references the framework by path, into the framework's own
+ * projects; a reader of the skill has no such path, and every skill tells them to use the packages. So
+ * the copy rewrites what only the repository has: a reference to a `Pragmatic.*` project becomes the
+ * package of the same name (an analyzer one private to the project), and an `Import` of a framework
+ * `.targets` goes, because the package brings its own. The application's references to its own projects
+ * stay as they are.
+ */
+export function asConsumerProject(text) {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  let imported = false;
+  return text
+    .replace(/<ProjectReference\s+Include="([^"]*)"([^>]*?)\/>/gs, (element, include, rest) => {
+      const id = /(?:^|[\\/])(Pragmatic\.[^\\/]+)\.csproj$/.exec(include)?.[1];
+      if (!id) return element;
+      return /OutputItemType="Analyzer"/.test(rest)
+        ? `<PackageReference Include="${id}" PrivateAssets="all" />`
+        : `<PackageReference Include="${id}" />`;
+    })
+    .replace(/^([ \t]*)<Import\s+Project="[^"]*[\\/]Pragmatic\.[^"]*"\s*\/>[ \t]*\r?\n/gm, (_, indent) => {
+      if (imported) return '';
+      imported = true;
+      return `${indent}<!-- The framework's build targets come with its packages: nothing to import. -->${eol}`;
+    });
+}
+
 // Git rewrites line endings on checkout (core.autocrlf), and not necessarily the same way for a source
 // and for the README this script generates: two files that differ only there are the same example.
 function sameText(a, b) {
@@ -109,9 +142,16 @@ function readme(skill, entry) {
     `${testedBy}. **Do not edit here**: change the source and run`,
     '`node scripts/sync-skill-examples.mjs`. The gate refuses a copy that differs from its source.',
     '',
+  ];
+  if (Object.keys(entry.files).some((file) => file.endsWith('.csproj')))
+    lines.push(
+      'A project file is the one rewrite: its references to the framework\'s own projects are written as',
+      'the packages of the same name, as an application that consumes them references them.',
+      '');
+  lines.push(
     '| File | What it shows |',
     '|---|---|',
-  ];
+  );
   for (const [file, description] of Object.entries(entry.files))
     lines.push(`| [\`${file}\`](${file}) | ${description} |`);
   lines.push('');

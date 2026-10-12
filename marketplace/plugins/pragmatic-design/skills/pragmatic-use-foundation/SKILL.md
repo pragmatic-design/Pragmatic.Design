@@ -128,6 +128,10 @@ refused the request without hours.
 
 `Pragmatic.Validation`, namespace `Pragmatic.Validation`. The SG generates **sync** validation on any `partial` class/record whose properties have validation attributes or are `required`.
 
+A `required` string is checked as **non-empty**: `""` is refused with `validation.required`, before any
+attribute on the property runs. So `[NotWhiteSpace]` on a `required` string answers only for a value of
+spaces, with `validation.notwhitespace`; a test that sends `""` sees the first key, not the second.
+
 ```csharp
 public partial class CreateUserRequest
 {
@@ -158,6 +162,10 @@ And these, same namespace, which the list above left out; check here before writ
 `ValidationTimeProvider.Current`, and a rule of your own does the same, here "a year not in the future":
 
 ```csharp
+using Pragmatic.Validation;              // ValidationTimeProvider
+using Pragmatic.Validation.Attributes;   // ValidationAttribute
+
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class NotFutureYearAttribute : ValidationAttribute
 {
     public override string DefaultMessageKey => "validation.not_future_year";
@@ -167,7 +175,8 @@ public sealed class NotFutureYearAttribute : ValidationAttribute
 }
 ```
 
-The generator instantiates it and calls `IsValid`, and reports its `DefaultMessageKey`. An async
+The generator instantiates it and calls `IsValid`, and reports its `DefaultMessageKey`; give that key a
+line in `translations/en.json`, or the caller reads the key. An async
 validator is for a rule that needs a lookup (the database, another service), not for one that needs
 the date.
 

@@ -34,8 +34,10 @@ for a clean shutdown to be flushed would not be.
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Built first, never loaded: the tests start the host as its own process and talk to it over TCP. -->
-    <ProjectReference Include="..\..\src\{{App}}.Host\{{App}}.Host.csproj" ReferenceOutputAssembly="false" />
+    <!-- Built first. The tests start the host as its own process and talk to it over TCP; the
+         reference is there for the build order and for the Testing generator, which reads the
+         endpoints from it. -->
+    <ProjectReference Include="..\..\src\{{App}}.Host\{{App}}.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,9 +57,16 @@ for a clean shutdown to be flushed would not be.
 </Project>
 ```
 
-`ReferenceOutputAssembly="false"` makes `dotnet test` build the host first without loading it into the
-test process. The assembly attribute records where that build puts `{{App}}.Host.dll`, so the tests
-find it without a hard-coded path. Versions come from `Directory.Packages.props` as in the solution
+The reference makes `dotnet test` build the host first. The assembly attribute records where that
+build puts `{{App}}.Host.dll`, so the tests find it without a hard-coded path.
+
+⚠️ **Do not add `ReferenceOutputAssembly="false"`**, though nothing here loads the host into the test
+process. The Testing generator finds the endpoints in the assemblies the test project references; with
+that attribute it finds none, and writes no `Api` client and no contract tests, without a warning. With
+the plain reference, `Pragmatic.Testing` and `Pragmatic.Testing.SourceGenerator` can go in this project
+too: the contract tests then run against this process
+(`PragmaticContractHost.Client = service.Client`), and the template's integration project becomes
+optional. Versions come from `Directory.Packages.props` as in the solution
 template (`Testcontainers.PostgreSql` 4.15.0 or later).
 
 ## 2. The host as a process: `ServiceProcess.cs`

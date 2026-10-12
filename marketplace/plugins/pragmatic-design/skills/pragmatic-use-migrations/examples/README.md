@@ -4,6 +4,9 @@ Copied from `examples`, which compiles in the repository and is exercised by
 `examples/warehouse/tests/Warehouse.IntegrationTests` and `examples/showcase/tests/Showcase.IntegrationTests`. **Do not edit here**: change the source and run
 `node scripts/sync-skill-examples.mjs`. The gate refuses a copy that differs from its source.
 
+A project file is the one rewrite: its references to the framework's own projects are written as
+the packages of the same name, as an application that consumes them references them.
+
 | File | What it shows |
 |---|---|
 | [`warehouse/src/Warehouse.Shipping.Host/Program.cs`](warehouse/src/Warehouse.Shipping.Host/Program.cs) | `UsePragmaticMigrations()`: the host's database migrated at start, before it serves |
