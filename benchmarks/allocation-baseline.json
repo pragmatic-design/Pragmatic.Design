@@ -1,4 +1,8 @@
 {
+  "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_ConcurrentRequests": 134859,
+  "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_OneRequest": 2016,
+  "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Direct_ConcurrentRequests": 27832,
+  "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Direct_OneRequest": 344,
   "Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks.Generated_Writer": 2090388,
   "Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks.Generated_Writer_Rented": 2090388,
   "Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks.Minus_NumberFormatting": 334523,
