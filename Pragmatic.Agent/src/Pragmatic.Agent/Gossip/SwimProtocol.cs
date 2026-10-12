@@ -49,12 +49,6 @@ internal sealed partial class SwimProtocol : IDisposable
         }
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
     // Max size of an inbound gossip datagram before deserialization. A UDP payload cannot exceed
     // ~65507 bytes, but we cap lower to bound allocation/parse work from a hostile or malformed
     // packet (DoS guard) — legitimate piggybacked membership/KV gossip stays well under this.
@@ -303,7 +297,7 @@ internal sealed partial class SwimProtocol : IDisposable
                 }
 
                 var json = Encoding.UTF8.GetString(payloadBytes);
-                var message = JsonSerializer.Deserialize<GossipMessage>(json, JsonOptions);
+                var message = JsonSerializer.Deserialize(json, GossipJsonContext.Default.GossipMessage);
                 if (message is not null)
                 {
                     // Handle OFF the receive loop: a PingReq handler pings the target and waits up
@@ -472,7 +466,7 @@ internal sealed partial class SwimProtocol : IDisposable
     {
         if (_udp is null) return;
 
-        var json = JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
+        var json = JsonSerializer.SerializeToUtf8Bytes(message, GossipJsonContext.Default.GossipMessage);
 
         // Sign the datagram with the cluster-shared key so peers can authenticate it. With no key
         // configured we send the bare payload (fail-closed receivers will ignore mutations).

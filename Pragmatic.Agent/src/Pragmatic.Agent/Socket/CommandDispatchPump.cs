@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 using Pragmatic.Agent.KV;
 using Pragmatic.Agent.Protocol;
+using Pragmatic.Agent.Protocol.Serialization;
 
 namespace Pragmatic.Agent.Socket;
 
@@ -104,7 +105,7 @@ internal sealed class CommandDispatchPump : IDisposable
         JsonElement payload;
         try
         {
-            payload = JsonSerializer.Deserialize<JsonElement>(value);
+            payload = AgentPayloads.FromJson<JsonElement>(value);
         }
         catch (JsonException)
         {

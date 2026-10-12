@@ -10,12 +10,6 @@ namespace Pragmatic.Agent.KV;
 internal sealed class KvFilePersistence(KvStore store, string filePath, TimeSpan? flushInterval = null)
     : IDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     private readonly TimeSpan _flushInterval = flushInterval ?? TimeSpan.FromSeconds(30);
     private readonly CancellationTokenSource _cts = new();
     private Task? _flushTask;
@@ -29,7 +23,7 @@ internal sealed class KvFilePersistence(KvStore store, string filePath, TimeSpan
         try
         {
             var json = File.ReadAllText(filePath);
-            var entries = JsonSerializer.Deserialize<List<KvEntryDto>>(json, JsonOptions);
+            var entries = JsonSerializer.Deserialize(json, KvFileJsonContext.Default.ListKvEntryDto);
             if (entries is null)
                 return;
 
@@ -75,7 +69,7 @@ internal sealed class KvFilePersistence(KvStore store, string filePath, TimeSpan
 
             // Atomic write: write to temp file, then rename
             var tempPath = filePath + ".tmp";
-            var json = JsonSerializer.Serialize(entries, JsonOptions);
+            var json = JsonSerializer.Serialize(entries, KvFileJsonContext.Default.ListKvEntryDto);
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, filePath, overwrite: true);
         }
@@ -120,7 +114,8 @@ internal sealed class KvFilePersistence(KvStore store, string filePath, TimeSpan
         }
     }
 
-    private sealed class KvEntryDto
+    // Internal, not private: KvFileJsonContext generates its metadata.
+    internal sealed class KvEntryDto
     {
         public string Key { get; init; } = "";
         public string Value { get; init; } = "";

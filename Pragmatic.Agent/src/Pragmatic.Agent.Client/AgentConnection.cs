@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using Pragmatic.Agent.Protocol;
 using Pragmatic.Agent.Protocol.Payloads;
+using Pragmatic.Agent.Protocol.Serialization;
 
 namespace Pragmatic.Agent.Client;
 
@@ -93,7 +94,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
         if (response?.Payload is null)
             return (null, 0, false);
 
-        var result = response.Payload.Value.Deserialize<KvEntryPayload>();
+        var result = AgentPayloads.From<KvEntryPayload>(response.Payload.Value);
         return result is null ? (null, 0, false) : (result.Value, result.Version, result.Found);
     }
 
@@ -113,7 +114,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
         if (response?.Payload is null)
             return (-1, false);
 
-        var result = response.Payload.Value.Deserialize<KvSetResultPayload>();
+        var result = AgentPayloads.From<KvSetResultPayload>(response.Payload.Value);
         return result is null ? (-1, false) : (result.Version, result.CasConflict);
     }
 
@@ -149,7 +150,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
         if (response?.Payload is null)
             return [];
 
-        var result = response.Payload.Value.Deserialize<KvEntriesPayload>();
+        var result = AgentPayloads.From<KvEntriesPayload>(response.Payload.Value);
         return result?.Entries ?? [];
     }
 
@@ -222,7 +223,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
             {
                 Type = type,
                 Id = id,
-                Payload = JsonSerializer.SerializeToElement(payload)
+                Payload = AgentPayloads.ToElement(payload)
             };
 
             await _sendLock.WaitAsync(ct).ConfigureAwait(false);
@@ -271,7 +272,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
                     case MessageType.KvChanged:
                         if (message.Payload is not null)
                         {
-                            var kvChanged = message.Payload.Value.Deserialize<KvChangedPayload>();
+                            var kvChanged = AgentPayloads.From<KvChangedPayload>(message.Payload.Value);
                             if (kvChanged is not null) OnKvChanged?.Invoke(kvChanged);
                         }
                         break;
@@ -279,7 +280,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
                     case MessageType.Command:
                         if (message.Payload is not null)
                         {
-                            var cmd = message.Payload.Value.Deserialize<CommandPayload>();
+                            var cmd = AgentPayloads.From<CommandPayload>(message.Payload.Value);
                             if (cmd is not null) OnCommand?.Invoke(cmd);
                         }
                         break;
@@ -287,7 +288,7 @@ public sealed class AgentConnection(string socketPath) : IAsyncDisposable
                     case MessageType.StateChange:
                         if (message.Payload is not null)
                         {
-                            var state = message.Payload.Value.Deserialize<StateChangePayload>();
+                            var state = AgentPayloads.From<StateChangePayload>(message.Payload.Value);
                             if (state is not null) OnStateChange?.Invoke(state);
                         }
                         break;

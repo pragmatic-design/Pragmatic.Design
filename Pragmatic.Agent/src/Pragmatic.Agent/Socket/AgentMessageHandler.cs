@@ -2,6 +2,7 @@ using System.Text.Json;
 using Pragmatic.Agent.KV;
 using Pragmatic.Agent.Protocol;
 using Pragmatic.Agent.Protocol.Payloads;
+using Pragmatic.Agent.Protocol.Serialization;
 
 namespace Pragmatic.Agent.Socket;
 
@@ -75,7 +76,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
             LastHeartbeat = now,
         };
         // Owned like an ephemeral key: it leaves with the connection, so it must also leave with this Agent.
-        kvStore.Set(client.RosterKey, JsonSerializer.Serialize(descriptor), owner: agentId);
+        kvStore.Set(client.RosterKey, AgentPayloads.ToJson(descriptor), owner: agentId);
 
         // Deliver any commands that were queued while this app was disconnected.
         InstanceRegistered?.Invoke(instanceId);
@@ -119,7 +120,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
             StartedAt = descriptor.StartedAt,
             LastHeartbeat = DateTimeOffset.UtcNow,
         };
-        kvStore.Set(key, JsonSerializer.Serialize(refreshed), owner: agentId);
+        kvStore.Set(key, AgentPayloads.ToJson(refreshed), owner: agentId);
     }
 
     /// <inheritdoc />
@@ -139,7 +140,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
     {
         try
         {
-            return JsonSerializer.Deserialize<HostDescriptorPayload>(json);
+            return AgentPayloads.FromJson<HostDescriptorPayload>(json);
         }
         catch (JsonException)
         {
@@ -185,7 +186,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
             Type = MessageType.Response,
             Id = message.Id,
             Success = !casConflict,
-            Payload = JsonSerializer.SerializeToElement(result)
+            Payload = AgentPayloads.ToElement(result)
         });
     }
 
@@ -228,7 +229,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
 
         try
         {
-            return message.Payload.Value.Deserialize<T>();
+            return AgentPayloads.From<T>(message.Payload.Value);
         }
         catch (System.Text.Json.JsonException)
         {
@@ -263,7 +264,7 @@ internal sealed class AgentMessageHandler(KvStore kvStore, string agentId) : IMe
         Type = MessageType.Response,
         Id = id,
         Success = true,
-        Payload = JsonSerializer.SerializeToElement(payload)
+        Payload = AgentPayloads.ToElement(payload)
     };
 
     /// <summary>

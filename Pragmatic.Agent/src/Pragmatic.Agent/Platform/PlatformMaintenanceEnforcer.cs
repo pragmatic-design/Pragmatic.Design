@@ -23,8 +23,6 @@ internal sealed class PlatformMaintenanceEnforcer : IDisposable
     private const string Prefix = HostRosterKeys.Prefix;
     private const string MaintenanceState = "Maintenance";
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     private readonly AgentSocketServer _server;
     private readonly IAgentPlatformAdapter _adapter;
     private readonly Channel<KvChangeEvent> _channel;
@@ -121,7 +119,7 @@ internal sealed class PlatformMaintenanceEnforcer : IDisposable
             return null;
         try
         {
-            return JsonSerializer.Deserialize<HostDescriptorPayload>(json, JsonOptions);
+            return JsonSerializer.Deserialize(json, PlatformJsonContext.Default.HostDescriptorPayload);
         }
         catch (JsonException)
         {

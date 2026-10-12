@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Pragmatic.Agent.Protocol;
 using Pragmatic.Agent.Protocol.Payloads;
 using Pragmatic.Agent.Protocol.Serialization;
@@ -28,7 +27,7 @@ internal static class FrameCodecSample
         {
             Type = MessageType.KvGet,
             Id = "req-1",
-            Payload = ToElement(new KvGetPayload { Key = "flags/new-checkout-flow" }),
+            Payload = AgentPayloads.ToElement(new KvGetPayload { Key = "flags/new-checkout-flow" }),
         };
 
         // --- Sync path: Encode -> TryDecode --------------------------------
@@ -44,7 +43,7 @@ internal static class FrameCodecSample
         {
             Type = MessageType.KvSet,
             Id = "req-2",
-            Payload = ToElement(new KvSetPayload { Key = "flags/new-checkout-flow", Value = "enabled:true" }),
+            Payload = AgentPayloads.ToElement(new KvSetPayload { Key = "flags/new-checkout-flow", Value = "enabled:true" }),
         };
 
         using var stream = new MemoryStream();
@@ -61,11 +60,5 @@ internal static class FrameCodecSample
         Console.WriteLine($"      frame 2 : Type={second?.Type}, Id={second?.Id}");
         Console.WriteLine($"      frame 3 : {(eof is null ? "null (clean EOF)" : "unexpected")}");
         Console.WriteLine();
-    }
-
-    private static JsonElement ToElement<T>(T payload)
-    {
-        var bytes = JsonWireFormat.Instance.Serialize(payload);
-        return JsonSerializer.Deserialize<JsonElement>(bytes);
     }
 }

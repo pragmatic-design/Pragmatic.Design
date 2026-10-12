@@ -29,7 +29,7 @@ public sealed class AgentDiscoveryBackend(AgentConnection connection) : IDiscove
         if (!connection.IsConnected)
             return; // No daemon — skip; the host still starts (topology observability is auxiliary).
 
-        var json = JsonSerializer.Serialize(topology);
+        var json = JsonSerializer.Serialize(topology, AgentDiscoveryJsonContext.Default.HostTopologyInfo);
         await connection.KvSetAsync($"{Prefix}{topology.HostName}", json, ct: ct).ConfigureAwait(false);
     }
 
@@ -67,7 +67,7 @@ public sealed class AgentDiscoveryBackend(AgentConnection connection) : IDiscove
             return null;
         try
         {
-            return JsonSerializer.Deserialize<HostTopologyInfo>(json);
+            return JsonSerializer.Deserialize(json, AgentDiscoveryJsonContext.Default.HostTopologyInfo);
         }
         catch (JsonException)
         {
