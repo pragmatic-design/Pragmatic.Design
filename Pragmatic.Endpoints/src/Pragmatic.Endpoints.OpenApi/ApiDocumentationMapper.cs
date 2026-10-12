@@ -66,6 +66,11 @@ public static partial class ApiDocumentationMapper
             context.HttpContext.Response.Headers.ContentSecurityPolicy = ReferenceContentSecurityPolicy;
             return await next(context).ConfigureAwait(false);
         });
+
+        // The reference belongs to no tenant, as the document it renders does: a browser opening it sends
+        // no tenant header, and a host that requires one would answer the page with an empty 400. The
+        // requests the page then sends to the API carry the tenant the developer gives it.
+        group.WithMetadata(global::Pragmatic.MultiTenancy.TenantAgnosticEndpoint.Instance);
     }
 
     /// <summary>The policy the interactive reference answers with, in place of the host's API default.</summary>
