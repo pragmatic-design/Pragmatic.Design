@@ -12,6 +12,8 @@ public class SectionPathInferenceTests : Generator.ConfigurationGeneratorTestBas
     [InlineData("BookingOptions", "Booking")]
     [InlineData("PaymentOptions", "Payment")]
     [InlineData("MyConfig", "MyConfig")]
+    [InlineData("PaymentSettings", "PaymentSettings")]
+    [InlineData("SmtpConfiguration", "SmtpConfiguration")]
     public void InferSectionPath_FromClassName_MatchesExpected(string className, string expectedSection)
     {
         var source = $$"""

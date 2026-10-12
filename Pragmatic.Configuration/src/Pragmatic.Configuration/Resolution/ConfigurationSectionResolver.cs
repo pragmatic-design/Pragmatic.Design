@@ -4,13 +4,18 @@ namespace Pragmatic.Configuration.Resolution;
 
 /// <summary>
 ///     Resolves the configuration section path for an options type: the explicit
-///     <c>[Configuration(SectionPath = …)]</c> if present, otherwise the type name with a common
-///     <c>Options</c>/<c>Settings</c>/<c>Config</c> suffix stripped. Reflection here is acceptable — option
-///     binding is inherently reflection-based — and runs once per closed generic (cached by the caller).
+///     <c>[Configuration(SectionPath = …)]</c> if present, otherwise the type name without its <c>Options</c>
+///     suffix. Reflection here is acceptable — option binding is inherently reflection-based — and runs once per
+///     closed generic (cached by the caller).
 /// </summary>
+/// <remarks>
+///     The rule is the generator's (<c>ConfigurationTransform.InferSectionPath</c>), which binds
+///     <c>IOptions&lt;T&gt;</c> to that section: stripping any other suffix here pointed
+///     <see cref="TenantOptions{T}" /> and the change handlers at another section than <c>IOptions&lt;T&gt;</c> (#194).
+/// </remarks>
 internal static class ConfigurationSectionResolver
 {
-    private static readonly string[] Suffixes = ["Options", "Settings", "Configuration", "Config"];
+    private const string Suffix = "Options";
 
     public static string Resolve<T>()
     {
@@ -19,10 +24,8 @@ internal static class ConfigurationSectionResolver
             return attr.SectionPath!;
 
         var name = typeof(T).Name;
-        foreach (var suffix in Suffixes)
-            if (name.Length > suffix.Length && name.EndsWith(suffix, StringComparison.Ordinal))
-                return name.Substring(0, name.Length - suffix.Length);
-
-        return name;
+        return name.Length > Suffix.Length && name.EndsWith(Suffix, StringComparison.Ordinal)
+            ? name.Substring(0, name.Length - Suffix.Length)
+            : name;
     }
 }
