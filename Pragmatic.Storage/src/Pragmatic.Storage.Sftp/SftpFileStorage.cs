@@ -100,26 +100,24 @@ public sealed partial class SftpFileStorage : IFileStorage, IFileInfoProvider
 
     /// <inheritdoc />
     /// <remarks>
-    ///     The remote file is buffered into an in-memory stream before the connection is closed, so
-    ///     the returned stream stays readable after this method returns. Returns <see langword="null" />
-    ///     when the file does not exist. The caller owns the returned stream and must dispose it.
+    ///     Streams the file through a <see cref="PipedDownloadStream" />: the connection stays open
+    ///     while the caller reads, and closes when the transfer ends or the stream is disposed, so
+    ///     what is held in memory is bounded whatever the file's size. The stream is forward-only.
+    ///     Returns <see langword="null" /> when the file does not exist. The caller owns the returned
+    ///     stream and must dispose it.
     /// </remarks>
-    public async Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
+    public Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
     {
         var remotePath = ResolveRemotePath(fileUri);
 
-        return await WithClientAsync<Stream?>(async (client, token) =>
+        return PipedDownloadStream.StartAsync((destination, token) => WithClientAsync(async (client, t) =>
         {
-            if (!await client.ExistsAsync(remotePath, token).ConfigureAwait(false))
-                return null;
+            if (!await client.ExistsAsync(remotePath, t).ConfigureAwait(false))
+                return false;
 
-            // Connection-per-operation: buffer the remote content locally before disconnecting,
-            // otherwise a lazily-read SFTP stream would die once the connection is closed.
-            var buffer = new MemoryStream();
-            await client.DownloadFileAsync(remotePath, buffer, token).ConfigureAwait(false);
-            buffer.Position = 0;
-            return buffer;
-        }, ct).ConfigureAwait(false);
+            await client.DownloadFileAsync(remotePath, destination, t).ConfigureAwait(false);
+            return true;
+        }, token), ct);
     }
 
     /// <inheritdoc />

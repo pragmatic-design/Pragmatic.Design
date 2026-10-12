@@ -59,28 +59,33 @@ public sealed partial class GoogleCloudFileStorage(
 
     /// <inheritdoc />
     /// <remarks>
-    ///     Downloads the object into an in-memory stream. Accepts only <c>gs://</c> URIs (whose
-    ///     bucket must match the configured bucket) or URIs prefixed with the configured
-    ///     <see cref="GoogleCloudStorageOptions.PublicBaseUrl" />; anything else is rejected with
-    ///     <see cref="ArgumentException" />. Returns <see langword="null" /> when the object does
-    ///     not exist (a 404). The returned stream must be disposed by the caller.
+    ///     Streams the object: the returned stream is read while the download runs, and the download
+    ///     pauses once 64 KB are unread, so what is held ahead of the reader is bounded by that and
+    ///     the client's last write, whatever the object's size. It is forward-only (no
+    ///     <c>Length</c>, no seeking); <see cref="IFileInfoProvider.GetInfoAsync" /> gives the size.
+    ///     A download that fails midway throws from the read that reaches the failure, and
+    ///     cancelling <paramref name="ct" /> or disposing the stream stops the download. Accepts only
+    ///     <c>gs://</c> URIs (whose bucket must match the configured bucket) or URIs prefixed with
+    ///     the configured <see cref="GoogleCloudStorageOptions.PublicBaseUrl" />; anything else is
+    ///     rejected with <see cref="ArgumentException" />. Returns <see langword="null" /> when the
+    ///     object does not exist (a 404). The returned stream must be disposed by the caller.
     /// </remarks>
-    public async Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
+    public Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
     {
         var key = ResolveKey(fileUri);
-        var buffer = new MemoryStream();
-        try
+        return Pragmatic.Storage.PipedDownloadStream.StartAsync(async (destination, token) =>
         {
-            await storageClient.DownloadObjectAsync(options.BucketName, key, buffer, cancellationToken: ct)
-                .ConfigureAwait(false);
-            buffer.Position = 0;
-            return buffer;
-        }
-        catch (GoogleApiException ex) when (IsNotFound(ex))
-        {
-            await buffer.DisposeAsync().ConfigureAwait(false);
-            return null;
-        }
+            try
+            {
+                await storageClient.DownloadObjectAsync(options.BucketName, key, destination, cancellationToken: token)
+                    .ConfigureAwait(false);
+                return true;
+            }
+            catch (GoogleApiException ex) when (IsNotFound(ex))
+            {
+                return false;
+            }
+        }, ct);
     }
 
     /// <inheritdoc />
