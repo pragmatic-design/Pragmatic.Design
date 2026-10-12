@@ -98,39 +98,35 @@ public sealed partial class FtpFileStorage : IFileStorage, IFileInfoProvider
 
     /// <inheritdoc />
     /// <remarks>
-    ///     Downloads the file into an in-memory buffer before the connection is closed, then returns
-    ///     that buffer as the stream. Returns <see langword="null" /> when the file does not exist.
+    ///     Streams the file through a <see cref="PipedDownloadStream" />: the connection stays open
+    ///     while the caller reads, and closes when the transfer ends or the stream is disposed, so
+    ///     what is held in memory is bounded whatever the file's size. The stream is forward-only.
+    ///     Returns <see langword="null" /> when the file does not exist; a transfer that fails
+    ///     midway throws from the read that reaches the failure.
     ///     <strong>The caller must dispose the returned stream.</strong>
     /// </remarks>
-    public async Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
+    public Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
     {
         var remotePath = ResolveRemotePath(fileUri);
 
-        var client = _factory.Create();
-        await using (client.ConfigureAwait(false))
+        return PipedDownloadStream.StartAsync(async (destination, token) =>
         {
-            await client.Connect(ct).ConfigureAwait(false);
-
-            // Buffer the whole file while connected: the returned stream must outlive the connection.
-            var buffer = new MemoryStream();
-            try
+            var client = _factory.Create();
+            await using (client.ConfigureAwait(false))
             {
-                var ok = await client.DownloadStream(buffer, remotePath, 0, null, ct, 0).ConfigureAwait(false);
-                if (!ok)
-                {
-                    await buffer.DisposeAsync().ConfigureAwait(false);
-                    return null;
-                }
-            }
-            catch (FtpException)
-            {
-                await buffer.DisposeAsync().ConfigureAwait(false);
-                return null;
-            }
+                await client.Connect(token).ConfigureAwait(false);
 
-            buffer.Position = 0;
-            return buffer;
-        }
+                // Existence is asked first, on the same connection: once bytes have reached the
+                // caller, a failed transfer must surface as a failure, never as "no such file".
+                if (!await client.FileExists(remotePath, token).ConfigureAwait(false))
+                    return false;
+
+                if (!await client.DownloadStream(destination, remotePath, 0, null, token, 0).ConfigureAwait(false))
+                    throw new IOException($"FTP download of '{remotePath}' failed.");
+
+                return true;
+            }
+        }, ct);
     }
 
     /// <inheritdoc />

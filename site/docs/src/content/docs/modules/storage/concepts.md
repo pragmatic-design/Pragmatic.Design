@@ -643,6 +643,19 @@ var uri = await _storage.SaveAsync(stream, formFile.FileName, "photos", ct);
 2. **Dispose the stream after use.** The caller owns the stream lifetime -- both the stream passed to `SaveAsync` and the stream returned by `GetAsync`. Use `await using`.
 3. **Do not read the stream before passing it.** If you consume the stream before `SaveAsync`, the provider receives an empty stream. If you need to inspect the content, save to a `MemoryStream` first, reset position, then pass to `SaveAsync`.
 
+### What a Download Holds in Memory
+
+What `GetAsync` keeps in memory depends on the provider:
+
+| Provider | Memory per open download |
+|---|---|
+| `LocalDiskFileStorage` | A `FileStream` buffer: bounded, whatever the file size. |
+| Azure, S3 | The SDK's response stream: bounded, read from the connection as the caller reads. |
+| Google Cloud, SFTP, FTP | Bounded. Their clients write into a stream instead of returning one, so the download runs into a `PipedDownloadStream`. The pipe pauses the download once 64 KB are unread, so the provider holds that plus the client's last write. SFTP and FTP keep their per-operation connection open until the transfer ends. Disposing the stream, or cancelling the token passed to `GetAsync`, stops the download and closes the connection. |
+| InMemory | The stored bytes themselves (the returned stream reads them without copying). |
+
+A `PipedDownloadStream` is forward-only: `Length` and `Seek` throw. A transfer that fails midway throws from the read that reaches the failure. Do not rely on `Length` or `Seek` with any provider (see Important Stream Rules); for the size, use `IFileInfoProvider.GetInfoAsync`.
+
 ### Size Limits
 
 Providers with a size limit (`LocalDiskFileStorage` with `maxFileSizeBytes > 0`, `S3FileStorage` with `MaxFileSizeBytes > 0`) enforce it in two ways: seekable streams are rejected up front by checking `Length`; non-seekable streams (HTTP request bodies, chunked inputs) are rejected mid-copy the moment the running byte total exceeds the limit. Both paths throw `InvalidOperationException`.

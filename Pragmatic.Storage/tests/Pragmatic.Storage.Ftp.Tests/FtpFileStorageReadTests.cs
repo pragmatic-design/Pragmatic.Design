@@ -14,10 +14,11 @@ public sealed class FtpFileStorageReadTests
     private const string RemotePath = "/photos/abc.jpg";
 
     [Fact]
-    public async Task GetAsync_ExistingFile_ReturnsBufferedRoundTrip()
+    public async Task GetAsync_ExistingFile_ReturnsStreamedRoundTrip()
     {
         var ctx = FtpStorageTestContext.Create();
         var payload = new byte[] { 10, 20, 30, 40 };
+        ctx.Client.FileExists.When(RemotePath, Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
         ctx.Client.DownloadStream.Returns(args =>
         {
             var target = (Stream)args[0]!;
@@ -38,11 +39,24 @@ public sealed class FtpFileStorageReadTests
     public async Task GetAsync_MissingFile_ReturnsNull()
     {
         var ctx = FtpStorageTestContext.Create();
-        ctx.Client.DownloadStream.Returns(Task.FromResult(false));
+        ctx.Client.FileExists.When(RemotePath, Arg.Any<CancellationToken>()).Returns(Task.FromResult(false));
 
         var result = await ctx.Storage.GetAsync(FileUri);
 
         result.Should().BeNull();
+        ctx.Client.DownloadStream.Received(0);
+    }
+
+    [Fact]
+    public async Task GetAsync_PresentFileWhoseDownloadFails_ThrowsInsteadOfReportingItMissing()
+    {
+        var ctx = FtpStorageTestContext.Create();
+        ctx.Client.FileExists.When(RemotePath, Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
+        ctx.Client.DownloadStream.Returns(Task.FromResult(false));
+
+        var act = () => ctx.Storage.GetAsync(FileUri);
+
+        await act.Should().ThrowAsync<IOException>();
     }
 
     [Fact]
