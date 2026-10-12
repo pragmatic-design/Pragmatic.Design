@@ -45,7 +45,7 @@ module skills link to references kept in `pragmatic-ecosystem`.
 | `pragmatic-architecture` | Splitting an application into libraries, modules and databases |
 | `pragmatic-choose-modules` | Choosing the packages for a feature |
 | `pragmatic-ecosystem` | The reference behind the others: packages, patterns, diagnostics, recipes |
-| `pragmatic-nuget-feed` | The local NuGet feed the alpha packages come from |
+| `pragmatic-nuget-feed` | A restore that fails, or a local feed for builds not on nuget.org yet |
 
 Then one skill per module, `pragmatic-use-*`, loaded when a task reaches it: actions and endpoints,
 persistence, composition, identity, authorization, delegation, multi-tenancy, events, messaging, jobs,
