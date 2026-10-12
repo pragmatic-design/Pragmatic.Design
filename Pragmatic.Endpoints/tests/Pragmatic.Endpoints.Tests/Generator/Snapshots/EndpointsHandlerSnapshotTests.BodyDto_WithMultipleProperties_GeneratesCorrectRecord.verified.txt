@@ -466,12 +466,13 @@ public partial class CreateOrderEndpoint
         
         var builder = endpoints.MapPost("/orders", (Microsoft.AspNetCore.Http.RequestDelegate)(async httpContext =>
         {
+            var __info_body = global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Orders.CreateOrderEndpointBody>(httpContext);
             TestApp.Orders.CreateOrderEndpointBody? __read_body;
             try
             {
                 __read_body = await global::Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync(
                     httpContext.Request,
-                    global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Orders.CreateOrderEndpointBody>(httpContext),
+                    __info_body,
                     httpContext.RequestAborted).ConfigureAwait(false);
             }
             catch (global::System.Text.Json.JsonException __jsonEx)
