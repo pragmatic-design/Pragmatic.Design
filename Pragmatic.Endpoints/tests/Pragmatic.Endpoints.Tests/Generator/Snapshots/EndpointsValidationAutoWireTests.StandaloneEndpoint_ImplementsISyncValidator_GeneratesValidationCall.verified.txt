@@ -458,12 +458,13 @@ public partial class CreateUserEndpoint
         
         var builder = endpoints.MapPost("/users", (Microsoft.AspNetCore.Http.RequestDelegate)(async httpContext =>
         {
+            var __info_body = global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Users.CreateUserEndpointBody>(httpContext);
             TestApp.Users.CreateUserEndpointBody? __read_body;
             try
             {
                 __read_body = await global::Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync(
                     httpContext.Request,
-                    global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Users.CreateUserEndpointBody>(httpContext),
+                    __info_body,
                     httpContext.RequestAborted).ConfigureAwait(false);
             }
             catch (global::System.Text.Json.JsonException __jsonEx)

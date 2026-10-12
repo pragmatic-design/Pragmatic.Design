@@ -528,12 +528,13 @@ public partial class UpdateUserEndpoint
                 await global::Pragmatic.Endpoints.Binding.BindingFailure.WriteAsync(httpContext, "id", "the value is missing or malformed").ConfigureAwait(false);
                 return;
             }
+            var __info_body = global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Users.UpdateUserEndpointBody>(httpContext);
             TestApp.Users.UpdateUserEndpointBody? __read_body;
             try
             {
                 __read_body = await global::Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync(
                     httpContext.Request,
-                    global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<TestApp.Users.UpdateUserEndpointBody>(httpContext),
+                    __info_body,
                     httpContext.RequestAborted).ConfigureAwait(false);
             }
             catch (global::System.Text.Json.JsonException __jsonEx)

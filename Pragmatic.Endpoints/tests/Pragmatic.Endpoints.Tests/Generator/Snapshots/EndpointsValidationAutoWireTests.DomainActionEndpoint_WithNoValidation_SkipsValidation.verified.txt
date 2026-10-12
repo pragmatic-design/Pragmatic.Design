@@ -450,12 +450,13 @@ public partial class ImportOrdersEndpoint
         
         var builder = endpoints.MapPost("/orders/import", (Microsoft.AspNetCore.Http.RequestDelegate)(async httpContext =>
         {
+            var __info_data = global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<byte[]>(httpContext);
             byte[]? __read_data;
             try
             {
                 __read_data = await global::Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync(
                     httpContext.Request,
-                    global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<byte[]>(httpContext),
+                    __info_data,
                     httpContext.RequestAborted).ConfigureAwait(false);
             }
             catch (global::System.Text.Json.JsonException __jsonEx)

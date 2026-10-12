@@ -115,13 +115,19 @@ internal static class RequestDelegateRenderer
         // has to work with the fallback disabled.
         var type = TrimNullable(parameter.TypeName);
         var read = $"__read_{parameter.Name}";
+        var info = $"__info_{parameter.Name}";
 
+        // ⚠️ Outside the try: a resolver that does not cover the type throws InvalidOperationException, the
+        // same type as the content-type check below answers 415 for. Inside, a programmer error reached the
+        // client as "unsupported media type" on a well-formed JSON request (#141); here it is a server error
+        // naming the type.
+        line($"var {info} = global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<{type}>(httpContext);");
         line($"{type}? {read};");
         line("try");
         line("{");
         line($"    {read} = await global::Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync(");
         line($"        httpContext.Request,");
-        line($"        global::Pragmatic.Endpoints.Binding.RequestJson.TypeInfo<{type}>(httpContext),");
+        line($"        {info},");
         line("        httpContext.RequestAborted).ConfigureAwait(false);");
         line("}");
         line("catch (global::System.Text.Json.JsonException __jsonEx)");
