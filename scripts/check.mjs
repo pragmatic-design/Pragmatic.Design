@@ -57,7 +57,9 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { runAsync, runPool } from './lib/spawn-async.mjs';
 import { acquire as acquireRunLock, describeHolder } from './lib/run-lock.mjs';
-import { record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail } from './lib/failure-record.mjs';
+import {
+  record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail, abortedRun,
+} from './lib/failure-record.mjs';
 import { TESTCONTAINERS_LABEL, ownTestHosts } from './lib/gate-ownership.mjs';
 import { measureCoverage } from './lib/example-coverage.mjs';
 import {
@@ -271,13 +273,20 @@ function parseTestOutput(out) {
   const detailed = /^\s*(?:Totale test|Total tests):\s+\d+/m.test(out);
   const count = detailed ? block : line;
 
+  // ⚠️ A run the platform aborted (a test past HANG_TIMEOUT, or a crashed host) prints its passed
+  // count and no failed one: counted as printed, it is green. Each test it names as running is a
+  // failure, and an abort that names none is still one.
+  const abort = abortedRun(out);
+  const abortFailures = abort.running.map((t) =>
+    `${t} — the test host was stopped while this test ran: no progress for ${HANG_TIMEOUT}, or a crash`);
+
   return {
     passed: count('Superati|Passed'),
-    failed: count('Non superati|Failed'),
+    failed: count('Non superati|Failed') + (abort.aborted ? Math.max(abort.running.length, 1) : 0),
     skipped: count('Ignorati|Skipped'),
     noTests: /Nessun test|No test is available/i.test(out),
     buildError: /error (CS|MSB|NETSDK)\d+/.test(out),
-    failures: parseFailedTests(out),
+    failures: [...abortFailures, ...parseFailedTests(out)],
   };
 }
 
@@ -1267,9 +1276,15 @@ async function runSuites(projects, { parallel, containerTier = false, poolSize =
     // reproduce to understand — and a flake does not reproduce. `-v n` would also produce it, and
     // brings the whole MSBuild log with it; this asks the test logger alone. The extra text is
     // captured, never printed: the gate still prints only its own lines.
+    // ⚠️ Bounded per test. Without it a test that stops making progress holds the suite until the CI
+    // job's timeout cancels it, and the log never says which test it was (#210). With it the test host
+    // is stopped, the runner names the test that was running, and parseTestOutput counts it as failed.
+    // No dump: the name is what the log needs, and a full dump of a test host is gigabytes.
     const { out } = await runAsync('dotnet',
       ['test', proj, '--nologo', '-v', 'q', '--logger', 'console;verbosity=detailed',
-        '--no-build', ...ARTIFACTS]);
+        '--no-build', ...ARTIFACTS,
+        '--blame-hang-timeout', HANG_TIMEOUT, '--blame-hang-dump-type', 'none',
+        '--results-directory', 'artifacts/test-results']);
     return { proj, ...parseTestOutput(out), out };
   };
 
@@ -2298,6 +2313,16 @@ const AOT_SUPPRESSION_BUDGET = 20;
  * a gate people run and one they postpone.
  */
 const ARTIFACTS = ['--artifacts-path', 'artifacts/build'];
+
+/**
+ * How long one test may run without the runner hearing from it before its host is stopped.
+ *
+ * Per test, not per suite: the longest suite (TimeOff, ~6 minutes on the CI runner) is many tests. A
+ * container suite's first test also pays for its containers starting, image pull included, which is
+ * why this is minutes and not seconds. Well under the 45 minutes after which CI cancels the job
+ * without saying what was running.
+ */
+const HANG_TIMEOUT = '15m';
 
 /**
  * Compares each suite's test count against the last run, and says so when one drops.

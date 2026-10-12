@@ -1,0 +1,21 @@
+  Passed Pragmatic.Ensure.Tests.Is.IsTests.IsNotNull_ReferenceType_WithValue_ReturnsTrue [< 1 ms]
+  Passed Pragmatic.Ensure.Tests.Is.IsTests.IsNotDefault_Int_WithDefault_ReturnsFalse [< 1 ms]
+  Passed Pragmatic.Ensure.Tests.Is.IsTests.IsNotNullOrEmpty_Collection_WithItems_ReturnsTrue [< 1 ms]
+  Passed Pragmatic.Ensure.Tests.Is.IsTests.HasNoDuplicates_EmptyCollection_ReturnsTrue [< 1 ms]
+  Passed Pragmatic.Ensure.Tests.Is.IsTests.HasNoDuplicates_WithNull_ReturnsTrue [< 1 ms]
+Data collector 'Blame' message: The specified inactivity time of 15 seconds has elapsed. Collecting hang dumps from testhost and its child processes.
+
+Total tests: Unknown
+     Passed: 330
+ Total time: 16,3267 Seconds
+
+
+Attachments:
+  C:\Pragmatic\Pragmatic.Design\Pragmatic.Ensure\tests\Pragmatic.Ensure.Tests\TestResults\f84d3080-7cb1-4673-a1c9-4e7adb564891\Sequence_991ee196bd044e7a876c784bde9f2584.xml
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+The active Test Run was aborted because the host process exited unexpectedly. Please inspect the call stack above, if available, to get more information about where the exception originated from.
+The test running when the crash occurred:
+Pragmatic.Ensure.Tests.HangProbe.NeverEnds
+
+This test may, or may not be the source of the crash.

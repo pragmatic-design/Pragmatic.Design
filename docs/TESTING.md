@@ -356,6 +356,19 @@ cases in `scripts/failure-record.test.mjs` are driven by `scripts/fixtures/dotne
 a real run's captured output, because a shape checked only against invented strings can match
 nothing on a real run and still pass.
 
+### A test that stops making progress
+
+Every suite runs with `--blame-hang-timeout 15m`: a test the runner has not heard from for 15 minutes
+has its test host stopped. The suite is red, and the line under it names the test that was running.
+Before this, a hung container suite held its CI job until the job's 45-minute timeout cancelled it,
+and the log said only "The operation was canceled".
+
+⚠️ An aborted run's counts lie. The runner prints `Total tests: Unknown` and a `Passed:` count, and
+no `Failed:` line at all, so a suite read for its counts alone is green. The gate reads the abort
+itself (`abortedRun` in `scripts/lib/failure-record.mjs`, against the captures in
+`scripts/fixtures/dotnet-test-hang-*.txt`) and counts each test it names as failed. Test results,
+the blame sequence file among them, go to `artifacts/test-results`, not into the test project.
+
 ## What "green" requires
 
 - `dotnet build --warnaserror --no-incremental` over the solution: **0 errors**.

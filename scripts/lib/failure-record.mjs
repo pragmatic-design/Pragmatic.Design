@@ -149,6 +149,34 @@ export function unnamedFailureTail(out, failed, { maxLines = UNNAMED_TAIL_LINES 
   return tail.length > 0 ? tail : null;
 }
 
+/**
+ * Whether the test platform aborted the run, and the tests it says were running when it did.
+ *
+ * ⚠️ An aborted run is the one whose counts lie. When `--blame-hang-timeout` stops a test host, or the
+ * host crashes, the runner prints "Total tests: Unknown" and a "Passed:" count, and no "Failed:" line
+ * at all: read for its counts, a hung suite is a green one. The abort is announced in a line of its
+ * own, followed by the names of the tests that were running; both are matched in English (the CI
+ * runner) and Italian (this machine), from captures in scripts/fixtures.
+ */
+export function abortedRun(out) {
+  const lines = out.split(/\r?\n/);
+  const aborted = lines.some((l) => /^(Test Run Aborted\.|Esecuzione dei test interrotta\.)\s*$/.test(l.trim()));
+  if (!aborted) return { aborted: false, running: [] };
+
+  const header = lines.findIndex((l) =>
+    /^(The test running when the crash occurred:|Test in esecuzione quando si è verificato l'arresto anomalo:)/.test(l.trim()));
+  const running = [];
+  if (header >= 0) {
+    for (const l of lines.slice(header + 1)) {
+      const name = l.trim();
+      if (name.length === 0) break;
+      running.push(name);
+    }
+  }
+
+  return { aborted: true, running };
+}
+
 const PREFIX = 'failures-';
 
 /** A filename-safe instant. */
