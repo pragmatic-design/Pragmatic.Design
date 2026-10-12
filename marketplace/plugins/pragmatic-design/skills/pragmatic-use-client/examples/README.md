@@ -4,6 +4,9 @@ Copied from `examples/showcase`, which compiles in the repository and is exercis
 `examples/showcase/tests/Showcase.IntegrationTests (GeneratedClientTests)`. **Do not edit here**: change the source and run
 `node scripts/sync-skill-examples.mjs`. The gate refuses a copy that differs from its source.
 
+A project file is the one rewrite: its references to the framework's own projects are written as
+the packages of the same name, as an application that consumes them references them.
+
 | File | What it shows |
 |---|---|
 | [`src/Showcase.BlazorClient/Showcase.BlazorClient.csproj`](src/Showcase.BlazorClient/Showcase.BlazorClient.csproj) | Where the manifest comes from: a compile-only reference to the domain assembly (`Private="false"`), the Client generator as an analyzer, and only Client, Result and Abstractions at runtime |

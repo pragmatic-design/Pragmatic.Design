@@ -20,8 +20,11 @@ Use this for an external consumer application that uses Pragmatic.Design package
 2. Read `../pragmatic-ecosystem/references/scaffold/solution-template.md` and lay down the **full
    best-practice structure** (do NOT create a single minimal project): `.slnx`, `global.json`,
    `Directory.Build.props`, `Directory.Packages.props` (CPM), `NuGet.config`, `.gitignore`,
-   `.editorconfig`, a boundary library per bounded context, the web host, and an integration test
-   project. Replace `{{App}}`/`{{Boundary}}` placeholders.
+   `.editorconfig`, a boundary library per bounded context with its `translations/en.json`, the web
+   host, and an integration test project with the Testing generator in it. Replace
+   `{{App}}`/`{{Boundary}}` placeholders. The translations and the generated tests are part of the
+   skeleton, not extras: without the first a refused field answers with a key and no sentence, and
+   without the second every endpoint goes untested unless someone writes the test by hand.
 3. Read `../pragmatic-ecosystem/references/cookbook/domain-model.md` first (namespaces, entity
    declaration, relations, and what not to hand-write), then
    `../pragmatic-ecosystem/references/cookbook/crud-web-api.md` for the per-feature code
@@ -31,14 +34,19 @@ Use this for an external consumer application that uses Pragmatic.Design package
    deliberately has none gets `[AnonymousHost]`. There is no third way that builds. If step 1 already
    asked, do not ask twice.
 5. Wire the host: `AppDatabase`, the `HostModule` with one `[Include<TModule, TDatabase>]` per module,
-   `Program.cs` with `UseI18N` + `UsePragmaticMigrations` + the identity choice, and
-   `Properties/launchSettings.json`.
+   `Program.cs` with `UseI18N(i18n => i18n.LocalizeProblemDetails())` + `UsePragmaticMigrations` + the
+   identity choice, and `Properties/launchSettings.json`.
 6. `dotnet build {{App}}.slnx`, fix PRAG diagnostics. **This is the first state that has to work**:
    the skeleton (a module with no entity yet) builds, and `dotnet run` serves `/openapi/v1.json`.
    It needs no database while no module has an entity: nothing is migrated.
 7. Fill domain code per bounded context: entity (`{{App}}.{{Boundary}}.Entities` namespace) ->
-   validation -> mutation/query/action -> DTO projection. Build, run, then `dotnet test`
-   (Testcontainers needs Docker).
+   validation -> mutation/query/action -> DTO projection. Each rule's message key gets a line in
+   `translations/en.json`, its own rules included.
+8. With the first endpoint in place, add the template's `ContractAppFixture.cs` and
+   `TheContractTestsRanAtAll.cs`: the Testing generator then runs a contract test per endpoint. Write
+   the tests the generator cannot (reads, the business rules, the acceptance criteria) through the
+   typed client it generates (`Api.{{Boundary}}.…`), never with route strings. Build, run, then
+   `dotnet test` (Testcontainers needs Docker).
 
 ## Default Package Set
 
@@ -53,6 +61,7 @@ Split the app into a **boundary library** and a **web host** with different pack
 - `Pragmatic.Endpoints` **and `Pragmatic.Endpoints.AspNetCore`** (the latter is required: `[Endpoint]` generates `Microsoft.AspNetCore.*` code into the boundary assembly)
 - `Pragmatic.Persistence` **and `Pragmatic.Persistence.EFCore`** (the latter is required for the generated entity infrastructure, e.g. `PersistenceId`)
 - `Pragmatic.SourceGenerator` as analyzer
+- `translations/en.json`, as `<AdditionalFiles>`: the words of the rules' messages
 
 **Web host**:
 
@@ -64,6 +73,10 @@ Split the app into a **boundary library** and a **web host** with different pack
   UI, in Development)
 - The EF provider matching Pragmatic's EF Core major (`.NET 10 → EF Core 10`), so `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.*`
 - `Pragmatic.SourceGenerator` as analyzer
+
+**Integration test project**: a plain `ProjectReference` to the host (the Testing generator reads the
+endpoints from it), `Pragmatic.Testing`, `Pragmatic.Testing.SourceGenerator` (`PrivateAssets="all"`),
+`Microsoft.AspNetCore.Mvc.Testing`, `Testcontainers.PostgreSql`.
 
 Nothing else is required. A capability is wired because a module **declares** it (`[Cacheable]`,
 `[ResiliencePolicy]`, `[Job]`, `[MessageHandler]`), not because its package is on the host; the Time
@@ -77,11 +90,14 @@ off example references neither Caching, MultiTenancy nor Resilience and starts. 
 2. **A host `[Module]` topology class with `[Include<TModule, TDatabase>]`** maps modules to databases
    (+ `[NeedsStep<RoutingStep>]`, `[NeedsStep<InternationalizationStep>]`). Without it: *"No databases
    configured"* → DI failure at startup.
-3. **A culture has to come from somewhere, or the host refuses to start.** Once the modules have
-   `translations/{culture}.json` they give it: the cultures of the files, defaulting to the one they are
-   written from (`[TranslationKeys(DefaultCulture = …)]`, `en` unless set). Before that, in the skeleton:
-   `app.UseI18N(i => { i.DefaultCulture(CultureCode.EnglishUS); i.Support(...); })`, which also overrides
-   the declared one when the application wants regional cultures.
+3. **A culture has to come from somewhere, or the host refuses to start.** The skeleton's
+   `translations/en.json` gives it: the cultures of the files, defaulting to the one they are written
+   from (`[TranslationKeys(DefaultCulture = …)]`, `en` unless set). Without a translation file,
+   `app.UseI18N(i => { i.DefaultCulture(CultureCode.EnglishUS); i.Support(...); })` gives it, and
+   overrides the declared one when the application wants regional cultures. ⚠️ The lookup is exact: a
+   file named `en.json` does not answer requests in `en-US`, so a host that sets `EnglishUS` needs
+   `en-US.json`. `LocalizeProblemDetails()` is what puts the sentences in an error response
+   (`messages`, beside the keys under `errors`); without it the client gets the keys only.
 4. **`IRepository<TEntity>` takes one type argument, the entity**: there is no form that also takes
    the key type.
 5. **Who calls the API is a decision, and the build asks for it.** `Pragmatic.Actions` brings
@@ -94,7 +110,8 @@ off example references neither Caching, MultiTenancy nor Resilience and starts. 
      require authorization and no authentication method is configured for environment Production"), so
      run it in Development (`launchSettings.json`) or give that environment a scheme;
    - deliberately no users (a LAN tool, a kiosk, behind an authenticating proxy) → `[AnonymousHost]`
-     on the host `[Module]`.
+     on the host `[Module]`. It also lifts the refusal to start outside Development: an anonymous host
+     runs in Production with nothing more.
 6. **The contract is served by the generated host, in Development**: with `Pragmatic.Endpoints.OpenApi`
    referenced it publishes `/openapi/v1.json` (the document the generator wrote at compile time) and,
    with `Scalar.AspNetCore` referenced too, `/scalar`. Write no startup step for either. Other
@@ -120,5 +137,14 @@ dotnet build <project-or-slnx>
 dotnet run --project src/<App>.Host      # then GET /openapi/v1.json
 dotnet test <test-project> --no-restore -v minimal
 ```
+
+Two checks that the defaults are in, before calling the application done:
+
+- `dotnet test` lists generated contract tests (`{{Boundary}}CrudContractTests`, and
+  `{{Boundary}}AuthContractTests` once an operation requires a permission) and
+  `TheContractTestsRanAtAll` passes with the uncovered operations pasted in.
+- A request a rule refuses answers `422` with both `errors` (the keys) and `messages` (the
+  sentences of `translations/en.json`). No `messages` at all means `LocalizeProblemDetails()` is
+  missing, or the file's culture is not the one the request is answered in.
 
 For analyzer/package validation, follow the consumer flow in `../pragmatic-ecosystem/references/verification.md`.

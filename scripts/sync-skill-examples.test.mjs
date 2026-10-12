@@ -92,6 +92,53 @@ test('several suites are named each in its own code span', () => {
   rmSync(root, { recursive: true });
 });
 
+const frameworkProject = [
+  '<Project Sdk="Microsoft.NET.Sdk.Web">',
+  '  <ItemGroup>',
+  '    <ProjectReference Include="..\\Shop.Orders\\Shop.Orders.csproj" Private="false" />',
+  '    <ProjectReference Include="..\\..\\..\\Pragmatic.Result\\src\\Pragmatic.Result\\Pragmatic.Result.csproj" />',
+  '    <ProjectReference Include="..\\..\\..\\Pragmatic.Client\\src\\Pragmatic.Client.SourceGenerator\\Pragmatic.Client.SourceGenerator.csproj"',
+  '                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />',
+  '  </ItemGroup>',
+  '  <Import Project="..\\..\\..\\Pragmatic.Migrations\\build\\Pragmatic.Migrations.targets" />',
+  '  <Import Project="..\\..\\..\\Pragmatic.Migrations\\build\\Pragmatic.Migrations.LocalCli.targets" />',
+  '</Project>',
+  '',
+].join('\n');
+
+function treeWithProject() {
+  const { root, write } = tree();
+  write('app/Shop.Host/Shop.Host.csproj', frameworkProject);
+  const manifest = JSON.parse(readFileSync(join(root, 'scripts/skill-examples.json'), 'utf8'));
+  manifest.skills['pragmatic-use-demo'].files['Shop.Host/Shop.Host.csproj'] = 'The host project';
+  write('scripts/skill-examples.json', JSON.stringify(manifest));
+  return { root, write };
+}
+
+test('a copied project names the framework as packages, not as paths into the repository', () => {
+  const { root } = treeWithProject();
+  assert.equal(run(root).status, 0);
+  const copy = readFileSync(join(root, skill, 'Shop.Host/Shop.Host.csproj'), 'utf8');
+
+  assert.doesNotMatch(copy, /Pragmatic\.[\w.]+\\src\\/);
+  assert.doesNotMatch(copy, /<Import Project="[^"]*Pragmatic\./);
+  assert.match(copy, /<PackageReference Include="Pragmatic\.Result" \/>/);
+  assert.match(copy, /<PackageReference Include="Pragmatic\.Client\.SourceGenerator" PrivateAssets="all" \/>/);
+  // The application's own project stays a project reference.
+  assert.match(copy, /<ProjectReference Include="\.\.\\Shop\.Orders\\Shop\.Orders\.csproj" Private="false" \/>/);
+  assert.equal(run(root, '--check').status, 0);
+  rmSync(root, { recursive: true });
+});
+
+test('a copied project edited in place still fails the check', () => {
+  const { root, write } = treeWithProject();
+  run(root);
+  const copy = readFileSync(join(root, skill, 'Shop.Host/Shop.Host.csproj'), 'utf8');
+  write(`${skill}/Shop.Host/Shop.Host.csproj`, copy.replace('Pragmatic.Result', 'Pragmatic.Other'));
+  assert.equal(run(root, '--check').status, 1);
+  rmSync(root, { recursive: true });
+});
+
 test('a source that is gone fails both the check and the sync', () => {
   const { root } = tree();
   rmSync(join(root, 'app/Orders/PlaceOrder.cs'));

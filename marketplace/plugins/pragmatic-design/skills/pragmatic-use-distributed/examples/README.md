@@ -4,6 +4,9 @@ Copied from `examples`, which compiles in the repository and is exercised by
 `examples/warehouse/tests/Warehouse.IntegrationTests` and `examples/showcase/tests/Showcase.Billing.Host.Tests`. **Do not edit here**: change the source and run
 `node scripts/sync-skill-examples.mjs`. The gate refuses a copy that differs from its source.
 
+A project file is the one rewrite: its references to the framework's own projects are written as
+the packages of the same name, as an application that consumes them references them.
+
 | File | What it shows |
 |---|---|
 | [`warehouse/src/Warehouse.Orders.Contracts/Warehouse.Orders.Contracts.csproj`](warehouse/src/Warehouse.Orders.Contracts/Warehouse.Orders.Contracts.csproj) | A contracts project: Abstractions, Events and Messaging.Core, nothing else; all a consumer references of the service |

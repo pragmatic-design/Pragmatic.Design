@@ -13,11 +13,10 @@
 
   <!-- Runtime deps: only Client helpers + Result for Result<T,E> + Abstractions for IError -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Pragmatic.Client\src\Pragmatic.Client\Pragmatic.Client.csproj" />
-    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
-    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\..\Pragmatic.Client\src\Pragmatic.Client.SourceGenerator\Pragmatic.Client.SourceGenerator.csproj"
-                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Pragmatic.Client" />
+    <PackageReference Include="Pragmatic.Result" />
+    <PackageReference Include="Pragmatic.Abstractions" />
+    <PackageReference Include="Pragmatic.Client.SourceGenerator" PrivateAssets="all" />
   </ItemGroup>
 
   <!--

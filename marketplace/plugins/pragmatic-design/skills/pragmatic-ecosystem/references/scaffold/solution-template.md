@@ -7,7 +7,10 @@ first, then fill domain code per `../cookbook/crud-web-api.md`.
 the ones two reference applications build and run on every gate,
 `examples/time-off/tests/TimeOff.IntegrationTests/Infrastructure/` and
 `examples/invoicing/tests/Invoicing.IntegrationTests/Infrastructure/`, with their names replaced by the
-placeholders. The rest is the structure those two applications have.
+placeholders and the container's image passed to its constructor (those suites pin Testcontainers
+4.2.0, this template 4.15.0). The contract-test files and the translation file were built and run as
+written here against the `1.0.0-alpha.2` packages. The rest is the structure those two applications
+have.
 
 Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a boundary's module is
 `{{App}}.{{Boundary}}`. Repeat the boundary library per bounded context.
@@ -28,6 +31,7 @@ Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a bo
 │   │   ├── {{App}}.{{Boundary}}.csproj
 │   │   ├── {{Boundary}}Boundary.cs
 │   │   ├── {{Boundary}}Module.cs
+│   │   ├── translations/en.json      # the words of every message: rules, errors
 │   │   └── {{Feature}}/              # Entities in {{App}}.{{Boundary}}.Entities namespace!
 │   └── {{App}}.Host/
 │       ├── {{App}}.Host.csproj
@@ -40,8 +44,15 @@ Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a bo
     ├── {{App}}.IntegrationTests.csproj
     ├── PostgresFixture.cs
     ├── {{App}}WebFactory.cs
+    ├── ContractAppFixture.cs         # runs the contract tests the Testing generator writes
+    ├── TheContractTestsRanAtAll.cs   # pins what it wrote and what it skipped
     └── ...Tests.cs
 ```
+
+Two things in this layout are easy to leave out and should not be: **the generated tests**
+(`Pragmatic.Testing.SourceGenerator` in the test project: a typed `Api` client and contract tests for
+every endpoint) and **a translation file**. Without the second, a refused field reaches the caller
+as a key such as `validation.required` and nothing else.
 
 ## global.json
 
@@ -126,6 +137,8 @@ manifest, but no smoke publishes it Native AOT yet.
     <PackageVersion Include="Pragmatic.Identity.AspNetCore" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.Endpoints.OpenApi" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.SourceGenerator" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Testing" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.Testing.SourceGenerator" Version="$(PragmaticVersion)" />
   </ItemGroup>
 
   <ItemGroup><!-- EF provider: match Pragmatic's EF Core major (.NET 10 -> EF Core 10) -->
@@ -243,8 +256,45 @@ indent_size = 2
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <!-- The generator compiles the translations into the module; the host registers them. -->
+    <AdditionalFiles Include="translations/*.json" />
+  </ItemGroup>
 </Project>
 ```
+
+## Boundary library: translations/en.json
+
+```json
+{
+  "validation.required": "This is required.",
+  "validation.notempty": "This cannot be empty.",
+  "validation.notwhitespace": "This cannot be blank.",
+  "validation.email": "This is not a valid email address.",
+  "validation.maxlength": "This is longer than {max} characters.",
+  "validation.range": "This must be between {min} and {max}.",
+  "error.validation.error.title": "The request is not valid",
+  "error.validation.error.detail": "Some fields are not valid: see the message beside each one."
+}
+```
+
+Add a line for every rule the module uses, its own rules included (`validation.not_future_year` for
+a `ValidationAttribute` whose `DefaultMessageKey` says so). Nothing reports a rule whose key no file
+translates: its place under `messages` holds the key again (`PRAG1804` covers the message keys of error types,
+not of rules). A refused field then answers with both: the key under `errors`, which a client
+matches on, and the sentence under `messages`, aligned one for one:
+
+```json
+{ "status": 422, "code": "VALIDATION_ERROR",
+  "errors":   { "year": ["validation.not_future_year"] },
+  "messages": { "year": ["The year cannot be in the future."] } }
+```
+
+⚠️ **The file's name is a culture, and it must be the one the requests are answered in.** The lookup
+is exact: `en.json` does not answer an `en-US` request. Let the file give the culture (the host below
+sets none), or name the file after the culture `UseI18N` sets (`en-US.json` with
+`CultureCode.EnglishUS`). The sentences also need `LocalizeProblemDetails()` in the host: without it
+the response carries the keys only.
 
 ## Host csproj (versionless, CPM)
 
@@ -285,18 +335,14 @@ the host; see *Optional feature packages* below for what each one adds.
 using Pragmatic.Composition.Hosting;
 using Pragmatic.Identity;
 using Pragmatic.Internationalization;
-using Pragmatic.Internationalization.Types;
 using Pragmatic.Migrations.Extensions;
 
 await PragmaticApp.RunAsync(args, app =>
 {
-    // The culture, until the modules have translations/{culture}.json: then they give it (the one they are
-    // written from) and these two lines can go. With neither, the host refuses to start.
-    app.UseI18N(i18n =>
-    {
-        i18n.DefaultCulture(CultureCode.EnglishUS);
-        i18n.Support(CultureCode.EnglishUS);
-    });
+    // The culture comes from the modules' translations/en.json; this puts their sentences into error
+    // responses beside the keys. A module with no translation file needs i18n.DefaultCulture(...) here,
+    // or the host refuses to start.
+    app.UseI18N(i18n => i18n.LocalizeProblemDetails());
     app.UsePragmaticMigrations();
 
     // Who is calling. In Development, the X-User-* headers; a real scheme (UseJwtAuthentication,
@@ -397,9 +443,13 @@ public sealed class HostModule;
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <!-- A plain reference: the Testing generator reads the endpoints from the referenced host. With
+         ReferenceOutputAssembly="false" it sees none and writes nothing, without a warning. -->
     <ProjectReference Include="..\..\src\{{App}}.Host\{{App}}.Host.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Pragmatic.Testing" />
+    <PackageReference Include="Pragmatic.Testing.SourceGenerator" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -420,11 +470,9 @@ namespace {{App}}.IntegrationTests;
 
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    // WithImage works on every 4.x. The shorter `new PostgreSqlBuilder("postgres:17-alpine")` needs a
-    // recent one (4.15.0 has it; 4.2.0 does not: CS1729).
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
-        .Build();
+    // The image in the constructor: 4.15.0, the version pinned above, marks the parameterless one
+    // obsolete (CS0618). A 4.x older than that has only the parameterless one (CS1729).
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     public string ConnectionString => _container.GetConnectionString();
     public Task InitializeAsync() => _container.StartAsync();
@@ -485,8 +533,90 @@ exception that caused it. The key can only switch the behaviour off; `"false"` (
 value it reads.
 
 A test then injects `PostgresFixture` (via `[Collection(IntegrationCollection.Name)]`), creates a
-`{{App}}WebFactory`, and exercises the HTTP endpoints with `factory.CreateClient()`. See the
-showcase pattern in `examples/showcase/tests/Showcase.IntegrationTests/` for richer scenarios.
+`{{App}}WebFactory`, and exercises the HTTP endpoints with `factory.CreateClient()`, through the typed
+client the Testing generator writes (`Api.{{Boundary}}.CreateXAsync(client, …)`, in
+`Pragmatic.Tests.Generated`): a renamed route breaks the build, not a test. `pragmatic-use-testing`
+has the assertions (`ShouldBeCreated()`, `ShouldBeUnprocessable()`, …).
+
+## Test project: ContractAppFixture.cs  (once the first endpoint exists)
+
+The Testing generator writes contract tests for every endpoint (a valid create is created, an empty
+one refused, a permission enforced); this fixture is all they need. Add it, and the file after it,
+once a module has its first endpoint: before that the generator writes nothing, and
+`Pragmatic.Tests.Generated` does not exist to be named.
+
+```csharp
+using Pragmatic.Testing;
+using Xunit;
+
+namespace {{App}}.IntegrationTests;
+
+public sealed class ContractAppFixture : IAsyncLifetime
+{
+    private readonly PostgresFixture _database = new();
+    private {{App}}WebFactory? _factory;
+
+    public async Task InitializeAsync()
+    {
+        await _database.InitializeAsync();
+        _factory = new {{App}}WebFactory(_database);
+
+        // Each generated test sets the caller on its own request (the development identity headers),
+        // so the client carries none.
+        PragmaticContractHost.Client = _factory.CreateClient();
+    }
+
+    public async Task DisposeAsync()
+    {
+        PragmaticContractHost.Reset();
+        _factory?.Dispose();
+        await _database.DisposeAsync();
+    }
+}
+
+[CollectionDefinition(PragmaticContractHost.Collection)]
+public sealed class ContractTestCollection : ICollectionFixture<ContractAppFixture>;
+```
+
+`PragmaticContractHost.Client` is any `HttpClient`: the client of the built host running as its own
+process works too (`../cookbook/restart-and-persistence-tests.md`). A create the generator cannot fill
+from its shape (a foreign key, a nested collection) gets its body from
+`PragmaticContractHost.BodyFor`; see `pragmatic-use-testing`.
+
+## Test project: TheContractTestsRanAtAll.cs
+
+A generated suite that writes nothing looks exactly like one that passes. This pins that it wrote
+something, and what it did not cover:
+
+```csharp
+using Pragmatic.Testing;
+using Pragmatic.Testing.Assertions;
+using Pragmatic.Tests.Generated;
+using Xunit;
+
+namespace {{App}}.IntegrationTests;
+
+public sealed class TheContractTestsRanAtAll
+{
+    [Fact]
+    public void TheGeneratorWroteContractTests()
+        => typeof(TheContractTestsRanAtAll).Assembly.GetTypes()
+            .Count(type => typeof(PragmaticContractTestBase).IsAssignableFrom(type))
+            .Should().BeGreaterThan(0);
+
+    /// <summary>The operations with no generated contract, so a lost one shows up as a change here.</summary>
+    [Fact]
+    public void WhatHasNoContractIsKnown()
+        => ContractCoverage.Uncovered.Select(o => $"{o.HttpMethod} {o.Route} {o.Operation}")
+            .Should().BeEquivalentTo(new[]
+            {
+                "GET /api/{{resources}}/{id} Get{{Resource}}Query",   // the list the first run prints
+            });
+}
+```
+
+The second test fails on its first run and prints what is uncovered: read the list, and paste it in.
+Reads have no generated contract, so they are the ones a hand-written test covers.
 
 `WebApplicationFactory` runs the host inside the test process, so it cannot prove that the data
 survives a restart: there is no process to kill. For that (the service killed and started again, the
