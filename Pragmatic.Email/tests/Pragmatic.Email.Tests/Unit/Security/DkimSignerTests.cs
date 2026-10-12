@@ -174,7 +174,7 @@ public sealed class DkimSignerTests
 
         var (headers, body) = DkimSigner.SplitHeadersAndBody(mime);
 
-        body.Should().Be("body");
+        body.ToString().Should().Be("body");
         headers.Should().HaveCount(2);
         headers[0].Value.Should().Be("first\r\n continued");
     }
