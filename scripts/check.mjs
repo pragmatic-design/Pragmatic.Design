@@ -1465,7 +1465,8 @@ function verifyPaths() {
     }
   }
   if (bad_ === 0) console.log(`  ${ok('ok')} every solution path referenced by CI exists`);
-  return bad_ === 0 && docsInSync() && skillExamplesInSync() && skillsArePortable() && everyModuleHasALicense();
+  return bad_ === 0 && docsInSync() && skillExamplesInSync() && skillsArePortable() && skillsNameOneVersion()
+    && everyModuleHasALicense();
 }
 
 /**
@@ -2096,6 +2097,32 @@ function skillsArePortable() {
 }
 
 /**
+ * The skills name one package version, and the plugin's version is the same in both manifests (#218).
+ *
+ * A release moves every version the skills name, by `node scripts/skills-version.mjs set <version>`; a file
+ * missed by hand would tell an agent to reference a version the other skills do not. The manifests move
+ * together or an installed copy does not update.
+ */
+function skillsNameOneVersion() {
+  const script = 'scripts/skills-version.mjs';
+  if (!existsSync(script)) return true;
+
+  process.stdout.write('  skills name one package version … ');
+  const r = spawnSync(process.execPath, [script, 'check'], { encoding: 'utf8' });
+
+  if (r.status === 0) {
+    console.log(`${ok('ok')} ${dim((r.stdout || '').trim().replace(/^skills name one package version /, ''))}`);
+    return true;
+  }
+
+  console.log(bad('MORE THAN ONE'));
+  for (const line of (r.stdout || r.stderr || '').split('\n'))
+    if (line.trim()) console.log(`  ${line.trimEnd()}`);
+  console.log(dim('    node scripts/skills-version.mjs set <released version> moves them all'));
+  return false;
+}
+
+/**
  * Every sample project, run from the assemblies the clean build just produced; each must exit 0.
  *
  * The build compiles the samples and nothing else runs them: without this, a sample broken by a change
@@ -2572,6 +2599,7 @@ if (tier === 'verify') {
     && siteLinksResolveFromTheirSource()
     && nodeTestCases('scripts/sync-skill-examples.test.mjs', 'the skill-examples sync refuses every drift')
     && nodeTestCases('scripts/skill-portability.test.mjs', 'the skill-portability check refuses what another agent misreads')
+    && nodeTestCases('scripts/skills-version.test.mjs', 'the skills-version check refuses two versions or two plugin numbers')
     && nodeTestCases('scripts/commit-message-check.test.mjs', 'the commit-message check refuses what the public history must not carry')
     && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
     && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
