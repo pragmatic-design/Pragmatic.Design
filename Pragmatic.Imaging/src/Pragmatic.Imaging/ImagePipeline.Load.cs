@@ -1,3 +1,4 @@
+using System.Buffers;
 using Pragmatic.Imaging.Native;
 
 namespace Pragmatic.Imaging;
@@ -41,12 +42,22 @@ public sealed partial class ImagePipeline
     public static ImagePipeline Load(byte[] data, ImagingOptions? options = null) => Load(data.AsSpan(), options);
 
     /// <summary>Load an image from a stream.</summary>
+    /// <remarks>
+    ///     The encoded bytes are read into a buffer rented from <see cref="ArrayPool{T}.Shared" /> and
+    ///     returned once decoded, sized from the stream's remaining length when it can seek.
+    /// </remarks>
     public static ImagePipeline Load(Stream stream, ImagingOptions? options = null)
     {
         options ??= ImagingOptions.Default;
-        using var ms = new MemoryStream();
-        CopyWithLimit(stream, ms, options.MaxInputBytes);
-        return Load(ms.GetBuffer().AsSpan(0, (int)ms.Length), options);
+        var buffer = RentedStreamReader.Read(stream, options.MaxInputBytes, overLimitThrows: true, out var length);
+        try
+        {
+            return Load(buffer.AsSpan(0, length), options);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     /// <summary>Load an image asynchronously from a ReadOnlyMemory.</summary>
@@ -54,42 +65,19 @@ public sealed partial class ImagePipeline
         => Task.Run(() => Load(data.Span, options), ct);
 
     /// <summary>Load an image asynchronously from a stream.</summary>
+    /// <remarks>Reads into a rented buffer, as <see cref="Load(Stream, ImagingOptions?)" /> does.</remarks>
     public static async Task<ImagePipeline> LoadAsync(Stream stream, CancellationToken ct = default, ImagingOptions? options = null)
     {
         options ??= ImagingOptions.Default;
-        using var ms = new MemoryStream();
-        await CopyWithLimitAsync(stream, ms, options.MaxInputBytes, ct).ConfigureAwait(false);
-        // Use GetBuffer()/Length to avoid a second allocation from ToArray().
-        var buf = ms.GetBuffer();
-        var len = (int)ms.Length;
-        return await Task.Run(() => Load(buf.AsSpan(0, len), options), ct).ConfigureAwait(false);
-    }
-
-    private static void CopyWithLimit(Stream source, MemoryStream target, long maxBytes)
-    {
-        var buffer = new byte[81920];
-        long total = 0;
-        int read;
-        while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+        var (buffer, length) = await RentedStreamReader.ReadAsync(stream, options.MaxInputBytes, overLimitThrows: true, ct)
+            .ConfigureAwait(false);
+        try
         {
-            total += read;
-            if (total > maxBytes)
-                throw new ImagingException($"Input stream exceeds size limit ({maxBytes} bytes).", ImagingError.InputTooLarge);
-            target.Write(buffer, 0, read);
+            return await Task.Run(() => Load(buffer.AsSpan(0, length), options), ct).ConfigureAwait(false);
         }
-    }
-
-    private static async Task CopyWithLimitAsync(Stream source, MemoryStream target, long maxBytes, CancellationToken ct)
-    {
-        var buffer = new byte[81920];
-        long total = 0;
-        int read;
-        while ((read = await source.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+        finally
         {
-            total += read;
-            if (total > maxBytes)
-                throw new ImagingException($"Input stream exceeds size limit ({maxBytes} bytes).", ImagingError.InputTooLarge);
-            target.Write(buffer, 0, read);
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }

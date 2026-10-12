@@ -16,6 +16,23 @@ public static class QrCode
     /// <returns>PNG-encoded QR code image.</returns>
     public static byte[] GeneratePng(string text, uint moduleSize = 10, uint margin = 2)
     {
+        using var buffer = GenerateNative(text, moduleSize, margin);
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Generate a QR code and write it to a stream.
+    /// </summary>
+    /// <remarks>Writes straight from the generator's native buffer, without a managed copy of the PNG.</remarks>
+    public static void GeneratePng(string text, Stream output, uint moduleSize = 10, uint margin = 2)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        using var buffer = GenerateNative(text, moduleSize, margin);
+        output.Write(buffer.AsSpan());
+    }
+
+    private static NativeBuffer GenerateNative(string text, uint moduleSize, uint margin)
+    {
         ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0)
             throw new ArgumentException("Text must not be empty.", nameof(text));
@@ -40,19 +57,8 @@ public static class QrCode
                 NativeError.CheckResult(rc, "qr_generate");
             }
 
-            using var buffer = new NativeBuffer(outPng, outLen);
-            return buffer.ToArray();
+            return new NativeBuffer(outPng, outLen);
         }
-    }
-
-    /// <summary>
-    /// Generate a QR code and write it to a stream.
-    /// </summary>
-    public static void GeneratePng(string text, Stream output, uint moduleSize = 10, uint margin = 2)
-    {
-        ArgumentNullException.ThrowIfNull(output);
-        var png = GeneratePng(text, moduleSize, margin);
-        output.Write(png, 0, png.Length);
     }
 
     /// <summary>
