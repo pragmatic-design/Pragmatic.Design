@@ -87,6 +87,10 @@ A change under `marketplace/` (the agent skills) also raises the plugin's versio
 `plugins/pragmatic-design/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` together:
 an installed copy of the skills updates only when that number moves.
 
+After a package release (`nuget-v<version>` tagged), `node scripts/skills-version.mjs set <version>` moves
+every package version the skills name and raises the plugin's version in both manifests. The gate fails
+when the skills name more than one version or the two manifests disagree.
+
 ## Conventions worth knowing before your first change
 
 - Attributes are generic: `[MapFrom<Order>]`, never `[MapFrom(typeof(Order))]`.
