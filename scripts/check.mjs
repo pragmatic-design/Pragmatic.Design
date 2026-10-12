@@ -482,11 +482,41 @@ function took(startedAt) {
   return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`;
 }
 
-function buildSolution({ clean }) {
+/**
+ * Builds the solution, or only `projects` and what they reference.
+ *
+ * A container shard runs a handful of suites, and building the whole solution for them cost a CI job
+ * 4m 51s of its ~13 (#197): one `dotnet build` per suite builds that suite's graph, and the second finds
+ * what the first already built. The gate's own clean build still compiles everything.
+ */
+function buildSolution({ clean, projects = null }) {
+  lastBuildStartedAt = Date.now();
+  if (projects) {
+    const label = `build --warnaserror (${projects.length} project${projects.length === 1 ? '' : 's'} and their references)`;
+    process.stdout.write(`  ${label} … `);
+    const startedAt = performance.now();
+    let warnings = 0;
+    for (const project of projects) {
+      const built = buildOne(project, { clean });
+      if (!built.ok) return false;
+      warnings += built.warnings;
+    }
+    console.log(`${ok('ok')} ${dim(`(${warnings} warnings, ${took(startedAt)})`)}`);
+    return true;
+  }
+
   const label = clean ? 'clean build --warnaserror' : 'build --warnaserror';
   process.stdout.write(`  ${label} … `);
+  const startedAt = performance.now();
+  const built = buildOne(SLN, { clean });
+  if (!built.ok) return false;
+  console.log(`${ok('ok')} ${dim(`(${built.warnings} warnings, ${took(startedAt)})`)}`);
+  return true;
+}
+
+function buildOne(target, { clean }) {
   const a = [
-    'build', SLN, '-warnaserror', '-v', 'q', '--nologo',
+    'build', target, '-warnaserror', '-v', 'q', '--nologo',
     // Pin the version so MinVer does not shell out to git once per project. Building the solution
     // fires it 150+ times in parallel, and one of those invocations sporadically fails with
     // "MINVER1007: git is not present in PATH" — which fails the whole build for a reason that has
@@ -497,18 +527,16 @@ function buildSolution({ clean }) {
     ...ARTIFACTS,
   ];
   if (clean) a.push('--no-incremental');
-  const startedAt = performance.now();
-  lastBuildStartedAt = Date.now();
   const { code, out, spawnError } = run('dotnet', a);
   if (spawnError) {
     console.log(bad(`COULD NOT RUN — ${spawnError}`));
-    return false;
+    return { ok: false };
   }
   const errors = [...out.matchAll(/error [A-Z]+\d+/g)].length;
   if (code !== 0 || errors > 0) {
-    console.log(bad(`FAIL (${errors} error markers, exit ${code})`));
+    console.log(bad(`FAIL (${errors} error markers, exit ${code}) building ${target}`));
     console.log(out.split('\n').filter((l) => /error /.test(l)).slice(0, 25).join('\n'));
-    return false;
+    return { ok: false };
   }
   // Read MSBuild's own total rather than counting "warning XXNNNN" markers: each one appears twice in
   // the log (once at the project, once in the summary), so counting them reported double — 3076 for a
@@ -517,9 +545,8 @@ function buildSolution({ clean }) {
   const warnings = summary
     ? Number(summary[1])
     : [...new Set(out.split('\n').filter((l) => /warning [A-Z]+\d+/.test(l)))].length;
-  console.log(`${ok('ok')} ${dim(`(${warnings} warnings, ${took(startedAt)})`)}`);
   lastBuildOutput = out;
-  return true;
+  return { ok: true, warnings };
 }
 
 /**
@@ -2592,7 +2619,9 @@ if (tier === 'verify') {
     console.log(bad('  Docker is not reachable — these suites cannot run. NOT a pass.'));
     good = false;
   } else {
-    good = buildSolution({ clean: false })
+    // A shard or --only runs some of the suites: build those and what they reference, not the solution.
+    const subset = docker.length < everyDocker.length ? docker : null;
+    good = buildSolution({ clean: false, projects: subset })
       && summarise(await runContainerSuites(docker));
   }
   console.log(dim(`  docker: ${took(dockerStartedAt)}`));
