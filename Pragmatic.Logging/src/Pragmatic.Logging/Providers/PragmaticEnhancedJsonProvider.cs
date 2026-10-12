@@ -1,8 +1,8 @@
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
 namespace Pragmatic.Logging.Providers;
@@ -25,9 +25,14 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
     private readonly bool _enableAsyncBuffering;
     private readonly bool _atomicWrites;
 
-    // Async buffering infrastructure
-    private readonly ConcurrentQueue<LogEntry> _logQueue = new();
-    private readonly Timer? _flushTimer;
+    // Async buffering: a channel bounded by Performance.MaxQueueSize, applying Performance.OverflowStrategy past
+    // it, read by one consumer that writes in batches (#144). It replaced an unbounded ConcurrentQueue drained by
+    // a Task.Run per call past a threshold, which under a burst grew without limit, and a dispose that wrote one
+    // batch of what it held.
+    private readonly Channel<LogEntry>? _logChannel;
+    private readonly Task? _consumer;
+    private readonly Pragmatic.Logging.Providers.QueueOverflowStrategy _overflow;
+    private long _droppedLogCount;
     private readonly SemaphoreSlim _flushSemaphore = new(1, 1);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
@@ -37,7 +42,6 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
     private readonly object _fileLock = new();
     private DateTime _currentFileDate = DateTime.MinValue;
     private long _currentFileSize;
-    private int _pendingLogCount;
 
     // Performance tracking
     private long _totalBytesWritten;
@@ -70,22 +74,11 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
 
         ValidateConfiguration();
 
+        _overflow = Configuration.Performance.OverflowStrategy;
         if (_enableAsyncBuffering)
         {
-            var flushInterval = TimeSpan.FromMilliseconds(
-                GetCustomProperty<int>("AsyncFlushIntervalMs", 2000));
-
-            // Use a synchronous TimerCallback that schedules the async work via Task.Run
-            // to avoid async void — an unhandled exception in async void crashes the process
-            _flushTimer = new Timer(
-                _ => { _ = Task.Run(async () =>
-                {
-                    try { await FlushBufferAsync().ConfigureAwait(false); }
-                    catch (Exception ex) { Console.Error.WriteLine($"[PragmaticEnhancedJsonProvider] Flush error: {ex}"); }
-                }); },
-                null,
-                flushInterval,
-                flushInterval);
+            _logChannel = CreateChannel(Configuration.Performance.MaxQueueSize, _overflow);
+            _consumer = Task.Run(ConsumeAsync);
         }
 
         // Initialize file if specified
@@ -100,18 +93,18 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
     {
         // The queue keeps the event past the call, and the synchronous path shares its serializer.
         var logEntry = logEvent.ToEntry();
-        if (_enableAsyncBuffering)
+        if (_logChannel is not null)
         {
-            // Queue for async processing
-            _logQueue.Enqueue(logEntry);
-            Interlocked.Increment(ref _pendingLogCount);
+            if (_logChannel.Writer.TryWrite(logEntry))
+                return;
 
-            // Trigger immediate flush if queue is getting full
-            var maxQueueSize = GetCustomProperty<int>("MaxAsyncQueueSize", 1000);
-            if (_pendingLogCount >= maxQueueSize)
-            {
-                _ = Task.Run(async () => await FlushBufferAsync());
-            }
+            // Full, in the Block strategy (the drop strategies always accept, dropping as they do): wait a
+            // bounded time for room, as PragmaticFileProvider does, and count the entry if none comes.
+            if (_overflow == Pragmatic.Logging.Providers.QueueOverflowStrategy.Block
+                && _logChannel.Writer.WriteAsync(logEntry, _cancellationTokenSource.Token).AsTask().Wait(1000))
+                return;
+
+            Interlocked.Increment(ref _droppedLogCount);
         }
         else
         {
@@ -123,18 +116,15 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
     /// <inheritdoc />
     protected override void DisposeCore()
     {
-        // Stop the periodic flush timer FIRST so no new flush is scheduled while we drain.
-        _flushTimer?.Dispose();
-
-        // Flush any remaining buffered logs synchronously, but off any captured
-        // SynchronizationContext to avoid a sync-over-async deadlock. Task.Run moves the
-        // continuation onto the thread pool, so blocking here cannot deadlock the caller.
-        // Drain happens before cancellation so the final flush is not aborted mid-write.
-        if (_enableAsyncBuffering)
+        // Complete the channel and wait for the consumer to write everything it holds: the consumer runs on the
+        // thread pool, so waiting on it cannot deadlock a caller's SynchronizationContext. Before cancellation,
+        // so the last batch is not aborted mid-write.
+        if (_logChannel is not null && _consumer is not null)
         {
+            _logChannel.Writer.TryComplete();
             try
             {
-                Task.Run(FlushBufferAsync).GetAwaiter().GetResult();
+                _consumer.GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -168,7 +158,7 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
                 }
 
                 // Check queue depth for async buffering
-                if (_enableAsyncBuffering && _pendingLogCount > GetCustomProperty<int>("HealthCheckQueueThreshold", 5000))
+                if (_enableAsyncBuffering && PendingLogCount > GetCustomProperty<int>("HealthCheckQueueThreshold", 5000))
                 {
                     return ProviderHealthStatus.Degraded;
                 }
@@ -191,7 +181,8 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
             ["Format"] = _isNdjsonFormat ? "NDJSON" : "JSON",
             ["AsyncBuffering"] = _enableAsyncBuffering,
             ["AtomicWrites"] = _atomicWrites,
-            ["PendingLogCount"] = _pendingLogCount,
+            ["PendingLogCount"] = PendingLogCount,
+            ["DroppedLogCount"] = Interlocked.Read(ref _droppedLogCount),
             ["CurrentFileSize"] = _currentFileSize,
             ["TotalBytesWritten"] = _totalBytesWritten,
             ["TotalLogsProcessed"] = _totalLogsProcessed,
@@ -201,41 +192,66 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
         };
     }
 
-    private async Task FlushBufferAsync()
+    private int PendingLogCount => _logChannel?.Reader.Count ?? 0;
+
+    /// <summary>
+    ///     The channel the async path queues into. <see cref="Pragmatic.Logging.Providers.QueueOverflowStrategy.Expand" />
+    ///     is the one unbounded choice, and only because it was asked for; every other strategy is bounded by
+    ///     <paramref name="capacity" />, and a dropped entry is counted.
+    /// </summary>
+    private Channel<LogEntry> CreateChannel(int capacity, Pragmatic.Logging.Providers.QueueOverflowStrategy overflow)
     {
-        if (!await _flushSemaphore.WaitAsync(100, _cancellationTokenSource.Token))
-            return;
+        if (overflow == Pragmatic.Logging.Providers.QueueOverflowStrategy.Expand)
+            return Channel.CreateUnbounded<LogEntry>(new UnboundedChannelOptions { SingleReader = true });
 
-        try
+        var options = new BoundedChannelOptions(Math.Max(1, capacity))
         {
-            var logsToProcess = new List<LogEntry>();
-            var maxBatchSize = GetCustomProperty<int>("MaxFlushBatchSize", 100);
-
-            // Dequeue logs for processing
-            for (int i = 0; i < maxBatchSize && _logQueue.TryDequeue(out var logEntry); i++)
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = overflow switch
             {
-                logsToProcess.Add(logEntry);
-                Interlocked.Decrement(ref _pendingLogCount);
-            }
+                Pragmatic.Logging.Providers.QueueOverflowStrategy.DropOldest => BoundedChannelFullMode.DropOldest,
+                // The newest message is the one arriving; the channel's DropNewest would drop the newest it holds.
+                Pragmatic.Logging.Providers.QueueOverflowStrategy.DropNewest => BoundedChannelFullMode.DropWrite,
+                _ => BoundedChannelFullMode.Wait,
+            },
+        };
+        return Channel.CreateBounded<LogEntry>(options, _ => Interlocked.Increment(ref _droppedLogCount));
+    }
 
-            if (logsToProcess.Count == 0)
-                return;
+    /// <summary>
+    ///     The one reader: writes what arrives in batches of <c>MaxFlushBatchSize</c>, until the channel is completed
+    ///     and empty. A failed batch is reported and the loop goes on, so one bad write does not stop logging.
+    /// </summary>
+    private async Task ConsumeAsync()
+    {
+        var reader = _logChannel!.Reader;
+        var maxBatchSize = Math.Max(1, GetCustomProperty<int>("MaxFlushBatchSize", 100));
+        var batch = new List<LogEntry>(maxBatchSize);
 
-            if (_filePath != null)
-            {
-                await WriteLogsToFileAsync(logsToProcess);
-            }
-            else
-            {
-                await WriteLogsToConsoleAsync(logsToProcess);
-            }
-
-            _lastFlushTime = DateTime.UtcNow;
-            Interlocked.Add(ref _totalLogsProcessed, logsToProcess.Count);
-        }
-        finally
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
-            _flushSemaphore.Release();
+            batch.Clear();
+            while (batch.Count < maxBatchSize && reader.TryRead(out var entry))
+                batch.Add(entry);
+
+            if (batch.Count == 0)
+                continue;
+
+            try
+            {
+                if (_filePath != null)
+                    await WriteLogsToFileAsync(batch).ConfigureAwait(false);
+                else
+                    await WriteLogsToConsoleAsync(batch).ConfigureAwait(false);
+
+                _lastFlushTime = DateTime.UtcNow;
+                Interlocked.Add(ref _totalLogsProcessed, batch.Count);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[PragmaticEnhancedJsonProvider] Flush error: {ex}");
+            }
         }
     }
 
