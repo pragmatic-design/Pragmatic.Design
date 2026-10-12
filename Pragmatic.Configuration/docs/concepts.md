@@ -207,14 +207,31 @@ public static class BookingOptionsConfigurationExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var section = configuration.GetSection("Booking");
         services.AddOptions<BookingOptions>()
-            .Bind(configuration.GetSection("Booking"))
+            .Configure(options => new BookingOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        // IOptionsMonitor<BookingOptions> rebuilds the options when the section reloads.
+        services.AddSingleton<IOptionsChangeTokenSource<BookingOptions>>(
+            new ConfigurationSectionChangeTokenSource<BookingOptions>(section));
+
+        services.TryAddSingleton<ITenantOptionsBinder<BookingOptions>, BookingOptionsTenantBinder>();
         return services;
     }
 }
 ```
+
+`BookingOptionsTenantBinder` is generated too: one typed assignment per property, converted as
+`ConfigurationBinder` would, with no reflection. It is emitted when every property is a scalar it can
+convert (string, bool, the numeric types, `Guid`, `TimeSpan`, `DateTime`, `DateTimeOffset`, enums, and their
+nullable forms). A class with a collection, a nested section, or a get-only, init-only or inherited property
+gets no binder, and its `Configure` calls `ConfigurationBinder.Bind(section, options)` instead.
+
+The registration does not call `OptionsBuilder.Bind`. That method binds by reflection, and it lives in
+`Microsoft.Extensions.Options.ConfigurationExtensions`, a package this module does not depend on, so the
+generated code compiles in a worker or console host as well as in an ASP.NET Core one.
 
 And a per-assembly aggregator that calls all individual methods:
 

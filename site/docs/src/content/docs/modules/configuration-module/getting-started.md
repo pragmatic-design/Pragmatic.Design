@@ -114,11 +114,18 @@ public class AppStartupStep : IStartupStep
 The generated code wires:
 
 ```csharp
+var section = configuration.GetSection("Booking");
 services.AddOptions<BookingOptions>()
-    .Bind(configuration.GetSection("Booking"))
+    .Configure(options => new BookingOptionsTenantBinder().Bind(options, key => section[key]))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+services.AddSingleton<IOptionsChangeTokenSource<BookingOptions>>(
+    new ConfigurationSectionChangeTokenSource<BookingOptions>(section));
 ```
+
+`BookingOptionsTenantBinder` is generated as well: it sets each property typed, without reflection. A class
+whose properties the binder cannot set (a collection, a nested section) is bound with
+`ConfigurationBinder.Bind` instead. See [concepts](/modules/configuration-module/concepts/#what-the-sg-generates).
 
 ## Step 5: Consume Options
 

@@ -16,9 +16,12 @@ public static partial class GlobalOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddGlobalOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                        global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Global");
         services.AddOptions<global::GlobalOptions>()
-            .Bind(configuration.GetSection("Global"))
+            .Configure(options => new global::GlobalOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateOnStart();
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::GlobalOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::GlobalOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::GlobalOptions>, global::GlobalOptionsTenantBinder>(services);
         

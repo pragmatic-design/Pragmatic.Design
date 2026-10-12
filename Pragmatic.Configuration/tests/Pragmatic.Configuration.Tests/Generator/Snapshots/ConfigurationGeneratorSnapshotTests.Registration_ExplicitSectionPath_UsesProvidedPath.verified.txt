@@ -17,9 +17,12 @@ public static partial class PaymentOptionsConfigurationExtensions
     public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddPaymentOptions(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, 
                                                                                                         global::Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
+        var section = configuration.GetSection("Services:Payment");
         services.AddOptions<global::MyApp.Config.PaymentOptions>()
-            .Bind(configuration.GetSection("Services:Payment"))
+            .Configure(options => new global::MyApp.Config.PaymentOptionsTenantBinder().Bind(options, key => section[key]))
             .ValidateOnStart();
+        
+        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Microsoft.Extensions.Options.IOptionsChangeTokenSource<global::MyApp.Config.PaymentOptions>>(services, new global::Pragmatic.Configuration.Resolution.ConfigurationSectionChangeTokenSource<global::MyApp.Config.PaymentOptions>(section));
         
         global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.PaymentOptions>, global::MyApp.Config.PaymentOptionsTenantBinder>(services);
         
