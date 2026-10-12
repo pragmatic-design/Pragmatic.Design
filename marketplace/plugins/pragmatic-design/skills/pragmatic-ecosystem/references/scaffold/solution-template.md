@@ -105,7 +105,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- One exact version for every Pragmatic package: an alpha can change its API, and a float would
          take the next one on the next restore. Upgrade by changing this line. -->
-    <PragmaticVersion>1.0.0-alpha.1</PragmaticVersion>
+    <PragmaticVersion>1.0.0-alpha.2</PragmaticVersion>
   </PropertyGroup>
 
   <ItemGroup><!-- Pragmatic.Design (1.0.0-alpha) -->
