@@ -54,9 +54,8 @@ public sealed class DkimSigner : IDisposable
     {
         var (headers, body) = SplitHeadersAndBody(mimeMessage);
 
-        // 1. Body hash over the canonicalized body only.
-        var canonBody = DkimCanonicalization.CanonicalizeBodyRelaxed(body);
-        var bh = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(canonBody)));
+        // 1. Body hash over the canonicalized body only, hashed as it is canonicalized.
+        var bh = Convert.ToBase64String(DkimCanonicalization.HashBodyRelaxed(body.Span));
 
         // 2. Only sign headers that are actually present: h= must not name an absent header.
         var signedHeaders = new List<KeyValuePair<string, string>>();
@@ -95,14 +94,15 @@ public sealed class DkimSigner : IDisposable
 
     /// <summary>
     ///     Splits a rendered message at the first empty line into its header fields and its body,
-    ///     unfolding header continuation lines (RFC 5322 §2.2.3) as it goes.
+    ///     unfolding header continuation lines (RFC 5322 §2.2.3) as it goes. The body is a view over
+    ///     <paramref name="mimeMessage" />, not a copy: it can be most of the message.
     /// </summary>
-    internal static (IReadOnlyList<KeyValuePair<string, string>> Headers, string Body) SplitHeadersAndBody(
+    internal static (IReadOnlyList<KeyValuePair<string, string>> Headers, ReadOnlyMemory<char> Body) SplitHeadersAndBody(
         string mimeMessage)
     {
         var separator = mimeMessage.IndexOf("\r\n\r\n", StringComparison.Ordinal);
         var headerBlock = separator < 0 ? mimeMessage : mimeMessage[..separator];
-        var body = separator < 0 ? string.Empty : mimeMessage[(separator + 4)..];
+        var body = separator < 0 ? ReadOnlyMemory<char>.Empty : mimeMessage.AsMemory(separator + 4);
 
         var headers = new List<KeyValuePair<string, string>>();
         string? name = null;
