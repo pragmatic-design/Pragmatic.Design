@@ -45,6 +45,13 @@ public sealed class LogContext : IMutableLogContext, IDisposable
         _parent = parent;
     }
 
+    // Starts with properties already built (LogContextProperties.From), so pushing several costs one array.
+    internal LogContext(LogContext? parent, KeyValuePair<string, object?>[] items)
+    {
+        _parent = parent;
+        _items = items;
+    }
+
     /// <inheritdoc />
     public IReadOnlyDictionary<string, object?> Properties
     {
@@ -169,6 +176,13 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     {
         ThrowIfDisposed();
         return new LogContext(this);
+    }
+
+    /// <summary>A child context that starts with <paramref name="items" />.</summary>
+    internal LogContext CreateChild(KeyValuePair<string, object?>[] items)
+    {
+        ThrowIfDisposed();
+        return new LogContext(this, items);
     }
 
     /// <summary>
