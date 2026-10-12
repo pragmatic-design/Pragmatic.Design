@@ -51,6 +51,46 @@ internal sealed class LogContextProperties(KeyValuePair<string, object?>[] items
         return next;
     }
 
+    /// <summary>
+    ///     The pairs as one array, a repeated key keeping its first place and its last value, as setting them one by
+    ///     one with <see cref="With" /> would.
+    /// </summary>
+    /// <remarks>
+    ///     One array when the count is known, which it is for the list the request middleware passes; setting them
+    ///     one by one copied into a new array per pair.
+    /// </remarks>
+    public static KeyValuePair<string, object?>[] From(IEnumerable<KeyValuePair<string, object?>> pairs)
+    {
+        if (pairs is not ICollection<KeyValuePair<string, object?>> collection)
+        {
+            KeyValuePair<string, object?>[] items = [];
+            foreach (var pair in pairs)
+                items = With(items, pair.Key, pair.Value);
+            return items;
+        }
+
+        if (collection.Count == 0)
+            return [];
+
+        var buffer = new KeyValuePair<string, object?>[collection.Count];
+        collection.CopyTo(buffer, 0);
+
+        var length = 0;
+        for (var i = 0; i < buffer.Length; i++)
+        {
+            var pair = buffer[i];
+            var index = IndexOf(buffer, length, pair.Key);
+            if (index >= 0)
+                buffer[index] = new KeyValuePair<string, object?>(buffer[index].Key, pair.Value);
+            else
+                buffer[length++] = pair;
+        }
+
+        if (length < buffer.Length)
+            Array.Resize(ref buffer, length);
+        return buffer;
+    }
+
     /// <summary>A copy of <paramref name="items" /> without <paramref name="key" />, or the same array when it is not there.</summary>
     public static KeyValuePair<string, object?>[] Without(KeyValuePair<string, object?>[] items, string key)
     {
@@ -65,9 +105,11 @@ internal sealed class LogContextProperties(KeyValuePair<string, object?>[] items
     }
 
     /// <summary>Where <paramref name="key" /> stands in <paramref name="items" />, or -1.</summary>
-    public static int IndexOf(KeyValuePair<string, object?>[] items, string key)
+    public static int IndexOf(KeyValuePair<string, object?>[] items, string key) => IndexOf(items, items.Length, key);
+
+    private static int IndexOf(KeyValuePair<string, object?>[] items, int length, string key)
     {
-        for (var i = 0; i < items.Length; i++)
+        for (var i = 0; i < length; i++)
         {
             if (string.Equals(items[i].Key, key, StringComparison.Ordinal))
                 return i;

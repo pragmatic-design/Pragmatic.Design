@@ -42,13 +42,11 @@ public static class LogContextScope
     /// <returns>A disposable scope that restores the previous context when disposed</returns>
     public static IDisposable PushContext(IEnumerable<KeyValuePair<string, object?>> properties)
     {
-        var newContext = _current.Value?.CreateChild() ?? new LogContext();
+        ArgumentNullException.ThrowIfNull(properties);
 
-        foreach (var kvp in properties)
-        {
-            newContext.SetProperty(kvp.Key, kvp.Value);
-        }
-
+        // Built at once: setting them one by one copied the properties into a new array per pair.
+        var items = LogContextProperties.From(properties);
+        var newContext = _current.Value?.CreateChild(items) ?? new LogContext(null, items);
         return new Scope(newContext);
     }
 

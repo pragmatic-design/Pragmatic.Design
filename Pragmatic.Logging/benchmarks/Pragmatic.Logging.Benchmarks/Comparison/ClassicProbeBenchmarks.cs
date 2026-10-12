@@ -48,6 +48,7 @@ public class ClassicProbeBenchmarks
 
     private readonly string _correlationId = "corr-7f3a";
     private readonly string _requestId = "req-0042";
+    private KeyValuePair<string, object?>[] _contextProperties = null!;
 
     private ILogger _classic = null!;
     private ILogger _deferred = null!;
@@ -61,6 +62,7 @@ public class ClassicProbeBenchmarks
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        _contextProperties = [new("CorrelationId", _correlationId), new("RequestId", _requestId)];
 
         _classic = Pragmatic(c => new PragmaticConsumingProvider("Classic", c, _classicSink));
         _deferred = Pragmatic(c => new PragmaticDeferredConsumingProvider("Deferred", c, _deferredSink));
@@ -143,6 +145,14 @@ public class ClassicProbeBenchmarks
     public void Classic_Production_ContextOnly()
     {
         using var context = PragmaticContext();
+    }
+
+    // The same two properties handed over together, as the request middleware does: against ContextOnly, what
+    // building them in one array saves (#134).
+    [Benchmark, BenchmarkCategory("Production")]
+    public void Classic_Production_ContextFromProperties()
+    {
+        using var context = LogContextScope.PushContext(_contextProperties);
     }
 
     [Benchmark, BenchmarkCategory("Production")]
