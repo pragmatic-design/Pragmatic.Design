@@ -37,6 +37,14 @@ In a session, `/plugin` shows the plugin, and a skill can be called by name, for
 `claude plugin update pragmatic-design@pragmatic-design`, or turn on auto-update for the marketplace in
 `/plugin`.
 
+**With many plugins installed.** Claude Code lists every skill to the model with its description,
+within a budget of 1% of the context window. Over budget, it drops descriptions, starting with the
+skills used least. A fresh install loses them first, and the agent can then match those skills by name
+only. `/doctor` estimates what the listing costs; to raise the budget, set
+`"skillListingBudgetFraction": 0.02` in your Claude Code settings
+([skills documentation](https://code.claude.com/docs/en/skills#skill-descriptions-are-cut-short)).
+Calling a skill by name works either way.
+
 ### Codex
 
 ```bash
