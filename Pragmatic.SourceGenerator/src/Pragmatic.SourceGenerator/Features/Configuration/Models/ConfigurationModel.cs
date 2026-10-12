@@ -37,6 +37,15 @@ internal sealed record ConfigurationModel : GeneratorModel
 
     /// <summary><c>[ConfigInvariant]</c> methods the validator cannot call — reported as PRAG2002.</summary>
     public EquatableArray<MisshapenInvariantModel> MisshapenInvariants { get; init; } = EquatableArray<MisshapenInvariantModel>.Empty;
+
+    /// <summary>
+    ///     Whether every property <c>ConfigurationBinder</c> would bind is one the generated
+    ///     <c>ITenantOptionsBinder&lt;T&gt;</c> can set: then it is emitted, with <see cref="TypedBindings" />.
+    /// </summary>
+    public bool HasTypedBinder { get; init; }
+
+    /// <summary>The properties the generated binder sets, when <see cref="HasTypedBinder" />.</summary>
+    public EquatableArray<TypedBindingModel> TypedBindings { get; init; } = EquatableArray<TypedBindingModel>.Empty;
 }
 
 /// <summary>A <c>[ConfigInvariant]</c> validation method on a <c>[Configuration]</c> options class.</summary>

@@ -11,11 +11,13 @@ internal sealed class RegistrationTemplate : CSharpTemplate
 {
     private readonly ConfigurationModel _model;
     private readonly string? _validatorType;
+    private readonly string? _binderType;
 
-    public RegistrationTemplate(ConfigurationModel model, string? validatorType = null)
+    public RegistrationTemplate(ConfigurationModel model, string? validatorType = null, string? binderType = null)
     {
         _model = model;
         _validatorType = validatorType;
+        _binderType = binderType;
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Configuration";
@@ -84,6 +86,15 @@ internal sealed class RegistrationTemplate : CSharpTemplate
             AppendLine(
                 "global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton" +
                 $"<global::Microsoft.Extensions.Options.IValidateOptions<global::{_model.FullTypeName}>, {validator}>(services);");
+        }
+
+        if (_binderType is { Length: > 0 } binder)
+        {
+            AppendLine();
+            // TenantOptions<T> binds through it instead of the reflective ConfigurationBinder.
+            AppendLine(
+                "global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton" +
+                $"<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::{_model.FullTypeName}>, {binder}>(services);");
         }
 
         AppendLine();

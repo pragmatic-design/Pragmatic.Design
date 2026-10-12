@@ -22,6 +22,8 @@ public static partial class LazyOptionsConfigurationExtensions
             .ValidateDataAnnotations()
             ;
         
+        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddSingleton<global::Pragmatic.Configuration.Resolution.ITenantOptionsBinder<global::MyApp.Config.LazyOptions>, global::MyApp.Config.LazyOptionsTenantBinder>(services);
+        
         return services;
     }
     

@@ -65,6 +65,8 @@ internal static class ConfigurationTransform
             })
             .ToImmutableArray();
 
+        var typedBindings = TypedBindingTransform.Bindings(symbol);
+
         return new ConfigurationModel
         {
             Namespace = symbol.GetNamespaceOrEmpty(),
@@ -77,7 +79,9 @@ internal static class ConfigurationTransform
             IsStaticOrAbstract = symbol.IsStatic || symbol.IsAbstract,
             Properties = properties,
             Invariants = invariants,
-            MisshapenInvariants = misshapen
+            MisshapenInvariants = misshapen,
+            HasTypedBinder = !typedBindings.IsDefault,
+            TypedBindings = typedBindings.IsDefault ? EquatableArray<TypedBindingModel>.Empty : typedBindings
         };
     }
 

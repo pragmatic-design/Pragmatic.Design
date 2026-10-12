@@ -111,7 +111,17 @@ internal static class ConfigurationFeature
             validatorType = validatorTemplate.FullyQualifiedName;
         }
 
-        var artifact = new RegistrationTemplate(model, validatorType).RenderOutput();
+        // A class whose properties are all typed scalars → an ITenantOptionsBinder<T>, so TenantOptions<T> binds
+        // it without the reflective ConfigurationBinder (#139). Any other class keeps that path.
+        string? binderType = null;
+        if (model.HasTypedBinder)
+        {
+            var binderTemplate = new TenantOptionsBinderTemplate(model);
+            ctx.AddSource(binderTemplate.RenderOutput());
+            binderType = binderTemplate.FullyQualifiedName;
+        }
+
+        var artifact = new RegistrationTemplate(model, validatorType, binderType).RenderOutput();
         ctx.AddSource(artifact);
     }
 

@@ -24,6 +24,25 @@ public abstract class ConfigurationGeneratorTestBase
         return GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(source, references);
     }
 
+    /// <summary>
+    ///     With the assemblies the generated registration calls into, so the output compiles: what
+    ///     <see cref="RunGenerator" /> leaves out, because most tests read the generated text and never compile it.
+    /// </summary>
+    protected static SourceGenRunResult RunGeneratorToCompile(string source)
+    {
+        MetadataReference[] runtime =
+        [
+            GeneratorTestHelper.FromType<Pragmatic.Configuration.ISensitiveKeyClassifier>(),
+            GeneratorTestHelper.FromType<Microsoft.Extensions.Configuration.IConfiguration>(),
+            GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Configuration.ConfigurationBinder)),
+            GeneratorTestHelper.FromType<Microsoft.Extensions.DependencyInjection.IServiceCollection>(),
+            GeneratorTestHelper.FromType<Microsoft.Extensions.Options.OptionsBuilder<object>>(),
+            GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Options.ConfigurationChangeTokenSource<>)),
+            GeneratorTestHelper.FromTypeAssembly(typeof(Microsoft.Extensions.Options.DataAnnotationValidateOptions<>)),
+        ];
+        return GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(source, [.. GetConfigurationReferences(), .. runtime]);
+    }
+
     protected static string? GetGeneratedSource(SourceGenRunResult result, string hintNameContains)
         => GeneratorTestHelper.GetGeneratedSource(result, hintNameContains);
 
