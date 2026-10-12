@@ -119,25 +119,25 @@ public static class PrimeNGAdapter
 
             // Convert value to property type
             var convertedValue = ConvertValue(value, property.Type);
-            var constant = Expression.Constant(convertedValue, property.Type);
+            var operand = QueryParameter.Of(convertedValue, property.Type);
 
             var matchMode = filterMeta.MatchMode?.ToLowerInvariant() ?? "contains";
 
             Expression body = matchMode switch
             {
-                "equals" => Expression.Equal(property, constant),
-                "notequals" => Expression.NotEqual(property, constant),
-                "lt" => Expression.LessThan(property, constant),
-                "lte" => Expression.LessThanOrEqual(property, constant),
-                "gt" => Expression.GreaterThan(property, constant),
-                "gte" => Expression.GreaterThanOrEqual(property, constant),
-                "contains" => CreateStringContains(property, constant),
-                "startswith" => CreateStringStartsWith(property, constant),
-                "endswith" => CreateStringEndsWith(property, constant),
-                "notcontains" => Expression.Not(CreateStringContains(property, constant)),
+                "equals" => Expression.Equal(property, operand),
+                "notequals" => Expression.NotEqual(property, operand),
+                "lt" => Expression.LessThan(property, operand),
+                "lte" => Expression.LessThanOrEqual(property, operand),
+                "gt" => Expression.GreaterThan(property, operand),
+                "gte" => Expression.GreaterThanOrEqual(property, operand),
+                "contains" => CreateStringContains(property, operand),
+                "startswith" => CreateStringStartsWith(property, operand),
+                "endswith" => CreateStringEndsWith(property, operand),
+                "notcontains" => Expression.Not(CreateStringContains(property, operand)),
                 "in" => CreateInExpression(property, value),
                 "between" => CreateBetweenExpression(property, value),
-                _ => Expression.Equal(property, constant)
+                _ => Expression.Equal(property, operand)
             };
 
             return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
@@ -173,8 +173,8 @@ public static class PrimeNGAdapter
                 if (property.Type != typeof(string))
                     continue;
 
-                var constant = Expression.Constant(searchValue, typeof(string));
-                var body = CreateStringContains(property, constant);
+                var operand = QueryParameter.Of(searchValue);
+                var body = CreateStringContains(property, operand);
 
                 combinedBody = combinedBody == null
                     ? body
@@ -191,13 +191,13 @@ public static class PrimeNGAdapter
             : Expression.Lambda<Func<TEntity, bool>>(combinedBody, parameter);
     }
 
-    private static Expression CreateStringContains(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringContains(MemberExpression property, Expression value)
         => Expression.Call(property, StringContainsMethod, value);
 
-    private static Expression CreateStringStartsWith(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringStartsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringStartsWithMethod, value);
 
-    private static Expression CreateStringEndsWith(MemberExpression property, ConstantExpression value)
+    private static Expression CreateStringEndsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringEndsWithMethod, value);
 
     private static Expression CreateInExpression(MemberExpression property, object? value)
@@ -213,8 +213,8 @@ public static class PrimeNGAdapter
         Expression? combined = null;
         foreach (var item in values)
         {
-            var constant = Expression.Constant(ConvertValue(item, property.Type), property.Type);
-            var eq = Expression.Equal(property, constant);
+            var operand = QueryParameter.Of(ConvertValue(item, property.Type), property.Type);
+            var eq = Expression.Equal(property, operand);
             combined = combined == null ? eq : Expression.OrElse(combined, eq);
         }
 
@@ -231,11 +231,11 @@ public static class PrimeNGAdapter
         if (values.Count != 2)
             return Expression.Constant(true);
 
-        var minConstant = Expression.Constant(ConvertValue(values[0], property.Type), property.Type);
-        var maxConstant = Expression.Constant(ConvertValue(values[1], property.Type), property.Type);
+        var minValue = QueryParameter.Of(ConvertValue(values[0], property.Type), property.Type);
+        var maxValue = QueryParameter.Of(ConvertValue(values[1], property.Type), property.Type);
 
-        var gte = Expression.GreaterThanOrEqual(property, minConstant);
-        var lte = Expression.LessThanOrEqual(property, maxConstant);
+        var gte = Expression.GreaterThanOrEqual(property, minValue);
+        var lte = Expression.LessThanOrEqual(property, maxValue);
 
         return Expression.AndAlso(gte, lte);
     }
