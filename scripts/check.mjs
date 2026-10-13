@@ -45,6 +45,7 @@
  *   node scripts/check.mjs --tier aot      # publish the AOT smokes and run them
  *   node scripts/check.mjs --tier docker   # the container suites, sequentially
  *   node scripts/check.mjs --tier docker --shard 2/3   # one CI job's part of them (docker-shards.mjs)
+ *   node scripts/check.mjs --tier docs     # the full tier's source-only checks: CI's tier for a Markdown-only change
  *   node scripts/check.mjs --tier all      # full, then aot, then docker  ← the real gate
  *   node scripts/check.mjs --tier verify   # only check that CI-referenced paths exist
  *
@@ -167,7 +168,7 @@ for (let i = 0; i < args.length; i++) {
     continue;
   }
   console.error(`unknown option '${arg}'\n`);
-  console.error('usage: node scripts/check.mjs [--tier fast|full|aot|docker|all|verify] [--jobs N] [--keep-going] [--only <substring>] [--shard k/n]');
+  console.error('usage: node scripts/check.mjs [--tier fast|full|aot|docker|docs|all|verify] [--jobs N] [--keep-going] [--only <substring>] [--shard k/n]');
   process.exit(2);
 }
 
@@ -2576,50 +2577,20 @@ if (tier === 'verify') {
     if (!subset.length) console.log(dim('  no changed module with hermetic tests — nothing to run'));
     else good = summarise(await runSuites(subset, { parallel: true }));
   }
+} else if (tier === 'docs') {
+  const docsStartedAt = performance.now();
+  console.log('docs — the checks that read sources only: no build, no suites');
+  console.log(dim('  For a change that touches only Markdown nothing builds (scripts/ci-paths.mjs). NOT the gate for code.\n'));
+  good = sourceChecks();
+  console.log(dim(`  docs: ${took(docsStartedAt)}`));
 } else if (tier === 'full' || tier === 'all') {
   const fullStartedAt = performance.now();
   console.log('full — clean build --warnaserror + every hermetic suite');
-  good = verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject()
-    && dockerShardsAreWhole()
-    && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
-    && everyRestoreIsLocked()
-    && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
-    && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet() && buildSolution({ clean: true })
+  // The source checks first: they need no build, and a red one is known before the build's minutes.
+  good = sourceChecks()
+    && buildSolution({ clean: true })
     && onlyPragmaticPackagesArePacked()
-    && noReflectionJsonInGeneratedCode() && trimWarningRatchet() && undeclaredReflectionRatchet()
-    && reflectionSourceRatchet()
-    && exampleCoverageRatchet()
-    && recordedReasonsNameRealProofs()
-    && theCoverageMeasureHolds()
-    && attributeReaderRatchet()
-    && theReaderMeasureHolds()
-    && emittedReflectionRatchet()
-    && aotSuppressionRatchet()
-    && siteDiagnosticsCheckCountsRows()
-    && siteLinksResolveFromTheirSource()
-    && nodeTestCases('scripts/sync-skill-examples.test.mjs', 'the skill-examples sync refuses every drift')
-    && nodeTestCases('scripts/skill-portability.test.mjs', 'the skill-portability check refuses what another agent misreads')
-    && nodeTestCases('scripts/skills-version.test.mjs', 'the skills-version check refuses two versions or two plugin numbers')
-    && nodeTestCases('scripts/commit-message-check.test.mjs', 'the commit-message check refuses what the public history must not carry')
-    && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
-    && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
-    && nodeTestCases('scripts/benchmarks.test.mjs', 'the allocation ratchet refuses one allocation more')
-    && nodeTestCases('scripts/benchmark-selection.test.mjs', 'a pull request runs every benchmark its change reaches')
-    && contractsRatchetReadsWhatItClaims()
-    && suiteRunnerOverlaps()
-    && silentDropRuleHolds()
-    && gateLeavesNoProcesses()
-    && gateCleansOnlyItsOwn()
-    && theFirstRunHolds()
-    && generatedCodeNamesNoWallClock()
-    && docsNameNoGenericEntity()
-    && packageLinksAreChecked()
-    && nativeBinariesAreCurrent()
-    && failureRecordWorks()
-    && vulnerabilityVerdictExpires()
-    && oneRunAtATime()
-    && diagnosticsInSync()
-    && siteListsEveryDiagnostic();
+    && noReflectionJsonInGeneratedCode() && trimWarningRatchet() && undeclaredReflectionRatchet();
   if (good) {
     // After the build, so the restore the scan needs has already happened. Its result is ANDed rather
     // than short-circuited: a known CVE and a failing test are independent signals, and letting the
@@ -2681,11 +2652,60 @@ if (tier === 'verify') {
   }
   console.log(dim(`  docker: ${took(dockerStartedAt)}`));
 } else {
-  console.error(`unknown --tier '${tier}' (fast | full | aot | docker | all | verify)`);
+  console.error(`unknown --tier '${tier}' (fast | full | aot | docker | docs | all | verify)`);
   process.exit(2);
 }
 
 runLock?.release();
+
+/**
+ * Every check of the full tier that reads sources only: the whole tier but the build and what reads its
+ * output (packed packages, the build's trim and reflection warnings, the generated code under
+ * artifacts/build, the supply-chain scan, the suites, the samples). The docs tier is this and nothing
+ * else (#199), so a Markdown change that breaks one of these is red without a build.
+ */
+function sourceChecks() {
+  return verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject()
+    && dockerShardsAreWhole()
+    && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
+    && everyRestoreIsLocked()
+    && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
+    && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet()
+    && reflectionSourceRatchet()
+    && exampleCoverageRatchet()
+    && recordedReasonsNameRealProofs()
+    && theCoverageMeasureHolds()
+    && attributeReaderRatchet()
+    && theReaderMeasureHolds()
+    && emittedReflectionRatchet()
+    && aotSuppressionRatchet()
+    && siteDiagnosticsCheckCountsRows()
+    && siteLinksResolveFromTheirSource()
+    && nodeTestCases('scripts/sync-skill-examples.test.mjs', 'the skill-examples sync refuses every drift')
+    && nodeTestCases('scripts/skill-portability.test.mjs', 'the skill-portability check refuses what another agent misreads')
+    && nodeTestCases('scripts/skills-version.test.mjs', 'the skills-version check refuses two versions or two plugin numbers')
+    && nodeTestCases('scripts/commit-message-check.test.mjs', 'the commit-message check refuses what the public history must not carry')
+    && nodeTestCases('scripts/run-samples.test.mjs', 'the sample runner fails a sample that does not exit 0')
+    && nodeTestCases('scripts/attest-published.test.mjs', 'a package attested as served is the build plus its signature')
+    && nodeTestCases('scripts/benchmarks.test.mjs', 'the allocation ratchet refuses one allocation more')
+    && nodeTestCases('scripts/benchmark-selection.test.mjs', 'a pull request runs every benchmark its change reaches')
+    && nodeTestCases('scripts/ci-paths.test.mjs', 'only Markdown that nothing builds skips the build in CI')
+    && contractsRatchetReadsWhatItClaims()
+    && suiteRunnerOverlaps()
+    && silentDropRuleHolds()
+    && gateLeavesNoProcesses()
+    && gateCleansOnlyItsOwn()
+    && theFirstRunHolds()
+    && generatedCodeNamesNoWallClock()
+    && docsNameNoGenericEntity()
+    && packageLinksAreChecked()
+    && nativeBinariesAreCurrent()
+    && failureRecordWorks()
+    && vulnerabilityVerdictExpires()
+    && oneRunAtATime()
+    && diagnosticsInSync()
+    && siteListsEveryDiagnostic();
+}
 
 console.log(good ? `\n${ok('GREEN')}\n` : `\n${bad('NOT GREEN')}\n`);
 process.exit(good ? 0 : 1);

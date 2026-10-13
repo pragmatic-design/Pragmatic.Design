@@ -41,17 +41,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
 
+      # A pull request or merge group that changes only Markdown nothing builds runs the gate's
+      # source-only checks (`--tier docs`) and nothing that compiles (#199, scripts/ci-paths.mjs). Any
+      # other event, and any doubt, is `full`. Decided in each job rather than by skipping jobs: a job
+      # skipped whole reports a check of its own name, and for the container shards' matrix that is not
+      # the three checks the branch rules wait for.
+      - name: Classify the change
+        id: change
+        run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
+
+      - name: Setup .NET
+        if: steps.change.outputs.scope != 'docs'
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
       - name: Restore
+        if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       # The SBOM and the clean vulnerability verdict of the newest green run. supply-chain.mjs decides
@@ -60,6 +71,7 @@ jobs:
       # three minutes of the gate (#197). Saved under this run's id, so a newer verdict is never kept
       # out by an older key, and restored by prefix, so the newest one is what the next run sees.
       - name: Restore the supply-chain verdict
+        if: steps.change.outputs.scope != 'docs'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -69,7 +81,7 @@ jobs:
           restore-keys: supply-chain-
 
       - name: Gate
-        run: node scripts/check.mjs --tier full --keep-going
+        run: node scripts/check.mjs --tier ${{ steps.change.outputs.scope == 'docs' && 'docs' || 'full' }} --keep-going
 
       # The log prints one capped line per failed test; the record beside it holds the message and the
       # stack. A failure that does not reproduce on a re-run is only diagnosable from that record.
@@ -85,6 +97,7 @@ jobs:
       # The CycloneDX SBOMs the gate just wrote, kept for release.yml to attach to the GitHub Release: it
       # calls this workflow, so the artifact is in its own run. Small, and kept a week.
       - name: Keep the SBOM
+        if: steps.change.outputs.scope != 'docs'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sbom
@@ -120,30 +133,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      # As in the gate job: a Markdown-only change runs no container suite, and the shard reports green
+      # under its own name having done nothing else.
+      - name: Classify the change
+        id: change
+        run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
+
       # This job holds the whole build (about 6 GB locally) and the images of fourteen suites at once,
       # SQL Server's the largest. On 2026-09-12 every SQL Server pull came back "No such image" and a
       # Postgres container could not write its init file, in the same run: the shape of a full disk,
       # though nothing in that log measured it. The df lines here and after the suites do.
       - name: Free disk space
+        if: steps.change.outputs.scope != 'docs'
         run: |
           df -h /
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
           df -h /
 
       - name: Setup .NET
+        if: steps.change.outputs.scope != 'docs'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-
       - name: Restore
+        if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       - name: Container suites
+        if: steps.change.outputs.scope != 'docs'
         run: node scripts/check.mjs --tier docker --shard ${{ matrix.shard }}/3 --keep-going
 
       - name: Keep the failure record
@@ -156,7 +179,7 @@ jobs:
           retention-days: 30
 
       - name: Disk after the suites
-        if: always()
+        if: always() && steps.change.outputs.scope != 'docs'
         run: |
           df -h /
           docker system df
