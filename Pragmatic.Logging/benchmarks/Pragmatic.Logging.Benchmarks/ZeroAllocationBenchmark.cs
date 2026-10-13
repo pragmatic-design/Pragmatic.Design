@@ -7,7 +7,6 @@ namespace Pragmatic.Logging.Benchmarks;
 
 [Config(typeof(DefaultExportConfig))]
 [MemoryDiagnoser]
-[DisassemblyDiagnoser]
 public class ZeroAllocationBenchmark
 {
     private const string Template = "User {UserId} logged in from {Location} at {Timestamp} with session {SessionId}";
