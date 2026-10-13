@@ -72,9 +72,25 @@ export const TOLERANCE_BYTES = 16;
  */
 export const TOLERANCE_SHARE = 0.0025;
 
+/**
+ * The benchmarks whose allocations depend on how the thread pool schedules them, each with the share of
+ * its baseline it may move. Every entry states the spread measured on the runner; the share covers that
+ * and nothing more.
+ *
+ * `Scopes_Blocking_ConcurrentRequests` reproduces sync-over-async under load: each query blocks on a
+ * `Task.Run`, and a wait that outlasts its spin allocates a wait handle, so the bytes follow how many
+ * waits the pool left unfinished. Eight runs on the runner gave 134,841 to 145,159 B per operation on a
+ * baseline of 134,859, a spread of 7.65% (#227); 8% is 10,789 B. The Pragmatic code it runs is
+ * `DefaultUserScopeResolver`, which its direct twin also runs, at 27,832 B in all eight runs and under
+ * the ordinary tolerance.
+ */
+export const SCHEDULER_TOLERANCES = {
+  'Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_ConcurrentRequests': 0.08,
+};
+
 /** The bytes a benchmark with this baseline may move without failing. */
-export function toleranceFor(base) {
-  return Math.max(TOLERANCE_BYTES, base * TOLERANCE_SHARE);
+export function toleranceFor(base, name = '') {
+  return Math.max(TOLERANCE_BYTES, base * (SCHEDULER_TOLERANCES[name] ?? TOLERANCE_SHARE));
 }
 
 // ── Reading BenchmarkDotNet's output ────────────────────────────────────────────────────────────
@@ -233,8 +249,8 @@ export function compareAllocations(measured, baseline, classes = null) {
   for (const [name, bytes] of Object.entries(measured).sort()) {
     const base = judged[name];
     if (base === undefined) result.unbaselined.push({ name, bytes });
-    else if (bytes > base + toleranceFor(base)) result.regressions.push({ name, bytes, base });
-    else if (bytes < base - toleranceFor(base)) result.improvements.push({ name, bytes, base });
+    else if (bytes > base + toleranceFor(base, name)) result.regressions.push({ name, bytes, base });
+    else if (bytes < base - toleranceFor(base, name)) result.improvements.push({ name, bytes, base });
   }
   for (const name of Object.keys(judged).sort()) {
     if (!(name in measured)) result.missing.push({ name, base: judged[name] });
@@ -260,7 +276,7 @@ export function allocationReport(result, measuredCount) {
     ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} selected class(es) measured nothing.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
-      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger).`, '');
+      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger; ${Object.keys(SCHEDULER_TOLERANCES).length} scheduled row(s) have their own, in \`SCHEDULER_TOLERANCES\`).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
   table('In the baseline, did not run (fails)', result.missing);

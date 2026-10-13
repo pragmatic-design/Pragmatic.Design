@@ -247,6 +247,9 @@ harness, through `node scripts/benchmarks.mjs ci`. It judges two kinds of result
   run turns the run red. "More" means beyond 16 bytes or 0.25% of the baseline, whichever is larger:
   the first is the averaging noise of a many-operation benchmark, the second the pooled-buffer
   growth of one that serialises a large document (up to 270 B on 483 KB over three runs).
+  A benchmark whose allocations follow the thread pool's scheduling — one that blocks on a task
+  under concurrent load — is not deterministic, and has its own share in `SCHEDULER_TOLERANCES`
+  (`scripts/benchmarks.mjs`), stated beside the spread measured on the runner.
   The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
   allocates less asks for the baseline to come down.
 - **Times never fail it.** A hosted runner varies by 10–20% from one run to the next, so times are
