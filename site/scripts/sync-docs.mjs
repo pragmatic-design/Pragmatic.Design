@@ -11,7 +11,7 @@
 
 import { readdir, readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { join, basename, dirname, sep, posix } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -266,6 +266,64 @@ export function fixLinks(content, moduleSlug, docPath = "", sourcePath = "") {
   return out;
 }
 
+/**
+ * The relative links of a source document whose target the repository does not have (#239).
+ *
+ * fixLinks turns a link the site cannot serve into a repository URL, whether or not the file exists:
+ * a link to a file that was renamed or never written became a published URL to nothing, and every check
+ * passed. Each relative link is resolved from the document, the way fixLinks resolves it, and asked of
+ * `exists`. Links inside code (a fenced block or an inline span) are examples, not links.
+ *
+ * @param {string} content   the document, LF line endings
+ * @param {string} sourcePath its repository path, "docs/howto/ide-tips.md"
+ * @param {(repoPath: string) => boolean} exists whether a repository path names a file or folder
+ * @returns {{ line: number, link: string, target: string }[]}
+ */
+export function missingLinks(content, sourcePath, exists) {
+  const missing = [];
+  let fenced = false;
+  const lines = content.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    const prose = lines[i].replace(/`[^`]*`/g, "");
+    for (const [, link] of prose.matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (/^[a-z][a-z0-9+.-]*:|^\/|^#/i.test(link)) continue;
+      const path = link.split("#")[0].split("?")[0].replace(/\/+$/, "");
+      if (path === "") continue;
+      const target = posix.normalize(posix.join(posix.dirname(sourcePath), path));
+      if (!exists(target)) missing.push({ line: i + 1, link, target });
+    }
+  }
+  return missing;
+}
+
+/**
+ * Whether a repository path names a file or folder, its case included: Windows matches "Readme.md" to
+ * README.md and Linux does not, and the published URL is case-sensitive.
+ */
+function existsInRepository(repoPath) {
+  if (repoPath.startsWith("..")) return false;
+  let dir = ROOT;
+  for (const segment of repoPath.split("/")) {
+    if (segment === "" || segment === ".") continue;
+    if (!existsSync(dir)) return false;
+    let entries;
+    try { entries = readdirSync(dir); } catch { return false; }
+    if (!entries.includes(segment)) return false;
+    dir = join(dir, segment);
+  }
+  return true;
+}
+
+const brokenLinks = [];
+
+/** Records the missing link targets of one source document, reported together at the end. */
+function checkLinks(content, sourcePath) {
+  for (const m of missingLinks(content, sourcePath, existsInRepository))
+    brokenLinks.push({ sourcePath, ...m });
+}
+
 // Remove the "Documentation" index table from README (sidebar handles navigation in site)
 function removeDocsIndex(content) {
   // Matches: ## Documentation\n\n| ... | ... |\n|...|...|\n| [Guide](docs/...) | ... |\n...
@@ -333,6 +391,7 @@ async function syncModule(moduleName, config) {
 
   // 1. Sync README.md → overview.md
   const readme = await readSource(readmePath);
+  checkLinks(readme, `${moduleName}/README.md`);
   const title = extractTitle(readme) || moduleName.replace("Pragmatic.", "");
   const description = extractDescription(readme);
   const overview = addFrontmatter(
@@ -362,6 +421,7 @@ async function syncModule(moduleName, config) {
       const file = sortedFiles[i];
       const filePath = join(docsDir, file);
       const content = await readSource(filePath);
+      checkLinks(content, `${moduleName}/docs/${file}`);
       const docTitle = extractTitle(content) || fileSlug(file);
       const docDesc = extractDescription(content);
       const processed = addFrontmatter(
@@ -411,6 +471,7 @@ async function syncGuides() {
   for (let i = 0; i < ordered.length; i++) {
     const [file, label] = ordered[i];
     const content = await readSource(join(GUIDES_SRC, file));
+    checkLinks(content, `docs/howto/${file}`);
     const title = label || extractTitle(content) || fileSlug(file);
     const description = extractDescription(content);
     // fixLinks with slug "../guides/<name>" so intra-howto links resolve under the guides section.
@@ -449,6 +510,15 @@ async function main() {
   // How-to guides (docs/howto → guides/)
   const guidePages = await syncGuides();
   totalPages += guidePages;
+
+  // Before the drift report: a page in sync with a source that links to nothing is still broken.
+  if (brokenLinks.length > 0) {
+    console.error(`\n❌ ${brokenLinks.length} relative link(s) name a file the repository does not have:\n`);
+    for (const { sourcePath, line, link, target } of brokenLinks)
+      console.error(`   ${sourcePath}:${line}  ${link}  →  ${target}`);
+    console.error(`\n   Fix the link in the source document; the site copy is regenerated from it.\n`);
+    process.exit(1);
+  }
 
   if (CHECK) return reportDrift();
 

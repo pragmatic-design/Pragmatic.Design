@@ -2037,10 +2037,13 @@ function docsInSync() {
     return true;
   }
 
-  console.log(bad('DRIFTED'));
-  // Only the drift lines: the script also logs one line per module on its way there.
-  for (const line of (r.stderr || r.stdout || '').split('\n')) {
-    if (/^\s{3}(changed|missing|orphaned)\s/.test(line) || /^\s+Fix:/.test(line))
+  // Two refusals share this check (#239): a source linking to a file the repository does not have, and a
+  // copy that drifted from its source. Only their lines: the script also logs one line per module.
+  const output = r.stderr || r.stdout || '';
+  const brokenLink = /relative link\(s\) name a file/.test(output);
+  console.log(bad(brokenLink ? 'BROKEN LINK' : 'DRIFTED'));
+  for (const line of output.split('\n')) {
+    if (/^\s{3}(changed|missing|orphaned)\s/.test(line) || /^\s+Fix/.test(line) || /^\s{3}\S+\.md:\d+\s/.test(line))
       console.log(`  ${line.trim()}`);
   }
   return false;
