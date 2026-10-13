@@ -18,6 +18,12 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = null!;
 
+    /// <summary>
+    ///     The hosts the test classes share. Kept here because they run on this server: they stop before it
+    ///     does, or their background work would end the run talking to a database that is gone.
+    /// </summary>
+    public TimeOffHosts Hosts { get; } = new();
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
@@ -39,5 +45,9 @@ public sealed class PostgresFixture : IAsyncLifetime
         return new NpgsqlConnectionStringBuilder(ConnectionString) { Database = name }.ConnectionString;
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        await Hosts.DisposeAsync();
+        await _container.DisposeAsync();
+    }
 }
