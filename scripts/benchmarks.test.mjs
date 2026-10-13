@@ -47,6 +47,19 @@ test('a large benchmark moves by its run-to-run drift without failing, and fails
   assert.equal(compareAllocations({ 'A.B.CitmCatalog': 482_837 + 60 * 24 }, baseline).failed, true);
 });
 
+// The blocking concurrent row on the runner, eight runs after #136: 134,841 to 145,159 B on a baseline
+// of 134,859 (#227). Its direct twin, the same harness without the blocking wait, measured 27,832 B in
+// all eight, and keeps the tolerance every other benchmark has.
+test('a row whose allocations follow the scheduler moves by its measured spread, and no further', () => {
+  const blocking = 'Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_ConcurrentRequests';
+  const direct = 'Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Direct_ConcurrentRequests';
+  const baseline = { [blocking]: 134_859, [direct]: 27_832 };
+
+  assert.equal(compareAllocations({ [blocking]: 145_159, [direct]: 27_832 }, baseline).failed, false);
+  assert.equal(compareAllocations({ [blocking]: 134_859 * 1.08 + 1, [direct]: 27_832 }, baseline).failed, true);
+  assert.equal(compareAllocations({ [blocking]: 134_859, [direct]: 27_832 + 24 * 4 }, baseline).failed, true);
+});
+
 test('a benchmark with no baseline fails, so a new one arrives with its baseline', () => {
   const result = compareAllocations({ 'A.B.New': 100 }, {});
 
