@@ -46,7 +46,10 @@ Use this for an external consumer application that uses Pragmatic.Design package
    `TheContractTestsRanAtAll.cs`: the Testing generator then runs a contract test per endpoint. Write
    the tests the generator cannot (reads, the business rules, the acceptance criteria) through the
    typed client it generates (`Api.{{Boundary}}.…`), never with route strings. Build, run, then
-   `dotnet test` (Testcontainers needs Docker).
+   `dotnet test` (Testcontainers needs Docker). ⚠️ **An acceptance list that asks for a restart** ("it
+   must not lose anything") changes which project that is: the built host as its own process
+   (`../pragmatic-ecosystem/references/cookbook/restart-and-persistence-tests.md`) carries every item
+   and the contract tests (its section 7), and the `WebApplicationFactory` project is not written.
 
 ## Default Package Set
 
@@ -137,6 +140,10 @@ dotnet build <project-or-slnx>
 dotnet run --project src/<App>.Host      # then GET /openapi/v1.json
 dotnet test <test-project> --no-restore -v minimal
 ```
+
+The first `dotnet run`, in Development, prints each log twice, the second time as OpenTelemetry's
+multi-line `LogRecord.Timestamp:` block, and a block per trace: the console exporter the host adds in
+Development. `Telemetry:Enabled=false` turns it off (see "Build & run" in the solution template).
 
 Two checks that the defaults are in, before calling the application done:
 

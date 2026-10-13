@@ -64,9 +64,8 @@ build puts `{{App}}.Host.dll`, so the tests find it without a hard-coded path.
 process. The Testing generator finds the endpoints in the assemblies the test project references; with
 that attribute it finds none, and writes no `Api` client and no contract tests, without a warning. With
 the plain reference, `Pragmatic.Testing` and `Pragmatic.Testing.SourceGenerator` can go in this project
-too: the contract tests then run against this process
-(`PragmaticContractHost.Client = service.Client`), and the template's integration project becomes
-optional. Versions come from `Directory.Packages.props` as in the solution
+too: the contract tests then run against this process, and the template's integration project becomes
+optional. Section 7 is the fixture that does it. Versions come from `Directory.Packages.props` as in the solution
 template (`Testcontainers.PostgreSql` 4.15.0 or later).
 
 ## 2. The host as a process: `ServiceProcess.cs`
@@ -439,3 +438,73 @@ services.AddBoundary<CatalogBoundary>(cfg => cfg.UseLocal().UseDatabase(options 
 
 A provider call there without a connection string keeps the one the generated registration set.
 `npgsql.ExecutionStrategy(d => new NonRetryingExecutionStrategy(d))` turns the retry off.
+
+## 7. The generated contract tests in the same project
+
+When this project is the application's only test project (an acceptance list with "survives a restart"
+in it: see `pragmatic-new-app`), the generated contract tests run here too, against the same process and
+the same container. Three things make it work, and the fixture of section 3 has none of them:
+
+```csharp
+using Pragmatic.Testing;
+using Testcontainers.PostgreSql;
+using Xunit;
+
+namespace {{App}}.RestartTests;
+
+public sealed class ServiceUnderTest : IAsyncLifetime
+{
+    // … the members of section 3, with these changes:
+
+    public async Task InitializeAsync()
+    {
+        await _database.StartAsync();
+        await StartServiceAsync();
+    }
+
+    public async Task RestartServiceAsync()
+    {
+        await Service.DisposeAsync();
+        _service = null;
+        await StartServiceAsync();
+    }
+
+    // RestartDatabaseAsync ends with `await StartServiceAsync();` too.
+
+    public async Task DisposeAsync()
+    {
+        PragmaticContractHost.Reset();
+        if (_service is not null)
+            await _service.DisposeAsync();
+
+        await _database.DisposeAsync();
+    }
+
+    private async Task StartServiceAsync()
+    {
+        _service = await ServiceProcess.StartAsync(_database.GetConnectionString());
+        // The generated contract tests run against this same process.
+        PragmaticContractHost.Client = _service.Client;
+    }
+}
+
+[CollectionDefinition(Name)]
+public sealed class ServiceCollection : ICollectionFixture<ServiceUnderTest>
+{
+    public const string Name = PragmaticContractHost.Collection;
+}
+```
+
+- **The collection is `PragmaticContractHost.Collection`.** The generated classes carry
+  `[Collection("PragmaticContractTests")]`, which is its value. Under a collection of another name
+  nothing sets their client, and each fails with "`PragmaticContractHost.Client` was not set".
+- **Every start assigns `PragmaticContractHost.Client` again.** A restart kills the process and its
+  `HttpClient` with it, and the new process listens on another port: a contract test that runs after a
+  restart test, with the client of the first process, fails on a disposed client.
+- **`PragmaticContractHost.Reset()` in `DisposeAsync`**, as the template's `ContractAppFixture` does,
+  so a later collection in the same run does not find this one's client.
+
+A create the generator cannot fill is answered from `PragmaticContractHost.BodyFor` in
+`StartServiceAsync`, as in `pragmatic-use-testing`. Built and run on the second consumer trial of the
+`1.0.0-alpha.2` packages: the restart tests and the generated contract tests in one project, 14 tests,
+all green, the restart test red when the restart lands on an empty database.
