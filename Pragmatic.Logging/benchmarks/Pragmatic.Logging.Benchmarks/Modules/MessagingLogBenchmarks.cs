@@ -44,6 +44,7 @@ public partial class MessagingLogBenchmarks
     private readonly LastLineStream _callSiteDebugStream = new();
     private readonly List<IDisposable> _owned = [];
 
+    private ILogger _informationLogger = null!;
     private MessagingMicrosoftLog _microsoft = null!;
     private MessagingCallSiteLog _callSite = null!;
     private MessagingMicrosoftLog _microsoftDebug = null!;
@@ -58,6 +59,7 @@ public partial class MessagingLogBenchmarks
 
         _microsoft = new MessagingMicrosoftLog(Logger(_microsoftInformationStream, LogLevel.Information));
         _callSite = new MessagingCallSiteLog(Logger(_callSiteInformationStream, LogLevel.Information));
+        _informationLogger = Logger(new LastLineStream(), LogLevel.Information);
         _microsoftDebug = new MessagingMicrosoftLog(Logger(_microsoftDebugStream, LogLevel.Debug));
         _callSiteDebug = new MessagingCallSiteLog(Logger(_callSiteDebugStream, LogLevel.Debug));
         _failure = Thrown();
@@ -79,6 +81,23 @@ public partial class MessagingLogBenchmarks
 
     [Benchmark, BenchmarkCategory("MessagingDisabled")]
     public void Messaging_Disabled_CallSite() => _callSite.LogPublishing(MessageType, Topic, Transport, MessageId);
+
+    /// <summary>
+    ///     Subtraction (#175): the level check alone, on the same logger, written by hand. What either generated
+    ///     method costs below its level beyond it is what the generator adds.
+    /// </summary>
+    [Benchmark, BenchmarkCategory("MessagingDisabled")]
+    public bool Messaging_Disabled_LevelCheckOnly() => _informationLogger.IsEnabled(LogLevel.Debug);
+
+    // ── MessagingDisabledReversed: the same pair, the call site declared and run first (#175) ──
+    // The two methods now compile to the same instructions up to the level check; a gap that follows the
+    // order the rows run in, rather than the row, is the machine's.
+
+    [Benchmark, BenchmarkCategory("MessagingDisabledReversed")]
+    public void Messaging_DisabledReversed_CallSite() => _callSite.LogPublishing(MessageType, Topic, Transport, MessageId);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("MessagingDisabledReversed")]
+    public void Messaging_DisabledReversed_LoggerMessage() => _microsoft.LogPublishing(MessageType, Topic, Transport, MessageId);
 
     // ── MessagingDebugJson: LogPublishing as a JSON line, the logger at Debug ──
 

@@ -54,15 +54,41 @@ internal abstract partial class LogCallSiteTemplateBase : CSharpTemplate
                 AppendLine();
             }
 
-            AppendLine($"{logger}.Log(");
-            IncreaseIndent();
-            AppendLine($"{level},");
-            AppendLine($"new global::Microsoft.Extensions.Logging.EventId({callSite.EventId}, {Literal(callSite.EventName)}),");
-            AppendLine($"new {stateName}({string.Join(", ", properties.Select(p => Identifier(p.Name)))}),");
-            AppendLine($"{(exception is null ? "null" : Identifier(exception.Name))},");
-            AppendLine($"{stateName}.Format);");
-            DecreaseIndent();
+            // The state is built in Write, never here: this method is inlined into its caller, and a state
+            // built in it would come along as locals the prologue zeroes on every call, below the level too.
+            var arguments = new List<string> { logger, level };
+            arguments.AddRange(properties.Select(p => Identifier(p.Name)));
+            arguments.Add(exception is null ? "null" : Identifier(exception.Name));
+            AppendLine($"{stateName}.Write({string.Join(", ", arguments)});");
         });
+    }
+
+    /// <summary>
+    ///     The write the call site makes once the level is on: the event id, the state and the formatter, in a
+    ///     method of the state's that is never inlined, so the caller's frame stays the level check's.
+    /// </summary>
+    private void RenderWrite(LogCallSiteModel callSite, string stateName, List<LogParameterModel> held)
+    {
+        var parameters = new List<string>
+        {
+            "global::Microsoft.Extensions.Logging.ILogger __logger",
+            "global::Microsoft.Extensions.Logging.LogLevel __level",
+        };
+        parameters.AddRange(held.Select(p => $"{p.Type} {Identifier(p.Name)}"));
+        parameters.Add("global::System.Exception? __exception");
+
+        AppendLine("[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]");
+        AppendLine($"public static void Write({string.Join(", ", parameters)})");
+        IncreaseIndent();
+        AppendLine("=> __logger.Log(");
+        IncreaseIndent();
+        AppendLine("__level,");
+        AppendLine($"new global::Microsoft.Extensions.Logging.EventId({callSite.EventId}, {Literal(callSite.EventName)}),");
+        AppendLine($"new {stateName}({string.Join(", ", held.Select(p => Identifier(p.Name)))}),");
+        AppendLine("__exception,");
+        AppendLine("Format);");
+        DecreaseIndent();
+        DecreaseIndent();
     }
 
     /// <summary>The state's name: <c>__{Method}LogState</c>, numbered when a method name repeats.</summary>

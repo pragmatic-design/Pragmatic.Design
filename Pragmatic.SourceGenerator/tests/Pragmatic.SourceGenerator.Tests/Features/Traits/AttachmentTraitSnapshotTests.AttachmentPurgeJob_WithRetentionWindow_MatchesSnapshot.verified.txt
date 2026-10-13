@@ -97,12 +97,7 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
         if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
             return;
         
-        _logger.Log(
-            global::Microsoft.Extensions.Logging.LogLevel.Warning,
-            new global::Microsoft.Extensions.Logging.EventId(385155156, "LogFilesKept"),
-            new __LogFilesKeptLogState(attachmentId),
-            ex,
-            __LogFilesKeptLogState.Format);
+        __LogFilesKeptLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Warning, attachmentId, ex);
     }
     
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -124,6 +119,15 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
         {
             _attachmentId = attachmentId;
         }
+        
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, global::System.Guid attachmentId, global::System.Exception? __exception)
+            => __logger.Log(
+                __level,
+                new global::Microsoft.Extensions.Logging.EventId(385155156, "LogFilesKept"),
+                new __LogFilesKeptLogState(attachmentId),
+                __exception,
+                Format);
         
         public string Template => "Purge of ReservationAttachment {AttachmentId} left its stored files in place; the row is kept and will be retried.";
         
@@ -197,12 +201,7 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
         if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
             return;
         
-        _logger.Log(
-            global::Microsoft.Extensions.Logging.LogLevel.Information,
-            new global::Microsoft.Extensions.Logging.EventId(391238444, "LogPurged"),
-            new __LogPurgedLogState(purgedCount, expiredCount),
-            null,
-            __LogPurgedLogState.Format);
+        __LogPurgedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Information, purgedCount, expiredCount, null);
     }
     
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -227,6 +226,15 @@ public sealed partial class PurgeReservationAttachmentsJob : IJob
             _purgedCount = purgedCount;
             _expiredCount = expiredCount;
         }
+        
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, int purgedCount, int expiredCount, global::System.Exception? __exception)
+            => __logger.Log(
+                __level,
+                new global::Microsoft.Extensions.Logging.EventId(391238444, "LogPurged"),
+                new __LogPurgedLogState(purgedCount, expiredCount),
+                __exception,
+                Format);
         
         public string Template => "Purged {PurgedCount} of {ExpiredCount} expired ReservationAttachment rows.";
         

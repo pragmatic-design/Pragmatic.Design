@@ -56,6 +56,9 @@ internal abstract partial class LogCallSiteTemplateBase
             });
             AppendLine();
 
+            RenderWrite(callSite, stateName, held);
+            AppendLine();
+
             AppendLine($"public string Template => {Literal(callSite.Template)};");
             AppendLine();
             AppendLine($"public bool IsSelfContained => {(callSite.IsSelfContained ? "true" : "false")};");
