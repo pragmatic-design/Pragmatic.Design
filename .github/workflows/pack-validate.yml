@@ -33,12 +33,26 @@ jobs:
         with:
           fetch-depth: 0  # MinVer needs full history for version resolution
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      # A Markdown-only change packs nothing (#199, scripts/ci-paths.mjs): the Markdown that is packed, a
+      # module's README and docs/ and the root README, classifies as `full`, so this job still validates
+      # it whenever it changes.
+      - name: Classify the change
+        id: change
+        run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
+
       - name: Setup .NET
+        if: steps.change.outputs.scope != 'docs'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Restore
+        if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       # Build, then pack what was built — the order scripts/publish-local.mjs uses. Runtime libraries set
@@ -46,12 +60,15 @@ jobs:
       # itself: on a fresh checkout it packed binaries that did not exist yet, and failed with NU5026 on
       # every package.
       - name: Build (Release)
+        if: steps.change.outputs.scope != 'docs'
         run: dotnet build Pragmatic.Design.slnx --no-restore --configuration Release
 
       - name: Pack (Release)
+        if: steps.change.outputs.scope != 'docs'
         run: dotnet pack Pragmatic.Design.slnx --no-build --configuration Release --output ./artifacts
 
       - name: Validate package metadata
+        if: steps.change.outputs.scope != 'docs'
         shell: bash
         run: |
           set -euo pipefail
@@ -85,9 +102,11 @@ jobs:
           echo "All $(ls *.nupkg | grep -v symbols | wc -l) packages validated"
 
       - name: List produced packages
+        if: steps.change.outputs.scope != 'docs'
         run: ls -la ./artifacts
 
       - name: Upload packages
+        if: steps.change.outputs.scope != 'docs'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nupkgs
