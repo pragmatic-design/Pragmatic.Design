@@ -127,12 +127,7 @@ public partial class SlowHandler
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(1970606620, "LogHandlerStarted"),
-                new __LogHandlerStartedLogState(messageName, handlerName, messageId),
-                null,
-                __LogHandlerStartedLogState.Format);
+            __LogHandlerStartedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Debug, messageName, handlerName, messageId, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -160,6 +155,15 @@ public partial class SlowHandler
                 _handlerName = handlerName;
                 _messageId = messageId;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string messageName, string handlerName, string messageId, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(1970606620, "LogHandlerStarted"),
+                    new __LogHandlerStartedLogState(messageName, handlerName, messageId),
+                    __exception,
+                    Format);
             
             public string Template => "Starting handler {HandlerName} for message {MessageName} (id: {MessageId})";
             
@@ -281,12 +285,7 @@ public partial class SlowHandler
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(1791248016, "LogHandlerCompleted"),
-                new __LogHandlerCompletedLogState(messageName, handlerName, durationMs),
-                null,
-                __LogHandlerCompletedLogState.Format);
+            __LogHandlerCompletedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Debug, messageName, handlerName, durationMs, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -314,6 +313,15 @@ public partial class SlowHandler
                 _handlerName = handlerName;
                 _durationMs = durationMs;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string messageName, string handlerName, double durationMs, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(1791248016, "LogHandlerCompleted"),
+                    new __LogHandlerCompletedLogState(messageName, handlerName, durationMs),
+                    __exception,
+                    Format);
             
             public string Template => "Handler {HandlerName} completed for message {MessageName} in {DurationMs:F1}ms";
             
@@ -395,12 +403,7 @@ public partial class SlowHandler
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Error,
-                new global::Microsoft.Extensions.Logging.EventId(399935518, "LogHandlerFailed"),
-                new __LogHandlerFailedLogState(messageName, handlerName, retryCount),
-                ex,
-                __LogHandlerFailedLogState.Format);
+            __LogHandlerFailedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Error, messageName, handlerName, retryCount, ex);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -428,6 +431,15 @@ public partial class SlowHandler
                 _handlerName = handlerName;
                 _retryCount = retryCount;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string messageName, string handlerName, int retryCount, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(399935518, "LogHandlerFailed"),
+                    new __LogHandlerFailedLogState(messageName, handlerName, retryCount),
+                    __exception,
+                    Format);
             
             public string Template => "Handler {HandlerName} failed for message {MessageName} (retry {RetryCount})";
             
@@ -549,12 +561,7 @@ public partial class SlowHandler
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(488193606, "LogDuplicateSkipped"),
-                new __LogDuplicateSkippedLogState(messageName, handlerName, messageId),
-                null,
-                __LogDuplicateSkippedLogState.Format);
+            __LogDuplicateSkippedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Debug, messageName, handlerName, messageId, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -582,6 +589,15 @@ public partial class SlowHandler
                 _handlerName = handlerName;
                 _messageId = messageId;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string messageName, string handlerName, string messageId, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(488193606, "LogDuplicateSkipped"),
+                    new __LogDuplicateSkippedLogState(messageName, handlerName, messageId),
+                    __exception,
+                    Format);
             
             public string Template => "Duplicate message skipped: {MessageName} handler {HandlerName} (id: {MessageId})";
             

@@ -291,12 +291,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(24462393, "LogSagaStarting"),
-                new __LogSagaStartingLogState(sagaType, correlationId),
-                null,
-                __LogSagaStartingLogState.Format);
+            __LogSagaStartingLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Information, sagaType, correlationId, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -321,6 +316,15 @@ public partial class OrderSaga
                 _sagaType = sagaType;
                 _correlationId = correlationId;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string correlationId, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(24462393, "LogSagaStarting"),
+                    new __LogSagaStartingLogState(sagaType, correlationId),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} starting for correlation {CorrelationId}";
             
@@ -429,12 +433,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Debug,
-                new global::Microsoft.Extensions.Logging.EventId(213292251, "LogSagaStepExecuting"),
-                new __LogSagaStepExecutingLogState(sagaType, stepName, currentState),
-                null,
-                __LogSagaStepExecutingLogState.Format);
+            __LogSagaStepExecutingLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Debug, sagaType, stepName, currentState, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -462,6 +461,15 @@ public partial class OrderSaga
                 _stepName = stepName;
                 _currentState = currentState;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, string currentState, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(213292251, "LogSagaStepExecuting"),
+                    new __LogSagaStepExecutingLogState(sagaType, stepName, currentState),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} executing step {StepName} in state {CurrentState}";
             
@@ -581,12 +589,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Error,
-                new global::Microsoft.Extensions.Logging.EventId(637660422, "LogSagaStepFailed"),
-                new __LogSagaStepFailedLogState(sagaType, stepName),
-                ex,
-                __LogSagaStepFailedLogState.Format);
+            __LogSagaStepFailedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Error, sagaType, stepName, ex);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -611,6 +614,15 @@ public partial class OrderSaga
                 _sagaType = sagaType;
                 _stepName = stepName;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(637660422, "LogSagaStepFailed"),
+                    new __LogSagaStepFailedLogState(sagaType, stepName),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} step {StepName} failed";
             
@@ -721,12 +733,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(1408023555, "LogSagaStepRejected"),
-                new __LogSagaStepRejectedLogState(sagaType, stepName, reason),
-                null,
-                __LogSagaStepRejectedLogState.Format);
+            __LogSagaStepRejectedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Information, sagaType, stepName, reason, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -754,6 +761,15 @@ public partial class OrderSaga
                 _stepName = stepName;
                 _reason = reason;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, string reason, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(1408023555, "LogSagaStepRejected"),
+                    new __LogSagaStepRejectedLogState(sagaType, stepName, reason),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} step {StepName} rejected: {Reason}";
             
@@ -873,12 +889,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(1192844918, "LogSagaCompensated"),
-                new __LogSagaCompensatedLogState(sagaType, stepName),
-                null,
-                __LogSagaCompensatedLogState.Format);
+            __LogSagaCompensatedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Information, sagaType, stepName, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -903,6 +914,15 @@ public partial class OrderSaga
                 _sagaType = sagaType;
                 _stepName = stepName;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(1192844918, "LogSagaCompensated"),
+                    new __LogSagaCompensatedLogState(sagaType, stepName),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} compensated step {StepName}";
             
@@ -1011,12 +1031,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Warning,
-                new global::Microsoft.Extensions.Logging.EventId(431188717, "LogSagaCompensationSkipped"),
-                new __LogSagaCompensationSkippedLogState(sagaType, stepName),
-                null,
-                __LogSagaCompensationSkippedLogState.Format);
+            __LogSagaCompensationSkippedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Warning, sagaType, stepName, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -1041,6 +1056,15 @@ public partial class OrderSaga
                 _sagaType = sagaType;
                 _stepName = stepName;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(431188717, "LogSagaCompensationSkipped"),
+                    new __LogSagaCompensationSkippedLogState(sagaType, stepName),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} compensator for step {StepName} skipped — JSON seeding produced null";
             
@@ -1151,12 +1175,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Error,
-                new global::Microsoft.Extensions.Logging.EventId(984699786, "LogSagaCompensationFailed"),
-                new __LogSagaCompensationFailedLogState(sagaType, stepName),
-                ex,
-                __LogSagaCompensationFailedLogState.Format);
+            __LogSagaCompensationFailedLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Error, sagaType, stepName, ex);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -1181,6 +1200,15 @@ public partial class OrderSaga
                 _sagaType = sagaType;
                 _stepName = stepName;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string stepName, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(984699786, "LogSagaCompensationFailed"),
+                    new __LogSagaCompensationFailedLogState(sagaType, stepName),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} compensator for step {StepName} threw — continuing chain";
             
@@ -1291,12 +1319,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Warning))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Warning,
-                new global::Microsoft.Extensions.Logging.EventId(584734852, "LogSagaTimedOut"),
-                new __LogSagaTimedOutLogState(sagaType, correlationId, state),
-                null,
-                __LogSagaTimedOutLogState.Format);
+            __LogSagaTimedOutLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Warning, sagaType, correlationId, state, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -1324,6 +1347,15 @@ public partial class OrderSaga
                 _correlationId = correlationId;
                 _state = state;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string correlationId, string state, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(584734852, "LogSagaTimedOut"),
+                    new __LogSagaTimedOutLogState(sagaType, correlationId, state),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} timed out (correlation {CorrelationId}, state {State}) — running compensation chain";
             
@@ -1445,12 +1477,7 @@ public partial class OrderSaga
             if (!_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
                 return;
             
-            _logger.Log(
-                global::Microsoft.Extensions.Logging.LogLevel.Information,
-                new global::Microsoft.Extensions.Logging.EventId(169046391, "LogSagaConflictRetrying"),
-                new __LogSagaConflictRetryingLogState(sagaType, correlationId, attempt),
-                null,
-                __LogSagaConflictRetryingLogState.Format);
+            __LogSagaConflictRetryingLogState.Write(_logger, global::Microsoft.Extensions.Logging.LogLevel.Information, sagaType, correlationId, attempt, null);
         }
         
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
@@ -1478,6 +1505,15 @@ public partial class OrderSaga
                 _correlationId = correlationId;
                 _attempt = attempt;
             }
+            
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            public static void Write(global::Microsoft.Extensions.Logging.ILogger __logger, global::Microsoft.Extensions.Logging.LogLevel __level, string sagaType, string correlationId, int attempt, global::System.Exception? __exception)
+                => __logger.Log(
+                    __level,
+                    new global::Microsoft.Extensions.Logging.EventId(169046391, "LogSagaConflictRetrying"),
+                    new __LogSagaConflictRetryingLogState(sagaType, correlationId, attempt),
+                    __exception,
+                    Format);
             
             public string Template => "Saga {SagaType} (correlation {CorrelationId}) was saved by another writer first; reading it again (attempt {Attempt})";
             

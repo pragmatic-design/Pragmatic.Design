@@ -28,6 +28,10 @@ public static partial class OrderLog
 - **Masking at the call site.** A parameter marked `[PersonalData]` or `[NotLogged]` is written as
   `[redacted]` by the generated code, in the message, the structured property and every other view of
   the state. The value is not even handed to the state.
+- **Below its level, the level check and nothing else.** The method holds the check and one call; the
+  state is built in a `Write` of the state's that is never inlined. A method that built it itself would be
+  inlined into its caller with the state as locals, and the caller's prologue would zero them on every
+  call, the disabled ones included.
 - **Usable from generated code.** The Pragmatic generator writes call sites into the types it generates
   (the message handler pipeline, the saga orchestrator, the attachment purge job), in the same pass.
   Microsoft's generator never sees another generator's output, so a `[LoggerMessage]` declared there
