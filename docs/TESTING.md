@@ -14,8 +14,15 @@ node scripts/check.mjs --tier aot      # publish the AOT smokes Native AOT and r
 node scripts/check.mjs --tier docker   # the container suites, one at a time
 node scripts/check.mjs --tier docker --shard 2/3   # one CI job's part of them (scripts/docker-shards.mjs)
 node scripts/check.mjs --tier all      # full, then aot, then docker  ← before a commit series or a publish
+node scripts/check.mjs --tier docs     # the full tier's source-only checks: no build, no suites (~1 min)
 node scripts/check.mjs --tier verify   # only: does every path CI names exist?
 ```
+
+`--tier docs` is what CI runs for a pull request that changes only Markdown nothing builds:
+`scripts/ci-paths.mjs` classifies the changed paths, and on `docs` the gate job runs this tier while the
+container shards and Pack & Validate skip their work. A module's `README.md` and `docs/`, the root
+`README.md` (all packed into packages) and anything under `marketplace/` (skills, synced from compiled
+examples) still run everything. It is not a gate for code: it leaves out the build and whatever reads it.
 
 Options: `--jobs N` (hermetic parallelism, default cores−2), `--keep-going` (don't stop at the first
 red suite), `--only <substring>` (run only the suites whose name contains it; **narrows the suites and
