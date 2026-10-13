@@ -6,17 +6,28 @@ using Microsoft.Extensions.DependencyInjection;
 namespace TimeOff.IntegrationTests.Infrastructure;
 
 /// <summary>
-///     A test against the running application: a host per test class, and HTTP clients to it.
+///     A test against the running application, and HTTP clients to it. The host is the suite's, shared by
+///     every class that changes nothing about it; a class that overrides <see cref="Settings" /> or
+///     <see cref="ConfigureServices" /> gets one of its own, shared by its tests; a class that overrides
+///     <see cref="ConnectionStringAsync" /> gets one per test, on the database each test asked for.
 /// </summary>
 /// <remarks>
-///     A test authenticates the way a client does — it signs in and sends the bearer token it got back.
-///     There is no test-only authentication anywhere: what these tests reach, a client reaches.
+///     <para>
+///         A test authenticates the way a client does — it signs in and sends the bearer token it got back.
+///         There is no test-only authentication anywhere: what these tests reach, a client reaches.
+///     </para>
+///     <para>
+///         A shared host keeps what the tests leave in it: the mailbox, the captured SQL, caches. The
+///         tests make their own data (fresh emails and codes) and clear the SQL capture before they read
+///         it, so none depends on a host nobody used before.
+///     </para>
 /// </remarks>
 [Collection(IntegrationCollection.Name)]
 public abstract class TimeOffTestBase(PostgresFixture database) : IAsyncLifetime
 {
     private readonly List<HttpClient> _clients = [];
     private TimeOffWebFactory _factory = null!;
+    private bool _ownsFactory;
 
     /// <summary>A client that has not signed in.</summary>
     protected HttpClient Client { get; private set; } = null!;
@@ -31,9 +42,31 @@ public abstract class TimeOffTestBase(PostgresFixture database) : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _factory = new TimeOffWebFactory(await ConnectionStringAsync(database), Settings, ConfigureServices);
+        // A database per test is what ConnectionStringAsync is overridden for: the classes that do count or
+        // seal across the whole database, and each test needs one nobody else wrote to.
+        _ownsFactory = Overrides(nameof(ConnectionStringAsync));
+        if (_ownsFactory)
+            _factory = new TimeOffWebFactory(await ConnectionStringAsync(database), Settings, ConfigureServices);
+        else
+        {
+            var ownHost = Overrides(nameof(ConfigureServices)) || Overrides(nameof(Settings));
+            _factory = database.Hosts.For(ownHost ? GetType() : typeof(TimeOffTestBase),
+                () => new TimeOffWebFactory(database.ConnectionString, Settings, ConfigureServices));
+        }
+
         Client = _factory.CreateClient();
         _clients.Add(Client);
+    }
+
+    /// <summary>Whether this class replaces the base's member of that name, which decides the host it runs on.</summary>
+    private bool Overrides(string member)
+    {
+        const System.Reflection.BindingFlags Declared =
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var declaringType = member == nameof(Settings)
+            ? GetType().GetProperty(member, Declared)!.GetMethod!.DeclaringType
+            : GetType().GetMethod(member, Declared)!.DeclaringType;
+        return declaringType != typeof(TimeOffTestBase);
     }
 
     /// <summary>Configuration a class needs on top of the suite's, applied after it.</summary>
@@ -52,7 +85,8 @@ public abstract class TimeOffTestBase(PostgresFixture database) : IAsyncLifetime
     {
         foreach (var client in _clients)
             client.Dispose();
-        await _factory.DisposeAsync();
+        if (_ownsFactory)
+            await _factory.DisposeAsync();
     }
 
     /// <summary>
