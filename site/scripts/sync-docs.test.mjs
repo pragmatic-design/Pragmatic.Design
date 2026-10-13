@@ -7,9 +7,34 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractTitle, fixLinks, normalizeSource } from './sync-docs.mjs';
+import { extractTitle, fixLinks, missingLinks, normalizeSource } from './sync-docs.mjs';
 
 const REPO = 'https://github.com/pragmatic-design/Pragmatic.Design';
+
+// #239: a link to a file that is not there was rewritten into a repository URL and published.
+test('a relative link to a file the repository does not have is reported with its line', () => {
+  const exists = (p) => p === 'docs/TESTING.md';
+  const missing = missingLinks('# Tips\n\nSee [TESTING.md](../TESTING-GONE.md).\n', 'docs/howto/ide-tips.md', exists);
+
+  assert.deepEqual(missing, [{ line: 3, link: '../TESTING-GONE.md', target: 'docs/TESTING-GONE.md' }]);
+});
+
+test('the control: a link to a file that exists, an anchor, a URL and a site page are not reported', () => {
+  const exists = (p) => ['docs/TESTING.md', 'Pragmatic.Logging/docs', 'Pragmatic.Logging/docs/concepts.md'].includes(p);
+  const content = [
+    'See [TESTING.md](../TESTING.md#lock-files) and [the docs](../../Pragmatic.Logging/docs/).',
+    '[concepts](../../Pragmatic.Logging/docs/concepts.md) [a](#anchor) [w](https://example.com)',
+    '[p](/modules/x/) [m](mailto:a@b.c)',
+  ].join('\n');
+
+  assert.deepEqual(missingLinks(content, 'docs/howto/x.md', exists), []);
+});
+
+test('a link inside code is an example, not a link', () => {
+  const content = 'Write `[text](docs/missing.md)` like this:\n\n```md\n[text](docs/missing.md)\n```\n';
+
+  assert.deepEqual(missingLinks(content, 'docs/howto/x.md', () => false), []);
+});
 
 test('a sample linked from a module doc resolves inside that module', () => {
   const out = fixLinks('[csv](../samples/Pragmatic.Documents.Csv.Samples/README.md)',
