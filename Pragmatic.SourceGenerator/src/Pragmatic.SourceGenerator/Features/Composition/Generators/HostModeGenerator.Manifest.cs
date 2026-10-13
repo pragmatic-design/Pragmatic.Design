@@ -26,7 +26,8 @@ internal static partial class HostModeGenerator
         SourceProductionContext context,
         ImmutableArray<AssemblyMetadataModel> assemblyMetadata,
         ImmutableArray<AssemblyMetadataModel> localMetadata,
-        Compilation compilation)
+        Compilation compilation,
+        bool anonymousHost)
     {
         // Collect all manifest JSON entries from referenced assemblies, then from this one
         var manifestJsons = new List<string>();
@@ -69,7 +70,7 @@ internal static partial class HostModeGenerator
         if (manifestJsons.Count > 0 || hasManifestRegistry)
             GenerateManifestDocument(context, compilation, assemblyName, manifestJsons);
 
-        GenerateOpenApiDocument(context, compilation, assemblyName, manifestJsons);
+        GenerateOpenApiDocument(context, compilation, assemblyName, manifestJsons, anonymousHost);
     }
 
     private static void GenerateManifestDocument(
@@ -125,12 +126,13 @@ internal static partial class HostModeGenerator
         SourceProductionContext context,
         Compilation compilation,
         string assemblyName,
-        List<string> manifestJsons)
+        List<string> manifestJsons,
+        bool anonymousHost)
     {
         var hasOpenApiRegistry = compilation.GetTypeByMetadataName(
             "Pragmatic.Endpoints.OpenApi.PragmaticOpenApiRegistry") is not null;
 
-        var openApi = Manifest.Templates.OpenApiJsonGenerator.Generate(assemblyName, manifestJsons);
+        var openApi = Manifest.Templates.OpenApiJsonGenerator.Generate(assemblyName, manifestJsons, anonymousHost);
         var json = openApi.Json
                    ?? (hasOpenApiRegistry ? Manifest.Templates.OpenApiJsonGenerator.WithNoOperations(assemblyName) : null);
         if (json is null)

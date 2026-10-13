@@ -442,7 +442,8 @@ internal static partial class HostModeGenerator
                 ? assemblyMetadata
                 : assemblyMetadata.Where(a => !remoteAssemblies.Contains(a.AssemblyName)).ToImmutableArray(),
             localMetadataOnly,
-            compilation);
+            compilation,
+            anonymousHost: !localModules.IsDefaultOrEmpty && localModules.Any(m => m.IsAnonymousHost));
 
         // Extract required configuration sections from [RequiresConfig] declarations.
         // Combines sections from:

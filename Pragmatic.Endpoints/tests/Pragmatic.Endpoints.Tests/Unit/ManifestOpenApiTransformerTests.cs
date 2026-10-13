@@ -173,6 +173,34 @@ public class ManifestOpenApiTransformerTests
         schema.Properties.Should().ContainKey("conflictingId");
     }
 
+    // ── #243: whether the document requires authentication is the host's call ──
+
+    /// <summary>
+    ///     A host that registered its document decided whether it requires authentication: an anonymous
+    ///     host said no. The module's manifest still marks the operation protected, because the module
+    ///     cannot know the host; reading it again here told an anonymous host to register an
+    ///     authentication it does not have.
+    /// </summary>
+    [Fact]
+    public void RequiresAuthentication_IsTheHostsAnswer_WhenTheHostRegisteredOne()
+    {
+        var services = new OneService(new HostOpenApiDocument("{}", RequiresAuthentication: false));
+
+        ManifestOpenApiTransformer.RequiresAuthentication(services, Lookup(ProtectedEndpoint)).Should().BeFalse();
+    }
+
+    /// <summary>The control: a host that registered nothing falls back to the manifests, as before.</summary>
+    [Fact]
+    public void RequiresAuthentication_WithoutTheHostsAnswer_ReadsTheManifests()
+        => ManifestOpenApiTransformer.RequiresAuthentication(new OneService(null), Lookup(ProtectedEndpoint)).Should().BeTrue();
+
+    private static Dictionary<string, ManifestEndpoint> Lookup(ManifestEndpoint endpoint) => new() { ["POST:orders"] = endpoint };
+
+    private sealed class OneService(object? service) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => serviceType.IsInstanceOfType(service) ? service : null;
+    }
+
     [Theory]
     [InlineData("", "/users/{id}", "/users/{id}")]
     [InlineData("/api", "/users/{id}", "/api/users/{id}")]
