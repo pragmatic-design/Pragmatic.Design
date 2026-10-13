@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Pragmatic.Composition.Attributes;
 using static Pragmatic.Ensure.Ensure;
 
@@ -11,13 +12,29 @@ public sealed class BcryptPasswordHasher : IPasswordHasher
 {
     private readonly int _workFactor;
 
+    /// <summary>The hasher the container builds: its cost is <see cref="LocalIdentityOptions.PasswordWorkFactor" />.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A cost outside BCrypt's 4–31, naming the option.</exception>
+    public BcryptPasswordHasher(IOptions<LocalIdentityOptions> options)
+        : this(ThrowIfNull(options).Value.PasswordWorkFactor, nameof(LocalIdentityOptions.PasswordWorkFactor))
+    {
+    }
+
     /// <param name="workFactor">
     ///     BCrypt cost factor. Must be within BCrypt's supported range (4–31); higher is slower
-    ///     and more resistant to brute force. Default: 12.
+    ///     and more resistant to brute force.
     /// </param>
-    public BcryptPasswordHasher(int workFactor = 12)
+    /// <remarks>
+    ///     For a hasher built by hand. No default value: one would make this constructor resolvable too, and
+    ///     a container offered two would refuse to choose between them.
+    /// </remarks>
+    public BcryptPasswordHasher(int workFactor)
+        : this(workFactor, nameof(workFactor))
     {
-        ThrowIfOutOfRange(workFactor, 4, 31);
+    }
+
+    private BcryptPasswordHasher(int workFactor, string source)
+    {
+        ThrowIfOutOfRange(workFactor, 4, 31, source);
         _workFactor = workFactor;
     }
 

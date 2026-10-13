@@ -183,6 +183,11 @@ services.Configure<LocalIdentityOptions>(opts =>
 });
 ```
 
+`PasswordWorkFactor` is the cost of the registered `BcryptPasswordHasher`, within BCrypt's 4–31; a value
+outside it fails when the hasher is first resolved, naming the option. Raising it upgrades each stored
+hash at that user's next successful sign-in, which is when the password is at hand to hash again.
+These options are set in code: there is no `Identity:Local` configuration section for them.
+
 #### Domain Events
 
 All actions raise domain events via `IDomainEventDispatcher`:
