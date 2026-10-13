@@ -32,6 +32,7 @@
     <File Path="docs/security/owasp-coverage.md" />
     <File Path="docs/security/supply-chain.md" />
     <File Path="docs/security/threat-model-compliance.md" />
+    <File Path="docs/security/untrusted-input.md" />
   </Folder>
   <Folder Name="/Pragmatic.Abstractions/docs/">
     <File Path="Pragmatic.Abstractions/README.md" />
