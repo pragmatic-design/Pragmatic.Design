@@ -71,7 +71,14 @@ internal static partial class OpenApiJsonGenerator
         return b.ToString();
     }
 
-    public static OpenApiDocument Generate(string assemblyName, IReadOnlyList<string> manifestJsons)
+    /// <param name="assemblyName">The host's assembly, the document's title.</param>
+    /// <param name="manifestJsons">The manifests of the modules the host composes.</param>
+    /// <param name="anonymousHost">
+    ///     Whether the host declares <c>[AnonymousHost]</c>. A module writes an operation without
+    ///     <c>[AllowAnonymous]</c> as protected because it cannot know the host; an anonymous host drops that
+    ///     default, and only an operation that declares a permission of its own still needs a caller (#243).
+    /// </param>
+    public static OpenApiDocument Generate(string assemblyName, IReadOnlyList<string> manifestJsons, bool anonymousHost = false)
     {
         if (manifestJsons.Count == 0) return default;
 
@@ -91,8 +98,9 @@ internal static partial class OpenApiJsonGenerator
 
         if (allEndpoints.Count == 0) return default;
 
-        var requiresAuthentication =
-            allEndpoints.Any(e => e.Authorization is not { AllowAnonymous: true });
+        var requiresAuthentication = anonymousHost
+            ? allEndpoints.Any(e => e.Authorization is { AllowAnonymous: false, RequiredPermissions.Count: > 0 })
+            : allEndpoints.Any(e => e.Authorization is not { AllowAnonymous: true });
 
         // One authority for "which components.schemas key does this type get", shared by the $ref sites
         // and by the schema rendering — deciding independently, the two could disagree.

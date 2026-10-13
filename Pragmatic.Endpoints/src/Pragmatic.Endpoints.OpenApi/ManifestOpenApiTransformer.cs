@@ -34,7 +34,7 @@ public sealed class ManifestOpenApiTransformer : IOpenApiDocumentTransformer
         // document (OpenApiSecuritySchemes). Declared once, so each requirement has one to reference.
         var schemes = OpenApiSecuritySchemes.Describe(
             context.ApplicationServices,
-            requiresAuthentication: endpointLookup.Values.Any(e => e.Authorization is { AllowAnonymous: false }));
+            requiresAuthentication: RequiresAuthentication(context.ApplicationServices, endpointLookup));
         AddSecuritySchemes(document, schemes);
 
         foreach (var pathItem in document.Paths)
@@ -54,6 +54,19 @@ public sealed class ManifestOpenApiTransformer : IOpenApiDocumentTransformer
 
         return Task.CompletedTask;
     }
+
+    /// <summary>Whether the document has an operation that requires authentication.</summary>
+    /// <remarks>
+    ///     The host's answer when it registered one (<see cref="HostOpenApiDocument" />): the host knows
+    ///     whether it is anonymous, and a module's manifest does not, so it marks every operation without
+    ///     <c>[AllowAnonymous]</c> protected (#243). The manifests are read only for a host that registered
+    ///     nothing.
+    /// </remarks>
+    internal static bool RequiresAuthentication(
+        IServiceProvider services, Dictionary<string, ManifestEndpoint> endpointLookup)
+        => services.GetService(typeof(HostOpenApiDocument)) is HostOpenApiDocument host
+            ? host.RequiresAuthentication
+            : endpointLookup.Values.Any(e => e.Authorization is { AllowAnonymous: false });
 
     /// <summary>
     ///     Declares the contributed schemes under <c>components.securitySchemes</c>. Never overwrites a

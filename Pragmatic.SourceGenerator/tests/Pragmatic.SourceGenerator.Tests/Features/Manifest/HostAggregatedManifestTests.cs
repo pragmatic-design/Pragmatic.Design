@@ -55,6 +55,15 @@ public class HostAggregatedManifestTests
                 public string SchemaVersion { get; }
                 public string JsonData { get; }
             }
+
+            [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false)]
+            public sealed class ModuleAttribute : System.Attribute
+            {
+                public string? Name { get; set; }
+            }
+
+            [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false)]
+            public sealed class AnonymousHostAttribute : System.Attribute { }
         }
         namespace Pragmatic.Composition.Hosting
         {
@@ -201,6 +210,62 @@ public class HostAggregatedManifestTests
         GeneratorTestHelper.GetDiagnosticsById(result, "PRAG9000").Should().BeEmpty();
         generated.Should().ContainKey("Host.Services.g.cs");
         generated.Should().ContainKey("Host.Entry.g.cs");
+    }
+
+    // ── #243: whether the contract requires authentication is the host's fact, not the module's ──
+
+    /// <summary>One operation, protected or anonymous as the module's manifest says, with or without its own permission.</summary>
+    private static string ManifestWithAuthorization(string assembly, bool allowAnonymous, string? permission)
+        => ModuleManifest(assembly, "Books.List", "/api/books").Replace(
+            "\"isVoid\":false,",
+            "\"isVoid\":false,\"authorization\":{\"allowAnonymous\":" + (allowAnonymous ? "true" : "false")
+            + ",\"requiredPermissions\":[" + (permission is null ? "" : $"\"{permission}\"") + "]},");
+
+    private static string HostWithRegistriesDeclaring(bool anonymous) => HostWithRegistries.Replace(
+        "namespace MyHost\n{",
+        "namespace MyHost\n{\n    [Pragmatic.Composition.Attributes.Module(Name = \"AppHost\")]\n"
+        + (anonymous ? "    [Pragmatic.Composition.Attributes.AnonymousHost]\n" : "")
+        + "    public sealed class HostModule { }\n").Replace("\r", "");
+
+    private static string RequiresAuthenticationConstant(Dictionary<string, string> generated)
+    {
+        var file = generated["_Infra.OpenApi.Generated.g.cs"];
+        var line = file.Split('\n').Single(l => l.Contains("internal const bool RequiresAuthentication =", StringComparison.Ordinal));
+        return line.Trim();
+    }
+
+    /// <summary>
+    ///     An anonymous host whose operations declare nothing of their own requires nothing: the module
+    ///     wrote them as protected because it cannot know the host, and the host dropped the default.
+    ///     Told otherwise, the host logged that its contract needed an authentication it does not have.
+    /// </summary>
+    [Fact]
+    public void AnAnonymousHost_WhoseOperationsDeclareNoPermission_RequiresNoAuthentication()
+    {
+        var (_, generated) = RunHost(HostWithRegistriesDeclaring(anonymous: true),
+            ModuleAssembly("App.Books", ManifestWithAuthorization("App.Books", allowAnonymous: false, permission: null)));
+
+        RequiresAuthenticationConstant(generated).Should().Be("internal const bool RequiresAuthentication = false;");
+    }
+
+    /// <summary>The control: an operation that declares a permission still needs a caller, anonymous host or not.</summary>
+    [Fact]
+    public void AnAnonymousHost_WithAnOperationThatDeclaresAPermission_RequiresAuthentication()
+    {
+        var (_, generated) = RunHost(HostWithRegistriesDeclaring(anonymous: true),
+            ModuleAssembly("App.Books", ManifestWithAuthorization("App.Books", allowAnonymous: false, permission: "books.book.delete")));
+
+        RequiresAuthenticationConstant(generated).Should().Be("internal const bool RequiresAuthentication = true;");
+    }
+
+    /// <summary>The second control: a host that authenticates keeps the module's protected default.</summary>
+    [Fact]
+    public void AHostThatAuthenticates_RequiresAuthenticationForAProtectedOperation()
+    {
+        var (_, generated) = RunHost(HostWithRegistriesDeclaring(anonymous: false),
+            ModuleAssembly("App.Books", ManifestWithAuthorization("App.Books", allowAnonymous: false, permission: null)));
+
+        RequiresAuthenticationConstant(generated).Should().Be("internal const bool RequiresAuthentication = true;");
     }
 
     [Fact]
