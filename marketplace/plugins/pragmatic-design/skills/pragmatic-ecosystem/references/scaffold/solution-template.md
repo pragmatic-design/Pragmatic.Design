@@ -296,6 +296,10 @@ sets none), or name the file after the culture `UseI18N` sets (`en-US.json` with
 `CultureCode.EnglishUS`). The sentences also need `LocalizeProblemDetails()` in the host: without it
 the response carries the keys only.
 
+**Another language** (a commission written in Italian, say) is another file beside this one, `it.json`,
+with the same keys, and the host's `UseI18N` choosing among the cultures: `pragmatic-use-i18n` has the
+files, `Support(…)` and the default culture. With `en.json` alone every request is answered in English.
+
 ## Host csproj (versionless, CPM)
 
 ```xml
@@ -623,6 +627,11 @@ survives a restart: there is no process to kill. For that (the service killed an
 database container stopped and started), run the built host as its own process, as in
 `../cookbook/restart-and-persistence-tests.md`.
 
+**When the acceptance list asks for a restart, that project is the only test project**, and this one is
+not written: every item, and the generated contract tests (the recipe's section 7), then run against the
+application as a user starts it, over HTTP to its own process, rather than some against the host in
+memory and one against the process.
+
 ## Optional feature packages
 
 The base set above covers CRUD + endpoints + persistence. Opt-in features add packages (and to
@@ -645,3 +654,9 @@ dotnet build {{App}}.slnx
 dotnet test {{App}}.slnx          # Testcontainers needs Docker running
 dotnet run --project src/{{App}}.Host
 ```
+
+In Development the console also carries OpenTelemetry's console exporter: each log a second time as a
+multi-line `LogRecord.Timestamp:` … block, and a block per trace and metric. The host adds that exporter
+in Development when no OTLP exporter is configured; in Production it does not. `"Telemetry": {
+"Enabled": false }` in `appsettings.Development.json` (or `--Telemetry:Enabled=false` on the command
+line) leaves the usual one-line format; `"UseOtlpExporter": true` sends them to a collector instead.

@@ -129,7 +129,10 @@ public sealed class ContractTestCollection : ICollectionFixture<ContractAppFixtu
 
 `PragmaticContractHost.Client` is any `HttpClient`, not only a `WebApplicationFactory`'s: the client of
 the built host running as its own process (the restart recipe's `ServiceProcess`) runs them too, so one
-test project can hold the restart tests and the contract tests.
+test project can hold the restart tests and the contract tests. Its fixture is section 7 of
+`../pragmatic-ecosystem/references/cookbook/restart-and-persistence-tests.md`: the collection named
+`PragmaticContractHost.Collection`, the client assigned again on every start (a restarted process
+listens on another port), and `PragmaticContractHost.Reset()` when the fixture is disposed.
 
 ⚠️ The generator reads the endpoints from the host the test project **references**. A
 `ProjectReference` with `ReferenceOutputAssembly="false"` hides them, and the project gets no contract
