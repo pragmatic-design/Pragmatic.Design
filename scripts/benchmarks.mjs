@@ -235,13 +235,15 @@ export function timesFromCsv(dir) {
  * - `missing`: in the baseline, not measured. Fails: BenchmarkDotNet exits 0 when it cannot build a
  *   benchmark, so one that did not run is only visible here. A benchmark removed or renamed takes its
  *   baseline entry with it in the same change.
- * - `notRun`: on a partial run, a selected class the suite lists that measured nothing. Fails, for the
- *   same reason, and it also catches a new class that has no baseline to go missing from.
+ * - `notRun`: a class the suite lists for this run that measured nothing. Fails, for the same reason,
+ *   and it also catches a class that has no baseline to go missing from: one new, or one BenchmarkDotNet
+ *   skipped because its setup threw, every night since it was added (#183).
  *
  * `classes`, on a partial run, are the classes that ran: the baseline of every other class is not
- * looked at, since nothing measured it.
+ * looked at, since nothing measured it. `listed` are the classes the suites list for the run, the
+ * selected ones on a partial run and every one on a full run, where `classes` is null.
  */
-export function compareAllocations(measured, baseline, classes = null) {
+export function compareAllocations(measured, baseline, classes = null, listed = classes) {
   const result = { regressions: [], unbaselined: [], improvements: [], missing: [], notRun: [] };
   const judged = classes === null
     ? baseline
@@ -255,7 +257,7 @@ export function compareAllocations(measured, baseline, classes = null) {
   for (const name of Object.keys(judged).sort()) {
     if (!(name in measured)) result.missing.push({ name, base: judged[name] });
   }
-  for (const c of classes ?? []) {
+  for (const c of listed ?? []) {
     if (!Object.keys(measured).some((name) => belongsTo(name, c))) result.notRun.push({ name: c });
   }
   result.failed = result.regressions.length > 0 || result.unbaselined.length > 0 || result.missing.length > 0
@@ -273,14 +275,14 @@ export function allocationReport(result, measuredCount) {
   };
 
   lines.push(result.failed
-    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} selected class(es) measured nothing.`
+    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} listed class(es) measured nothing.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
       : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger; ${Object.keys(SCHEDULER_TOLERANCES).length} scheduled row(s) have their own, in \`SCHEDULER_TOLERANCES\`).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
   table('In the baseline, did not run (fails)', result.missing);
-  table('Selected, measured nothing (fails)', result.notRun);
+  table('Listed, measured nothing (fails)', result.notRun);
   table('Allocates less: lower the baseline', result.improvements);
   return lines.join('\n');
 }
@@ -381,15 +383,26 @@ function listSuite(checkout, suite, filters) {
   return { code: r.status ?? 1, classes: classesFromList(r.stdout ?? '') };
 }
 
-/** Per suite, the filters to run with: `null` for a suite with nothing to run. */
+/**
+ * Per suite, the filters to run with (`null` for a suite with nothing to run); the classes that run on a
+ * partial run (`null` on a full one); and the classes the suites list for the run, each of which must
+ * measure something.
+ */
 function plan(options, notes) {
   const everything = Object.fromEntries(SUITES.map((s) => [s.name, ['*']]));
-  if (!options['changed-only']) return { filters: everything, classes: null };
+  // A full run judged no class by itself: one BenchmarkDotNet skipped had nothing in the baseline to go
+  // missing from, and the nightly run stayed green (#183). Listing every suite names each class.
+  const listEverything = () => SUITES.flatMap((suite) => {
+    const listed = listSuite(options.head, suite, ['*']);
+    if (listed.code !== 0) throw new Error(`${suite.name}: listing the benchmarks exited ${listed.code}.`);
+    return listed.classes;
+  });
+  if (!options['changed-only']) return { filters: everything, classes: null, listed: listEverything() };
 
   const selection = selectBenchmarks(readCheckout(options.head, SUITES), readCheckout(options.base, SUITES), SUITES);
   if (selection.all) {
     notes.push(`Every benchmark runs: ${selection.all}.`);
-    return { filters: everything, classes: null };
+    return { filters: everything, classes: null, listed: listEverything() };
   }
 
   const filters = {};
@@ -414,14 +427,14 @@ function plan(options, notes) {
       : `${suite.name}: nothing this change reaches.`);
   }
   notes.unshift('Partial run, for a pull request: only the classes the change reaches. The nightly run measures everything.');
-  return { filters, classes };
+  return { filters, classes, listed: classes };
 }
 
 function ci(options) {
   const out = resolve(options.out);
   const notes = [];
   let headFailed = false;
-  const { filters, classes } = plan(options, notes);
+  const { filters, classes, listed } = plan(options, notes);
 
   SUITES.forEach((suite, i) => {
     if (filters[suite.name] === null) return;
@@ -442,7 +455,7 @@ function ci(options) {
   const baseline = existsSync(join(options.head, BASELINE))
     ? JSON.parse(readFileSync(join(options.head, BASELINE), 'utf8'))
     : {};
-  const allocations = compareAllocations(measured, baseline, classes);
+  const allocations = compareAllocations(measured, baseline, classes, listed);
   const nothingToRun = classes !== null && classes.length === 0;
 
   // What the baseline would be if this run were accepted: uploaded with the reports, so a new or

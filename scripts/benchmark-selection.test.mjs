@@ -10,6 +10,9 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import {
   BASELINE_PATH,
   belongsTo,
@@ -17,6 +20,7 @@ import {
   classesFromList,
   declarations,
   filtersFor,
+  readCheckout,
   selectBenchmarks,
 } from './benchmark-selection.mjs';
 
@@ -27,12 +31,36 @@ const SUITES = [
 
 const DIR = 'L/benchmarks/L.Benchmarks/';
 
+/**
+ * The Logging benchmarks reference their module, which references Core; the generator comes in as an
+ * analyzer, over a line break as the real project files write it. Nothing references M.
+ */
+const BENCHMARK_PROJECT = `<Project>
+  <ItemGroup>
+    <ProjectReference Include="..\\..\\src\\L\\L.csproj" />
+    <ProjectReference Include="..\\..\\..\\Gen\\src\\Gen\\Gen.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>`;
+
 /** A checkout with two Logging classes sharing nothing, one through a chain of helpers, and Result. */
 function checkout() {
   return new Map([
     ['scripts/benchmarks.mjs', 'harness'],
+    ['Directory.Packages.props', '<Project />'],
     [BASELINE_PATH, JSON.stringify({ 'L.Benchmarks.Json.JsonBenchmarks.Write': 100, 'R.Benchmarks.ResultBenchmarks.Map': 0 })],
-    [`${DIR}L.Benchmarks.csproj`, '<Project />'],
+    [`${DIR}L.Benchmarks.csproj`, BENCHMARK_PROJECT],
+    [`${DIR}Context/ContextBenchmarks.cs`, 'namespace L.Benchmarks.Context;\npublic class ContextBenchmarks { [Benchmark] public void Push() { using var s = LogContextScope.Push(); } }'],
+    ['L/src/L/L.csproj', '<Project><ItemGroup><ProjectReference Include="..\\..\\..\\Core\\src\\Core\\Core.csproj" /></ItemGroup></Project>'],
+    ['L/src/L/Context/LogContextScope.cs', 'namespace L.Context;\npublic sealed class LogContextScope { private readonly Clock _clock = new(); }'],
+    ['L/src/L/Context/LogContext.cs', 'namespace L.Context;\npublic sealed class LogContext { }'],
+    ['Core/src/Core/Core.csproj', '<Project />'],
+    ['Core/src/Core/Clock.cs', 'namespace Core;\npublic sealed class Clock { }'],
+    ['Gen/src/Gen/Gen.csproj', '<Project />'],
+    ['Gen/src/Gen/Templates/WriterTemplate.cs', 'namespace Gen.Templates;\ninternal sealed class WriterTemplate { }'],
+    ['shared/SourceGen/CSharpTemplate.cs', 'namespace Shared;\npublic abstract class CSharpTemplate { }'],
+    ['M/src/M/M.csproj', '<Project />'],
+    ['M/src/M/Thing.cs', 'namespace M;\npublic sealed class Thing { }'],
     [`${DIR}Program.cs`, 'namespace L.Benchmarks;\npublic class Program { void Main() { Run(typeof(Json.JsonBenchmarks)); Run(typeof(Modules.ActionsBenchmarks)); } }\npublic class SharedConfig { }'],
     [`${DIR}Json/JsonBenchmarks.cs`, 'namespace L.Benchmarks.Json;\npublic class JsonBenchmarks { private readonly LastLine _line = new(); [Benchmark] public void Write() {} }'],
     [`${DIR}Json/LastLine.cs`, 'namespace L.Benchmarks.Json;\ninternal sealed class LastLine { private readonly LineBuffer _b = new(); }'],
@@ -149,6 +177,84 @@ test('a report next to the benchmarks selects nothing', () => {
   const selection = changed({ 'R/benchmarks/reports/old-report-github.md': 'a newer report' });
 
   assert.deepEqual(selection.suites, { Logging: { classes: [] }, Result: { classes: [] } });
+});
+
+// #188 changed LogContextScope under Pragmatic.Logging/src, and the job read only the benchmark project:
+// it reported "nothing this change reaches" for a class that pushes a context on every row (#189).
+test('a change to a type in a referenced module selects the benchmark class that uses it', () => {
+  const selection = changed({ 'L/src/L/Context/LogContextScope.cs': 'namespace L.Context;\npublic sealed class LogContextScope { private readonly Clock _clock = new(); int _depth; }' });
+
+  assert.deepEqual(selection.suites, { Logging: { classes: ['L.Benchmarks.Context.ContextBenchmarks'] }, Result: { classes: [] } });
+});
+
+test('a change in a module the referenced module references reaches through both', () => {
+  const selection = changed({ 'Core/src/Core/Clock.cs': 'namespace Core;\npublic sealed class Clock { long _ticks; }' });
+
+  assert.deepEqual(selection.suites.Logging.classes, ['L.Benchmarks.Context.ContextBenchmarks']);
+});
+
+test('a change in a referenced module that no benchmark uses selects nothing', () => {
+  const selection = changed({ 'L/src/L/Context/LogContext.cs': 'namespace L.Context;\npublic sealed class LogContext { int _n; }' });
+
+  assert.deepEqual(selection.suites, { Logging: { classes: [] }, Result: { classes: [] } });
+});
+
+test('a change to a module no benchmark project references selects nothing', () => {
+  const selection = changed({ 'M/src/M/Thing.cs': 'namespace M;\npublic sealed class Thing { int _n; }', 'M/src/M/M.csproj': '<Project Sdk="x" />' });
+
+  assert.deepEqual(selection.suites, { Logging: { classes: [] }, Result: { classes: [] } });
+});
+
+test('a referenced project file selects the whole suite, as the benchmark project file does', () => {
+  const selection = changed({ 'Core/src/Core/Core.csproj': '<Project Sdk="x" />' });
+
+  assert.deepEqual(selection.suites.Logging, { all: 'Core/src/Core/Core.csproj changed', classes: [] });
+});
+
+// A generator writes code into the benchmarks and the modules; no benchmark names a template, so its
+// reach cannot be read from the sources.
+test('a change to a generator the suite is built with selects the whole suite', () => {
+  const selection = changed({ 'Gen/src/Gen/Templates/WriterTemplate.cs': 'namespace Gen.Templates;\ninternal sealed class WriterTemplate { int _n; }' });
+
+  assert.deepEqual(selection.suites.Logging, { all: 'Gen/src/Gen/Templates/WriterTemplate.cs changed', classes: [] });
+  assert.deepEqual(selection.suites.Result, { classes: [] });
+});
+
+test('the shared code compiled into every generator selects the suites built with one', () => {
+  const selection = changed({ 'shared/SourceGen/CSharpTemplate.cs': 'namespace Shared;\npublic abstract class CSharpTemplate { int _n; }' });
+
+  assert.deepEqual(selection.suites.Logging, { all: 'shared/SourceGen/CSharpTemplate.cs changed', classes: [] });
+  assert.deepEqual(selection.suites.Result, { classes: [] });
+});
+
+test('a file every project is built with runs everything', () => {
+  assert.deepEqual(changed({ 'Directory.Packages.props': '<Project Sdk="x" />' }), { all: 'Directory.Packages.props changed' });
+});
+
+test('a reference through an MSBuild property the selection cannot resolve selects the whole suite', () => {
+  const selection = changed({ 'L/src/L/L.csproj': '<Project><ItemGroup><ProjectReference Include="$(Elsewhere)X.csproj" /></ItemGroup></Project>' });
+
+  assert.deepEqual(selection.suites.Logging, { all: 'L/src/L/L.csproj changed', classes: [] });
+  const unresolved = selectBenchmarks(
+    new Map([...checkout(), ['L/src/L/L.csproj', '<Project><ItemGroup><ProjectReference Include="$(Elsewhere)X.csproj" /></ItemGroup></Project>']]),
+    new Map([...checkout(), ['L/src/L/L.csproj', '<Project><ItemGroup><ProjectReference Include="$(Elsewhere)X.csproj" /></ItemGroup></Project>']]),
+    SUITES);
+  assert.equal(unresolved.suites.Logging.all, 'L/src/L/L.csproj references $(Elsewhere)X.csproj, which the selection cannot resolve');
+});
+
+test('the referenced modules are read from the checkout on disk, and an unreferenced one is not', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bench-checkout-'));
+  for (const [path, text] of checkout()) {
+    mkdirSync(join(root, dirname(path)), { recursive: true });
+    writeFileSync(join(root, path), text);
+  }
+
+  const files = readCheckout(root, SUITES);
+
+  for (const path of ['L/src/L/Context/LogContextScope.cs', 'Core/src/Core/Clock.cs', 'Gen/src/Gen/Templates/WriterTemplate.cs', 'shared/SourceGen/CSharpTemplate.cs', 'Directory.Packages.props']) {
+    assert.equal(files.get(path), checkout().get(path), path);
+  }
+  assert.equal(files.has('M/src/M/Thing.cs'), false);
 });
 
 test('a type named in a comment is not a declaration', () => {

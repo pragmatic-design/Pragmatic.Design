@@ -17,6 +17,7 @@ import { join } from 'node:path';
 import {
   TOLERANCE_BYTES,
   abReport,
+  allocationReport,
   allocationsFromJson,
   compareAllocations,
   parseTime,
@@ -101,6 +102,25 @@ test('on a partial run a selected class that measured nothing fails', () => {
 
   assert.equal(result.failed, true);
   assert.deepEqual(result.notRun, [{ name: 'A.New' }]);
+});
+
+// BenchmarkDotNet skips a class whose [GlobalSetup] throws and exits 0; a class that never ran has no
+// baseline entry to go missing from. RedactionOverheadBenchmarks went unmeasured every night that way (#183).
+test('on a full run a listed class that measured nothing fails and is named, and the baseline is still judged whole', () => {
+  const baseline = { 'A.B.Log': 2368, 'A.Other.Write': 50, 'A.Gone.Write': 10 };
+
+  const result = compareAllocations({ 'A.B.Log': 2368, 'A.Other.Write': 50 }, baseline, null, ['A.B', 'A.Other', 'A.Skipped']);
+
+  assert.equal(result.failed, true);
+  assert.deepEqual(result.notRun, [{ name: 'A.Skipped' }]);
+  assert.deepEqual(result.missing, [{ name: 'A.Gone.Write', base: 10 }]);
+  assert.match(allocationReport(result, 2), /listed class\(es\) measured nothing[\s\S]*`A\.Skipped`/);
+});
+
+test('on a full run every listed class that ran within its baseline passes', () => {
+  const baseline = { 'A.B.Log': 2368, 'A.Other.Write': 50 };
+
+  assert.equal(compareAllocations({ 'A.B.Log': 2368, 'A.Other.Write': 50 }, baseline, null, ['A.B', 'A.Other']).failed, false);
 });
 
 test('allocations are read from the JSON reports, the larger of two jobs kept', () => {
