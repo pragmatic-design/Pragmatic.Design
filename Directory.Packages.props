@@ -184,7 +184,7 @@
        ══════════════════════════════════════════════════════ -->
   <ItemGroup>
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.3" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
   </ItemGroup>
 
   <!-- ══════════════════════════════════════════════════════
