@@ -156,7 +156,7 @@
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )",
-          "System.Security.Cryptography.Pkcs": "[9.0.3, )"
+          "System.Security.Cryptography.Pkcs": "[9.0.21, )"
         }
       },
       "pragmatic.email.model": {
@@ -530,9 +530,9 @@
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "CentralTransitive",
-        "requested": "[9.0.3, )",
-        "resolved": "9.0.3",
-        "contentHash": "4XYeGOYBYtvaF2bH+cps+vPWjI5jQCWR7R1B4dI9I1Da9JQrXYP7mxdci+zKV2Ie4JafaOnOoNaDtzxkaXUxCg=="
+        "requested": "[9.0.21, )",
+        "resolved": "9.0.21",
+        "contentHash": "KD+oHoYIxwNCajjVe58WVwq9cRpum+Pg3tRveDRtkcaw6w3oc7sNBoMRtb5P5OehI3bgv1ucMpgjf8lpj5J96A=="
       }
     }
   }
