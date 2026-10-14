@@ -222,6 +222,37 @@ the same code allocates 352 and 584 B (that run and the `LoggingBenchmarks` one 
 optimisation does not apply, as in the request middleware, which returns the scope to its caller, the chain
 would save 8 B on the context and the scope together and cost 8 B on a context alone.
 
+**#134, second step: the context is its own node.** One `AsyncLocal` again, without a frame beside the
+context: a `LogContext` pushed as it was created is itself a node of the scopes' chain, with one internal link
+(8 B), and what pops it stays a separate object held only by the caller's `using`, inlined into the push so the
+JIT can still allocate it on the stack. A context pushed again with `LogContextScope.Push` gets a node of its
+own, since the same context may be a node in another flow. Against the code before it, the same machine and
+runtime (.NET 10.0.13),
+[`classic-probe-134-before-context-node`](benchmarks/reports/classic-probe-134-before-context-node_ClassicProbeBenchmarks-report-github.md)
+and [`classic-probe-134-context-node`](benchmarks/reports/classic-probe-134-context-node_ClassicProbeBenchmarks-report-github.md):
+
+| Row | Before | Context as node | ZLogger |
+|---|---:|---:|---:|
+| The context alone (properties together) | 320 B | 328 B | 264 B |
+| The context, properties one by one | 336 B | 312 B | — |
+| The context and the scope, no call | 552 B, 117.4 ns | 544 B, 120.1 ns | 488 B, 87.3 ns |
+| The whole scenario | 784 B | 776 B | 768 B |
+
+Bytes go down by 8 where a request holds both, which is the case the change is for; the time of the context and
+the scope did not move beyond the run's deviation. In `LoggingBenchmarks`
+([`local-134-context-node`](benchmarks/reports/local-134-context-node_LoggingBenchmarks-report-github.md)):
+
+| Library | Mean | Ratio | Deviation | Allocated |
+|---|---:|---:|---:|---:|
+| **Pragmatic** | **642.7 ns** | baseline | | **840 B** |
+| ZLogger | 652.1 ns | 1.01× slower | 0.05 | 832 B |
+| NLog | 1,149.9 ns | 1.79× slower | 0.06 | 2,872 B |
+| Serilog | 1,232.7 ns | 1.92× slower | 0.09 | 3,000 B |
+
+A tie in time on this machine, and 8 B above ZLogger. What is left is the context itself: a `LogContext` (it
+inherits, reads by name, takes more properties later) and the copy of the caller's array, where ZLogger's scope
+keeps the caller's array as it is.
+
 ## A JSON line: `JsonSinkBenchmarks`
 
 ⚠️ **Not the run of the rest of this page.** These numbers come from a run on 2026-10-09 on the machine

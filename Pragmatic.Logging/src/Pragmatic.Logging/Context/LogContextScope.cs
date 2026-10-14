@@ -5,14 +5,16 @@ namespace Pragmatic.Logging.Context;
 /// <summary>
 /// Manages the current LogContext using AsyncLocal for proper async/await support.
 /// </summary>
+/// <remarks>
+/// The context lives in the same ambient chain as the logger's scopes (<see cref="AmbientChain" />): a pushed context
+/// and a scope begun after it are popped in reverse order, as nested <c>using</c> blocks pop them.
+/// </remarks>
 public static class LogContextScope
 {
-    private static readonly AsyncLocal<LogContext?> _current = new();
-
     /// <summary>
     /// Gets the current LogContext, or null if none is set.
     /// </summary>
-    public static LogContext? Current => _current.Value;
+    public static LogContext? Current => AmbientChain.NearestContext(AmbientChain.Current);
 
     /// <summary>
     /// Pushes a new LogContext to the current scope.
@@ -22,7 +24,7 @@ public static class LogContextScope
     public static IDisposable Push(LogContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return new Scope(context);
+        return AmbientChain.PushExisting(context);
     }
 
     /// <summary>
@@ -31,8 +33,8 @@ public static class LogContextScope
     /// <returns>A disposable scope that restores the previous context when disposed</returns>
     public static IDisposable PushContext()
     {
-        var newContext = _current.Value?.CreateChild() ?? new LogContext();
-        return new Scope(newContext);
+        var newContext = Current?.CreateChild() ?? new LogContext();
+        return AmbientChain.PushNew(newContext);
     }
 
     /// <summary>
@@ -46,8 +48,8 @@ public static class LogContextScope
 
         // Built at once: setting them one by one copied the properties into a new array per pair.
         var items = LogContextProperties.From(properties);
-        var newContext = _current.Value?.CreateChild(items) ?? new LogContext(null, items);
-        return new Scope(newContext);
+        var newContext = Current?.CreateChild(items) ?? new LogContext(null, items);
+        return AmbientChain.PushNew(newContext);
     }
 
     /// <summary>
@@ -58,9 +60,9 @@ public static class LogContextScope
     /// <returns>A disposable scope that restores the previous context when disposed</returns>
     public static IDisposable PushProperty(string name, object? value)
     {
-        var newContext = _current.Value?.CreateChild() ?? new LogContext();
+        var newContext = Current?.CreateChild() ?? new LogContext();
         newContext.SetProperty(name, value);
-        return new Scope(newContext);
+        return AmbientChain.PushNew(newContext);
     }
 
     /// <summary>
@@ -71,7 +73,7 @@ public static class LogContextScope
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static object? GetProperty(string name)
     {
-        return _current.Value?.GetProperty(name);
+        return Current?.GetProperty(name);
     }
 
     /// <summary>
@@ -83,7 +85,7 @@ public static class LogContextScope
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T? GetProperty<T>(string name)
     {
-        return _current.Value != null ? _current.Value.GetProperty<T>(name) : default(T);
+        return Current is { } current ? current.GetProperty<T>(name) : default(T);
     }
 
     /// <summary>
@@ -93,32 +95,15 @@ public static class LogContextScope
     /// <param name="value">Property value</param>
     public static void SetProperty(string name, object? value)
     {
-        if (_current.Value == null)
+        var current = Current;
+        if (current == null)
         {
-            _current.Value = new LogContext();
+            // Never popped: it lasts until the async flow leaves the method that set it, or until a scope it was
+            // pushed over is disposed.
+            current = new LogContext();
+            AmbientChain.PushNew(current);
         }
 
-        _current.Value.SetProperty(name, value);
-    }
-
-    private sealed class Scope : IDisposable
-    {
-        private readonly LogContext? _previousContext;
-        private bool _disposed;
-
-        public Scope(LogContext context)
-        {
-            _previousContext = _current.Value;
-            _current.Value = context;
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _current.Value = _previousContext;
-                _disposed = true;
-            }
-        }
+        current.SetProperty(name, value);
     }
 }

@@ -30,6 +30,12 @@ public sealed class LogContext : IMutableLogContext, IDisposable
     private bool _disposed;
 
     /// <summary>
+    ///     The node under this one in <see cref="AmbientChain" />, when this context was pushed as it was created. Set
+    ///     once, before the context becomes the top: the context is its own node, with no node object beside it.
+    /// </summary>
+    internal object? AmbientPrevious { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the LogContext class.
     /// </summary>
     public LogContext()
