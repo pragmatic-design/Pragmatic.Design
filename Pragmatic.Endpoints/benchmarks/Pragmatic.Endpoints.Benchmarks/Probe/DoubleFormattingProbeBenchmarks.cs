@@ -1,13 +1,14 @@
 using System.Globalization;
 using BenchmarkDotNet.Attributes;
 using Pragmatic.Endpoints.Benchmarks.Documents;
+using Pragmatic.Serialization;
 
 namespace Pragmatic.Endpoints.Benchmarks.Probe;
 
 /// <summary>
 ///     What formatting a double costs on its own (#149), apart from any writer: <c>double.TryFormat</c> into
 ///     UTF-8, as <c>Utf8JsonRun.NumberValue(double)</c> calls it, over every coordinate of <c>canada.json</c> and
-///     over a set of values chosen to take every branch of the formatter.
+///     over a set of values chosen to take every branch of the formatter; and the Ryu formatter that replaced it there.
 /// </summary>
 [MemoryDiagnoser]
 public class DoubleFormattingProbeBenchmarks
@@ -39,6 +40,22 @@ public class DoubleFormattingProbeBenchmarks
 
     [Benchmark]
     public int TryFormat_Branches() => FormatAll(Branches);
+
+    /// <summary>The same values through the formatter the runs use now, which writes the same bytes.</summary>
+    [Benchmark]
+    public int Shortest_Canada() => ShortestAll(_canada);
+
+    [Benchmark]
+    public int Shortest_Branches() => ShortestAll(Branches);
+
+    private int ShortestAll(double[] values)
+    {
+        var total = 0;
+        foreach (var value in values)
+            total += ShortestRoundTrip.Format(value, _buffer);
+
+        return total;
+    }
 
     private int FormatAll(double[] values)
     {

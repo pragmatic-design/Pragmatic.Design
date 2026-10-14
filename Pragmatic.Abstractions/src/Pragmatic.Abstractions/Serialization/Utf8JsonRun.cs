@@ -200,8 +200,7 @@ public ref struct Utf8JsonRun
 
         var target = Reserve(MaxFloatingPoint + 1);
         var at = Separator(target);
-        value.TryFormat(target[at..], out var count, provider: CultureInfo.InvariantCulture);
-        Value(at + count);
+        Value(at + ShortestRoundTrip.Format(value, target[at..]));
     }
 
     /// <summary>A float, in its shortest round-trip invariant form, as the writer writes one.</summary>
@@ -213,8 +212,7 @@ public ref struct Utf8JsonRun
 
         var target = Reserve(MaxFloatingPoint + 1);
         var at = Separator(target);
-        value.TryFormat(target[at..], out var count, provider: CultureInfo.InvariantCulture);
-        Value(at + count);
+        Value(at + ShortestRoundTrip.Format(value, target[at..]));
     }
 
     /// <summary>A decimal, in the general format, as the writer writes one.</summary>

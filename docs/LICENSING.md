@@ -69,6 +69,13 @@ Each published NuGet package includes the full text of its applicable license (M
 Business). The per-package mapping is defined centrally in `Directory.Build.props`; this page is the
 authoritative human-readable map.
 
+## Third-party code
+
+`Pragmatic.Abstractions/src/Pragmatic.Abstractions/Serialization/Ryu/` is a C# port of
+[Ryu](https://github.com/ulfjack/ryu) (Copyright 2018 Ulf Adams), used under the
+[Boost Software License 1.0](https://www.boost.org/LICENSE_1_0.txt): each ported file keeps that notice,
+and the license text is in the same folder.
+
 ## Contributions
 
 Contributions are accepted under the [Contributor License Agreement](../CLA.md), signed once on the
