@@ -7,7 +7,7 @@ namespace Pragmatic.Documents.Templating.Data.Providers;
 /// <summary>
 /// Data source that reads and deserializes a JSON file.
 /// </summary>
-public sealed class JsonFileDataSource<T> : IDataSourceProvider where T : class
+public sealed class JsonFileDataSource<[TemplateData] T> : IDataSourceProvider where T : class
 {
     private readonly string _filePath;
     private readonly JsonTypeInfo<T>? _typeInfo;

@@ -7,15 +7,24 @@ namespace Pragmatic.Documents.Templating.Data;
 /// Fallback property accessor using cached reflection.
 /// Used when no registered accessor claims the property and the object is not a dictionary.
 /// Note: This is the ONLY place in the template engine that uses reflection,
-/// ⚠️ NOT opt-in: TemplateDataContext falls back to it automatically on a JIT runtime. No generator
-/// emits an accessor; the ones tried first are the dictionary accessor and whatever WithAccessor
-/// registered, so a typed object reaches this unless the application wrote an accessor for it.
+/// ⚠️ NOT opt-in: TemplateDataContext falls back to it automatically on a JIT runtime. Tried first are
+/// the dictionary accessor, whatever WithAccessor registered, and the accessors the generator writes
+/// into TemplateAccessors for the types a source is added with when they are known at compile time.
+/// What still reaches this: data added as <c>object</c>, anonymous types, a runtime type that is a
+/// subclass of the one the source was added with, and types the generated code cannot name.
 /// </summary>
 internal sealed class ReflectionPropertyAccessor : IPropertyAccessor
 {
     public static ReflectionPropertyAccessor Instance { get; } = new();
 
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> Cache = new();
+
+    /// <summary>Whether a property of <paramref name="type"/> has ever been looked up here.</summary>
+    /// <remarks>
+    ///     For the tests that prove a typed source is read without reflection: every lookup, found or not,
+    ///     leaves its key in the cache, so an empty answer means this class never saw the type.
+    /// </remarks>
+    internal static bool HasRead(Type type) => Cache.Keys.Any(key => key.Item1 == type);
 
     public object? GetValue(object target, string propertyName)
     {

@@ -3,7 +3,7 @@ namespace Pragmatic.Documents.Templating.Data;
 /// <summary>
 /// A data source backed by an async factory. Resolved once and cached.
 /// </summary>
-public sealed class AsyncDataSource<T>(string name, Func<CancellationToken, ValueTask<T>> factory) : IDataSourceProvider
+public sealed class AsyncDataSource<[TemplateData] T>(string name, Func<CancellationToken, ValueTask<T>> factory) : IDataSourceProvider
     where T : class
 {
     private readonly Lock _gate = new();

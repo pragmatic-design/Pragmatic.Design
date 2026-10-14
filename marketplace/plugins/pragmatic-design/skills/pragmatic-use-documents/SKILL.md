@@ -106,8 +106,10 @@ template a tenant uploaded, log it and render.
 ⚠️ **Dictionaries, not entities, as sources.** The names a template may use become the application's
 public vocabulary for that document: a dictionary makes it a list somebody wrote down, instead of every
 property (and navigation) the entity happens to have. Renaming a key breaks templates silently: a
-warning, not an error. Typed objects work too, through reflection on a JIT runtime; under Native AOT a
-property no accessor covers **throws**, so pass dictionaries there.
+warning, not an error. Typed objects work too: added with their type known (`AddSource<T>`,
+`DataSourceCatalog.Add<T>`), the generator writes their accessors and those of the types reached from
+them, Native AOT included. Added as `object` or as an anonymous type they go through reflection, and
+under Native AOT a property no accessor covers **throws**.
 
 **Where templates come from.** `EmbeddedPdxTemplateSource` (a module's own; two modules cannot collide
 on one output path as copied files do), `DirectoryPdxTemplateSource` (files an operator edits in place;

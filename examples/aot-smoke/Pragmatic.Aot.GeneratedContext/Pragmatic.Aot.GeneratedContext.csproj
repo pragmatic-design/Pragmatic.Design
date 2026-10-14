@@ -18,6 +18,9 @@
     <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <!-- A typed template source, read through the accessors the SG writes: under Native AOT there is no
+         reflective fallback, so without them the read throws. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

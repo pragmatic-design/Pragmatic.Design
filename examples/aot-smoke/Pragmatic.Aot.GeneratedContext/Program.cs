@@ -103,7 +103,20 @@ if (ticketBack is null || ticketBack.Code != "T-77" || ticketBack.Note != "urgen
     return 1;
 }
 
-Console.WriteLine($"AOT-GEN-OK: {json} | {dtoJson} | {lineJson} | {shipmentJson} | {ticketJson}");
+// A typed template source. Under Native AOT the data context has no reflective fallback and throws on
+// a property no accessor covers, so this read works only through the accessors the SG writes for the
+// types a source is added with — here Customer, and Profile reached through one of its properties.
+var templateData = new Pragmatic.Documents.Templating.Data.TemplateDataContext()
+    .AddSource("letter", new Letter { To = new Profile { Name = "carla", Age = 30 } });
+var addressee = await templateData.ResolveAsync("letter.to.name").ConfigureAwait(false);
+
+if (addressee as string != "carla" || templateData.Warnings.Count != 0)
+{
+    Console.Error.WriteLine($"AOT-GEN-FAIL: typed template source read '{addressee}'");
+    return 1;
+}
+
+Console.WriteLine($"AOT-GEN-OK: {json} | {dtoJson} | {lineJson} | {shipmentJson} | {ticketJson} | template: {addressee}");
 return 0;
 
 namespace App
@@ -196,5 +209,11 @@ namespace App
     {
         public required string Code { get; init; }
         public string Note { get; init; } = "";
+    }
+
+    // The data a template is given, typed: the SG writes its accessors, and Profile's through To.
+    public sealed class Letter
+    {
+        public Profile To { get; init; } = new();
     }
 }

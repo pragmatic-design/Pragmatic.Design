@@ -69,6 +69,9 @@
     <!-- [StoresNotifications], so ABoundaryDeclarationReachesItsDbContextTests declares the real
          attribute rather than a copy of its name — the reader is pinned to the type it claims to read. -->
     <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <!-- [TemplateData] and its members, so TheTemplateDataEntryPointsAreAllSeenTests compares the
+         names the generator looks for with the members the runtime really marks. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
   </ItemGroup>
 
 </Project>

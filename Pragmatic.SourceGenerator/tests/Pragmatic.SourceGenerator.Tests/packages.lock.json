@@ -744,6 +744,9 @@
           "Pragmatic.Cryptography": "[1.0.0, )"
         }
       },
+      "pragmatic.documents.templating": {
+        "type": "Project"
+      },
       "pragmatic.email": {
         "type": "Project",
         "dependencies": {
