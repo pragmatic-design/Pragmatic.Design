@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Features.Manifest.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Manifest.Transforms;
@@ -51,7 +52,8 @@ internal static class ErrorExtensionExtractor
 
                 extensions.Add(new ManifestErrorExtensionModel
                 {
-                    Name = ToCamelCase(prop.Name),
+                    // The name the server writes (ResultFeature): the body naming rule, so URL is "url".
+                    Name = JsonWireNames.CamelCase(prop.Name),
                     Type = prop.Type.ToDisplayString()
                 });
             }
@@ -60,11 +62,5 @@ internal static class ErrorExtensionExtractor
         }
 
         return extensions.ToImmutable();
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name.Substring(1);
     }
 }
