@@ -190,6 +190,38 @@ ZLogger's caller hands one array to one scope; and two `AsyncLocal`s — the con
 ZLogger has one, so each push and pop copies a two-entry map. Closing it changes what `LogContextScope`
 is, which is #134.
 
+**#134: the properties handed over together; one ambient value tried and not kept.**
+`LogContextScope.PushContext(properties)` is now the documented way to push several properties, and the
+Production row uses it: the two properties in one array, as ZLogger's caller hands its scope one.
+[`local-134-push-together`](benchmarks/reports/local-134-push-together_LoggingBenchmarks-report-github.md),
+2026-10-14:
+
+| Library | Mean | Ratio | Deviation | Allocated |
+|---|---:|---:|---:|---:|
+| ZLogger | 600.1 ns | 1.10× faster | 0.08 | 832 B |
+| **Pragmatic** | **655.6 ns** | baseline | | **848 B** |
+| NLog | 1,151.7 ns | 1.76× slower | 0.12 | 2,872 B |
+| Serilog | 1,289.9 ns | 1.97× slower | 0.21 | 3,000 B |
+
+Production is still ZLogger's: 55 ns, beyond both rows' deviation (32 and 31 ns), and 16 B. In
+[`classic-probe-134-push-together`](benchmarks/reports/classic-probe-134-push-together_ClassicProbeBenchmarks-report-github.md)
+the context alone is 320 B with the properties together and 336 B set one by one
+(`Classic_Production_ContextPropertyByProperty`), against ZLogger's 264 B; the context and the scope are
+552 B against 488 B. What is left is the `LogContext` and the second ambient value.
+
+One `AsyncLocal` for the context and the scopes, the frame of a pushed context in the scopes' own chain,
+was measured and not kept
+([`classic-probe-134-one-chain`](benchmarks/reports/classic-probe-134-one-chain_ClassicProbeBenchmarks-report-github.md)):
+the context alone went from 320 to 360 B and the context and the scope from 552 to 576 B. The cause is the
+JIT, not the map. The object that pops a pushed context is held only by the caller's `using`, so in a
+benchmark method the JIT allocates it on the stack; a frame of the chain is the ambient value itself, and
+always reaches the heap. With the JIT's stack allocation turned off (`DOTNET_JitObjectStackAllocation=0`,
+[`classic-probe-134-no-stack-allocation`](benchmarks/reports/classic-probe-134-no-stack-allocation_ClassicProbeBenchmarks-report-github.md))
+the same code allocates 352 and 584 B (that run and the `LoggingBenchmarks` one above were on .NET 10.0.13, the two probe runs before them on
+10.0.12). Where the
+optimisation does not apply, as in the request middleware, which returns the scope to its caller, the chain
+would save 8 B on the context and the scope together and cost 8 B on a context alone.
+
 ## A JSON line: `JsonSinkBenchmarks`
 
 ⚠️ **Not the run of the rest of this page.** These numbers come from a run on 2026-10-09 on the machine

@@ -185,9 +185,11 @@ public class LoggingBenchmarks
     [Benchmark(Baseline = true), BenchmarkCategory("Production")]
     public void Pragmatic_Production()
     {
-        using var context = LogContextScope.PushContext();
-        LogContextScope.Current!.SetProperty("CorrelationId", _correlationId);
-        LogContextScope.Current.SetProperty("RequestId", _requestId);
+        using var context = LogContextScope.PushContext(new KeyValuePair<string, object?>[]
+        {
+            new("CorrelationId", _correlationId),
+            new("RequestId", _requestId),
+        });
         Structured(_pragmaticProduction);
     }
 
