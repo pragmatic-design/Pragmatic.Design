@@ -245,8 +245,9 @@ prevent. See `examples/aot-smoke/README.md` for what each sample covers.
 ## Benchmarks
 
 Performance is not in the gate. `.github/workflows/benchmarks.yml` runs the Logging, Result and
-Endpoints benchmarks nightly, on demand, and on a pull request that changes a benchmark or the
-harness, through `node scripts/benchmarks.mjs ci`. It judges two kinds of result differently:
+Endpoints benchmarks nightly, on demand, and on a pull request that changes a benchmark, the harness,
+a module's source, the shared code or a file every project is built with, through
+`node scripts/benchmarks.mjs ci`. It judges two kinds of result differently:
 
 - **Allocations fail the run.** Bytes allocated per operation are deterministic for a code path, so
   they hold on a shared runner. `benchmarks/allocation-baseline.json` holds one number per benchmark;
@@ -270,12 +271,21 @@ and the baseline is the runner's.
 
 **A pull request runs only the benchmark classes its change reaches** (`scripts/benchmark-selection.mjs`):
 a class whose file changed, a class that uses a changed helper (through as many helpers as it takes),
-and a class whose baseline entry changed. A change to a project or lock file runs that whole suite,
-and a change to the harness runs everything. The ratchet then judges only the classes that ran. It
-fails one that measured nothing, which also catches a new class that cannot fail as missing from the
-baseline. The proposed baseline is still the whole file. The nightly run measures every benchmark, so
-a class that a pull request leaves out, and the effect of a change outside the benchmark projects, are
-checked there.
+and a class whose baseline entry changed. The helpers include the source of every module the benchmark
+project references, transitively: a type changed under a module's `src/` runs the classes that use it.
+A change to a project or lock file of the benchmark project or of a module it references runs that
+whole suite, and so does a change to a generator it is built with, or to the shared code compiled into
+every generator (`shared/SourceGen/`): what they change is generated code, which no benchmark names. A
+change to the harness or to `Directory.Build.props`, `Directory.Build.targets`,
+`Directory.Packages.props` or `global.json` runs everything. A change to a module no benchmark project
+references runs nothing. The ratchet then judges only the classes that ran. It fails one that measured
+nothing, which also catches a new class that cannot fail as missing from the baseline. The proposed
+baseline is still the whole file.
+
+**The nightly run measures every benchmark, and lists every class first.** A class the suites list
+that measures nothing fails the run, named in the report: BenchmarkDotNet skips a class whose
+`[GlobalSetup]` throws and still exits 0, and a class that never ran has no baseline entry to go
+missing from (#183).
 
 
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you

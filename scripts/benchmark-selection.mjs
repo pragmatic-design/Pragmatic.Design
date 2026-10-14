@@ -13,12 +13,17 @@
  *   many helper files as it takes. Names are matched as words, so a helper named in a comment selects
  *   too: that costs a class run, not a missed one;
  * - a baseline entry added, changed or removed selects the class it belongs to;
- * - anything in a suite's project that is not C# (the project file, the lock file), or a deleted C#
- *   file, selects the whole suite: what it reaches cannot be read from the sources;
- * - a change to the harness selects everything, since the harness is what the run proves.
+ * - the modules a suite's project references, transitively, are read the same way: a changed type in
+ *   one selects the benchmark classes that use it, through the helpers in the module and in the
+ *   benchmark project alike (#189);
+ * - anything in a suite's project or a module it references that is not C# (a project file, a lock
+ *   file), or a deleted C# file, selects the whole suite: what it reaches cannot be read from the sources;
+ * - a change to a generator the suite is built with, or to the shared code compiled into every
+ *   generator, selects the whole suite: it changes generated code, which no benchmark names;
+ * - a change to the harness, or to a file every project is built with, selects everything.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, posix, relative } from 'node:path';
 
 /** The files whose change is proven only by running every benchmark. */
 export const HARNESS = [
@@ -26,6 +31,24 @@ export const HARNESS = [
   'scripts/benchmarks.mjs',
   'scripts/benchmark-selection.mjs',
 ];
+
+/** Files outside any project that every project is built with: the SDK, the build and the packages. */
+export const BUILD_INPUTS = [
+  'Directory.Build.props',
+  'Directory.Build.targets',
+  'Directory.Packages.props',
+  'global.json',
+];
+
+/**
+ * The shared code `Directory.Build.props` compiles into every generator (`IsGenerator`), without its
+ * Testing folder, which only generator tests get.
+ */
+export const GENERATOR_SHARED_SOURCE = 'shared/SourceGen/';
+const GENERATOR_SHARED_TESTING = 'shared/SourceGen/Testing/';
+
+/** The MSBuild properties a project file uses in a path, as `Directory.Build.props` defines them. */
+const PATH_PROPERTIES = { '$(PragmaticRoot)': '', '$(SharedSourceGenPath)': GENERATOR_SHARED_SOURCE };
 
 /** Where the allocation baseline lives, relative to a checkout. */
 export const BASELINE_PATH = 'benchmarks/allocation-baseline.json';
@@ -78,33 +101,103 @@ function splitTopLevel(list) {
 }
 
 /**
+ * The projects a benchmark project is built from: itself and its `ProjectReference`s, transitively, by
+ * checkout-relative path. Each has its directory (`dir`, with a trailing '/'), the files outside it that
+ * it compiles by name (`compiled`), and whether it is `opaque`: referenced as an analyzer (a generator),
+ * or referenced by one. `unresolved` names each path an MSBuild property hides from this reading.
+ *
+ * `read` gives a project file's text by checkout-relative path, or undefined when there is none.
+ */
+export function referencedProjects(read, project) {
+  const projects = new Map();
+  const unresolved = [];
+  const visit = (path, opaque) => {
+    const known = projects.get(path);
+    if (known && (known.opaque || !opaque)) return;
+    const text = read(path);
+    if (text === undefined) return;
+    const dir = posix.dirname(path);
+    const items = projectItems(text, dir);
+    projects.set(path, { dir: `${dir}/`, compiled: items.compiled, opaque });
+    for (const include of items.hidden) unresolved.push({ project: path, include });
+    for (const r of items.references) visit(r.path, opaque || r.analyzer);
+  };
+  visit(project.replaceAll('\\', '/'), false);
+  return { projects, unresolved };
+}
+
+/** A project file's references and named sources, as checkout-relative paths. */
+function projectItems(text, dir) {
+  const references = [];
+  const compiled = [];
+  const hidden = [];
+  for (const m of text.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<(ProjectReference|Compile)\b([^>]*)>/g)) {
+    // `<Compile Remove="…">` and `Update` name nothing the project gains.
+    const include = /\bInclude="([^"]+)"/.exec(m[2])?.[1];
+    if (!include) continue;
+    const path = resolveInclude(include, dir);
+    if (path === null) hidden.push(include);
+    else if (m[1] === 'ProjectReference') references.push({ path, analyzer: /\bOutputItemType="Analyzer"/.test(m[2]) });
+    else compiled.push(path);
+  }
+  return { references, compiled, hidden };
+}
+
+/** An `Include` as a checkout-relative path, or null when a property or a wildcard hides what it names. */
+function resolveInclude(include, dir) {
+  let path = include.replaceAll('\\', '/');
+  const property = Object.keys(PATH_PROPERTIES).find((p) => path.startsWith(p));
+  if (property) path = PATH_PROPERTIES[property] + path.slice(property.length);
+  else path = posix.join(dir, path);
+  return path.includes('$(') || path.includes('*') ? null : posix.normalize(path);
+}
+
+/**
  * The benchmark classes a change reaches, per suite.
  *
  * `head` and `base` map a path relative to the checkout ('/'-separated) to the file's text, and hold at
- * least the harness, the baseline and every file under each suite's project directory. Returns
- * `{ all: reason }` when everything must run, or `{ suites: { [name]: { all?: reason, classes: [] } } }`
- * where `classes` are full class names (`Namespace.Type`).
+ * least what `readCheckout` reads: the harness, the build inputs, the baseline, and every file of each
+ * project a suite is built from. Returns `{ all: reason }` when everything must run, or
+ * `{ suites: { [name]: { all?: reason, classes: [] } } }` where `classes` are full class names
+ * (`Namespace.Type`).
  */
 export function selectBenchmarks(head, base, suites) {
   const changed = [...new Set([...head.keys(), ...base.keys()])].filter((p) => head.get(p) !== base.get(p)).sort();
 
-  const harness = changed.find((p) => HARNESS.includes(p));
+  const harness = changed.find((p) => HARNESS.includes(p) || BUILD_INPUTS.includes(p));
   if (harness) return { all: `${harness} changed` };
 
   const changedEntries = changedBaselineEntries(head.get(BASELINE_PATH), base.get(BASELINE_PATH));
+  const how = (p) => `${p} ${head.has(p) ? 'changed' : 'was deleted'}`;
   const result = {};
   for (const suite of suites) {
     const dir = dirname(suite.project).replaceAll('\\', '/') + '/';
-    const inSuite = changed.filter((p) => p.startsWith(dir));
-    const opaque = inSuite.find((p) => !p.endsWith('.cs') || !head.has(p));
+    const { projects, unresolved } = referencedProjects((p) => head.get(p) ?? base.get(p), suite.project);
+    const of = (opaque) => {
+      const chosen = [...projects.values()].filter((p) => p.opaque === opaque);
+      return (path) => chosen.some((p) => path.startsWith(p.dir) || p.compiled.includes(path));
+    };
+    const inPlain = of(false);
+    const inOpaque = of(true);
+    const generated = [...projects.values()].some((p) => p.opaque);
+    const inGenerator = (p) => inOpaque(p)
+      || (generated && p.startsWith(GENERATOR_SHARED_SOURCE) && !p.startsWith(GENERATOR_SHARED_TESTING));
+
+    const inSuite = changed.filter(inPlain);
+    const opaque = changed.find(inGenerator) ?? inSuite.find((p) => !p.endsWith('.cs') || !head.has(p));
     if (opaque) {
-      result[suite.name] = { all: `${opaque} ${head.has(opaque) ? 'changed' : 'was deleted'}`, classes: [] };
+      result[suite.name] = { all: how(opaque), classes: [] };
+      continue;
+    }
+    if (unresolved.length > 0) {
+      const { project, include } = unresolved[0];
+      result[suite.name] = { all: `${project} references ${include}, which the selection cannot resolve`, classes: [] };
       continue;
     }
 
-    const files = [...head.keys()].filter((p) => p.startsWith(dir) && p.endsWith('.cs')).map((path) => ({ path, ...declarations(head.get(path)) }));
+    const files = [...head.keys()].filter((p) => p.endsWith('.cs') && inPlain(p)).map((path) => ({ path, ...declarations(head.get(path)) }));
     const benchmarkClasses = new Map();
-    for (const f of files.filter((f) => f.benchmark)) {
+    for (const f of files.filter((f) => f.benchmark && f.path.startsWith(dir))) {
       for (const t of f.types) benchmarkClasses.set(t, f.namespace ? `${f.namespace}.${t}` : t);
     }
 
@@ -203,7 +296,7 @@ export function readCheckout(checkout, suites) {
     const full = join(checkout, path);
     if (existsSync(full)) files.set(path, readFileSync(full, 'utf8'));
   };
-  for (const path of [...HARNESS, BASELINE_PATH]) add(path);
+  for (const path of [...HARNESS, ...BUILD_INPUTS, BASELINE_PATH]) add(path);
 
   const walk = (dir) => {
     if (!existsSync(dir)) return;
@@ -216,6 +309,15 @@ export function readCheckout(checkout, suites) {
       }
     }
   };
-  for (const suite of suites) walk(join(checkout, dirname(suite.project)));
+  // Only the benchmark project's own folder was read, so a change to a module's source reached nothing (#189).
+  for (const suite of suites) {
+    const read = (path) => (add(path), files.get(path));
+    const { projects } = referencedProjects(read, suite.project);
+    for (const project of projects.values()) {
+      walk(join(checkout, project.dir));
+      for (const path of project.compiled) add(path);
+    }
+    if ([...projects.values()].some((p) => p.opaque)) walk(join(checkout, GENERATOR_SHARED_SOURCE));
+  }
   return files;
 }

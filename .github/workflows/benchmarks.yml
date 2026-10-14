@@ -24,7 +24,9 @@ on:
         default: main
   schedule:
     - cron: '0 3 * * *'   # nightly: main against main, the ratchet and the noise floor of the A/B
-  # A change to the harness or to a benchmark is proven by running it; nothing else here triggers it.
+  # A change that can reach a benchmark: the harness, a benchmark, a module's source, the shared code or a
+  # file every project is built with. Which classes it reaches is the selection's to decide, and a change
+  # to a module no benchmark project references runs nothing (#189).
   pull_request:
     branches: [main]
     paths:
@@ -33,6 +35,12 @@ on:
       - scripts/benchmark-selection.mjs
       - benchmarks/**
       - '*/benchmarks/**'
+      - '*/src/**'
+      - shared/**
+      - Directory.Build.props
+      - Directory.Build.targets
+      - Directory.Packages.props
+      - global.json
 
 concurrency:
   group: benchmarks-${{ github.ref }}
