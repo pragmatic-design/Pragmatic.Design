@@ -55,6 +55,30 @@ public class ErrorExtensionExtractorTests
         extensions.Single(e => e.Name == "nightsRequested").Type.Should().Be("int");
     }
 
+    /// <summary>
+    ///     The manifest publishes the names the server writes, and both follow the body naming rule: the whole
+    ///     leading acronym lowered, not only its first letter (#178).
+    /// </summary>
+    [Fact]
+    public void Extract_AcronymLedProperties_FollowTheBodyNamingRule()
+    {
+        var symbol = Symbol(ErrorBase + """
+
+            namespace App
+            {
+                public sealed class AcronymLedError : Pragmatic.Error
+                {
+                    public string URL { get; init; } = "";
+                    public string IOStream { get; init; } = "";
+                }
+            }
+            """, "App.AcronymLedError");
+
+        var extensions = ErrorExtensionExtractor.ExtractFromSymbol(symbol);
+
+        extensions.Select(e => e.Name).Should().BeEquivalentTo("url", "ioStream");
+    }
+
     [Fact]
     public void Extract_StopsAtThePragmaticErrorBase_SoBaseFieldsAreNotExtensions()
     {

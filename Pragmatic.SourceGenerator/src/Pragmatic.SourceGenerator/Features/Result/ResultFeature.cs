@@ -229,7 +229,8 @@ internal static class ResultFeature
             var isNullable = prop.Type.NullableAnnotation == NullableAnnotation.Annotated
                              || prop.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
             var isValueType = prop.Type.IsValueType;
-            var camelCase = char.ToLowerInvariant(prop.Name[0]) + prop.Name.Substring(1);
+            // The body naming rule, as the manifest publishes it (ErrorExtensionExtractor): URL is "url", not "uRL".
+            var camelCase = JsonWireNames.CamelCase(prop.Name);
 
             builder.Add(new ErrorPropertyModel(prop.Name, typeName, camelCase, isNullable, isValueType,
                 MapJsonSchemaType(prop.Type), EnumValuesOf(prop.Type)));
