@@ -13,15 +13,13 @@ public static class DocxRenderer
         DocxResources? resources = null, DocxRenderOptions? options = null);
     public static void RenderTo(Stream output, DocumentModel model,
         DocxResources? resources = null, DocxRenderOptions? options = null);
-    public static Task<byte[]> RenderAsync(DocumentModel model,
-        DocxResources? resources = null, DocxRenderOptions? options = null, CancellationToken ct = default);
-    public static Task RenderToStreamAsync(Stream output, DocumentModel model,
-        DocxResources? resources = null, DocxRenderOptions? options = null, CancellationToken ct = default);
 }
 ```
 
 - `Render` materialises the full DOCX in memory.
 - `RenderTo(Stream)` streams into the target.
+- There is no `RenderAsync`. Rendering is CPU work: on a server, call `Render` on the request's own
+  thread. Wrapping it in `Task.Run` frees no thread, it only adds a hop.
 - All of them accept optional `DocxResources` (images by name) and `DocxRenderOptions`. The class is
   static: there is nothing to construct.
 

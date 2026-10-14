@@ -39,7 +39,7 @@ public partial class DownloadTheDecisionLetterAsWordEndpoint : Endpoint<FileResp
             return NotFoundError.For<Guid>("Case", Id);
 
         var letter = await _letters.ForCaseAsync(Id, ct).ConfigureAwait(false);
-        var docx = await DocxRenderer.RenderAsync(letter.Model, ct: ct).ConfigureAwait(false);
+        var docx = DocxRenderer.Render(letter.Model);
 
         return new FileResponse(new MemoryStream(docx), DocxContentType, $"decision-{Id}.docx");
     }

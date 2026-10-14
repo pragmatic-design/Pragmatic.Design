@@ -12,8 +12,6 @@ public static class PdfRenderer
     public static bool IsSupported { get; }
     public static byte[] Render(DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null);
     public static void RenderTo(Stream output, DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null);
-    public static Task<byte[]> RenderAsync(DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null, CancellationToken ct = default);
-    public static Task RenderToStreamAsync(Stream output, DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null, CancellationToken ct = default);
 }
 
 public static class PdfOperations
@@ -27,6 +25,9 @@ public static class PdfOperations
 - `Render` materialises the whole PDF in memory. Fine for invoices, letters, one-offs.
 - `RenderTo(Stream, ...)` streams directly to the destination. Use this for large reports.
 - `GetPageCount` is a lightweight PDF-aware scan, with no full parsing.
+- There is no `RenderAsync`. Rendering is CPU work: on a server, call `Render` on the request's own
+  thread. Wrapping it in `Task.Run` frees no thread, it only adds a hop. `PdfBatch` is asynchronous
+  because it renders several documents at once.
 
 ---
 

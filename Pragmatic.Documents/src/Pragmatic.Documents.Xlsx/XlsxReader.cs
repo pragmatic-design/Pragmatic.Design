@@ -19,24 +19,4 @@ public static class XlsxReader
     /// <summary>Read an XLSX from a stream.</summary>
     public static SpreadsheetModel Read(Stream stream)
         => Internal.XlsxPackageReader.Read(stream);
-
-    /// <summary>Read an XLSX from a byte array (async wrapper).</summary>
-    public static Task<SpreadsheetModel> ReadAsync(byte[] data, CancellationToken ct = default)
-        => Task.Run(() =>
-        {
-            // ct on Task.Run only gates scheduling; observe it inside the work so an already-
-            // cancelled token short-circuits before the (potentially large) parse runs.
-            ct.ThrowIfCancellationRequested();
-            // MemoryStream over the existing buffer — no copy of `data`.
-            using var ms = new MemoryStream(data, writable: false);
-            return Read(ms);
-        }, ct);
-
-    /// <summary>Read an XLSX from a stream (async wrapper).</summary>
-    public static Task<SpreadsheetModel> ReadAsync(Stream stream, CancellationToken ct = default)
-        => Task.Run(() =>
-        {
-            ct.ThrowIfCancellationRequested();
-            return Read(stream);
-        }, ct);
 }

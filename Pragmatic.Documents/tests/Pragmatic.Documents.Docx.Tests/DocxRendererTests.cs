@@ -264,21 +264,7 @@ public class DocxRendererTests
     }
 
     [Fact]
-    public async Task RenderAsync_ProducesValidDocx()
-    {
-        var model = new DocumentBuilder()
-            .Title("Async Test")
-            .Page(p => p.Text("Async content"))
-            .Build();
-
-        var docx = await DocxRenderer.RenderAsync(model);
-
-        docx[0].Should().Be(0x50);
-        docx[1].Should().Be(0x4B);
-    }
-
-    [Fact]
-    public async Task RenderToStreamAsync_WritesToStream()
+    public void RenderTo_WritesToStream()
     {
         var model = new DocumentBuilder()
             .Title("Stream Test")
@@ -286,7 +272,7 @@ public class DocxRendererTests
             .Build();
 
         using var ms = new MemoryStream();
-        await DocxRenderer.RenderToStreamAsync(ms, model);
+        DocxRenderer.RenderTo(ms, model);
 
         ms.Length.Should().BeGreaterThan(0);
     }

@@ -45,27 +45,6 @@ public static class PdfRenderer
     }
 
     /// <summary>
-    /// Render a DocumentModel to PDF bytes asynchronously.
-    /// Note: offloads CPU-bound Typst compilation to the thread pool. Cancellation applies
-    /// only before/after the compilation, not during it.
-    /// </summary>
-    public static Task<byte[]> RenderAsync(DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null, CancellationToken ct = default)
-    {
-        return Task.Run(() => Render(model, resources, options), ct);
-    }
-
-    /// <summary>
-    /// Render and write to a stream asynchronously.
-    /// Note: offloads CPU-bound Typst compilation to the thread pool. Cancellation applies
-    /// only before/after the compilation, not during it.
-    /// </summary>
-    public static async Task RenderToStreamAsync(Stream output, DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null, CancellationToken ct = default)
-    {
-        var pdf = await RenderAsync(model, resources, options, ct).ConfigureAwait(false);
-        await output.WriteAsync(pdf, ct).ConfigureAwait(false);
-    }
-
-    /// <summary>
     /// Guards options whose effect lives in the native Typst engine, which does not yet consume them.
     /// We fail loudly rather than accept the option and silently ignore it.
     /// </summary>

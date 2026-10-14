@@ -42,7 +42,7 @@ public static class PdfBatch
     {
         var pdfs = await RenderAsync(models, maxConcurrency, ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
-        return await PdfOperations.MergeAsync(pdfs, ct).ConfigureAwait(false);
+        return PdfOperations.Merge(pdfs);
     }
 
     private static async Task<byte[]> RenderOneAsync(

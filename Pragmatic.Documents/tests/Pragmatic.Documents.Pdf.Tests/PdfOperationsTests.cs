@@ -72,17 +72,6 @@ public class PdfOperationsTests
     }
 
     [NativeRequiredFact]
-    public async Task MergeAsync_TwoPdfs_ProducesValidPdf()
-    {
-        var pdf1 = CreateSimplePdf("Async1", 2);
-        var pdf2 = CreateSimplePdf("Async2", 3);
-
-        var merged = await PdfOperations.MergeAsync([pdf1, pdf2]);
-
-        PdfOperations.GetPageCount(merged).Should().Be(5);
-    }
-
-    [NativeRequiredFact]
     public void Split_ExtractsPageRange()
     {
         var pdf = CreateSimplePdf("Split", 5);
@@ -131,16 +120,6 @@ public class PdfOperationsTests
         var act = () => PdfOperations.Split(pdf, fromPage: 2, toPage: 5);
 
         act.Should().Throw<PdfRenderException>();
-    }
-
-    [NativeRequiredFact]
-    public async Task SplitAsync_ExtractsRange()
-    {
-        var pdf = CreateSimplePdf("AsyncSplit", 5);
-
-        var extracted = await PdfOperations.SplitAsync(pdf, fromPage: 1, toPage: 2);
-
-        PdfOperations.GetPageCount(extracted).Should().Be(2);
     }
 
     [NativeRequiredFact]

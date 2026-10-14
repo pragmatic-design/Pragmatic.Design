@@ -18,10 +18,6 @@ public static class PdfOperations
         catch (BadImageFormatException ex) { throw NativePdfImports.NativeUnavailable(ex); }
     }
 
-    /// <summary>Merge multiple PDFs into a single PDF asynchronously.</summary>
-    public static Task<byte[]> MergeAsync(byte[][] pdfs, CancellationToken ct = default)
-        => Task.Run(() => Merge(pdfs), ct);
-
     /// <summary>Extract a range of pages from a PDF (1-based, inclusive).</summary>
     public static byte[] Split(ReadOnlySpan<byte> pdf, uint fromPage, uint toPage)
     {
@@ -29,10 +25,6 @@ public static class PdfOperations
         catch (DllNotFoundException ex) { throw NativePdfImports.NativeUnavailable(ex); }
         catch (BadImageFormatException ex) { throw NativePdfImports.NativeUnavailable(ex); }
     }
-
-    /// <summary>Extract a range of pages from a PDF asynchronously.</summary>
-    public static Task<byte[]> SplitAsync(ReadOnlyMemory<byte> pdf, uint fromPage, uint toPage, CancellationToken ct = default)
-        => Task.Run(() => Split(pdf.Span, fromPage, toPage), ct);
 
     /// <summary>Get the number of pages in a PDF.</summary>
     public static uint GetPageCount(ReadOnlySpan<byte> pdf)

@@ -41,7 +41,7 @@ public partial class DownloadTheDecisionLetterEndpoint : Endpoint<FileResponse, 
             return NotFoundError.For<Guid>("Case", Id);
 
         var letter = await _letters.ForCaseAsync(Id, ct).ConfigureAwait(false);
-        var pdf = await PdfRenderer.RenderAsync(letter.Model, ct: ct).ConfigureAwait(false);
+        var pdf = PdfRenderer.Render(letter.Model);
 
         return new FileResponse(new MemoryStream(pdf), "application/pdf", $"decision-{Id}.pdf");
     }
