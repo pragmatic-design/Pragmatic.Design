@@ -19,6 +19,6 @@ MultiPageSample.Run(outputDir);
 BarcodeAndLandscapeSample.Run(outputDir);
 PdfPageSetupSample.Run(outputDir);
 await PdfBatchSample.Run(outputDir);
-await PdfOperationsSample.Run(outputDir);
+PdfOperationsSample.Run(outputDir);
 
 Console.WriteLine("\n=== All samples completed. Inspect the .pdf files in the output directory. ===");

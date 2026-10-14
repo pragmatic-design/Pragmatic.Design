@@ -5,12 +5,11 @@ namespace Pragmatic.Documents.Pdf.Samples.Samples;
 
 /// <summary>
 /// Post-processing on already-rendered PDF bytes with <see cref="PdfOperations"/>:
-/// page count, merge (sync + async) and page-range split — all backed by the
-/// native engine.
+/// page count, merge and page-range split — all backed by the native engine.
 /// </summary>
 public static class PdfOperationsSample
 {
-    public static async Task Run(string outputDir)
+    public static void Run(string outputDir)
     {
         Console.WriteLine("--- Merge / split / page-count (PdfOperations) ---");
 
@@ -32,16 +31,12 @@ public static class PdfOperationsSample
         var merged = PdfOperations.Merge(pdfA, pdfB);
         Console.WriteLine($"  Merge                  {merged.Length} bytes, {PdfOperations.GetPageCount(merged)} pages total");
 
-        // Merge (async) -> same result off the calling thread.
-        var mergedAsync = await PdfOperations.MergeAsync([pdfA, pdfB]);
-        Console.WriteLine($"  MergeAsync             {PdfOperations.GetPageCount(mergedAsync)} pages");
-
         // Split -> extract a 1-based, inclusive page range as a new PDF.
         var firstTwo = PdfOperations.Split(merged, fromPage: 1, toPage: 2);
         Console.WriteLine($"  Split(1..2)            {PdfOperations.GetPageCount(firstTwo)} pages");
 
-        var lastPage = await PdfOperations.SplitAsync(merged, fromPage: 3, toPage: 3);
-        Console.WriteLine($"  SplitAsync(3..3)       {PdfOperations.GetPageCount(lastPage)} page");
+        var lastPage = PdfOperations.Split(merged, fromPage: 3, toPage: 3);
+        Console.WriteLine($"  Split(3..3)            {PdfOperations.GetPageCount(lastPage)} page");
 
         var mergedPath = Path.Combine(outputDir, "operations-merged.pdf");
         File.WriteAllBytes(mergedPath, merged);

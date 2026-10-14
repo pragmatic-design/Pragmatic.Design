@@ -16,7 +16,6 @@ public static class XlsxRenderer
 {
     public static byte[] Render(SpreadsheetModel model);
     public static void RenderTo(Stream stream, SpreadsheetModel model);
-    public static Task RenderToStreamAsync(Stream stream, SpreadsheetModel model, CancellationToken ct = default);
 }
 
 public static class XlsxReader
@@ -25,6 +24,9 @@ public static class XlsxReader
     public static SpreadsheetModel Read(Stream stream);
 }
 ```
+
+There are no `…Async` methods. Writing and reading a workbook is CPU work: on a server, call them on
+the request's own thread. Wrapping them in `Task.Run` frees no thread, it only adds a hop.
 
 ---
 
@@ -180,7 +182,7 @@ The reader returns the same `SpreadsheetModel` type you'd build manually; roundt
 
 ## Large data sets
 
-For very wide exports (millions of rows), use `RenderToStreamAsync` and build rows lazily rather than materialising the whole `SpreadsheetModel`:
+For very wide exports (millions of rows), use `RenderTo` with the destination stream and build rows lazily rather than materialising the whole `SpreadsheetModel`:
 
 ```csharp
 // Build the model incrementally, feeding from a DB cursor
@@ -191,7 +193,7 @@ await foreach (var entity in dbCursor)
     sheet.Rows.Add(new Row { Cells = { new Cell { Value = entity.Id }, new Cell { Value = entity.Value } } });
 
 var model = new SpreadsheetModel { Sheets = { sheet } };
-await XlsxRenderer.RenderToStreamAsync(fs, model, ct);
+XlsxRenderer.RenderTo(fs, model);
 ```
 
 For truly streaming output (constant memory regardless of row count), the current renderer is not the right fit: it writes the OOXML package in one pass. File an issue if you need a streaming XLSX writer.

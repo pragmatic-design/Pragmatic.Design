@@ -208,17 +208,4 @@ public class XlsxReaderTests
         read.Sheets[0].Rows.Should().HaveCount(4);
         read.Sheets[0].Rows[3].Cells[1].Formula.Should().Be("SUM(B3:B4)");
     }
-
-    [Fact]
-    public async Task ReadAsync_Works()
-    {
-        var model = new SpreadsheetBuilder()
-            .Sheet("Async", s => s.Row("test"))
-            .Build();
-
-        var bytes = XlsxRenderer.Render(model);
-        var read = await XlsxReader.ReadAsync(bytes);
-
-        read.Sheets[0].Rows[0].Cells[0].Value.Should().Be("test");
-    }
 }

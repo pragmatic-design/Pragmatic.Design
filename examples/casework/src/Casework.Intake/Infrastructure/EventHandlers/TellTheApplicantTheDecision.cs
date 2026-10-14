@@ -65,7 +65,7 @@ internal sealed partial class TellTheApplicantTheDecision(
         foreach (var warning in letter.Warnings)
             LogTemplateGap(@event.Number, warning.Path, warning.Message);
 
-        var pdf = await PdfRenderer.RenderAsync(letter.Model, ct: ct).ConfigureAwait(false);
+        var pdf = PdfRenderer.Render(letter.Model);
 
         // Stored first, so what is attached below is a file that exists and can be fetched again.
         using var bytes = new MemoryStream(pdf);

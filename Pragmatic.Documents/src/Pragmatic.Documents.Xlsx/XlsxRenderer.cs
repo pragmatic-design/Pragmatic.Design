@@ -21,12 +21,4 @@ public static class XlsxRenderer
     {
         Internal.XlsxPackageWriter.Build(stream, model);
     }
-
-    /// <summary>Render to a byte array (async wrapper).</summary>
-    public static Task<byte[]> RenderAsync(SpreadsheetModel model, CancellationToken ct = default)
-        => Task.Run(() => Render(model), ct);
-
-    /// <summary>Render to a stream (async wrapper).</summary>
-    public static Task RenderToStreamAsync(Stream stream, SpreadsheetModel model, CancellationToken ct = default)
-        => Task.Run(() => RenderTo(stream, model), ct);
 }

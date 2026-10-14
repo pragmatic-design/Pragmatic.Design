@@ -243,17 +243,6 @@ public class XlsxRendererTests
     }
 
     [Fact]
-    public async Task RenderAsync_Works()
-    {
-        var model = new SpreadsheetBuilder()
-            .Sheet("Async", s => s.Row("test"))
-            .Build();
-
-        var bytes = await XlsxRenderer.RenderAsync(model);
-        bytes.Should().NotBeEmpty();
-    }
-
-    [Fact]
     public void Render_HiddenRow()
     {
         var model = new SpreadsheetModel
