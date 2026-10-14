@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Pragmatic.Logging.Context;
 
 namespace Pragmatic.Logging.Providers;
 
@@ -165,53 +166,27 @@ internal sealed class PragmaticLogger(string categoryName, PragmaticLoggerProvid
 /// <summary>
 /// Simple external scope provider for managing logging scopes.
 /// </summary>
+/// <remarks>The scopes live in the same ambient chain as the pushed <see cref="LogContext" /> (<see cref="AmbientChain" />).</remarks>
 internal static class LoggerExternalScopeProvider
 {
-    private static readonly AsyncLocal<Scope?> _currentScope = new();
-
     /// <summary>Whether any scope is active on the current async flow (allocation-free check).</summary>
-    public static bool HasActiveScopes => _currentScope.Value != null;
+    public static bool HasActiveScopes => AmbientChain.NearestScope(AmbientChain.Current) != null;
 
     public static IDisposable? CreateScope<T>(T state) where T : notnull
     {
         if (state == null)
             return null;
 
-        return new Scope(state);
+        return new AmbientScope(state);
     }
 
     public static void ForEachScope<TState>(Action<object?, TState> callback, TState state)
     {
-        var current = _currentScope.Value;
+        var current = AmbientChain.NearestScope(AmbientChain.Current);
         while (current != null)
         {
             callback(current.State, state);
-            current = current.Parent;
-        }
-    }
-
-    // The scope node doubles as the caller's IDisposable: one allocation per BeginScope.
-    private sealed class Scope : IDisposable
-    {
-        private bool _disposed;
-
-        public Scope(object state)
-        {
-            State = state;
-            Parent = _currentScope.Value;
-            _currentScope.Value = this;
-        }
-
-        public Scope? Parent { get; }
-        public object State { get; }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _currentScope.Value = Parent;
-                _disposed = true;
-            }
+            current = current.Outer;
         }
     }
 }
