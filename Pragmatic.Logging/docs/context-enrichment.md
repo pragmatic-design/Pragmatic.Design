@@ -465,6 +465,28 @@ logging.AddFile("logs/app.log", config =>
 
 ---
 
+## Pushing Properties for a Unit of Work
+
+To give every log line of a request, a message or a job the same properties, push them together with
+`LogContextScope.PushContext(properties)`. The context is built in one step, and disposing the returned scope
+restores the context that was current before:
+
+```csharp
+using var context = LogContextScope.PushContext(new KeyValuePair<string, object?>[]
+{
+    new("CorrelationId", correlationId),
+    new("RequestId", requestId),
+});
+```
+
+This is what `LoggingEnrichmentMiddleware` does for each request. A pushed context inherits the properties of
+the one it was pushed over, so a nested push adds to them and its dispose takes only its own away.
+
+`PushContext()` followed by `SetProperty` calls on `LogContextScope.Current` gives the same lines, but copies the
+properties once per call; keep it for a property that is known only later in the unit of work.
+
+---
+
 ## How Context Flows Through the Pipeline
 
 When a call is written, `PragmaticLoggerProviderBase` enriches it with context from two sources before passing it to `WriteLogCore`:

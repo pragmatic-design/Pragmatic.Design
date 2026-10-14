@@ -48,7 +48,6 @@ public class ClassicProbeBenchmarks
 
     private readonly string _correlationId = "corr-7f3a";
     private readonly string _requestId = "req-0042";
-    private KeyValuePair<string, object?>[] _contextProperties = null!;
 
     private ILogger _classic = null!;
     private ILogger _deferred = null!;
@@ -62,7 +61,6 @@ public class ClassicProbeBenchmarks
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-        _contextProperties = [new("CorrelationId", _correlationId), new("RequestId", _requestId)];
 
         _classic = Pragmatic(c => new PragmaticConsumingProvider("Classic", c, _classicSink));
         _deferred = Pragmatic(c => new PragmaticDeferredConsumingProvider("Deferred", c, _deferredSink));
@@ -147,12 +145,14 @@ public class ClassicProbeBenchmarks
         using var context = PragmaticContext();
     }
 
-    // The same two properties handed over together, as the request middleware does: against ContextOnly, what
-    // building them in one array saves (#134).
+    // The same two properties set one by one on the pushed context, as LoggingBenchmarks did before #134: against
+    // ContextOnly, what handing them over together saves.
     [Benchmark, BenchmarkCategory("Production")]
-    public void Classic_Production_ContextFromProperties()
+    public void Classic_Production_ContextPropertyByProperty()
     {
-        using var context = LogContextScope.PushContext(_contextProperties);
+        using var context = LogContextScope.PushContext();
+        LogContextScope.Current!.SetProperty("CorrelationId", _correlationId);
+        LogContextScope.Current.SetProperty("RequestId", _requestId);
     }
 
     [Benchmark, BenchmarkCategory("Production")]
@@ -213,14 +213,13 @@ public class ClassicProbeBenchmarks
         using var scope = logger.BeginScope(_scope);
     }
 
-    // As LoggingBenchmarks pushes them: each library's own request context mechanism.
-    private IDisposable PragmaticContext()
+    // As LoggingBenchmarks pushes them: each library's own request context mechanism, the properties handed over
+    // in one array as ZLogger's caller hands its scope one.
+    private IDisposable PragmaticContext() => LogContextScope.PushContext(new KeyValuePair<string, object?>[]
     {
-        var context = LogContextScope.PushContext();
-        LogContextScope.Current!.SetProperty("CorrelationId", _correlationId);
-        LogContextScope.Current.SetProperty("RequestId", _requestId);
-        return context;
-    }
+        new("CorrelationId", _correlationId),
+        new("RequestId", _requestId),
+    });
 
     private IDisposable ZLoggerContext() => _zlogger.BeginScope(new KeyValuePair<string, object?>[]
     {
