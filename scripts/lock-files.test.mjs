@@ -19,7 +19,7 @@ const WHOLE = {
   lockFiles: ['A/src/A/packages.lock.json', 'A/tests/A.Tests/packages.lock.json'],
   workflows: [{ path: '.github/workflows/ci.yml', text: '      - run: dotnet restore X.slnx --locked-mode\n' }],
   buildProps: PROPS,
-  globalJson: '{ "sdk": { "version": "10.0.303", "rollForward": "patch" } }',
+  globalJson: '{ "sdk": { "version": "10.0.303", "rollForward": "feature" } }',
   ilLinkVersions: new Map([['10.0.11', 2]]),
 };
 
@@ -65,17 +65,38 @@ test('locked mode everywhere, not only in CI, is not what is asked: a developer 
   ]);
 });
 
-test('an SDK that rolls forward to the latest patch is reported: the next patch moves every lock file', () => {
-  const globalJson = '{ "sdk": { "version": "10.0.302", "rollForward": "latestPatch" } }';
-  assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
-    "global.json rolls forward to 'latestPatch': a newer SDK patch would move every lock file",
-  ]);
+test('a clone builds with a newer SDK of another feature band: rolling forward by feature is accepted', () => {
+  const globalJson = '{ "sdk": { "version": "10.0.303", "rollForward": "feature" } }';
+  assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), []);
 });
+
+test("'patch' stays accepted: stricter than 'feature', and still installed exactly by setup-dotnet", () => {
+  const globalJson = '{ "sdk": { "version": "10.0.303", "rollForward": "patch" } }';
+  assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), []);
+});
+
+for (const rollForward of ['latestPatch', 'latestFeature', 'latestMinor', 'latestMajor']) {
+  test(`'${rollForward}' is reported: setup-dotnet would install whatever SDK is newest, and CI's lock files move with it`, () => {
+    const globalJson = `{ "sdk": { "version": "10.0.303", "rollForward": "${rollForward}" } }`;
+    assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
+      `global.json rolls forward to '${rollForward}': setup-dotnet would install the newest SDK instead of 10.0.303, and every locked restore in CI would fail`,
+    ]);
+  });
+}
+
+for (const rollForward of ['minor', 'major']) {
+  test(`'${rollForward}' is reported: a local build may leave the 10.0 line`, () => {
+    const globalJson = `{ "sdk": { "version": "10.0.303", "rollForward": "${rollForward}" } }`;
+    assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
+      `global.json rolls forward to '${rollForward}': a build could run on an SDK outside 10.0, which no lock file was written by`,
+    ]);
+  });
+}
 
 test('no rollForward at all is reported: the pin has to be written, not left to the default', () => {
   const globalJson = '{ "sdk": { "version": "10.0.303" } }';
   assert.deepEqual(lockFileProblems({ ...WHOLE, globalJson }), [
-    "global.json names no rollForward: say 'patch', so the SDK that wrote the lock files is the one used",
+    "global.json names no rollForward: say 'feature', so CI installs the SDK that wrote the lock files and a newer local one still builds",
   ]);
 });
 

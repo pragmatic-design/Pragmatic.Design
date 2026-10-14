@@ -12,9 +12,15 @@
  * restores reads as locked where it is written.
  *
  * The SDK is part of what a lock file records. It adds `Microsoft.NET.ILLink.Tasks` to the trimmable projects at the
- * version of the runtime it bundles, so a newer SDK patch resolves a newer one and every locked restore fails. So
- * `global.json` pins the patch (`rollForward: patch`, the exact version when it is installed, which `setup-dotnet`
- * does), and every lock file has to agree on one ILLink version: two of them mean the files were written by two SDKs.
+ * version of the runtime it bundles, so a newer SDK resolves a newer one and every locked restore fails. So CI has to
+ * run the exact SDK in `global.json`, and every lock file has to agree on one ILLink version: two of them mean the
+ * files were written by two SDKs.
+ *
+ * `setup-dotnet` installs that exact version unless `rollForward` starts with `latest`, which it turns into "the
+ * newest 10.0" and friends. `rollForward: feature` keeps CI exact and still lets a clone build with any newer 10.0
+ * SDK; `patch` used to be required, and stopped every contributor whose SDK was of a newer feature band. A newer
+ * local SDK rewrites the lock files on restore: those changes are not committed, and CI's locked restore says so if
+ * they are.
  *
  * Regenerate after changing a package, or the SDK in `global.json`:
  * `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
@@ -61,11 +67,14 @@ export function lockFileProblems({ projects, lockFiles, workflows, buildProps, g
     problems.push("Directory.Build.props does not set RestoreLockedMode when '$(CI)' is true");
 
   // Required in so many words: an absent policy leaves the reader to know the SDK's default.
-  const rollForward = JSON.parse(globalJson).sdk?.rollForward;
+  const sdk = JSON.parse(globalJson).sdk;
+  const rollForward = sdk?.rollForward;
   if (rollForward === undefined)
-    problems.push("global.json names no rollForward: say 'patch', so the SDK that wrote the lock files is the one used");
-  else if (rollForward !== 'patch' && rollForward !== 'disable')
-    problems.push(`global.json rolls forward to '${rollForward}': a newer SDK patch would move every lock file`);
+    problems.push("global.json names no rollForward: say 'feature', so CI installs the SDK that wrote the lock files and a newer local one still builds");
+  else if (rollForward.startsWith('latest'))
+    problems.push(`global.json rolls forward to '${rollForward}': setup-dotnet would install the newest SDK instead of ${sdk.version}, and every locked restore in CI would fail`);
+  else if (rollForward === 'minor' || rollForward === 'major')
+    problems.push(`global.json rolls forward to '${rollForward}': a build could run on an SDK outside ${sdk.version.split('.').slice(0, 2).join('.')}, which no lock file was written by`);
 
   if (ilLinkVersions.size > 1) {
     const counts = [...ilLinkVersions].map(([version, n]) => `${version} in ${n}`).join(', ');
