@@ -16,6 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The shortest round-trip formatter (Serialization/ShortestRoundTrip.cs) is compared byte for byte with
+         TryFormat by the tests, and measured against it by the benchmarks; neither is public surface. -->
+    <InternalsVisibleTo Include="Pragmatic.Abstractions.Tests" />
+    <InternalsVisibleTo Include="Pragmatic.Endpoints.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Abstractions.Analyzers\Pragmatic.Abstractions.Analyzers.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
