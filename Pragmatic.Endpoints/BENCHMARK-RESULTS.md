@@ -1,9 +1,9 @@
 # Pragmatic.Endpoints: Benchmark Results
 
 What writing one response body costs: the host as it answers through `System.Text.Json`, STJ's fastest path,
-RE:Dox, and the generated UTF-8 writer of the response type (#51, #131, #130). The numbers come from runs on
-2026-10-08 (before #131), 2026-10-09 (the subtraction probes and the final run of #131, the string probes and
-the final run of #130) of:
+RE:Dox, and the generated UTF-8 writer of the response type (#51, #131, #130, #150). The numbers come from runs
+on 2026-10-08 (before #131), 2026-10-09 (the subtraction probes and the final run of #131, the string probes and
+the final run of #130) and 2026-10-14 (every competitor into a kept buffer, #150) of:
 
 ```bash
 cd Pragmatic.Endpoints/benchmarks/Pragmatic.Endpoints.Benchmarks
@@ -17,14 +17,18 @@ dotnet run -c Release -- --filter "*ProbeBenchmarks*"       # the subtraction pr
 | Runtime | .NET 10.0.12, SDK 10.0.303, X64 RyuJIT AVX-512 |
 | Harness | BenchmarkDotNet 0.14.0, default job, `[MemoryDiagnoser]` |
 
-The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-130_*` for the current
-numbers, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
+The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-150_*` for the current
+numbers, `final-130_*` for the last run in which every competitor returned an array, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
 and `ab-*` files of 2026-10-08 for the numbers before #131. A number here that does not appear there is a
 mistake.
 
 ## What is compared
 
-Each competitor turns a graph already in memory into UTF-8 bytes, as an endpoint writing its result does.
+Each competitor turns a graph already in memory into UTF-8 bytes, as an endpoint writing its result does. Since
+#150 every one of them writes into one `ArrayBufferWriter<byte>` kept across calls and returns the count it
+wrote: the STJ rows through `JsonSerializer.Serialize(Utf8JsonWriter, …)` with a writer built from their own
+options, RE:Dox through its `IBufferWriter<byte>` overload. Until then every competitor returned a `byte[]`, and
+every run below the current one was measured that way; the current results say why that changed.
 
 | Competitor | What it is |
 |---|---|
@@ -32,7 +36,7 @@ Each competitor turns a graph already in memory into UTF-8 bytes, as an endpoint
 | `Host_GeneratedMetadata` | The same options with source-generated metadata for the type in front of the seam. |
 | `Stj_FastPath` | STJ's own fastest path: a context in default mode with camelCase and nulls left out, and no converter or reference handling, so its serialization handler is used wherever it can be. |
 | `REDox` | `CAPCOM.REDox` 1.0.0, `DoxSerializerSettings` with camelCase and nulls left out on write. |
-| `Generated_Writer` | The writer the Pragmatic generator emits for the type, through an endpoint that answers with it (`Endpoints/`), into a buffer and a `Utf8JsonWriter` kept across calls, as `GeneratedJsonResponse` writes a response; copied out at the end, as `SerializeToUtf8Bytes` copies its pooled buffer. |
+| `Generated_Writer` | The writer the Pragmatic generator emits for the type, through an endpoint that answers with it (`Endpoints/`), into the kept buffer through a `Utf8JsonWriter` kept across calls, as `GeneratedJsonResponse` writes a response. |
 | `Generated_Writer_DefaultEncoder` | The same writer with STJ's default encoder, the one `Stj_FastPath` writes with: what the writer costs apart from what the host's encoder costs. |
 
 ⚠️ **The host's encoder is ASP.NET's, `UnsafeRelaxedJsonEscaping`**, which leaves non-ASCII text and `<`, `>`,
@@ -41,7 +45,10 @@ them, so its Twitter numbers compared a host that does not exist: 523 KB of outp
 KB. The competitors are corrected; the 2026-10-05 numbers are not reused.
 
 Before anything is timed, `GlobalSetup` refuses to run unless every competitor writes the same document
-(parsed, `JsonNode.DeepEquals`), **and the generated writer writes the host's very bytes**.
+(parsed, `JsonNode.DeepEquals`), **and the generated writer writes the host's very bytes**. The host's row is
+also checked byte for byte against `SerializeToUtf8Bytes`: written into a `Utf8JsonWriter`, STJ takes the
+encoder from the writer and ignores the one in the options, so a writer built with another encoder would time
+a host that does not exist.
 `dotnet run -c Release -- verify` runs that check alone.
 
 ## Workloads
@@ -55,7 +62,31 @@ Before anything is timed, `GlobalSetup` refuses to run unless every competitor w
 
 ## Results
 
-### Current: every workload has a writer (#130)
+### Current: every competitor into a kept buffer (#150)
+
+Per serialization; lower is better; ± is the run's standard deviation. The four workloads run together,
+2026-10-14 (`final-150_*`). Allocated is per call: with no array returned, what is left is what the serializer
+allocates for itself.
+
+| Workload | Host_Reflection | Stj_FastPath | REDox | Generated_Writer | Allocated, writer vs fast path |
+|---|---:|---:|---:|---:|---|
+| `twitter.json` | 362.6 μs | 398.3 μs ±7.09 | **225.4 μs** ±7.68 | 250.2 μs ±3.23 | 0 B vs 31,201 B |
+| `citm_catalog.json` | 718.2 μs | 286.6 μs ±10.46 | 410.2 μs | **164.1 μs** ±4.00 | 0 B vs 625 B |
+| `canada.json` | 8.194 ms | 7.415 ms ±0.2011 | 7.619 ms | **7.048 ms** ±0.1240 | 0 B vs 0 B |
+| `ReservationPage` | 13.591 μs | 10.737 μs ±0.3105 | 11.967 μs | **7.831 μs** ±0.2094 | 0 B vs 0 B |
+
+The writer is ahead of the fast path by 37% on Twitter, 43% on CITM, 5% on Canada and 27% on the page, each
+beyond both sides' deviation, and allocates nothing. RE:Dox stays 11% ahead of it on Twitter.
+
+⚠️ **These numbers are not comparable with the runs below.** They time a different thing: the runs below
+include a fresh array of the whole document per call, which is a large-object-heap allocation for every
+workload but the page (about 420 KB, 470 KB and 2 MB). That allocation is what made the CITM rows step up
+mid-run on the CI runner (#150): in the probe run of #214 on the runner (workflow run 38256034345, read from
+its log), the rows that returned a large array stepped by about 85 μs part way through the run whether they ran
+the generated writer or not, and the same writer without the copy did not. Compare within a table, never
+across.
+
+### Every workload has a writer, every competitor returning an array (#130)
 
 Per serialization; lower is better; ± is the run's standard deviation. The four workloads run together on an
 idle machine, 2026-10-09 (`final-130_*`), late in the evening: every competitor is faster than in the run of
@@ -178,7 +209,8 @@ competitors, at once, the machine otherwise idle: the same number of runs for ea
   (`WriteNumber(name, value)`), read from the handler the STJ source generator emits for the benchmark's own
   context. The template now writes a leaf in one call; the encoder was measured as the other suspect and ruled
   out (`Generated_Writer_DefaultEncoder`, within the noise of `Generated_Writer`).
-- **Allocation is the output, and the writer allocates no more** than the fast path in any workload.
+- **The writer allocates nothing per call** once the output is not counted (#150). Until then the allocation
+  column was the output array, and the writer allocated no more than the fast path in any workload.
 - **Against the host as it answers today**, in the final run: 77% faster on CITM, 18% on Canada, 40% on the
   page.
 
@@ -199,7 +231,8 @@ RE:Dox stays ahead on Twitter, where the writer does not apply.
 
 ## Not covered
 
-- **Writing to the response body.** Every competitor returns a `byte[]`; a response writes into the body's
-  `PipeWriter`. The container suites prove that path answers right, not what it costs.
+- **Writing to the response body.** Every competitor writes into an `ArrayBufferWriter<byte>` kept across
+  calls; a response writes into the body's `PipeWriter`, which flushes to the socket. The container suites
+  prove that path answers right, not what it costs.
 - **Enums.** No workload carries one.
 - **Repetition across days, and Linux.** One day, one machine.
