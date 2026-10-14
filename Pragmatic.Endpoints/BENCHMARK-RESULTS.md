@@ -62,7 +62,32 @@ a host that does not exist.
 
 ## Results
 
-### Current: every competitor into a kept buffer (#150)
+### Current: a double formatter of our own (#149)
+
+The run's numbers are formatted by a port of Ryu that writes `double.TryFormat`'s bytes. Per serialization;
+lower is better. The benchmarks workflow's A/B on the GitHub runner for pull request #251 (workflow run
+38551225021, read from its log): base is `main` before the change, head is the change, both in the same job.
+The runner is slower than the machine of the tables below, so compare within a row.
+
+| Workload | Row | Base | Head | Head / base |
+|---|---|---:|---:|---:|
+| `canada.json` | `Generated_Writer` | 17.320 ms | **7.577 ms** | 0.44 |
+| `canada.json` | `Stj_FastPath` | 17.750 ms | 17.688 ms | 1.00 |
+| `canada.json` | `REDox` | 18.670 ms | 18.339 ms | 0.98 |
+| `citm_catalog.json` | `Generated_Writer` | 384.1 μs | 419.6 μs | 1.09 |
+| `citm_catalog.json` | `Generated_Writer_DefaultEncoder` | 390.1 μs | 395.5 μs | 1.01 |
+| `citm_catalog.json` | `Stj_FastPath` | 597.3 μs | 595.1 μs | 1.00 |
+| `ReservationPage` | `Generated_Writer` | 17.38 μs | 18.57 μs | 1.07 |
+| `ReservationPage` | `Generated_Writer_DefaultEncoder` | 19.41 μs | 19.16 μs | 0.99 |
+| `ReservationPage` | `Stj_FastPath` | 22.69 μs | 23.17 μs | 1.02 |
+
+On Canada the writer goes from level with the fast path to 57% ahead of it. CITM and the page format few
+doubles: their rows moved by less than the 10–20% the workflow gives as the runner's variation between runs,
+and the other writer row of each, which formats numbers the same way, moved by 1%. The formatter
+alone (`DoubleFormattingProbeBenchmarks`, `probe-149-ryu_*`, local) takes 2.93 ms for Canada's coordinates
+against 7.01 ms for `TryFormat`, and allocates nothing.
+
+### Every competitor into a kept buffer (#150)
 
 Per serialization; lower is better; ± is the run's standard deviation. The four workloads run together,
 2026-10-14 (`final-150_*`). Allocated is per call: with no array returned, what is left is what the serializer
@@ -224,8 +249,9 @@ in both full runs of the day (CITM 465 and 560 μs against 554 and 579, Canada 8
 encoder cannot change and hands it to the writer, which still writes every string and every name it has to
 escape.
 
-**A faster double formatter is the one lever left on Canada.** It is not in #131: it would have to write the
-digits `double.TryFormat` writes, for every value, and that is a piece of work of its own.
+**A faster double formatter was the one lever left on Canada**, and #149 pulled it: a port of Ryu that writes
+the digits `double.TryFormat` writes, checked against it on every binade of float and on sixteen million
+doubles.
 
 RE:Dox stays ahead on Twitter, where the writer does not apply.
 

@@ -72,21 +72,34 @@ public sealed class ShortestRoundTripTests
         mismatches.Should().BeEmpty();
     }
 
-    /// <summary>Every finite float, both signs: 4,278,190,080 values.</summary>
+    /// <summary>
+    ///     Every finite binade of float, both signs: the first and last 256 mantissas of each, where the interval
+    ///     around a power of two is asymmetric, and every 61st mantissa between them, shifted by the exponent so the low
+    ///     bits vary. About 70 million values. The check over all 4,278,190,080 finite floats was run once by hand for
+    ///     #149 and matched; it takes longer on a two-core CI runner than the gate allows a test to stay silent.
+    /// </summary>
     [Fact]
-    public void Format_EveryFloat_WritesWhatTryFormatWrites()
+    public void Format_FloatsAcrossEveryBinade_WritesWhatTryFormatWrites()
     {
+        const int mantissas = 1 << 23;
+        const int edge = 256;
+        const int stride = 61;
         var mismatches = new List<string>();
-        Parallel.For(0, 1 << 16, high =>
+        Parallel.For(0, 2 * 255, signAndExponent =>
         {
             Span<byte> actual = stackalloc byte[32];
             Span<byte> expected = stackalloc byte[32];
-            for (var low = 0; low < 1 << 16; low++)
+            var sign = (uint)(signAndExponent / 255) << 31;
+            var exponent = signAndExponent % 255;
+            var prefix = sign | ((uint)exponent << 23);
+            for (var mantissa = 0; mantissa < mantissas; mantissa++)
             {
-                var value = BitConverter.UInt32BitsToSingle(((uint)high << 16) | (uint)low);
-                if (!float.IsFinite(value))
-                    continue;
+                if (mantissa == edge)
+                    mantissa = edge + exponent % stride;
+                else if (mantissa > edge && mantissa < mantissas - edge)
+                    mantissa = Math.Min(mantissa + stride - 1, mantissas - edge);
 
+                var value = BitConverter.UInt32BitsToSingle(prefix | (uint)mantissa);
                 var expectedLength = Write(value, expected);
                 var actualLength = ShortestRoundTrip.Format(value, actual);
                 if (!actual[..actualLength].SequenceEqual(expected[..expectedLength]))
