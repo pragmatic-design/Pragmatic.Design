@@ -1,15 +1,20 @@
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Composition;
 using Pragmatic.SourceGenerator.Features.Composition.Models;
+using Pragmatic.SourceGenerator.Features.Documents.Models;
 using Pragmatic.SourceGenerator.Features.Documents.Templates;
+using Pragmatic.SourceGenerator.Features.Documents.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Documents;
 
 /// <summary>
 ///     Publishes that an assembly embeds document or mail templates, so the host registers it as a
-///     template source instead of each host writing <c>AddPdxTemplates</c> for each module it includes.
+///     template source instead of each host writing <c>AddPdxTemplates</c> for each module it includes;
+///     and writes the property accessors of the typed data the assembly gives a template.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -30,6 +35,8 @@ internal static class DocumentsFeature
     public static IncrementalValueProvider<EquatableArray<MetadataEntry>> Register(
         IncrementalGeneratorInitializationContext context)
     {
+        RegisterTemplateAccessors(context);
+
         var anchor = context.CompilationProvider.Select(static (compilation, _) => AnchorOf(compilation));
 
         context.RegisterSourceOutputSafe(anchor, static (ctx, type) =>
@@ -45,6 +52,44 @@ internal static class DocumentsFeature
                     MetadataCategoryIds.PdxTemplates,
                     "1.0",
                     PdxTemplatesMetadataTemplate.Payload(type)))));
+    }
+
+    /// <summary>
+    ///     Writes the property accessors of the types this assembly gives a template, so the data context
+    ///     reads them without reflection, and under Native AOT reads them at all.
+    /// </summary>
+    /// <remarks>
+    ///     Driven by the call sites rather than by a <c>DetectedFeatures</c> flag: a call can only bind a
+    ///     <c>[TemplateData]</c> parameter when Templating is referenced, so finding one is the condition.
+    ///     One file per assembly, the types sorted, so the output does not depend on the order the call
+    ///     sites are visited.
+    /// </remarks>
+    private static void RegisterTemplateAccessors(IncrementalGeneratorInitializationContext context)
+    {
+        var types = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                static (node, _) => TemplateDataTypeReader.IsCandidate(node),
+                static (ctx, ct) => TemplateDataTypeReader.Read(ctx, ct))
+            .Where(static models => models.Length > 0)
+            .Collect()
+            .Select(static (all, _) => new EquatableArray<TemplateDataTypeModel>(all
+                .SelectMany(static models => models.AsImmutableArray())
+                .GroupBy(static model => model.FullyQualifiedName, StringComparer.Ordinal)
+                .Select(static group => group.First())
+                .OrderBy(static model => model.FullyQualifiedName, StringComparer.Ordinal)
+                .ToImmutableArray()));
+
+        var assemblyName = context.CompilationProvider.Select(static (compilation, _) => compilation.AssemblyName ?? "Global");
+
+        context.RegisterSourceOutputSafe(types.Combine(assemblyName), static (ctx, pair) =>
+        {
+            var (models, assembly) = pair;
+            if (models.Length == 0)
+                return;
+
+            ctx.AddSource(new TemplateAccessorsTemplate(
+                GeneratedRegistrationNames.InGeneratedNamespace(assembly), models).RenderOutput());
+        });
     }
 
     /// <summary>The anchor type <c>[assembly: PdxTemplates&lt;TAnchor&gt;]</c> names, or <c>null</c>.</summary>

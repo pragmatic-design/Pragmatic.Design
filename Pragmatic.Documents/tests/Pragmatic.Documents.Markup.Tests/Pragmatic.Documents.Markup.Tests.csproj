@@ -9,6 +9,9 @@
     <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Documents.Email\Pragmatic.Documents.Email.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Documents.Templating.I18N\Pragmatic.Documents.Templating.I18N.csproj" />
+    <!-- The generator runs on THIS compilation: the typed-template tests read through the accessors it writes here. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

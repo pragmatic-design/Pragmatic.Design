@@ -48,8 +48,11 @@ public sealed class TemplateDataContext
         return this;
     }
 
-    /// <summary>Add a typed data source (type preserved for IntelliSense/SG).</summary>
-    public TemplateDataContext AddSource<T>(string name, T value) where T : class
+    /// <summary>
+    /// Add a typed data source. The source generator writes property accessors for <typeparamref name="T"/>
+    /// and the types reached from it, so the template reads it without reflection.
+    /// </summary>
+    public TemplateDataContext AddSource<[TemplateData] T>(string name, T value) where T : class
     {
         _sources[name] = value;
         return this;
@@ -232,6 +235,16 @@ public sealed class TemplateDataContext
             }
         }
 
+        // A type the generator wrote accessors for answers here, and its answer is final: a property it
+        // does not list is not on the type, so reflection would find nothing either.
+        if (TemplateAccessors.TryGet(target.GetType(), out var generated))
+        {
+            var found = generated.HasProperty(target, propertyName);
+            value = found ? generated.GetValue(target, propertyName) : null;
+
+            return found;
+        }
+
         // The reflection fallback below answers both questions at once, so ask it whether the property
         // exists before asking for its value.
         if (RuntimeFeature.IsDynamicCodeSupported
@@ -255,10 +268,11 @@ public sealed class TemplateDataContext
                 return accessor.GetValue(target, propertyName);
         }
 
-        // No registered accessor claims this property — nothing generates one; they come from
-        // WithAccessor. On a JIT runtime, fall back to cached reflection: a template names properties in
-        // text no compiler has seen, so refusing here would break a feature whose whole point is late
-        // binding.
+        // No accessor claims this property: neither one from WithAccessor nor one the generator wrote,
+        // which it does for the types a source is added with when they are known at compile time
+        // (TemplateAccessors). On a JIT runtime, fall back to cached reflection: a template names
+        // properties in text no compiler has seen, so refusing here would break a feature whose whole
+        // point is late binding.
         //
         // Under Native AOT there is no such fallback. Reflecting over a trimmed type finds nothing and
         // silently renders an empty value, and a template that quietly drops a field is worse than one
@@ -267,7 +281,8 @@ public sealed class TemplateDataContext
         if (!RuntimeFeature.IsDynamicCodeSupported)
             throw new InvalidOperationException(
                 $"No accessor covers '{propertyName}' on '{target.GetType()}', and under Native AOT there "
-                + "is no reflection fallback. Pass the value through a dictionary, or register an "
+                + "is no reflection fallback. Add the source with its type known at compile time, so the "
+                + "generator writes an accessor for it, pass the value through a dictionary, or register an "
                 + "IPropertyAccessor for the type with WithAccessor.");
 
         return ReflectionPropertyAccessor.Instance.GetValue(target, propertyName);

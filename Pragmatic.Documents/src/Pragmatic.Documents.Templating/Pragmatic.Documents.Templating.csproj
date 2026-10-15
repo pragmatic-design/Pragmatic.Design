@@ -6,4 +6,8 @@
     <NoWarn>$(NoWarn);CA2007;CA1822;IL2080</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Documents.Markup.Tests" />
+  </ItemGroup>
+
 </Project>

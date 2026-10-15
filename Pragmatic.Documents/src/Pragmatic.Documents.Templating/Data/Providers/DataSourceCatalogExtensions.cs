@@ -13,26 +13,26 @@ public static class DataSourceCatalogExtensions
     extension(DataSourceCatalog catalog)
     {
         /// <summary>Add a JSON file data source (single object, AOT-safe).</summary>
-        public DataSourceCatalog AddJsonFile<T>(string name, string filePath, JsonTypeInfo<T> typeInfo)
+        public DataSourceCatalog AddJsonFile<[TemplateData] T>(string name, string filePath, JsonTypeInfo<T> typeInfo)
             where T : class
             => catalog.AddProvider(new JsonFileDataSource<T>(name, filePath, typeInfo));
 
         /// <summary>Add a JSON file data source (single object, convenience).</summary>
         [RequiresUnreferencedCode("Use the JsonTypeInfo overload for AOT.")]
         [RequiresDynamicCode("Use the JsonTypeInfo overload for AOT.")]
-        public DataSourceCatalog AddJsonFile<T>(string name, string filePath, JsonSerializerOptions? options = null)
+        public DataSourceCatalog AddJsonFile<[TemplateData] T>(string name, string filePath, JsonSerializerOptions? options = null)
             where T : class
             => catalog.AddProvider(new JsonFileDataSource<T>(name, filePath, options));
 
         /// <summary>Add a JSON file data source (list, AOT-safe).</summary>
-        public DataSourceCatalog AddJsonFileList<T>(string name, string filePath, JsonTypeInfo<List<T>> typeInfo)
+        public DataSourceCatalog AddJsonFileList<[TemplateData] T>(string name, string filePath, JsonTypeInfo<List<T>> typeInfo)
             where T : class
             => catalog.AddProvider(new JsonFileListDataSource<T>(name, filePath, typeInfo));
 
         /// <summary>Add a JSON file data source (list, convenience).</summary>
         [RequiresUnreferencedCode("Use the JsonTypeInfo overload for AOT.")]
         [RequiresDynamicCode("Use the JsonTypeInfo overload for AOT.")]
-        public DataSourceCatalog AddJsonFileList<T>(string name, string filePath, JsonSerializerOptions? options = null)
+        public DataSourceCatalog AddJsonFileList<[TemplateData] T>(string name, string filePath, JsonSerializerOptions? options = null)
             where T : class
             => catalog.AddProvider(new JsonFileListDataSource<T>(name, filePath, options));
 

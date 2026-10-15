@@ -36,14 +36,22 @@ template the value it needs (`firstItem`), or iterate. An expression is read to 
 grammar cannot place, an unquoted pipe argument with a space in it (`date:dd MMM yyyy`, quote it), or a
 string with no closing quote is an error, never a silently shorter expression.
 
-Properties are resolved via `IPropertyAccessor`. Built-in accessors:
+Properties are resolved via `IPropertyAccessor`, tried in this order:
 
-- `DictionaryPropertyAccessor` for `IDictionary<string, object?>`
-- `ReflectionPropertyAccessor` for typed records and classes, on a JIT runtime only. Under Native AOT
-  a property no registered accessor covers **throws**; pass dictionaries there.
+1. `DictionaryPropertyAccessor` for `IDictionary<string, object?>`, and the accessors you registered
+   with `context.WithAccessor(accessor)`: JSON nodes, expando objects, dynamic proxies, anything with a
+   "property by name" contract.
+2. The accessors the source generator writes for typed data. When a source is added with its type known
+   at compile time (`AddSource<T>`, `DataSourceCatalog.Add<T>`, `AddAsync<T>`, `AddJsonFile<T>`,
+   `StaticDataSource<T>`, …), the generator writes getters for that type and for the types reached from
+   it, through a property or through the elements of a collection (the rows of a table). They are
+   registered when the assembly loads, and they work under Native AOT.
+3. `ReflectionPropertyAccessor`, on a JIT runtime only, for what the generator could not see: a value
+   added as `object`, an anonymous type, a runtime type that is a subclass of the one the source was
+   added with, or a type the generated code cannot name (`private`, `file`-local). Under Native AOT a
+   property none of the above covers **throws**.
 
-You can register custom accessors (`context.WithAccessor(accessor)`) for JSON nodes, expando objects,
-dynamic proxies, anything with a "property by name" contract.
+Names match ignoring case, in every accessor but a dictionary's own comparer.
 
 ### Operators
 
@@ -175,12 +183,11 @@ Each root is isolated: `invoice.total` and `customer.total` can coexist without 
 
 ### Typed vs dictionary sources
 
-Both work on a JIT runtime. Dictionary sources use `DictionaryPropertyAccessor`; typed objects use
-`ReflectionPropertyAccessor` (cached per type). Prefer dictionaries:
-
-- the keys a template may use become a list you wrote down, instead of every property (and navigation)
-  the object happens to have;
-- under Native AOT there is no reflection fallback: a property no registered accessor covers throws.
+Both work, on a JIT runtime and under Native AOT. Dictionary sources use `DictionaryPropertyAccessor`;
+typed objects use the accessors the generator writes for their type, and fall back to reflection only
+for the cases listed above. Prefer dictionaries for what the template may name: the keys become a list
+you wrote down, instead of every property (and navigation) the object happens to have. A typed object
+is the better fit for a type that is already that list, such as a DTO made for the document.
 
 ### Async data sources
 

@@ -16,11 +16,11 @@ public sealed class DataSourceCatalog
     public int Count => _providers.Count;
 
     /// <summary>Add a typed static data source.</summary>
-    public DataSourceCatalog Add<T>(string name, T value) where T : class
+    public DataSourceCatalog Add<[TemplateData] T>(string name, T value) where T : class
         => AddProvider(new StaticDataSource<T>(name, value));
 
     /// <summary>Add a typed async data source.</summary>
-    public DataSourceCatalog AddAsync<T>(string name, Func<CancellationToken, ValueTask<T>> factory) where T : class
+    public DataSourceCatalog AddAsync<[TemplateData] T>(string name, Func<CancellationToken, ValueTask<T>> factory) where T : class
         => AddProvider(new AsyncDataSource<T>(name, factory));
 
     /// <summary>Add a custom provider.</summary>
