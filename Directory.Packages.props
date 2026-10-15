@@ -129,6 +129,13 @@
     <!-- Benchmark comparison only (Pragmatic.Endpoints.Benchmarks): a tuned, non-generated JSON writer
          to measure the generated response writer against (#51). Apache-2.0. -->
     <PackageVersion Include="CAPCOM.REDox" Version="1.0.0" />
+    <!-- Benchmark comparison only (Pragmatic.Documents.Benchmarks): the XLSX writer a user would
+         otherwise pick (#143). MIT. -->
+    <PackageVersion Include="ClosedXML" Version="0.105.1" />
+    <!-- Benchmark comparison only (Pragmatic.Documents.Benchmarks): a managed PDF writer with tables (#143).
+         ⚠️ Held at 6.2.4, the last MIT release: from 6.5.0 PDFsharp and MigraDoc are AGPL-3.0 with a
+         commercial licence. Dependabot ignores the newer versions; raising this is a licensing decision. -->
+    <PackageVersion Include="PDFsharp-MigraDoc" Version="[6.2.4]" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.2.0" />

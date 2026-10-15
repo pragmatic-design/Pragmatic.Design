@@ -1,4 +1,12 @@
 {
+  "Pragmatic.Documents.Benchmarks.SpreadsheetRenderBenchmarks.Xlsx_ClosedXml": 11618198,
+  "Pragmatic.Documents.Benchmarks.SpreadsheetRenderBenchmarks.Xlsx_Pragmatic": 2891429,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Pdf_MigraDoc": 176396440,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Pdf_TemplateToPdf": 14033574,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Read_GeneratedAccessors": 2257132,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Read_Reflection": 2257136,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Resolve_GeneratedAccessors": 8399160,
+  "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Resolve_Reflection": 8399160,
   "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_ConcurrentRequests": 134859,
   "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_OneRequest": 2016,
   "Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Direct_ConcurrentRequests": 27832,
