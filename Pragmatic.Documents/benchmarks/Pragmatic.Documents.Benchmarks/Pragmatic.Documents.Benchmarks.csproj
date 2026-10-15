@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress CA1822 for BenchmarkDotNet (requires instance methods) -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Pdf\Pragmatic.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
+    <!-- The generator runs on THIS compilation: the typed report is added with its type known, so the
+         accessors it writes are the ones the generated-accessor row reads through. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Benchmark comparison only: the XLSX writer a user would otherwise pick (#143). -->
+    <PackageReference Include="ClosedXML" />
+  </ItemGroup>
+
+</Project>

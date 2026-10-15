@@ -51,4 +51,7 @@
     <Project Path="tests/Pragmatic.Documents.Csv.Generator.Tests/Pragmatic.Documents.Csv.Generator.Tests.csproj" />
     <Project Path="tests/Pragmatic.Documents.Templating.Spreadsheet.Tests/Pragmatic.Documents.Templating.Spreadsheet.Tests.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Documents.Benchmarks/Pragmatic.Documents.Benchmarks.csproj" />
+  </Folder>
 </Solution>

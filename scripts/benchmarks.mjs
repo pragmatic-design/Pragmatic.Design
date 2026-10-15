@@ -43,6 +43,11 @@ export const SUITES = [
     project: 'Pragmatic.Endpoints/benchmarks/Pragmatic.Endpoints.Benchmarks/Pragmatic.Endpoints.Benchmarks.csproj',
     command: [],
   },
+  {
+    name: 'Documents',
+    project: 'Pragmatic.Documents/benchmarks/Pragmatic.Documents.Benchmarks/Pragmatic.Documents.Benchmarks.csproj',
+    command: [],
+  },
 ];
 
 /** A suite's arguments to BenchmarkDotNet, for every benchmark (`*`) or the filters of a selection. */
