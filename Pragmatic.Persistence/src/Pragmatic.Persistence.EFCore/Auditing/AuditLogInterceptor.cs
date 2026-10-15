@@ -53,7 +53,7 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
     /// <inheritdoc />
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        WriteAuditEntries(eventData.Context);
+        WriteAuditEntries(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -61,17 +61,17 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        WriteAuditEntries(eventData.Context);
+        WriteAuditEntries(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void WriteAuditEntries(DbContext? context)
+    private void WriteAuditEntries(DbContextEventData eventData)
     {
-        if (context is null)
+        if (eventData.Context is not { } context)
             return;
 
         // Snapshot first — adding audit rows mutates the change tracker mid-enumeration.
-        var audited = context.ChangeTracker.Entries<IAuditedEntity>()
+        var audited = Interceptors.SaveEntries.Of<IAuditedEntity>(eventData)
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .ToList();
         if (audited.Count == 0)

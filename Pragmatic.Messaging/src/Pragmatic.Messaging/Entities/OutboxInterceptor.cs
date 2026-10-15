@@ -34,7 +34,7 @@ public sealed partial class OutboxInterceptor(ILogger<OutboxInterceptor>? logger
         CancellationToken cancellationToken = default)
     {
         if (eventData.Context is not null)
-            CollectAndPersistOutboxMessages(eventData.Context);
+            CollectAndPersistOutboxMessages(eventData);
 
         return await base.SavingChangesAsync(eventData, result, cancellationToken).ConfigureAwait(false);
     }
@@ -45,15 +45,15 @@ public sealed partial class OutboxInterceptor(ILogger<OutboxInterceptor>? logger
         InterceptionResult<int> result)
     {
         if (eventData.Context is not null)
-            CollectAndPersistOutboxMessages(eventData.Context);
+            CollectAndPersistOutboxMessages(eventData);
 
         return base.SavingChanges(eventData, result);
     }
 
-    private void CollectAndPersistOutboxMessages(DbContext context)
+    private void CollectAndPersistOutboxMessages(DbContextEventData eventData)
     {
-        var entitiesWithEvents = context.ChangeTracker
-            .Entries<IHasDomainEvents>()
+        var context = eventData.Context!;
+        var entitiesWithEvents = SaveEntries.Of<IHasDomainEvents>(eventData)
             .Where(e => e.Entity.DomainEvents.Count > 0)
             .Select(e => e.Entity)
             .ToList();

@@ -50,7 +50,7 @@ public sealed class TenantInterceptor(
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        ApplyTenantId(eventData.Context);
+        ApplyTenantId(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -60,24 +60,24 @@ public sealed class TenantInterceptor(
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        ApplyTenantId(eventData.Context);
+        ApplyTenantId(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void ApplyTenantId(DbContext? context)
+    private void ApplyTenantId(DbContextEventData eventData)
     {
-        if (context is null)
+        if (eventData.Context is null)
             return;
 
         var tenantId = tenantContext.TenantId;
 
         if (!tenantContext.IsResolved || string.IsNullOrEmpty(tenantId))
         {
-            RefuseIfATenantWasRequired(context);
+            RefuseIfATenantWasRequired(eventData);
             return;
         }
 
-        foreach (var entry in context.ChangeTracker.Entries<ITenantEntity>())
+        foreach (var entry in SaveEntries.Of<ITenantEntity>(eventData))
         {
             if (entry.State == EntityState.Added)
             {
@@ -112,12 +112,12 @@ public sealed class TenantInterceptor(
     ///         the framework wires passes the application's own setting, so a deployment is covered.
     ///     </para>
     /// </remarks>
-    private void RefuseIfATenantWasRequired(DbContext context)
+    private void RefuseIfATenantWasRequired(DbContextEventData eventData)
     {
         if (!requireTenant)
             return;
 
-        foreach (var entry in context.ChangeTracker.Entries<ITenantEntity>())
+        foreach (var entry in SaveEntries.Of<ITenantEntity>(eventData))
         {
             if (entry.State is EntityState.Added or EntityState.Modified)
                 throw new TenantNotResolvedException(entry.Metadata.ClrType.Name);

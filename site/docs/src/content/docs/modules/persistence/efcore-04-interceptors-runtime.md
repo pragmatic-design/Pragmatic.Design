@@ -140,3 +140,21 @@ declare:
 There is no ID interceptor: the entity assigns its own `PersistenceId` (see *Where the ID comes from*).
 
 You do not register these manually unless you want to change their behaviour.
+
+### One change-detection pass per save
+
+`ChangeTracker.Entries()` runs a change-detection pass over every tracked entity each time it is
+called, and every interceptor above reads the tracker. They share one pass per save instead of running
+one each: the first of them to read the tracker detects, and the rest read what it found
+(`SaveChangesDetection`, in `Pragmatic.Abstractions`). A save then runs two passes, that one and EF
+Core's own, where a boundary with every feature on and a signed-in caller used to run ten.
+
+What this means for an interceptor of your own:
+
+- **Reading** needs nothing. `ChangeTracker.Entries()` in your interceptor runs its own pass, as it
+  always did.
+- **Changing an entity that was `Unchanged`**, by setting a property, needs one call:
+  `context.Entry(entity).DetectChanges()`. Without it, the framework's interceptors that run after yours
+  still see the entity as `Unchanged`, so no lifecycle event and no audit row record the change. EF Core's
+  own pass still writes it. The roll-up interceptor does this for the parents it adjusts.
+- Changing an entity that is already `Added` or `Modified` needs nothing.

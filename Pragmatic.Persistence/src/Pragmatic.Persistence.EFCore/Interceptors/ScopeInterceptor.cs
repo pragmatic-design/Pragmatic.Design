@@ -73,7 +73,7 @@ public sealed class ScopeInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        ApplyScopes(eventData.Context);
+        ApplyScopes(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -83,7 +83,7 @@ public sealed class ScopeInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        ApplyScopes(eventData.Context);
+        ApplyScopes(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -103,18 +103,18 @@ public sealed class ScopeInterceptor : SaveChangesInterceptor
     ///         removes only its own <c>scope:{name}</c>.
     ///     </para>
     /// </remarks>
-    private void ApplyScopes(DbContext? context)
+    private void ApplyScopes(DbContextEventData eventData)
     {
-        if (context is null)
+        if (eventData.Context is null)
             return;
 
-        AssignScopes(context);
+        AssignScopes(eventData);
 
         foreach (var step in _materialization)
-            step.Materialize(context);
+            step.Materialize(eventData);
     }
 
-    private void AssignScopes(DbContext context)
+    private void AssignScopes(DbContextEventData eventData)
     {
         var userId = _currentUser?.IdOrNull();
         if (userId is null)
@@ -124,7 +124,7 @@ public sealed class ScopeInterceptor : SaveChangesInterceptor
         // scoped to nobody. ScopeIdentifiers is where the two sides agree.
         var ownScope = ScopeIdentifiers.ForUser(userId);
 
-        foreach (var entry in context.ChangeTracker.Entries<IScopedEntity>())
+        foreach (var entry in SaveEntries.Of<IScopedEntity>(eventData))
         {
             if (entry.State != EntityState.Added)
                 continue;

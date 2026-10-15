@@ -30,7 +30,7 @@ public sealed class LifecycleEventsInterceptor : SaveChangesInterceptor
     /// <inheritdoc />
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        if (eventData.Context is not null) RaiseLifecycleEvents(eventData.Context);
+        if (eventData.Context is not null) RaiseLifecycleEvents(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -38,13 +38,13 @@ public sealed class LifecycleEventsInterceptor : SaveChangesInterceptor
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        if (eventData.Context is not null) RaiseLifecycleEvents(eventData.Context);
+        if (eventData.Context is not null) RaiseLifecycleEvents(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private static void RaiseLifecycleEvents(DbContext context)
+    private static void RaiseLifecycleEvents(DbContextEventData eventData)
     {
-        foreach (var entry in context.ChangeTracker.Entries())
+        foreach (var entry in SaveEntries.All(eventData))
         {
             if (entry.Entity is not IRaisesLifecycleEvents raiser)
                 continue;

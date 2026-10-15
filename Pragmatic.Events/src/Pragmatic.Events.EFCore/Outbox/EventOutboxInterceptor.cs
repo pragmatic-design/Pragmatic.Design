@@ -26,7 +26,7 @@ public sealed class EventOutboxInterceptor : SaveChangesInterceptor
         DbContextEventData eventData, InterceptionResult<int> result)
     {
         if (eventData.Context is not null)
-            CaptureEvents(eventData.Context);
+            CaptureEvents(eventData);
 
         return base.SavingChanges(eventData, result);
     }
@@ -36,15 +36,15 @@ public sealed class EventOutboxInterceptor : SaveChangesInterceptor
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         if (eventData.Context is not null)
-            CaptureEvents(eventData.Context);
+            CaptureEvents(eventData);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private static void CaptureEvents(DbContext context)
+    private static void CaptureEvents(DbContextEventData eventData)
     {
-        var entities = context.ChangeTracker
-            .Entries<IHasDomainEvents>()
+        var context = eventData.Context!;
+        var entities = SaveEntries.Of<IHasDomainEvents>(eventData)
             .Where(e => e.Entity.DomainEvents.Count > 0)
             .Select(e => e.Entity)
             .ToList();
