@@ -143,20 +143,21 @@ Pragmatic.{Module}/
 
 ### SDK version
 
-Pinned in `global.json`:
+Named in `global.json`:
 
 ```json
 {
   "sdk": {
     "version": "10.0.303",
-    "rollForward": "patch"
+    "rollForward": "feature"
   }
 }
 ```
 
-The patch is pinned because the NuGet lock files record a package whose version follows the SDK
-(`docs/TESTING.md`, "Lock files"). Updating the SDK means changing this file and regenerating the lock
-files in the same commit: `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
+CI runs exactly this version, because the NuGet lock files record a package whose version follows the SDK
+(`docs/TESTING.md`, "Lock files"). A clone builds with any newer 10.0 SDK. Updating the SDK means changing
+this file and regenerating the lock files in the same commit:
+`dotnet restore Pragmatic.Design.slnx --force-evaluate`.
 
 All runtime libraries target **net10.0**. Source generators target **netstandard2.0** (Roslyn requirement).
 
@@ -472,7 +473,7 @@ examples/showcase/Showcase.slnx
 
 | Question | Answer |
 |----------|--------|
-| What .NET version? | 10.0 (SDK 10.0.303, pinned to the patch in `global.json`) |
+| What .NET version? | 10.0 (SDK 10.0.303 in `global.json` and in CI; any newer 10.0 SDK builds) |
 | What C# version? | `latest` (currently C# 14) |
 | Solution format? | `.slnx` (XML-based, not legacy `.sln`) |
 | Package versions? | Central in `Directory.Packages.props` |

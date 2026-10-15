@@ -60,7 +60,7 @@ from there; a Dependabot alert for the same advisory is dismissed with the same 
 
 ## Decisions
 
-### `packages.lock.json` for every project, and the SDK pinned to the patch
+### `packages.lock.json` for every project, and CI on the exact SDK
 
 Every project in the solution commits a lockfile, and CI restores in locked mode (`docs/TESTING.md`,
 "Lock files"). Central package management fixes the versions a project asks for, not what a restore
@@ -74,9 +74,15 @@ This was first decided the other way (2026-10-03), and the costs measured then s
   269, xunit 128, `Microsoft.EntityFrameworkCore` 98. They are generated, and the rewrite is one command.
 - The trimmable projects record `Microsoft.NET.ILLink.Tasks`, whose version follows the SDK's bundled
   runtime. With `global.json` rolling forward to the latest patch, a runner image or a contributor on a
-  newer patch writes different lockfiles and every locked restore fails. So `global.json` now pins the
-  patch (`rollForward: patch`): an SDK update is a change of its own that rewrites those files in the same
-  commit, and the full tier fails when the lockfiles disagree on the ILLink version or the pin is loosened.
+  newer patch writes different lockfiles and every locked restore fails. So CI runs the exact SDK in
+  `global.json`: an SDK update is a change of its own that rewrites those files in the same commit, and the
+  full tier fails when the lockfiles disagree on the ILLink version or `rollForward` would let CI install
+  another SDK.
+- `rollForward` was first `patch` (2026-10-11). A clone then failed outright on a machine whose only .NET 10
+  SDK belonged to a newer feature band, which is any machine updated since. It is now `feature`:
+  `setup-dotnet` still installs the exact version (it moves only for the `latest…` policies), and a newer
+  local SDK builds. That SDK may rewrite the lockfiles on restore; those changes are not committed, and
+  CI's locked restore rejects them if they are.
 
 The decision moved (2026-10-10) because a content hash per package is what makes a restore reproducible,
 which the registry signature alone is not: a signature says who published a package, not that it is the
