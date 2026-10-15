@@ -1,5 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
+using PdfSharp.Fonts;
+using Pragmatic.Documents.Benchmarks.Competitors;
 using Pragmatic.Documents.Benchmarks.Workload;
 using Pragmatic.Documents.Markup;
 using Pragmatic.Documents.Model;
@@ -21,9 +23,11 @@ namespace Pragmatic.Documents.Benchmarks;
 ///         thousand reads, path by path, through the data context alone.
 ///     </para>
 ///     <para>
-///         <c>Pdf</c> is the whole path a caller pays for: template and data to PDF bytes. It has no competitor
-///         row: QuestPDF's licence forbids using it to develop or market a competing PDF component, which a
-///         committed comparison would do (#143).
+///         <c>Pdf</c> is the whole path a caller pays for: template and data to PDF bytes, against MigraDoc
+///         building the same report in code from the same typed lines (<see cref="MigraDocReport" />), each
+///         in a system sans-serif font. MigraDoc is held at 6.2.4, its last MIT release. QuestPDF is not here:
+///         its licence forbids using it to develop or market a competing PDF component, which a committed
+///         comparison would do (#143).
 ///     </para>
 ///     <para>
 ///         <see cref="Setup" /> checks both data paths resolve the same document, every row of it, with no
@@ -39,10 +43,14 @@ public class TemplateRenderBenchmarks
     private DocumentTemplate _template = null!;
     private InvoiceReport _typed = null!;
     private ReflectedInvoiceReport _reflected = null!;
+    private readonly MemoryStream _migraDocOutput = new();
 
     [GlobalSetup]
     public void Setup()
     {
+        // Once per process: PDFsharp refuses a second resolver after its first font is loaded.
+        GlobalFontSettings.FontResolver ??= new SystemFontResolver();
+
         _template = PdxDocParser.Parse(Workloads.ReportTemplate);
         _typed = Workloads.Typed();
         _reflected = Workloads.Reflected();
@@ -80,9 +88,12 @@ public class TemplateRenderBenchmarks
         return found;
     }
 
-    [Benchmark, BenchmarkCategory("Pdf")]
+    [Benchmark(Baseline = true), BenchmarkCategory("Pdf")]
     public async Task<byte[]> Pdf_TemplateToPdf()
         => PdfRenderer.Render(await _resolver.ResolveAsync(_template, TypedData()).ConfigureAwait(false));
+
+    [Benchmark, BenchmarkCategory("Pdf")]
+    public long Pdf_MigraDoc() => MigraDocReport.Render(_typed, _migraDocOutput);
 
     private TemplateDataContext TypedData() => new TemplateDataContext().AddSource("report", _typed);
 
@@ -134,6 +145,11 @@ public class TemplateRenderBenchmarks
         var pdf = Pdf_TemplateToPdf().GetAwaiter().GetResult();
         if (pdf.Length < 1024 || pdf[0] != (byte)'%' || pdf[1] != (byte)'P')
             failures.Add($"the PDF is not one ({pdf.Length} bytes)");
+
+        var migraDoc = Pdf_MigraDoc();
+        var head = _migraDocOutput.GetBuffer();
+        if (migraDoc < 1024 || head[0] != (byte)'%' || head[1] != (byte)'P')
+            failures.Add($"MigraDoc's PDF is not one ({migraDoc} bytes)");
 
         if (failures.Count > 0)
             throw new InvalidOperationException("The rows would measure something else: " + string.Join("; ", failures));

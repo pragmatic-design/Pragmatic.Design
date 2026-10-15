@@ -16,8 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Benchmark comparison only: the XLSX writer a user would otherwise pick (#143). -->
+    <!-- Benchmark comparison only: the XLSX and PDF writers a user would otherwise pick (#143). -->
     <PackageReference Include="ClosedXML" />
+    <PackageReference Include="PDFsharp-MigraDoc" />
+    <!-- MigraDoc 6.2.4 asks for Pkcs 8.0.1, which has known vulnerabilities (GHSA-846f-f764-76mx): pinned
+         here to the central version, as transitive pinning is off for the repository. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
 
 </Project>

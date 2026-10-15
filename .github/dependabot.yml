@@ -11,6 +11,11 @@ updates:
     groups:
       nuget:
         patterns: ["*"]
+    ignore:
+      # A benchmark-only reference held at its last MIT release: 6.5.0 moved PDFsharp and MigraDoc to
+      # AGPL-3.0 (see Directory.Packages.props).
+      - dependency-name: "PDFsharp*"
+        versions: [">= 6.5.0"]
 
   # Minor and patch only. A major of Astro, Starlight or TypeScript changes the site's configuration, and
   # bundled together they arrive as one red pull request nobody can merge; a major is an upgrade done on
