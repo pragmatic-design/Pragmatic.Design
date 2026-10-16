@@ -177,10 +177,23 @@ The reader returns the same `SpreadsheetModel` type you'd build manually; roundt
 
 ## Large data sets
 
-For very wide exports (millions of rows), use `RenderTo` with the destination stream and build rows lazily rather than materialising the whole `SpreadsheetModel`:
+`RenderTo` writes the package into the destination stream, but the `SpreadsheetModel` holds every row
+until the render ends, so memory grows with the rows. The figures below come from the Documents
+benchmarks' `memory` mode (`-- memory`), a ten-column sheet built with `SpreadsheetBuilder` and written
+to a `MemoryStream`, on Windows, .NET 10, on 2026-10-16, each size in a process of its own:
+
+| Rows | XLSX bytes | Managed heap peak | Process peak working set |
+|---:|---:|---:|---:|
+| 1,000 | 88,056 | 3.6 MB | 40 MB |
+| 10,000 | 892,731 | 19 MB | 66 MB |
+| 50,000 | 4,409,079 | 81 MB | 138 MB |
+
+About 1.5 KB of managed heap per row, the model and the output buffer together; writing to a file
+stream instead of a `MemoryStream` takes the output out of that figure. Feeding the model from a
+cursor saves the source collection, not the model:
 
 ```csharp
-// Build the model incrementally, feeding from a DB cursor
+// Build the model from a DB cursor
 var sheet = new Sheet { Name = "Data" };
 sheet.Rows.Add(new Row { Cells = { new Cell { Value = "Id" }, new Cell { Value = "Value" } } });
 
