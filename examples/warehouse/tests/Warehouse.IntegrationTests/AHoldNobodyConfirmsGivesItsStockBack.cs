@@ -99,6 +99,29 @@ public sealed class AHoldNobodyConfirmsGivesItsStockBack(WarehouseFixture wareho
         (await LevelsAsync(sku.Id)).Single().GetProperty("reserved").GetInt32().Should().Be(0);
     }
 
+    /// <summary>
+    ///     An expiry that meets another writer of its level is run again: its row allows more than one
+    ///     attempt, which is the number the store reads when the job throws (#101).
+    /// </summary>
+    /// <remarks>
+    ///     The row and not a forced conflict: the job runs on whichever instance polls first, so a hook in
+    ///     one instance could not be sure to meet it. That the store retries up to the row's number is the
+    ///     job engine's own test.
+    /// </remarks>
+    [Fact]
+    public async Task AnExpiry_IsScheduledWithRoomToRetry()
+    {
+        var sku = await StockCalls.InStockAsync(warehouse.StockA, 10);
+        using var desk = OrderCalls.ThroughTheGateway(warehouse);
+        var order = await PlacedAsync(desk, sku.Sku, 1);
+
+        var job = await JobOfAsync(order);
+
+        job.Should().NotBeNull("the expiry is scheduled in the transaction that holds the stock");
+        job!.MaxAttempts.Should().Be(5,
+            "a conflict with a hold saved first is not a fault, and a job run once would leave the stock held for ever");
+    }
+
     private static async Task<Guid> PlacedAsync(HttpClient desk, string sku, int quantity)
     {
         using var created = await OrderCalls.DraftAsync(desk, (sku, quantity));

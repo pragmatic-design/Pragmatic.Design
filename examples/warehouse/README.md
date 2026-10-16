@@ -154,6 +154,12 @@ levels. `StockLevel` is `[ConcurrencyAware]`, so the second save fails instead o
 first receipt. Measured without it: 241 on hand where the file said 397. A part meeting another writer
 is applied again, whole, in a fresh scope.
 
+Holds meet other writers too: two orders for the same product, or a hold and the expiry of an earlier
+one, on either instance. A conflict says nothing about the stock, so it is not the customer's answer:
+`AnswerReservationRequests` makes the hold again in a fresh scope, and `ExpireReservationsJob` carries
+`[Retry]`, without which the job store runs a job once. Before both, a hold that met an expiry answered
+the customer 503 and the expiry was given up on, leaving its stock held.
+
 ### Now and eventually
 
 **The one request that waits for an answer.** Placing an order cannot finish until its stock is known to

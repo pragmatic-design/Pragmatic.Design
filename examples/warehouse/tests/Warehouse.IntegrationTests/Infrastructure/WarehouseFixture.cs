@@ -287,6 +287,21 @@ public sealed class WarehouseFixture : IAsyncLifetime
     internal ServiceHost<OrdersHost> OrdersWithNobodyToAnswer(Action<IServiceCollection>? services = null)
         => new ServiceHost<OrdersHost>(OrdersSettings(_rabbit.NobodyAnswersConnectionString), services).Start();
 
+    /// <summary>
+    ///     A third Stock instance with <paramref name="services" /> added, out of the gateway's rotation: a
+    ///     test that needs a hook inside Stock calls it directly. The caller disposes it.
+    /// </summary>
+    /// <remarks>
+    ///     It shares the database and the broker, so it also takes its share of the queues and the due
+    ///     jobs while it runs, as a third instance in a deployment would. A hook it carries has to pick out
+    ///     the test's own rows.
+    /// </remarks>
+    internal ServiceHost<StockHost> StockWith(Action<IServiceCollection> services)
+        => new ServiceHost<StockHost>(StockSettings(Agents["stock-a"]), services).Start();
+
+    /// <summary>Stock's database, for a test that writes to it from outside the service.</summary>
+    internal string StockConnectionString => _postgres.StockConnectionString;
+
     private Dictionary<string, string?> OrdersSettings(string broker)
     {
         var settings = HostSettings("Orders", _postgres.OrdersConnectionString, Agents["orders"]);

@@ -32,8 +32,9 @@ namespace Warehouse.Stock.Reservations.Actions;
 ///     </para>
 ///     <para>
 ///         ⚠️ Two orders asking at the same instant for the last units are not serialized here: each reads
-///         the levels, each finds enough, and both hold. The levels carry no concurrency token yet; the
-///         suite places orders one at a time.
+///         the levels and each finds enough. They do not both hold: the level is <c>[ConcurrencyAware]</c>,
+///         so the second save fails, and <c>AnswerReservationRequests</c> makes that hold again, which reads
+///         what the first one took and checks again.
 ///     </para>
 ///     <para>
 ///         <c>[Transactional]</c> because of the expiry: <c>ExpireReservationsJob</c> is scheduled for the

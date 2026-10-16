@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging;
 using Pragmatic.Messaging.Attributes;
 using Warehouse.Stock.Contracts;
@@ -22,24 +25,61 @@ namespace Warehouse.Stock.Infrastructure.RequestHandlers;
 ///         Through the internal interface: a request arrives with no principal, and the internal surface
 ///         is the one that runs as an internal call. The action's invoker owns the transaction.
 ///     </para>
+///     <para>
+///         ⚠️ <b>Holds meet other writers.</b> A hold raises its level's <c>Reserved</c>, and so does every
+///         other hold on the same product; the expiry of an earlier order lowers it, on either instance.
+///         The level is <c>[ConcurrencyAware]</c>, so the second writer's save fails instead of undoing the
+///         first one's. Here that is not an answer for the customer, whose order would be refused for a
+///         conflict that says nothing about the stock: the reservation is made again, from the start, in a
+///         fresh scope, and reads what the other writer committed. The same pattern as an import's parts
+///         (<c>ApplyImportParts</c>).
+///     </para>
 /// </remarks>
 [RequestHandler]
-internal sealed partial class AnswerReservationRequests(IStockReservationsInternalActions reservations)
-    : IRequestHandler<ReserveStock, StockReservation>
+internal sealed partial class AnswerReservationRequests(
+    IServiceScopeFactory scopes,
+    ILogger<AnswerReservationRequests> logger) : IRequestHandler<ReserveStock, StockReservation>
 {
+    /// <summary>How many times a reservation is made before its conflicts are given up on.</summary>
+    private const int Attempts = 5;
+
     public async Task<StockReservation> HandleAsync(
         ReserveStock request, MessageContext context, CancellationToken ct = default)
     {
-        var held = await reservations
-            .ReserveStock(orderId: request.OrderId, lines: [.. request.Lines], ct: ct)
-            .ConfigureAwait(false);
-
-        // A refusal that is not "short" — nothing here expects one — goes back to Orders as the
-        // responder's error, which the requester reads as a service that could not answer.
-        if (held.IsFailure)
-            throw new InvalidOperationException(
-                $"The stock for order {request.OrderId} could not be reserved: {held.Error}");
-
-        return held.Value;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await ReserveAsync(request, ct).ConfigureAwait(false);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < Attempts)
+            {
+                LogLevelMet(request.OrderId, attempt);
+            }
+        }
     }
+
+    /// <summary>One attempt, in a scope of its own: a failed save leaves its DbContext unusable.</summary>
+    private async Task<StockReservation> ReserveAsync(ReserveStock request, CancellationToken ct)
+    {
+        var scope = scopes.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            var reservations = scope.ServiceProvider.GetRequiredService<IStockReservationsInternalActions>();
+            var held = await reservations
+                .ReserveStock(orderId: request.OrderId, lines: [.. request.Lines], ct: ct)
+                .ConfigureAwait(false);
+
+            // A refusal that is not "short" — nothing here expects one — goes back to Orders as the
+            // responder's error, which the requester reads as a service that could not answer.
+            return held.IsSuccess
+                ? held.Value
+                : throw new InvalidOperationException(
+                    $"The stock for order {request.OrderId} could not be reserved: {held.Error}");
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "The hold for order {OrderId} met another writer of its level (attempt {Attempt}): reserving again.")]
+    private partial void LogLevelMet(Guid orderId, int attempt);
 }
