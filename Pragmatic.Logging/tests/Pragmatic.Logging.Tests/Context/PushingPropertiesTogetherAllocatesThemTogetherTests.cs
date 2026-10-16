@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Pragmatic.Logging.Context;
 using Pragmatic.Testing.Assertions;
 using Xunit;
@@ -80,6 +81,58 @@ public class PushingPropertiesTogetherAllocatesThemTogetherTests
 
         LogContextScope.Current.Should().BeSameAs(parent);
         LogContextScope.GetProperty("RequestId").Should().BeNull();
+    }
+
+    /// <summary>
+    ///     Pushed as an immutable array the context keeps the caller's array: it cannot change after the push, so
+    ///     there is nothing to copy it against (#134).
+    /// </summary>
+    [Fact]
+    public void PushContextWithAnImmutableArray_AllocatesLessThanTheSamePairsAsAnArray()
+    {
+        var immutable = ImmutableArray.Create(Request);
+
+        LogContextScope.PushContext(immutable).Dispose();
+        LogContextScope.PushContext((IEnumerable<KeyValuePair<string, object?>>)Request).Dispose();
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        LogContextScope.PushContext((IEnumerable<KeyValuePair<string, object?>>)Request).Dispose();
+        var copied = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        before = GC.GetAllocatedBytesForCurrentThread();
+        LogContextScope.PushContext(immutable).Dispose();
+        var kept = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        kept.Should().BeLessThan(copied, "the immutable array is held as it is; a mutable one is copied");
+    }
+
+    [Fact]
+    public void PushContextWithAnImmutableArray_ReadsAsTheOtherOverload()
+    {
+        using var context = LogContextScope.PushContext(ImmutableArray.Create(Request));
+
+        var current = LogContextScope.Current!;
+        current.Properties.Keys.Should().Equal("CorrelationId", "RequestPath", "RequestMethod", "RequestId");
+        current.GetProperty("RequestId").Should().Be("req-0042");
+    }
+
+    [Fact]
+    public void PushContextWithAnImmutableArray_ARepeatedKeyKeepsItsFirstPlaceAndTheLastValue()
+    {
+        ImmutableArray<KeyValuePair<string, object?>> repeated = [new("A", 1), new("B", 2), new("A", 3)];
+        using var context = LogContextScope.PushContext(repeated);
+
+        var current = LogContextScope.Current!;
+        current.Properties.Keys.Should().Equal("A", "B");
+        current.GetProperty("A").Should().Be(3);
+    }
+
+    [Fact]
+    public void PushContextWithAnImmutableArray_RefusesADefaultArray()
+    {
+        var act = () => LogContextScope.PushContext(default(ImmutableArray<KeyValuePair<string, object?>>));
+
+        act.Should().Throw<ArgumentNullException>();
     }
 
     private static IDisposable OneByOne()

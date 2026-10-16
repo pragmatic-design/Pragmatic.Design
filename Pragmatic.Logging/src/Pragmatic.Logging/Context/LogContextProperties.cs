@@ -91,6 +91,18 @@ internal sealed class LogContextProperties(KeyValuePair<string, object?>[] items
         return buffer;
     }
 
+    /// <summary>Whether a key appears twice in <paramref name="items" />: then <see cref="From" /> has to fold them.</summary>
+    public static bool HasRepeatedKey(KeyValuePair<string, object?>[] items)
+    {
+        for (var i = 1; i < items.Length; i++)
+        {
+            if (IndexOf(items, i, items[i].Key) >= 0)
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>A copy of <paramref name="items" /> without <paramref name="key" />, or the same array when it is not there.</summary>
     public static KeyValuePair<string, object?>[] Without(KeyValuePair<string, object?>[] items, string key)
     {
