@@ -1,4 +1,8 @@
 {
+  "Pragmatic.Configuration.Benchmarks.TenantOptionsBenchmarks.OptionsMonitor": 0,
+  "Pragmatic.Configuration.Benchmarks.TenantOptionsBenchmarks.OptionsSnapshot": 1872,
+  "Pragmatic.Configuration.Benchmarks.TenantOptionsBenchmarks.TenantOptions_GeneratedBinder": 2728,
+  "Pragmatic.Configuration.Benchmarks.TenantOptionsBenchmarks.TenantOptions_Reflection": 10894,
   "Pragmatic.Documents.Benchmarks.SpreadsheetRenderBenchmarks.Xlsx_ClosedXml": 11618198,
   "Pragmatic.Documents.Benchmarks.SpreadsheetRenderBenchmarks.Xlsx_Pragmatic": 2891429,
   "Pragmatic.Documents.Benchmarks.TemplateRenderBenchmarks.Pdf_MigraDoc": 176396440,
