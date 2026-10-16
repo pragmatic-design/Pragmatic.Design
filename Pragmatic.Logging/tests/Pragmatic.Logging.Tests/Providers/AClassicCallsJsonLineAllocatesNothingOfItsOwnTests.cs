@@ -107,15 +107,7 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
         }
     }
 
-    /// <summary>
-    ///     The fewest bytes 200 calls allocated, over five batches after 200 calls of warm-up, as text that carries
-    ///     every sample for the failure message.
-    /// </summary>
-    /// <remarks>
-    ///     A byte a line costs is in every batch, the smallest included. The minimum leaves out what the runtime
-    ///     allocates on the thread only now and then: under the gate's load, a batch of a path that allocates nothing
-    ///     has measured 12,360 B once, in this test and in a generated call site's, and passed every run on its own.
-    /// </remarks>
+    // The fewest bytes 200 calls allocated, over five batches after one of warm-up: 1,200 lines.
     private static (long Fewest, string Samples) Allocated(ILogger logger)
     {
         var state = new OrderState(42, "jane", 19.99m);
@@ -123,19 +115,11 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         try
         {
-            for (var i = 0; i < 200; i++)
-                logger.Log(LogLevel.Information, new EventId(2001, "OrderPlaced"), state, null, OrderState.Format);
-
-            var samples = new long[5];
-            for (var batch = 0; batch < samples.Length; batch++)
+            return ThreadAllocations.Fewest(() =>
             {
-                var before = GC.GetAllocatedBytesForCurrentThread();
                 for (var i = 0; i < 200; i++)
                     logger.Log(LogLevel.Information, new EventId(2001, "OrderPlaced"), state, null, OrderState.Format);
-                samples[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
-            }
-
-            return (samples.Min(), string.Join(", ", samples));
+            });
         }
         finally
         {

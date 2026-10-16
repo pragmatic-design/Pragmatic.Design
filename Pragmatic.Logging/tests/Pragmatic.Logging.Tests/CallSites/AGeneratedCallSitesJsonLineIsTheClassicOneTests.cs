@@ -119,17 +119,13 @@ public partial class AGeneratedCallSitesJsonLineIsTheClassicOneTests
         using var provider = new PragmaticJsonProvider("json", Configuration(PragmaticJsonConfiguration.ForJson()), Stream.Null);
         var loggers = Enumerable.Range(0, 200).Select(i => provider.CreateLogger($"Category{i}")).ToArray();
 
-        foreach (var logger in loggers)
-            OrderLog.StockLow(logger, "SKU-1");
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var round = 0; round < 5; round++)
+        var allocated = ThreadAllocations.Fewest(() =>
         {
             foreach (var logger in loggers)
                 OrderLog.StockLow(logger, "SKU-1");
-        }
+        });
 
-        (GC.GetAllocatedBytesForCurrentThread() - before).Should().Be(0);
+        allocated.Fewest.Should().Be(0L, $"each category's block is encoded once (samples: {allocated.Samples})");
     }
 
     private static PragmaticProviderConfiguration Configuration(PragmaticProviderConfiguration config)

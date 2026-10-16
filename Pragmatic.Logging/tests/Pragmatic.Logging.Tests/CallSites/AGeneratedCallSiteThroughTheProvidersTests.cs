@@ -92,15 +92,14 @@ public partial class AGeneratedCallSiteThroughTheProvidersTests
         using var factory = LoggerFactory.Create(builder => builder.AddProvider(provider));
         var logger = factory.CreateLogger("Orders");
 
-        for (var i = 0; i < 200; i++)
-            LogBoth(logger, i);
+        var allocated = ThreadAllocations.Fewest(() =>
+        {
+            for (var i = 0; i < 200; i++)
+                LogBoth(logger, i);
+        });
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
-            LogBoth(logger, i);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0, "a call site whose arguments are values and strings, masked or not, writes its state itself");
+        allocated.Fewest.Should().Be(0L,
+            $"a call site whose arguments are values and strings, masked or not, writes its state itself (samples: {allocated.Samples})");
     }
 
     private static void LogBoth(ILogger logger, int i)

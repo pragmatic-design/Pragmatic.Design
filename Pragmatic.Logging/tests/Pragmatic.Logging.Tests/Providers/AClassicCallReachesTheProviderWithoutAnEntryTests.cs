@@ -33,15 +33,13 @@ public class AClassicCallReachesTheProviderWithoutAnEntryTests
         var logger = factory.CreateLogger("Orders");
         var state = new OrderState(67890, "user12345");
 
-        for (var i = 0; i < 200; i++)
-            logger.Log(LogLevel.Information, default, state, null, OrderState.Format);
+        var allocated = ThreadAllocations.Fewest(() =>
+        {
+            for (var i = 0; i < 200; i++)
+                logger.Log(LogLevel.Information, default, state, null, OrderState.Format);
+        });
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
-            logger.Log(LogLevel.Information, default, state, null, OrderState.Format);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0);
+        allocated.Fewest.Should().Be(0L, $"samples: {allocated.Samples}");
         sink.Last.Should().Be("Order 67890 processed for user user12345 | OrderId=67890 UserId=user12345");
         sink.LastTemplate.Should().Be(Template);
     }

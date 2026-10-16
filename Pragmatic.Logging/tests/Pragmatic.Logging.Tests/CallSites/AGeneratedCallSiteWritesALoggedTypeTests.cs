@@ -70,15 +70,14 @@ public partial class AGeneratedCallSiteWritesALoggedTypeTests
         using var factory = LoggerFactory.Create(builder => builder.AddProvider(provider));
         var logger = factory.CreateLogger("Customers");
 
-        for (var i = 0; i < 200; i++)
-            OrderLog.Registered(logger, Alice);
+        var allocated = ThreadAllocations.Fewest(() =>
+        {
+            for (var i = 0; i < 200; i++)
+                OrderLog.Registered(logger, Alice);
+        });
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
-            OrderLog.Registered(logger, Alice);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0, "the argument is written by the call site's own writer, not serialized and masked");
+        allocated.Fewest.Should().Be(0L,
+            $"the argument is written by the call site's own writer, not serialized and masked (samples: {allocated.Samples})");
     }
 
     [Fact]
