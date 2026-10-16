@@ -29,9 +29,24 @@ internal sealed class HostErrorLog : ILoggerProvider
     ///     that answered the request is the last one logged, and a start-up error before it with forty
     ///     frames would push it out.
     /// </remarks>
-    public override string ToString() => _entries.IsEmpty
-        ? "(the host logged no error)"
-        : string.Join(Environment.NewLine, _entries.Reverse());
+    public override string ToString() => Since(0);
+
+    /// <summary>How many errors have been logged so far: the mark <see cref="Since" /> starts from.</summary>
+    public int Mark() => _entries.Count;
+
+    /// <summary>The errors logged after <paramref name="mark" />, newest first, rendered as <see cref="ToString" /> does.</summary>
+    /// <remarks>
+    ///     The fixture's hosts live for the whole collection, so their log also holds what earlier tests made
+    ///     them log. A failure reports what happened during its own test: an import test's conflicts, logged
+    ///     before, would otherwise fill the forty lines the gate keeps and push out the error that mattered.
+    /// </remarks>
+    public string Since(int mark)
+    {
+        var entries = _entries.ToArray();
+        return entries.Length <= mark
+            ? "(the host logged no error)"
+            : string.Join(Environment.NewLine, entries.Skip(mark).Reverse());
+    }
 
     public void Dispose()
     {

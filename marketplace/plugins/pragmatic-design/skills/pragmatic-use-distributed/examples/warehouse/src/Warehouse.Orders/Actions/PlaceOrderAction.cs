@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging;
 using Pragmatic.Messaging.RequestReply;
 using Warehouse.Orders.Errors;
@@ -40,6 +41,7 @@ public partial class PlaceOrderAction
     : DomainAction<OrderDto, NotFoundError, ConflictError, InsufficientStockError, StockUnansweredError>
 {
     private IMessageBus _bus = null!;
+    private ILogger<PlaceOrderAction> _logger = null!;
 
     public required Guid Id { get; init; }
 
@@ -60,10 +62,12 @@ public partial class PlaceOrderAction
                     ct)
                 .ConfigureAwait(false);
         }
-        catch (RequestReplyException)
+        catch (RequestReplyException unanswered)
         {
-            // No reply within the timeout, or Stock's handler failed: either way nobody knows whether the
-            // stock is there, and the order is not placed on a guess.
+            // No reply within the timeout, the request never sent, or Stock's handler failed: either way
+            // nobody knows whether the stock is there, and the order is not placed on a guess. The customer's
+            // 503 says only that; which of the three it was is in the exception, so it goes to the log.
+            LogStockUnanswered(_order.PersistenceId, unanswered.Message);
             return new StockUnansweredError();
         }
 
@@ -89,4 +93,7 @@ public partial class PlaceOrderAction
 
         return OrderDto.FromEntity(_order);
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Order {OrderId} not placed: Stock did not answer. {Reason}")]
+    private partial void LogStockUnanswered(Guid orderId, string reason);
 }

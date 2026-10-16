@@ -119,6 +119,9 @@ public sealed class PlacingAnOrderHoldsItsStock(WarehouseFixture warehouse)
             "the customer is told when the timeout runs out, not after a hang");
         clock.Elapsed.Should().BeGreaterThanOrEqualTo(WarehouseFixture.RequestReplyTimeout - TimeSpan.FromMilliseconds(100),
             "the 503 is the timeout, not a failure before the request was sent");
+        orders.Errors.Entries.Should().Contain(
+            entry => entry.Contains($"Order {order} not placed") && entry.Contains("No reply for ReserveStock"),
+            "the customer's 503 says only that Stock did not answer; the log says which way (#101)");
 
         (await OrderCalls.ReadAsync(desk, order)).GetProperty("status").GetString().Should().Be("Draft");
     }
