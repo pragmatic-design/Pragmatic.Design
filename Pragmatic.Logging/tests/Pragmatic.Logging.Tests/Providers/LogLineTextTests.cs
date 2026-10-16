@@ -37,13 +37,12 @@ public sealed class LogLineTextTests
     public void Escape_NoControl_AllocatesNothing()
     {
         var value = "GET /orders/42?page=3 answered 200 in 12 ms";
-        LogLineText.Escape(value);
+        var allocated = ThreadAllocations.Fewest(() =>
+        {
+            for (var i = 0; i < 1_000; i++)
+                LogLineText.Escape(value);
+        });
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1_000; i++)
-            LogLineText.Escape(value);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0);
+        allocated.Fewest.Should().Be(0L, $"samples: {allocated.Samples}");
     }
 }

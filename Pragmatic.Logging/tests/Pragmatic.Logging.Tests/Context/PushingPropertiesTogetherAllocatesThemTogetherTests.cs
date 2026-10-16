@@ -26,19 +26,11 @@ public class PushingPropertiesTogetherAllocatesThemTogetherTests
     [Fact]
     public void PushContextWithProperties_AllocatesLessThanSettingThemOneByOne()
     {
-        // Warm both paths, so neither pays a first-call cost the other does not.
-        OneByOne().Dispose();
-        LogContextScope.PushContext(Request).Dispose();
+        var oneByOne = ThreadAllocations.Fewest(() => OneByOne().Dispose());
+        var together = ThreadAllocations.Fewest(() => LogContextScope.PushContext(Request).Dispose());
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        OneByOne().Dispose();
-        var oneByOne = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        before = GC.GetAllocatedBytesForCurrentThread();
-        LogContextScope.PushContext(Request).Dispose();
-        var together = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        together.Should().BeLessThan(oneByOne, "the four pairs are known up front and need one array, not four");
+        together.Fewest.Should().BeLessThan(oneByOne.Fewest,
+            $"the four pairs are known up front and need one array, not four (together: {together.Samples}; one by one: {oneByOne.Samples})");
     }
 
     [Fact]
@@ -92,18 +84,11 @@ public class PushingPropertiesTogetherAllocatesThemTogetherTests
     {
         var immutable = ImmutableArray.Create(Request);
 
-        LogContextScope.PushContext(immutable).Dispose();
-        LogContextScope.PushContext((IEnumerable<KeyValuePair<string, object?>>)Request).Dispose();
+        var copied = ThreadAllocations.Fewest(() => LogContextScope.PushContext((IEnumerable<KeyValuePair<string, object?>>)Request).Dispose());
+        var kept = ThreadAllocations.Fewest(() => LogContextScope.PushContext(immutable).Dispose());
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        LogContextScope.PushContext((IEnumerable<KeyValuePair<string, object?>>)Request).Dispose();
-        var copied = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        before = GC.GetAllocatedBytesForCurrentThread();
-        LogContextScope.PushContext(immutable).Dispose();
-        var kept = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        kept.Should().BeLessThan(copied, "the immutable array is held as it is; a mutable one is copied");
+        kept.Fewest.Should().BeLessThan(copied.Fewest,
+            $"the immutable array is held as it is; a mutable one is copied (kept: {kept.Samples}; copied: {copied.Samples})");
     }
 
     [Fact]

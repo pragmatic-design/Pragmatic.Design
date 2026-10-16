@@ -26,14 +26,11 @@ public class TheContextAndTheScopesShareOneAmbientChainTests
         using var factory = Factory(Memory());
         var logger = factory.CreateLogger("Orders");
 
-        // Warm both paths, so neither pays a first-call cost the other does not.
-        InsideAContext(logger);
-        InsideAScope(logger);
-
         var insideAScope = InsideAScope(logger);
         var insideAContext = InsideAContext(logger);
 
-        insideAContext.Should().BeLessThanOrEqualTo(insideAScope, "the context is a node of the scopes' own chain, not a second ambient value");
+        insideAContext.Fewest.Should().BeLessThanOrEqualTo(insideAScope.Fewest,
+            $"the context is a node of the scopes' own chain, not a second ambient value (in a context: {insideAContext.Samples}; in a scope: {insideAScope.Samples})");
     }
 
     [Fact]
@@ -94,25 +91,21 @@ public class TheContextAndTheScopesShareOneAmbientChainTests
     }
 
     // What one scope begun and disposed costs while a context is pushed.
-    private static long InsideAContext(ILogger logger)
+    private static (long Fewest, string Samples) InsideAContext(ILogger logger)
     {
         using var context = LogContextScope.PushContext(Request);
         return ScopeCost(logger);
     }
 
     // The same while another scope is begun: one ambient value either way.
-    private static long InsideAScope(ILogger logger)
+    private static (long Fewest, string Samples) InsideAScope(ILogger logger)
     {
         using var outer = logger.BeginScope(Scope);
         return ScopeCost(logger);
     }
 
-    private static long ScopeCost(ILogger logger)
-    {
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        logger.BeginScope(Scope)!.Dispose();
-        return GC.GetAllocatedBytesForCurrentThread() - before;
-    }
+    private static (long Fewest, string Samples) ScopeCost(ILogger logger)
+        => ThreadAllocations.Fewest(() => logger.BeginScope(Scope)!.Dispose());
 
     private static PragmaticMemoryProvider Memory() => new("memory", PragmaticMemoryConfiguration.ForTesting());
 
