@@ -14,9 +14,9 @@ namespace Pragmatic.Logging.Providers;
 /// <remarks>
 ///     <para>
 ///         The line is the one <see cref="WriteLogCore" /> writes for the same call, field for field, and a
-///         test compares the two. What differs is only the route: the classic path builds a
-///         <see cref="LogEntry" />, renders the message to a <see cref="string" />, serializes into a
-///         <see cref="MemoryStream" /> and decodes the bytes back into a string for a <see cref="TextWriter" />.
+///         test compares the two. What differs is only the route: the classic path reads a <see cref="LogEvent" />
+///         from the call's state, with the message rendered to a <see cref="string" /> and the values as objects,
+///         and writes every field through the writer.
 ///     </para>
 ///     <para>
 ///         The buffer, the writer and the message buffer live with the provider and are used under the
@@ -43,9 +43,6 @@ public sealed partial class PragmaticJsonProvider
     private byte[] _json = new byte[1024];
     private string? _timestampFormat;
     private TimestampLayout? _timestampLayout;
-
-    // Set by the classic path when it leaves a line in the text writer's buffer.
-    private bool _textPending;
 
     /// <inheritdoc />
     protected internal override bool SupportsUtf8State => true;
@@ -239,20 +236,11 @@ public sealed partial class PragmaticJsonProvider
     {
         if (_filePath != null)
         {
-            // The classic path writes through the stream writer and flushes per line; nothing is pending
-            // there, but its encoder state is the same stream, so flush before going around it.
-            _streamWriter!.Flush();
             _fileStream!.Write(json);
             _fileStream.Write(NewLine);
             _fileStream.Flush();
             _currentFileSize += json.Length + NewLine.Length;
             return;
-        }
-
-        if (_textPending)
-        {
-            _textWriter.Flush();
-            _textPending = false;
         }
 
         _outputStream.Write(json);

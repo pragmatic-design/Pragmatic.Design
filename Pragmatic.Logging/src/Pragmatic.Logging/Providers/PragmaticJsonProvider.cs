@@ -1,5 +1,5 @@
+using System.Buffers;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -103,15 +103,17 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
     // on the options instance, and a new one per complex value threw that cache away on every call.
     private readonly JsonSerializerOptions _serializerOptions;
     private readonly Stream _outputStream;
-    private readonly TextWriter _textWriter;
     private readonly object _writeLock = new();
     private readonly bool _ownsStream;
     private readonly string? _filePath;
-    private readonly StringBuilder _stringBuilder = new(4096);
+
+    // The classic path's line, kept as the generated path keeps its own; used under the write lock.
+    private ArrayBufferWriter<byte>? _entryLine;
+    private Utf8JsonWriter? _entryWriter;
+    private bool _writingEntry;
 
     // File-specific fields for when writing to file
     private FileStream? _fileStream;
-    private StreamWriter? _streamWriter;
     private DateTime _currentFileDate = DateTime.MinValue;
     private long _currentFileSize;
 
@@ -129,19 +131,9 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         _jsonOptions = CreateJsonWriterOptions();
         _serializerOptions = CreateJsonSerializerOptions();
 
-        if (outputStream != null)
-        {
-            _outputStream = outputStream;
-            _textWriter = new StreamWriter(_outputStream, LogTextEncoding.Utf8, leaveOpen: true);
-            _ownsStream = false;
-        }
-        else
-        {
-            // Default to console output
-            _outputStream = Console.OpenStandardOutput();
-            _textWriter = Console.Out;
-            _ownsStream = false;
-        }
+        // Default to console output: the standard output's stream, which every line is written to as bytes.
+        _outputStream = outputStream ?? Console.OpenStandardOutput();
+        _ownsStream = false;
     }
 
     /// <summary>
@@ -162,8 +154,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         _ownsStream = true;
 
         // Initialize file stream - will be created on first write
-        _outputStream = null!; // Will be set in EnsureFileCreated
-        _textWriter = null!; // Will be set in EnsureFileCreated
+        _outputStream = null!; // The file stream is opened in EnsureFileCreated
     }
 
     /// <inheritdoc />
@@ -188,14 +179,9 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         lock (_writeLock)
         {
             if (_ownsStream)
-            {
-                _streamWriter?.Dispose();
                 _fileStream?.Dispose();
-            }
             else
-            {
-                _textWriter?.Flush();
-            }
+                _outputStream.Flush();
         }
     }
 
@@ -250,28 +236,62 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         return metrics;
     }
 
+    /// <summary>
+    ///     A classic call's line, written through a writer and a buffer the provider keeps and reaching the output as
+    ///     its bytes, as a generated call site's does.
+    /// </summary>
+    /// <remarks>
+    ///     A new stream and writer per line, the bytes copied to an array, decoded into a string and encoded again by a
+    ///     text writer, were 6,408 of the 6,560 bytes a <c>[LoggerMessage]</c> call allocated
+    ///     (<c>benchmarks/reports/classic-json-probe-284_*</c>). The writer is not the generated path's, and a classic
+    ///     line written while another is being written on the same thread — a value whose serialization logs — gets
+    ///     one of its own: under the reentrant write lock, neither can reset a line in progress.
+    /// </remarks>
     private void WriteJsonLogEntry(LogEvent logEvent)
     {
-        _stringBuilder.Clear();
+        if (_writingEntry)
+        {
+            var nested = new ArrayBufferWriter<byte>(1024);
+            using var nestedWriter = new Utf8JsonWriter(nested, _jsonOptions);
+            WriteJsonLogEntry(nestedWriter, logEvent);
+            WriteLine(nested.WrittenSpan);
+            return;
+        }
 
-        using var stream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(stream, _jsonOptions);
+        _writingEntry = true;
+        try
+        {
+            var line = _entryLine ??= new ArrayBufferWriter<byte>(1024);
+            line.ResetWrittenCount();
+            var writer = _entryWriter ??= new Utf8JsonWriter(line, _jsonOptions);
+            writer.Reset(line);
 
+            WriteJsonLogEntry(writer, logEvent);
+            WriteLine(line.WrittenSpan);
+        }
+        finally
+        {
+            _writingEntry = false;
+        }
+    }
+
+    private void WriteJsonLogEntry(Utf8JsonWriter writer, LogEvent logEvent)
+    {
         writer.WriteStartObject();
 
         // Core fields
-        writer.WriteString("@timestamp", FormatTimestamp(logEvent.Timestamp));
-        writer.WriteString("@level", GetLogLevelString(logEvent.LogLevel));
-        writer.WriteString("@logger", logEvent.Category);
-        writer.WriteString("@message", logEvent.Message);
+        WriteTimestamp(writer, logEvent.Timestamp);
+        writer.WriteString(LevelProperty, GetLogLevelString(logEvent.LogLevel));
+        writer.WriteString(LoggerProperty, logEvent.Category);
+        writer.WriteString(MessageProperty, logEvent.Message);
 
         // Event ID if present
         if (logEvent.EventId.Id != 0)
         {
-            writer.WriteNumber("@eventId", logEvent.EventId.Id);
+            writer.WriteNumber(EventIdProperty, logEvent.EventId.Id);
             if (!string.IsNullOrEmpty(logEvent.EventId.Name))
             {
-                writer.WriteString("@eventName", logEvent.EventId.Name);
+                writer.WriteString(EventNameProperty, logEvent.EventId.Name);
             }
         }
 
@@ -284,7 +304,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         // Message template if available
         if (!string.IsNullOrEmpty(logEvent.MessageTemplate))
         {
-            writer.WriteString("@messageTemplate", logEvent.MessageTemplate);
+            writer.WriteString(TemplateProperty, logEvent.MessageTemplate);
         }
 
         // Structured properties
@@ -298,29 +318,6 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
 
         writer.WriteEndObject();
         writer.Flush();
-
-        var jsonBytes = stream.ToArray();
-        var jsonString = Encoding.UTF8.GetString(jsonBytes);
-
-        if (_filePath != null)
-        {
-            _streamWriter!.WriteLine(jsonString);
-            _streamWriter.Flush();
-            _currentFileSize += Encoding.UTF8.GetByteCount(jsonString) + Environment.NewLine.Length;
-        }
-        else
-        {
-            _textWriter.WriteLine(jsonString);
-            if (GetCustomProperty<bool>("AutoFlush", true))
-            {
-                _textWriter.Flush();
-            }
-            else
-            {
-                // A generated call site's line goes to the stream itself; this one must reach it first.
-                _textPending = true;
-            }
-        }
     }
 
     private void WriteExceptionDetails(Utf8JsonWriter writer, Exception exception)
@@ -477,13 +474,6 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         }
     }
 
-    private string FormatTimestamp(DateTime timestamp)
-    {
-        var formatting = Configuration.Formatting;
-        var effectiveTimestamp = formatting.UseUtcTimestamp ? timestamp.ToUniversalTime() : timestamp.ToLocalTime();
-        return effectiveTimestamp.ToString(formatting.TimestampFormat, CultureInfo.InvariantCulture);
-    }
-
     private static string GetLogLevelString(LogLevel logLevel) => logLevel switch
     {
         LogLevel.Trace => "TRCE",
@@ -595,7 +585,6 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         if (_filePath == null)
             return;
 
-        _streamWriter?.Dispose();
         _fileStream?.Dispose();
 
         // Create rolled file name
@@ -625,7 +614,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
 
     private void EnsureFileCreated()
     {
-        if (_filePath == null || (_fileStream != null && _streamWriter != null))
+        if (_filePath == null || _fileStream != null)
             return;
 
         var directory = Path.GetDirectoryName(_filePath);
@@ -635,7 +624,6 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         }
 
         _fileStream = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-        _streamWriter = new StreamWriter(_fileStream, LogTextEncoding.Utf8);
 
         if (_currentFileDate == DateTime.MinValue)
         {
