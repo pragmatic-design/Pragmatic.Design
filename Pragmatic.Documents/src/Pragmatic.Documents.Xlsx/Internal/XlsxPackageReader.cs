@@ -37,14 +37,26 @@ internal static class XlsxPackageReader
         return XDocument.Load(reader);
     }
 
-    private static bool IsSafeWorksheetTarget(string target)
+    /// <summary>
+    ///     The part name a workbook relationship target names, or <see langword="null" /> when that part is not
+    ///     inside <c>xl/worksheets/</c>.
+    /// </summary>
+    /// <remarks>
+    ///     OPC allows a target to be absolute from the package root (<c>/xl/worksheets/sheet1.xml</c>, which
+    ///     ClosedXML writes) or relative to the source part, <c>xl/workbook.xml</c> (<c>worksheets/sheet1.xml</c>,
+    ///     which Excel writes). The guard is on the part the target names, not on its spelling: a crafted rId
+    ///     pointing a worksheet at <c>docProps/</c> or <c>_rels/</c> is refused either way. Backslashes, a
+    ///     UNC-style <c>//</c> and <c>.</c>/<c>..</c> segments are not resolved but refused.
+    /// </remarks>
+    private static string? ResolveWorksheetPart(string target)
     {
-        if (string.IsNullOrWhiteSpace(target)) return false;
-        // Absolute URIs, parent-traversal, and UNC-style prefixes all escape the expected
-        // xl/worksheets/ subdirectory once concatenated with the "xl/" base.
-        if (target.StartsWith('/') || target.StartsWith('\\')) return false;
-        if (target.Contains("..", StringComparison.Ordinal)) return false;
-        return target.StartsWith("worksheets/", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(target)) return null;
+        if (target.Contains('\\') || target.StartsWith("//", StringComparison.Ordinal)) return null;
+
+        var partName = target.StartsWith('/') ? target[1..] : "xl/" + target;
+        if (partName.Split('/').Any(segment => segment is "" or "." or "..")) return null;
+
+        return partName.StartsWith("xl/worksheets/", StringComparison.OrdinalIgnoreCase) ? partName : null;
     }
 
     internal static SpreadsheetModel Read(Stream stream)
@@ -143,11 +155,10 @@ internal static class XlsxPackageReader
                 // Reject relationship targets that try to reach outside xl/worksheets/ or that use
                 // traversal. Without this a crafted XLSX could point a worksheet rId at an unrelated
                 // package part (docProps, _rels) and have the reader parse it as a sheet.
-                if (!IsSafeWorksheetTarget(target))
-                    throw new InvalidOperationException(
+                var sheetPath = ResolveWorksheetPart(target)
+                    ?? throw new InvalidOperationException(
                         $"XLSX relationship target '{target}' is not inside xl/worksheets/.");
 
-                var sheetPath = $"xl/{target}";
                 var sheet = ReadWorksheet(zip, sheetPath, name, sharedStrings);
                 sheets.Add(sheet);
             }
