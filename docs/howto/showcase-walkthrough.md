@@ -106,7 +106,9 @@ This spins up PostgreSQL 17 on port **5433** (not the default 5432, to avoid con
 
 Then run with `dotnet run --project examples/showcase/src/Showcase.Host`, and open
 http://localhost:5000/scalar/v1 for the Scalar API UI. The host creates the schema of both databases at
-startup (`UsePragmaticMigrations`); they start empty, with no demo data. In Development the caller comes
+startup (`UsePragmaticMigrations`). In Development, with `Showcase:SeedDemoData` on (the default in
+`appsettings.json`), it also puts three hotels and their room types into the tenant `demo`; every other
+tenant starts empty, and no guest is seeded. In Development the caller comes
 from the `X-User-Id` and `X-User-Permissions` headers and the tenant from `X-Tenant-Id`:
 `examples/showcase/ENV.md` has a first reservation, created and confirmed with `curl`.
 
@@ -152,7 +154,7 @@ Content-Type: application/json
 }
 ```
 
-Returns the guest, with its `id`. The database starts empty: no guest or hotel is seeded.
+Returns the guest, with its `id`. No guest is seeded, so this is the first one.
 
 ### Step 2: Browse Properties
 
@@ -160,7 +162,7 @@ Returns the guest, with its `id`. The database starts empty: no guest or hotel i
 GET /api/properties/search
 ```
 
-Returns hotel properties from the Catalog boundary, paged. Each property has room types with base rates and max occupancy. A new database has none: create one with `POST /api/properties` and its room types with `POST /api/room-types` (`examples/showcase/ENV.md` has both).
+Returns hotel properties from the Catalog boundary, paged. Each property has room types with base rates and max occupancy. With `X-Tenant-Id: demo` it lists the three seeded hotels (`DEMO-ROME`, `DEMO-MILAN`, `DEMO-PARIS`); in any other tenant a new database has none: create one with `POST /api/properties` and its room types with `POST /api/room-types` (`examples/showcase/ENV.md` has both).
 
 ### Step 3: Create a Reservation
 

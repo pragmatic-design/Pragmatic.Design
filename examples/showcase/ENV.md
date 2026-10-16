@@ -24,8 +24,10 @@ docker compose up -d
 # PostgreSQL runs on port 5433 (mapped from 5432 inside container)
 ```
 
-The host creates the schema of both at startup (`app.UsePragmaticMigrations()` in `Program.cs`). They
-start empty: no demo data is seeded.
+The host creates the schema of both at startup (`app.UsePragmaticMigrations()` in `Program.cs`). In
+Development, with `Showcase:SeedDemoData` on, `ShowcaseDemoDataSeeder` then puts three hotels (`DEMO-ROME`,
+`DEMO-MILAN`, `DEMO-PARIS`) and their room types into the tenant `demo`, through the catalogue's own
+actions; a restart adds nothing more. Every other tenant, and the financial database, start empty.
 
 ### Connection Strings (Showcase.Host/appsettings.json)
 
@@ -90,8 +92,10 @@ docker compose -f docker-compose.yml -f docker-compose.messaging.yml up -d
 
 In Development the host takes the caller from headers (`HeaderUserMiddleware`): `X-User-Id`, `X-User-Name`
 and `X-User-Permissions` (comma-separated). There is no token to obtain. Every request also names its
-tenant in `X-Tenant-Id`. The databases start empty, so a reservation needs a property, a room type and
-a guest first. Each command prints the `id` the next one uses.
+tenant in `X-Tenant-Id`. The tenant `demo` already has three hotels and their room types (see above), so
+`GET /api/properties/search` with `X-Tenant-Id: demo` answers at once. The commands below use a tenant of
+their own, `hotel-rome`, which starts empty: a reservation there needs a property, a room type and a guest
+first. Each command prints the `id` the next one uses.
 
 Routes in the `/api/reservations` group take `?api-version=1.0`; without it the answer is `400`
 `ApiVersionUnspecified`. The full list, with every body, is in Scalar (`http://localhost:5000/scalar/v1`)
