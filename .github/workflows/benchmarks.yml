@@ -59,6 +59,9 @@ jobs:
     name: Allocation ratchet + A/B timings
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    permissions:
+      contents: read
+      actions: read     # the native libraries, from the runs that built them
 
     steps:
       - name: Checkout head
@@ -81,6 +84,17 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      # The native libraries are not committed (#159): each side gets the CI build of its own source, by
+      # head's script, which knows where both go. ⚠️ CI builds a changed crate's source in its own run: a
+      # pull request that changes one starts this job before that build exists, fails here, and is re-run
+      # once its CI has built it. A base on main always has one.
+      - name: Native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node head/scripts/fetch-native.mjs --rid linux-x64 --root head
+          node head/scripts/fetch-native.mjs --rid linux-x64 --root base
 
       - name: Run base and head
         run: node head/scripts/benchmarks.mjs ci --head head --base base --out results ${{ github.event_name == 'pull_request' && '--changed-only' || '' }}

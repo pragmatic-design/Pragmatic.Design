@@ -19,6 +19,18 @@ cd Pragmatic.Design
 dotnet restore Pragmatic.Design.slnx
 ```
 
+The PDF and Imaging modules load native libraries that are not in the repository: CI builds them from the
+Rust source under each module's `native/`. The gate fails until your machine's are in place, and says so.
+Either of these puts them there:
+
+```bash
+# CI's build of the source you checked out (needs the GitHub CLI, logged in)
+node scripts/fetch-native.mjs
+
+# Or build them yourself (needs a Rust toolchain)
+node scripts/refresh-native.mjs
+```
+
 ### Building and Running Tests
 
 One script defines the build and the test run, and CI executes the same one:

@@ -25,7 +25,7 @@ builds; nothing else in the repository reads it.
 | CodeQL (`codeql.yml`) | the C# sources and the workflows | every pull request, every push to `main`, weekly |
 | Dependabot version updates (`.github/dependabot.yml`) | NuGet, npm and Actions, grouped | weekly |
 | Dependabot alerts (the dependency graph) | every ecosystem above, Cargo included, against the GitHub Advisory Database | when an advisory is published |
-| `node scripts/native-stamp.mjs check` | each committed native binary carries the hash of the Rust source it was built from | every gate run |
+| `node scripts/native-stamp.mjs check` | this machine's native binaries are there, and each one present carries the hash of the Rust source it was built from | every gate run |
 
 **Gap.** Nothing in the gate scans the Rust crates or the npm packages, and Dependabot proposes no
 version updates for Cargo. Their advisories reach us as Dependabot alerts, for those with a GitHub
@@ -88,40 +88,43 @@ The decision moved (2026-10-10) because a content hash per package is what makes
 which the registry signature alone is not: a signature says who published a package, not that it is the
 one this commit built against.
 
-### The native libraries are committed, for now
+### The native libraries are built by CI, not committed
 
-`Pragmatic.Documents/runtimes/` and `Pragmatic.Imaging/runtimes/` hold six shared libraries: the PDF
-renderer (built on Typst) and the imaging library, each for win-x64, linux-x64 and osx-arm64. OpenSSF
-Scorecard reports them as binary artifacts. This is what they are, and how far to trust them.
+The packages ship six shared libraries: the PDF renderer (built on Typst) and the imaging library, each
+for win-x64, linux-x64 and osx-arm64. None of them is in the repository (#159). This is where they come
+from, and how far to trust them.
 
 - **The source is in the repository.** The crates are `Pragmatic.Documents/native/pragmatic-pdf` and
   `Pragmatic.Imaging/native/pragmatic-imaging`, plus `shared/native`. Each has its `Cargo.lock`.
-- **Why they are committed.** The .NET build does not compile Rust, and the packages ship the libraries
-  under `runtimes/`. Committed, they let the tests and samples run without a Rust toolchain.
+- **CI builds them.** The public workflows `pdf-native.yml` and `imaging-native.yml` test each crate,
+  build it for the three RIDs (linux-x64 in a `rust:1-bookworm` container, so the library loads on that
+  glibc), verify its stamp and upload it as an artifact named after the source hash,
+  `<crate>-native-<rid>-<hash>`.
+- **Every run uses the build of its own source.** `ci.yml` and `pack-validate.yml` first ask whether a
+  run has built the current source (`scripts/fetch-native.mjs --probe`). When none has, they call the
+  two workflows in the same run; then the gate, the container shards and the pack download the build by
+  its name. The jobs that test install no Rust toolchain.
 - **Each binary names the source it came from.** At build time, each crate's `build.rs` writes the
-  SHA-256 hash of that crate's source into the library. Every gate run hashes the source again and reads
-  the stamp back out of each binary's bytes (`scripts/native-stamp.mjs`). A binary whose stamp is not the
-  current source's fails the gate. This is what caught a Windows PDF library that had stayed five months
-  behind its source.
-- **Who built them.**
-  - osx-arm64 is built only by the public workflows `pdf-native.yml` and `imaging-native.yml`. Each run
-    tests the crate, builds it, verifies the stamp and uploads the library.
-  - win-x64 and linux-x64 come from the same workflows, or from a maintainer's machine through
-    `node scripts/refresh-native.mjs` (Linux through Docker).
+  SHA-256 hash of that crate's source into the library. `fetch-native.mjs` refuses a download whose stamp
+  is not the current source's, and every gate run hashes the source again and reads the stamp back out
+  of each binary in `runtimes/` (`scripts/native-stamp.mjs`).
+- **What a release ships.** `release.yml` packs with `build-native`: the libraries are built in the
+  release's own run, from the tagged commit, and the pack takes only those. Each library is attested as a
+  file of its own before the push, and every `.nupkg` carries its own build-provenance attestation (see
+  "Releases" above).
 - **What the stamp does not prove.** It proves that a binary matches the current source as its builder
   stamped it, and it catches a stale binary. It is not a signature, and the builds are not verified to be
-  reproducible bit for bit. So it does not prove, against a dishonest builder, that the bytes came from
-  that source. For win-x64 and linux-x64, that trust rests today on the maintainer's machine.
-- **What a release attests.** Every `.nupkg` carries a build-provenance attestation (see "Releases" above).
-  It covers the package as packed, binaries included. It does not cover the compilation of those
-  binaries.
+  reproducible bit for bit. The attestation is what says which workflow, on which commit, built a released
+  library.
 - **How to check it yourself.**
-  - Rebuild from source with `node scripts/refresh-native.mjs` (a Rust toolchain, and Docker for Linux),
-    then run `node scripts/native-stamp.mjs check`.
-  - Or run the two workflows on the commit you care about and compare their artifacts' stamps.
-- **Where this is going.** The binaries should be built by CI from the released commit, attested, and
-  removed from the repository (#159). Until then, Scorecard's six binary-artifact alerts are dismissed
-  with this reason (#157).
+  - `gh attestation verify <library> --repo pragmatic-design/Pragmatic.Design`, on a library taken out
+    of a released package's `runtimes/`.
+  - Or rebuild from source with `node scripts/refresh-native.mjs` (a Rust toolchain, and Docker for
+    Linux), then run `node scripts/native-stamp.mjs check`.
+- **On a developer's machine.** The gate needs that machine's libraries in `runtimes/`, and fails without
+  them, naming two ways to get them: `node scripts/fetch-native.mjs` downloads CI's build of the current
+  source (the GitHub CLI, logged in), and `node scripts/refresh-native.mjs` builds them. Both write files
+  `.gitignore` keeps out of the repository.
 
 ### Minimum versions, not exact ones
 

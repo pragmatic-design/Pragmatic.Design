@@ -8,7 +8,10 @@
  *   node scripts/refresh-native.mjs [pdf] [imaging] --linux   also linux-x64, built in a rust:1-bookworm container
  *
  * With no crate named, every crate. Each crate's unit tests run first: a binary is refreshed only from
- * source whose tests pass. osx-arm64 needs a macOS machine; nothing ships for it today.
+ * source whose tests pass. osx-arm64 needs a macOS machine: the CI workflows build it.
+ *
+ * The binaries are not committed (#159); CI builds the ones it tests and ships. This is for a developer
+ * who changes a crate, or has no GitHub CLI for scripts/fetch-native.mjs.
  */
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync } from 'node:fs';

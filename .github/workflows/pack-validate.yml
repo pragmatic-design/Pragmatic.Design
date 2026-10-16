@@ -8,6 +8,11 @@ on:
   merge_group:
   workflow_dispatch:
   workflow_call:   # release.yml publishes the packages this job packs and validates
+    inputs:
+      build-native:
+        description: Build the native libraries in this run, and pack only those (a release)
+        type: boolean
+        default: false
 
 concurrency:
   group: pack-${{ github.ref }}
@@ -22,12 +27,65 @@ permissions:
   contents: read
 
 jobs:
-  pack:
-    name: Pack & Validate
+  # The packages carry the native libraries of every RID, and they are not committed (#159). As in ci.yml:
+  # ask whether a run has built this source, build it here when none has, then download it. A release
+  # (build-native) ships only libraries its own run built, from the commit it releases.
+  native:
+    name: Native libraries
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read     # the artifacts of other runs
+    outputs:
+      pdf: ${{ steps.probe.outputs.pdf }}
+      imaging: ${{ steps.probe.outputs.imaging }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # A release asks about its own run only: a build an earlier run made does not count, and one the
+      # release's gate already made in this run is not made twice (a second upload of a name fails).
+      - name: Is there a build of this source?
+        id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --probe --rid all ${{ inputs.build-native && format('--run-id {0}', github.run_id) || '' }}
+
+  pdf-native:
+    needs: native
+    if: needs.native.outputs.pdf == 'missing'
+    uses: ./.github/workflows/pdf-native.yml
+
+  imaging-native:
+    needs: native
+    if: needs.native.outputs.imaging == 'missing'
+    uses: ./.github/workflows/imaging-native.yml
+
+  pack:
+    name: Pack & Validate
+    needs: [native, pdf-native, imaging-native]
+    # As in ci.yml: skipped would read as passed, so this runs whatever the native jobs did and fails first.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read     # the native libraries, from the run that built them
+
+    steps:
+      - name: The native libraries were built where they had to be
+        if: needs.native.result != 'success' || needs.pdf-native.result == 'failure' || needs.imaging-native.result == 'failure' || needs.pdf-native.result == 'cancelled' || needs.imaging-native.result == 'cancelled'
+        run: |
+          echo "::error::native: ${{ needs.native.result }}, pdf: ${{ needs.pdf-native.result }}, imaging: ${{ needs.imaging-native.result }}"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,6 +95,13 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      # Every RID, before the build: the projects copy and pack whichever of them exist. A release takes
+      # only what this run built.
+      - name: Native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --rid all ${{ inputs.build-native && format('--run-id {0}', github.run_id) || '' }}
 
       # A Markdown-only change packs nothing (#199, scripts/ci-paths.mjs): the Markdown that is packed, a
       # module's README and docs/ and the root README, classifies as `full`, so this job still validates

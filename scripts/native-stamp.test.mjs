@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { CRATES, ROOT, sourceHash, stampMismatch, stampOf, staleBinaries } from './native-stamp.mjs';
+import { CRATES, ROOT, artifactName, missingBinaries, sourceHash, stampMismatch, stampOf, staleBinaries } from './native-stamp.mjs';
 
 const SOURCES = ['crate/Cargo.toml', 'crate/src'];
 
@@ -87,6 +87,25 @@ test('a binary is stale when it carries no stamp or another hash, and absent bin
   assert.ok(stale.every((s) => s.crate === 'one' && s.expected === expected));
 });
 
+// The libraries are not committed (#159): a run without this machine's fails the gate, with the command
+// that brings them, instead of failing every PDF and image test on a missing library.
+test('a binary of the given RID that is not there is missing, and other RIDs are not asked for', () => {
+  const root = tree(crate);
+  const one = {
+    name: 'one',
+    targets: [
+      { rid: 'win-x64', path: 'win/one.dll' },
+      { rid: 'linux-x64', path: 'linux/libone.so' },
+      { rid: 'osx-arm64', path: 'osx/libone.dylib' },
+    ],
+  };
+  mkdirSync(join(root, 'linux'), { recursive: true });
+  writeFileSync(join(root, 'linux/libone.so'), 'built');
+
+  assert.deepEqual(missingBinaries(root, [one], 'win-x64'), [{ crate: 'one', path: 'win/one.dll' }]);
+  assert.deepEqual(missingBinaries(root, [one], 'linux-x64'), []);
+});
+
 // What a CI workflow checks a freshly built library with, instead of grep: BSD grep fails the same
 // check on macOS that GNU grep passes on Linux and Windows.
 test('a built library with the current stamp passes verify, with another or none it says which', () => {
@@ -124,8 +143,20 @@ for (const c of CRATES) {
     assert.ok(tests < text.indexOf('cargo build --release --locked'), 'the tests run after the build');
   });
 
-  test(`${c.workflow} names each artifact as runtimes/ commits it`, () => {
-    const matrix = [...workflow().matchAll(/rid:\s*(\S+)\s+artifact:\s*(\S+)\s+target_name:\s*(\S+)/g)]
+  // fetch-native.mjs finds a build by this name alone: a workflow uploading under another finds nothing,
+  // and every run would build again.
+  test(`${c.workflow} uploads under the name fetch-native.mjs looks for`, () => {
+    const uploaded = /name:\s*(\S+-native-\$\{\{ matrix\.rid \}\}-\$\{\{ env\.(\w+) \}\})/.exec(workflow());
+
+    assert.ok(uploaded, 'no artifact named <crate>-native-<rid>-<source hash>');
+    assert.equal(uploaded[2], c.env);
+    assert.equal(
+      uploaded[1].replace('${{ matrix.rid }}', 'linux-x64').replace(`\${{ env.${c.env} }}`, 'h'),
+      artifactName(c, 'linux-x64', 'h'));
+  });
+
+  test(`${c.workflow} names each artifact's file as runtimes/ holds it`, () => {
+    const matrix = [...workflow().matchAll(/rid:\s*(\S+)\s+(?:container:\s*\S+\s+)?artifact:\s*(\S+)\s+target_name:\s*(\S+)/g)]
       .map(([, rid, artifact, target]) => ({ rid, artifact, target }));
 
     assert.deepEqual(

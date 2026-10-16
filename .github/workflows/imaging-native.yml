@@ -1,33 +1,31 @@
 name: Imaging Native
 
 # Tests and builds the native image/QR library (native/pragmatic-imaging) for every supported RID and
-# uploads the shared libraries as artifacts. For osx-arm64 this workflow is the only source: that binary
-# can be built on a macOS runner only. win-x64 and linux-x64 also come from
-# `node scripts/refresh-native.mjs imaging --linux`.
+# uploads the shared libraries as artifacts. The libraries are not committed (#159): this workflow is where
+# the ones CI tests and the packages ship come from. A developer can build win-x64 and linux-x64 with
+# `node scripts/refresh-native.mjs imaging --linux`; osx-arm64 only a macOS runner builds.
 #
 # Each binary is stamped with the hash of the source it was built from (PRAGMATIC_IMAGING_SOURCE_HASH,
-# computed by scripts/native-stamp.mjs), and the run fails if the built library does not carry it. So the
-# artifacts pass the gate as they are: download them and place them under
+# computed by scripts/native-stamp.mjs), and the run fails if the built library does not carry it. Each
+# artifact is named `imaging-native-<rid>-<source hash>`, so a run of any workflow finds the build of the
+# source it checked out: scripts/fetch-native.mjs looks it up by that name and places it under
 #   Pragmatic.Imaging/runtimes/{rid}/native/
-# with the names they already have (linux-x64/libpragmatic_imaging_native.so,
-# osx-arm64/libpragmatic_imaging_native.dylib, win-x64/Pragmatic.Imaging.Native.dll) — the names the gate
-# and the package expect. An artifact from another commit's source fails the gate, as it should.
+# with the names it already has (linux-x64/libpragmatic_imaging_native.so,
+# osx-arm64/libpragmatic_imaging_native.dylib, win-x64/Pragmatic.Imaging.Native.dll), the names the gate
+# and the package expect.
+#
+# Called by ci.yml and pack-validate.yml when no run has built the current source yet (a change to the
+# crate, or an artifact past its retention), and by release.yml through pack-validate.yml on every release.
+#
+# linux-x64 is built in a rust:1-bookworm container, as refresh-native.mjs builds it: the runner's newer
+# glibc would make a library that does not load on Debian bookworm.
 #
 # No NASM: rav1e is built without its asm feature (Cargo.lock has no nasm-rs), and the linux-x64 build
 # in a rust:1-bookworm container needs none.
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'Pragmatic.Imaging/native/**'
-      - 'shared/native/**'
-      - '.github/workflows/imaging-native.yml'
-
-concurrency:
-  group: imaging-native-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 permissions:
   contents: read
@@ -44,14 +42,17 @@ jobs:
         include:
           - os: ubuntu-latest
             rid: linux-x64
+            container: true
             artifact: libpragmatic_imaging_native.so
             target_name: libpragmatic_imaging_native.so
           - os: macos-14        # arm64 runner → native aarch64-apple-darwin
             rid: osx-arm64
+            container: false
             artifact: libpragmatic_imaging_native.dylib
             target_name: libpragmatic_imaging_native.dylib
           - os: windows-latest
             rid: win-x64
+            container: false
             artifact: pragmatic_imaging_native.dll
             target_name: Pragmatic.Imaging.Native.dll
 
@@ -64,6 +65,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Rust
+        if: ${{ !matrix.container }}
         uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           # Pinned to a commit, the ref no longer names the toolchain: say it.
@@ -81,10 +83,24 @@ jobs:
           echo "PRAGMATIC_IMAGING_SOURCE_HASH=$hash" >> "$GITHUB_ENV"
 
       - name: Unit tests
+        if: ${{ !matrix.container }}
         run: cargo test --release --locked
 
       - name: Build (release)
+        if: ${{ !matrix.container }}
         run: cargo build --release --locked
+
+      - name: Unit tests and build (release), in rust:1-bookworm
+        if: ${{ matrix.container }}
+        shell: bash
+        working-directory: .
+        run: >
+          docker run --rm
+          -v "$GITHUB_WORKSPACE:/src"
+          -e PRAGMATIC_IMAGING_SOURCE_HASH
+          -w /src/Pragmatic.Imaging/native/pragmatic-imaging
+          rust:1-bookworm
+          sh -c 'cargo test --release --locked && cargo build --release --locked'
 
       - name: Stage native library
         shell: bash
@@ -99,6 +115,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: imaging-native-${{ matrix.rid }}
+          name: imaging-native-${{ matrix.rid }}-${{ env.PRAGMATIC_IMAGING_SOURCE_HASH }}
           path: native-out/${{ matrix.rid }}/${{ matrix.target_name }}
-          retention-days: 30
+          if-no-files-found: error
+          # The longest a public repository keeps one. A run that finds none past it builds again.
+          retention-days: 90
