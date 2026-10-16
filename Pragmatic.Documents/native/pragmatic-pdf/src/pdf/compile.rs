@@ -53,9 +53,19 @@ pub(crate) fn compile_with_fonts(typst_markup: &str, resources: &HashMap<String,
     }
 
     let world = PragmaticWorld::new(typst_markup, resources, fonts);
+    let result = compile_and_export(&world);
 
+    // Typst memoizes what it computes in process-wide caches (comemo) and keeps every entry until something
+    // evicts it. A document is compiled once here, so nothing it cached is worth keeping: without this, each
+    // render left its whole layout behind, about 195 MB per 1,000-row report, for the life of the process (#275).
+    typst::comemo::evict(0);
+
+    result
+}
+
+fn compile_and_export(world: &PragmaticWorld<'_>) -> Result<Vec<u8>, String> {
     // Compile Typst source to a paged document
-    let warned = typst::compile::<PagedDocument>(&world);
+    let warned = typst::compile::<PagedDocument>(world);
 
     let document = warned.output.map_err(|errors| {
         let msgs: Vec<String> = errors.iter()
