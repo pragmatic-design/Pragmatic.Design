@@ -19,6 +19,9 @@
     <Project Path="tests/Pragmatic.Configuration.Database.Tests/Pragmatic.Configuration.Database.Tests.csproj" />
     <Project Path="tests/Pragmatic.Configuration.Azure.Tests/Pragmatic.Configuration.Azure.Tests.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Configuration.Benchmarks/Pragmatic.Configuration.Benchmarks.csproj" />
+  </Folder>
   <!-- Unified source generator -->
   <Project Path="../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />
 </Solution>
