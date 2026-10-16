@@ -472,12 +472,16 @@ To give every log line of a request, a message or a job the same properties, pus
 restores the context that was current before:
 
 ```csharp
-using var context = LogContextScope.PushContext(new KeyValuePair<string, object?>[]
-{
-    new("CorrelationId", correlationId),
-    new("RequestId", requestId),
-});
+using var context = LogContextScope.PushContext(
+    ImmutableArray.Create<KeyValuePair<string, object?>>(
+        new("CorrelationId", correlationId),
+        new("RequestId", requestId)));
 ```
+
+Pass an `ImmutableArray`: the context keeps it as it is. The overload that takes any `IEnumerable` works the same
+but copies the pairs, since an array or a list the caller still holds could change under the context after the
+push; on a path that runs per request that copy is the one allocation the immutable overload saves. A repeated
+key keeps its first place and its last value either way.
 
 This is what `LoggingEnrichmentMiddleware` does for each request. A pushed context inherits the properties of
 the one it was pushed over, so a nested push adds to them and its dispose takes only its own away.

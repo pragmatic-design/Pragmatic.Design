@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Pragmatic.Logging.Context;
 
@@ -48,6 +50,32 @@ public static class LogContextScope
 
         // Built at once: setting them one by one copied the properties into a new array per pair.
         var items = LogContextProperties.From(properties);
+        var newContext = Current?.CreateChild(items) ?? new LogContext(null, items);
+        return AmbientChain.PushNew(newContext);
+    }
+
+    /// <summary>
+    ///     Creates a new LogContext with <paramref name="properties" /> and pushes it to the current scope, keeping the
+    ///     caller's array instead of copying it.
+    /// </summary>
+    /// <remarks>
+    ///     An <see cref="ImmutableArray{T}" /> cannot change after the push, so the context can hold it as it is: the
+    ///     <see cref="IEnumerable{T}" /> overload has to copy, since a caller's array or list could change under the
+    ///     context afterwards. Build it once per push, <c>[new("CorrelationId", id), new("RequestId", request)]</c> or
+    ///     <c>ImmutableArray.Create(…)</c>. A repeated key still keeps its first place and its last value, which costs
+    ///     the copy the other overload makes (#134).
+    /// </remarks>
+    /// <param name="properties">Initial properties for the context</param>
+    /// <returns>A disposable scope that restores the previous context when disposed</returns>
+    public static IDisposable PushContext(ImmutableArray<KeyValuePair<string, object?>> properties)
+    {
+        if (properties.IsDefault)
+            throw new ArgumentNullException(nameof(properties));
+
+        var items = ImmutableCollectionsMarshal.AsArray(properties)!;
+        if (LogContextProperties.HasRepeatedKey(items))
+            items = LogContextProperties.From(items);
+
         var newContext = Current?.CreateChild(items) ?? new LogContext(null, items);
         return AmbientChain.PushNew(newContext);
     }

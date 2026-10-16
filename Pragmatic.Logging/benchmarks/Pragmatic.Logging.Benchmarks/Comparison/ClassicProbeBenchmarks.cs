@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
@@ -214,12 +215,11 @@ public class ClassicProbeBenchmarks
     }
 
     // As LoggingBenchmarks pushes them: each library's own request context mechanism, the properties handed over
-    // in one array as ZLogger's caller hands its scope one.
-    private IDisposable PragmaticContext() => LogContextScope.PushContext(new KeyValuePair<string, object?>[]
-    {
-        new("CorrelationId", _correlationId),
-        new("RequestId", _requestId),
-    });
+    // in one array as ZLogger's caller hands its scope one. Immutable, so the context keeps it without a copy (#134).
+    private IDisposable PragmaticContext() => LogContextScope.PushContext(
+        ImmutableArray.Create<KeyValuePair<string, object?>>(
+            new KeyValuePair<string, object?>("CorrelationId", _correlationId),
+            new KeyValuePair<string, object?>("RequestId", _requestId)));
 
     private IDisposable ZLoggerContext() => _zlogger.BeginScope(new KeyValuePair<string, object?>[]
     {

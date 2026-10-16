@@ -253,6 +253,25 @@ A tie in time on this machine, and 8 B above ZLogger. What is left is the contex
 inherits, reads by name, takes more properties later) and the copy of the caller's array, where ZLogger's scope
 keeps the caller's array as it is.
 
+**#134, third step: an immutable array is kept, not copied.** `LogContextScope.PushContext` takes an
+`ImmutableArray<KeyValuePair<string, object?>>` and holds its array as it is: it cannot change after the push, so
+there is nothing to copy it against. The `IEnumerable` overload still copies, since a caller's array or list could
+change under the context afterwards; that was the choice (owner, 2026-10-15) between keeping the copy and taking a
+reference the caller could still write to. The Production row pushes an immutable array.
+[`local-134-immutable`](benchmarks/reports/local-134-immutable_LoggingBenchmarks-report-github.md), 2026-10-16,
+.NET 10.0.13:
+
+| Library | Mean | Ratio | Deviation | Allocated |
+|---|---:|---:|---:|---:|
+| ZLogger | 587.1 ns | 1.08× faster | 0.10 | 832 B |
+| **Pragmatic** | **630.7 ns** | baseline | | **784 B** |
+| NLog | 1,066.1 ns | 1.70× slower | 0.15 | 2,872 B |
+| Serilog | 1,241.1 ns | 1.98× slower | 0.21 | 3,000 B |
+
+48 B below ZLogger, from 8 B above. In time this run puts ZLogger ahead by 44 ns, where the run before put the two
+level: the same code has moved by about 5% between runs in both directions, so one local run does not settle it,
+and the runner's A/B is the measure that does.
+
 ## A JSON line: `JsonSinkBenchmarks`
 
 ⚠️ **Not the run of the rest of this page.** These numbers come from a run on 2026-10-09 on the machine
