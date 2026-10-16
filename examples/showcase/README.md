@@ -12,10 +12,12 @@ dotnet run --project src/Showcase.Host
 # Open http://localhost:5000/scalar/v1  (Scalar API UI)
 ```
 
-> The host creates the schema of both databases at startup (`UsePragmaticMigrations`). The databases
-> start empty: create a property, a room type and a guest before a reservation (see [ENV.md](ENV.md)).
-> In Development the caller is whoever the `X-User-Id` and `X-User-Permissions` headers say, and every
-> request names its tenant in `X-Tenant-Id`.
+> The host creates the schema of both databases at startup (`UsePragmaticMigrations`). In Development,
+> with `Showcase:SeedDemoData` on (it is in `appsettings.json`), it also puts three hotels with their
+> room types into the tenant **`demo`**: send `X-Tenant-Id: demo` and `GET /api/properties/search`
+> lists them. Every other tenant starts empty, and there are no demo guests: create a guest before a
+> reservation (see [ENV.md](ENV.md)). In Development the caller is whoever the `X-User-Id` and
+> `X-User-Permissions` headers say, and every request names its tenant in `X-Tenant-Id`.
 
 ## Architecture
 

@@ -13,6 +13,7 @@ using Showcase.Host.AgentDemo;
 using Showcase.Host.Configuration;
 using Showcase.Host.FeatureFlags;
 using Showcase.Host.Pipeline;
+using Showcase.Host.Seeding;
 
 namespace Showcase.Host;
 
@@ -77,6 +78,9 @@ public class ShowcaseStartupStep : IStartupStep
         // Feature Flags — app-specific context provider and seeder
         services.AddScoped<IFeatureFlagContextProvider, ShowcaseFeatureFlagContextProvider>();
         services.AddHostedService<ShowcaseFeatureFlagSeeder>();
+
+        // Demo hotels in the tenant "demo", in Development and only with Showcase:SeedDemoData on
+        services.AddHostedService<ShowcaseDemoDataSeeder>();
 
         // Pre/Post processors
         services.AddScoped<IEndpointPreProcessor, TenantValidationPreProcessor>();

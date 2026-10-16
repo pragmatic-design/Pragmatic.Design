@@ -44,7 +44,10 @@ public sealed class ShowcaseWebFactory(
                 ["ConnectionStrings:Financial"] = fixture.FinancialConnectionString,
                 ["DetailedErrors"] = "true",
                 // Disable MaintenanceMode — let exceptions propagate to WebApplicationFactory
-                ["Pragmatic:MaintenanceMode:EnableOnStartupFailure"] = "false"
+                ["Pragmatic:MaintenanceMode:EnableOnStartupFailure"] = "false",
+                // No demo hotels: the suites count and search the rows they write themselves. The test
+                // of the seeding turns it on through extraConfig, which is applied after this.
+                ["Showcase:SeedDemoData"] = "false",
             };
 
             // Scenario overrides (e.g. the Azure Service Bus transport tests)

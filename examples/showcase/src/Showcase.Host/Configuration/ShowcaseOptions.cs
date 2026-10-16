@@ -39,7 +39,10 @@ public partial class ShowcaseOptions
     [Range(1, 168)]
     public int CancellationWindowHours { get; set; } = 24;
 
-    /// <summary>Whether to enable demo data seeding on startup.</summary>
+    /// <summary>
+    ///     Whether a host started in Development puts the demo hotels into the tenant <c>demo</c>
+    ///     (<c>ShowcaseDemoDataSeeder</c>). Ignored in any other environment.
+    /// </summary>
     public bool SeedDemoData { get; set; } = true;
 
     /// <summary>
