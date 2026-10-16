@@ -96,6 +96,10 @@ public class Program
                 BenchmarkRunner.Run<Json.Probe.ProbeBenchmarks>(null, args[1..]);
                 break;
 
+            case "classic-json-probe":
+                BenchmarkRunner.Run<Json.Probe.ClassicJsonProbeBenchmarks>(null, args[1..]);
+                break;
+
             case "classic-probe":
                 BenchmarkRunner.Run<Comparison.ClassicProbeBenchmarks>(null, args[1..]);
                 break;
