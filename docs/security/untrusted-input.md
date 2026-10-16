@@ -27,6 +27,7 @@ the converters `System.Text.Json` calls, the binders the generator emits, and th
 | Entry point | Source | Who sends it |
 |---|---|---|
 | Agent frames | `Pragmatic.Agent.Protocol/FrameCodec.cs` (`TryDecode`, `ReadFrameAsync`: a big-endian length bounded by `MaxFrameSize`, 16 MB, then the payload through the wire format) | The peer on the agent connection |
+| Gossip datagrams | `Pragmatic.Agent/Gossip/SwimProtocol.cs`: a UDP datagram is verified by `GossipAuthenticator.TryVerify` (HMAC over `Gossip:SharedKey`), then its payload is deserialized as a `GossipMessage` | Anything that can send a UDP packet to the gossip port. With a shared key, only a peer holding it reaches the JSON; without one, every datagram is parsed, and only remote mutations are refused after parsing |
 | Broker messages | `IMessageTypeRegistry.Deserialize` (type name and JSON payload), `SqlQueueConsumer` headers | Another service, through the broker or the SQL queue |
 | Error bodies of a remote API | `Pragmatic.Result/Serialization/ErrorJson.cs` (`ReadDiscriminator`, `Read`) | The server a generated client calls |
 
