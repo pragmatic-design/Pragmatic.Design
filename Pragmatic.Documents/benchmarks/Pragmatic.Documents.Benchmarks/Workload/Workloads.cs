@@ -48,7 +48,10 @@ public static class Workloads
 
     private static readonly string[] Categories = ["Hardware", "Software", "Services", "Training"];
 
-    public static InvoiceReport Typed() => new() { Title = Title, Lines = [.. Enumerable.Range(1, Rows).Select(Line)] };
+    public static InvoiceReport Typed() => Typed(Rows);
+
+    /// <summary>The same report with <paramref name="rows" /> lines, for a measure that grows the document.</summary>
+    public static InvoiceReport Typed(int rows) => new() { Title = Title, Lines = [.. Enumerable.Range(1, rows).Select(Line)] };
 
     public static ReflectedInvoiceReport Reflected() => new()
     {
