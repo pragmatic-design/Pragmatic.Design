@@ -17,14 +17,17 @@ namespace Pragmatic.Documents.Pdf.Tests;
 ///     <para>
 ///         Measured on the process's private bytes after a managed collection: they see native memory, and unlike
 ///         the working set the operating system does not shrink them by trimming pages, which under a loaded gate
-///         made one render's growth come out negative. One render first, so fonts and first-use caches are
-///         loaded, then four renders of different documents. Kept out of the parallel run, so other tests' renders
-///         do not land between two readings.
+///         made one render's growth come out negative. Kept out of the parallel run, so other tests' renders do
+///         not land between two readings.
 ///     </para>
 ///     <para>
-///         The bound is absolute because a relative one is not stable: the first render's own growth depends on
-///         what ran before it in the process. With the leak, each of these documents kept about 30 MB, so four
-///         kept over 100 MB; without it, four keep about 2.5 MB. 16 MB is far from both.
+///         Three renders first, so fonts, first-use caches and the allocator's arenas have settled: on Linux,
+///         glibc's allocator keeps the arenas a render grew, so the first renders of a fixed library still raise
+///         private bytes (217 → 254 → 301 → 306 MB) and then stop, with an occasional step of one arena (306 →
+///         342). Then six renders of different documents, measured. With the leak, each kept about 30 MB on
+///         Windows and 36 MB on Linux, so six keep over 180 MB; without it, six keep at most one arena step on
+///         Linux and about 2.5 MB on Windows. 64 MB is far from both. A bound relative to the first render was
+///         tried and is not stable: that render's own growth depends on what ran before it in the process.
 ///     </para>
 /// </remarks>
 [Collection(nameof(ARenderGivesItsMemoryBackTests))]
@@ -33,21 +36,26 @@ public class ARenderGivesItsMemoryBackTests
 {
     private const int Lines = 3_000;
 
-    private const long Bound = 16 * 1024 * 1024;
+    private const int WarmUpRenders = 3;
+
+    private const int MeasuredRenders = 6;
+
+    private const long Bound = 64 * 1024 * 1024;
 
     [NativeRequiredFact]
     public void RepeatedRenders_DoNotKeepTheirNativeMemory()
     {
-        PdfRenderer.Render(Report(0));
-        var warm = PrivateBytesAfterCollection();
-
-        for (var i = 1; i <= 4; i++)
+        for (var i = 0; i < WarmUpRenders; i++)
             PdfRenderer.Render(Report(i));
-        var kept = PrivateBytesAfterCollection() - warm;
+        var settled = PrivateBytesAfterCollection();
+
+        for (var i = WarmUpRenders; i < WarmUpRenders + MeasuredRenders; i++)
+            PdfRenderer.Render(Report(i));
+        var kept = PrivateBytesAfterCollection() - settled;
 
         kept.Should().BeLessThan(Bound,
-            $"four renders of {Lines:N0}-line documents kept {kept:N0} bytes; a render that gives its memory back "
-            + "keeps none of it, and one that does not keeps about 30 MB each");
+            $"{MeasuredRenders} renders of {Lines:N0}-line documents kept {kept:N0} bytes; a render that gives its "
+            + "memory back keeps at most an allocator arena, and one that does not keeps about 30 MB each");
     }
 
     // A different document each time: memoized entries are keyed by content, so the same document twice could
