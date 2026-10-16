@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Pragmatic.Jobs;
 using Pragmatic.Jobs.Attributes;
+using Pragmatic.Resilience.Attributes;
 
 namespace Warehouse.Stock.Infrastructure.Jobs;
 
@@ -25,8 +26,15 @@ namespace Warehouse.Stock.Infrastructure.Jobs;
 ///         The work is the boundary's internal action, whose invoker owns the transaction. A failure is
 ///         thrown so the job store retries it rather than marking a hold given back that was not.
 ///     </para>
+///     <para>
+///         ⚠️ <c>[Retry]</c> is what makes that true: without it the store runs a job once
+///         (<c>JobsOptions.DefaultMaxRetries</c> is 1), and the usual failure here is a conflict, not a fault
+///         — a hold on the same level saved first, on this instance or the other. The expiry reads only
+///         what is still held, so running it again is safe (<c>ExpireReservationsAction</c>).
+///     </para>
 /// </remarks>
 [Job]
+[Retry(MaxAttempts = 5, Strategy = BackoffStrategy.ExponentialWithJitter, BaseDelayMs = 200)]
 internal sealed partial class ExpireReservationsJob(
     IStockReservationsInternalActions reservations,
     ILogger<ExpireReservationsJob> logger) : IJob<ExpireReservations>

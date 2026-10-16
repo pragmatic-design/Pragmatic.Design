@@ -30,6 +30,8 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
     [Fact]
     public async Task DrainingStockB_UnderSteadyTraffic_FailsNoRequest_AndAServesEverything_UntilBIsPutBack()
     {
+        var (ordersMark, stockAMark, stockBMark) =
+            (warehouse.Orders.Errors.Mark(), warehouse.StockA.Errors.Mark(), warehouse.StockB.Errors.Mark());
         var product = await StockCalls.InStockAsync(warehouse.StockA, quantity: 500);
         using var manager = StockCalls.ThroughTheGateway(warehouse, StockCalls.Manager);
         using var desk = OrderCalls.ThroughTheGateway(warehouse);
@@ -51,13 +53,16 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
         }
 
         answers.Should().NotBeEmpty();
-        // Each failure with its body and duration, and the services' own errors: the one time this failed
-        // in CI it said only "(place, ServiceUnavailable)", which is not enough to tell a drain defect from
-        // a stalled runner (#101).
+        // Each failure with its body and duration, and the errors the services logged during this test:
+        // the one time this failed in CI it said only "(place, ServiceUnavailable)", which is not enough
+        // to tell a drain defect from a stalled runner (#101). Orders first, since its line says why Stock
+        // did not answer, and Stock B before A, since B is the one being drained.
         answers.Where(answer => (int)answer.Status >= 500).Should().BeEmpty(
             "a drain leaves the rotation before the instance stops taking requests, so nothing is refused. "
-            + $"Slowest place: {SlowestOf(answers, "place")}. Orders errors: {warehouse.Orders.Errors}. "
-            + $"Stock A errors: {warehouse.StockA.Errors}. Stock B errors: {warehouse.StockB.Errors}");
+            + $"Failures: {string.Join(" | ", answers.Where(answer => (int)answer.Status >= 500))}. "
+            + $"Orders errors: {warehouse.Orders.Errors.Since(ordersMark)}. "
+            + $"Stock B errors: {warehouse.StockB.Errors.Since(stockBMark)}. "
+            + $"Stock A errors: {warehouse.StockA.Errors.Since(stockAMark)}");
 
         // Drained: every read is A's.
         var reads = await ServedByAsync(manager, product.Id, 20);
@@ -146,9 +151,6 @@ public sealed class DrainingOneInstanceFailsNoRequest(WarehouseFixture warehouse
             }
         }
     }
-
-    private static string SlowestOf(IEnumerable<Answer> answers, string call)
-        => answers.Where(answer => answer.Call == call).MaxBy(answer => answer.Elapsed)?.ToString() ?? "none";
 
     /// <summary>The answer, with its body when it is a failure: a 5xx is only diagnosable by what it said.</summary>
     private static async Task<Answer> AnswerAsync(string call, HttpResponseMessage response, Stopwatch clock)

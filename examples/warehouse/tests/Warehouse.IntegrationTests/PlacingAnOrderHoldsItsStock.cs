@@ -1,8 +1,12 @@
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Messaging;
 using Pragmatic.Testing.Assertions;
 using Warehouse.IntegrationTests.Infrastructure;
+using Warehouse.Stock.Contracts;
 
 namespace Warehouse.IntegrationTests;
 
@@ -119,8 +123,41 @@ public sealed class PlacingAnOrderHoldsItsStock(WarehouseFixture warehouse)
             "the customer is told when the timeout runs out, not after a hang");
         clock.Elapsed.Should().BeGreaterThanOrEqualTo(WarehouseFixture.RequestReplyTimeout - TimeSpan.FromMilliseconds(100),
             "the 503 is the timeout, not a failure before the request was sent");
+        orders.Errors.Entries.Should().Contain(
+            entry => entry.Contains($"Order {order} not placed") && entry.Contains("No reply for ReserveStock"),
+            "the customer's 503 says only that Stock did not answer; the log says which way (#101)");
 
         (await OrderCalls.ReadAsync(desk, order)).GetProperty("status").GetString().Should().Be("Draft");
+    }
+
+    /// <summary>
+    ///     A hold whose level another writer saved first is made again, and holds once: the conflict says
+    ///     nothing about the stock, so it is not the customer's answer (#101).
+    /// </summary>
+    /// <remarks>
+    ///     Asked of a third Stock instance directly, through its bus: the request then runs in that process,
+    ///     where the other writer is hooked, and not on whichever instance would take it off the queue.
+    /// </remarks>
+    [Fact]
+    public async Task AHold_WhoseLevelAnotherWriterSavedFirst_IsMadeAgain_AndHeldOnce()
+    {
+        var sku = await InStockAsync(10);
+        var otherWriter = new AnotherWriterOfTheLevel(warehouse.StockConnectionString, sku.Id);
+        await using var stock = warehouse.StockWith(services => services.AddSingleton<IInterceptor>(otherWriter));
+
+        var scope = stock.Services.CreateAsyncScope();
+        StockReservation answer;
+        await using (scope)
+        {
+            answer = await scope.ServiceProvider.GetRequiredService<IMessageBus>()
+                .RequestAsync<ReserveStock, StockReservation>(
+                    new ReserveStock(Guid.CreateVersion7(), [new ReservationLine(sku.Sku, 3)]));
+        }
+
+        otherWriter.Wrote.Should().BeTrue("the other writer saved the level between the hold's read and its save");
+        answer.IsComplete.Should().BeTrue($"{stock.Errors}");
+        (await LevelsAsync(sku.Id)).Single().GetProperty("reserved").GetInt32()
+            .Should().Be(3, "the hold made again replaces the one that failed, it does not add to it");
     }
 
     private Task<(Guid Id, string Sku)> InStockAsync(int quantity) => StockCalls.InStockAsync(warehouse.StockA, quantity);
