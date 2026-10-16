@@ -11,10 +11,16 @@ namespace Pragmatic.Documents.Templating.Data;
 /// </summary>
 public sealed class TemplateDataContext
 {
-    private readonly Dictionary<string, object?> _sources = [];
-    private readonly Dictionary<string, Func<CancellationToken, ValueTask<object?>>> _asyncSources = [];
+    // Created on first use, not per context: a child scope is made for every row of a $for, holds one item and
+    // no async source, and allocating the three collections for it was over half of what a row cost (#261).
+    private Dictionary<string, object?>? _sources;
+    private Dictionary<string, Func<CancellationToken, ValueTask<object?>>>? _asyncSources;
     // Thread-safe: concurrent template resolution can hit the same async source simultaneously.
-    private readonly ConcurrentDictionary<string, object?> _resolvedAsyncCache = new();
+    private ConcurrentDictionary<string, object?>? _resolvedAsyncCache;
+
+    // The one value a child scope binds (CreateChildScope), held without a dictionary.
+    private string? _itemName;
+    private object? _item;
     private readonly List<IPropertyAccessor> _accessors = [DictionaryPropertyAccessor.Instance];
     private readonly TemplateDataContext? _parent;
 
@@ -44,7 +50,7 @@ public sealed class TemplateDataContext
     /// <summary>Add a named data source (any object — properties accessed via reflection or registered accessor).</summary>
     public TemplateDataContext AddSource(string name, object? value)
     {
-        _sources[name] = value;
+        (_sources ??= [])[name] = value;
         return this;
     }
 
@@ -54,14 +60,14 @@ public sealed class TemplateDataContext
     /// </summary>
     public TemplateDataContext AddSource<[TemplateData] T>(string name, T value) where T : class
     {
-        _sources[name] = value;
+        (_sources ??= [])[name] = value;
         return this;
     }
 
     /// <summary>Add an async data source (resolved on first access, cached).</summary>
     public TemplateDataContext AddSource(string name, Func<CancellationToken, ValueTask<object?>> factory)
     {
-        _asyncSources[name] = factory;
+        (_asyncSources ??= [])[name] = factory;
         return this;
     }
 
@@ -106,24 +112,22 @@ public sealed class TemplateDataContext
 
     /// <summary>Create a child scope with an additional named value (for $for iteration).</summary>
     public TemplateDataContext CreateChildScope(string itemName, object? item)
-    {
-        var child = new TemplateDataContext(this);
-        child._sources[itemName] = item;
-        return child;
-    }
+        => new(this) { _itemName = itemName, _item = item };
 
     /// <summary>
     /// Resolve a dotted path: <c>customer.address.city</c>.
     /// First segment is the source name, rest is property path.
     /// </summary>
-    public async ValueTask<object?> ResolveAsync(string path, CancellationToken ct = default)
-    {
-        if (string.IsNullOrEmpty(path)) return null;
+    public ValueTask<object?> ResolveAsync(string path, CancellationToken ct = default)
+        => string.IsNullOrEmpty(path) ? ValueTask.FromResult<object?>(null) : ResolveAsync(path, path.Split('.'), ct);
 
-        // Split into source name and property path
-        var dotIndex = path.IndexOf('.');
-        var sourceName = dotIndex >= 0 ? path[..dotIndex] : path;
-        var propertyPath = dotIndex >= 0 ? path[(dotIndex + 1)..] : null;
+    /// <summary>
+    ///     Resolves a path whose segments were split when its expression was parsed
+    ///     (<see cref="Expressions.PropertyAccessExpression" />), so a read splits nothing.
+    /// </summary>
+    internal async ValueTask<object?> ResolveAsync(string path, string[] segments, CancellationToken ct)
+    {
+        var sourceName = segments[0];
 
         // Look up the source value
         var root = await GetSourceAsync(sourceName, ct);
@@ -136,14 +140,15 @@ public sealed class TemplateDataContext
         }
 
         // If no property path, return root
-        if (propertyPath is null) return root;
+        if (segments.Length == 1) return root;
 
         // ⚠️ Whether the path could be FOLLOWED, not whether it arrived at something. A property that is
         // there and empty is a fact about the data; a property nobody provides is a fact about the
         // template, and only the second one is worth a warning. Warning on `result is null` made the two
         // indistinguishable, and an application cannot act on a channel that reports both.
-        if (!TryNavigatePath(root, propertyPath, out var result))
-            _warnings.Add(new TemplateWarning(path, $"Property '{propertyPath}' not found on source '{sourceName}'"));
+        if (!TryNavigatePath(root, segments, out var result))
+            _warnings.Add(new TemplateWarning(
+                path, $"Property '{path[(sourceName.Length + 1)..]}' not found on source '{sourceName}'"));
 
         return result;
     }
@@ -158,15 +163,17 @@ public sealed class TemplateDataContext
     private async ValueTask<object?> GetSourceAsync(string name, CancellationToken ct)
     {
         // Check local sources first
-        if (_sources.TryGetValue(name, out var value)) return value;
+        if (_itemName is not null && string.Equals(_itemName, name, StringComparison.Ordinal)) return _item;
+        if (_sources is not null && _sources.TryGetValue(name, out var value)) return value;
 
         // Check async sources
-        if (_asyncSources.TryGetValue(name, out var factory))
+        if (_asyncSources is not null && _asyncSources.TryGetValue(name, out var factory))
         {
-            if (!_resolvedAsyncCache.TryGetValue(name, out var cached))
+            var resolved = LazyInitializer.EnsureInitialized(ref _resolvedAsyncCache);
+            if (!resolved.TryGetValue(name, out var cached))
             {
                 cached = await factory(ct);
-                _resolvedAsyncCache[name] = cached;
+                resolved[name] = cached;
             }
             return cached;
         }
@@ -189,16 +196,17 @@ public sealed class TemplateDataContext
     ///     be null, and that is a legitimate answer. <see langword="false" /> when a segment named
     ///     nothing, or when the walk hit a null before its last segment and could not go on.
     /// </returns>
-    private bool TryNavigatePath(object current, string path, out object? value)
+    // segments is the whole path's; the first is the source, already resolved into current.
+    private bool TryNavigatePath(object current, string[] segments, out object? value)
     {
-        var segments = path.Split('.');
-        if (segments.Length > MaxPathSegments)
+        if (segments.Length - 1 > MaxPathSegments)
             throw new InvalidOperationException(
-                $"Property path '{path}' exceeds the maximum depth of {MaxPathSegments} segments.");
+                $"Property path '{string.Join('.', segments.AsSpan(1))}' exceeds the maximum depth of "
+                + $"{MaxPathSegments} segments.");
 
         object? cursor = current;
 
-        foreach (var segment in segments)
+        foreach (var segment in segments.AsSpan(1))
         {
             // The walk cannot continue through a null, and stopping early is not the same as arriving
             // at an empty value: `case.decision.signedBy` with no decision asked something the data

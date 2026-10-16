@@ -29,7 +29,7 @@ public sealed class ExpressionEvaluator(PipeRegistry? pipes = null)
         return expression switch
         {
             LiteralExpression lit => lit.Value,
-            PropertyAccessExpression prop => await context.ResolveAsync(prop.Path, ct),
+            PropertyAccessExpression prop => await context.ResolveAsync(prop.Path, prop.Segments, ct),
             PipeExpression pipe => EvaluatePipe(pipe, await EvaluateAsync(pipe.Input, context, ct), context),
             BinaryExpression bin => await EvaluateBinaryAsync(bin, context, ct),
             TernaryExpression tern => await EvaluateTernaryAsync(tern, context, ct),

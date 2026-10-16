@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using Pragmatic.Documents.Model;
 using Pragmatic.Documents.Templating.Data;
 using Pragmatic.Documents.Templating.Expressions;
@@ -341,9 +342,14 @@ public sealed class DocumentTemplateResolver(PipeRegistry? pipes = null)
     {
         if (!template.Contains("{{")) return template;
 
-        var expr = ExpressionParser.ParseTemplate(template);
+        var expr = ParsedTemplates.GetValue(template, static text => ExpressionParser.ParseTemplate(text));
         return await _evaluator.EvaluateToStringAsync(expr, data, ct);
     }
+
+    // A cell of a $for is the same string, from the same parsed template, on every row: parsing it once per row
+    // was a third of what resolving a 1,000-row table allocated (#261). Keyed on the string instance, so an entry
+    // lives as long as the template that holds the text and no longer, whatever templates come and go.
+    private static readonly ConditionalWeakTable<string, TemplateExpression> ParsedTemplates = new();
 
     private static (string ItemName, string CollectionPath) ParseForExpression(string forExpr)
     {
