@@ -244,8 +244,9 @@ prevent. See `examples/aot-smoke/README.md` for what each sample covers.
 
 ## Benchmarks
 
-Performance is not in the gate. `.github/workflows/benchmarks.yml` runs the Logging, Result and
-Endpoints benchmarks nightly, on demand, and on a pull request that changes a benchmark, the harness,
+Performance is not in the gate. `.github/workflows/benchmarks.yml` runs the Logging, Result,
+Endpoints, Documents and Persistence benchmarks (`SUITES` in `scripts/benchmarks.mjs`) nightly, on
+demand, and on a pull request that changes a benchmark, the harness,
 a module's source, the shared code or a file every project is built with, through
 `node scripts/benchmarks.mjs ci`. It judges two kinds of result differently:
 

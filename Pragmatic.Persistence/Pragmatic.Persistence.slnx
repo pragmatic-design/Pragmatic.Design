@@ -55,4 +55,7 @@
     <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
     <Project Path="samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Persistence.Benchmarks/Pragmatic.Persistence.Benchmarks.csproj" />
+  </Folder>
 </Solution>
