@@ -36,6 +36,11 @@
          that regenerates them is in scripts/lock-files.mjs (an XML comment cannot spell its option). -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <!-- The Native AOT smokes (examples/aot-smoke) publish for a runtime identifier, and that restore runs
+         for every repository project they reference: written to the committed file, it would add a
+         runtime-identifier graph to each of them. Their scripts set PragmaticAotSmokeRestore, a global
+         property that reaches the referenced projects too, and the restore writes under obj/ instead. -->
+    <NuGetLockFilePath Condition="'$(PragmaticAotSmokeRestore)' == 'true'">$(MSBuildProjectDirectory)/obj/packages.aot-smoke.lock.json</NuGetLockFilePath>
 
     <!-- Build Settings -->
     <!-- Pinned, not "latest". C# 14 is the version that ships with .NET 10, which is what every

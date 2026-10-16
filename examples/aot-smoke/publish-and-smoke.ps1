@@ -19,7 +19,10 @@ $proj = Join-Path $PSScriptRoot 'Pragmatic.Aot.Smoke/Pragmatic.Aot.Smoke.csproj'
 $rid = if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'win-x64' } elseif ($IsMacOS) { 'osx-x64' } else { 'linux-x64' }
 
 Write-Host "Publishing $proj for $rid (Native AOT)..."
-dotnet publish $proj -c Release -r $rid
+# A global property, so it reaches the restore of every repository project the smoke references: their
+# committed lock files have no runtime-identifier graph, and this restore writes its own under obj/
+# instead (Directory.Build.props; docs/TESTING.md, "Lock files").
+dotnet publish $proj -c Release -r $rid -p:PragmaticAotSmokeRestore=true
 if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.Smoke.exe' } else { 'Pragmatic.Aot.Smoke' }

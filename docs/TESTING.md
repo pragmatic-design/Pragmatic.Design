@@ -507,6 +507,15 @@ ILLink.Tasks at more than one version (**`every restore locked to a packages.loc
 write no lock file: CI does not restore them, the smoke scripts restore for a runtime identifier, and the
 consumer samples do not inherit the repository's build properties at all.
 
+The repository projects a smoke references do have lock files, and the smoke's restore runs for them too,
+for the same runtime identifier. Written to the committed file, that restore would add a
+runtime-identifier section to each of them: `--tier aot` used to leave 31 lock files changed. The smoke
+scripts therefore publish with `-p:PragmaticAotSmokeRestore=true`, a global property that reaches every
+referenced project, and `Directory.Build.props` then sends their lock file to
+`obj/packages.aot-smoke.lock.json`. After `--tier aot`, `git status` shows no lock file changed. Switching
+lock files off for that restore is not an option: NuGet refuses it (NU1005) while a committed lock file
+exists.
+
 ## Notes
 
 - Some suites are load-sensitive without needing Docker (`Pragmatic.Jobs.Tests` uses lease-based

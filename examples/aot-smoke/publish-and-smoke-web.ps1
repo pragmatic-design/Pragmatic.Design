@@ -24,7 +24,8 @@ $proj = Join-Path $PSScriptRoot 'Pragmatic.Aot.WebEndpoint/Pragmatic.Aot.WebEndp
 $rid = if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'win-x64' } elseif ($IsMacOS) { 'osx-x64' } else { 'linux-x64' }
 
 Write-Host "Publishing $proj for $rid (Native AOT, SG-generated endpoint)..."
-dotnet publish $proj -c Release -r $rid
+# Keeps the referenced projects' committed lock files untouched (publish-and-smoke.ps1).
+dotnet publish $proj -c Release -r $rid -p:PragmaticAotSmokeRestore=true
 if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.WebEndpoint.exe' } else { 'Pragmatic.Aot.WebEndpoint' }
