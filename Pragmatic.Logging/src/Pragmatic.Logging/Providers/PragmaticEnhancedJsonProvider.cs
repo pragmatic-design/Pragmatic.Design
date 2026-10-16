@@ -545,8 +545,11 @@ public sealed class PragmaticEnhancedJsonProvider : PragmaticLoggerProviderBase
         if (_filePath == null)
             return;
 
+        // Null after disposing, so that EnsureFileInitialized opens the file at the configured path again.
         _streamWriter?.Dispose();
+        _streamWriter = null;
         _fileStream?.Dispose();
+        _fileStream = null;
 
         var directory = Path.GetDirectoryName(_filePath) ?? "";
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(_filePath);

@@ -117,6 +117,9 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
     private DateTime _currentFileDate = DateTime.MinValue;
     private long _currentFileSize;
 
+    /// <summary>The clock the file's date and the rolled file's name are read from.</summary>
+    internal TimeProvider Clock { get; init; } = TimeProvider.System;
+
     /// <summary>
     /// Initializes a new instance of the JSON provider for console output.
     /// </summary>
@@ -570,7 +573,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         // Check date-based rolling 
         if (rollByDate)
         {
-            var now = DateTime.Now;
+            var now = Clock.GetLocalNow().DateTime;
             if (_currentFileDate.Date != now.Date)
             {
                 return true;
@@ -585,14 +588,17 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         if (_filePath == null)
             return;
 
+        // Null after disposing, so that EnsureFileCreated opens the file at the configured path again.
         _fileStream?.Dispose();
+        _fileStream = null;
 
         // Create rolled file name
         var directory = Path.GetDirectoryName(_filePath) ?? "";
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(_filePath);
         var extension = Path.GetExtension(_filePath);
 
-        var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        var now = Clock.GetLocalNow().DateTime;
+        var timestamp = now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         var rolledFileName = $"{fileNameWithoutExt}_{timestamp}{extension}";
         var rolledFilePath = Path.Combine(directory, rolledFileName);
 
@@ -609,7 +615,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
         }
 
         _currentFileSize = 0;
-        _currentFileDate = DateTime.Now;
+        _currentFileDate = now;
     }
 
     private void EnsureFileCreated()
@@ -627,7 +633,7 @@ public sealed partial class PragmaticJsonProvider : PragmaticLoggerProviderBase
 
         if (_currentFileDate == DateTime.MinValue)
         {
-            _currentFileDate = DateTime.Now;
+            _currentFileDate = Clock.GetLocalNow().DateTime;
             _currentFileSize = new FileInfo(_filePath).Length;
         }
     }
