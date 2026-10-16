@@ -270,7 +270,19 @@ reference the caller could still write to. The Production row pushes an immutabl
 
 48 B below ZLogger, from 8 B above. In time this run puts ZLogger ahead by 44 ns, where the run before put the two
 level: the same code has moved by about 5% between runs in both directions, so one local run does not settle it,
-and the runner's A/B is the measure that does.
+and the runner's A/B is the measure that does. On the runner (#278, base and head in one job), head is first:
+
+| Library | Mean | Deviation | Allocated |
+|---|---:|---:|---:|
+| **Pragmatic** | **1,120.9 ns** | 4.5 ns | **784 B** |
+| ZLogger | 1,138.3 ns | 3.9 ns | 832 B |
+| NLog | 2,183.4 ns | 14.3 ns | 2,872 B |
+| Serilog | 2,320.7 ns | 7.3 ns | 3,000 B |
+
+In the subtraction probe
+([`classic-probe-134-immutable`](benchmarks/reports/classic-probe-134-immutable_ClassicProbeBenchmarks-report-github.md),
+local) the request context alone is 272 B against ZLogger's 264, from 320; the context and the scope together are
+488 B, ZLogger's figure, from 552.
 
 ## A JSON line: `JsonSinkBenchmarks`
 

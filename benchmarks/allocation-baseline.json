@@ -107,7 +107,7 @@
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_CallSite": 128,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_Exception": 184,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_HighVolume": 167,
-  "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_Production": 864,
+  "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_Production": 784,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_Simple": 168,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_SourceGenerated": 128,
   "Pragmatic.Logging.Benchmarks.LoggingBenchmarks.Pragmatic_Structured": 464,
