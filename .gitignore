@@ -12,6 +12,12 @@
 # Rust build artifacts
 **/target/
 
+# The native libraries, built by CI (pdf-native.yml, imaging-native.yml) and fetched by
+# scripts/fetch-native.mjs, or built here by scripts/refresh-native.mjs: never committed (#159).
+# Listed by path, so grep finds them and nothing else under a runtimes/ is caught.
+Pragmatic.Documents/runtimes/
+Pragmatic.Imaging/runtimes/
+
 # Temp pack files
 .tmp-pack*/
 

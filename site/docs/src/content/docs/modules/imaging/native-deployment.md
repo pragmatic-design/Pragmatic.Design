@@ -133,11 +133,13 @@ The output is at `Pragmatic.Imaging/native/pragmatic-imaging/target/release/`:
 For a platform the package does not ship, copy the built file next to your app under the name in the
 last column.
 
-**Inside this repository**, the binaries in `Pragmatic.Imaging/runtimes/` are not copied by hand. Each
-one carries the hash of the source it was built from, and the gate refuses one that does not match. The
-one way to refresh them is `node scripts/refresh-native.mjs imaging` (add `--linux` for the linux-x64
-build, which needs Docker). It runs the crate's tests, builds stamped, and places the files. The
-pack step renames the Linux file to `libPragmatic.Imaging.Native.so`.
+**Inside this repository**, the binaries in `Pragmatic.Imaging/runtimes/` are not committed: the
+`Imaging Native` CI workflow builds them, and the gate fails until this machine's are there. Each one
+carries the hash of the source it was built from, and the gate refuses one that does not match. Two ways
+to get them: `node scripts/fetch-native.mjs` downloads CI's build of the current source (needs the GitHub
+CLI), and `node scripts/refresh-native.mjs imaging` builds them (add `--linux` for the linux-x64 build,
+which needs Docker): it runs the crate's tests, builds stamped, and places the files. The pack step
+renames the Linux file to `libPragmatic.Imaging.Native.so`.
 
 ---
 

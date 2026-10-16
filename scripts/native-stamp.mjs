@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * native-stamp.mjs — ties each committed native binary to the Rust source it comes from.
+ * native-stamp.mjs — ties each native binary to the Rust source it comes from.
  *
  * The binaries in Pragmatic.Documents/runtimes/ and Pragmatic.Imaging/runtimes/ are built outside the
- * .NET build and copied in. The PDF one on Windows once stayed behind its source for five months:
+ * .NET build and are not committed (#159): CI builds them (pdf-native.yml, imaging-native.yml) and a run
+ * downloads the build of its own source (scripts/fetch-native.mjs); a developer can build them instead
+ * (scripts/refresh-native.mjs). When they were committed, the PDF one on Windows stayed behind its source for five months:
  * 1668ea4cd changed the engine three hours after the DLL was committed, the DLL was never rebuilt, and
  * every test stayed green.
  *
@@ -13,11 +15,12 @@
  * machine. A binary built from other source, or built without the stamp, fails the gate.
  *
  *   node scripts/native-stamp.mjs hash <crate>   the hash of that crate's current source
- *   node scripts/native-stamp.mjs check          exit 1, naming each stale binary
+ *   node scripts/native-stamp.mjs check          exit 1, naming each stale binary, and each of this
+ *                                                machine's that is missing
  *   node scripts/native-stamp.mjs verify <crate> <file>   exit 1 unless that built library carries the
  *                                                         current source's stamp (the CI workflows)
  *
- * The fix is always the same command: node scripts/refresh-native.mjs
+ * The fix: node scripts/refresh-native.mjs (from source), or node scripts/fetch-native.mjs (CI's build).
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -45,6 +48,17 @@ function crate(name, dir, env, lib, runtimes, dllName) {
     ],
     get binaries() { return this.targets.map((t) => t.path); },
   };
+}
+
+/** The RID whose binaries a run on this machine loads: the one a local gate cannot do without. */
+export const HOST_RID = { win32: 'win-x64', linux: 'linux-x64', darwin: 'osx-arm64' }[process.platform];
+
+/**
+ * The name a crate's workflow uploads a RID's library under: the source hash in it, so a run finds the build
+ * of the source it checked out, whichever run made it (scripts/fetch-native.mjs).
+ */
+export function artifactName(c, rid, hash) {
+  return `${c.name}-native-${rid}-${hash}`;
 }
 
 export const CRATES = [
@@ -93,6 +107,13 @@ export function stampMismatch(bytes, env, expected) {
   return stamp ? `built from ${stamp}, source is ${expected}` : `carries no ${env} stamp, source is ${expected}`;
 }
 
+/** Each binary of <rid> that is not there: the libraries are not committed, so a run has to bring them. */
+export function missingBinaries(root = ROOT, crates = CRATES, rid = HOST_RID) {
+  return crates.flatMap((c) => c.targets
+    .filter((t) => t.rid === rid && !existsSync(join(root, t.path)))
+    .map((t) => ({ crate: c.name, path: t.path })));
+}
+
 /** Each binary present whose stamp is not its crate's current source hash. A missing one is not judged. */
 export function staleBinaries(root = ROOT, crates = CRATES) {
   return crates.flatMap((c) => {
@@ -129,13 +150,17 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.log(`${file} carries ${c.env}:${sourceHash(ROOT, c.sources)}`);
   } else if (command === 'check') {
     const present = CRATES.flatMap((c) => c.binaries).filter((p) => existsSync(join(ROOT, p)));
+    const missing = missingBinaries();
     const stale = staleBinaries();
+    for (const b of missing)
+      console.error(`   missing  ${b.path} — the libraries are not committed; this machine's (${HOST_RID}) are needed to run the tests`);
     for (const b of stale)
       console.error(`   stale  ${b.path} — ${b.stamp ? `built from ${b.stamp.slice(0, 12)}…` : 'carries no source stamp'}, source is ${b.expected.slice(0, 12)}…`);
-    if (stale.length) {
-      const names = [...new Set(stale.map((b) => b.crate))].join(' ');
+    if (missing.length || stale.length) {
+      const names = [...new Set([...missing, ...stale].map((b) => b.crate))].join(' ');
       console.error(`   Fix: node scripts/refresh-native.mjs ${names}          (win-x64, from Windows)`);
       console.error(`        node scripts/refresh-native.mjs ${names} --linux  (linux-x64 as well, needs Docker)`);
+      console.error(`   Or:  node scripts/fetch-native.mjs                    (the CI build of this source, needs gh)`);
       process.exit(1);
     }
     console.log(`${present.length} binaries built from the current source`);

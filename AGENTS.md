@@ -79,7 +79,7 @@ gate fails when the docs site, a skill example or a native binary has drifted fr
 | `site/docs/src/content/docs/modules/`, `…/guides/` | each module's `README.md` and `docs/`, and `docs/howto/` | `node site/scripts/sync-docs.mjs` |
 | `marketplace/…/skills/*/examples/` | the compiled, tested files listed in `scripts/skill-examples.json` | `node scripts/sync-skill-examples.mjs` |
 | the `/docs/` folders inside each `.slnx` | the markdown on disk: each module's README, CHANGELOG and `docs/`, and the repository's `docs/` | `node scripts/sync-slnx-docs.mjs` |
-| the native binaries under a module's `runtimes/` | `native/` (Rust) | `node scripts/refresh-native.mjs` |
+| the native binaries under a module's `runtimes/` (not committed: CI builds them) | `native/` (Rust) | `node scripts/fetch-native.mjs` (CI's build, needs `gh`) or `node scripts/refresh-native.mjs` (builds them) |
 
 Generated C# under `obj/` is never edited either: change the template that writes it.
 

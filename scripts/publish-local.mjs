@@ -114,6 +114,10 @@ const output = join(REPO, 'artifacts', 'local-feed', version);
 
 console.log(`\npublishing ${green(version)} ${dim(`→ ${FEED}`)}\n`);
 
+// Every RID's native libraries, before the build copies and packs them: they are not committed (#159), and
+// a project packs whichever of them exist, so a missing one would ship a package without it, silently.
+run(process.execPath, [join(REPO, 'scripts', 'fetch-native.mjs'), '--rid', 'all'], 'native libraries of every RID');
+
 if (!skipBuild) {
   // --no-incremental deliberately: MSBuild does not re-evaluate projects it considers up to date, and
   // a build that reports zero errors on sources that fail when compiled clean has happened here before.

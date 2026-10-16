@@ -29,13 +29,21 @@ permissions:
   contents: read
 
 jobs:
-  # Clean build with --warnaserror, plus every suite that needs no container.
-  # Clean is not optional: an incremental build does not re-evaluate up-to-date projects, so
-  # --warnaserror over one reports 0 errors on sources that clean-build with 14.
-  gate:
-    name: Gate (clean build + hermetic tests)
+  # The native PDF and Imaging libraries are not committed (#159). Each is uploaded under its source hash
+  # by its own workflow, so this asks whether any run has built the source this commit has; when none has
+  # (a change to the crate, or an artifact past its 90 days), the two jobs below build it in this run,
+  # before the gate and the shards download it. Downloading rather than building in every job keeps the
+  # gate's time, which is why the jobs that test do not install a Rust toolchain.
+  native:
+    name: Native libraries
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read     # the artifacts of other runs
+    outputs:
+      pdf: ${{ steps.probe.outputs.pdf }}
+      imaging: ${{ steps.probe.outputs.imaging }}
 
     steps:
       - name: Checkout
@@ -45,6 +53,60 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      # linux-x64 only: the gate and the shards run on Linux. The packages' other RIDs are pack-validate's.
+      - name: Is there a build of this source?
+        id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --probe --rid linux-x64
+
+  pdf-native:
+    needs: native
+    if: needs.native.outputs.pdf == 'missing'
+    uses: ./.github/workflows/pdf-native.yml
+
+  imaging-native:
+    needs: native
+    if: needs.native.outputs.imaging == 'missing'
+    uses: ./.github/workflows/imaging-native.yml
+
+  # Clean build with --warnaserror, plus every suite that needs no container.
+  # Clean is not optional: an incremental build does not re-evaluate up-to-date projects, so
+  # --warnaserror over one reports 0 errors on sources that clean-build with 14.
+  gate:
+    name: Gate (clean build + hermetic tests)
+    needs: [native, pdf-native, imaging-native]
+    # A build that was not needed is skipped, and a job after a skipped one is skipped too unless it says
+    # otherwise. Skipped would also read as passed to the branch rules, so the gate runs whatever the
+    # native jobs did, and its first step fails when one of them did not succeed.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read     # the native libraries, from the run that built them
+
+    steps:
+      - name: The native libraries were built where they had to be
+        if: needs.native.result != 'success' || needs.pdf-native.result == 'failure' || needs.imaging-native.result == 'failure' || needs.pdf-native.result == 'cancelled' || needs.imaging-native.result == 'cancelled'
+        run: |
+          echo "::error::native: ${{ needs.native.result }}, pdf: ${{ needs.pdf-native.result }}, imaging: ${{ needs.imaging-native.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # Before anything reads runtimes/: the gate's source checks refuse a run without this machine's.
+      - name: Native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --rid linux-x64
 
       # A pull request or merge group that changes only Markdown nothing builds runs the gate's
       # source-only checks (`--tier docs`) and nothing that compiles (#199, scripts/ci-paths.mjs). Any
@@ -121,8 +183,13 @@ jobs:
   # take the longest shard from about 6m 47s of suites to 6m 11s, a runner for 36 seconds.
   container-suites:
     name: Container suites (${{ matrix.shard }}/3)
+    needs: [native, pdf-native, imaging-native]
+    if: ${{ !cancelled() }}   # as the gate: run whatever the native jobs did, and fail if one failed
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read     # the native libraries, from the run that built them
     strategy:
       # Each shard is its own verdict: one red shard cancelling the others would hide whether they pass.
       fail-fast: false
@@ -130,6 +197,12 @@ jobs:
         shard: [1, 2, 3]
 
     steps:
+      - name: The native libraries were built where they had to be
+        if: needs.native.result != 'success' || needs.pdf-native.result == 'failure' || needs.imaging-native.result == 'failure' || needs.pdf-native.result == 'cancelled' || needs.imaging-native.result == 'cancelled'
+        run: |
+          echo "::error::native: ${{ needs.native.result }}, pdf: ${{ needs.pdf-native.result }}, imaging: ${{ needs.imaging-native.result }}"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -137,6 +210,11 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      - name: Native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --rid linux-x64
 
       # As in the gate job: a Markdown-only change runs no container suite, and the shard reports green
       # under its own name having done nothing else.
