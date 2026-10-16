@@ -15,8 +15,8 @@ providers.
 > the production preset with context enrichment included, and allocates the least in each. Its narrowest
 > leads are Structured and Production, 3% and 2% ahead of ZLogger. A JSON line written from a generated
 > call site is the fastest of the four and allocates nothing; one written from Microsoft's
-> `[LoggerMessage]` is the slowest (#284). See [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the
-> runs, the machines and the reports.
+> `[LoggerMessage]` is ahead of Serilog's and NLog's and allocates 144 B. See
+> [BENCHMARK-RESULTS.md](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Logging/BENCHMARK-RESULTS.md) for the runs, the machines and the reports.
 
 ## The Problem
 

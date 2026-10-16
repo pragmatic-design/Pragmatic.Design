@@ -318,9 +318,9 @@ local) the request context alone is 272 B against ZLogger's 264, from 320; the c
 ## A JSON line: `JsonSinkBenchmarks`
 
 ⚠️ **Not the run of the rest of this page.** The table below is the CI runner's, 2026-10-16, in the
-benchmarks job of #278 ([`runner-278`](benchmarks/reports/runner-278_JsonSinkBenchmarks-report-github.md)),
+benchmarks job of #284 ([`runner-284`](benchmarks/reports/runner-284_JsonSinkBenchmarks-report-github.md)),
 beside a run on the machine above the same day
-([`local-278`](benchmarks/reports/local-278_JsonSinkBenchmarks-report-github.md)). The run before #109 on
+([`local-284`](benchmarks/reports/local-284_JsonSinkBenchmarks-report-github.md)). The run before #109 on
 the runner put ZLogger 1.63× ahead (447.7 ns against 730.2,
 [report](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md)). Compare
 rows within this table, not with the tables above.
@@ -344,28 +344,31 @@ configured for the others.
 
 | Library | Runner | Ratio | Allocated | This machine |
 |---|---:|---:|---:|---:|
-| **Pragmatic, generated call site** | **302.3 ns** | baseline | **0 B** | 190.4 ns |
-| ZLogger, `[ZLoggerMessage]`, into a buffer | 445.5 ns | 1.47× slower | 0 B | 332.6 ns |
-| ZLogger, to a stream | 476.7 ns | 1.58× slower | 0 B | 341.1 ns |
-| ZLogger, the same fields, to a stream | 536.5 ns | 1.77× slower | 0 B | 349.9 ns |
-| Serilog, `[LoggerMessage]` | 1,598.1 ns | 5.29× slower | 1,448 B | 991.5 ns |
-| NLog, `[LoggerMessage]` | 1,654.1 ns | 5.47× slower | 1,704 B | 1,127.0 ns |
-| Pragmatic, `[LoggerMessage]` | 1,798.1 ns | 5.95× slower | 6,560 B | 1,044.4 ns |
+| **Pragmatic, generated call site** | **313.6 ns** | baseline | **0 B** | 183.4 ns |
+| ZLogger, `[ZLoggerMessage]`, into a buffer | 454.8 ns | 1.45× slower | 0 B | 264.4 ns |
+| ZLogger, to a stream | 475.4 ns | 1.52× slower | 0 B | 287.1 ns |
+| ZLogger, the same fields, to a stream | 523.2 ns | 1.67× slower | 0 B | 277.6 ns |
+| Pragmatic, `[LoggerMessage]` | 817.0 ns | 2.60× slower | 144 B | 596.0 ns |
+| Serilog, `[LoggerMessage]` | 1,535.8 ns | 4.90× slower | 1,448 B | 879.1 ns |
+| NLog, `[LoggerMessage]` | 1,661.1 ns | 5.30× slower | 1,704 B | 911.4 ns |
 
-The runner's deviation is under 1% on every row but Pragmatic's `[LoggerMessage]` (1.3%); this machine's
-is 7–17%. Allocation is the same on both.
+The runner's deviation is under 1% on every row; this machine's is 1–10%. Allocation is the same on both.
 
 - **The generated call site is the fastest row and allocates nothing**, ahead of ZLogger in all three
   shapes, the lighter ones included, on both machines. On the runner after #109 alone it was level
   (263.5 ns against 224.0–264.2, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md),
   [base](benchmarks/reports/runner-109-base_JsonSinkBenchmarks-report-github.md)); #129 is what took the
   lead.
-- **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row on the runner and
-  the largest allocation of all: 6,560 B,** from 6,992 B on 2026-10-09. #128 took the entry and the
-  dictionary off the classic path for the consuming sink of `LoggingBenchmarks`, where that call now
-  allocates 128 B; the JSON provider's classic path still pays most of what it did. A library or an
-  application that has not adopted the generated call sites is on this path, so it is #284. On this
-  machine the three `[LoggerMessage]` rows are within each other's deviation.
+- **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the fastest of the three
+  `[LoggerMessage]` rows and allocates the least: 144 B,** against 1,448 B for Serilog and 1,704 B for
+  NLog, on both machines. Before #284 it was the slowest row on the runner, 1,747.8 ns and 6,560 B in the
+  base of the same job. A subtraction probe
+  ([`classic-json-probe-284`](benchmarks/reports/classic-json-probe-284_ClassicJsonProbeBenchmarks-report-github.md),
+  `-- classic-json-probe`) put 6,408 B of those on the provider: a new stream and JSON writer per line, the
+  bytes decoded into a string and encoded again, the timestamp formatted as a string. The classic path now
+  writes through a writer the provider keeps; the 144 B left are the call's own, the message MEL renders
+  and the boxed values. A library or an application that has not adopted the generated call sites is on
+  this path.
 
 ### Where the time went, and what #109 changed
 
