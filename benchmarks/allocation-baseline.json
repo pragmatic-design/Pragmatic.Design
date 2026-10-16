@@ -158,6 +158,8 @@
   "Pragmatic.Logging.Benchmarks.ZeroAllocationBenchmark.StructuredLoggingWithILogger": 904,
   "Pragmatic.Logging.Benchmarks.ZeroAllocationBenchmark.ZeroAllocMessageFormatterFormat": 176,
   "Pragmatic.Logging.Benchmarks.ZeroAllocationBenchmark.ZeroAllocMessageFormatterTryFormat": 0,
+  "Pragmatic.Persistence.Benchmarks.GridFilterBenchmarks.Search_PrimeNGAdapter": 48002,
+  "Pragmatic.Persistence.Benchmarks.GridFilterBenchmarks.Search_ValueAsConstant": 114274,
   "Pragmatic.Persistence.Benchmarks.SaveChangesBenchmarks.Save_EfCoreOnly(Rows: 10)": 123307,
   "Pragmatic.Persistence.Benchmarks.SaveChangesBenchmarks.Save_EfCoreOnly(Rows: 100)": 865186,
   "Pragmatic.Persistence.Benchmarks.SaveChangesBenchmarks.Save_EfCoreOnly(Rows: 1000)": 8270022,

@@ -2,7 +2,8 @@ using BenchmarkDotNet.Running;
 using Pragmatic.Persistence.Benchmarks;
 
 // `verify` saves each row once per size with a change-detection counter attached, checks that both wrote
-// every row and the interceptors ran, and times nothing. Anything else goes to BenchmarkDotNet.
+// every row and the interceptors ran, then counts the queries EF compiles for 1,000 distinct grid search
+// texts each way. It times nothing. Anything else goes to BenchmarkDotNet.
 if (args is ["verify"])
 {
     foreach (var rows in (int[])[10, 100, 1000])
@@ -17,6 +18,17 @@ if (args is ["verify"])
         {
             benchmarks.Cleanup();
         }
+    }
+
+    var grid = new GridFilterBenchmarks();
+    grid.Setup();
+    try
+    {
+        grid.Verify(distinctValues: 1000);
+    }
+    finally
+    {
+        grid.Cleanup();
     }
 
     return;
