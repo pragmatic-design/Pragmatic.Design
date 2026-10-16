@@ -95,21 +95,22 @@ await PragmaticApp.RunAsync(args, app =>
 
 ### Performance
 
-Benchmarked on .NET 10 against Serilog, NLog and ZLogger, each writing into a sink that renders the
-message and reads every property (per call, 2026-10-09):
+Benchmarked on .NET 10.0.13 against Serilog, NLog and ZLogger, each writing into a sink that renders the
+message and reads every property. Per call, on the CI runner (AMD EPYC 7763, Ubuntu 24.04), in the A/B of
+#278 on 2026-10-16, where the deviation of every row is under 1%:
 
 | Scenario | Pragmatic | ZLogger | NLog | Serilog |
 |----------|-----------|---------|------|---------|
-| `[LoggerMessage]` call site | 132.2 ns / 128 B | 156.9 ns / 192 B | 389.7 ns / 1,416 B | 329.5 ns / 800 B |
-| Simple logging | 147.0 ns / 168 B | 170.0 ns / 216 B | 237.7 ns / 760 B | 276.2 ns / 528 B |
-| Structured (with scope) | 378.9 ns / 464 B | 432.8 ns / 520 B | 674.2 ns / 1,328 B | 860.5 ns / 1,912 B |
-| Exception logging | 208.8 ns / 184 B | 218.9 ns / 232 B | 316.2 ns / 776 B | 367.0 ns / 528 B |
-| Production (context + scope) | 695.5 ns / 864 B | 589.9 ns / 832 B | 1,065.9 ns / 2,872 B | 1,299.4 ns / 3,000 B |
+| `[LoggerMessage]` call site | 263.8 ns / 128 B | 343.6 ns / 192 B | 854.0 ns / 1,416 B | 638.3 ns / 800 B |
+| Simple logging | 300.7 ns / 168 B | 355.6 ns / 216 B | 552.9 ns / 760 B | 518.6 ns / 528 B |
+| Structured (with scope) | 894.8 ns / 464 B | 922.6 ns / 520 B | 1,507.9 ns / 1,328 B | 1,781.8 ns / 1,912 B |
+| Exception logging | 328.7 ns / 184 B | 413.5 ns / 232 B | 581.4 ns / 776 B | 548.6 ns / 528 B |
+| Production (context + scope) | 1,120.9 ns / 784 B | 1,138.3 ns / 832 B | 2,183.4 ns / 2,872 B | 2,320.7 ns / 3,000 B |
 
-Pragmatic is ahead of Serilog and NLog in every scenario, and allocates the least of the four everywhere
-but Production. Against ZLogger it is faster in every scenario but Production: on exception logging the
-lead is within this run's deviation, and beyond it on the CI runner, whose deviation is ten times smaller.
-Production is ZLogger's, by 4% on the runner, and the request context is why: see the results page.
+Pragmatic is first in every scenario and allocates the least of the four in each. The narrow leads are
+Structured, 3% ahead of ZLogger, and Production, 2%. On a desktop machine, whose deviation is about ten
+times larger, the same code reads as a tie in Production and puts ZLogger ahead in Structured: the results
+page has that run too.
 
 A provider writes a call from its state: the properties read where the call put them, the scopes from the
 ambient stack, no `LogEntry` and no dictionary. A call builds an entry only for what needs one — an

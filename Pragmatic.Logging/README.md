@@ -5,9 +5,12 @@ privacy-aware redaction, an audit trail, context enrichment, an expression filte
 providers.
 
 > **Performance:** with every library writing into a sink that renders and reads the event, Pragmatic
-> is ahead of Serilog and NLog in every benchmarked scenario, the production preset with context
-> enrichment included, and behind ZLogger everywhere. See
-> [BENCHMARK-RESULTS.md](BENCHMARK-RESULTS.md) for the run, the machine and the reports.
+> is first of Pragmatic, ZLogger, NLog and Serilog in all seven benchmarked scenarios on the CI runner,
+> the production preset with context enrichment included, and allocates the least in each. Its narrowest
+> leads are Structured and Production, 3% and 2% ahead of ZLogger. A JSON line written from a generated
+> call site is the fastest of the four and allocates nothing; one written from Microsoft's
+> `[LoggerMessage]` is the slowest (#284). See [BENCHMARK-RESULTS.md](BENCHMARK-RESULTS.md) for the
+> runs, the machines and the reports.
 
 ## The Problem
 
