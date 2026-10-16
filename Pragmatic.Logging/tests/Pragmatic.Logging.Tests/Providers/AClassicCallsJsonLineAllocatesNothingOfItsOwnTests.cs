@@ -32,7 +32,8 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
 
         var allocated = Allocated(provider.CreateLogger("Orders"));
 
-        allocated.Should().Be(0);
+        provider.GetMetrics().LastError.Should().BeNull();
+        allocated.Fewest.Should().Be(0L, $"no line allocates in the provider (samples: {allocated.Samples})");
         output.Text.Should().Contain("\"@message\":\"Order 42 placed by jane for 19.99\"")
             .And.Contain("\"@properties\":{\"OrderId\":42,\"Customer\":\"jane\",\"Amount\":19.99}");
     }
@@ -46,11 +47,16 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
         {
             var configuration = Configuration();
             configuration.CustomProperties["RollByDate"] = false;
-            long allocated;
+            (long Fewest, string Samples) allocated;
+            string? lastError;
             using (var provider = new PragmaticJsonProvider("json", configuration, file))
+            {
                 allocated = Allocated(provider.CreateLogger("Orders"));
+                lastError = provider.GetMetrics().LastError;
+            }
 
-            allocated.Should().Be(0);
+            lastError.Should().BeNull();
+            allocated.Fewest.Should().Be(0L, $"no line allocates in the provider (samples: {allocated.Samples})");
             var lines = File.ReadAllLines(file);
             lines.Should().HaveCount(1200);
             lines[^1].Should().Contain("\"@properties\":{\"OrderId\":42,\"Customer\":\"jane\",\"Amount\":19.99}");
@@ -101,8 +107,16 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
         }
     }
 
-    // 200 calls to reach the steady state, 1000 measured.
-    private static long Allocated(ILogger logger)
+    /// <summary>
+    ///     The fewest bytes 200 calls allocated, over five batches after 200 calls of warm-up, as text that carries
+    ///     every sample for the failure message.
+    /// </summary>
+    /// <remarks>
+    ///     A byte a line costs is in every batch, the smallest included. The minimum leaves out what the runtime
+    ///     allocates on the thread only now and then: under the gate's load, a batch of a path that allocates nothing
+    ///     has measured 12,360 B once, in this test and in a generated call site's, and passed every run on its own.
+    /// </remarks>
+    private static (long Fewest, string Samples) Allocated(ILogger logger)
     {
         var state = new OrderState(42, "jane", 19.99m);
         var previous = CultureInfo.CurrentCulture;
@@ -112,10 +126,16 @@ public class AClassicCallsJsonLineAllocatesNothingOfItsOwnTests
             for (var i = 0; i < 200; i++)
                 logger.Log(LogLevel.Information, new EventId(2001, "OrderPlaced"), state, null, OrderState.Format);
 
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            for (var i = 0; i < 1000; i++)
-                logger.Log(LogLevel.Information, new EventId(2001, "OrderPlaced"), state, null, OrderState.Format);
-            return GC.GetAllocatedBytesForCurrentThread() - before;
+            var samples = new long[5];
+            for (var batch = 0; batch < samples.Length; batch++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 200; i++)
+                    logger.Log(LogLevel.Information, new EventId(2001, "OrderPlaced"), state, null, OrderState.Format);
+                samples[batch] = GC.GetAllocatedBytesForCurrentThread() - before;
+            }
+
+            return (samples.Min(), string.Join(", ", samples));
         }
         finally
         {
