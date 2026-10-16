@@ -28,6 +28,35 @@ Before anything is timed, `GlobalSetup` runs every scenario once per library and
 four sinks produced the same message, the same property set and the same exception. Taking the work out
 of any one sink makes it fail. That was checked once per sink when the check was written.
 
+### Where it stands: 2026-10-16, after #134
+
+On the CI runner (AMD EPYC 7763, Ubuntu 24.04, .NET 10.0.13), in the benchmarks job of #278:
+[`runner-278`](benchmarks/reports/runner-278_LoggingBenchmarks-report-github.md). Per call; the deviation of
+every row is under 1%.
+
+| Category | Pragmatic | ZLogger | NLog | Serilog | Pragmatic against ZLogger |
+|---|---:|---:|---:|---:|---:|
+| Simple | 300.7 ns, 168 B | 355.6 ns, 216 B | 552.9 ns, 760 B | 518.6 ns, 528 B | 1.18× faster |
+| Source-generated (`[LoggerMessage]`) | 263.8 ns, 128 B | 343.6 ns, 192 B | 854.0 ns, 1,416 B | 638.3 ns, 800 B | 1.30× faster |
+| Generated call site | 271.4 ns, 128 B | 309.6 ns, 184 B | 826.2 ns, 1,408 B | 651.4 ns, 792 B | 1.14× faster |
+| Structured | 894.8 ns, 464 B | 922.6 ns, 520 B | 1,507.9 ns, 1,328 B | 1,781.8 ns, 1,912 B | 1.03× faster |
+| Exception | 328.7 ns, 184 B | 413.5 ns, 232 B | 581.4 ns, 776 B | 548.6 ns, 528 B | 1.26× faster |
+| High volume | 343.4 ns, 167 B | 383.3 ns, 215 B | 544.3 ns, 759 B | 500.9 ns, 518 B | 1.12× faster |
+| Production | 1,120.9 ns, 784 B | 1,138.3 ns, 832 B | 2,183.4 ns, 2,872 B | 2,320.7 ns, 3,000 B | 1.02× faster |
+
+- **Pragmatic is first in all seven categories, and allocates the least of the four in each.**
+- **The narrow ones are Structured (3%) and Production (2%).** Both leads are beyond the runner's
+  deviation, but small enough that a desktop run does not settle them.
+- In the same code's run on the machine above, 2026-10-16
+  ([`local-278`](benchmarks/reports/local-278_LoggingBenchmarks-report-github.md)), every row's deviation
+  is about ten times the runner's. That run has Production as a tie (686.5 ns against 694.1, deviation 0.12),
+  and **Structured as ZLogger's**: 443.8 ns against 560.2, 1.26× with a deviation of 0.15. The two machines
+  disagree on Structured. The runner, whose deviation is under 1%, is the one this page takes for the lead;
+  the desktop run is why it is listed as narrow.
+- What is left in Production is measured below (#134): the context alone is 8 B above ZLogger's.
+
+The sections that follow record how each category got here, run by run.
+
 The numbers below are one run on 2026-10-09, same machine and runtime as above, after #128:
 [`local-128-context`](benchmarks/reports/local-128-context_LoggingBenchmarks-report-github.md)
 (`dotnet run -c Release -- logging`). The run of 2026-10-05, before it, is
@@ -119,7 +148,9 @@ an order below this machine's.
 | High volume | 435.4 ns, 591 B | 299.2 ns, 167 B | 384.8 ns, 215 B | 1.29× slower |
 | Production | 1,886.2 ns, 2,368 B | 1,175.5 ns, 864 B | 1,132.0 ns, 832 B | **1.04× faster** |
 
-### What the comparison says
+### What the comparison said on 2026-10-09, after #128
+
+Superseded for Production by #134 (above, and at the end of this section).
 
 - **Pragmatic is first in six categories of seven, on time and allocation.** On the runner every one of the
   six leads is beyond the deviation, Exception and High volume included. On this machine those two read as a
@@ -286,13 +317,13 @@ local) the request context alone is 272 B against ZLogger's 264, from 320; the c
 
 ## A JSON line: `JsonSinkBenchmarks`
 
-⚠️ **Not the run of the rest of this page.** These numbers come from a run on 2026-10-09 on the machine
-above, after the changes of #109 and #129. The report is
-[`benchmarks/reports/local-129_JsonSinkBenchmarks-report-github.md`](benchmarks/reports/local-129_JsonSinkBenchmarks-report-github.md).
-The run before #109 on the GitHub runner put ZLogger 1.63× ahead (447.7 ns against 730.2,
-[report](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md)); the
-benchmarks workflow measures head against base on that runner for every change. Compare rows within this
-table, not with the tables above.
+⚠️ **Not the run of the rest of this page.** The table below is the CI runner's, 2026-10-16, in the
+benchmarks job of #278 ([`runner-278`](benchmarks/reports/runner-278_JsonSinkBenchmarks-report-github.md)),
+beside a run on the machine above the same day
+([`local-278`](benchmarks/reports/local-278_JsonSinkBenchmarks-report-github.md)). The run before #109 on
+the runner put ZLogger 1.63× ahead (447.7 ns against 730.2,
+[report](benchmarks/reports/Pragmatic.Logging.Benchmarks.Json.JsonSinkBenchmarks-report-github.md)). Compare
+rows within this table, not with the tables above.
 
 The same call (`Order {OrderId} placed by {Customer} for {Amount}`: an int, a string, a decimal) written
 as a JSON line by each library's own JSON writer, on the logging thread. Pragmatic logs through its
@@ -311,28 +342,30 @@ three shapes:
 same-fields line every field it claims. Pragmatic's context enrichment is off, as nothing like it is
 configured for the others.
 
-| Library | Mean | Ratio | Allocated |
-|---|---:|---:|---:|
-| **Pragmatic, generated call site** | **166.9 ns** | baseline | **0 B** |
-| ZLogger, `[ZLoggerMessage]`, into a buffer | 281.6 ns | 1.71× slower | 0 B |
-| ZLogger, to a stream | 304.0 ns | 1.84× slower | 0 B |
-| ZLogger, the same fields, to a stream | 297.2 ns | 1.80× slower | 0 B |
-| Serilog, `[LoggerMessage]` | 885.4 ns | 5.36× slower | 1,448 B |
-| NLog, `[LoggerMessage]` | 998.3 ns | 6.05× slower | 1,704 B |
-| Pragmatic, `[LoggerMessage]` | 1,176.5 ns | 7.13× slower | 6,992 B |
+| Library | Runner | Ratio | Allocated | This machine |
+|---|---:|---:|---:|---:|
+| **Pragmatic, generated call site** | **302.3 ns** | baseline | **0 B** | 190.4 ns |
+| ZLogger, `[ZLoggerMessage]`, into a buffer | 445.5 ns | 1.47× slower | 0 B | 332.6 ns |
+| ZLogger, to a stream | 476.7 ns | 1.58× slower | 0 B | 341.1 ns |
+| ZLogger, the same fields, to a stream | 536.5 ns | 1.77× slower | 0 B | 349.9 ns |
+| Serilog, `[LoggerMessage]` | 1,598.1 ns | 5.29× slower | 1,448 B | 991.5 ns |
+| NLog, `[LoggerMessage]` | 1,654.1 ns | 5.47× slower | 1,704 B | 1,127.0 ns |
+| Pragmatic, `[LoggerMessage]` | 1,798.1 ns | 5.95× slower | 6,560 B | 1,044.4 ns |
+
+The runner's deviation is under 1% on every row but Pragmatic's `[LoggerMessage]` (1.3%); this machine's
+is 7–17%. Allocation is the same on both.
 
 - **The generated call site is the fastest row and allocates nothing**, ahead of ZLogger in all three
-  shapes, the lighter ones included. The run's standard deviation is about 20 ns on every row; the lead is
-  115 ns and more.
-- **On the GitHub runner, after #109 alone, it was level, not first.** The benchmarks workflow on that change
-  (AMD EPYC, Ubuntu 24.04, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md) and
-  [base](benchmarks/reports/runner-109-base_JsonSinkBenchmarks-report-github.md)): the call site 263.5 ns,
-  down from 405.8 on the base; ZLogger with the same fields to a stream 264.2, to a stream 251.0, into a
-  buffer 224.0. #129 is what was meant to take the lead there; its own runner numbers are in its pull
-  request's benchmarks job.
-- **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row and the largest
-  allocation:** that is the classic path, which in that run built an entry, a message string and a
-  dictionary. Since #128 it reads the call's state instead; this table was not run again.
+  shapes, the lighter ones included, on both machines. On the runner after #109 alone it was level
+  (263.5 ns against 224.0–264.2, [head](benchmarks/reports/runner-109_JsonSinkBenchmarks-report-github.md),
+  [base](benchmarks/reports/runner-109-base_JsonSinkBenchmarks-report-github.md)); #129 is what took the
+  lead.
+- **Microsoft's `[LoggerMessage]` through the Pragmatic JSON provider is the slowest row on the runner and
+  the largest allocation of all: 6,560 B,** from 6,992 B on 2026-10-09. #128 took the entry and the
+  dictionary off the classic path for the consuming sink of `LoggingBenchmarks`, where that call now
+  allocates 128 B; the JSON provider's classic path still pays most of what it did. A library or an
+  application that has not adopted the generated call sites is on this path, so it is #284. On this
+  machine the three `[LoggerMessage]` rows are within each other's deviation.
 
 ### Where the time went, and what #109 changed
 
