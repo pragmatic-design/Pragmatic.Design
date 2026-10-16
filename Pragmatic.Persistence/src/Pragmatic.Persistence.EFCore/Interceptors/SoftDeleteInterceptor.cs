@@ -40,7 +40,7 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        Convert(eventData.Context);
+        Convert(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -50,16 +50,16 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        Convert(eventData.Context);
+        Convert(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void Convert(DbContext? context)
+    private void Convert(DbContextEventData eventData)
     {
-        if (context is null || SoftDeleteScope.IsSuspended)
+        if (eventData.Context is null || SoftDeleteScope.IsSuspended)
             return;
 
-        foreach (var entry in context.ChangeTracker.Entries())
+        foreach (var entry in SaveEntries.All(eventData))
         {
             if (entry.Entity is not ISoftDelete soft)
                 continue;

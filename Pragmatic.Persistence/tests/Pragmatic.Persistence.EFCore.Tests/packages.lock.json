@@ -707,6 +707,15 @@
           "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
+      "pragmatic.events.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Pragmatic.Events": "[1.0.0, )"
+        }
+      },
       "pragmatic.internationalization": {
         "type": "Project",
         "dependencies": {
@@ -728,6 +737,31 @@
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )",
           "Pragmatic.Mapping": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Mapping": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.core": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {
@@ -759,6 +793,19 @@
         "type": "Project",
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.resilience": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Configuration.Binder": "[10.0.10, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
         }
       },
       "pragmatic.result": {
@@ -906,6 +953,12 @@
         "requested": "[10.0.10, )",
         "resolved": "10.0.10",
         "contentHash": "rfZA1RjR021RPqSmIPovfz2aOd79TGqJ9BengbjnzIISOVwjLmuSDnhCMmiY/1c6iYvGolQ1iNGzkav0u11XEA=="
+      },
+      "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "6euxgVR7NS83y0a2wLRAxfYXusLQJ2e1ah0MpQgYTYMs5lYrmdNP79C6T8uvRZdP87n5mcCcp6+w0EyWAidKZw=="
       },
       "Microsoft.Extensions.Hosting.Abstractions": {
         "type": "CentralTransitive",

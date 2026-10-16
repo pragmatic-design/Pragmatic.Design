@@ -88,10 +88,14 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
     ///         asked, and re-saving a row would leave a gap for nothing.
     ///     </para>
     /// </remarks>
-    private async Task FillGeneratedValuesAsync(CancellationToken ct)
+    /// <returns>
+    ///     Whether it read the tracker, and so detected changes just before the save: the save is then
+    ///     told not to detect them again (<see cref="SaveChangesDetection.Detected" />).
+    /// </returns>
+    private async Task<bool> FillGeneratedValuesAsync(CancellationToken ct)
     {
         if (_generatedValues.Count == 0)
-            return;
+            return false;
 
         var context = new LifecycleContext
         {
@@ -107,28 +111,45 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
             foreach (var binding in _generatedValues)
                 await binding.TryFillAsync(entry.Entity, context, ct).ConfigureAwait(false);
         }
+
+        return true;
     }
 
     /// <summary>
     ///     Removes the pending events from every tracked entity holding any, and returns them.
     /// </summary>
     /// <remarks>
-    ///     Called once, after a successful save, and it is the only place domain events leave an entity.
-    ///     A second collector — an interceptor reading the same entries inside
-    ///     <c>SavedChangesAsync</c> — would not agree with this one, because the lifecycle events are
-    ///     raised in between.
+    ///     <para>
+    ///         Called once, after a successful save, and it is the only place domain events leave an entity.
+    ///         A second collector — an interceptor reading the same entries inside
+    ///         <c>SavedChangesAsync</c> — would not agree with this one, because the lifecycle events are
+    ///         raised in between.
+    ///     </para>
+    ///     <para>
+    ///         Without detecting changes: the save has just accepted every entry, and the events live on
+    ///         the entities, not in anything a change-detection pass would find.
+    ///     </para>
     /// </remarks>
     private List<IDomainEvent> TakeDomainEvents()
     {
         var taken = new List<IDomainEvent>();
-
-        foreach (var entry in _db.ChangeTracker.Entries<IHasDomainEvents>())
+        var tracker = _db.ChangeTracker;
+        var autoDetect = tracker.AutoDetectChangesEnabled;
+        tracker.AutoDetectChangesEnabled = false;
+        try
         {
-            if (entry.Entity.DomainEvents.Count == 0)
-                continue;
+            foreach (var entry in tracker.Entries<IHasDomainEvents>())
+            {
+                if (entry.Entity.DomainEvents.Count == 0)
+                    continue;
 
-            taken.AddRange(entry.Entity.DomainEvents);
-            entry.Entity.ClearDomainEvents();
+                taken.AddRange(entry.Entity.DomainEvents);
+                entry.Entity.ClearDomainEvents();
+            }
+        }
+        finally
+        {
+            tracker.AutoDetectChangesEnabled = autoDetect;
         }
 
         return taken;
@@ -140,7 +161,7 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
         using var activity = PersistenceDiagnostics.ActivitySource.StartActivity("Persistence.SaveChanges");
         LogSaveChangesStarting();
 
-        await FillGeneratedValuesAsync(ct).ConfigureAwait(false);
+        var detected = await FillGeneratedValuesAsync(ct).ConfigureAwait(false);
 
         var stopwatch = Stopwatch.StartNew();
         try
@@ -148,6 +169,9 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
             int rowCount;
             try
             {
+                // The first attempt's interceptors take the detection the fill just ran; a retry detects again.
+                using var detectedBeforeTheSave = detected ? SaveChangesDetection.Detected(_db) : null;
+
                 // Inside the strategy, because an interceptor may open a transaction in SavingChanges — the
                 // roll-up does, to apply its delta — and that is before EF's own strategy starts, where a
                 // retrying one refuses it. Inside a unit already running (ExecuteAsync) this passes through.

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Pragmatic.Persistence.EFCore.Interceptors;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Scopes;
 
@@ -28,9 +30,9 @@ public sealed class ScopeMaterializationStep<TEntity>(IScopeMaterializer materia
     where TEntity : class, IScopedEntity
 {
     /// <inheritdoc />
-    public void Materialize(DbContext context)
+    public void Materialize(DbContextEventData save)
     {
-        foreach (var entry in context.ChangeTracker.Entries<TEntity>())
+        foreach (var entry in SaveEntries.Of<TEntity>(save))
         {
             if (entry.State is not (EntityState.Added or EntityState.Modified))
                 continue;

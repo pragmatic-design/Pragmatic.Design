@@ -56,7 +56,7 @@ public sealed class OwnershipInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        AssignOwners(eventData.Context);
+        AssignOwners(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -66,20 +66,20 @@ public sealed class OwnershipInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        AssignOwners(eventData.Context);
+        AssignOwners(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void AssignOwners(DbContext? context)
+    private void AssignOwners(DbContextEventData eventData)
     {
-        if (context is null)
+        if (eventData.Context is null)
             return;
 
         var userId = _currentUser?.IdOrNull();
         if (userId is null)
             return;
 
-        foreach (var entry in context.ChangeTracker.Entries<IOwnershipAssignable>())
+        foreach (var entry in SaveEntries.Of<IOwnershipAssignable>(eventData))
         {
             if (entry.State != EntityState.Added)
                 continue;

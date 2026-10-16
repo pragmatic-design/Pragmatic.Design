@@ -93,7 +93,7 @@ public sealed class AuditingInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        ApplyAuditFields(eventData.Context);
+        ApplyAuditFields(eventData);
         return base.SavingChanges(eventData, result);
     }
 
@@ -103,13 +103,13 @@ public sealed class AuditingInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        ApplyAuditFields(eventData.Context);
+        ApplyAuditFields(eventData);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void ApplyAuditFields(DbContext? context)
+    private void ApplyAuditFields(DbContextEventData eventData)
     {
-        if (context is null)
+        if (eventData.Context is null)
             return;
 
         var now = _timeProvider.GetUtcNow();
@@ -120,7 +120,7 @@ public sealed class AuditingInterceptor : SaveChangesInterceptor
         // actually created or last touched the row rather than record that it is unknown.
         var userId = _currentUser?.IdOrNull();
 
-        foreach (var entry in context.ChangeTracker.Entries<IAuditable>())
+        foreach (var entry in SaveEntries.Of<IAuditable>(eventData))
         {
             switch (entry.State)
             {

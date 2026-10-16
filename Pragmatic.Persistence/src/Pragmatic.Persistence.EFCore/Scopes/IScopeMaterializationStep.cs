@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Pragmatic.Persistence.EFCore.Scopes;
 
@@ -21,8 +21,11 @@ namespace Pragmatic.Persistence.EFCore.Scopes;
 public interface IScopeMaterializationStep
 {
     /// <summary>
-    ///     Materializes the rules of this step's entity type over the context's added and modified rows.
+    ///     Materializes the rules of this step's entity type over the added and modified rows of a save.
     /// </summary>
-    /// <param name="context">The context whose change tracker is being saved.</param>
-    void Materialize(DbContext context);
+    /// <param name="save">
+    ///     The save in progress, rather than its context: the step reads the entries the save has already
+    ///     detected, instead of running a change-detection pass of its own (<see cref="SaveChangesDetection" />).
+    /// </param>
+    void Materialize(DbContextEventData save);
 }

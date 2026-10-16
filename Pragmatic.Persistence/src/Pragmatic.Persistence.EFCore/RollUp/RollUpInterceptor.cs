@@ -61,13 +61,13 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
         {
             try
             {
-                foreach (var plan in PlanDeltas(context))
+                foreach (var plan in PlanDeltas(eventData, context))
                 {
                     if (plan.Sql is null)
                     {
                         var parent = plan.TrackedParent?.Entity ?? context.Find(plan.Rule.ParentType, plan.ParentKey);
                         if (parent is not null)
-                            plan.Rule.ApplyDelta(parent, plan.Delta);
+                            ApplyTracked(context, plan, parent);
                         continue;
                     }
 
@@ -99,14 +99,14 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
         {
             try
             {
-                foreach (var plan in PlanDeltas(context))
+                foreach (var plan in PlanDeltas(eventData, context))
                 {
                     if (plan.Sql is null)
                     {
                         var parent = plan.TrackedParent?.Entity
                                      ?? await context.FindAsync(plan.Rule.ParentType, [plan.ParentKey], cancellationToken).ConfigureAwait(false);
                         if (parent is not null)
-                            plan.Rule.ApplyDelta(parent, plan.Delta);
+                            ApplyTracked(context, plan, parent);
                         continue;
                     }
 
@@ -208,7 +208,22 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
     /// <summary>One planned adjustment: relational when <see cref="Sql"/> is set, tracked otherwise.</summary>
     private sealed record DeltaPlan(RollUpRule Rule, object ParentKey, decimal Delta, string? Sql, EntityEntry? TrackedParent);
 
-    private List<DeltaPlan> PlanDeltas(DbContext context)
+    /// <summary>
+    ///     Applies a delta to a parent read through the tracker, then detects that parent alone.
+    /// </summary>
+    /// <remarks>
+    ///     The save's change detection has already run (<see cref="SaveChangesDetection" />), so a parent
+    ///     that was Unchanged would stay Unchanged for the interceptors after this one. The lifecycle events,
+    ///     the audit log and the outboxes would then miss the update the roll-up just made. Detecting the one
+    ///     entry keeps what they see as it was when every interceptor ran its own pass.
+    /// </remarks>
+    private static void ApplyTracked(DbContext context, DeltaPlan plan, object parent)
+    {
+        plan.Rule.ApplyDelta(parent, plan.Delta);
+        (plan.TrackedParent ?? context.Entry(parent)).DetectChanges();
+    }
+
+    private List<DeltaPlan> PlanDeltas(DbContextEventData eventData, DbContext context)
     {
         var plans = new List<DeltaPlan>();
         if (_rulesByChild.Count == 0)
@@ -217,7 +232,7 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
         // Merge deltas per (rule, parent) so concurrent-safe SQL runs once per parent.
         var merged = new Dictionary<(RollUpRule Rule, object Key), decimal>();
         // Snapshot: planning may touch the tracker while entries are being enumerated.
-        foreach (var entry in context.ChangeTracker.Entries().ToList())
+        foreach (var entry in SaveEntries.All(eventData).ToList())
         {
             if (entry.State is not (EntityState.Added or EntityState.Deleted or EntityState.Modified))
                 continue;
@@ -235,7 +250,7 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
             if (delta == 0m)
                 continue;
 
-            var plan = BuildPlan(context, rule, parentKey, delta, isRelational);
+            var plan = BuildPlan(eventData, context, rule, parentKey, delta, isRelational);
             if (plan is not null)
                 plans.Add(plan);
         }
@@ -243,11 +258,12 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
         return plans;
     }
 
-    private static DeltaPlan? BuildPlan(DbContext context, RollUpRule rule, object parentKey, decimal delta, bool isRelational)
+    private static DeltaPlan? BuildPlan(
+        DbContextEventData eventData, DbContext context, RollUpRule rule, object parentKey, decimal delta, bool isRelational)
     {
         var entityType = context.Model.FindEntityType(rule.ParentType);
         var primaryKey = entityType?.FindPrimaryKey();
-        var tracked = entityType is null ? null : FindTrackedParent(context, entityType, primaryKey, parentKey);
+        var tracked = entityType is null ? null : FindTrackedParent(eventData, entityType, primaryKey, parentKey);
 
         // A parent being deleted in the same save does not need its aggregate maintained.
         if (tracked is { State: EntityState.Deleted })
@@ -296,13 +312,13 @@ public sealed class RollUpInterceptor : SaveChangesInterceptor
     }
 
     private static EntityEntry? FindTrackedParent(
-        DbContext context, IEntityType entityType, IKey? primaryKey, object parentKey)
+        DbContextEventData eventData, IEntityType entityType, IKey? primaryKey, object parentKey)
     {
         if (primaryKey is not { Properties.Count: 1 })
             return null;
 
         var keyName = primaryKey.Properties[0].Name;
-        foreach (var entry in context.ChangeTracker.Entries())
+        foreach (var entry in SaveEntries.All(eventData))
         {
             if (!entityType.ClrType.IsInstanceOfType(entry.Entity))
                 continue;

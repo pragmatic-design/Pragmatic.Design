@@ -243,11 +243,15 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
         AccessModifier.Private,
         new MethodModifiers { IsStatic = true });
 
+        // The check has just run a change-detection pass over every entry, so the save is told not to run
+        // another before EF's own (SaveChangesDetection). Awaited in the async overload, or the scope would
+        // close before the interceptors run.
         XmlSummary("Saves, refusing any change to an entity this boundary only reads.");
 
         Method("SaveChanges", () =>
         {
             AppendLine("EnsureReadAccessEntitiesAreUnchanged();");
+            AppendLine("using var detected = global::Pragmatic.Persistence.SaveChangesDetection.Detected(this);");
             AppendLine("return base.SaveChanges(acceptAllChangesOnSuccess);");
         }, "int",
         [new MethodParameter("bool", "acceptAllChangesOnSuccess")],
@@ -259,7 +263,8 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
         Method("SaveChangesAsync", () =>
         {
             AppendLine("EnsureReadAccessEntitiesAreUnchanged();");
-            AppendLine("return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);");
+            AppendLine("using var detected = global::Pragmatic.Persistence.SaveChangesDetection.Detected(this);");
+            AppendLine("return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);");
         }, "global::System.Threading.Tasks.Task<int>",
         [
             new MethodParameter("bool", "acceptAllChangesOnSuccess"),
@@ -267,7 +272,7 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
                 { DefaultValue = "default" }
         ],
         AccessModifier.Public,
-        new MethodModifiers { IsOverride = true });
+        new MethodModifiers { IsOverride = true, IsAsync = true });
     }
 
     private void RenderOnModelCreating()
