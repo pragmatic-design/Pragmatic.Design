@@ -14,6 +14,8 @@ if (args is ["verify"])
     new Pragmatic.Endpoints.Benchmarks.Probe.PageProbeBenchmarks().Setup();
     new Pragmatic.Endpoints.Benchmarks.Probe.CanadaProbeBenchmarks().Setup();
     new Pragmatic.Endpoints.Benchmarks.Probe.TwitterStringProbeBenchmarks().Setup();
+    foreach (var set in new[] { "all", "ascii", "non-ascii", "plain", "escaped" })
+        new Pragmatic.Endpoints.Benchmarks.Probe.TwitterStringRedoxProbeBenchmarks { Set = set }.Setup();
     Console.WriteLine("The probes' candidates write the host's very bytes.");
     return;
 }

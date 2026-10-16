@@ -28,12 +28,7 @@ public class TwitterStringProbeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        var root = Workloads.Create<Twitter.Root>();
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(root, (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Twitter.Root>)
-            Serialization.Competitors.HostReflection.GetTypeInfo(typeof(Twitter.Root)));
-        var strings = new List<string>();
-        Collect(JsonDocument.Parse(bytes).RootElement, strings);
-        _strings = [.. strings];
+        _strings = TwitterStrings.Read();
         _writer = new Utf8JsonWriter(_buffer, GeneratedJsonDefaults.ResponseWriterOptions);
 
         var expected = Writer_WriteStringValue();
@@ -237,23 +232,5 @@ public class TwitterStringProbeBenchmarks
         _writer.WriteEndArray();
         _writer.Flush();
         return _buffer.WrittenSpan.ToArray();
-    }
-
-    private static void Collect(JsonElement element, List<string> strings)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                foreach (var property in element.EnumerateObject())
-                    Collect(property.Value, strings);
-                break;
-            case JsonValueKind.Array:
-                foreach (var item in element.EnumerateArray())
-                    Collect(item, strings);
-                break;
-            case JsonValueKind.String:
-                strings.Add(element.GetString()!);
-                break;
-        }
     }
 }
