@@ -27,8 +27,10 @@ public static class PdfOperations
 }
 ```
 
-- `Render` materialises the whole PDF in memory. Fine for invoices, letters, one-offs.
-- `RenderTo(Stream, ...)` streams directly to the destination. Use this for large reports.
+- `Render` returns the whole PDF as one `byte[]`.
+- `RenderTo(Stream, ...)` renders the same `byte[]` and writes it to the stream. It saves a line, not
+  memory: the native engine lays out the whole document before it returns. See *Memory* under
+  *Performance*.
 - `GetPageCount` is a lightweight PDF-aware scan, with no full parsing.
 - There is no `RenderAsync`. Rendering is CPU work: on a server, call `Render` on the request's own
   thread. Wrapping it in `Task.Run` frees no thread, it only adds a hop. `PdfBatch` is asynchronous
@@ -231,9 +233,27 @@ Available types include `QrCode`, `Code128`, `Code39`, `Ean13`. The barcode rend
 
 ## Performance
 
-- For **large reports** (many pages, embedded images) use `RenderTo(Stream, ...)` instead of `Render` so you don't hold the whole output in memory.
 - The renderer is deterministic: the same model produces byte-identical output (modulo creation dates), which makes PDFs snapshot-testable.
 - Typical single-page invoice renders in ~5-15ms on modern hardware.
+
+### Memory
+
+A render is **not bounded**: it grows with the document. The figures below come from the Documents
+benchmarks' `memory` mode (`dotnet run -c Release --project Pragmatic.Documents/benchmarks/Pragmatic.Documents.Benchmarks -- memory`).
+Each row is the benchmark report template filled with typed data, measured on Windows, .NET 10, on
+2026-10-16, each size in a process of its own:
+
+| Rows | PDF bytes | Managed heap peak | Process peak working set |
+|---:|---:|---:|---:|
+| 1,000 | 155,215 | 6.7 MB | 277 MB |
+| 10,000 | 1,311,100 | 68 MB | 2.25 GB |
+| 50,000 | 7,622,112 | 377 MB | 11.2 GB |
+
+- Most of the peak is outside the managed heap: the native engine lays out the whole document at
+  once, at about 220 KB per table row. Plan a long report's memory from the working-set column, not from
+  the size of the PDF. Reducing it is [#279](https://github.com/pragmatic-design/Pragmatic.Design/issues/279).
+- The native memory is given back when the render returns, so a process that renders many documents
+  holds one render's peak, not their sum.
 
 ---
 
