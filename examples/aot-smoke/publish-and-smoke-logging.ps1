@@ -18,7 +18,8 @@ $rid = if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'win-x64' } elseif ($IsMac
 Write-Host "Publishing $proj for $rid (Native AOT)..."
 # IL2026/IL3050 as errors: the logging path, generated call sites included, is meant to need no unreferenced
 # or dynamic code, and a warning here would be the first sign it started to.
-dotnet publish $proj -c Release -r $rid -warnaserror:IL2026,IL3050
+# Keeps the referenced projects' committed lock files untouched (publish-and-smoke.ps1).
+dotnet publish $proj -c Release -r $rid -warnaserror:IL2026,IL3050 -p:PragmaticAotSmokeRestore=true
 if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.Logging.exe' } else { 'Pragmatic.Aot.Logging' }
