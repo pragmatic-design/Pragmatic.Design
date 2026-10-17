@@ -9,7 +9,7 @@ the ones two reference applications build and run on every gate,
 `examples/invoicing/tests/Invoicing.IntegrationTests/Infrastructure/`, with their names replaced by the
 placeholders and the container's image passed to its constructor (those suites pin Testcontainers
 4.2.0, this template 4.15.0). The contract-test files and the translation file were built and run as
-written here against the `1.0.0-alpha.2` packages. The rest is the structure those two applications
+written here against the `1.0.0-alpha.3` packages. The rest is the structure those two applications
 have.
 
 Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a boundary's module is
@@ -116,7 +116,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- One exact version for every Pragmatic package: an alpha can change its API, and a float would
          take the next one on the next restore. Upgrade by changing this line. -->
-    <PragmaticVersion>1.0.0-alpha.2</PragmaticVersion>
+    <PragmaticVersion>1.0.0-alpha.3</PragmaticVersion>
   </PropertyGroup>
 
   <ItemGroup><!-- Pragmatic.Design (1.0.0-alpha) -->

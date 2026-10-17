@@ -18,7 +18,7 @@ The same user/tenant always resolves the same way (stable bucketing), with no fl
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.FeatureFlags" Version="1.0.0-alpha.2" />
+<PackageReference Include="Pragmatic.FeatureFlags" Version="1.0.0-alpha.3" />
 ```
 
 ## Core pattern
