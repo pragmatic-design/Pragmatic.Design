@@ -129,9 +129,17 @@ public class ResponseSerializationBenchmarks<T>
     ///     the writer checks through a static table rather than the encoder's virtual method.
     /// </summary>
     /// <remarks>
-    ///     Not what a host answers with — its options carry ASP.NET's relaxed encoder, so the bytes differ wherever
-    ///     there is non-ASCII text — but the one comparison with the fast path where both escape alike: what the
-    ///     writer costs, apart from what the host's encoder costs.
+    ///     <para>
+    ///         Not what a host answers with — its options carry ASP.NET's relaxed encoder — and a generated writer is
+    ///         never used under another encoder: <c>GeneratedJsonDefaults.AllowGeneratedWriters</c> sends such a
+    ///         response to the serializer.
+    ///     </para>
+    ///     <para>
+    ///         Since #152, strings are written inside runs, escaped as the response encoder escapes them, and names
+    ///         are encoded once; so on these documents the writer's own encoder touches nothing the generated writer
+    ///         writes, and this row is level with <see cref="Generated_Writer" />. It stays as the check that this
+    ///         remains so: a member that goes back to the writer's encoder shows up here as a difference.
+    ///     </para>
     /// </remarks>
     [Benchmark]
     public int Generated_Writer_DefaultEncoder()

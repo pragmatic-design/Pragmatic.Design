@@ -5,8 +5,8 @@ using Pragmatic.SourceGenerator.Features.Serialization.Models;
 namespace Pragmatic.SourceGenerator.Features.Serialization.Templates;
 
 /// <summary>
-///     The parts of a response no encoder can change, formatted into a <c>Utf8JsonRun</c> and handed to the writer in
-///     one <c>WriteRawValue</c>.
+///     The parts of a response a run can write with the writer's very bytes, formatted into a <c>Utf8JsonRun</c> and
+///     handed to the writer in one <c>WriteRawValue</c>.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -16,11 +16,12 @@ namespace Pragmatic.SourceGenerator.Features.Serialization.Templates;
 ///         runs took the writer from level with System.Text.Json's own serialization handler to well ahead of it.
 ///     </para>
 ///     <para>
-///         Encoder-free means the bytes are the same whatever the encoder: a name already encoded, a number, a
-///         boolean, a Guid, a date, an enum by number, and objects, arrays and integer-keyed dictionaries made only of
-///         those. A string can hold anything the encoder escapes, and an enum by name is pre-encoded text chosen at run
-///         time: both stay with the writer. A floating-point number that is not finite is refused by the run, as the
-///         writer refuses it.
+///         What fits a run: a name already encoded, a number, a boolean, a Guid, a date, an enum by number, a string,
+///         and objects, arrays and integer-keyed dictionaries made only of those. A string is escaped by the run as the
+///         writer escapes it under the response encoder (#152), which is the only encoder a generated response is
+///         written with: <c>GeneratedJsonDefaults.AllowGeneratedWriters</c> sends anything else to the serializer. An
+///         enum by name is pre-encoded text chosen at run time, and stays with the writer. A floating-point number that
+///         is not finite, or a string longer than the writer takes, is refused by the run as the writer refuses it.
 ///     </para>
 ///     <para>
 ///         ⚠️ A run of members starts with a name, written where the writer expects one: the writer must skip
@@ -38,21 +39,22 @@ internal sealed partial class Utf8JsonWritersTemplate
 
     private bool WritesRuns => _profile == JsonWriterProfile.Response;
 
-    /// <summary>Whether no encoder can change the bytes of <paramref name="value" />.</summary>
-    private bool IsEncoderFree(JsonWriterValueModel value) => value.Kind switch
+    /// <summary>Whether a run writes <paramref name="value" /> with the writer's very bytes.</summary>
+    private bool FitsARun(JsonWriterValueModel value) => value.Kind switch
     {
+        JsonWriterValueKind.String => true,
         JsonWriterValueKind.Number => value.Cast is "int" or "uint" or "long" or "ulong" or "decimal" or "double" or "float",
         JsonWriterValueKind.Enum => value.Cast is "int" or "uint" or "long" or "ulong",
         JsonWriterValueKind.Boolean or JsonWriterValueKind.StringValue
             or JsonWriterValueKind.DateTime or JsonWriterValueKind.DateTimeOffset => true,
-        JsonWriterValueKind.Collection => IsEncoderFree(value.Element!),
-        JsonWriterValueKind.Dictionary => value.Cast.Length > 0 && IsEncoderFree(value.Element!),
-        JsonWriterValueKind.Object => IsEncoderFree(value.Method),
+        JsonWriterValueKind.Collection => FitsARun(value.Element!),
+        JsonWriterValueKind.Dictionary => value.Cast.Length > 0 && FitsARun(value.Element!),
+        JsonWriterValueKind.Object => FitsARun(value.Method),
         _ => false,
     };
 
-    /// <summary>Whether every member the method writes is encoder-free: the whole object is one run.</summary>
-    private bool IsEncoderFree(string method)
+    /// <summary>Whether every member the method writes fits a run: the whole object is one run.</summary>
+    private bool FitsARun(string method)
     {
         if (_free.TryGetValue(method, out var known))
             return known;
@@ -64,13 +66,13 @@ internal sealed partial class Utf8JsonWritersTemplate
         _free[method] = false;
         var free = _byName.TryGetValue(method, out var model)
                    && model.Root is null
-                   && model.Members.All(m => IsEncoderFree(m.Value));
+                   && model.Members.All(m => FitsARun(m.Value));
         _free[method] = free;
         return free;
     }
 
     /// <summary>
-    ///     Whether a group of consecutive encoder-free members is worth a run: one scalar is one writer call either
+    ///     Whether a group of consecutive members that fit a run is worth a run: one scalar is one writer call either
     ///     way, a container or two members is not.
     /// </summary>
     private static bool WorthARun(IReadOnlyList<JsonWriterMemberModel> group)
@@ -80,14 +82,14 @@ internal sealed partial class Utf8JsonWritersTemplate
     private static string RunMethodName(string method)
         => method.StartsWith("Write_", System.StringComparison.Ordinal) ? "Run_" + method.Substring("Write_".Length) : method + "_Run";
 
-    /// <summary>The members of an object, consecutive encoder-free ones written as runs.</summary>
+    /// <summary>The members of an object, consecutive ones that fit a run written as runs.</summary>
     private void RenderMembers(JsonWriterMethodModel method)
     {
         var members = method.Members;
         var i = 0;
         while (i < members.Count)
         {
-            if (!WritesRuns || !IsEncoderFree(members[i].Value))
+            if (!WritesRuns || !FitsARun(members[i].Value))
             {
                 RenderMember(members[i], "value.@" + members[i].ClrName);
                 i++;
@@ -95,7 +97,7 @@ internal sealed partial class Utf8JsonWritersTemplate
             }
 
             var group = new List<JsonWriterMemberModel>();
-            while (i < members.Count && IsEncoderFree(members[i].Value))
+            while (i < members.Count && FitsARun(members[i].Value))
                 group.Add(members[i++]);
 
             if (!WorthARun(group))
@@ -123,7 +125,7 @@ internal sealed partial class Utf8JsonWritersTemplate
         AppendLine("run.Dispose();");
     }
 
-    /// <summary>A method of an encoder-free object that writes into a run, for the runs that contain one.</summary>
+    /// <summary>A method of an object that fits a run that writes into a run, for the runs that contain one.</summary>
     private void RenderRunMethod(JsonWriterMethodModel method)
     {
         AppendLine($"internal static void {RunMethodName(method.Name)}(ref {Run} run, {method.TypeExpr} value)");
@@ -194,6 +196,7 @@ internal sealed partial class Utf8JsonWritersTemplate
             case JsonWriterValueKind.Boolean:
                 AppendLine($"run.BooleanValue({expression});");
                 break;
+            case JsonWriterValueKind.String:
             case JsonWriterValueKind.StringValue:
             case JsonWriterValueKind.DateTime:
             case JsonWriterValueKind.DateTimeOffset:
