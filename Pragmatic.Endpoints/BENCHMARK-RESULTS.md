@@ -17,8 +17,8 @@ dotnet run -c Release -- --filter "*ProbeBenchmarks*"       # the subtraction pr
 | Runtime | .NET 10.0.12, SDK 10.0.303, X64 RyuJIT AVX-512 |
 | Harness | BenchmarkDotNet 0.14.0, default job, `[MemoryDiagnoser]` |
 
-The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-150_*` for the current
-numbers, `final-130_*` for the last run in which every competitor returned an array, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
+The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-152_*` for the current
+numbers, `final-150_*` for the first run into a kept buffer, `final-130_*` for the last run in which every competitor returned an array, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
 and `ab-*` files of 2026-10-08 for the numbers before #131. A number here that does not appear there is a
 mistake.
 
@@ -37,7 +37,7 @@ every run below the current one was measured that way; the current results say w
 | `Stj_FastPath` | STJ's own fastest path: a context in default mode with camelCase and nulls left out, and no converter or reference handling, so its serialization handler is used wherever it can be. |
 | `REDox` | `CAPCOM.REDox` 1.0.0, `DoxSerializerSettings` with camelCase and nulls left out on write. |
 | `Generated_Writer` | The writer the Pragmatic generator emits for the type, through an endpoint that answers with it (`Endpoints/`), into the kept buffer through a `Utf8JsonWriter` kept across calls, as `GeneratedJsonResponse` writes a response. |
-| `Generated_Writer_DefaultEncoder` | The same writer with STJ's default encoder, the one `Stj_FastPath` writes with: what the writer costs apart from what the host's encoder costs. |
+| `Generated_Writer_DefaultEncoder` | The same writer with STJ's default encoder, the one `Stj_FastPath` writes with. Until #152 it was what the writer cost apart from the host's encoder; since strings are written inside runs, nothing the writer writes goes through the writer's encoder, and the row checks that this remains so. |
 
 ⚠️ **The host's encoder is ASP.NET's, `UnsafeRelaxedJsonEscaping`**, which leaves non-ASCII text and `<`, `>`,
 `&` unescaped. The run of 2026-10-05 built the host from `JsonSerializerDefaults.Web` instead, which escapes
@@ -62,7 +62,37 @@ a host that does not exist.
 
 ## Results
 
-### Current: a double formatter of our own (#149)
+### Current: strings inside runs (#152)
+
+Strings are written by the run, escaped as `Utf8JsonWriter` escapes them under the response encoder, in one pass
+(`ResponseText`). An exhaustive test compares every UTF-16 code unit, every surrogate pair and every lone
+surrogate with the writer. An object made of names, numbers, dates and strings, as each of Twitter's is, is now
+one run.
+
+Per serialization; lower is better; ± is the run's standard deviation. The four workloads run together on this
+machine, 2026-10-17, three launches each, .NET 10.0.13 (`final-152_*`):
+
+| Workload | Host_Reflection | Stj_FastPath | REDox | Generated_Writer | Allocated, writer vs fast path |
+|---|---:|---:|---:|---:|---|
+| `twitter.json` | 380.0 μs | 418.9 μs ±8.14 | 237.9 μs ±4.40 | **217.8 μs** ±5.04 | 0 B vs 31,201 B |
+| `citm_catalog.json` | 777.4 μs | 304.4 μs ±11.15 | 426.3 μs | **169.7 μs** ±2.42 | 0 B vs 625 B |
+| `canada.json` | 8.615 ms | 7.613 ms ±0.2999 | 8.098 ms | **3.741 ms** ±0.0893 | 0 B vs 0 B |
+| `ReservationPage` | 14.240 μs | 11.534 μs ±0.4156 | 12.587 μs | **7.490 μs** ±0.2088 | 0 B vs 0 B |
+
+On Twitter the writer is ahead of RE:Dox by 8%, beyond both sides' deviation; it was 11% behind in the run of
+#150. The strings alone (`probe-152-redox-strings_*`, the probe of the same change) show where the time goes:
+
+- **ASCII text:** the run's path takes 0.84 of `WriteStringValue`'s time and RE:Dox's 0.98.
+- **Text past ASCII:** the run's path takes 0.75 and RE:Dox's 0.51. RE:Dox escapes only what RFC 8259 requires
+  and never looks such a character up, which the response encoder's bytes require.
+
+The rest of the lead is the run: a document of small objects goes to the writer as one raw value per object
+instead of a call per token.
+
+`Generated_Writer_DefaultEncoder` is now level with `Generated_Writer` on every workload: nothing the writer
+writes goes through the writer's encoder any more.
+
+### A double formatter of our own (#149)
 
 The run's numbers are formatted by a port of Ryu that writes `double.TryFormat`'s bytes. Per serialization;
 lower is better. The benchmarks workflow's A/B on the GitHub runner for pull request #251 (workflow run

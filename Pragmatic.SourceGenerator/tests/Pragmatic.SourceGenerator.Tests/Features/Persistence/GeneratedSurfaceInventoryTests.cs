@@ -362,6 +362,9 @@ public class GeneratedSurfaceInventoryTests
         .. ByName(
             // the runtime the generated code stands on
             "System.Text.Json",
+            // A response writer hands a run to Utf8JsonWriter.WriteRawValue, whose overloads name
+            // ReadOnlySequence<byte>: resolving the call needs the assembly that defines it.
+            "System.Memory",
             "System.Linq.Queryable",
             "System.ComponentModel.Annotations",
             "System.Diagnostics.DiagnosticSource",

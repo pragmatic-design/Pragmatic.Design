@@ -150,14 +150,14 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
         {
             if (method.Root is { } root)
             {
-                if (WritesRuns && IsEncoderFree(root))
+                if (WritesRuns && FitsARun(root))
                     RenderRun(() => RenderRunValue(root, "value"));
                 else
                     RenderValue(root, "value");
                 return;
             }
 
-            if (WritesRuns && IsEncoderFree(method.Name))
+            if (WritesRuns && FitsARun(method.Name))
             {
                 RenderRun(() => AppendLine($"{RunMethodName(method.Name)}(ref run, value);"));
                 return;
@@ -169,7 +169,7 @@ internal sealed partial class Utf8JsonWritersTemplate : CSharpTemplate
             AppendLine("writer.WriteEndObject();");
         });
 
-        if (WritesRuns && method.Root is null && IsEncoderFree(method.Name))
+        if (WritesRuns && method.Root is null && FitsARun(method.Name))
         {
             AppendLine();
             RenderRunMethod(method);

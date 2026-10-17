@@ -6321,6 +6321,7 @@ internal static class GeneratedUtf8ResponseWriters
     internal static readonly Action<Utf8JsonWriter, RelationChildWithParentDto, JsonSerializerOptions> Write_Inventory_RelationChildWithParentDtoDelegate
     internal static readonly GeneratedJsonShape Write_Inventory_RelationChildWithParentDtoShape
     internal static void Write_Inventory_RelationChildWithParentDto(Utf8JsonWriter writer, RelationChildWithParentDto value, JsonSerializerOptions options)
+    internal static void Run_Inventory_RelationChildWithParentDto(ref Utf8JsonRun run, RelationChildWithParentDto value)
 
 ## _Metadata.ActionPermissions.g.cs
     [assembly: global::Pragmatic.Composition.Attributes.PragmaticMetadataAttribute]

@@ -248,46 +248,65 @@ internal static class GeneratedUtf8ResponseWriters {
     
     internal static void Write_TestApp_Users_UserResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse value, global::System.Text.Json.JsonSerializerOptions options)
     {
-        writer.WriteStartObject();
-        writer.WriteNumber(__Name0, (int)value.@Id);
+        var run = global::Pragmatic.Serialization.Utf8JsonRun.Start();
+        Run_TestApp_Users_UserResponse(ref run, value);
+        if (!run.IsEmpty)
+            writer.WriteRawValue(run.Written, skipInputValidation: true);
+        run.Dispose();
+    }
+    
+    internal static void Run_TestApp_Users_UserResponse(ref global::Pragmatic.Serialization.Utf8JsonRun run, global::TestApp.Users.UserResponse value)
+    {
+        run.StartObject();
+        run.PropertyName(__RawName0);
+        run.NumberValue((int)value.@Id);
         if (value.@Name is { } v0)
         {
-            writer.WriteString(__Name1, v0);
+            run.PropertyName(__RawName1);
+            run.StringValue(v0);
         }
         if (value.@Email is { } v1)
         {
-            writer.WriteString(__Name2, v1);
+            run.PropertyName(__RawName2);
+            run.StringValue(v1);
         }
-        writer.WriteEndObject();
+        run.EndObject();
     }
     
     internal static void Write_TestApp_Users_UserResponse__(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Users.UserResponse[] value, global::System.Text.Json.JsonSerializerOptions options)
     {
+        var run = global::Pragmatic.Serialization.Utf8JsonRun.Start();
         if (value is { } v2)
         {
-            writer.WriteStartArray();
+            run.StartArray();
             foreach (var e3 in v2)
             {
                 if (e3 is { } v4)
                 {
-                    Write_TestApp_Users_UserResponse(writer, v4, options);
+                    Run_TestApp_Users_UserResponse(ref run, v4);
                 }
                 else
                 {
-                    writer.WriteNullValue();
+                    run.NullValue();
                 }
             }
-            writer.WriteEndArray();
+            run.EndArray();
         }
         else
         {
-            writer.WriteNullValue();
+            run.NullValue();
         }
+        if (!run.IsEmpty)
+            writer.WriteRawValue(run.Written, skipInputValidation: true);
+        run.Dispose();
     }
     
     private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("id");
     private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("name");
     private static readonly global::System.Text.Json.JsonEncodedText __Name2 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("email");
+    private static readonly byte[] __RawName0 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name0);
+    private static readonly byte[] __RawName1 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name1);
+    private static readonly byte[] __RawName2 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name2);
 }
 ,
   _Metadata.Endpoints.g.cs:
