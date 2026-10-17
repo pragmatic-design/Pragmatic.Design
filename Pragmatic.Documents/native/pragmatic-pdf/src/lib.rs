@@ -41,11 +41,8 @@ pub unsafe extern "C" fn pragmatic_doc_to_pdf(
         Err(e) => { set_last_error(format!("JSON parse failed: {e}")); return -1; }
     };
 
-    // Generate Typst markup
-    let typst_markup = pdf::typst_gen::generate_typst(&model);
-
-    // Compile to PDF
-    match pdf::compile::compile_to_pdf(&typst_markup, &model.resources) {
+    // Lay out and write the PDF, in chunks when the document is long enough to need them
+    match pdf::chunked::render_document(&model) {
         Ok(pdf_bytes) => {
             let len = pdf_bytes.len();
             let boxed = pdf_bytes.into_boxed_slice();

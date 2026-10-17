@@ -22,60 +22,11 @@ pub fn merge_pdfs(pdfs: &[&[u8]]) -> Result<Vec<u8>, String> {
     let mut all_page_ids: Vec<ObjectId> = Vec::new();
 
     for doc in &documents {
-        let id_offset = merged.max_id + 1;
-
-        // Map old object IDs → new (renumbered) IDs
-        let mut id_map: BTreeMap<ObjectId, ObjectId> = BTreeMap::new();
-        for &old_id in doc.objects.keys() {
-            let new_id = (old_id.0 + id_offset, old_id.1);
-            id_map.insert(old_id, new_id);
-        }
-
-        // Copy all objects with new IDs
-        for (&old_id, object) in &doc.objects {
-            let new_id = id_map[&old_id];
-            let mut cloned = object.clone();
-            remap_references(&mut cloned, &id_map);
-            merged.objects.insert(new_id, cloned);
-        }
-
-        // Update max_id
-        if let Some(&max) = id_map.values().map(|(n, _)| n).max() {
-            if max > merged.max_id {
-                merged.max_id = max;
-            }
-        }
-
-        // Collect remapped page IDs (in page order)
-        let pages = doc.get_pages();
-        let mut sorted_pages: Vec<_> = pages.iter().collect();
-        sorted_pages.sort_by_key(|(num, _)| *num);
-
-        for (_, &page_id) in sorted_pages {
-            if let Some(&new_id) = id_map.get(&page_id) {
-                all_page_ids.push(new_id);
-            }
-        }
+        let (_, page_ids) = append_document(&mut merged, doc);
+        all_page_ids.extend(page_ids);
     }
 
-    // Build Pages dictionary
-    let kids: Vec<Object> = all_page_ids.iter()
-        .map(|&id| Object::Reference(id))
-        .collect();
-
-    let mut pages_dict = Dictionary::new();
-    pages_dict.set("Type", Object::Name(b"Pages".to_vec()));
-    pages_dict.set("Count", Object::Integer(all_page_ids.len() as i64));
-    pages_dict.set("Kids", Object::Array(kids));
-
-    let pages_id = merged.add_object(Object::Dictionary(pages_dict));
-
-    // Set Parent reference on each page
-    for &page_id in &all_page_ids {
-        if let Some(Object::Dictionary(dict)) = merged.objects.get_mut(&page_id) {
-            dict.set("Parent", Object::Reference(pages_id));
-        }
-    }
+    let pages_id = add_page_tree(&mut merged, &all_page_ids);
 
     // Build Catalog
     let mut catalog = Dictionary::new();
@@ -90,6 +41,68 @@ pub fn merge_pdfs(pdfs: &[&[u8]]) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Failed to save merged PDF: {e}"))?;
 
     Ok(output)
+}
+
+/// Copy every object of `doc` into `merged` under new numbers, after the ones it has. Returns the map from
+/// old to new numbers and the new numbers of `doc`'s pages, in page order.
+pub(crate) fn append_document(merged: &mut Document, doc: &Document) -> (BTreeMap<ObjectId, ObjectId>, Vec<ObjectId>) {
+    let id_offset = merged.max_id + 1;
+
+    // Map old object IDs → new (renumbered) IDs
+    let mut id_map: BTreeMap<ObjectId, ObjectId> = BTreeMap::new();
+    for &old_id in doc.objects.keys() {
+        let new_id = (old_id.0 + id_offset, old_id.1);
+        id_map.insert(old_id, new_id);
+    }
+
+    // Copy all objects with new IDs
+    for (&old_id, object) in &doc.objects {
+        let new_id = id_map[&old_id];
+        let mut cloned = object.clone();
+        remap_references(&mut cloned, &id_map);
+        merged.objects.insert(new_id, cloned);
+    }
+
+    // Update max_id
+    if let Some(&max) = id_map.values().map(|(n, _)| n).max() {
+        if max > merged.max_id {
+            merged.max_id = max;
+        }
+    }
+
+    // Collect remapped page IDs (in page order)
+    let pages = doc.get_pages();
+    let mut sorted_pages: Vec<_> = pages.iter().collect();
+    sorted_pages.sort_by_key(|(num, _)| *num);
+
+    let page_ids = sorted_pages.into_iter()
+        .filter_map(|(_, page_id)| id_map.get(page_id).copied())
+        .collect();
+    (id_map, page_ids)
+}
+
+/// A page tree over `page_ids`, in that order, set as each page's parent. Returns its number.
+pub(crate) fn add_page_tree(merged: &mut Document, page_ids: &[ObjectId]) -> ObjectId {
+    // Build Pages dictionary
+    let kids: Vec<Object> = page_ids.iter()
+        .map(|&id| Object::Reference(id))
+        .collect();
+
+    let mut pages_dict = Dictionary::new();
+    pages_dict.set("Type", Object::Name(b"Pages".to_vec()));
+    pages_dict.set("Count", Object::Integer(page_ids.len() as i64));
+    pages_dict.set("Kids", Object::Array(kids));
+
+    let pages_id = merged.add_object(Object::Dictionary(pages_dict));
+
+    // Set Parent reference on each page
+    for &page_id in page_ids {
+        if let Some(Object::Dictionary(dict)) = merged.objects.get_mut(&page_id) {
+            dict.set("Parent", Object::Reference(pages_id));
+        }
+    }
+
+    pages_id
 }
 
 /// Split a range of pages from a PDF (1-based, inclusive).
