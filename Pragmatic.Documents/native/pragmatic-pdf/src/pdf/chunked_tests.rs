@@ -109,9 +109,19 @@ fn assert_same_pages(chunked: &Rendered, single: &Rendered) {
     let (chunked_pages, single_pages) = (drawn_text(&chunked.pdf), drawn_text(&single.pdf));
     assert!(single_pages.len() > 10, "the report is {} pages: too short to cut", single_pages.len());
     for (index, (c, s)) in chunked_pages.iter().zip(&single_pages).enumerate() {
-        assert_eq!(c, s, "page {} differs", index + 1);
+        assert_drawn_alike(c, s, &format!("page {} differs", index + 1));
     }
     assert_eq!(chunked_pages.len(), single_pages.len(), "page count");
+}
+
+/// The same runs of text, each within two hundredths of a point of the other. A chunk's page is laid out
+/// from another origin than the one compile's, and the float sums can land either side of a rounding: on
+/// macOS one line came out 557.67 against 557.68 with every other position equal.
+fn assert_drawn_alike(left: &[(i64, i64, String)], right: &[(i64, i64, String)], message: &str) {
+    let alike = left.len() == right.len() && left.iter().zip(right).all(|((lx, ly, lt), (rx, ry, rt))| {
+        lt == rt && (lx - rx).abs() <= 2 && (ly - ry).abs() <= 2
+    });
+    assert!(alike, "{message}\n  left: {left:?}\n right: {right:?}");
 }
 
 #[test]
@@ -156,7 +166,7 @@ fn the_row_markers_change_nothing_on_the_page() {
     assert!(plain.iter().map(Vec::len).sum::<usize>() > 1_000, "the chunk draws almost nothing");
     assert_eq!(marked.len(), plain.len(), "page count");
     for (page, (m, p)) in marked.iter().zip(&plain).enumerate() {
-        assert_eq!(m, p, "page {} is drawn differently with the markers", page + 1);
+        assert_drawn_alike(m, p, &format!("page {} is drawn differently with the markers", page + 1));
     }
 }
 
