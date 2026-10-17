@@ -1,17 +1,14 @@
 namespace Pragmatic.Documents.Pdf;
 
 /// <summary>
-/// Options for PDF rendering: batching, fonts, image policy.
+/// Options for PDF rendering: fonts, image policy.
 /// </summary>
+/// <remarks>
+/// There is no memory option: the native engine lays a long document out in chunks on its own, so its
+/// peak follows the chunk and not the document (see <c>pdf-rendering.md</c>, <i>Memory</i>).
+/// </remarks>
 public sealed record PdfRenderOptions
 {
-    /// <summary>
-    /// Number of pages per batch for large documents. 0 = no batching (compile entire document at once).
-    /// When set (e.g. 20), documents with more pages are compiled in batches and merged.
-    /// This bounds memory usage for large documents at the cost of a merge step.
-    /// </summary>
-    public int BatchPageCount { get; init; }
-
     /// <summary>
     /// Custom font files (TTF/OTF bytes) to register in the Typst engine.
     /// These fonts are available in addition to system fonts.
@@ -39,17 +36,6 @@ public sealed record PdfRenderOptions
     /// </summary>
     public byte ImageQuality { get; init; } = 85;
 
-    /// <summary>Default options (no batching, no image limits).</summary>
+    /// <summary>Default options (no custom fonts, no image limits).</summary>
     public static PdfRenderOptions Default { get; } = new();
-
-    /// <summary>Server preset: batch 20 pages to bound memory on large documents.</summary>
-    /// <remarks>
-    /// Deliberately does NOT set <see cref="MaxImageDimension"/>: image downscaling is not yet
-    /// wired into the native engine and a non-zero value makes the renderer throw
-    /// <see cref="NotSupportedException"/> — which would make this preset unusable.
-    /// </remarks>
-    public static PdfRenderOptions Server { get; } = new()
-    {
-        BatchPageCount = 20
-    };
 }

@@ -9,10 +9,10 @@ namespace Pragmatic.Documents.Pdf.Samples.Samples;
 /// author, subject, keywords and custom key/value pairs flow into the PDF
 /// document information dictionary.
 ///
-/// Note: <c>PdfRenderOptions</c> (custom fonts, image down-scaling, page batching)
-/// is declared in the Pdf package but is not yet wired into a public
-/// <see cref="PdfRenderer"/> overload, so it cannot be demonstrated end-to-end
-/// here — see the module review notes. This sample shows the page setup that IS
+/// Note: <c>PdfRenderOptions</c> holds custom fonts and image down-scaling, neither
+/// of which the native engine applies yet: setting either makes
+/// <see cref="PdfRenderer"/> throw <see cref="System.NotSupportedException"/>, so
+/// neither is demonstrated here. This sample shows the page setup that IS
 /// available through the rendering pipeline today.
 /// </summary>
 public static class PdfPageSetupSample
