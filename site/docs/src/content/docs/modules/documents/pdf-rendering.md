@@ -29,8 +29,7 @@ public static class PdfOperations
 
 - `Render` returns the whole PDF as one `byte[]`.
 - `RenderTo(Stream, ...)` renders the same `byte[]` and writes it to the stream. It saves a line, not
-  memory: the native engine lays out the whole document before it returns. See *Memory* under
-  *Performance*.
+  memory: the whole PDF is built before it returns. See *Memory* under *Performance*.
 - `GetPageCount` is a lightweight PDF-aware scan, with no full parsing.
 - There is no `RenderAsync`. Rendering is CPU work: on a server, call `Render` on the request's own
   thread. Wrapping it in `Task.Run` frees no thread, it only adds a hop. `PdfBatch` is asynchronous
@@ -238,22 +237,39 @@ Available types include `QrCode`, `Code128`, `Code39`, `Ean13`. The barcode rend
 
 ### Memory
 
-A render is **not bounded**: it grows with the document. The figures below come from the Documents
-benchmarks' `memory` mode (`dotnet run -c Release --project Pragmatic.Documents/benchmarks/Pragmatic.Documents.Benchmarks -- memory`).
-Each row is the benchmark report template filled with typed data, measured on Windows, .NET 10, on
-2026-10-16, each size in a process of its own:
+The native engine lays a long document out **in chunks**. Typst keeps what it computed for every table
+cell until a compile ends, about 20 KB a cell, so one compile of a long table holds memory in proportion
+to its rows. A document over about 5,000 table cells is laid out a chunk at a time, and that memory is
+released between chunks. The engine's peak then follows the chunk, not the document.
 
-| Rows | PDF bytes | Managed heap peak | Process peak working set |
-|---:|---:|---:|---:|
-| 1,000 | 155,215 | 6.7 MB | 277 MB |
-| 10,000 | 1,311,100 | 68 MB | 2.25 GB |
-| 50,000 | 7,622,112 | 377 MB | 11.2 GB |
+The figures below come from the Documents benchmarks' `memory` mode
+(`dotnet run -c Release --project Pragmatic.Documents/benchmarks/Pragmatic.Documents.Benchmarks -- memory`).
+Each row is the benchmark report template filled with typed data. They were measured on Windows, .NET 10,
+on 2026-10-17, each size in a process of its own. The *before* column is the same measure on 2026-10-16,
+when the document was laid out in one compile:
 
-- Most of the peak is outside the managed heap: the native engine lays out the whole document at
-  once, at about 220 KB per table row. Plan a long report's memory from the working-set column, not from
-  the size of the PDF. Reducing it is [#279](https://github.com/pragmatic-design/Pragmatic.Design/issues/279).
+| Rows | PDF bytes | Managed heap peak | Process peak working set | Before |
+|---:|---:|---:|---:|---:|
+| 1,000 | 199,467 | 6.7 MB | 198 MB | 277 MB |
+| 10,000 | 1,758,157 | 69 MB | 304 MB | 2.25 GB |
+| 50,000 | 9,868,139 | 391 MB | 819 MB | 11.2 GB |
+
+- **Still growing with the rows:** the model, the request sent to the engine, and the PDF itself. Above
+  10,000 rows most of the growth is the managed heap.
+- **The page is the one compile would make.** A chunk ends on the last page that a table row starts
+  cleanly, and the rows after it begin the next chunk. Every row lands on the page it would have, and page
+  numbers, "page N of M", the repeated header, the document information and the bookmarks are those of the
+  whole document. With a `NumPages` field in the document, each chunk is laid out twice: the count is
+  only known after the last chunk.
+- **The file is about 30% larger** than one compile's: each chunk carries its own subset of the fonts.
+- **What is not chunked:** a document with a `TocNode` or a `FootnoteNode` is still laid out in one
+  compile, however long, and holds memory as a whole. A table of contents lists every heading of the
+  document, and a footnote can be set on the page after its reference. Only a table placed directly in
+  a page's content is split; a long table inside a container is laid out whole.
 - The native memory is given back when the render returns, so a process that renders many documents
   holds one render's peak, not their sum.
+- The engine's own peak is bounded by a test: a 10,000-row report's native allocations stay under
+  250 MB, where one compile of 2,000 rows takes about 400 MB.
 
 ---
 

@@ -1,4 +1,4 @@
-use crate::pdf::compile::compile_to_pdf;
+use crate::pdf::chunked::render_document;
 use crate::pdf::model::DocumentModel;
 use crate::pdf::typst_gen::generate_typst;
 
@@ -10,7 +10,7 @@ fn markup(json: &str) -> String {
 
 fn render(json: &str) -> Result<Vec<u8>, String> {
     let model: DocumentModel = serde_json::from_str(json).expect("model");
-    compile_to_pdf(&generate_typst(&model), &model.resources)
+    render_document(&model)
 }
 
 fn page(content: &str) -> String {

@@ -1,49 +1,64 @@
 use std::fmt::Write;
 use crate::pdf::model::*;
 use crate::pdf::style::{font_list, inherit, write_aligned, write_run};
+use crate::pdf::table_gen::write_table;
 
 /// Generate Typst markup from a DocumentModel.
 pub fn generate_typst(model: &DocumentModel) -> String {
     let mut out = String::with_capacity(4096);
-
-    // Page setup
-    write_page_setup(&mut out, model);
-
-    // Document metadata
-    let doc_filename = model.title.as_deref().unwrap_or("Document");
-    writeln!(out, "#let pragmatic-filename = \"{}\"", escape_str(doc_filename)).unwrap();
-    if let Some(title) = &model.title {
-        writeln!(out, "#set document(title: \"{}\")", escape_str(title)).unwrap();
-    }
-    if let Some(author) = &model.author {
-        writeln!(out, "#set document(author: \"{}\")", escape_str(author)).unwrap();
-    }
+    write_preamble(&mut out, model, None);
 
     // Pages
     for (i, page) in model.pages.iter().enumerate() {
         if i > 0 {
             writeln!(out, "#pagebreak()").unwrap();
         }
-
-        // Header
-        if let Some(header) = &page.header {
-            write!(out, "#set page(header: [").unwrap();
-            write_nodes(&mut out, header);
-            writeln!(out, "])").unwrap();
-        }
-
-        // Footer
-        if let Some(footer) = &page.footer {
-            write!(out, "#set page(footer: [").unwrap();
-            write_nodes(&mut out, footer);
-            writeln!(out, "])").unwrap();
-        }
+        write_page_rules(&mut out, page);
 
         // Content
         write_nodes(&mut out, &page.content);
     }
 
     out
+}
+
+/// Page setup and document metadata. `total_pages` is the page count when the caller already knows it,
+/// as a chunk of a longer document does: a chunk's own final page counter is not the document's.
+pub(super) fn write_preamble(out: &mut String, model: &DocumentModel, total_pages: Option<usize>) {
+    // Page setup
+    write_page_setup(out, model);
+
+    // Document metadata
+    let doc_filename = model.title.as_deref().unwrap_or("Document");
+    writeln!(out, "#let pragmatic-filename = \"{}\"", escape_str(doc_filename)).unwrap();
+    match total_pages {
+        // Shown from a context as the whole document's count is, so the two are set the same way.
+        Some(total) => writeln!(out, "#let pragmatic-page-total = context {total}").unwrap(),
+        None => writeln!(out, "#let pragmatic-page-total = context counter(page).final().first()").unwrap(),
+    }
+    if let Some(title) = &model.title {
+        writeln!(out, "#set document(title: \"{}\")", escape_str(title)).unwrap();
+    }
+    if let Some(author) = &model.author {
+        writeln!(out, "#set document(author: \"{}\")", escape_str(author)).unwrap();
+    }
+}
+
+/// The page's header and footer, which apply from here to the next page's rules.
+pub(super) fn write_page_rules(out: &mut String, page: &DocumentPage) {
+    // Header
+    if let Some(header) = &page.header {
+        write!(out, "#set page(header: [").unwrap();
+        write_nodes(out, header);
+        writeln!(out, "])").unwrap();
+    }
+
+    // Footer
+    if let Some(footer) = &page.footer {
+        write!(out, "#set page(footer: [").unwrap();
+        write_nodes(out, footer);
+        writeln!(out, "])").unwrap();
+    }
 }
 
 fn write_page_setup(out: &mut String, model: &DocumentModel) {
@@ -73,13 +88,13 @@ fn page_dimensions(size: PageSize, orientation: PageOrientation) -> (f64, f64) {
     }
 }
 
-fn write_nodes(out: &mut String, nodes: &[DocumentNode]) {
+pub(super) fn write_nodes(out: &mut String, nodes: &[DocumentNode]) {
     for node in nodes {
         write_node(out, node);
     }
 }
 
-fn write_node(out: &mut String, node: &DocumentNode) {
+pub(super) fn write_node(out: &mut String, node: &DocumentNode) {
     match node {
         DocumentNode::Text { content, style } => {
             write_aligned(out, style.as_ref(), |out| {
@@ -137,7 +152,7 @@ fn write_node(out: &mut String, node: &DocumentNode) {
             });
         }
         DocumentNode::Table { columns, header, rows, repeat_header, .. } => {
-            write_table(out, columns, header.as_ref(), rows, *repeat_header);
+            write_table(out, columns, header.as_ref(), rows, *repeat_header, None);
         }
         DocumentNode::List { ordered, items } => {
             for item in items {
@@ -183,7 +198,7 @@ fn write_node(out: &mut String, node: &DocumentNode) {
         DocumentNode::Field { field_type, format } => {
             match field_type {
                 FieldType::Page => write!(out, "#context counter(page).display()").unwrap(),
-                FieldType::NumPages => write!(out, "#context counter(page).final().first()").unwrap(),
+                FieldType::NumPages => write!(out, "#pragmatic-page-total").unwrap(),
                 FieldType::Date => {
                     if let Some(fmt) = format {
                         write!(out, "#datetime.today().display(\"{}\")", escape_str(fmt)).unwrap();
@@ -203,104 +218,6 @@ fn write_node(out: &mut String, node: &DocumentNode) {
     }
 }
 
-fn write_table(out: &mut String, columns: &[TableColumn], header: Option<&TableRow>, rows: &[TableRow], repeat_header: bool) {
-    let col_count = columns.len().max(
-        header.map_or(0, |h| h.cells.len()).max(
-            rows.first().map_or(0, |r| r.cells.len())
-        )
-    );
-
-    if col_count == 0 { return; }
-
-    // Column definitions
-    write!(out, "#table(\n  columns: (").unwrap();
-    for (i, col) in columns.iter().enumerate() {
-        if i > 0 { write!(out, ", ").unwrap(); }
-        if let Some(w) = col.width {
-            write!(out, "{}mm", w).unwrap();
-        } else {
-            write!(out, "1fr").unwrap();
-        }
-    }
-    // Fill remaining columns with auto
-    for i in columns.len()..col_count {
-        if i > 0 || !columns.is_empty() { write!(out, ", ").unwrap(); }
-        write!(out, "1fr").unwrap();
-    }
-    writeln!(out, "),").unwrap();
-
-    // Alignment
-    let has_align = columns.iter().any(|c| c.align.is_some());
-    if has_align {
-        write!(out, "  align: (").unwrap();
-        for (i, col) in columns.iter().enumerate() {
-            if i > 0 { write!(out, ", ").unwrap(); }
-            match col.align {
-                Some(TextAlign::Center) => write!(out, "center").unwrap(),
-                Some(TextAlign::Right) => write!(out, "right").unwrap(),
-                Some(TextAlign::Justify) => write!(out, "left").unwrap(),
-                _ => write!(out, "left").unwrap(),
-            }
-        }
-        writeln!(out, "),").unwrap();
-    }
-
-    // Header row — use table.header() for repeat support
-    if let Some(header) = header {
-        if repeat_header {
-            writeln!(out, "  table.header(repeat: true,").unwrap();
-        }
-        for cell in &header.cells {
-            write_table_cell(out, cell, true);
-        }
-        if repeat_header {
-            writeln!(out, "  ),").unwrap();
-        }
-    }
-
-    // Data rows
-    for row in rows {
-        for cell in &row.cells {
-            write_table_cell(out, cell, false);
-        }
-    }
-
-    writeln!(out, ")").unwrap();
-}
-
-fn write_table_cell(out: &mut String, cell: &TableCell, is_header: bool) {
-    let has_span = cell.col_span > 1 || cell.row_span > 1;
-
-    if has_span {
-        write!(out, "  table.cell(").unwrap();
-        if cell.col_span > 1 { write!(out, "colspan: {}, ", cell.col_span).unwrap(); }
-        if cell.row_span > 1 { write!(out, "rowspan: {}, ", cell.row_span).unwrap(); }
-        write!(out, ")[").unwrap();
-    } else {
-        write!(out, "  [").unwrap();
-    }
-
-    if is_header {
-        write!(out, "#strong[").unwrap();
-        write_cell_content(out, &cell.content);
-        write!(out, "]").unwrap();
-    } else {
-        write_cell_content(out, &cell.content);
-    }
-
-    if has_span {
-        writeln!(out, "],").unwrap();
-    } else {
-        writeln!(out, "],").unwrap();
-    }
-}
-
-fn write_cell_content(out: &mut String, nodes: &[DocumentNode]) {
-    for node in nodes {
-        write_inline(out, node, None);
-    }
-}
-
 /// A link as a block, aligned by its own style; `inherited` is the enclosing paragraph's style, which the
 /// link's run formatting completes for the text inside it.
 fn write_hyperlink(out: &mut String, href: &str, children: &[DocumentNode], style: Option<&NodeStyle>, inherited: Option<&NodeStyle>) {
@@ -315,7 +232,7 @@ fn write_hyperlink(out: &mut String, href: &str, children: &[DocumentNode], styl
 }
 
 /// `inherited` is the enclosing block's style: its run formatting reaches a text and a link.
-fn write_inline(out: &mut String, node: &DocumentNode, inherited: Option<&NodeStyle>) {
+pub(super) fn write_inline(out: &mut String, node: &DocumentNode, inherited: Option<&NodeStyle>) {
     match node {
         DocumentNode::Text { content, style } =>
             write_run(out, inherit(inherited, style.as_ref()).as_ref(), |out| out.push_str(&escape(content))),
