@@ -506,5 +506,5 @@ public sealed class ServiceCollection : ICollectionFixture<ServiceUnderTest>
 
 A create the generator cannot fill is answered from `PragmaticContractHost.BodyFor` in
 `StartServiceAsync`, as in `pragmatic-use-testing`. Built and run on the second consumer trial of the
-`1.0.0-alpha.2` packages: the restart tests and the generated contract tests in one project, 14 tests,
+`1.0.0-alpha.3` packages: the restart tests and the generated contract tests in one project, 14 tests,
 all green, the restart test red when the restart lands on an empty database.

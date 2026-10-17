@@ -21,12 +21,12 @@ For the `[HasOwner]`/`[HasAccessScopes]` attributes on entities: also see `pragm
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Authorization" Version="1.0.0-alpha.2" />
-<PackageReference Include="Pragmatic.Identity" Version="1.0.0-alpha.2" />
-<PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.2" />     <!-- HTTP bridge -->
-<PackageReference Include="Pragmatic.Identity.Local.Jwt" Version="1.0.0-alpha.2" />      <!-- local JWT auth -->
-<PackageReference Include="Pragmatic.Identity.Oidc" Version="1.0.0-alpha.2" />           <!-- external IdP (OIDC) -->
-<PackageReference Include="Pragmatic.Identity.Persistence" Version="1.0.0-alpha.2" />    <!-- DB-backed users -->
+<PackageReference Include="Pragmatic.Authorization" Version="1.0.0-alpha.3" />
+<PackageReference Include="Pragmatic.Identity" Version="1.0.0-alpha.3" />
+<PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.3" />     <!-- HTTP bridge -->
+<PackageReference Include="Pragmatic.Identity.Local.Jwt" Version="1.0.0-alpha.3" />      <!-- local JWT auth -->
+<PackageReference Include="Pragmatic.Identity.Oidc" Version="1.0.0-alpha.3" />           <!-- external IdP (OIDC) -->
+<PackageReference Include="Pragmatic.Identity.Persistence" Version="1.0.0-alpha.3" />    <!-- DB-backed users -->
 ```
 
 `ICurrentUser`, `[RequirePermission]`, `[PragmaticUser]` are in `Pragmatic.Abstractions`. Always add `Pragmatic.SourceGenerator` as an analyzer.

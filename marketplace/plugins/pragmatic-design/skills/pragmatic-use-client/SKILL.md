@@ -18,8 +18,8 @@ Inside one host, modules call each other through the generated boundary interfac
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Client" Version="1.0.0-alpha.2" />
-<PackageReference Include="Pragmatic.Client.SourceGenerator" Version="1.0.0-alpha.2"
+<PackageReference Include="Pragmatic.Client" Version="1.0.0-alpha.3" />
+<PackageReference Include="Pragmatic.Client.SourceGenerator" Version="1.0.0-alpha.3"
                   OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
