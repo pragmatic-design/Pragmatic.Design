@@ -24,14 +24,7 @@ public static class PdfRenderer
     public static byte[] Render(DocumentModel model, PdfResources? resources = null, PdfRenderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(model);
-        var effective = options ?? PdfRenderOptions.Default;
-        EnsureSupported(effective);
-
-        // Page batching: compile the document in page-bounded chunks and merge, so peak memory
-        // is bounded by BatchPageCount rather than the whole document. Only worthwhile when the
-        // document actually exceeds the batch size.
-        if (effective.BatchPageCount > 0 && model.Pages.Count > effective.BatchPageCount)
-            return RenderBatched(model, resources, effective.BatchPageCount);
+        EnsureSupported(options ?? PdfRenderOptions.Default);
 
         var payload = BuildPayload(model, resources);
         return RenderFromPayload(payload);
@@ -60,36 +53,6 @@ public static class PdfRenderer
                 "PdfRenderOptions.MaxImageDimension (and the related ImageQuality) is not yet wired " +
                 "into the native Typst engine. Pre-resize images before embedding them.");
     }
-
-    private static byte[] RenderBatched(DocumentModel model, PdfResources? resources, int batchPageCount)
-    {
-        var batches = new List<byte[]>((model.Pages.Count + batchPageCount - 1) / batchPageCount);
-
-        for (var start = 0; start < model.Pages.Count; start += batchPageCount)
-        {
-            var count = Math.Min(batchPageCount, model.Pages.Count - start);
-            var pageSlice = model.Pages.Skip(start).Take(count).ToList();
-            var batchModel = CloneWithPages(model, pageSlice);
-            batches.Add(RenderFromPayload(BuildPayload(batchModel, resources)));
-        }
-
-        return PdfOperations.Merge(batches.ToArray());
-    }
-
-    private static DocumentModel CloneWithPages(DocumentModel source, IReadOnlyList<DocumentPage> pages) => new()
-    {
-        Title = source.Title,
-        Author = source.Author,
-        Language = source.Language,
-        PageSize = source.PageSize,
-        Orientation = source.Orientation,
-        Margins = source.Margins,
-        Pages = pages,
-        Subject = source.Subject,
-        Keywords = source.Keywords,
-        CreatedDate = source.CreatedDate,
-        Metadata = source.Metadata
-    };
 
     private static string BuildPayload(DocumentModel model, PdfResources? resources)
     {
