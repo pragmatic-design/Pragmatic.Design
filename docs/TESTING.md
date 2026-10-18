@@ -256,9 +256,12 @@ a module's source, the shared code or a file every project is built with, throug
   run turns the run red. "More" means beyond 16 bytes or 0.25% of the baseline, whichever is larger:
   the first is the averaging noise of a many-operation benchmark, the second the pooled-buffer
   growth of one that serialises a large document (up to 270 B on 483 KB over three runs).
-  A benchmark whose allocations follow the thread pool's scheduling — one that blocks on a task
-  under concurrent load — is not deterministic, and has its own share in `SCHEDULER_TOLERANCES`
-  (`scripts/benchmarks.mjs`), stated beside the spread measured on the runner.
+  A benchmark whose allocations are not deterministic — one that blocks on a task under concurrent
+  load, one that compiles a new query into EF Core's cache on every operation — has its own share in
+  `ROW_TOLERANCES` (`scripts/benchmarks.mjs`), stated beside the spread measured on the runner. One
+  that allocates a fixed amount once per measurement, which BenchmarkDotNet divides by however many
+  operations it chose for the runner's speed, has a bound in bytes in `ONE_OFF_BYTES`, allowed over the
+  operations the row was measured on.
   The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
   allocates less asks for the baseline to come down.
 - **Times never fail it.** A hosted runner varies by 10–20% from one run to the next, so times are
