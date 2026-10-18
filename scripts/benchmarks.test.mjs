@@ -20,6 +20,7 @@ import {
   allocationReport,
   allocationsFromJson,
   compareAllocations,
+  operationsFromJson,
   parseTime,
   rowsFromCsv,
   timesFromCsv,
@@ -59,6 +60,31 @@ test('a row whose allocations follow the scheduler moves by its measured spread,
   assert.equal(compareAllocations({ [blocking]: 145_159, [direct]: 27_832 }, baseline).failed, false);
   assert.equal(compareAllocations({ [blocking]: 134_859 * 1.08 + 1, [direct]: 27_832 }, baseline).failed, true);
   assert.equal(compareAllocations({ [blocking]: 134_859, [direct]: 27_832 + 24 * 4 }, baseline).failed, true);
+});
+
+// The host's row on canada.json, on the runner: 1,218 B over 16 operations, 1,156 to 1,165 over 32, 1,134
+// to 1,139 over 64, the same code every time (#298). A fixed amount per measurement, divided by however
+// many operations BenchmarkDotNet chose for that runner's speed.
+test('a one-off allocation per measurement is allowed in proportion to the operations it was averaged over', () => {
+  const host = 'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Canada.Root_.Host_Reflection';
+  const plain = 'A.B.SameNumbers';
+  const baseline = { [host]: 1134 };
+
+  assert.equal(compareAllocations({ [host]: 1218 }, baseline, null, null, { [host]: 16 }).failed, false);
+  assert.equal(compareAllocations({ [host]: 1165 }, baseline, null, null, { [host]: 32 }).failed, false);
+  assert.equal(compareAllocations({ [host]: 1134 + 24 }, baseline, null, null, { [host]: 1024 }).failed, true);
+  assert.equal(compareAllocations({ [plain]: 1218 }, { [plain]: 1134 }, null, null, { [plain]: 16 }).failed, true);
+});
+
+// The constant search on the runner, nineteen samples over nine runs: 113,875 to 114,623 B, at 256 and at
+// 512 operations alike (#298). Each operation compiles a query into EF Core's cache, and what that costs
+// moves with the cache, not with the code.
+test('a row whose allocations follow a cache moves by its measured spread, and no further', () => {
+  const constant = 'Pragmatic.Persistence.Benchmarks.GridFilterBenchmarks.Search_ValueAsConstant';
+  const baseline = { [constant]: 113_875 };
+
+  assert.equal(compareAllocations({ [constant]: 114_623 }, baseline).failed, false);
+  assert.equal(compareAllocations({ [constant]: 113_875 * 1.007 + 1 }, baseline).failed, true);
 });
 
 test('a benchmark with no baseline fails, so a new one arrives with its baseline', () => {
@@ -136,6 +162,19 @@ test('allocations are read from the JSON reports, the larger of two jobs kept', 
   writeFileSync(join(dir, 'results', 'A.B-report-full-compressed.json'), JSON.stringify(report));
 
   assert.deepEqual(allocationsFromJson(dir), { 'A.B.Log': 120 });
+});
+
+test('the operations each allocation was averaged over are read with it, from the job whose figure is kept', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bench-ops-'));
+  const report = {
+    Benchmarks: [
+      { FullName: 'A.B.Log', Memory: { BytesAllocatedPerOperation: 120, TotalOperations: 16 } },
+      { FullName: 'A.B.Log', Memory: { BytesAllocatedPerOperation: 100, TotalOperations: 64 } },
+    ],
+  };
+  writeFileSync(join(dir, 'A.B-report-full-compressed.json'), JSON.stringify(report));
+
+  assert.deepEqual(operationsFromJson(dir), { 'A.B.Log': 16 });
 });
 
 // ResponseSerializationBenchmarks<T> runs over three documents whose type is called Root; FullName says

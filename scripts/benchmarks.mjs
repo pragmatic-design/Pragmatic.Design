@@ -88,9 +88,9 @@ export const TOLERANCE_BYTES = 16;
 export const TOLERANCE_SHARE = 0.0025;
 
 /**
- * The benchmarks whose allocations depend on how the thread pool schedules them, each with the share of
- * its baseline it may move. Every entry states the spread measured on the runner; the share covers that
- * and nothing more.
+ * The benchmarks whose allocations are not deterministic for their code path, each with the share of its
+ * baseline it may move. Every entry states the spread measured on the runner; the share covers that and
+ * nothing more.
  *
  * `Scopes_Blocking_ConcurrentRequests` reproduces sync-over-async under load: each query blocks on a
  * `Task.Run`, and a wait that outlasts its spin allocates a wait handle, so the bytes follow how many
@@ -98,14 +98,49 @@ export const TOLERANCE_SHARE = 0.0025;
  * baseline of 134,859, a spread of 7.65% (#227); 8% is 10,789 B. The Pragmatic code it runs is
  * `DefaultUserScopeResolver`, which its direct twin also runs, at 27,832 B in all eight runs and under
  * the ordinary tolerance.
+ *
+ * The two `GridFilterBenchmarks` rows run EF Core, which compiles a query into its own cache: every
+ * operation of the constant row compiles a new one, and what each costs follows the cache's state, not
+ * the code. Nineteen samples over nine runs on the runner (#298): the constant row 113,875 to 114,623 B,
+ * a spread of 0.66%, at 256 operations and at 512 alike; the adapter's row 47,988 to 48,226 B, 0.50%.
  */
-export const SCHEDULER_TOLERANCES = {
+export const ROW_TOLERANCES = {
   'Pragmatic.Endpoints.Benchmarks.Authorization.ScopeResolutionBenchmarks.Scopes_Blocking_ConcurrentRequests': 0.08,
+  'Pragmatic.Persistence.Benchmarks.GridFilterBenchmarks.Search_ValueAsConstant': 0.007,
+  'Pragmatic.Persistence.Benchmarks.GridFilterBenchmarks.Search_PrimeNGAdapter': 0.005,
 };
 
-/** The bytes a benchmark with this baseline may move without failing. */
-export function toleranceFor(base, name = '') {
-  return Math.max(TOLERANCE_BYTES, base * (SCHEDULER_TOLERANCES[name] ?? TOLERANCE_SHARE));
+/**
+ * The benchmarks that allocate a fixed amount once per measurement, on top of what each operation does,
+ * with an upper bound on that amount in bytes. BenchmarkDotNet divides it by the operations it chose to
+ * run, and it chooses fewer on a slower runner, so the row moves from run to run on the same code; the
+ * tolerance is that bound over the operations the row was measured on, and falls to the ordinary one
+ * where they are many.
+ *
+ * STJ's serializer under the host's options, on the runner (#298): on canada.json 1,218 B over 16
+ * operations, 1,156 to 1,165 over 32 and 1,134 to 1,139 over 64; on citm_catalog.json 1,138 over 64 and
+ * 1,113 over 1,024. Both fit a fixed 1.5 to 1.8 KB. Locally, with the invocation count forced, canada.json
+ * gave 1,252 to 1,291 B over 8 and 1,123 over 128, and twitter.json 2,580 to 2,619 over 8 and 2,451 over
+ * 128, with forced collections off, with tiered compilation off and after 30 warmup iterations alike: not
+ * the array pool, not the JIT, not a cold start. STJ's fast path, on the same documents, measures 0 B.
+ * Where it comes from inside the serializer is not known.
+ */
+export const ONE_OFF_BYTES = {
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Canada.Root_.Host_GeneratedMetadata': 2048,
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Canada.Root_.Host_Reflection': 2048,
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_CitmCatalog.Root_.Host_GeneratedMetadata': 2048,
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_CitmCatalog.Root_.Host_Reflection': 2048,
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Twitter.Root_.Host_GeneratedMetadata': 2048,
+  'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Twitter.Root_.Host_Reflection': 2048,
+};
+
+/**
+ * The bytes a benchmark with this baseline may move without failing, measured over `operations`
+ * (unknown when 0).
+ */
+export function toleranceFor(base, name = '', operations = 0) {
+  const oneOff = operations > 0 ? (ONE_OFF_BYTES[name] ?? 0) / operations : 0;
+  return Math.max(TOLERANCE_BYTES, base * (ROW_TOLERANCES[name] ?? TOLERANCE_SHARE), oneOff);
 }
 
 // ── Reading BenchmarkDotNet's output ────────────────────────────────────────────────────────────
@@ -129,6 +164,22 @@ export function filesEndingWith(dir, suffix) {
  * anything allocates more, and the larger one is the one that can answer yes.
  */
 export function allocationsFromJson(dir) {
+  return Object.fromEntries(Object.entries(memoryFromJson(dir)).map(([name, m]) => [name, m.bytes]));
+}
+
+/**
+ * How many operations each figure of `allocationsFromJson` was averaged over, as BenchmarkDotNet reports
+ * them (`TotalOperations`); a benchmark whose report gives none is left out.
+ */
+export function operationsFromJson(dir) {
+  return Object.fromEntries(
+    Object.entries(memoryFromJson(dir))
+      .filter(([, m]) => typeof m.operations === 'number')
+      .map(([name, m]) => [name, m.operations]),
+  );
+}
+
+function memoryFromJson(dir) {
   const measured = {};
   for (const file of filesEndingWith(dir, '-report-full-compressed.json')) {
     const report = JSON.parse(readFileSync(file, 'utf8'));
@@ -137,7 +188,7 @@ export function allocationsFromJson(dir) {
       const bytes = b.Memory?.BytesAllocatedPerOperation;
       if (typeof bytes !== 'number') continue;
       const name = benchmarkName(b, reportName);
-      measured[name] = Math.max(measured[name] ?? 0, bytes);
+      if (bytes >= (measured[name]?.bytes ?? 0)) measured[name] = { bytes, operations: b.Memory.TotalOperations };
     }
   }
   return measured;
@@ -256,9 +307,10 @@ export function timesFromCsv(dir) {
  *
  * `classes`, on a partial run, are the classes that ran: the baseline of every other class is not
  * looked at, since nothing measured it. `listed` are the classes the suites list for the run, the
- * selected ones on a partial run and every one on a full run, where `classes` is null.
+ * selected ones on a partial run and every one on a full run, where `classes` is null. `operations` are
+ * what each measurement was averaged over (`operationsFromJson`), which the rows in `ONE_OFF_BYTES` need.
  */
-export function compareAllocations(measured, baseline, classes = null, listed = classes) {
+export function compareAllocations(measured, baseline, classes = null, listed = classes, operations = {}) {
   const result = { regressions: [], unbaselined: [], improvements: [], missing: [], notRun: [] };
   const judged = classes === null
     ? baseline
@@ -266,8 +318,8 @@ export function compareAllocations(measured, baseline, classes = null, listed = 
   for (const [name, bytes] of Object.entries(measured).sort()) {
     const base = judged[name];
     if (base === undefined) result.unbaselined.push({ name, bytes });
-    else if (bytes > base + toleranceFor(base, name)) result.regressions.push({ name, bytes, base });
-    else if (bytes < base - toleranceFor(base, name)) result.improvements.push({ name, bytes, base });
+    else if (bytes > base + toleranceFor(base, name, operations[name])) result.regressions.push({ name, bytes, base });
+    else if (bytes < base - toleranceFor(base, name, operations[name])) result.improvements.push({ name, bytes, base });
   }
   for (const name of Object.keys(judged).sort()) {
     if (!(name in measured)) result.missing.push({ name, base: judged[name] });
@@ -293,7 +345,7 @@ export function allocationReport(result, measuredCount) {
     ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} listed class(es) measured nothing.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
-      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger; ${Object.keys(SCHEDULER_TOLERANCES).length} scheduled row(s) have their own, in \`SCHEDULER_TOLERANCES\`).`, '');
+      : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger; ${Object.keys(ROW_TOLERANCES).length} row(s) have their own share, in \`ROW_TOLERANCES\`, and ${Object.keys(ONE_OFF_BYTES).length} a one-off allowance per measurement, in \`ONE_OFF_BYTES\`).`, '');
   table('Allocates more (fails)', result.regressions);
   table('No baseline (fails)', result.unbaselined);
   table('In the baseline, did not run (fails)', result.missing);
@@ -470,7 +522,7 @@ function ci(options) {
   const baseline = existsSync(join(options.head, BASELINE))
     ? JSON.parse(readFileSync(join(options.head, BASELINE), 'utf8'))
     : {};
-  const allocations = compareAllocations(measured, baseline, classes, listed);
+  const allocations = compareAllocations(measured, baseline, classes, listed, operationsFromJson(join(out, 'head')));
   const nothingToRun = classes !== null && classes.length === 0;
 
   // What the baseline would be if this run were accepted: uploaded with the reports, so a new or
@@ -535,7 +587,7 @@ function main(argv) {
         return 0;
       }
       const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : {};
-      const result = compareAllocations(measured, baseline);
+      const result = compareAllocations(measured, baseline, null, null, operationsFromJson(options.results));
       console.log(allocationReport(result, Object.keys(measured).length));
       return result.failed ? 1 : 0;
     }
