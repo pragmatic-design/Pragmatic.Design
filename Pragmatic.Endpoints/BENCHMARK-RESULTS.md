@@ -92,6 +92,27 @@ instead of a call per token.
 `Generated_Writer_DefaultEncoder` is now level with `Generated_Writer` on every workload: nothing the writer
 writes goes through the writer's encoder any more.
 
+**On Linux the first version made the page slower.** The table above was measured on Windows with the escape
+buffer set up in `ResponseText.Write`, once per string. The benchmarks workflow's A/B on the GitHub runner (run
+39075141539) showed the page's `Generated_Writer` at 8.353 μs on `main` and 9.320 μs with the change, while the
+rows that do not write through a run (the host, the fast path, RE:Dox) moved between 0.99 and 1.03. The same A/B in Docker on this machine (`mcr.microsoft.com/dotnet/sdk:10.0`,
+`main` and the change alternated, twice each) reproduced it: 7.469 and 7.161 μs against 8.064 and 8.110.
+
+The page's 200 strings are short and need no escaping. With the buffer moved into the method that escapes, so a
+string with nothing to escape never sets one up, the same Linux A/B gives:
+
+| Workload | `main` | the change |
+|---|---:|---:|
+| `twitter.json` | 243.2 / 237.4 μs | **194.4 / 188.8 μs** |
+| `citm_catalog.json` | 154.1 / 155.6 μs | 153.0 / 153.0 μs |
+| `canada.json` | 3.480 / 3.492 ms | 3.380 / 3.442 ms |
+| `ReservationPage` | 7.257 / 7.304 μs | **6.524 / 6.541 μs** |
+
+RE:Dox on Twitter in the change's runs: 234.2 and 240.4 μs. Two other changes were measured on the page and left
+out: a 64 KB scratch instead of 16 KB (8.461 and 7.903 μs, no better) and `Ascii.FromUtf16` for the ASCII runs
+(7.697 and 7.680 μs alone, against 7.194 and 7.214 on `main`; with the buffer moved too, 0.87 and 0.84 of
+`main`, where the buffer alone is 0.86 and 0.87).
+
 ### A double formatter of our own (#149)
 
 The run's numbers are formatted by a port of Ryu that writes `double.TryFormat`'s bytes. Per serialization;

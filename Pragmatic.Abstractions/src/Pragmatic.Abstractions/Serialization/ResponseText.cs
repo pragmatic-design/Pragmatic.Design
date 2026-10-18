@@ -43,7 +43,6 @@ internal static class ResponseText
     {
         var at = 0;
         destination[at++] = (byte)'"';
-        Span<char> escaped = stackalloc char[16];
         var rest = text;
         while (!rest.IsEmpty)
         {
@@ -90,14 +89,24 @@ internal static class ResponseText
 
             // A pair is escaped as one scalar; a lone surrogate on its own, as the encoder replaces it.
             var take = char.IsHighSurrogate(rest[0]) && rest.Length > 1 && char.IsLowSurrogate(rest[1]) ? 2 : 1;
-            GeneratedJsonDefaults.ResponseEncoder.Encode(rest[..take], escaped, out _, out var written);
-            for (var i = 0; i < written; i++)
-                destination[at++] = (byte)escaped[i];
+            at += Escape(rest[..take], destination[at..]);
             rest = rest[take..];
         }
 
         destination[at++] = (byte)'"';
         return at;
+    }
+
+    // The buffer lives here and not in Write, so a string with nothing to escape never sets one up. In Write, on the
+    // reservation page's short strings, the generated writer was 8-13% slower than main on Linux; here it is 14%
+    // faster (#152).
+    private static int Escape(ReadOnlySpan<char> scalar, Span<byte> destination)
+    {
+        Span<char> escaped = stackalloc char[16];
+        GeneratedJsonDefaults.ResponseEncoder.Encode(scalar, escaped, out _, out var written);
+        for (var i = 0; i < written; i++)
+            destination[i] = (byte)escaped[i];
+        return written;
     }
 
     private static char[] Safe(int from, int to)
