@@ -5,9 +5,9 @@ using Xunit;
 namespace Pragmatic.SourceGenerator.Tests.Features.Serialization;
 
 /// <summary>
-///     The parts of a response no encoder can change are written as runs, one raw value each (#131), and the bytes
-///     are still the serializer's: separators, nulls left out, defaults left out, dates trimmed, a run that outgrows
-///     its stack buffer.
+///     The parts of a response a run can write are written as runs, one raw value each (#131), strings among them
+///     (#152), and the bytes are still the serializer's: separators, nulls left out, defaults left out, dates trimmed,
+///     strings escaped, a run that outgrows its stack buffer.
 /// </summary>
 public class ARunWritesWhatTheWriterWritesTests
 {
@@ -74,7 +74,7 @@ public class ARunWritesWhatTheWriterWritesTests
                 Ref = Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e"),
                 Rank = 0,
                 Revision = 2,
-                Title = "<é>",
+                Title = "<é>\"\\\n\u0001😀\u2028",
                 When = new Stamp
                 {
                     Unspecified = new DateTime(2026, 10, 9, 8, 7, 6),
@@ -118,19 +118,20 @@ public class ARunWritesWhatTheWriterWritesTests
     }
 
     /// <summary>
-    ///     The control for the test above: the writer does write runs — for the members before the string, the members
-    ///     after it, and every object made only of encoder-free values — so the bytes it is compared on come from them.
+    ///     The control for the test above: the writer does write runs — every object, the ticket with its strings
+    ///     included — so the bytes it is compared on come from them, the strings' among them.
     /// </summary>
     [Fact]
-    public void TheEncoderFreeParts_AreWrittenAsRuns()
+    public void EveryPartThatFitsARun_IsWrittenAsOne()
     {
         var compiled = CompiledResponseWriter.For(Source, CompiledResponseWriter.Named("App.Ticket"));
 
         compiled.Generated.Should().Contain("internal static void Run_App_Area(ref global::Pragmatic.Serialization.Utf8JsonRun run");
         compiled.Generated.Should().Contain("internal static void Run_App_Seat(ref global::Pragmatic.Serialization.Utf8JsonRun run");
         compiled.Generated.Should().Contain("internal static void Run_App_Stamp(ref global::Pragmatic.Serialization.Utf8JsonRun run");
-        compiled.Generated.Should().NotContain("Run_App_Ticket(");
-        compiled.Generated.Split("writer.WriteRawValue(run.Written, skipInputValidation: true);").Length.Should().BeGreaterThan(2);
+        compiled.Generated.Should().Contain("internal static void Run_App_Ticket(ref global::Pragmatic.Serialization.Utf8JsonRun run");
+        compiled.Generated.Should().Contain("run.StringValue(v");
+        compiled.Generated.Should().NotContain("writer.WriteStringValue(");
     }
 
     /// <summary>A number JSON cannot hold fails the response through the run as it fails through the serializer.</summary>

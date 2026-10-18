@@ -8,9 +8,10 @@ using System.Text.Json;
 namespace Pragmatic.Serialization;
 
 /// <summary>
-///     A run of JSON whose bytes no encoder can change — names already encoded, numbers, booleans, Guids, dates, and
-///     objects and arrays made only of those — formatted as <see cref="Utf8JsonWriter" /> would write it, for a
-///     generated writer to hand over in one <see cref="Utf8JsonWriter.WriteRawValue(ReadOnlySpan{byte}, bool)" />.
+///     A run of JSON — names already encoded, numbers, booleans, Guids, dates, strings, and objects and arrays made
+///     only of those — formatted as <see cref="Utf8JsonWriter" /> would write it under
+///     <see cref="GeneratedJsonDefaults.ResponseEncoder" />, for a generated writer to hand over in one
+///     <see cref="Utf8JsonWriter.WriteRawValue(ReadOnlySpan{byte}, bool)" />.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -222,6 +223,21 @@ public ref struct Utf8JsonRun
         var at = Separator(target);
         Utf8Formatter.TryFormat(value, target[at..], out var count);
         Value(at + count);
+    }
+
+    /// <summary>
+    ///     A string, escaped as the writer escapes it under <see cref="GeneratedJsonDefaults.ResponseEncoder" />: the
+    ///     encoder every generated response is written with, so the run holds the writer's very bytes.
+    /// </summary>
+    /// <exception cref="ArgumentException">The string is longer than the writer accepts, which it refuses too.</exception>
+    public void StringValue(string value)
+    {
+        if (value.Length > ResponseText.MaxLength)
+            throw new ArgumentException($"The JSON value of length {value.Length} is too large and not supported.");
+
+        var target = Reserve(ResponseText.MaxBytes(value.Length) + 1);
+        var at = Separator(target);
+        Value(at + ResponseText.Write(value, target[at..]));
     }
 
     /// <summary>A Guid, in the <c>D</c> format, as the writer writes one: none of its characters is escaped.</summary>

@@ -249,17 +249,30 @@ internal static class GeneratedUtf8ResponseWriters {
     
     internal static void Write_TestApp_Orders_OrderResponse(global::System.Text.Json.Utf8JsonWriter writer, global::TestApp.Orders.OrderResponse value, global::System.Text.Json.JsonSerializerOptions options)
     {
-        writer.WriteStartObject();
-        writer.WriteNumber(__Name0, (int)value.@Id);
+        var run = global::Pragmatic.Serialization.Utf8JsonRun.Start();
+        Run_TestApp_Orders_OrderResponse(ref run, value);
+        if (!run.IsEmpty)
+            writer.WriteRawValue(run.Written, skipInputValidation: true);
+        run.Dispose();
+    }
+    
+    internal static void Run_TestApp_Orders_OrderResponse(ref global::Pragmatic.Serialization.Utf8JsonRun run, global::TestApp.Orders.OrderResponse value)
+    {
+        run.StartObject();
+        run.PropertyName(__RawName0);
+        run.NumberValue((int)value.@Id);
         if (value.@Status is { } v0)
         {
-            writer.WriteString(__Name1, v0);
+            run.PropertyName(__RawName1);
+            run.StringValue(v0);
         }
-        writer.WriteEndObject();
+        run.EndObject();
     }
     
     private static readonly global::System.Text.Json.JsonEncodedText __Name0 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("id");
     private static readonly global::System.Text.Json.JsonEncodedText __Name1 = global::Pragmatic.Serialization.GeneratedJsonDefaults.Encode("status");
+    private static readonly byte[] __RawName0 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name0);
+    private static readonly byte[] __RawName1 = global::Pragmatic.Serialization.Utf8JsonRun.Name(__Name1);
 }
 ,
   _Metadata.Endpoints.g.cs:
