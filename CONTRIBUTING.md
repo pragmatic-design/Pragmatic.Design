@@ -7,8 +7,8 @@ Thank you for considering contributing to Pragmatic.Design! This document explai
 ### Prerequisites
 
 - .NET 10.0 SDK, the version in `global.json` or any newer 10.0 SDK. CI uses that exact version. A newer
-  SDK may rewrite the NuGet lock files when it restores: leave those changes out of your commit, as CI
-  would reject them ([docs/TESTING.md](docs/TESTING.md#lock-files)).
+  SDK writes the same NuGet lock files, since the one package that followed the SDK is pinned
+  ([docs/TESTING.md](docs/TESTING.md#lock-files)).
 - Git
 
 ### Getting the source

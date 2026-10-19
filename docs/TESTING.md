@@ -492,20 +492,22 @@ them with the change:
 dotnet restore Pragmatic.Design.slnx --force-evaluate
 ```
 
-The SDK is part of what a lock file records: it adds `Microsoft.NET.ILLink.Tasks` to the trimmable
-projects at the version of the runtime it bundles, so a newer SDK writes different lock files. So CI runs
-the exact SDK in `global.json`, and updating the SDK means changing it and regenerating the lock files in
-the same commit.
+The SDK adds `Microsoft.NET.ILLink.Tasks` to the trimmable projects at the version of the runtime it
+bundles: 10.0.303 writes 10.0.11, 10.0.402 writes 10.0.13. Left to the SDK, every restore by a newer one
+rewrote the lock files, an IDE included, which does it in the background (#301). `Directory.Build.targets`
+pins that version (`PinILLinkPack`), so the lock files are the same whichever 10.0 SDK restores them.
+Updating the SDK means changing `global.json`, moving the pin to the version the new SDK bundles, and
+regenerating the lock files, in the same commit.
 
 `global.json` says `rollForward: feature`. `setup-dotnet` installs the exact version for it (only the
-`latest…` policies make it install the newest SDK), and a clone still builds with any newer 10.0 SDK. That
-SDK may rewrite the lock files when it restores: leave those changes out of a commit, since CI's locked
-restore would reject them.
+`latest…` policies make it install the newest SDK), and a clone still builds with any newer 10.0 SDK.
 
 `--tier full` fails when a project in the solution has no lock file, a lock file has no project, a
 workflow restores without `--locked-mode`, `global.json` names no `rollForward` or one that would let CI
-install another SDK (`latest…`) or leave 10.0 (`minor`, `major`), or the lock files resolve
-ILLink.Tasks at more than one version (**`every restore locked to a packages.lock.json`**,
+install another SDK (`latest…`) or leave 10.0 (`minor`, `major`), the trimmer is not pinned, the pin is
+not what the SDK in `global.json` bundles (checked where that SDK is installed, as in CI), or the lock
+files resolve ILLink.Tasks at more than one version or at one other than the pin
+(**`every restore locked to a packages.lock.json`**,
 `scripts/lock-files.mjs`). The AOT smoke projects and the consumer samples are outside the solution and
 write no lock file: CI does not restore them, the smoke scripts restore for a runtime identifier, and the
 consumer samples do not inherit the repository's build properties at all.
