@@ -119,8 +119,7 @@ Excel's CSV auto-detection picks the delimiter based on the system locale. An It
 Export with the locale-appropriate delimiter:
 
 ```csharp
-var italian = new CsvOptions { Delimiter = ';', DecimalSeparator = ',' };
-CsvWriter.Write(fs, book, italian);
+CsvWriter.Write(fs, book, CsvOptions.Italian); // ';', it-IT numbers, dd/MM/yyyy dates
 ```
 
 ### Encoding characters appear corrupted
@@ -128,7 +127,7 @@ CsvWriter.Write(fs, book, italian);
 UTF-8 without BOM is the default. Some Excel versions misinterpret UTF-8 without BOM. Force a BOM for broader compatibility:
 
 ```csharp
-var options = new CsvOptions { WriteByteOrderMark = true };
+var options = new CsvOptions { Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true) };
 ```
 
 ---

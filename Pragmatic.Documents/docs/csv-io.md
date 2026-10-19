@@ -29,6 +29,10 @@ public static class CsvWriter
 ```csharp
 public static class CsvReader
 {
+    public static (string[] Headers, List<string[]> Rows) Read(Stream stream, CsvOptions? options = null);
+    public static (string[] Headers, List<string[]> Rows) Read(byte[] data, CsvOptions? options = null);
+    public static IEnumerable<string[]> ReadRows(Stream stream, CsvOptions? options = null); // streams, one row at a time
+
     public static SpreadsheetModel ReadAsModel(Stream stream, string sheetName = "Sheet1", CsvOptions? options = null);
     public static SpreadsheetModel ReadAsModel(byte[] data, string sheetName = "Sheet1", CsvOptions? options = null);
 }
@@ -87,14 +91,15 @@ For multi-sheet workbooks, CSV can only carry one sheet: write each sheet to its
 ```csharp
 var italian = new CsvOptions
 {
-    Delimiter = ';',             // Italian Excel default
-    DecimalSeparator = ',',      // 1,5 instead of 1.5
-    QuoteChar = '"',
-    LineEnding = "\r\n",         // CRLF (default); "\n" for Unix
-    Encoding = Encoding.UTF8,    // default
-    AlwaysQuote = false,         // quote only when needed
-    WriteByteOrderMark = false,  // UTF-8 no BOM (default)
+    Delimiter = ';',                                // Italian Excel default
+    Culture = CultureInfo.GetCultureInfo("it-IT"),  // 1,5 instead of 1.5
+    DateFormat = "dd/MM/yyyy",
+    NewLine = "\r\n",                               // default: Environment.NewLine
+    Encoding = new UTF8Encoding(false),             // default: UTF-8 without BOM
+    HasHeaders = true,                              // default
+    FormulaProtection = true,                       // default, see above
 };
+// The same three as CsvOptions.Italian. MaxRows and MaxFieldChars bound what the reader accepts.
 
 CsvWriter.Write(fs, book, italian);
 ```
@@ -139,22 +144,38 @@ foreach (var row in sheet.Rows)
 ### Reading with a locale
 
 ```csharp
-var options = new CsvOptions { Delimiter = ';', DecimalSeparator = ',' };
+// Semicolon delimiter, it-IT numbers (1.234,56) and dd/MM/yyyy dates.
 using var fs = File.OpenRead("it-export.csv");
-var book = CsvReader.ReadAsModel(fs, options: options);
+var book = CsvReader.ReadAsModel(fs, options: CsvOptions.Italian);
 ```
 
 ### What the reader handles
 
-- RFC 4180 quoting (`"embedded ""quote"""`, embedded commas, embedded newlines)
-- CRLF, LF, CR line endings
-- UTF-8 with or without BOM
-- Empty rows (skipped)
-- Leading/trailing whitespace preserved inside quoted fields, stripped in unquoted fields (RFC behaviour)
+- RFC 4180 quoting (`"embedded ""quote"""`, embedded delimiters, embedded newlines)
+- CRLF, LF and CR line endings, mixed in one file
+- UTF-8 with or without BOM; bytes that are not UTF-8 are read as U+FFFD, not refused
+- Whitespace kept as it is, quoted or not
+- A quote inside an unquoted field (`a"b`) is kept as a character
+- An empty line is a row with one empty field
+
+`ReadAsModel` types each cell it can: `true`/`false`, an integer (`int`, or `long` when it does not fit), a
+`decimal`, a date in `CsvOptions.DateFormat`, and the text otherwise, all in `CsvOptions.Culture`. `Read` and
+`ReadRows` return the fields as written.
 
 What it doesn't do:
-- Auto-detect delimiter: specify `CsvOptions.Delimiter` if it's not `,`
-- Infer column types: everything comes back as `string` in `Cell.Value`. If you need typed values, convert after reading.
+- Auto-detect the delimiter: set `CsvOptions.Delimiter` if it's not `,`
+
+### A file you did not write
+
+An uploaded file is read or refused, and the refusal is a `FormatException` whose message starts with `CSV`:
+
+- a quoted field still open at the end of the input;
+- a field longer than `CsvOptions.MaxFieldChars` (1,000,000 characters by default);
+- more rows than `CsvOptions.MaxRows` (1,000,000 by default), the streaming `ReadRows` included.
+
+⚠️ Nothing yet bounds the number of fields in one row: a line of delimiters is one row of as many fields
+([#315](https://github.com/pragmatic-design/Pragmatic.Design/issues/315)). The reader is fuzzed
+(`node scripts/fuzz.mjs csv-reader`) and has property tests for these outcomes; anything else it throws is a defect.
 
 ---
 

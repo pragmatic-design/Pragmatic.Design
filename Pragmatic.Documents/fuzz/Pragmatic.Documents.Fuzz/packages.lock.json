@@ -22,6 +22,12 @@
         "resolved": "2.2.0",
         "contentHash": "biITWpwnMR7HUp43lAGU97DWq/4LfyXqqhuOK0Z4IuRP97KjQMOe/GKq3wE1KY21gNrc7OPO9HbAtQUvMKTImA=="
       },
+      "pragmatic.documents.csv": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      },
       "pragmatic.documents.ooxml": {
         "type": "Project"
       },

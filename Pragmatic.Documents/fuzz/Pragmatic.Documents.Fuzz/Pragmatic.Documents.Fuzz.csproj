@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Documents.Xlsx\Pragmatic.Documents.Xlsx.csproj" />
   </ItemGroup>
 
