@@ -187,9 +187,16 @@
           "xunit.extensibility.core": "[2.9.2]"
         }
       },
+      "pragmatic.documents.csv": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      },
       "pragmatic.documents.fuzz": {
         "type": "Project",
         "dependencies": {
+          "Pragmatic.Documents.Csv": "[1.0.0, )",
           "Pragmatic.Documents.Xlsx": "[1.0.0, )",
           "SharpFuzz": "[2.3.0, )"
         }

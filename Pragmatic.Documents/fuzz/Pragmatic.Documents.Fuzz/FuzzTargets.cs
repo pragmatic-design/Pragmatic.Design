@@ -10,6 +10,7 @@ public static class FuzzTargets
 {
     public static IReadOnlyDictionary<string, ReadOnlySpanAction> All { get; } = new Dictionary<string, ReadOnlySpanAction>
     {
+        ["csv-reader"] = CsvReaderTarget.Run,
         ["xlsx-reader"] = XlsxReaderTarget.Run,
     };
 }

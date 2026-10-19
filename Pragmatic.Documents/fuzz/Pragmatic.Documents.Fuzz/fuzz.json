@@ -1,5 +1,8 @@
 {
   "targets": {
+    "csv-reader": {
+      "instrument": ["Pragmatic.Documents.Csv.dll"]
+    },
     "xlsx-reader": {
       "instrument": ["Pragmatic.Documents.Xlsx.dll"]
     }

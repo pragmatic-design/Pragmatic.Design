@@ -62,6 +62,11 @@
 *.otf binary
 *.eot binary
 
+# Binary — fuzz inputs. A seed or a regression is bytes under test, whatever its extension: a CSV seed's CR LF is
+# the case it exists for, and text normalization would turn it into another input.
+**/fuzz/*/Corpus/** binary
+**/fuzz/*/Regressions/** binary
+
 # Binary — build / signing artifacts
 *.snk binary
 *.nupkg binary
