@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
+import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, pinnedILLinkVersion, solutionProjects } from './lock-files.mjs';
 
 const PROPS = `<Project>
   <PropertyGroup>
@@ -14,12 +14,24 @@ const PROPS = `<Project>
   </PropertyGroup>
 </Project>`;
 
+const pin = (version) => `<Project>
+  <Target Name="PinILLinkPack" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownILLinkPack Condition="'%(Identity)' == 'Microsoft.NET.ILLink.Tasks' AND '%(TargetFramework)' == 'net10.0'">
+        <ILLinkPackVersion>${version}</ILLinkPackVersion>
+      </KnownILLinkPack>
+    </ItemGroup>
+  </Target>
+</Project>`;
+
 const WHOLE = {
   projects: ['A/src/A/A.csproj', 'A/tests/A.Tests/A.Tests.csproj'],
   lockFiles: ['A/src/A/packages.lock.json', 'A/tests/A.Tests/packages.lock.json'],
   workflows: [{ path: '.github/workflows/ci.yml', text: '      - run: dotnet restore X.slnx --locked-mode\n' }],
   buildProps: PROPS,
+  buildTargets: pin('10.0.11'),
   globalJson: '{ "sdk": { "version": "10.0.303", "rollForward": "feature" } }',
+  bundledILLink: '10.0.11',
   ilLinkVersions: new Map([['10.0.11', 2]]),
 };
 
@@ -105,6 +117,46 @@ test('lock files that resolve two ILLink.Tasks versions are reported: two SDKs w
   assert.deepEqual(lockFileProblems({ ...WHOLE, ilLinkVersions }), [
     'the lock files resolve Microsoft.NET.ILLink.Tasks at more than one version (10.0.11 in 200, 10.0.12 in 1): written by different SDKs',
   ]);
+});
+
+// SDK 10.0.303 adds ILLink.Tasks 10.0.11 and 10.0.402 adds 10.0.13: with the version left to the SDK, an IDE on
+// the newer one rewrote the lock files in the background (#301).
+test('the trimmer left to the SDK is reported: the lock files would record whichever SDK restored last', () => {
+  assert.deepEqual(lockFileProblems({ ...WHOLE, buildTargets: '<Project />' }), [
+    'Directory.Build.targets does not pin Microsoft.NET.ILLink.Tasks: the lock files would record whichever SDK restored last',
+  ]);
+});
+
+test('a pin the SDK in global.json does not bundle is reported: the SDK moved and the trimmer stayed behind', () => {
+  assert.deepEqual(lockFileProblems({ ...WHOLE, bundledILLink: '10.0.13' }), [
+    'Directory.Build.targets pins Microsoft.NET.ILLink.Tasks 10.0.11, but SDK 10.0.303 in global.json bundles 10.0.13: move the pin with the SDK',
+  ]);
+});
+
+test('without that SDK installed the pin is not compared with it: only CI is sure to have it', () => {
+  assert.deepEqual(lockFileProblems({ ...WHOLE, bundledILLink: null }), []);
+});
+
+test('lock files that resolve a version other than the pin are reported: they were written before it moved', () => {
+  assert.deepEqual(lockFileProblems({ ...WHOLE, ilLinkVersions: new Map([['10.0.13', 2]]) }), [
+    'the lock files resolve Microsoft.NET.ILLink.Tasks 10.0.13, but Directory.Build.targets pins 10.0.11: regenerate them',
+  ]);
+});
+
+test('the pinned version is read from the targets, and the bundled one from the SDK for net10.0 only', () => {
+  assert.equal(pinnedILLinkVersion(pin('10.0.11')), '10.0.11');
+  assert.equal(pinnedILLinkVersion('<Project />'), null);
+
+  const bundled = `<Project>
+    <KnownILLinkPack Include="Microsoft.NET.ILLink.Tasks"
+                     TargetFramework="net10.0"
+                     ILLinkPackVersion="10.0.11" />
+    <KnownILLinkPack Include="Microsoft.NET.ILLink.Tasks"
+                     TargetFramework="net9.0"
+                     ILLinkPackVersion="9.0.19" />
+  </Project>`;
+  assert.equal(bundledILLinkVersion(bundled), '10.0.11');
+  assert.equal(bundledILLinkVersion('<Project />'), null);
 });
 
 test('the ILLink.Tasks version a lock file resolves, or null without it', () => {

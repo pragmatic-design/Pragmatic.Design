@@ -77,7 +77,9 @@ This was first decided the other way (2026-10-03), and the costs measured then s
   newer patch writes different lockfiles and every locked restore fails. So CI runs the exact SDK in
   `global.json`: an SDK update is a change of its own that rewrites those files in the same commit, and the
   full tier fails when the lockfiles disagree on the ILLink version or `rollForward` would let CI install
-  another SDK.
+  another SDK. Since #301 that version is pinned in `Directory.Build.targets`, so a newer local SDK (or an
+  IDE restoring with one) writes the same lockfiles; the pin moves with `global.json`, and the full tier
+  fails when the two disagree.
 - `rollForward` was first `patch` (2026-10-11). A clone then failed outright on a machine whose only .NET 10
   SDK belonged to a newer feature band, which is any machine updated since. It is now `feature`:
   `setup-dotnet` still installs the exact version (it moves only for the `latest…` policies), and a newer

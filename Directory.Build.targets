@@ -5,6 +5,23 @@
        ============================================ -->
 
   <!-- ============================================
+       The trimmer package, pinned
+       ============================================ -->
+
+  <!-- The SDK adds Microsoft.NET.ILLink.Tasks to every trimmable project at the version of the runtime it
+       bundles, so the lock files recorded whichever SDK restored last: 10.0.303 writes 10.0.11, 10.0.402
+       writes 10.0.13, and an IDE running the newer one rewrote them in the background (#301). Pinned here,
+       the lock files no longer depend on the SDK. It moves with the SDK in global.json, and the gate fails
+       when the two disagree (scripts/lock-files.mjs). -->
+  <Target Name="PinILLinkPack" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownILLinkPack Condition="'%(Identity)' == 'Microsoft.NET.ILLink.Tasks' AND '%(TargetFramework)' == 'net10.0'">
+        <ILLinkPackVersion>10.0.11</ILLinkPackVersion>
+      </KnownILLinkPack>
+    </ItemGroup>
+  </Target>
+
+  <!-- ============================================
        Source Generator Packaging
        ============================================ -->
 

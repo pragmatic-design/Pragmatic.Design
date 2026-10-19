@@ -154,9 +154,10 @@ Named in `global.json`:
 }
 ```
 
-CI runs exactly this version, because the NuGet lock files record a package whose version follows the SDK
-(`docs/TESTING.md`, "Lock files"). A clone builds with any newer 10.0 SDK. Updating the SDK means changing
-this file and regenerating the lock files in the same commit:
+CI runs exactly this version. A clone builds with any newer 10.0 SDK, and writes the same NuGet lock files:
+the trimmer package, whose version followed the SDK, is pinned in `Directory.Build.targets`
+(`docs/TESTING.md`, "Lock files"). Updating the SDK means changing this file, moving that pin to the version
+the new SDK bundles, and regenerating the lock files in the same commit:
 `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
 
 All runtime libraries target **net10.0**. Source generators target **netstandard2.0** (Roslyn requirement).

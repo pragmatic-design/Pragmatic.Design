@@ -77,7 +77,7 @@ import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
-import { ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
+import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -1901,12 +1901,15 @@ function everyRestoreIsLocked() {
     if (version) ilLinkVersions.set(version, (ilLinkVersions.get(version) ?? 0) + 1);
   }
 
+  const globalJson = readFileSync('global.json', 'utf-8');
   const problems = lockFileProblems({
     projects,
     lockFiles,
     workflows,
     buildProps: readFileSync('Directory.Build.props', 'utf-8'),
-    globalJson: readFileSync('global.json', 'utf-8'),
+    buildTargets: readFileSync('Directory.Build.targets', 'utf-8'),
+    globalJson,
+    bundledILLink: bundledILLinkOf(JSON.parse(globalJson).sdk?.version),
     ilLinkVersions,
   });
 
@@ -1920,6 +1923,19 @@ function everyRestoreIsLocked() {
   if (problems.length > 20) console.log(dim(`    … and ${problems.length - 20} more`));
   console.log(dim(`    regenerate with: dotnet restore ${SLN} --force-evaluate, and commit the lock files`));
   return false;
+}
+
+/**
+ * The ILLink.Tasks version the SDK `version` bundles, read from its install, or null when that SDK is not
+ * installed: a clone may build on a newer one, and CI, which installs the exact one, compares.
+ */
+function bundledILLinkOf(version) {
+  if (!version) return null;
+  const sdks = execSync('dotnet --list-sdks', { encoding: 'utf-8' });
+  const line = sdks.split('\n').find((l) => l.startsWith(`${version} [`));
+  if (!line) return null;
+  const props = join(line.slice(line.indexOf('[') + 1, line.lastIndexOf(']')), version, 'Microsoft.NETCoreSdk.BundledVersions.props');
+  return existsSync(props) ? bundledILLinkVersion(readFileSync(props, 'utf-8')) : null;
 }
 
 function suiteRunnerOverlaps() {

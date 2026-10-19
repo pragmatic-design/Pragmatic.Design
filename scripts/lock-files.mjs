@@ -11,16 +11,16 @@
  * run on their own. The workflows' explicit `dotnet restore` lines say `--locked-mode` as well, so the step that
  * restores reads as locked where it is written.
  *
- * The SDK is part of what a lock file records. It adds `Microsoft.NET.ILLink.Tasks` to the trimmable projects at the
- * version of the runtime it bundles, so a newer SDK resolves a newer one and every locked restore fails. So CI has to
- * run the exact SDK in `global.json`, and every lock file has to agree on one ILLink version: two of them mean the
- * files were written by two SDKs.
+ * The SDK was part of what a lock file recorded. It adds `Microsoft.NET.ILLink.Tasks` to the trimmable projects at
+ * the version of the runtime it bundles: SDK 10.0.303 writes 10.0.11, 10.0.402 writes 10.0.13. Any restore by a newer
+ * SDK rewrote every lock file, and an IDE that runs one in the background did it with nobody asking (#301). So
+ * `Directory.Build.targets` pins that version, and the lock files no longer depend on the SDK that restores them.
+ * The pin moves with the SDK in `global.json`. When that exact SDK is installed, as it always is in CI, the check
+ * compares the two, and every lock file has to resolve the pinned version.
  *
- * `setup-dotnet` installs that exact version unless `rollForward` starts with `latest`, which it turns into "the
+ * `setup-dotnet` installs the exact SDK version unless `rollForward` starts with `latest`, which it turns into "the
  * newest 10.0" and friends. `rollForward: feature` keeps CI exact and still lets a clone build with any newer 10.0
- * SDK; `patch` used to be required, and stopped every contributor whose SDK was of a newer feature band. A newer
- * local SDK rewrites the lock files on restore: those changes are not committed, and CI's locked restore says so if
- * they are.
+ * SDK; `patch` used to be required, and stopped every contributor whose SDK was of a newer feature band.
  *
  * Regenerate after changing a package, or the SDK in `global.json`:
  * `dotnet restore Pragmatic.Design.slnx --force-evaluate`.
@@ -36,13 +36,18 @@
  *   lockFiles: string[],
  *   workflows: { path: string, text: string }[],
  *   buildProps: string,
+ *   buildTargets: string,
  *   globalJson: string,
+ *   bundledILLink: string | null,
  *   ilLinkVersions: Map<string, number>,
- * }} input paths with forward slashes, relative to the repository root; `ilLinkVersions` counts the lock files
- *   per ILLink.Tasks version they resolve
+ * }} input paths with forward slashes, relative to the repository root; `bundledILLink` is the ILLink.Tasks
+ *   version the SDK named in `global.json` bundles, null when that SDK is not installed; `ilLinkVersions` counts the
+ *   lock files per ILLink.Tasks version they resolve
  * @returns {string[]}
  */
-export function lockFileProblems({ projects, lockFiles, workflows, buildProps, globalJson, ilLinkVersions }) {
+export function lockFileProblems({
+  projects, lockFiles, workflows, buildProps, buildTargets, globalJson, bundledILLink, ilLinkVersions,
+}) {
   const problems = [];
   const dir = (path) => path.slice(0, path.lastIndexOf('/'));
   const projectDirs = new Set(projects.map(dir));
@@ -81,7 +86,51 @@ export function lockFileProblems({ projects, lockFiles, workflows, buildProps, g
     problems.push(`the lock files resolve Microsoft.NET.ILLink.Tasks at more than one version (${counts}): written by different SDKs`);
   }
 
+  const pinned = pinnedILLinkVersion(buildTargets);
+  if (pinned === null) {
+    problems.push('Directory.Build.targets does not pin Microsoft.NET.ILLink.Tasks: the lock files would record whichever SDK restored last');
+    return problems;
+  }
+
+  if (bundledILLink !== null && bundledILLink !== pinned)
+    problems.push(`Directory.Build.targets pins Microsoft.NET.ILLink.Tasks ${pinned}, but SDK ${sdk.version} in global.json bundles ${bundledILLink}: move the pin with the SDK`);
+
+  if (ilLinkVersions.size === 1) {
+    const [resolved] = ilLinkVersions.keys();
+    if (resolved !== pinned)
+      problems.push(`the lock files resolve Microsoft.NET.ILLink.Tasks ${resolved}, but Directory.Build.targets pins ${pinned}: regenerate them`);
+  }
+
   return problems;
+}
+
+/**
+ * The version `Directory.Build.targets` pins for `Microsoft.NET.ILLink.Tasks` on net10.0, or null when it pins none.
+ *
+ * @param {string} buildTargets the file's text
+ * @returns {string | null}
+ */
+export function pinnedILLinkVersion(buildTargets) {
+  const match = buildTargets.match(
+    /<KnownILLinkPack\s+Condition="[^"]*Microsoft\.NET\.ILLink\.Tasks[^"]*net10\.0[^"]*">\s*<ILLinkPackVersion>([^<]+)<\/ILLinkPackVersion>/,
+  );
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * The `Microsoft.NET.ILLink.Tasks` version an SDK bundles for net10.0, from its
+ * `Microsoft.NETCoreSdk.BundledVersions.props`, or null when the file names none.
+ *
+ * @param {string} bundledVersionsProps the file's text
+ * @returns {string | null}
+ */
+export function bundledILLinkVersion(bundledVersionsProps) {
+  for (const [item] of bundledVersionsProps.matchAll(/<KnownILLinkPack\b[^>]*\/>/g)) {
+    if (!/TargetFramework="net10\.0"/.test(item)) continue;
+    const version = item.match(/ILLinkPackVersion="([^"]+)"/);
+    if (version) return version[1];
+  }
+  return null;
 }
 
 /**
