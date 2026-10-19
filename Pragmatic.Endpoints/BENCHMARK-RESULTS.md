@@ -18,7 +18,7 @@ dotnet run -c Release -- --filter "*ProbeBenchmarks*"       # the subtraction pr
 | Harness | BenchmarkDotNet 0.14.0, default job, `[MemoryDiagnoser]` |
 
 The reports are committed in [`benchmarks/reports/`](benchmarks/reports/): `final-152_*` for the current
-numbers, `final-150_*` for the first run into a kept buffer, `final-130_*` for the last run in which every competitor returned an array, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes, and the per-workload
+numbers, `final-150_*` for the first run into a kept buffer, `final-130_*` for the last run in which every competitor returned an array, `final-131_*` and `probe-131-*` for #131, `probe-130-*` for the string probes (`probe-303-*` for the same probe without a copy of its output), and the per-workload
 and `ab-*` files of 2026-10-08 for the numbers before #131. A number here that does not appear there is a
 mistake.
 
@@ -191,6 +191,13 @@ writing the same strings without the writer, with its very bytes, were measured 
 
 None is ahead of the writer in every run: `Utf8JsonWriter`'s string path is as fast as anything built on the
 same encoder calls. What is left is a string path of our own, transcoding and checking in one pass: #152.
+
+⚠️ Every row of these four runs also timed and allocated a copy of its 216 KB output, which the probe returned
+as an array. #303 took the copy out, as #150 had for the other benchmarks: one local run afterwards
+(`probe-303-strings_*`, 2026-10-19) allocates 0 B on every row, with `Writer_WriteStringValue` at 148.2 μs,
+`Raw_AsciiCopy` 144.3, `Raw_AsciiOrUtf16Check` 178.6, `Raw_AsciiOrEncoded` 205.3, `Raw_AsciiOrUtf8Check` 206.8,
+`Raw_CheckedCopy` 214.2 and `Minus_Text` 29.3. The order is the same, and so is the conclusion: only the ASCII
+copy is level with the writer, and nothing is ahead of it.
 
 ### Runs of what the encoder cannot change (#131)
 
