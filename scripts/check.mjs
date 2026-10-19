@@ -55,6 +55,8 @@
  *
  * Exit code is 0 only if everything requested passed.
  */
+// First, so that every relative path below and in what follows means the repository (#302).
+import './lib/repo-root.mjs';
 import { execSync, spawnSync } from 'node:child_process';
 import { runAsync, runPool } from './lib/spawn-async.mjs';
 import { acquire as acquireRunLock, describeHolder } from './lib/run-lock.mjs';
@@ -2709,6 +2711,7 @@ function sourceChecks() {
     && nodeTestCases('scripts/benchmarks.test.mjs', 'the allocation ratchet refuses one allocation more')
     && nodeTestCases('scripts/benchmark-selection.test.mjs', 'a pull request runs every benchmark its change reaches')
     && nodeTestCases('scripts/ci-paths.test.mjs', 'only Markdown that nothing builds skips the build in CI')
+    && nodeTestCases('scripts/check-root.test.mjs', 'the gate reads its own repository from any directory')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()
