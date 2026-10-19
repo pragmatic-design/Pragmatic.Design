@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Text.Json;
 using Pragmatic.Agent.Protocol.Serialization;
 
 namespace Pragmatic.Agent.Protocol;
@@ -45,10 +46,16 @@ public static class FrameCodec
             return (null, 0);
 
         var payload = buffer.Slice(4, length);
-        var message = (format ?? DefaultFormat).Deserialize<AgentMessage>(payload);
+        var message = Message((format ?? DefaultFormat).Deserialize<AgentMessage>(payload));
 
         return (message, 4 + length);
     }
+
+    // A payload that reads as no message at all (the JSON literal null) is refused like any other payload that is not
+    // a message. Returned as null it said "not enough bytes" with bytes consumed, and ReadFrameAsync's null said
+    // "end of stream": a peer could end a client's read loop with an eight-byte frame (#307).
+    private static AgentMessage Message(AgentMessage? message)
+        => message ?? throw new JsonException("The frame's payload is not a message.");
 
     /// <summary>
     ///     Reads a complete frame from a Stream asynchronously.
@@ -93,7 +100,7 @@ public static class FrameCodec
             if (!await ReadExactlyAsync(stream, payloadBuffer.AsMemory(0, length), ct, allowCancellation: false).ConfigureAwait(false))
                 return null;
 
-            return (format ?? DefaultFormat).Deserialize<AgentMessage>(payloadBuffer.AsSpan(0, length));
+            return Message((format ?? DefaultFormat).Deserialize<AgentMessage>(payloadBuffer.AsSpan(0, length)));
         }
         finally
         {

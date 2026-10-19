@@ -291,6 +291,39 @@ that measures nothing fails the run, named in the report: BenchmarkDotNet skips 
 `[GlobalSetup]` throws and still exits 0, and a class that never ran has no baseline entry to go
 missing from (#183).
 
+## Fuzzing
+
+The parsers that read untrusted input (`docs/security/untrusted-input.md`) are fuzzed two ways (#158):
+
+- **Property tests with FsCheck**, in the module's hermetic suite, so every gate runs them. Each property states
+  the parser's declared outcomes (a value, or its own refusal) and holds for arbitrary input.
+- **Coverage-guided fuzzing with SharpFuzz and libFuzzer**, every night (`.github/workflows/fuzz.yml`).
+
+A harness is a `*.Fuzz` project in the module's `fuzz/` folder (`Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz`):
+
+- its `fuzz.json` names each target and the assemblies it reaches;
+- `FuzzTargets.All` maps the same names to code;
+- `Corpus/<target>/` holds the seeds a run starts from;
+- `Regressions/<target>/` holds every input that once crashed.
+
+The module's tests check that the two lists of names agree, and replay every seed and regression through its
+harness, so a fixed crash stays fixed in the gate.
+
+```bash
+node scripts/fuzz.mjs --list
+node scripts/fuzz.mjs frame-codec --seconds 300
+```
+
+libFuzzer needs Linux. Elsewhere the script runs itself in the .NET SDK image, on a copy of the repository, and
+leaves the grown corpus and any crash under `artifacts/fuzz/<target>/`.
+
+A crash fails the run. Its input goes under `Regressions/<target>/` with the fix, in the same change.
+
+**Adding a target:**
+1. Write a harness that returns on the parser's declared outcomes and throws on anything else.
+2. Add it to `FuzzTargets.All` and `fuzz.json`.
+3. Seed `Corpus/<target>/` with a few valid inputs.
+4. Write the property tests beside the module's other tests.
 
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you
 commit.

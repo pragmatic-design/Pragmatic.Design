@@ -152,6 +152,9 @@
 
     <IsSample>false</IsSample>
     <IsSample Condition="$(MSBuildProjectName.EndsWith('.Samples'))">true</IsSample>
+
+    <IsFuzz>false</IsFuzz>
+    <IsFuzz Condition="$(MSBuildProjectName.EndsWith('.Fuzz'))">true</IsFuzz>
   </PropertyGroup>
 
   <!-- ============================================
@@ -273,6 +276,23 @@
   </ItemGroup>
 
   <!-- ============================================
+       Fuzz Projects
+       ============================================ -->
+
+  <!-- The harnesses scripts/fuzz.mjs instruments and runs under libFuzzer (#158). An executable, published, never
+       packed: SharpFuzz is a test-only dependency and reaches no package. -->
+  <PropertyGroup Condition="'$(IsFuzz)' == 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>true</IsPublishable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsFuzz)' == 'true'">
+    <PackageReference Include="SharpFuzz" />
+  </ItemGroup>
+
+  <!-- ============================================
        Sample Projects
        ============================================ -->
 
@@ -293,7 +313,7 @@
        ============================================ -->
 
   <!-- Runtime Library Projects (default) -->
-  <PropertyGroup Condition="'$(IsGenerator)' != 'true' AND '$(IsAnalyzer)' != 'true' AND '$(IsTest)' != 'true' AND '$(IsBenchmark)' != 'true' AND '$(IsSample)' != 'true'">
+  <PropertyGroup Condition="'$(IsGenerator)' != 'true' AND '$(IsAnalyzer)' != 'true' AND '$(IsTest)' != 'true' AND '$(IsBenchmark)' != 'true' AND '$(IsSample)' != 'true' AND '$(IsFuzz)' != 'true'">
     <IsRuntimeLib>true</IsRuntimeLib>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>true</IsPackable>

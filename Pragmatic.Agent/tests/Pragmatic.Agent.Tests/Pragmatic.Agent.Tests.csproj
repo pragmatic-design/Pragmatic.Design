@@ -12,4 +12,16 @@
     <ProjectReference Include="..\..\src\Pragmatic.Agent.Discovery\Pragmatic.Agent.Discovery.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FsCheck" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the gate (#307). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Agent.Fuzz\Pragmatic.Agent.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Agent.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Agent.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Agent.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

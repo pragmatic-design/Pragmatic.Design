@@ -1,0 +1,74 @@
+name: Fuzz
+
+# Coverage-guided fuzzing of the .NET parsers that read untrusted input (#158, scripts/fuzz.mjs): every harness,
+# for a fixed time, every night. Not on pull requests: the gate replays every kept input (the seeds and each input
+# that once crashed) on every change, and the property tests run there too; this is where new inputs are found.
+#
+# The corpus each harness grows is kept between runs in the cache, so a night starts where the last one stopped.
+# A crash fails the run and uploads its input: commit it under the harness's Regressions/ folder with the fix.
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds per harness
+        required: true
+        default: '600'
+  schedule:
+    - cron: '0 2 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/fuzz.yml
+      - scripts/fuzz.mjs
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz every harness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # Restored from the newest run, saved under this one: each night adds to the last.
+      - name: Corpus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: artifacts/fuzz/*/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: fuzz-corpus-
+
+      # A pull request that changes the harness runs it briefly, to prove the run itself works.
+      - name: Fuzz
+        run: node scripts/fuzz.mjs --all --seconds ${{ inputs.seconds || (github.event_name == 'pull_request' && '60') || '600' }}
+
+      - name: Upload crashes
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-crashes
+          path: artifacts/fuzz/*/crashes/
+          if-no-files-found: warn

@@ -827,6 +827,11 @@
     <Project Path="Pragmatic.Result/benchmarks/Pragmatic.Result.Benchmarks/Pragmatic.Result.Benchmarks.csproj" />
   </Folder>
 
+  <!-- ══════════════════════════════════════════════════════ FUZZ -->
+  <Folder Name="/Fuzz/">
+    <Project Path="Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz/Pragmatic.Agent.Fuzz.csproj" />
+  </Folder>
+
   <!-- ══════════════════════════════════════════════════════ TESTS -->
   <Folder Name="/Tests/">
     <Project Path="Pragmatic.Abstractions/tests/Pragmatic.Abstractions.Analyzers.Tests/Pragmatic.Abstractions.Analyzers.Tests.csproj" />

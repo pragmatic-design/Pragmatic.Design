@@ -1,0 +1,7 @@
+{
+  "targets": {
+    "frame-codec": {
+      "instrument": ["Pragmatic.Agent.Protocol.dll"]
+    }
+  }
+}
