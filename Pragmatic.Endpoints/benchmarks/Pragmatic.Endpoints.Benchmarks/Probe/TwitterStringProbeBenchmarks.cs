@@ -31,21 +31,21 @@ public class TwitterStringProbeBenchmarks
         _strings = TwitterStrings.Read();
         _writer = new Utf8JsonWriter(_buffer, GeneratedJsonDefaults.ResponseWriterOptions);
 
-        var expected = Writer_WriteStringValue();
-        if (!expected.AsSpan().SequenceEqual(Raw_CheckedCopy()))
+        var expected = Written(Writer_WriteStringValue());
+        if (!expected.AsSpan().SequenceEqual(Written(Raw_CheckedCopy())))
             throw new InvalidOperationException($"{nameof(Raw_CheckedCopy)} does not write the writer's bytes.");
-        if (!expected.AsSpan().SequenceEqual(Raw_AsciiCopy()))
+        if (!expected.AsSpan().SequenceEqual(Written(Raw_AsciiCopy())))
             throw new InvalidOperationException($"{nameof(Raw_AsciiCopy)} does not write the writer's bytes.");
-        if (!expected.AsSpan().SequenceEqual(Raw_AsciiOrEncoded()))
+        if (!expected.AsSpan().SequenceEqual(Written(Raw_AsciiOrEncoded())))
             throw new InvalidOperationException($"{nameof(Raw_AsciiOrEncoded)} does not write the writer's bytes.");
-        if (!expected.AsSpan().SequenceEqual(Raw_AsciiOrUtf8Check()))
+        if (!expected.AsSpan().SequenceEqual(Written(Raw_AsciiOrUtf8Check())))
             throw new InvalidOperationException($"{nameof(Raw_AsciiOrUtf8Check)} does not write the writer's bytes.");
-        if (!expected.AsSpan().SequenceEqual(Raw_AsciiOrUtf16Check()))
+        if (!expected.AsSpan().SequenceEqual(Written(Raw_AsciiOrUtf16Check())))
             throw new InvalidOperationException($"{nameof(Raw_AsciiOrUtf16Check)} does not write the writer's bytes.");
     }
 
     [Benchmark(Baseline = true)]
-    public byte[] Writer_WriteStringValue()
+    public int Writer_WriteStringValue()
     {
         Start();
         foreach (var text in _strings)
@@ -54,7 +54,7 @@ public class TwitterStringProbeBenchmarks
     }
 
     [Benchmark]
-    public byte[] Raw_CheckedCopy()
+    public int Raw_CheckedCopy()
     {
         Start();
         var encoder = GeneratedJsonDefaults.ResponseEncoder;
@@ -81,7 +81,7 @@ public class TwitterStringProbeBenchmarks
     ///     else goes to the writer. Conservative by construction: a character this does not know about is the writer's.
     /// </summary>
     [Benchmark]
-    public byte[] Raw_AsciiCopy()
+    public int Raw_AsciiCopy()
     {
         Start();
         foreach (var text in _strings)
@@ -108,7 +108,7 @@ public class TwitterStringProbeBenchmarks
     ///     do with a string; one raw value per string here, so the comparison is per string.
     /// </summary>
     [Benchmark]
-    public byte[] Raw_AsciiOrEncoded()
+    public int Raw_AsciiOrEncoded()
     {
         Start();
         var encoder = GeneratedJsonDefaults.ResponseEncoder;
@@ -137,7 +137,7 @@ public class TwitterStringProbeBenchmarks
     ///     when the check finds something.
     /// </summary>
     [Benchmark]
-    public byte[] Raw_AsciiOrUtf8Check()
+    public int Raw_AsciiOrUtf8Check()
     {
         Start();
         var encoder = GeneratedJsonDefaults.ResponseEncoder;
@@ -170,7 +170,7 @@ public class TwitterStringProbeBenchmarks
     ///     transcoded, and escaped by the encoder only when the check finds something.
     /// </summary>
     [Benchmark]
-    public unsafe byte[] Raw_AsciiOrUtf16Check()
+    public unsafe int Raw_AsciiOrUtf16Check()
     {
         Start();
         var encoder = GeneratedJsonDefaults.ResponseEncoder;
@@ -211,7 +211,7 @@ public class TwitterStringProbeBenchmarks
 
     /// <summary>Subtraction: the same array with every string empty, already encoded.</summary>
     [Benchmark]
-    public byte[] Minus_Text()
+    public int Minus_Text()
     {
         Start();
         var empty = JsonEncodedText.Encode("");
@@ -227,10 +227,13 @@ public class TwitterStringProbeBenchmarks
         _writer.WriteStartArray();
     }
 
-    private byte[] End()
+    // The count, not a copy: a copy of the 216 KB output was timed and allocated by every row (#303).
+    private int End()
     {
         _writer.WriteEndArray();
         _writer.Flush();
-        return _buffer.WrittenSpan.ToArray();
+        return _buffer.WrittenCount;
     }
+
+    private byte[] Written(int count) => _buffer.WrittenSpan[..count].ToArray();
 }
