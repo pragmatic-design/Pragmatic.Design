@@ -77,6 +77,11 @@ public sealed class DateRangeConverter : JsonConverter<DateRange>
         if (!start.HasValue || !end.HasValue)
             throw new JsonException("DateRange requires both 'start' and 'end' properties.");
 
+        // The constructor's ArgumentException is a programmer's mistake; in a body it is the sender's, and the
+        // string form above already refuses it.
+        if (start.Value > end.Value)
+            throw new JsonException($"DateRange start '{start.Value}' is after its end '{end.Value}'.");
+
         return new DateRange(start.Value, end.Value);
     }
 

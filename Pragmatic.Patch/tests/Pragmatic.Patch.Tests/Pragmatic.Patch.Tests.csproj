@@ -12,12 +12,21 @@
     <!-- Generator testing -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+    <PackageReference Include="FsCheck" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Patch\Pragmatic.Patch.csproj" />
     <!-- Direct reference to test the generator (we run it manually via CSharpGeneratorDriver) -->
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the gate (#311). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Patch.Fuzz\Pragmatic.Patch.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Patch.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Patch.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Patch.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

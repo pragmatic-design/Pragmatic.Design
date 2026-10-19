@@ -44,6 +44,22 @@ public class TimeZoneResolverTests
         zone.Should().BeNull();
     }
 
+    // On Linux these name directories of the zoneinfo folder, which FindSystemTimeZoneById answers with a
+    // SecurityException; a request body carried one to a 500 (#311). Elsewhere they are simply unknown, so this
+    // discriminates only where the gate runs on Linux.
+    [Theory]
+    [InlineData("Europe")]
+    [InlineData("Europe/")]
+    [InlineData("America/Argentina")]
+    public void An_id_that_names_a_zoneinfo_directory_is_not_a_time_zone(string id)
+    {
+        TimeZoneResolver.TryGetTimeZone(id, out var zone).Should().BeFalse();
+        zone.Should().BeNull();
+
+        var act = () => TimeZoneResolver.GetTimeZone(id);
+        act.Should().Throw<TimeZoneNotFoundException>();
+    }
+
     [Fact]
     public void TryGetTimeZone_ValidIana_ReturnsTrue()
     {

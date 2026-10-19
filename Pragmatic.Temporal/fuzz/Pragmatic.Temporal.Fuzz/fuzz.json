@@ -1,0 +1,10 @@
+{
+  "targets": {
+    "temporal-json": {
+      "instrument": ["Pragmatic.Temporal.dll", "Pragmatic.Temporal.Json.dll"]
+    },
+    "temporal-parse": {
+      "instrument": ["Pragmatic.Temporal.dll"]
+    }
+  }
+}

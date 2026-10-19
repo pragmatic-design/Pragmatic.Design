@@ -33,6 +33,15 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <!-- A request through the culture middleware to a response, for what only the pipeline shows. -->
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="FsCheck" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the gate (#311). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Internationalization.Fuzz\Pragmatic.Internationalization.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Internationalization.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Internationalization.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Internationalization.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 

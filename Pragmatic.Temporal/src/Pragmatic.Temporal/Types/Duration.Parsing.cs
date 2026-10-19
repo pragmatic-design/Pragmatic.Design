@@ -106,22 +106,25 @@ public readonly partial struct Duration
             var unit = span[numEnd];
             span = span[(numEnd + 1)..];
 
-            var ticks = unit switch
+            var ticksPerUnit = unit switch
             {
-                'D' when !inTimePart => (long)(value * TimeSpan.TicksPerDay),
-                'H' when inTimePart => (long)(value * TimeSpan.TicksPerHour),
-                'M' when inTimePart => (long)(value * TimeSpan.TicksPerMinute),
-                'S' when inTimePart => (long)(value * TimeSpan.TicksPerSecond),
-                _ => -1L
+                'D' when !inTimePart => TimeSpan.TicksPerDay,
+                'H' when inTimePart => TimeSpan.TicksPerHour,
+                'M' when inTimePart => TimeSpan.TicksPerMinute,
+                'S' when inTimePart => TimeSpan.TicksPerSecond,
+                _ => 0L
             };
 
-            if (ticks < 0)
+            // A length a TimeSpan cannot hold is not a duration. Unchecked, the cast to long clamps it and the sum
+            // wraps, and the text reads as some other length.
+            var ticks = value * ticksPerUnit;
+            if (ticksPerUnit == 0 || ticks >= long.MaxValue || (long)ticks > long.MaxValue - totalTicks)
             {
                 result = default;
                 return false;
             }
 
-            totalTicks += ticks;
+            totalTicks += (long)ticks;
         }
 
         result = new Duration(TimeSpan.FromTicks(negative ? -totalTicks : totalTicks));

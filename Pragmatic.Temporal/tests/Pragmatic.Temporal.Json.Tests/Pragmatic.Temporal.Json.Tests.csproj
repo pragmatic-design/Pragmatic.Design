@@ -10,4 +10,8 @@
     <ProjectReference Include="..\..\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FsCheck" />
+  </ItemGroup>
+
 </Project>

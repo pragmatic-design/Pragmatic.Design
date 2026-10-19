@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="FsCheck" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +16,14 @@
     <ProjectReference Include="..\..\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Temporal.AspNetCore\Pragmatic.Temporal.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Temporal.EFCore\Pragmatic.Temporal.EFCore.csproj" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the gate (#311). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Temporal.Fuzz\Pragmatic.Temporal.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Temporal.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Temporal.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Temporal.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

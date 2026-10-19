@@ -23,4 +23,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Internationalization.Samples/Pragmatic.Internationalization.Samples.csproj" />
   </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Internationalization.Fuzz/Pragmatic.Internationalization.Fuzz.csproj" />
+  </Folder>
 </Solution>

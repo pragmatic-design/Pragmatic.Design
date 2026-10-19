@@ -1,0 +1,7 @@
+{
+  "targets": {
+    "i18n-json": {
+      "instrument": ["Pragmatic.Internationalization.dll", "Pragmatic.Internationalization.AspNetCore.dll"]
+    }
+  }
+}

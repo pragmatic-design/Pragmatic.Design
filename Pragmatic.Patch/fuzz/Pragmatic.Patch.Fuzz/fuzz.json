@@ -1,0 +1,7 @@
+{
+  "targets": {
+    "optional-converter": {
+      "instrument": ["Pragmatic.Patch.dll"]
+    }
+  }
+}

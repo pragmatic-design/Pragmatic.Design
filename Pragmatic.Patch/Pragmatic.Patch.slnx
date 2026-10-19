@@ -19,6 +19,9 @@
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Patch.Samples/Pragmatic.Patch.Samples.csproj" />
   </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Patch.Fuzz/Pragmatic.Patch.Fuzz.csproj" />
+  </Folder>
 
   <!-- Unified source generator -->
   <Project Path="../Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Pragmatic.SourceGenerator.csproj" />

@@ -110,6 +110,8 @@ Writing always produces the object form. Reading accepts:
 
 1. Object: `{"start":"2026-01-01","end":"2026-03-31"}` (property names case-insensitive; both required)
 2. String: `"2026-01-01/2026-03-31"`
+
+In both forms an end before the start is a `JsonException`.
 3. `null` → `DateRange.Empty` for non-nullable `DateRange`; `null` for `DateRange?`
 
 Mind the asymmetry in form 3: a round-trip of `DateRange.Empty` does not produce `null`, and a `null` in the payload silently becomes `Empty` on a non-nullable property.

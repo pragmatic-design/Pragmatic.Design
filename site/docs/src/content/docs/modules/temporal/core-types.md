@@ -421,7 +421,8 @@ Duration.TryParse(s, out var d);
 Limits of the format (by design): days are the largest unit emitted/accepted, with **no weeks, no
 years/months** (those are calendar concepts → `Period`); `H`/`M`/`S` must appear after the `T`;
 fractional values are accepted (`PT0.5H`); custom format strings are not supported:
-`ToString(format, provider)` always returns the ISO form.
+`ToString(format, provider)` always returns the ISO form. A duration longer than a `TimeSpan` holds
+(about 10.7 million days) is refused, not clamped: `TryParse` returns `false`.
 
 ---
 
@@ -484,7 +485,8 @@ Period.TryParse(s, out var p);
 ```
 
 The parser accepts only `P…Y…M…D` (case-insensitive, at least one component): no weeks (`P2W`
-is invalid; use `FromWeeks`), no time part (`PT…` belongs to `Duration`).
+is invalid; use `FromWeeks`), no time part (`PT…` belongs to `Duration`). Components are ASCII
+digits within the range of an `int`; anything else makes `TryParse` return `false`.
 
 ---
 
