@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
+  </ItemGroup>
+
+</Project>

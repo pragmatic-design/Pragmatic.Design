@@ -64,6 +64,17 @@ public class DateRangeConverterJsonTests
         act.Should().Throw<JsonException>();
     }
 
+    // The string form refused an end before the start; the object form passed it to the constructor, whose
+    // ArgumentException a request body turned into a 500 (#311).
+    [Fact]
+    public void Read_ObjectEndingBeforeItStarts_Throws()
+    {
+        var act = () => JsonSerializer.Deserialize<DateRange>(
+            "{\"start\":\"2026-03-31\",\"end\":\"2026-01-01\"}", Options);
+
+        act.Should().Throw<JsonException>();
+    }
+
     [Fact]
     public void Read_PropertyNames_AreCaseInsensitive()
     {

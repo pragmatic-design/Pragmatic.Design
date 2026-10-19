@@ -38,4 +38,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Temporal.Samples/Pragmatic.Temporal.Samples.csproj" />
   </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Temporal.Fuzz/Pragmatic.Temporal.Fuzz.csproj" />
+  </Folder>
 </Solution>

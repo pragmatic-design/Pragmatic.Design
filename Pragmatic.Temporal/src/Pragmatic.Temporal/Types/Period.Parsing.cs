@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -7,8 +8,9 @@ public readonly partial struct Period
 {
     #region Formatting & Parsing
 
+    // [0-9], not \d: \d matches the digits of every script, which int parsing then refuses.
     private static readonly Regex IsoPattern = new(
-        @"^P(?:(-?\d+)Y)?(?:(-?\d+)M)?(?:(-?\d+)D)?$",
+        @"^P(?:(-?[0-9]+)Y)?(?:(-?[0-9]+)M)?(?:(-?[0-9]+)D)?$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
@@ -96,12 +98,24 @@ public readonly partial struct Period
         if (!match.Groups[1].Success && !match.Groups[2].Success && !match.Groups[3].Success)
             return false;
 
-        var years = match.Groups[1].Success ? int.Parse(match.Groups[1].Value) : 0;
-        var months = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0;
-        var days = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+        if (!TryReadComponent(match.Groups[1], out var years)
+            || !TryReadComponent(match.Groups[2], out var months)
+            || !TryReadComponent(match.Groups[3], out var days))
+        {
+            return false;
+        }
 
         result = new Period(years, months, days);
         return true;
+    }
+
+    // A component past the range of an int is text the type cannot hold, so the text is not a period: TryParse says
+    // false rather than letting an OverflowException out of a method that promises not to throw.
+    private static bool TryReadComponent(Group group, out int value)
+    {
+        value = 0;
+        return !group.Success
+               || int.TryParse(group.ValueSpan, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out value);
     }
 
     #endregion

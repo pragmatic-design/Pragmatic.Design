@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 using static Pragmatic.Ensure.Ensure;
 using Pragmatic.Telemetry.Conventions;
 
@@ -43,51 +44,56 @@ public static class TimeZoneResolver
         }
 
         // Try direct lookup first (works with both IANA on Linux and Windows IDs on Windows)
-        try
+        if (FindOrNull(timezoneId) is { } direct)
         {
-            var result = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
             activity?.SetTag(TemporalTags.ResolutionType, "direct");
-            activity?.SetTag(TemporalTags.ResolvedTimeZoneId, result.Id);
-            return SCache[timezoneId] = result;
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            // Continue to try conversion
+            activity?.SetTag(TemporalTags.ResolvedTimeZoneId, direct.Id);
+            return SCache[timezoneId] = direct;
         }
 
         // Try IANA to Windows conversion
-        if (TimeZoneInfo.TryConvertIanaIdToWindowsId(timezoneId, out var windowsId) && windowsId != null)
-            try
-            {
-                var result = TimeZoneInfo.FindSystemTimeZoneById(windowsId);
-                activity?.SetTag(TemporalTags.ResolutionType, "iana_to_windows");
-                activity?.SetTag(TemporalTags.ResolvedTimeZoneId, result.Id);
-                return SCache[timezoneId] = result;
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                // Fall through
-            }
+        if (TimeZoneInfo.TryConvertIanaIdToWindowsId(timezoneId, out var windowsId) && windowsId != null
+            && FindOrNull(windowsId) is { } fromIana)
+        {
+            activity?.SetTag(TemporalTags.ResolutionType, "iana_to_windows");
+            activity?.SetTag(TemporalTags.ResolvedTimeZoneId, fromIana.Id);
+            return SCache[timezoneId] = fromIana;
+        }
 
         // Try Windows to IANA conversion
-        if (TimeZoneInfo.TryConvertWindowsIdToIanaId(timezoneId, out var ianaId) && ianaId != null)
-            try
-            {
-                var result = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
-                activity?.SetTag(TemporalTags.ResolutionType, "windows_to_iana");
-                activity?.SetTag(TemporalTags.ResolvedTimeZoneId, result.Id);
-                return SCache[timezoneId] = result;
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                // Fall through
-            }
+        if (TimeZoneInfo.TryConvertWindowsIdToIanaId(timezoneId, out var ianaId) && ianaId != null
+            && FindOrNull(ianaId) is { } fromWindows)
+        {
+            activity?.SetTag(TemporalTags.ResolutionType, "windows_to_iana");
+            activity?.SetTag(TemporalTags.ResolvedTimeZoneId, fromWindows.Id);
+            return SCache[timezoneId] = fromWindows;
+        }
 
         activity?.SetStatus(ActivityStatusCode.Error, "Timezone not found");
         activity?.SetTag(TemporalTags.ResolutionType, "failed");
 
         throw new TimeZoneNotFoundException($"Timezone '{timezoneId}' not found. " +
                                             $"Tried both IANA and Windows timezone formats.");
+    }
+
+    // On Linux an ID that names a directory of the zoneinfo folder ("Europe", "Europe/") is found but cannot be read
+    // as a zone, and FindSystemTimeZoneById reports that as a SecurityException. The ID arrives in request bodies, and
+    // either way it names no time zone. InvalidTimeZoneException is left to escape: no ID reaches it, only a zone file
+    // the host has corrupted.
+    private static TimeZoneInfo? FindOrNull(string id)
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(id);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return null;
+        }
+        catch (SecurityException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

@@ -8,6 +8,15 @@
         "resolved": "6.0.2",
         "contentHash": "bJShQ6uWRTQ100ZeyiMqcFlhP7WJ+bCuabUs885dJiBEzMsJMSFr7BOyeCw4rgvQokteGi5rKQTlkhfQPUXg2A=="
       },
+      "FsCheck": {
+        "type": "Direct",
+        "requested": "[3.5.0, )",
+        "resolved": "3.5.0",
+        "contentHash": "olekPbZ9M09t1qRK6yXfzvyA/eiLFXK2obJ0BAkk7reEoohbO/6ac8ISbCD3murRnQbwT04TUZKT3boFDUe4kw==",
+        "dependencies": {
+          "FSharp.Core": "5.0.2"
+        }
+      },
       "Microsoft.AspNetCore.TestHost": {
         "type": "Direct",
         "requested": "[10.0.10, )",
@@ -94,10 +103,20 @@
           "System.Management": "8.0.0"
         }
       },
+      "dnlib": {
+        "type": "Transitive",
+        "resolved": "4.4.0",
+        "contentHash": "cKHI720q+zfEEvzklWVGt6B0TH3AibAyJbpUJl4U6KvTP13tycfnqJpkGHRZ/oQ45BTIoIxIwltHIJVDN+iCqQ=="
+      },
       "EmptyFiles": {
         "type": "Transitive",
         "resolved": "8.4.0",
         "contentHash": "M+GhsRIbqmfoGqB4XYya1ikuVb5GLT+F2bjitGAOs1Mg14Ojt9+MkEKWU3Kf3tse/2TuM5ozhxi3TBmPaSQ6GA=="
+      },
+      "FSharp.Core": {
+        "type": "Transitive",
+        "resolved": "5.0.2",
+        "contentHash": "DpcajqENgb3VXaHw1FKfVS+TWwEzck1PCajqLwBAVrtd1lfxd7T8JISVZBdV1mX9+2g48+tIgpNaVJWObdMrBw=="
       },
       "Microsoft.CodeAnalysis.Common": {
         "type": "Transitive",
@@ -172,6 +191,11 @@
         "dependencies": {
           "OpenTelemetry.Api": "1.15.3"
         }
+      },
+      "SharpFuzz.Common": {
+        "type": "Transitive",
+        "resolved": "2.2.0",
+        "contentHash": "biITWpwnMR7HUp43lAGU97DWq/4LfyXqqhuOK0Z4IuRP97KjQMOe/GKq3wE1KY21gNrc7OPO9HbAtQUvMKTImA=="
       },
       "SimpleInfoName": {
         "type": "Transitive",
@@ -364,6 +388,14 @@
           "Pragmatic.Internationalization": "[1.0.0, )"
         }
       },
+      "pragmatic.internationalization.fuzz": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Internationalization": "[1.0.0, )",
+          "Pragmatic.Internationalization.AspNetCore": "[1.0.0, )",
+          "SharpFuzz": "[2.3.0, )"
+        }
+      },
       "pragmatic.internationalization.sourcegenerator": {
         "type": "Project"
       },
@@ -544,6 +576,16 @@
         "contentHash": "vFO4Fj/dXkoVNGo/nhoGpO2zYQmZwr4jTID7oRGo+XlQ8LqksyZjUXQ4p39RfUvTID7IzzL8Qe71tW7CcAFymA==",
         "dependencies": {
           "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
+      "SharpFuzz": {
+        "type": "CentralTransitive",
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "5f11toR82RVCIBTr5XuuauJgesGVXIAO6vBCvLThNbrcer9NN6qB2HCA/Q122BvH2qRPsLx14O6QVtCbgRQhog==",
+        "dependencies": {
+          "SharpFuzz.Common": "2.2.0",
+          "dnlib": "4.4.0"
         }
       }
     }
