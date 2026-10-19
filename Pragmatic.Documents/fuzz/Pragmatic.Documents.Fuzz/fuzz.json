@@ -1,0 +1,7 @@
+{
+  "targets": {
+    "xlsx-reader": {
+      "instrument": ["Pragmatic.Documents.Xlsx.dll"]
+    }
+  }
+}
