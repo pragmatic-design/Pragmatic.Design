@@ -136,6 +136,9 @@ async function fuzzOne(target, seconds, work) {
   const crashes = join(work, target.name, 'crashes');
   mkdirSync(corpus, { recursive: true });
   mkdirSync(crashes, { recursive: true });
+  // A crash from an earlier local run stays where it was written until someone commits it; this run reports only
+  // the inputs it wrote, or every later run would fail on a crash already fixed.
+  const earlier = new Set(readdirSync(crashes));
 
   const assembly = join(bin, `${basename(target.project)}.dll`);
   const seeds = join(project, 'Corpus', target.name);
@@ -143,7 +146,7 @@ async function fuzzOne(target, seconds, work) {
     env: { ...process.env, PRAGMATIC_FUZZ_TARGET: target.name },
   });
 
-  const found = readdirSync(crashes);
+  const found = readdirSync(crashes).filter(name => !earlier.has(name));
   if (status !== 0 || found.length > 0) {
     console.error(`FAIL: ${target.name} crashed; inputs in ${crashes}: ${found.join(', ') || '(none written)'}`);
     console.error(`Commit each one under ${target.project}/Regressions/${target.name}/ with the fix.`);

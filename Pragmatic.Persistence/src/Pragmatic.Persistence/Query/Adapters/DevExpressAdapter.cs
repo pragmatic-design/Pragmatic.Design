@@ -41,10 +41,14 @@ public static class DevExpressAdapter
         this Builder.QueryBuilder<TEntity> builder,
         DevExpressLoadOptions loadOptions) where TEntity : class
     {
+        // Every clause of the filter and every sort descriptor nests the query one level deeper, and past
+        // GridFilterTooLargeException.MaxTerms the request is refused before the chain is built.
+        var terms = 0;
+
         // Apply filtering
         if (loadOptions.Filter is { Count: > 0 })
         {
-            var filter = ParseDevExpressFilter<TEntity>(loadOptions.Filter);
+            var filter = ParseDevExpressFilter<TEntity>(loadOptions.Filter, ref terms);
             if (filter != null)
                 builder = builder.WithFilter(filter);
         }
@@ -52,6 +56,10 @@ public static class DevExpressAdapter
         // Apply sorting
         if (loadOptions.Sort != null)
         {
+            terms += loadOptions.Sort.Count;
+            if (terms > GridFilterTooLargeException.MaxTerms)
+                throw new GridFilterTooLargeException(terms);
+
             foreach (var sort in loadOptions.Sort)
             {
                 var sortExpr = CreateSortExpression<TEntity>(sort.Selector);
@@ -80,13 +88,17 @@ public static class DevExpressAdapter
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
         TEntity>(
-        IReadOnlyList<object?> filter)
+        IReadOnlyList<object?> filter, ref int terms)
     {
         if (filter.Count == 0)
             return null;
 
         var parameter = Expression.Parameter(typeof(TEntity), "e");
-        var body = ParseFilterExpression<TEntity>(filter, parameter);
+
+        // The top level as the nested groups are read: as CLR values, so that a string is read once, here, and
+        // an unreadable one is an unusable value rather than an exception wherever it is next compared.
+        IReadOnlyList<object?> elements = [.. filter.Select(e => e is JsonElement json ? DeserializeJsonElement(json) : e)];
+        var body = ParseFilterExpression<TEntity>(elements, parameter, ref terms);
 
         if (body == null)
             return null;
@@ -99,12 +111,17 @@ public static class DevExpressAdapter
     ///     All sub-expressions share the same <paramref name="parameter" /> to ensure
     ///     the resulting lambda has a single, consistent parameter binding.
     /// </summary>
+    /// <remarks>
+    ///     <paramref name="terms" /> counts the clauses across every group, and the filter is refused past
+    ///     <see cref="GridFilterTooLargeException.MaxTerms" /> before a deeper chain is built: what reads the
+    ///     expression walks it recursively, and a wide enough one overflows the stack.
+    /// </remarks>
     private static Expression? ParseFilterExpression<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
         TEntity>(
-        IReadOnlyList<object?> filter, ParameterExpression parameter)
+        IReadOnlyList<object?> filter, ParameterExpression parameter, ref int terms)
     {
         if (filter.Count == 0)
             return null;
@@ -115,7 +132,7 @@ public static class DevExpressAdapter
             var subFilter = ToFilterList(filter[1]);
             if (subFilter != null)
             {
-                var inner = ParseFilterExpression<TEntity>(subFilter, parameter);
+                var inner = ParseFilterExpression<TEntity>(subFilter, parameter, ref terms);
                 return inner != null ? Expression.Not(inner) : null;
             }
 
@@ -125,6 +142,9 @@ public static class DevExpressAdapter
         // Simple filter: ["field", "operator", value]
         if (filter.Count == 3 && IsFieldName(filter[0]))
         {
+            if (++terms > GridFilterTooLargeException.MaxTerms)
+                throw new GridFilterTooLargeException(terms);
+
             var field = filter[0]!.ToString()!;
             var op = filter[1]?.ToString();
 
@@ -149,7 +169,7 @@ public static class DevExpressAdapter
                     if (subList == null)
                         return null;
 
-                    var sub = ParseFilterExpression<TEntity>(subList, parameter);
+                    var sub = ParseFilterExpression<TEntity>(subList, parameter, ref terms);
                     if (sub == null)
                         return null;
 
@@ -196,7 +216,7 @@ public static class DevExpressAdapter
         // JsonElement string values are also field names
         if (element is JsonElement { ValueKind: JsonValueKind.String } json)
         {
-            var value = json.GetString();
+            var value = ReadString(json);
             return value is not (null or "and" or "or" or "!");
         }
 
@@ -225,8 +245,14 @@ public static class DevExpressAdapter
             // Coerce the value to the property type (handles JsonElement and type mismatches)
             var coerced = CoerceValue(value, property.Type);
             var operand = QueryParameter.Of(coerced, property.Type);
+            var opName = op.ToLowerInvariant();
 
-            Expression body = op.ToLowerInvariant() switch
+            // A string match against null means nothing, and string.StartsWith(null) throws on every row it is
+            // evaluated against. The generated adapter drops such a clause; so does this one.
+            if (coerced is null && opName is "contains" or "startswith" or "endswith")
+                return null;
+
+            Expression body = opName switch
             {
                 "=" or "==" => Expression.Equal(property, operand),
                 "<>" or "!=" => Expression.NotEqual(property, operand),
@@ -247,6 +273,13 @@ public static class DevExpressAdapter
             return null;
         }
         catch (InvalidOperationException) // Type conversion failure
+        {
+            return null;
+        }
+        // A value the client sent that is not of the column's type: "abc" or [1,2] for a number, a number
+        // past the column's range. Convert.ChangeType answers each with its own exception, and each escaped
+        // as a 500 (#310); the clause is unusable, like an unknown operator.
+        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException)
         {
             return null;
         }
@@ -309,15 +342,51 @@ public static class DevExpressAdapter
     {
         return element.ValueKind switch
         {
-            JsonValueKind.String => element.GetString(),
+            JsonValueKind.String => ReadString(element),
             JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null => null,
             JsonValueKind.Array => element.EnumerateArray()
                 .Select(e => (object?)DeserializeJsonElement(e)).ToList() as object,
-            _ => element.GetRawText()
+            _ => ReadRawText(element)
         };
+    }
+
+    /// <summary>The text of a JSON string, or <c>null</c> when the bytes the client sent are not UTF-8.</summary>
+    /// <remarks>
+    ///     An element of <see cref="DevExpressLoadOptions.Filter" /> binds as a <see cref="JsonElement" />, and its
+    ///     text is not validated until it is read: <see cref="JsonElement.GetString" /> then throws
+    ///     <see cref="InvalidOperationException" />, which escaped the adapter as a 500 (found by the fuzz harness,
+    ///     #310). An unreadable string is a value the adapter cannot use, like one of the wrong type.
+    /// </remarks>
+    private static string? ReadString(JsonElement element)
+    {
+        try
+        {
+            return element.GetString();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The raw text of an object, or <c>null</c> when it holds bytes that are not UTF-8.</summary>
+    /// <remarks>
+    ///     <see cref="JsonElement.GetRawText" /> transcodes like <see cref="JsonElement.GetString" />, and threw the same
+    ///     way on a key the client spelled in such bytes (found by the fuzz harness, #310).
+    /// </remarks>
+    private static string? ReadRawText(JsonElement element)
+    {
+        try
+        {
+            return element.GetRawText();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static Expression CreateStringContains(MemberExpression property, Expression value)

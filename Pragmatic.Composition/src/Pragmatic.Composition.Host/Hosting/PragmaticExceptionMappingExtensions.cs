@@ -87,6 +87,25 @@ public static class PragmaticExceptionMappingExtensions
                     contentType: "application/problem+json",
                     context.RequestAborted).ConfigureAwait(false);
             }
+            // A grid filter with more terms than the adapters build (#310). A 400 that names the bound, because
+            // the client fixes it by sending fewer; refusing is what keeps the chain from overflowing the stack.
+            catch (global::Pragmatic.Persistence.Query.Adapters.GridFilterTooLargeException)
+                when (!context.Response.HasStarted)
+            {
+                context.Response.Clear();
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(
+                    new ProblemDetails
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        Title = "Bad Request",
+                        Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                        Detail = $"The grid filter has more than {(global::Pragmatic.Persistence.Query.Adapters.GridFilterTooLargeException.MaxTerms)} terms, sorts included."
+                    },
+                    PragmaticProblemJsonContext.Default.ProblemDetails,
+                    contentType: "application/problem+json",
+                    context.RequestAborted).ConfigureAwait(false);
+            }
             catch (Exception ex) when (!context.Response.HasStarted && IsConcurrencyConflict(ex))
             {
                 context.Response.Clear();

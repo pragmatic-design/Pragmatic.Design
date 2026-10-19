@@ -58,4 +58,7 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Pragmatic.Persistence.Benchmarks/Pragmatic.Persistence.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Persistence.Fuzz/Pragmatic.Persistence.Fuzz.csproj" />
+  </Folder>
 </Solution>

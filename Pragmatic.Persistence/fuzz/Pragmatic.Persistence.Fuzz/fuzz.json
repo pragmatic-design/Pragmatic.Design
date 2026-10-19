@@ -1,0 +1,13 @@
+{
+  "targets": {
+    "devexpress-adapter": {
+      "instrument": ["Pragmatic.Persistence.dll"]
+    },
+    "grid-adapter-generated": {
+      "instrument": ["Pragmatic.Persistence.dll"]
+    },
+    "primeng-adapter": {
+      "instrument": ["Pragmatic.Persistence.dll"]
+    }
+  }
+}

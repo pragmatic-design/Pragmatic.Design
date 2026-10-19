@@ -1,0 +1,1 @@
+{"filter":[["state","=","Shipped"],"or",["placedAt",">","2026-03-01"]],"skip":1,"take":1}

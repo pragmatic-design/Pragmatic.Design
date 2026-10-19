@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Pragmatic.Persistence.Query.Adapters;
@@ -139,6 +140,24 @@ public class TheGridAdapterReadsWhatAGridSendsTests
     }
 
     /// <summary>
+    ///     A sort on a column the adapter does not know is skipped, and the next one is still the first.
+    /// </summary>
+    /// <remarks>
+    ///     Found by the fuzz harness (#310): the loop marked the first sort as done whether or not it applied, so the
+    ///     next became a <c>ThenBy</c> on a query nobody had ordered, and LINQ threw out of the adapter.
+    /// </remarks>
+    [Fact]
+    public void ASortOnAnUnknownColumn_LeavesTheNextOneFirst()
+    {
+        var grid = Adapter();
+
+        grid.Apply(
+                [("Ada", 10, "t1"), ("Grace", 20, "t1")],
+                """{"sort":[{"selector":"nope"},{"selector":"total","desc":true}]}""")
+            .Should().Equal("Grace", "Ada");
+    }
+
+    /// <summary>
     ///     A column can be given a different name on the wire, which is what <c>[GridField]</c> is for.
     /// </summary>
     /// <remarks>
@@ -182,6 +201,82 @@ public class TheGridAdapterReadsWhatAGridSendsTests
                 """{"filter":["total",">",15],"skip":0,"take":20}""")
             .Should().HaveCount(2, "the column answers to 'amount' now, and to nothing else");
     }
+
+    /// <summary>
+    ///     A filter at <see cref="GridFilterTooLargeException.MaxTerms" /> terms is applied; one past it is
+    ///     refused before the adapter builds anything (#310).
+    /// </summary>
+    /// <remarks>
+    ///     The generated parser joins a composite's terms one by one, and every join rewrites the whole chain
+    ///     built so far: 10,000 terms took 9 seconds in <c>Apply</c> alone, and the chain it left overflowed the
+    ///     stack of whatever executed it. A stack overflow ends the process, not the request.
+    /// </remarks>
+    [Fact]
+    public void AFilterAtTheBound_IsApplied_AndOnePastIt_IsRefused()
+    {
+        var grid = Adapter();
+        var rows = Enumerable.Range(0, 300).Select(i => ($"c{i}", i, "t1")).ToArray();
+
+        grid.Apply(rows, $$"""{"filter":[{{Ors(GridFilterTooLargeException.MaxTerms)}}]}""")
+            .Should().HaveCount(GridFilterTooLargeException.MaxTerms);
+
+        var act = () => grid.Apply(rows, $$"""{"filter":[{{Ors(GridFilterTooLargeException.MaxTerms + 1)}}]}""");
+        act.Should().Throw<TargetInvocationException>().Where(e => e.InnerException is GridFilterTooLargeException);
+    }
+
+    /// <summary>A sort nests the query like a clause does: 10,000 of them overflowed the same way.</summary>
+    [Fact]
+    public void SortsPastTheBound_AreRefused()
+    {
+        var sorts = string.Join(",", Enumerable.Repeat("""{"selector":"total"}""", GridFilterTooLargeException.MaxTerms + 1));
+
+        var act = () => Adapter().Apply([("Ada", 10, "t1")], $$"""{"sort":[{{sorts}}]}""");
+
+        act.Should().Throw<TargetInvocationException>().Where(e => e.InnerException is GridFilterTooLargeException);
+    }
+
+    /// <summary>PrimeNG's global filter joins one predicate per column it names, and its sorts chain the same way.</summary>
+    [Theory]
+    [InlineData("globalFilterFields")]
+    [InlineData("multiSortMeta")]
+    public void APrimeNGRequestPastTheBound_IsRefused(string property)
+    {
+        var grid = Adapter("""
+            [GridAdapter<Order>(Framework = GridFramework.PrimeNG)]
+            public partial class OrderGrid;
+            """);
+        var items = property == "globalFilterFields"
+            ? string.Join(",", Enumerable.Repeat("\"customer\"", GridFilterTooLargeException.MaxTerms + 1))
+            : string.Join(",", Enumerable.Repeat("""{"field":"total"}""", GridFilterTooLargeException.MaxTerms + 1));
+
+        var act = () => grid.ApplyPrimeNG([("Ada", 10, "t1")], $$"""{"globalFilter":"a","{{property}}":[{{items}}]}""");
+
+        act.Should().Throw<TargetInvocationException>().Where(e => e.InnerException is GridFilterTooLargeException);
+    }
+
+    /// <summary>
+    ///     A string that is not UTF-8 is a value the adapter cannot use, not an exception out of it.
+    /// </summary>
+    /// <remarks>
+    ///     An element of <c>Filter</c> binds as a <c>JsonElement</c> whose text is validated only when read, and the
+    ///     generated <c>Unwrap</c> read it with <c>GetString</c>, which throws on such bytes (#310).
+    /// </remarks>
+    [Theory]
+    [InlineData("[\"\u0001customer\",\"=\",\"Ada\"]")]
+    [InlineData("[\"customer\",\"=\",{\"\u0001key\":1}]")]
+    public void AStringThatIsNotUtf8_DoesNotEscape(string filter)
+    {
+        // 0x9A, a continuation byte with nothing before it, where the 0x01 is.
+        var body = Encoding.UTF8.GetBytes($"{{\"filter\":{filter}}}")
+            .Select(b => b == 0x01 ? (byte)0x9A : b).ToArray();
+
+        var act = () => Adapter().Apply([("Ada", 10, "t1")], body);
+
+        act.Should().NotThrow();
+    }
+
+    private static string Ors(int terms)
+        => string.Join(",\"or\",", Enumerable.Range(0, terms).Select(i => $"[\"total\",\"=\",{i}]"));
 
     private static GeneratedGrid Adapter(string? gridDeclaration = null)
     {
@@ -237,9 +332,14 @@ public class TheGridAdapterReadsWhatAGridSendsTests
         /// <summary>The customers left, in order, after the grid's load options are applied.</summary>
         public IReadOnlyList<string> Apply(
             (string Customer, int Total, string TenantId)[] rows, string loadOptionsJson)
+            => Apply(rows, Encoding.UTF8.GetBytes(loadOptionsJson));
+
+        /// <summary>The same, from the bytes of the body, which may hold what a string cannot.</summary>
+        public IReadOnlyList<string> Apply(
+            (string Customer, int Total, string TenantId)[] rows, byte[] loadOptionsBody)
         {
             var options = JsonSerializer.Deserialize<DevExpressLoadOptions>(
-                loadOptionsJson,
+                loadOptionsBody,
                 new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 
             var apply = Array.Find(
@@ -253,6 +353,25 @@ public class TheGridAdapterReadsWhatAGridSendsTests
                             .Select(p => p.ParameterType.Name)) + ")")));
 
             var applied = (IEnumerable)apply.Invoke(null, [Queryable(rows), options])!;
+
+            return [.. applied.Cast<object>().Select(o => (string)_order.GetProperty("Customer")!.GetValue(o)!)];
+        }
+
+        /// <summary>The customers left after a PrimeNG lazy-load event is applied.</summary>
+        public IReadOnlyList<string> ApplyPrimeNG(
+            (string Customer, int Total, string TenantId)[] rows, string lazyEventJson)
+        {
+            var lazyEvent = JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(
+                lazyEventJson,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+            var apply = Array.Find(
+                    _grid.GetMethods(BindingFlags.Public | BindingFlags.Static),
+                    m => m.Name == "Apply"
+                        && m.GetParameters() is [_, { ParameterType.Name: nameof(PrimeNGLazyLoadEvent) }])
+                ?? throw new InvalidOperationException("The generated adapter has no PrimeNG Apply.");
+
+            var applied = (IEnumerable)apply.Invoke(null, [Queryable(rows), lazyEvent])!;
 
             return [.. applied.Cast<object>().Select(o => (string)_order.GetProperty("Customer")!.GetValue(o)!)];
         }

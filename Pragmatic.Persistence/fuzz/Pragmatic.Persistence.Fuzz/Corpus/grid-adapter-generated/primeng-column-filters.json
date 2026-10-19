@@ -1,0 +1,1 @@
+{"filters":{"name":{"value":"a","matchMode":"contains"},"number":{"value":20,"matchMode":"gte"}},"first":0,"rows":10}

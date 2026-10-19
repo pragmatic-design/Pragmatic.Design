@@ -15,6 +15,18 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FsCheck" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the gate (#310). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Persistence.Fuzz\Pragmatic.Persistence.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Persistence.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Persistence.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Persistence.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- Generated mocks: the runtime, plus the generator that turns [GenerateMock<T>] into a class. -->
