@@ -178,6 +178,20 @@ The reader returns the same `SpreadsheetModel` type you'd build manually; roundt
 
 **Limits of the reader**: complex Excel features that don't have model equivalents (pivot tables, conditional formatting, charts, macros) are dropped on read. If you need those features round-tripped, don't use this library.
 
+### A file you did not write
+
+An uploaded file is read or refused, and the refusal is one of three exceptions:
+
+| Exception | When |
+|---|---|
+| `InvalidDataException` | The file is not a ZIP, or the archive is damaged |
+| `XmlException` | A part is not well-formed XML, or declares a DTD |
+| `InvalidOperationException`, message starting `XLSX` | A limit is exceeded (256 sheets, 1,000,000 shared strings, 5,000,000 cells in a sheet, 100 MB in a part), a sheet points outside `xl/worksheets/`, or the workbook names a sheet the package does not hold |
+
+A sheet the workbook declares and the package does not hold is refused, not read as an empty sheet: an import
+would otherwise succeed with no rows where the file had data. The reader is fuzzed (`node scripts/fuzz.mjs
+xlsx-reader`) and has property tests for these outcomes; anything else it throws is a defect.
+
 ---
 
 ## Large data sets

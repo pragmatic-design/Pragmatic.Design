@@ -148,20 +148,23 @@ internal static class XlsxPackageReader
         foreach (var sheetEl in sheetElements)
         {
             var name = sheetEl.Attribute("name")?.Value ?? "Sheet";
-            var rId = sheetEl.Attribute(Rns + "id")?.Value;
 
-            if (rId is not null && relMap.TryGetValue(rId, out var target))
-            {
-                // Reject relationship targets that try to reach outside xl/worksheets/ or that use
-                // traversal. Without this a crafted XLSX could point a worksheet rId at an unrelated
-                // package part (docProps, _rels) and have the reader parse it as a sheet.
-                var sheetPath = ResolveWorksheetPart(target)
-                    ?? throw new InvalidOperationException(
-                        $"XLSX relationship target '{target}' is not inside xl/worksheets/.");
+            // A sheet the workbook declares and the package does not hold is damage, not an empty sheet: skipping it
+            // would hand an import a table with no rows where the file had data.
+            var rId = sheetEl.Attribute(Rns + "id")?.Value
+                ?? throw new InvalidOperationException($"XLSX sheet '{name}' has no relationship id.");
+            if (!relMap.TryGetValue(rId, out var target))
+                throw new InvalidOperationException(
+                    $"XLSX sheet '{name}' names relationship '{rId}', which the workbook does not declare.");
 
-                var sheet = ReadWorksheet(zip, sheetPath, name, sharedStrings);
-                sheets.Add(sheet);
-            }
+            // Reject relationship targets that try to reach outside xl/worksheets/ or that use
+            // traversal. Without this a crafted XLSX could point a worksheet rId at an unrelated
+            // package part (docProps, _rels) and have the reader parse it as a sheet.
+            var sheetPath = ResolveWorksheetPart(target)
+                ?? throw new InvalidOperationException(
+                    $"XLSX relationship target '{target}' is not inside xl/worksheets/.");
+
+            sheets.Add(ReadWorksheet(zip, sheetPath, name, sharedStrings));
         }
 
         return sheets;
@@ -193,8 +196,8 @@ internal static class XlsxPackageReader
 
     private static Sheet ReadWorksheet(ZipArchive zip, string path, string name, string[] sharedStrings)
     {
-        var entry = zip.GetEntry(path);
-        if (entry is null) return new Sheet { Name = name };
+        var entry = zip.GetEntry(path)
+            ?? throw new InvalidOperationException($"XLSX sheet '{name}' is in part '{path}', which is not in the package.");
         GuardEntrySize(entry);
 
         // Streaming parse: one element in memory at a time (rows are the unbounded part —
