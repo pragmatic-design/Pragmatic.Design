@@ -512,6 +512,24 @@ var query = builder.Build(repository.Query(), filterProvider).AsNoTracking();
 
 **Global filter**: Applies a `Contains` search across all specified `GlobalFilterFields` (string properties only), combined with OR logic.
 
+⚠️ **The runtime PrimeNG adapter applies no column filter that arrives as JSON** (#317): the value binds as a
+`JsonElement` it never unwraps, and `in`/`between` fail with any value. Until that is fixed, a PrimeNG grid
+served by `FromPrimeNG` returns every row whatever it filters on; the generated `[GridAdapter]` does not have
+this defect.
+
+### The width of a request
+
+Every adapter, runtime or generated, refuses a request with more than
+`GridFilterTooLargeException.MaxTerms` (256) terms, and the host answers it with 400. A term is what nests the
+query one level deeper: a `[field, op, value]` clause wherever it sits in the groups, a value of an `in`, a
+column of the global filter, a PrimeNG column filter, a sort descriptor.
+
+The bound is there for the process, not the database. A composite of N clauses is a chain N deep, and LINQ's
+compiler and EF Core's translator walk it recursively: measured on .NET 10, EF Core's translation overflowed
+the stack between 1,000 and 1,250 clauses, a 30 KB body, and a stack overflow ends the process with every
+request it was serving. A grid that needs a list longer than the bound is better served by an `in` on a
+declared filter than by a chain of `or`s.
+
 ### Custom Adapters
 
 For other grid frameworks (AG Grid, Kendo, Syncfusion), implement `IGridFilterAdapter<TExternalFormat>`:

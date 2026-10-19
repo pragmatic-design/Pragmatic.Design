@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using Pragmatic.Testing.Assertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -110,6 +111,21 @@ public class PragmaticExceptionMappingTests
         withheldContext.Response.StatusCode.Should().Be(unknownContext.Response.StatusCode);
         (await BodyOf(withheldContext)).Should().Be(await BodyOf(unknownContext),
             "the response cannot say whether the column exists");
+    }
+
+    /// <summary>A grid filter past the width bound is the client's to shorten: a 400 that says so (#310).</summary>
+    [Fact]
+    public async Task AGridFilterTooWide_IsMappedTo400()
+    {
+        var pipeline = BuildPipeline(_ => throw new GridFilterTooLargeException(GridFilterTooLargeException.MaxTerms + 1));
+        var context = NewContext();
+
+        await pipeline(context);
+
+        context.Response.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        context.Response.ContentType.Should().StartWith("application/problem+json");
+        (await BodyOf(context)).Should().Contain(GridFilterTooLargeException.MaxTerms.ToString(CultureInfo.InvariantCulture),
+            "the client has to know how far to shorten the filter");
     }
 
     private sealed class DuplicateWorkEmail : Pragmatic.Result.IError

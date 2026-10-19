@@ -40,6 +40,10 @@ public static class PrimeNGAdapter
         this Builder.QueryBuilder<TEntity> builder,
         PrimeNGLazyLoadEvent lazyEvent) where TEntity : class
     {
+        // Every column filter, every value of an in, every column of the global filter and every sort adds to
+        // the query, and past GridFilterTooLargeException.MaxTerms the request is refused before any is built.
+        var terms = 0;
+
         // Apply filtering
         if (lazyEvent.Filters != null)
         {
@@ -48,6 +52,7 @@ public static class PrimeNGAdapter
                 if (filterMeta.Value == null)
                     continue;
 
+                terms = Count(terms, TermsOf(filterMeta));
                 var filter = CreateFilterExpression<TEntity>(field, filterMeta);
                 if (filter != null)
                     builder = builder.WithFilter(filter);
@@ -57,6 +62,7 @@ public static class PrimeNGAdapter
         // Apply global filter
         if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter) && lazyEvent.GlobalFilterFields != null)
         {
+            terms = Count(terms, lazyEvent.GlobalFilterFields.Count);
             var globalFilter = CreateGlobalFilter<TEntity>(
                 lazyEvent.GlobalFilter,
                 lazyEvent.GlobalFilterFields);
@@ -77,6 +83,7 @@ public static class PrimeNGAdapter
         }
         else if (lazyEvent.MultiSortMeta != null)
         {
+            terms = Count(terms, lazyEvent.MultiSortMeta.Count);
             foreach (var sortMeta in lazyEvent.MultiSortMeta)
             {
                 var sortExpr = CreateSortExpression<TEntity>(sortMeta.Field);
@@ -96,6 +103,32 @@ public static class PrimeNGAdapter
         }
 
         return builder;
+    }
+
+    private static int Count(int terms, int more)
+    {
+        terms += more;
+        return terms > GridFilterTooLargeException.MaxTerms ? throw new GridFilterTooLargeException(terms) : terms;
+    }
+
+    // One comparison, or one per value of an in or a between. A string is counted per character because that
+    // is how CreateInExpression reads it, as the IEnumerable<char> it is.
+    private static int TermsOf(PrimeNGFilterMetadata filterMeta)
+    {
+        if (filterMeta.MatchMode?.ToLowerInvariant() is not ("in" or "between")
+            || filterMeta.Value is not System.Collections.IEnumerable values)
+        {
+            return 1;
+        }
+
+        var count = 0;
+        foreach (var _ in values)
+        {
+            if (++count > GridFilterTooLargeException.MaxTerms)
+                break;
+        }
+
+        return Math.Max(count, 1);
     }
 
     private static Expression<Func<TEntity, bool>>? CreateFilterExpression<

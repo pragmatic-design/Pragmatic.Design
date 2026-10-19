@@ -1,0 +1,1 @@
+{"filter":[[["number","<",100],"or",["paid","=",true]],"and",["!",["name","startswith","G"]]]}

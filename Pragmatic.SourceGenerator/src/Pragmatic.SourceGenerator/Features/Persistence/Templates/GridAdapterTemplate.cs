@@ -87,16 +87,22 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         DecreaseIndent();
         Block(() =>
         {
+            AppendLine("// Every clause and every sort nests the query one level deeper; past the bound the request");
+            AppendLine("// is refused before the chain is built (GridFilterTooLargeException).");
+            AppendLine("var terms = 0;");
+            AppendLine();
+
             // Filter
             AppendLine("if (options.Filter != null && options.Filter.Count > 0)");
             Block(() =>
             {
                 if (_model.SupportNestedFilters)
                 {
-                    AppendLine("query = ApplyNestedFilter(query, options.Filter);");
+                    AppendLine("query = ApplyNestedFilter(query, options.Filter, ref terms);");
                 }
                 else
                 {
+                    AppendLine("terms = CountedTerms(terms + 1);");
                     AppendLine("query = ApplySimpleFilter(query, options.Filter);");
                 }
             });
@@ -106,13 +112,17 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("if (options.Sort != null)");
             Block(() =>
             {
+                AppendLine("terms = CountedTerms(terms + options.Sort.Count);");
                 AppendLine("var isFirst = true;");
                 AppendLine("foreach (var sort in options.Sort)");
                 Block(() =>
                 {
                     AppendLine("if (string.IsNullOrEmpty(sort.Selector)) continue;");
+                    AppendLine("// A column the adapter does not know is skipped and returns the query as it was: only a sort");
+                    AppendLine("// that applied makes the next one a ThenBy, which needs an ordered query under it.");
+                    AppendLine("var before = query;");
                     AppendLine("query = ApplySort(query, sort.Selector, sort.Desc, isFirst);");
-                    AppendLine("isFirst = false;");
+                    AppendLine("if (!ReferenceEquals(query, before)) isFirst = false;");
                 });
             });
             AppendLine();
@@ -146,6 +156,11 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         DecreaseIndent();
         Block(() =>
         {
+            AppendLine("// Every column filter, global-filter column and sort nests the query one level deeper; past");
+            AppendLine("// the bound the request is refused before the chain is built (GridFilterTooLargeException).");
+            AppendLine("var terms = 0;");
+            AppendLine();
+
             // Filters
             AppendLine("if (lazyEvent.Filters != null)");
             Block(() =>
@@ -154,6 +169,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                 Block(() =>
                 {
                     AppendLine("if (filter.Value.Value == null) continue;");
+                    AppendLine("terms = CountedTerms(terms + 1);");
                     AppendLine("query = ApplyPrimeNGFilter(query, filter.Key, filter.Value);");
                 });
             });
@@ -163,6 +179,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter) && lazyEvent.GlobalFilterFields != null)");
             Block(() =>
             {
+                AppendLine("terms = CountedTerms(terms + lazyEvent.GlobalFilterFields.Count);");
                 AppendLine("query = ApplyGlobalFilter(query, lazyEvent.GlobalFilter, lazyEvent.GlobalFilterFields);");
             });
             AppendLine();
@@ -176,13 +193,16 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("else if (lazyEvent.MultiSortMeta != null)");
             Block(() =>
             {
+                AppendLine("terms = CountedTerms(terms + lazyEvent.MultiSortMeta.Count);");
                 AppendLine("var isFirst = true;");
                 AppendLine("foreach (var sort in lazyEvent.MultiSortMeta)");
                 Block(() =>
                 {
                     AppendLine("if (string.IsNullOrEmpty(sort.Field)) continue;");
+                    AppendLine("// Only a sort that applied makes the next one a ThenBy (see the DevExpress Apply).");
+                    AppendLine("var before = query;");
                     AppendLine("query = ApplySort(query, sort.Field, sort.Order == -1, isFirst);");
-                    AppendLine("isFirst = false;");
+                    AppendLine("if (!ReferenceEquals(query, before)) isFirst = false;");
                 });
             });
             AppendLine();
@@ -219,17 +239,18 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         AppendLine($"private static IQueryable<{_model.EntityTypeFullName}> ApplyNestedFilter(");
         IncreaseIndent();
         AppendLine($"IQueryable<{_model.EntityTypeFullName}> query,");
-        AppendLine("IReadOnlyList<object?> filter)");
+        AppendLine("IReadOnlyList<object?> filter,");
+        AppendLine("ref int terms)");
         DecreaseIndent();
         Block(() =>
         {
-            AppendLine("var expr = ParseFilterExpression(filter);");
+            AppendLine("var expr = ParseFilterExpression(filter, ref terms);");
             AppendLine("return expr != null ? query.Where(expr) : query;");
         });
         AppendLine();
 
         // Recursive filter expression parser
-        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>>? ParseFilterExpression(IReadOnlyList<object?> filter)");
+        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>>? ParseFilterExpression(IReadOnlyList<object?> filter, ref int terms)");
         Block(() =>
         {
             AppendLine("if (filter.Count == 0) return null;");
@@ -241,6 +262,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("if (filter.Count == 3 && Unwrap(filter[0]) is string field && Unwrap(filter[1]) is string op)");
             Block(() =>
             {
+                AppendLine("terms = CountedTerms(terms + 1);");
                 AppendLine("return CreateFieldFilter(field, op, Unwrap(filter[2]));");
             });
             AppendLine();
@@ -265,7 +287,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                     AppendLine("if (filter[i] is global::System.Text.Json.JsonElement { ValueKind: global::System.Text.Json.JsonValueKind.Array } jsonGroup)");
                     Block(() =>
                     {
-                        AppendLine("var groupExpr = ParseFilterExpression([.. jsonGroup.EnumerateArray().Select(e => (object?)e)]);");
+                        AppendLine("var groupExpr = ParseFilterExpression([.. jsonGroup.EnumerateArray().Select(e => (object?)e)], ref terms);");
                         AppendLine("if (groupExpr != null)");
                         Block(() =>
                         {
@@ -277,7 +299,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                     AppendLine("if (filter[i] is IReadOnlyList<object?> nested)");
                     Block(() =>
                     {
-                        AppendLine("var nestedExpr = ParseFilterExpression(nested);");
+                        AppendLine("var nestedExpr = ParseFilterExpression(nested, ref terms);");
                         AppendLine("if (nestedExpr != null)");
                         Block(() =>
                         {
@@ -288,7 +310,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                     Block(() =>
                     {
                         AppendLine("var nestedList = list.Cast<object?>().ToList();");
-                        AppendLine("var nestedExpr = ParseFilterExpression(nestedList);");
+                        AppendLine("var nestedExpr = ParseFilterExpression(nestedList, ref terms);");
                         AppendLine("if (nestedExpr != null)");
                         Block(() =>
                         {
@@ -365,11 +387,11 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         Block(() =>
         {
             AppendLine("if (filter.Count != 3) return query;");
-            AppendLine("var field = filter[0]?.ToString();");
-            AppendLine("var op = filter[1]?.ToString();");
+            AppendLine("var field = Text(filter[0]);");
+            AppendLine("var op = Text(filter[1]);");
             AppendLine("if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(op)) return query;");
             AppendLine();
-            AppendLine("var expr = CreateFieldFilter(field, op, filter[2]);");
+            AppendLine("var expr = CreateFieldFilter(field, op, Unwrap(filter[2]));");
             AppendLine("return expr != null ? query.Where(expr) : query;");
         });
     }
@@ -677,7 +699,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("return json.ValueKind switch");
             AppendLine("{");
             IncreaseIndent();
-            AppendLine("global::System.Text.Json.JsonValueKind.String => json.GetString(),");
+            AppendLine("global::System.Text.Json.JsonValueKind.String => ReadString(json),");
             AppendLine("global::System.Text.Json.JsonValueKind.True => true,");
             AppendLine("global::System.Text.Json.JsonValueKind.False => false,");
             AppendLine("global::System.Text.Json.JsonValueKind.Null or global::System.Text.Json.JsonValueKind.Undefined => null,");
@@ -688,11 +710,37 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             DecreaseIndent();
             AppendLine("};");
         });
+        AppendLine();
+
+        // A JsonElement's text is validated only when it is read, and GetString throws on bytes that are not
+        // UTF-8: an unreadable string is a value the adapter cannot use, not an exception out of it (#310).
+        AppendLine("private static string? ReadString(global::System.Text.Json.JsonElement json)");
+        Block(() =>
+        {
+            AppendLine("try");
+            Block(() => AppendLine("return json.GetString();"));
+            AppendLine("catch (InvalidOperationException)");
+            Block(() => AppendLine("return null;"));
+        });
+        AppendLine();
+
+        // The text a filter compares against. An object or an array the client sent is its raw JSON, which
+        // GetRawText transcodes and throws on in the same way, so it is read just as carefully.
+        AppendLine("private static string? Text(object? value)");
+        Block(() =>
+        {
+            AppendLine("if (Unwrap(value) is not global::System.Text.Json.JsonElement json) return Unwrap(value)?.ToString();");
+            AppendLine();
+            AppendLine("try");
+            Block(() => AppendLine("return json.GetRawText();"));
+            AppendLine("catch (InvalidOperationException)");
+            Block(() => AppendLine("return null;"));
+        });
     }
 
     private void RenderStringFilter(GridFieldModel field)
     {
-        AppendLine("var strValue = value?.ToString();");
+        AppendLine("var strValue = Text(value);");
         AppendLine("if (string.IsNullOrEmpty(strValue)) return null;");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
@@ -797,6 +845,16 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
     private void RenderHelperMethods()
     {
         RenderUnwrapHelper();
+        AppendLine();
+
+        // The width bound (#310): a chain of joined comparisons or sorts is walked recursively by whatever
+        // reads the query, and a wide enough one overflows the stack, which ends the process.
+        AppendLine("private static int CountedTerms(int terms)");
+        IncreaseIndent();
+        AppendLine("=> terms > global::Pragmatic.Persistence.Query.Adapters.GridFilterTooLargeException.MaxTerms");
+        AppendLine("    ? throw new global::Pragmatic.Persistence.Query.Adapters.GridFilterTooLargeException(terms)");
+        AppendLine("    : terms;");
+        DecreaseIndent();
         AppendLine();
 
         // TryConvert<T> helper

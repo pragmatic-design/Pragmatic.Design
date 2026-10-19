@@ -831,6 +831,7 @@
   <Folder Name="/Fuzz/">
     <Project Path="Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz/Pragmatic.Agent.Fuzz.csproj" />
     <Project Path="Pragmatic.Documents/fuzz/Pragmatic.Documents.Fuzz/Pragmatic.Documents.Fuzz.csproj" />
+    <Project Path="Pragmatic.Persistence/fuzz/Pragmatic.Persistence.Fuzz/Pragmatic.Persistence.Fuzz.csproj" />
   </Folder>
 
   <!-- ══════════════════════════════════════════════════════ TESTS -->
