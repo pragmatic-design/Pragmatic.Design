@@ -18,4 +18,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Agent.Tests/Pragmatic.Agent.Tests.csproj" />
   </Folder>
+
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Agent.Fuzz/Pragmatic.Agent.Fuzz.csproj" />
+  </Folder>
 </Solution>

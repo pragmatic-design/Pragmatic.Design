@@ -2712,6 +2712,7 @@ function sourceChecks() {
     && nodeTestCases('scripts/benchmark-selection.test.mjs', 'a pull request runs every benchmark its change reaches')
     && nodeTestCases('scripts/ci-paths.test.mjs', 'only Markdown that nothing builds skips the build in CI')
     && nodeTestCases('scripts/check-root.test.mjs', 'the gate reads its own repository from any directory')
+    && nodeTestCases('scripts/fuzz.test.mjs', 'the fuzz runner finds every harness and keeps its seeds apart')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()

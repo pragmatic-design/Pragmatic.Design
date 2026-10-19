@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Agent.Protocol\Pragmatic.Agent.Protocol.csproj" />
+  </ItemGroup>
+
+</Project>
