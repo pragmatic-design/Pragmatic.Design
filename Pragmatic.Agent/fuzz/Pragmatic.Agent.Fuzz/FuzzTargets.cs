@@ -11,5 +11,6 @@ public static class FuzzTargets
     public static IReadOnlyDictionary<string, ReadOnlySpanAction> All { get; } = new Dictionary<string, ReadOnlySpanAction>
     {
         ["frame-codec"] = FrameCodecTarget.Run,
+        ["gossip-datagram"] = GossipDatagramTarget.Run,
     };
 }

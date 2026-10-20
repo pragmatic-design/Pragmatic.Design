@@ -11,6 +11,8 @@
   <!-- Expose internals to test project -->
   <ItemGroup>
     <InternalsVisibleTo Include="Pragmatic.Messaging.Tests" />
+    <!-- The headers harness (#312) builds a context through the internal SqlQueueConsumer.ToContext. -->
+    <InternalsVisibleTo Include="Pragmatic.Messaging.Fuzz" />
   </ItemGroup>
 
   <!-- Core dependencies -->

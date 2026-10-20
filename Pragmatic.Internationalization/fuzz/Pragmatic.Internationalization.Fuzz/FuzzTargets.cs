@@ -10,6 +10,7 @@ public static class FuzzTargets
 {
     public static IReadOnlyDictionary<string, ReadOnlySpanAction> All { get; } = new Dictionary<string, ReadOnlySpanAction>
     {
+        ["culture-code"] = CultureCodeTarget.Run,
         ["i18n-json"] = InternationalizationJsonTarget.Run,
     };
 }

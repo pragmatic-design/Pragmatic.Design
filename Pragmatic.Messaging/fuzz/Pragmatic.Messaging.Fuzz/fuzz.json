@@ -1,0 +1,10 @@
+{
+  "targets": {
+    "message-type-registry": {
+      "instrument": ["Pragmatic.Messaging.Core.dll"]
+    },
+    "sql-headers": {
+      "instrument": ["Pragmatic.Messaging.Sql.dll"]
+    }
+  }
+}

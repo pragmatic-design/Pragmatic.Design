@@ -1,5 +1,8 @@
 {
   "targets": {
+    "culture-code": {
+      "instrument": ["Pragmatic.Internationalization.dll"]
+    },
     "i18n-json": {
       "instrument": ["Pragmatic.Internationalization.dll", "Pragmatic.Internationalization.AspNetCore.dll"]
     }

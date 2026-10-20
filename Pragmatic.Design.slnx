@@ -832,8 +832,10 @@
     <Project Path="Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz/Pragmatic.Agent.Fuzz.csproj" />
     <Project Path="Pragmatic.Documents/fuzz/Pragmatic.Documents.Fuzz/Pragmatic.Documents.Fuzz.csproj" />
     <Project Path="Pragmatic.Internationalization/fuzz/Pragmatic.Internationalization.Fuzz/Pragmatic.Internationalization.Fuzz.csproj" />
+    <Project Path="Pragmatic.Messaging/fuzz/Pragmatic.Messaging.Fuzz/Pragmatic.Messaging.Fuzz.csproj" />
     <Project Path="Pragmatic.Patch/fuzz/Pragmatic.Patch.Fuzz/Pragmatic.Patch.Fuzz.csproj" />
     <Project Path="Pragmatic.Persistence/fuzz/Pragmatic.Persistence.Fuzz/Pragmatic.Persistence.Fuzz.csproj" />
+    <Project Path="Pragmatic.Result/fuzz/Pragmatic.Result.Fuzz/Pragmatic.Result.Fuzz.csproj" />
     <Project Path="Pragmatic.Temporal/fuzz/Pragmatic.Temporal.Fuzz/Pragmatic.Temporal.Fuzz.csproj" />
   </Folder>
 

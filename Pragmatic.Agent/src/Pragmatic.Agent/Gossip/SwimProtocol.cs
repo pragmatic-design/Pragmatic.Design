@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
 using Pragmatic.Agent.KV;
 
@@ -296,8 +295,7 @@ internal sealed partial class SwimProtocol : IDisposable
                     payloadBytes = result.Buffer;
                 }
 
-                var json = Encoding.UTF8.GetString(payloadBytes);
-                var message = JsonSerializer.Deserialize(json, GossipJsonContext.Default.GossipMessage);
+                var message = GossipWire.Read(payloadBytes);
                 if (message is not null)
                 {
                     // Handle OFF the receive loop: a PingReq handler pings the target and waits up
