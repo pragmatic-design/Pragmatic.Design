@@ -11,9 +11,18 @@ namespace Pragmatic.Persistence.Query.Adapters;
 internal static class FilterValue
 {
     /// <summary>
+    ///     What a JSON string or object reads as when its bytes are not UTF-8: a value no column can be compared with.
+    /// </summary>
+    /// <remarks>
+    ///     Not <c>null</c>, which it was: an unreadable value then read as a JSON <c>null</c>, and
+    ///     <c>["name","&lt;&gt;",…]</c> became <c>name != null</c>, every row (#318).
+    /// </remarks>
+    public static readonly object Unreadable = new();
+
+    /// <summary>
     ///     The value converted to <paramref name="targetType" />, unwrapping a <see cref="JsonElement" /> first.
     /// </summary>
-    /// <exception cref="FormatException">The text is not a value of the type.</exception>
+    /// <exception cref="FormatException">The text is not a value of the type, or could not be read.</exception>
     /// <exception cref="InvalidCastException">The value cannot become one of the type.</exception>
     /// <exception cref="OverflowException">The value is past the type's range.</exception>
     /// <exception cref="ArgumentException">The text names no member of the enum.</exception>
@@ -22,6 +31,9 @@ internal static class FilterValue
         value = Unwrap(value);
         if (value == null)
             return null;
+
+        if (ReferenceEquals(value, Unreadable))
+            throw new FormatException("The value is a string or an object whose bytes are not UTF-8.");
 
         // Already the correct type
         if (targetType.IsInstanceOfType(value))
@@ -64,7 +76,7 @@ internal static class FilterValue
     {
         return element.ValueKind switch
         {
-            JsonValueKind.String => ReadString(element),
+            JsonValueKind.String => ReadString(element) ?? Unreadable,
             // (object) on both arms: without it the ternary's type is double, every integer arrived as one, and
             // an enum by number (Enum.ToObject refuses a double) or a long past 2^53 could not be filtered on.
             JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l : element.GetDouble(),
@@ -73,7 +85,7 @@ internal static class FilterValue
             JsonValueKind.Null => null,
             JsonValueKind.Array => element.EnumerateArray()
                 .Select(e => (object?)Read(e)).ToList() as object,
-            _ => ReadRawText(element)
+            _ => ReadRawText(element) ?? Unreadable
         };
     }
 

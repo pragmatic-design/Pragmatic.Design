@@ -367,9 +367,10 @@ public record GroupClause(string Field, SortDirection? SortDirection = null);
 | `In` | ⚠️ Not generated on the grid path; see below |
 | `Between` | ⚠️ Not generated anywhere; see below |
 
-⚠️ **A clause the generated code does not handle is dropped, not refused.** The `switch` ends in
+⚠️ **A clause the generated bridge does not handle is dropped, not refused.** The `switch` ends in
 `_ => query`, so an `In` or `Between` clause arriving from a grid returns the query **unrestricted**:
-more rows than the caller asked for, with no error. What each path really covers:
+more rows than the caller asked for, with no error. The grid adapters refuse such a clause (see "A clause the
+adapter cannot apply" below); the bridge does not yet (#325). What each path really covers:
 
 | Path | Operators generated |
 |---|---|
@@ -491,7 +492,7 @@ repository for an untracked source instead (`repository.Query(QueryStrategy.Proj
 `.AsNoTracking()` on the `IQueryable` that comes out of `Build`. Pass the `IQueryFilterProvider` too:
 without it `Build` applies no global filter at all.
 
-**DevExpress filter format**: `["field", "operator", value]` arrays with `"and"`/`"or"` connectives. Supports negation via `["!", [subfilter]]`.
+**DevExpress filter format**: `["field", "operator", value]` arrays with `"and"`/`"or"` connectives. Supports negation via `["!", [subfilter]]`, and a group of one clause, `[["field", "operator", value]]`, is read as that clause.
 
 ```json
 [["name", "contains", "Rome"], "and", ["starRating", ">=", 3]]
@@ -510,13 +511,34 @@ var query = builder.Build(repository.Query(), filterProvider).AsNoTracking();
 
 **PrimeNG match modes**: `equals`, `notEquals`, `contains`, `notContains`, `startsWith`, `endsWith`, `lt`, `lte`, `gt`, `gte`, `in`, `between`.
 
-**Global filter**: Applies a `Contains` search across all specified `GlobalFilterFields` (string properties only), combined with OR logic.
+**Global filter**: Applies a `Contains` search across the text columns among `GlobalFilterFields`, combined with
+OR logic. A column of another type is passed over, since a grid lists every column it shows; a search that names
+no text column is refused.
 
 **Column filter values** arrive as JSON, so `PrimeNGFilterMetadata.Value` binds as a `JsonElement`; the adapter
 reads it into the column's type, an enum by name or number. `in` and `between` take an array and convert each of
-its values; `between` needs exactly two. A clause the adapter cannot use (a value of the wrong type, a comparison
-the column's type does not define, a `between` of one value) is dropped, and the request's other clauses still
-apply.
+its values; `between` needs exactly two. A column filter whose value is `null` is not set, and is skipped.
+
+### A clause the adapter cannot apply
+
+The runtime adapters and `[GridAdapter<T>]` answer a clause they cannot apply with a refusal, never by leaving it
+out. A filter restricts: a clause left out answers with **more** rows than the client asked for, under a success
+status, and the grid shows them as the filtered result.
+
+| The clause | Thrown | `Rejection` |
+|---|---|---|
+| names a field the adapter does not filter on | `GridFieldRejectedException` | `Unknown`, or `Withheld` for a sensitive name the entity has |
+| is not a clause, a group or a negation: a connective other than `and`/`or`, an empty group, a trailing connective | `GridFilterRejectedException` | `Malformed` |
+| has an operator the field's type does not support, one outside its `AllowedOperators`, or a PrimeNG match mode the adapter does not know (`dateIs`, `dateBefore`, …) | `GridFilterRejectedException` | `UnsupportedOperator` |
+| has a value the field cannot be compared with: another type, past its range, a string that is not UTF-8, `null` in a string match or an ordering, an `in` with no values, a `between` without two | `GridFilterRejectedException` | `UnusableValue` |
+
+The field is checked first, so neither the operator nor the value says whether a withheld column exists. The host
+(`UsePragmaticExceptionMapping`) answers both with 400: a `GridFieldRejectedException` names the field and never
+the reason, a `GridFilterRejectedException` says which clause and why. `=` and `<>` against `null` are comparisons,
+not refusals, on a column that can hold it.
+
+A sort on a column the adapter does not sort on is still passed over: it changes the order of the page, not which
+rows are in it.
 
 ### The width of a request
 

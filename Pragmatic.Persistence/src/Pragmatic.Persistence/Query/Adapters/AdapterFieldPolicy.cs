@@ -66,7 +66,34 @@ internal static class AdapterFieldPolicy
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
         TEntity>(ParameterExpression parameter, string? field)
+        => Resolve<TEntity>(parameter, field, out _);
+
+    /// <summary>
+    ///     The member access for the field a filter clause names, or a <see cref="GridFieldRejectedException" />
+    ///     when the field must not be exposed: a filter that left the clause out would answer with more rows than
+    ///     the client asked for (#318).
+    /// </summary>
+    /// <param name="parameter">The lambda parameter the expression is built over.</param>
+    /// <param name="field">The field name the client supplied.</param>
+    /// <remarks>
+    ///     <see cref="GridFieldRejection.Withheld" /> only for a property the entity has under a sensitive name, as
+    ///     the generated bridge says it; an undeclared or missing one is <see cref="GridFieldRejection.Unknown" />.
+    /// </remarks>
+    public static MemberExpression ResolveFilterableMember<
+        [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+            global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
+            | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        TEntity>(ParameterExpression parameter, string? field)
+        => Resolve<TEntity>(parameter, field, out var rejection)
+           ?? throw new GridFieldRejectedException(field ?? "", rejection);
+
+    private static MemberExpression? Resolve<
+        [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+            global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
+            | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        TEntity>(ParameterExpression parameter, string? field, out GridFieldRejection rejection)
     {
+        rejection = GridFieldRejection.Unknown;
         if (string.IsNullOrEmpty(field))
             return null;
 
@@ -78,10 +105,12 @@ internal static class AdapterFieldPolicy
         var property = typeof(TEntity).GetProperty(
             field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
-        if (property is null
-            || global::Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name)
-            || !IsScalar(property.PropertyType))
+        if (property is null || !IsScalar(property.PropertyType))
+            return null;
+
+        if (global::Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name))
         {
+            rejection = GridFieldRejection.Withheld;
             return null;
         }
 

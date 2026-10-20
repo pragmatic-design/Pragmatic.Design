@@ -7,9 +7,10 @@ using PersistenceQuery = Pragmatic.Persistence.Query.Query;
 namespace Pragmatic.Persistence.Tests.AdapterTests;
 
 /// <summary>
-///     The runtime grid adapters read load options a client sends (#158, #310). For any request they have two
-///     outcomes: a query that runs, or a <see cref="GridFilterTooLargeException" /> past the width bound. Every
-///     request here is JSON deserialized as an endpoint binds it.
+///     The runtime grid adapters read load options a client sends (#158, #310). For any request they have four
+///     outcomes: a query that runs, a <see cref="GridFilterTooLargeException" /> past the width bound, and the refusal
+///     of a field (<see cref="GridFieldRejectedException" />) or of a clause (<see cref="GridFilterRejectedException" />)
+///     they cannot apply (#318). Every request here is JSON deserialized as an endpoint binds it.
 /// </summary>
 public class GridAdapterPropertyTests
 {
@@ -26,11 +27,10 @@ public class GridAdapterPropertyTests
         "[\"number\",\"<>\",0]");
 
     // A clause or, now and then, a small group of them or a negated clause: what a filter builder sends. A group
-    // has two clauses at least: the runtime parser reads a group of one as nothing and drops the whole filter,
-    // which is #318's to decide, not this property's.
+    // of one is among them: it is read as the clause it holds (#318).
     private static readonly Gen<(string Json, int Clauses)> Elements = Gen.Frequency(
         (9, Clauses.Select(c => (c, 1))),
-        (1, from width in Gen.Choose(2, 5)
+        (1, from width in Gen.Choose(1, 5)
             from items in Clauses.ListOf(width)
             from connective in Gen.Elements("and", "or")
             select ("[" + string.Join($",\"{connective}\",", items) + "]", width)),
@@ -68,23 +68,15 @@ public class GridAdapterPropertyTests
         }).Check(Config.QuickThrowOnFailure.WithMaxTest(200));
 
     [Fact]
-    public void Any_devexpress_filter_gives_a_query_that_runs_or_the_refusal()
+    public void Any_devexpress_filter_gives_a_query_that_runs_or_a_refusal()
         => Prop.ForAll(Anything.ToArbitrary(), filter =>
         {
             var options = JsonSerializer.Deserialize<DevExpressLoadOptions>($"{{\"filter\":{filter}}}", JsonSerializerOptions.Web)!;
-            try
-            {
-                PersistenceQuery.For<Order>().FromDevExpress(options).Build(Orders.AsQueryable()).ToList();
-            }
-            catch (GridFilterTooLargeException)
-            {
-            }
-
-            return true;
+            return RunsOrIsRefused(() => PersistenceQuery.For<Order>().FromDevExpress(options).Build(Orders.AsQueryable()).ToList());
         }).Check(Config.QuickThrowOnFailure.WithMaxTest(500));
 
     [Fact]
-    public void Any_primeng_request_gives_a_query_that_runs_or_the_refusal()
+    public void Any_primeng_request_gives_a_query_that_runs_or_a_refusal()
     {
         var filters =
             from count in Gen.Choose(0, 6)
@@ -103,16 +95,22 @@ public class GridAdapterPropertyTests
         Prop.ForAll(requests.ToArbitrary(), json =>
         {
             var lazyEvent = JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(json, JsonSerializerOptions.Web)!;
-            try
-            {
-                PersistenceQuery.For<Order>().FromPrimeNG(lazyEvent).Build(Orders.AsQueryable()).ToList();
-            }
-            catch (GridFilterTooLargeException)
-            {
-            }
-
-            return true;
+            return RunsOrIsRefused(() => PersistenceQuery.For<Order>().FromPrimeNG(lazyEvent).Build(Orders.AsQueryable()).ToList());
         }).Check(Config.QuickThrowOnFailure.WithMaxTest(300));
+    }
+
+    // The declared outcomes; anything else escapes and fails the property.
+    private static bool RunsOrIsRefused(Func<List<Order>> query)
+    {
+        try
+        {
+            query();
+            return true;
+        }
+        catch (Exception e) when (e is GridFilterTooLargeException or GridFieldRejectedException or GridFilterRejectedException)
+        {
+            return true;
+        }
     }
 
     private static readonly Gen<string> AnyValue = Gen.Elements(

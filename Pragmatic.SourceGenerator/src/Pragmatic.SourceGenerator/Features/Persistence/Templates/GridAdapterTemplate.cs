@@ -7,7 +7,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 /// <summary>
 ///     Generates optimized, compile-time grid adapter code.
 /// </summary>
-internal sealed class GridAdapterTemplate : CSharpTemplate
+internal sealed partial class GridAdapterTemplate : CSharpTemplate
 {
     private readonly GridAdapterModel _model;
 
@@ -156,9 +156,19 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         DecreaseIndent();
         Block(() =>
         {
-            AppendLine("// Every column filter, global-filter column and sort nests the query one level deeper; past");
-            AppendLine("// the bound the request is refused before the chain is built (GridFilterTooLargeException).");
+            AppendLine("// Every column filter (each value of an in or a between), global-filter column and sort nests the");
+            AppendLine("// query one level deeper. Counted before anything is built, so a request past the bound is refused");
+            AppendLine("// as too wide whatever else is wrong with it (GridFilterTooLargeException).");
             AppendLine("var terms = 0;");
+            AppendLine("if (lazyEvent.Filters != null)");
+            Block(() =>
+            {
+                AppendLine("foreach (var filter in lazyEvent.Filters)");
+                Block(() => AppendLine("if (filter.Value.Value != null) terms += TermsOf(filter.Value);"));
+            });
+            AppendLine("if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter)) terms += lazyEvent.GlobalFilterFields?.Count ?? 0;");
+            AppendLine("if (string.IsNullOrEmpty(lazyEvent.SortField) && lazyEvent.MultiSortMeta != null) terms += lazyEvent.MultiSortMeta.Count;");
+            AppendLine("_ = CountedTerms(terms);");
             AppendLine();
 
             // Filters
@@ -169,18 +179,16 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                 Block(() =>
                 {
                     AppendLine("if (filter.Value.Value == null) continue;");
-                    AppendLine("terms = CountedTerms(terms + 1);");
                     AppendLine("query = ApplyPrimeNGFilter(query, filter.Key, filter.Value);");
                 });
             });
             AppendLine();
 
-            // Global filter
-            AppendLine("if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter) && lazyEvent.GlobalFilterFields != null)");
+            // Global filter: a search with no column to search is refused with the rest, not ignored.
+            AppendLine("if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter))");
             Block(() =>
             {
-                AppendLine("terms = CountedTerms(terms + lazyEvent.GlobalFilterFields.Count);");
-                AppendLine("query = ApplyGlobalFilter(query, lazyEvent.GlobalFilter, lazyEvent.GlobalFilterFields);");
+                AppendLine("query = ApplyGlobalFilter(query, lazyEvent.GlobalFilter, lazyEvent.GlobalFilterFields ?? global::System.Array.Empty<string>());");
             });
             AppendLine();
 
@@ -193,7 +201,6 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("else if (lazyEvent.MultiSortMeta != null)");
             Block(() =>
             {
-                AppendLine("terms = CountedTerms(terms + lazyEvent.MultiSortMeta.Count);");
                 AppendLine("var isFirst = true;");
                 AppendLine("foreach (var sort in lazyEvent.MultiSortMeta)");
                 Block(() =>
@@ -234,97 +241,8 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         RenderGlobalFilterMethod();
     }
 
-    private void RenderNestedFilterMethod()
+    private void RenderExpressionCombiner()
     {
-        AppendLine($"private static IQueryable<{_model.EntityTypeFullName}> ApplyNestedFilter(");
-        IncreaseIndent();
-        AppendLine($"IQueryable<{_model.EntityTypeFullName}> query,");
-        AppendLine("IReadOnlyList<object?> filter,");
-        AppendLine("ref int terms)");
-        DecreaseIndent();
-        Block(() =>
-        {
-            AppendLine("var expr = ParseFilterExpression(filter, ref terms);");
-            AppendLine("return expr != null ? query.Where(expr) : query;");
-        });
-        AppendLine();
-
-        // Recursive filter expression parser
-        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>>? ParseFilterExpression(IReadOnlyList<object?> filter, ref int terms)");
-        Block(() =>
-        {
-            AppendLine("if (filter.Count == 0) return null;");
-            AppendLine();
-            AppendLine("// Simple filter: [field, op, value]");
-            AppendLine("// ⚠️ Unwrapped first: a filter that arrived over HTTP is a list of JsonElement,");
-            AppendLine("// not of string, so testing `is string` here matched nothing and the whole");
-            AppendLine("// branch was dead — the query came back unfiltered.");
-            AppendLine("if (filter.Count == 3 && Unwrap(filter[0]) is string field && Unwrap(filter[1]) is string op)");
-            Block(() =>
-            {
-                AppendLine("terms = CountedTerms(terms + 1);");
-                AppendLine("return CreateFieldFilter(field, op, Unwrap(filter[2]));");
-            });
-            AppendLine();
-            AppendLine("// Composite filter: [filter1, \"and\"/\"or\", filter2, ...]");
-            AppendLine("if (filter.Count >= 3)");
-            Block(() =>
-            {
-                AppendLine($"Expression<Func<{_model.EntityTypeFullName}, bool>>? combined = null;");
-                AppendLine("var currentOp = \"and\";");
-                AppendLine();
-                AppendLine("for (var i = 0; i < filter.Count; i++)");
-                Block(() =>
-                {
-                    AppendLine("if (Unwrap(filter[i]) is string logical && (logical == \"and\" || logical == \"or\"))");
-                    Block(() =>
-                    {
-                        AppendLine("currentOp = logical;");
-                        AppendLine("continue;");
-                    });
-                    AppendLine();
-                    AppendLine("// A nested group that arrived as JSON is an array element, not a list.");
-                    AppendLine("if (filter[i] is global::System.Text.Json.JsonElement { ValueKind: global::System.Text.Json.JsonValueKind.Array } jsonGroup)");
-                    Block(() =>
-                    {
-                        AppendLine("var groupExpr = ParseFilterExpression([.. jsonGroup.EnumerateArray().Select(e => (object?)e)], ref terms);");
-                        AppendLine("if (groupExpr != null)");
-                        Block(() =>
-                        {
-                            AppendLine("combined = combined == null ? groupExpr : CombineExpressions(combined, groupExpr, currentOp);");
-                        });
-                        AppendLine("continue;");
-                    });
-                    AppendLine();
-                    AppendLine("if (filter[i] is IReadOnlyList<object?> nested)");
-                    Block(() =>
-                    {
-                        AppendLine("var nestedExpr = ParseFilterExpression(nested, ref terms);");
-                        AppendLine("if (nestedExpr != null)");
-                        Block(() =>
-                        {
-                            AppendLine("combined = combined == null ? nestedExpr : CombineExpressions(combined, nestedExpr, currentOp);");
-                        });
-                    });
-                    AppendLine("else if (filter[i] is IList list)");
-                    Block(() =>
-                    {
-                        AppendLine("var nestedList = list.Cast<object?>().ToList();");
-                        AppendLine("var nestedExpr = ParseFilterExpression(nestedList, ref terms);");
-                        AppendLine("if (nestedExpr != null)");
-                        Block(() =>
-                        {
-                            AppendLine("combined = combined == null ? nestedExpr : CombineExpressions(combined, nestedExpr, currentOp);");
-                        });
-                    });
-                });
-                AppendLine("return combined;");
-            });
-            AppendLine();
-            AppendLine("return null;");
-        });
-        AppendLine();
-
         // Expression combiner
         AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>> CombineExpressions(");
         IncreaseIndent();
@@ -374,124 +292,6 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             {
                 AppendLine("return node == _oldParam ? _newParam : base.VisitParameter(node);");
             });
-        });
-    }
-
-    private void RenderSimpleFilterMethod()
-    {
-        AppendLine($"private static IQueryable<{_model.EntityTypeFullName}> ApplySimpleFilter(");
-        IncreaseIndent();
-        AppendLine($"IQueryable<{_model.EntityTypeFullName}> query,");
-        AppendLine("IReadOnlyList<object?> filter)");
-        DecreaseIndent();
-        Block(() =>
-        {
-            AppendLine("if (filter.Count != 3) return query;");
-            AppendLine("var field = Text(filter[0]);");
-            AppendLine("var op = Text(filter[1]);");
-            AppendLine("if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(op)) return query;");
-            AppendLine();
-            AppendLine("var expr = CreateFieldFilter(field, op, Unwrap(filter[2]));");
-            AppendLine("return expr != null ? query.Where(expr) : query;");
-        });
-    }
-
-    private void RenderPrimeNGFilterMethod()
-    {
-        AppendLine($"private static IQueryable<{_model.EntityTypeFullName}> ApplyPrimeNGFilter(");
-        IncreaseIndent();
-        AppendLine($"IQueryable<{_model.EntityTypeFullName}> query,");
-        AppendLine("string field,");
-        AppendLine("PrimeNGFilterMetadata filterMeta)");
-        DecreaseIndent();
-        Block(() =>
-        {
-            AppendLine("var matchMode = filterMeta.MatchMode?.ToLowerInvariant() ?? \"contains\";");
-            AppendLine("var op = matchMode switch");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine("\"equals\" => \"=\",");
-            AppendLine("\"notequals\" => \"<>\",");
-            AppendLine("\"lt\" => \"<\",");
-            AppendLine("\"lte\" => \"<=\",");
-            AppendLine("\"gt\" => \">\",");
-            AppendLine("\"gte\" => \">=\",");
-            AppendLine("\"contains\" => \"contains\",");
-            AppendLine("\"startswith\" => \"startswith\",");
-            AppendLine("\"endswith\" => \"endswith\",");
-            AppendLine("\"notcontains\" => \"notcontains\",");
-            AppendLine("_ => \"=\"");
-            DecreaseIndent();
-            AppendLine("};");
-            AppendLine();
-            AppendLine("var expr = CreateFieldFilter(field, op, filterMeta.Value);");
-            AppendLine("return expr != null ? query.Where(expr) : query;");
-        });
-    }
-
-    /// <summary>
-    ///     The grid's single search box: one value matched against every text field, joined by OR.
-    /// </summary>
-    /// <remarks>
-    ///     ⚠️ A typed lambda, not an expression built by hand — <c>typeof(string).GetMethod("Contains")</c>
-    ///     and <c>Expression.Property(parameter, "Name")</c> would be reflection, at run time, in the
-    ///     consumer's application, emitted by an attribute whose own documentation promises "compile-time
-    ///     optimized, strongly-typed LINQ expressions". The switch knows the field at compile time, so a
-    ///     typed lambda says the same thing with none of it. <c>DevExpressAdapter</c> in the runtime
-    ///     captures its MethodInfo from a typed lambda the same way.
-    ///     <para>
-    ///         And nothing would catch it: the reflection ratchet skips <c>.g.cs</c> because "the
-    ///         generator is measured by what it emits", then skips generator projects because "a
-    ///         generator runs at compile time where reflection costs nothing" — so what a template puts
-    ///         into an application is measured by neither half.
-    ///     </para>
-    /// </remarks>
-    private void RenderGlobalFilterMethod()
-    {
-        var stringFields = _model.Fields
-            .Where(f => f.Filterable && f.TypeCategory == PropertyTypeCategory.String)
-            .ToList();
-
-        AppendLine($"private static IQueryable<{_model.EntityTypeFullName}> ApplyGlobalFilter(");
-        IncreaseIndent();
-        AppendLine($"IQueryable<{_model.EntityTypeFullName}> query,");
-        AppendLine("string searchValue,");
-        AppendLine("IReadOnlyList<string> fields)");
-        DecreaseIndent();
-        Block(() =>
-        {
-            if (stringFields.Count == 0)
-            {
-                AppendLine("return query;");
-                return;
-            }
-
-            AppendLine($"global::System.Linq.Expressions.Expression<Func<{_model.EntityTypeFullName}, bool>>? combined = null;");
-            AppendLine();
-            AppendLine("foreach (var field in fields)");
-            Block(() =>
-            {
-                AppendLine($"global::System.Linq.Expressions.Expression<Func<{_model.EntityTypeFullName}, bool>>? predicate = field.ToLowerInvariant() switch");
-                AppendLine("{");
-                IncreaseIndent();
-                foreach (var field in stringFields)
-                {
-                    AppendLine($"\"{field.JsonField.ToLowerInvariant()}\" => e => e.{field.PropertyPath}.Contains(searchValue),");
-                }
-                AppendLine("_ => null");
-                DecreaseIndent();
-                AppendLine("};");
-                AppendLine();
-                AppendLine("if (predicate is not null)");
-                Block(() =>
-                {
-                    AppendLine("combined = combined is null");
-                    AppendLine("    ? predicate");
-                    AppendLine("    : global::Pragmatic.Persistence.Query.Adapters.GridPredicate.Or(combined, predicate);");
-                });
-            });
-            AppendLine();
-            AppendLine("return combined is null ? query : query.Where(combined);");
         });
     }
 
@@ -554,20 +354,29 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine();
         }
 
-        // Generate the main CreateFieldFilter dispatcher
-        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>>? CreateFieldFilter(string field, string op, object? value)");
+        // Generate the main CreateFieldFilter dispatcher: the field first, so neither the operator nor the value
+        // says whether a withheld column exists.
+        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>> CreateFieldFilter(string field, string? op, object? value)");
         Block(() =>
         {
-            AppendLine("if (value == null) return null;");
+            AppendLine("if (!IsFilterable(field))");
+            IncreaseIndent();
+            AppendLine("throw RejectedField(field);");
+            DecreaseIndent();
+            AppendLine();
+            AppendLine("if (op is null)");
+            IncreaseIndent();
+            AppendLine("throw Unsupported(field, op);");
+            DecreaseIndent();
             AppendLine();
             AppendLine("return field.ToLowerInvariant() switch");
             AppendLine("{");
             IncreaseIndent();
             foreach (var filterField in _model.Fields.Where(f => f.Filterable))
             {
-                AppendLine($"\"{filterField.JsonField.ToLowerInvariant()}\" => Create{filterField.PropertyName}Filter(op, value),");
+                AppendLine($"\"{filterField.JsonField.ToLowerInvariant()}\" => Create{filterField.PropertyName}Filter(field, op, value),");
             }
-            AppendLine("_ => null");
+            AppendLine("_ => throw RejectedField(field),");
             DecreaseIndent();
             AppendLine("};");
         });
@@ -583,10 +392,11 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
 
     private void RenderFieldFilterMethod(GridFieldModel field)
     {
-        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>>? Create{field.PropertyName}Filter(string op, object? value)");
+        AppendLine($"private static Expression<Func<{_model.EntityTypeFullName}, bool>> Create{field.PropertyName}Filter(string field, string op, object? value)");
         Block(() =>
         {
             RenderAllowedOperatorsGuard(field);
+            RenderNullComparison(field);
 
             switch (field.TypeCategory)
             {
@@ -609,10 +419,43 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
                     RenderEnumFilter(field);
                     break;
                 default:
-                    AppendLine("return null;");
+                    AppendLine("throw Unsupported(field, op);");
                     break;
             }
         });
+    }
+
+    /// <summary>
+    ///     A clause against <c>null</c>: equality and inequality on a column that can hold it, as the runtime adapter
+    ///     compares; anything else is a value the column cannot be compared with.
+    /// </summary>
+    /// <remarks>
+    ///     The dispatcher dropped every clause with a null value, so <c>["city","&lt;&gt;",null]</c> answered with
+    ///     the rows that have no city as well (#318).
+    /// </remarks>
+    private void RenderNullComparison(GridFieldModel field)
+    {
+        AppendLine("if (Unwrap(value) is null)");
+        if (field.TypeCategory != PropertyTypeCategory.String && !field.IsNullable)
+        {
+            IncreaseIndent();
+            AppendLine("throw Unusable(field);");
+            DecreaseIndent();
+            AppendLine();
+            return;
+        }
+
+        IncreaseIndent();
+        AppendLine("return op.ToLowerInvariant() switch");
+        AppendLine("{");
+        IncreaseIndent();
+        AppendLine($"\"=\" or \"==\" or \"equals\" => e => e.{field.PropertyPath} == null,");
+        AppendLine($"\"<>\" or \"!=\" or \"notequals\" => e => e.{field.PropertyPath} != null,");
+        AppendLine("_ => throw Unusable(field),");
+        DecreaseIndent();
+        AppendLine("};");
+        DecreaseIndent();
+        AppendLine();
     }
 
     private void RenderAllowedOperatorsGuard(GridFieldModel field)
@@ -629,7 +472,10 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             return;
 
         var condition = string.Join(" or ", tokens.Select(t => $"\"{t}\""));
-        AppendLine($"if (op.ToLowerInvariant() is not ({condition})) return null;");
+        AppendLine($"if (op.ToLowerInvariant() is not ({condition}))");
+        IncreaseIndent();
+        AppendLine("throw Unsupported(field, op);");
+        DecreaseIndent();
         AppendLine();
     }
 
@@ -699,7 +545,9 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
             AppendLine("return json.ValueKind switch");
             AppendLine("{");
             IncreaseIndent();
-            AppendLine("global::System.Text.Json.JsonValueKind.String => ReadString(json),");
+            AppendLine("// A string whose bytes are not UTF-8 stays the element: no column converts it, and a null it");
+            AppendLine("// would have been read as made [\"city\",\"<>\",…] a clause on nothing (#318).");
+            AppendLine("global::System.Text.Json.JsonValueKind.String => ReadString(json) ?? (object)json,");
             AppendLine("global::System.Text.Json.JsonValueKind.True => true,");
             AppendLine("global::System.Text.Json.JsonValueKind.False => false,");
             AppendLine("global::System.Text.Json.JsonValueKind.Null or global::System.Text.Json.JsonValueKind.Undefined => null,");
@@ -724,12 +572,16 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         });
         AppendLine();
 
-        // The text a filter compares against. An object or an array the client sent is its raw JSON, which
-        // GetRawText transcodes and throws on in the same way, so it is read just as carefully.
+        // The text a filter compares against, null when there is none. An object the client sent is its raw JSON,
+        // which GetRawText transcodes and throws on in the same way, so it is read just as carefully. An array is
+        // not a text, as the runtime adapter refuses it, and a string still an element here is one that could not
+        // be read.
         AppendLine("private static string? Text(object? value)");
         Block(() =>
         {
             AppendLine("if (Unwrap(value) is not global::System.Text.Json.JsonElement json) return Unwrap(value)?.ToString();");
+            AppendLine();
+            AppendLine("if (json.ValueKind is global::System.Text.Json.JsonValueKind.String or global::System.Text.Json.JsonValueKind.Array) return null;");
             AppendLine();
             AppendLine("try");
             Block(() => AppendLine("return json.GetRawText();"));
@@ -741,7 +593,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
     private void RenderStringFilter(GridFieldModel field)
     {
         AppendLine("var strValue = Text(value);");
-        AppendLine("if (string.IsNullOrEmpty(strValue)) return null;");
+        AppendLine("if (strValue is null) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
@@ -752,7 +604,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         AppendLine($"\"notcontains\" => e => e.{field.PropertyPath} == null || !e.{field.PropertyPath}.Contains(strValue),");
         AppendLine($"\"startswith\" => e => e.{field.PropertyPath} != null && e.{field.PropertyPath}.StartsWith(strValue),");
         AppendLine($"\"endswith\" => e => e.{field.PropertyPath} != null && e.{field.PropertyPath}.EndsWith(strValue),");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
@@ -761,7 +613,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
     {
         var type = field.IsNullable ? field.UnderlyingType : field.PropertyType;
 
-        AppendLine($"if (!TryConvert<{type}>(value, out var typedValue)) return null;");
+        AppendLine($"if (!TryConvert<{type}>(value, out var typedValue)) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
@@ -772,21 +624,21 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         AppendLine($"\">=\" or \"gte\" => e => e.{field.PropertyPath} >= typedValue,");
         AppendLine($"\"<\" or \"lt\" => e => e.{field.PropertyPath} < typedValue,");
         AppendLine($"\"<=\" or \"lte\" => e => e.{field.PropertyPath} <= typedValue,");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
 
     private void RenderBooleanFilter(GridFieldModel field)
     {
-        AppendLine("if (!TryConvert<bool>(value, out var typedValue)) return null;");
+        AppendLine("if (!TryConvert<bool>(value, out var typedValue)) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
         IncreaseIndent();
         AppendLine($"\"=\" or \"==\" or \"equals\" => e => e.{field.PropertyPath} == typedValue,");
         AppendLine($"\"<>\" or \"!=\" or \"notequals\" => e => e.{field.PropertyPath} != typedValue,");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
@@ -795,7 +647,7 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
     {
         var type = field.UnderlyingType;
 
-        AppendLine($"if (!TryConvert<{type}>(value, out var typedValue)) return null;");
+        AppendLine($"if (!TryConvert<{type}>(value, out var typedValue)) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
@@ -806,21 +658,21 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         AppendLine($"\">=\" or \"gte\" => e => e.{field.PropertyPath} >= typedValue,");
         AppendLine($"\"<\" or \"lt\" => e => e.{field.PropertyPath} < typedValue,");
         AppendLine($"\"<=\" or \"lte\" => e => e.{field.PropertyPath} <= typedValue,");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
 
     private void RenderGuidFilter(GridFieldModel field)
     {
-        AppendLine("if (!TryConvert<Guid>(value, out var typedValue)) return null;");
+        AppendLine("if (!TryConvert<Guid>(value, out var typedValue)) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
         IncreaseIndent();
         AppendLine($"\"=\" or \"==\" or \"equals\" => e => e.{field.PropertyPath} == typedValue,");
         AppendLine($"\"<>\" or \"!=\" or \"notequals\" => e => e.{field.PropertyPath} != typedValue,");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
@@ -830,14 +682,14 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
         // Use fully qualified name to avoid namespace issues
         var enumType = $"global::{field.UnderlyingTypeFullName}";
 
-        AppendLine($"if (!TryConvertEnum<{enumType}>(value, out var typedValue)) return null;");
+        AppendLine($"if (!TryConvertEnum<{enumType}>(value, out var typedValue)) throw Unusable(field);");
         AppendLine();
         AppendLine("return op.ToLowerInvariant() switch");
         AppendLine("{");
         IncreaseIndent();
         AppendLine($"\"=\" or \"==\" or \"equals\" => e => e.{field.PropertyPath} == typedValue,");
         AppendLine($"\"<>\" or \"!=\" or \"notequals\" => e => e.{field.PropertyPath} != typedValue,");
-        AppendLine("_ => null");
+        AppendLine("_ => throw Unsupported(field, op),");
         DecreaseIndent();
         AppendLine("};");
     }
@@ -845,6 +697,9 @@ internal sealed class GridAdapterTemplate : CSharpTemplate
     private void RenderHelperMethods()
     {
         RenderUnwrapHelper();
+        AppendLine();
+
+        RenderRefusalHelpers();
         AppendLine();
 
         // The width bound (#310): a chain of joined comparisons or sorts is walked recursively by whatever

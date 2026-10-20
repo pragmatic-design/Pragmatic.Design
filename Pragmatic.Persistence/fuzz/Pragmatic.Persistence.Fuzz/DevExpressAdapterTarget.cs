@@ -7,8 +7,10 @@ namespace Pragmatic.Persistence.Fuzz;
 ///     <see cref="FuzzOrder.Rows" />.
 /// </summary>
 /// <remarks>
-///     The declared outcomes are a query that runs and <see cref="GridFilterTooLargeException" />. Those return;
-///     anything else escapes and is a crash. A stack overflow is a crash libFuzzer sees too: the process dies.
+///     The declared outcomes are a query that runs, <see cref="GridFilterTooLargeException" />, and the refusal of a
+///     field or a clause the adapter cannot apply (<see cref="GridFieldRejectedException" />,
+///     <see cref="GridFilterRejectedException" />, #318). Those return; anything else escapes and is a crash. A stack
+///     overflow is a crash libFuzzer sees too: the process dies.
 /// </remarks>
 public static class DevExpressAdapterTarget
 {
@@ -21,7 +23,7 @@ public static class DevExpressAdapterTarget
         {
             _ = Query.Query.For<FuzzOrder>().FromDevExpress(options).Build(FuzzOrder.Rows()).ToList();
         }
-        catch (GridFilterTooLargeException)
+        catch (Exception e) when (e is GridFilterTooLargeException or GridFieldRejectedException or GridFilterRejectedException)
         {
         }
     }

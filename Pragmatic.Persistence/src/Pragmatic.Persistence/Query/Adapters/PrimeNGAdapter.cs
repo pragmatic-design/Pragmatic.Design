@@ -41,35 +41,21 @@ public static class PrimeNGAdapter
         PrimeNGLazyLoadEvent lazyEvent) where TEntity : class
     {
         // Every column filter, every value of an in, every column of the global filter and every sort adds to
-        // the query, and past GridFilterTooLargeException.MaxTerms the request is refused before any is built.
-        var terms = 0;
+        // the query, and past GridFilterTooLargeException.MaxTerms the request is refused before any is built:
+        // counted first, so the width is refused as the width whatever else is wrong with the request.
+        var columnFilters = lazyEvent.Filters?.Where(f => f.Value.Value != null).ToList() ?? [];
+        var globalFields = string.IsNullOrEmpty(lazyEvent.GlobalFilter) ? null : lazyEvent.GlobalFilterFields ?? [];
+        var sorts = string.IsNullOrEmpty(lazyEvent.SortField) ? lazyEvent.MultiSortMeta?.Count ?? 0 : 0;
+        Count(columnFilters.Sum(f => TermsOf(f.Value)) + (globalFields?.Count ?? 0) + sorts);
 
         // Apply filtering
-        if (lazyEvent.Filters != null)
-        {
-            foreach (var (field, filterMeta) in lazyEvent.Filters)
-            {
-                if (filterMeta.Value == null)
-                    continue;
-
-                terms = Count(terms, TermsOf(filterMeta));
-                var filter = CreateFilterExpression<TEntity>(field, filterMeta);
-                if (filter != null)
-                    builder = builder.WithFilter(filter);
-            }
-        }
+        foreach (var (field, filterMeta) in columnFilters)
+            builder = builder.WithFilter(CreateFilterExpression<TEntity>(field, filterMeta));
 
         // Apply global filter
-        if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter) && lazyEvent.GlobalFilterFields != null)
-        {
-            terms = Count(terms, lazyEvent.GlobalFilterFields.Count);
-            var globalFilter = CreateGlobalFilter<TEntity>(
-                lazyEvent.GlobalFilter,
-                lazyEvent.GlobalFilterFields);
-
-            if (globalFilter != null)
-                builder = builder.WithFilter(globalFilter);
-        }
+        // A search text with no column to search is refused with the rest (CreateGlobalFilter), not ignored.
+        if (globalFields != null)
+            builder = builder.WithFilter(CreateGlobalFilter<TEntity>(lazyEvent.GlobalFilter!, globalFields));
 
         // Apply sorting
         if (!string.IsNullOrEmpty(lazyEvent.SortField))
@@ -83,7 +69,6 @@ public static class PrimeNGAdapter
         }
         else if (lazyEvent.MultiSortMeta != null)
         {
-            terms = Count(terms, lazyEvent.MultiSortMeta.Count);
             foreach (var sortMeta in lazyEvent.MultiSortMeta)
             {
                 var sortExpr = CreateSortExpression<TEntity>(sortMeta.Field);
@@ -105,10 +90,10 @@ public static class PrimeNGAdapter
         return builder;
     }
 
-    private static int Count(int terms, int more)
+    private static void Count(int terms)
     {
-        terms += more;
-        return terms > GridFilterTooLargeException.MaxTerms ? throw new GridFilterTooLargeException(terms) : terms;
+        if (terms > GridFilterTooLargeException.MaxTerms)
+            throw new GridFilterTooLargeException(terms);
     }
 
     // One comparison, or one per value of an in or a between, read the way CreateInExpression reads them.
@@ -118,7 +103,7 @@ public static class PrimeNGAdapter
             ? values.Count
             : 1;
 
-    private static Expression<Func<TEntity, bool>>? CreateFilterExpression<
+    private static Expression<Func<TEntity, bool>> CreateFilterExpression<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -129,63 +114,86 @@ public static class PrimeNGAdapter
 
         // The entity's declared fields first, then the names that must never be exposed: a client
         // supplies this name, so filtering on a column the entity did not publish would answer
-        // whether a row holds a value — an oracle over data nobody offered.
-        if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
-            return null;
-
+        // whether a row holds a value — an oracle over data nobody offered. Refused, not skipped: a
+        // column filter left out answers with more rows than the grid shows as filtered (#318).
+        var property = AdapterFieldPolicy.ResolveFilterableMember<TEntity>(parameter, field);
         var matchMode = filterMeta.MatchMode?.ToLowerInvariant() ?? "contains";
 
+        // The operand per match mode: an in or a between converts each of its values. Converting the whole
+        // list as one value of the column's type failed for every list, so neither ever applied (#317).
+        var body = matchMode switch
+        {
+            "in" => CreateInExpression(property, field, filterMeta.Value),
+            "between" => CreateBetweenExpression(property, field, filterMeta.Value),
+            _ => CreateComparison(property, field, filterMeta.MatchMode, filterMeta.Value),
+        };
+
+        return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
+    }
+
+    private static Expression CreateComparison(MemberExpression property, string field, string? sentMode, object? value)
+    {
+        var matchMode = sentMode?.ToLowerInvariant() ?? "contains";
+
+        // An unknown match mode was read as equals: dateBefore answered with the rows on that date.
+        if (matchMode is not ("equals" or "notequals" or "lt" or "lte" or "gt" or "gte"
+                              or "contains" or "startswith" or "endswith" or "notcontains"))
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnsupportedOperator, sentMode);
+
+        // Against null only equality and inequality mean something: a string match throws on every row it is
+        // evaluated against, string.StartsWith(null).
+        if (FilterValue.Unwrap(value) is null && matchMode is not ("equals" or "notequals"))
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
+
+        var operand = Parameter(value, property.Type, field);
         try
         {
-            // The operand per match mode: an in or a between converts each of its values. Converting the whole
-            // list as one value of the column's type failed for every list, so neither ever applied (#317).
-            var body = matchMode switch
+            return matchMode switch
             {
-                "in" => CreateInExpression(property, filterMeta.Value),
-                "between" => CreateBetweenExpression(property, filterMeta.Value),
-                _ => CreateComparison(property, matchMode, filterMeta.Value),
+                "equals" => Expression.Equal(property, operand),
+                "notequals" => Expression.NotEqual(property, operand),
+                "lt" => Expression.LessThan(property, operand),
+                "lte" => Expression.LessThanOrEqual(property, operand),
+                "gt" => Expression.GreaterThan(property, operand),
+                "gte" => Expression.GreaterThanOrEqual(property, operand),
+                "contains" => CreateStringContains(property, operand),
+                "startswith" => CreateStringStartsWith(property, operand),
+                "endswith" => CreateStringEndsWith(property, operand),
+                _ => Expression.Not(CreateStringContains(property, operand)),
             };
-
-            return body is null ? null : Expression.Lambda<Func<TEntity, bool>>(body, parameter);
         }
-        // A clause the adapter cannot use, dropped as every adapter drops one (what it should be is #318):
-        // FormatException, InvalidCastException and OverflowException from a value not of the column's type,
-        // ArgumentException from an enum name it does not have or a value the parameter refuses, and
-        // InvalidOperationException from a comparison the column's type does not define.
-        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException
-                                      or ArgumentException or InvalidOperationException)
+        // A match mode the column's type does not define: a string match on a number is an ArgumentException, an
+        // ordering on a type with no comparison an InvalidOperationException.
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {
-            return null;
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnsupportedOperator, sentMode);
         }
     }
 
-    private static Expression? CreateComparison(MemberExpression property, string matchMode, object? value)
+    /// <summary>
+    ///     The value as a parameter of the column's type, or the refusal of one the column cannot be compared with:
+    ///     "abc" for a number, a number past its range, a name the enum does not have, null for a column that
+    ///     cannot hold it.
+    /// </summary>
+    private static Expression Parameter(object? value, Type type, string field)
     {
-        var converted = FilterValue.Coerce(value, property.Type);
-
-        // A string match against null means nothing, and string.StartsWith(null) throws on every row it is
-        // evaluated against; the other adapters drop such a clause, and so does this one.
-        if (converted is null && matchMode is "contains" or "startswith" or "endswith" or "notcontains")
-            return null;
-
-        var operand = QueryParameter.Of(converted, property.Type);
-        return matchMode switch
+        try
         {
-            "equals" => Expression.Equal(property, operand),
-            "notequals" => Expression.NotEqual(property, operand),
-            "lt" => Expression.LessThan(property, operand),
-            "lte" => Expression.LessThanOrEqual(property, operand),
-            "gt" => Expression.GreaterThan(property, operand),
-            "gte" => Expression.GreaterThanOrEqual(property, operand),
-            "contains" => CreateStringContains(property, operand),
-            "startswith" => CreateStringStartsWith(property, operand),
-            "endswith" => CreateStringEndsWith(property, operand),
-            "notcontains" => Expression.Not(CreateStringContains(property, operand)),
-            _ => Expression.Equal(property, operand)
-        };
+            return QueryParameter.Of(FilterValue.Coerce(value, type), type);
+        }
+        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException or ArgumentException)
+        {
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
+        }
     }
 
-    private static Expression<Func<TEntity, bool>>? CreateGlobalFilter<
+    /// <summary>The search box over the text columns it names, joined by OR.</summary>
+    /// <remarks>
+    ///     A column it names that the adapter does not filter on is refused, like a column filter; one that is not
+    ///     text is passed over, since a grid lists every column it shows. One that names no text column at all
+    ///     restricts nothing, and is refused rather than answered with every row (#318).
+    /// </remarks>
+    private static Expression<Func<TEntity, bool>> CreateGlobalFilter<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -193,31 +201,21 @@ public static class PrimeNGAdapter
         string searchValue,
         IReadOnlyList<string> fields)
     {
-        if (fields.Count == 0)
-            return null;
-
         var parameter = Expression.Parameter(typeof(TEntity), "e");
         Expression? combinedBody = null;
 
         foreach (var field in fields)
         {
-            if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
-                continue;
-
-            // Only apply global filter to string properties
+            var property = AdapterFieldPolicy.ResolveFilterableMember<TEntity>(parameter, field);
             if (property.Type != typeof(string))
                 continue;
 
-            var operand = QueryParameter.Of(searchValue);
-            var body = CreateStringContains(property, operand);
-
-            combinedBody = combinedBody == null
-                ? body
-                : Expression.OrElse(combinedBody, body);
+            var body = CreateStringContains(property, QueryParameter.Of(searchValue));
+            combinedBody = combinedBody == null ? body : Expression.OrElse(combinedBody, body);
         }
 
         return combinedBody == null
-            ? null
+            ? throw new GridFilterRejectedException(null, GridFilterRejection.UnusableValue)
             : Expression.Lambda<Func<TEntity, bool>>(combinedBody, parameter);
     }
 
@@ -230,36 +228,42 @@ public static class PrimeNGAdapter
     private static Expression CreateStringEndsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringEndsWithMethod, value);
 
-    // An in over no values, or over something that is not a list, selects nothing to filter on: dropped, as before.
-    private static Expression? CreateInExpression(MemberExpression property, object? value)
+    // An in over no values, or over something that is not a list, selects nothing to filter on.
+    private static Expression CreateInExpression(MemberExpression property, string field, object? value)
     {
         if (FilterValue.Elements(value) is not { Count: > 0 } values)
-            return null;
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
 
         Expression? combined = null;
         foreach (var item in values)
         {
-            var operand = QueryParameter.Of(FilterValue.Coerce(item, property.Type), property.Type);
-            var eq = Expression.Equal(property, operand);
+            var eq = Expression.Equal(property, Parameter(item, property.Type, field));
             combined = combined == null ? eq : Expression.OrElse(combined, eq);
         }
 
-        return combined;
+        return combined!;
     }
 
     // A between is [min, max]; anything else is a clause the adapter cannot use.
-    private static Expression? CreateBetweenExpression(MemberExpression property, object? value)
+    private static Expression CreateBetweenExpression(MemberExpression property, string field, object? value)
     {
         if (FilterValue.Elements(value) is not { Count: 2 } values)
-            return null;
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
 
-        var minValue = QueryParameter.Of(FilterValue.Coerce(values[0], property.Type), property.Type);
-        var maxValue = QueryParameter.Of(FilterValue.Coerce(values[1], property.Type), property.Type);
+        var minValue = Parameter(values[0], property.Type, field);
+        var maxValue = Parameter(values[1], property.Type, field);
 
-        var gte = Expression.GreaterThanOrEqual(property, minValue);
-        var lte = Expression.LessThanOrEqual(property, maxValue);
-
-        return Expression.AndAlso(gte, lte);
+        try
+        {
+            return Expression.AndAlso(
+                Expression.GreaterThanOrEqual(property, minValue),
+                Expression.LessThanOrEqual(property, maxValue));
+        }
+        // A column whose type has no ordering: a between on it is a match mode it does not define.
+        catch (InvalidOperationException)
+        {
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnsupportedOperator, "between");
+        }
     }
 
     private static Expression<Func<TEntity, object>>? CreateSortExpression<

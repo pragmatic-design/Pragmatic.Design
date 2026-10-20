@@ -64,29 +64,29 @@ public class AGridFilterHasAWidthTests
     }
 
     /// <summary>
-    ///     A value that does not convert to the column's type is an unusable clause, like an unknown operator,
-    ///     not an exception out of the adapter.
+    ///     A value that does not convert to the column's type is refused as an unusable value, not an exception out
+    ///     of the adapter.
     /// </summary>
     /// <remarks>
-    ///     Each of these escaped as an unhandled exception, a 500. What an unusable clause should become, dropped
-    ///     or refused, is #318; this pins only that the adapter's own answer is the one it gives everywhere else.
+    ///     Each of these escaped as an unhandled exception, a 500 (#310), and then was dropped, which answered with
+    ///     every row (#318).
     /// </remarks>
     [Theory]
     [InlineData("\"abc\"")]
     [InlineData("[1,2]")]
     [InlineData("99999999999")]
-    public void A_devexpress_value_that_does_not_convert_does_not_escape(string value)
+    public void A_devexpress_value_that_does_not_convert_is_refused(string value)
     {
         var act = () => PersistenceQuery.For<Order>()
             .FromDevExpress(DevExpress($"\"number\",\"=\",{value}"))
             .Build(Orders)
             .ToList();
 
-        act.Should().NotThrow();
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == GridFilterRejection.UnusableValue);
     }
 
     /// <summary>
-    ///     A string match against <c>null</c> is an unusable clause, as the generated adapter already treats it.
+    ///     A string match against <c>null</c> is refused as an unusable value.
     /// </summary>
     /// <remarks>
     ///     Found by <see cref="GridAdapterPropertyTests" />: the adapter built <c>e.Name.StartsWith(null)</c>, which
@@ -96,30 +96,33 @@ public class AGridFilterHasAWidthTests
     [InlineData("contains")]
     [InlineData("startswith")]
     [InlineData("endswith")]
-    public void A_devexpress_string_match_against_null_does_not_escape(string op)
+    public void A_devexpress_string_match_against_null_is_refused(string op)
     {
         var act = () => PersistenceQuery.For<Order>()
             .FromDevExpress(DevExpress($"\"name\",\"{op}\",null"))
             .Build(Orders)
             .ToList();
 
-        act.Should().NotThrow();
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == GridFilterRejection.UnusableValue);
     }
 
     /// <summary>
-    ///     A string that is not UTF-8 is an unusable value, not an exception out of the adapter.
+    ///     A string that is not UTF-8 is refused where it stands: as a value, an unusable one; as a field name, a
+    ///     connective or a group, a filter that is not one.
     /// </summary>
     /// <remarks>
     ///     Found by the fuzz harness: an element of <c>Filter</c> binds as a <c>JsonElement</c> whose text is not
-    ///     validated until it is read, and reading it threw <see cref="InvalidOperationException" />, a 500.
+    ///     validated until it is read, and reading it threw <see cref="InvalidOperationException" />, a 500 (#310).
+    ///     Read as <c>null</c> after that, <c>["name","&lt;&gt;",…]</c> became <c>name != null</c>, every row (#318).
     /// </remarks>
     [Theory]
-    [InlineData("[\"\u0001name\",\"=\",\"Ada\"]")]
-    [InlineData("[\"name\",\"=\",\"\u0001Ada\"]")]
-    [InlineData("[[\"name\",\"=\",\"Ada\"],\"\u0001or\",[\"number\",\"=\",1]]")]
-    [InlineData("[[\"name\",\"=\",\"Ada\"],\"and\",{\"\u0001selector\":\"name\"}]")]
-    [InlineData("[\"name\",\"=\",{\"\u0001key\":1}]")]
-    public void A_devexpress_string_that_is_not_utf8_does_not_escape(string filter)
+    [InlineData("[\"\u0001name\",\"=\",\"Ada\"]", GridFilterRejection.Malformed)]
+    [InlineData("[\"name\",\"=\",\"\u0001Ada\"]", GridFilterRejection.UnusableValue)]
+    [InlineData("[\"name\",\"<>\",\"\u0001Ada\"]", GridFilterRejection.UnusableValue)]
+    [InlineData("[[\"name\",\"=\",\"Ada\"],\"\u0001or\",[\"number\",\"=\",1]]", GridFilterRejection.Malformed)]
+    [InlineData("[[\"name\",\"=\",\"Ada\"],\"and\",{\"\u0001selector\":\"name\"}]", GridFilterRejection.Malformed)]
+    [InlineData("[\"name\",\"=\",{\"\u0001key\":1}]", GridFilterRejection.UnusableValue)]
+    public void A_devexpress_string_that_is_not_utf8_is_refused(string filter, GridFilterRejection rejection)
     {
         // \u0001 marks where the invalid byte goes: 0x9A, a continuation byte with nothing before it.
         var body = Encoding.UTF8.GetBytes($"{{\"filter\":{filter}}}").Select(b => b == 0x01 ? (byte)0x9A : b).ToArray();
@@ -127,7 +130,7 @@ public class AGridFilterHasAWidthTests
 
         var act = () => PersistenceQuery.For<Order>().FromDevExpress(options).Build(Orders).ToList();
 
-        act.Should().NotThrow();
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == rejection);
     }
 
     [Fact]

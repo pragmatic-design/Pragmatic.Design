@@ -18,6 +18,15 @@ internal sealed record GridAdapterModel
     public required bool SupportGrouping { get; init; }
     public required EquatableArray<GridFieldModel> Fields { get; init; }
     public required EquatableArray<string> ExcludedProperties { get; init; }
+
+    /// <summary>
+    ///     Properties of the entity with a sensitive name, which no grid may filter on.
+    /// </summary>
+    /// <remarks>
+    ///     Carried so the generated dispatcher refuses them as withheld and every other name as unknown, as the
+    ///     bridge does (<c>GridFilterBridgeModel.WithheldProperties</c>).
+    /// </remarks>
+    public EquatableArray<string> WithheldProperties { get; init; } = EquatableArray<string>.Empty;
 }
 
 /// <summary>
