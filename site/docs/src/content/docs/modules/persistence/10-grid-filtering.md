@@ -512,10 +512,11 @@ var query = builder.Build(repository.Query(), filterProvider).AsNoTracking();
 
 **Global filter**: Applies a `Contains` search across all specified `GlobalFilterFields` (string properties only), combined with OR logic.
 
-⚠️ **The runtime PrimeNG adapter applies no column filter that arrives as JSON** (#317): the value binds as a
-`JsonElement` it never unwraps, and `in`/`between` fail with any value. Until that is fixed, a PrimeNG grid
-served by `FromPrimeNG` returns every row whatever it filters on; the generated `[GridAdapter]` does not have
-this defect.
+**Column filter values** arrive as JSON, so `PrimeNGFilterMetadata.Value` binds as a `JsonElement`; the adapter
+reads it into the column's type, an enum by name or number. `in` and `between` take an array and convert each of
+its values; `between` needs exactly two. A clause the adapter cannot use (a value of the wrong type, a comparison
+the column's type does not define, a `between` of one value) is dropped, and the request's other clauses still
+apply.
 
 ### The width of a request
 

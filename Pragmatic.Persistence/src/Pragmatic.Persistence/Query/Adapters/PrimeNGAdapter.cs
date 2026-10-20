@@ -111,25 +111,12 @@ public static class PrimeNGAdapter
         return terms > GridFilterTooLargeException.MaxTerms ? throw new GridFilterTooLargeException(terms) : terms;
     }
 
-    // One comparison, or one per value of an in or a between. A string is counted per character because that
-    // is how CreateInExpression reads it, as the IEnumerable<char> it is.
+    // One comparison, or one per value of an in or a between, read the way CreateInExpression reads them.
     private static int TermsOf(PrimeNGFilterMetadata filterMeta)
-    {
-        if (filterMeta.MatchMode?.ToLowerInvariant() is not ("in" or "between")
-            || filterMeta.Value is not System.Collections.IEnumerable values)
-        {
-            return 1;
-        }
-
-        var count = 0;
-        foreach (var _ in values)
-        {
-            if (++count > GridFilterTooLargeException.MaxTerms)
-                break;
-        }
-
-        return Math.Max(count, 1);
-    }
+        => filterMeta.MatchMode?.ToLowerInvariant() is "in" or "between"
+           && FilterValue.Elements(filterMeta.Value) is { Count: > 0 } values
+            ? values.Count
+            : 1;
 
     private static Expression<Func<TEntity, bool>>? CreateFilterExpression<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
@@ -146,39 +133,56 @@ public static class PrimeNGAdapter
         if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
             return null;
 
+        var matchMode = filterMeta.MatchMode?.ToLowerInvariant() ?? "contains";
+
         try
         {
-            var value = filterMeta.Value;
-
-            // Convert value to property type
-            var convertedValue = ConvertValue(value, property.Type);
-            var operand = QueryParameter.Of(convertedValue, property.Type);
-
-            var matchMode = filterMeta.MatchMode?.ToLowerInvariant() ?? "contains";
-
-            Expression body = matchMode switch
+            // The operand per match mode: an in or a between converts each of its values. Converting the whole
+            // list as one value of the column's type failed for every list, so neither ever applied (#317).
+            var body = matchMode switch
             {
-                "equals" => Expression.Equal(property, operand),
-                "notequals" => Expression.NotEqual(property, operand),
-                "lt" => Expression.LessThan(property, operand),
-                "lte" => Expression.LessThanOrEqual(property, operand),
-                "gt" => Expression.GreaterThan(property, operand),
-                "gte" => Expression.GreaterThanOrEqual(property, operand),
-                "contains" => CreateStringContains(property, operand),
-                "startswith" => CreateStringStartsWith(property, operand),
-                "endswith" => CreateStringEndsWith(property, operand),
-                "notcontains" => Expression.Not(CreateStringContains(property, operand)),
-                "in" => CreateInExpression(property, value),
-                "between" => CreateBetweenExpression(property, value),
-                _ => Expression.Equal(property, operand)
+                "in" => CreateInExpression(property, filterMeta.Value),
+                "between" => CreateBetweenExpression(property, filterMeta.Value),
+                _ => CreateComparison(property, matchMode, filterMeta.Value),
             };
 
-            return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
+            return body is null ? null : Expression.Lambda<Func<TEntity, bool>>(body, parameter);
         }
-        catch
+        // A clause the adapter cannot use, dropped as every adapter drops one (what it should be is #318):
+        // FormatException, InvalidCastException and OverflowException from a value not of the column's type,
+        // ArgumentException from an enum name it does not have or a value the parameter refuses, and
+        // InvalidOperationException from a comparison the column's type does not define.
+        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException
+                                      or ArgumentException or InvalidOperationException)
         {
             return null;
         }
+    }
+
+    private static Expression? CreateComparison(MemberExpression property, string matchMode, object? value)
+    {
+        var converted = FilterValue.Coerce(value, property.Type);
+
+        // A string match against null means nothing, and string.StartsWith(null) throws on every row it is
+        // evaluated against; the other adapters drop such a clause, and so does this one.
+        if (converted is null && matchMode is "contains" or "startswith" or "endswith" or "notcontains")
+            return null;
+
+        var operand = QueryParameter.Of(converted, property.Type);
+        return matchMode switch
+        {
+            "equals" => Expression.Equal(property, operand),
+            "notequals" => Expression.NotEqual(property, operand),
+            "lt" => Expression.LessThan(property, operand),
+            "lte" => Expression.LessThanOrEqual(property, operand),
+            "gt" => Expression.GreaterThan(property, operand),
+            "gte" => Expression.GreaterThanOrEqual(property, operand),
+            "contains" => CreateStringContains(property, operand),
+            "startswith" => CreateStringStartsWith(property, operand),
+            "endswith" => CreateStringEndsWith(property, operand),
+            "notcontains" => Expression.Not(CreateStringContains(property, operand)),
+            _ => Expression.Equal(property, operand)
+        };
     }
 
     private static Expression<Func<TEntity, bool>>? CreateGlobalFilter<
@@ -197,26 +201,19 @@ public static class PrimeNGAdapter
 
         foreach (var field in fields)
         {
-            try
-            {
-                if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
-                    continue;
+            if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
+                continue;
 
-                // Only apply global filter to string properties
-                if (property.Type != typeof(string))
-                    continue;
+            // Only apply global filter to string properties
+            if (property.Type != typeof(string))
+                continue;
 
-                var operand = QueryParameter.Of(searchValue);
-                var body = CreateStringContains(property, operand);
+            var operand = QueryParameter.Of(searchValue);
+            var body = CreateStringContains(property, operand);
 
-                combinedBody = combinedBody == null
-                    ? body
-                    : Expression.OrElse(combinedBody, body);
-            }
-            catch
-            {
-                // Skip invalid property
-            }
+            combinedBody = combinedBody == null
+                ? body
+                : Expression.OrElse(combinedBody, body);
         }
 
         return combinedBody == null
@@ -233,69 +230,36 @@ public static class PrimeNGAdapter
     private static Expression CreateStringEndsWith(MemberExpression property, Expression value)
         => Expression.Call(property, StringEndsWithMethod, value);
 
-    private static Expression CreateInExpression(MemberExpression property, object? value)
+    // An in over no values, or over something that is not a list, selects nothing to filter on: dropped, as before.
+    private static Expression? CreateInExpression(MemberExpression property, object? value)
     {
-        // value should be an array or list
-        if (value is not System.Collections.IEnumerable enumerable)
-            return Expression.Constant(true);
-
-        var values = enumerable.Cast<object>().ToList();
-        if (values.Count == 0)
-            return Expression.Constant(true);
+        if (FilterValue.Elements(value) is not { Count: > 0 } values)
+            return null;
 
         Expression? combined = null;
         foreach (var item in values)
         {
-            var operand = QueryParameter.Of(ConvertValue(item, property.Type), property.Type);
+            var operand = QueryParameter.Of(FilterValue.Coerce(item, property.Type), property.Type);
             var eq = Expression.Equal(property, operand);
             combined = combined == null ? eq : Expression.OrElse(combined, eq);
         }
 
-        return combined ?? Expression.Constant(true);
+        return combined;
     }
 
-    private static Expression CreateBetweenExpression(MemberExpression property, object? value)
+    // A between is [min, max]; anything else is a clause the adapter cannot use.
+    private static Expression? CreateBetweenExpression(MemberExpression property, object? value)
     {
-        // value should be an array with [min, max]
-        if (value is not System.Collections.IEnumerable enumerable)
-            return Expression.Constant(true);
+        if (FilterValue.Elements(value) is not { Count: 2 } values)
+            return null;
 
-        var values = enumerable.Cast<object>().ToList();
-        if (values.Count != 2)
-            return Expression.Constant(true);
-
-        var minValue = QueryParameter.Of(ConvertValue(values[0], property.Type), property.Type);
-        var maxValue = QueryParameter.Of(ConvertValue(values[1], property.Type), property.Type);
+        var minValue = QueryParameter.Of(FilterValue.Coerce(values[0], property.Type), property.Type);
+        var maxValue = QueryParameter.Of(FilterValue.Coerce(values[1], property.Type), property.Type);
 
         var gte = Expression.GreaterThanOrEqual(property, minValue);
         var lte = Expression.LessThanOrEqual(property, maxValue);
 
         return Expression.AndAlso(gte, lte);
-    }
-
-    private static object? ConvertValue(object? value, Type targetType)
-    {
-        if (value == null)
-            return null;
-
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        try
-        {
-            // Convert.ChangeType fails for enums — parse by name or numeric value instead.
-            if (underlyingType.IsEnum)
-            {
-                if (value is string s)
-                    return Enum.Parse(underlyingType, s, ignoreCase: true);
-                return Enum.ToObject(underlyingType, value);
-            }
-
-            return Convert.ChangeType(value, underlyingType);
-        }
-        catch
-        {
-            return value;
-        }
     }
 
     private static Expression<Func<TEntity, object>>? CreateSortExpression<
@@ -311,14 +275,7 @@ public static class PrimeNGAdapter
         if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
             return null;
 
-        try
-        {
-            var convert = Expression.Convert(property, typeof(object));
-            return Expression.Lambda<Func<TEntity, object>>(convert, parameter);
-        }
-        catch
-        {
-            return null;
-        }
+        var convert = Expression.Convert(property, typeof(object));
+        return Expression.Lambda<Func<TEntity, object>>(convert, parameter);
     }
 }
