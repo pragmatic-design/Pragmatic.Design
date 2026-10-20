@@ -55,6 +55,9 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         AppendLine();
         RenderPredicateForMethod();
 
+        AppendLine();
+        RenderRefusalHelpers();
+
         // Per-field typed predicate helpers
         foreach (var prop in _model.Properties)
         {
@@ -124,10 +127,8 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         AppendLine("foreach (var filter in request.Filters)");
         Block(() =>
         {
+            AppendLine("// A predicate or a refusal: a clause left out answers with more rows than the client asked for.");
             AppendLine("var predicate = PredicateFor(filter);");
-            AppendLine("if (predicate is null)");
-            Block(() => AppendLine("continue;"));
-            AppendLine();
             AppendLine("combined = combined is null");
             AppendLine("    ? predicate");
             AppendLine("    : pending == FilterLogic.Or");
@@ -194,9 +195,9 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
     {
         var entityParam = $"global::{_model.EntityFullTypeName}";
         var returnType =
-            $"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>>?";
+            $"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>>";
 
-        XmlSummary("The predicate one clause stands for, or null when the clause carries no usable value.");
+        XmlSummary("The predicate one clause stands for; a clause it cannot stand for is refused.");
         XmlParam("filter", "The clause as the grid sent it.");
 
         var parameters = new List<MethodParameter> { new("FilterClause", "filter") };
@@ -237,36 +238,150 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         var parameters = new List<MethodParameter> { new("FilterClause", "filter") };
 
         Method($"{prop.Name}Predicate", () => RenderFieldFilterBody(prop),
-            $"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>>?",
+            $"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>>",
             parameters,
             accessModifier: AccessModifier.Private,
             modifiers: new MethodModifiers { IsStatic = true });
     }
 
+    /// <summary>
+    ///     A clause on one field: a predicate, or a refusal (#325).
+    /// </summary>
+    /// <remarks>
+    ///     A filter restricts, so a clause left out answers with more rows than the client asked for: the body returned
+    ///     null for a value it could not read and for an operator the column's type does not support, and
+    ///     <c>ApplyCanonical</c> skipped it. In the order the grid adapters read a clause: <c>null</c>, then the lists
+    ///     of <c>In</c> and <c>Between</c>, then the one value.
+    /// </remarks>
     private void RenderFieldFilterBody(GridFilterBridgePropertyModel prop)
     {
         var entityPath = $"e.{prop.Name}";
+        var typeName = prop.IsString ? "string" : prop.TypeName;
 
+        var orders = prop.IsComparable && !prop.IsString && !prop.IsBool && !prop.IsEnum;
+        var arms = new List<(string Operator, string Predicate)>();
         if (prop.IsString)
         {
-            RenderStringFilterBody(entityPath, prop.TypeName);
+            arms.Add(("Contains", $"e => {entityPath}.Contains(value)"));
+            arms.Add(("StartsWith", $"e => {entityPath}.StartsWith(value)"));
+            arms.Add(("EndsWith", $"e => {entityPath}.EndsWith(value)"));
         }
-        else if (prop.IsBool || prop.IsEnum)
+        arms.Add(("Equals", $"e => {entityPath} == value"));
+        arms.Add(("NotEquals", $"e => {entityPath} != value"));
+        if (orders)
         {
-            RenderEqualityOnlyFilterBody(entityPath, prop.TypeName);
+            arms.Add(("GreaterThan", $"e => {entityPath} > value"));
+            arms.Add(("GreaterOrEqual", $"e => {entityPath} >= value"));
+            arms.Add(("LessThan", $"e => {entityPath} < value"));
+            arms.Add(("LessOrEqual", $"e => {entityPath} <= value"));
         }
-        else if (prop.IsComparable)
-        {
-            RenderComparableFilterBody(entityPath, prop.TypeName);
-        }
-        else
-        {
-            RenderEqualityOnlyFilterBody(entityPath, prop.TypeName);
-        }
+
+        RenderNullClause(prop, entityPath);
+        RenderInClause(entityPath, typeName);
+        if (orders)
+            RenderBetweenClause(entityPath, typeName);
+
+        // The operator before the value, as the grid adapters read a clause: a Between on a text column is an
+        // operator the column does not support, whatever its value holds.
+        var supported = string.Join(" or ", arms.Select(a => $"FilterOperator.{a.Operator}"));
+        AppendLine($"if (filter.Operator is not ({supported}))");
+        IncreaseIndent();
+        AppendLine("throw Unsupported(filter);");
+        DecreaseIndent();
+        AppendLine();
+        RenderValueLocal(typeName);
+
+        AppendLine("return filter.Operator switch");
+        AppendLine("{");
+        IncreaseIndent();
+        foreach (var (op, predicate) in arms)
+            AppendLine($"FilterOperator.{op} => {predicate},");
+        AppendLine("_ => throw Unsupported(filter),");
+        DecreaseIndent();
+        AppendLine("};");
     }
 
     /// <summary>
-    ///     Reads the clause value as the field's own type, once, into a local.
+    ///     A clause with no value: <c>FilterClause.Value</c> "may be null for is-null checks", and equality and inequality
+    ///     against null are comparisons on a column that can hold it. Anything else against null is a value the column
+    ///     cannot be compared with.
+    /// </summary>
+    private void RenderNullClause(GridFilterBridgePropertyModel prop, string entityPath)
+    {
+        AppendLine("if (global::Pragmatic.Persistence.Query.Adapters.GridValue.IsNull(filter.Value))");
+        if (!prop.IsString && !prop.IsNullable)
+        {
+            IncreaseIndent();
+            AppendLine("throw Unusable(filter);");
+            DecreaseIndent();
+            AppendLine();
+            return;
+        }
+
+        IncreaseIndent();
+        AppendLine("return filter.Operator switch");
+        AppendLine("{");
+        IncreaseIndent();
+        AppendLine($"FilterOperator.Equals => e => {entityPath} == null,");
+        AppendLine($"FilterOperator.NotEquals => e => {entityPath} != null,");
+        AppendLine("_ => throw Unusable(filter),");
+        DecreaseIndent();
+        AppendLine("};");
+        DecreaseIndent();
+        AppendLine();
+    }
+
+    /// <summary>An <c>In</c>: one equality per value, each read as the field's type, joined by OR.</summary>
+    private void RenderInClause(string entityPath, string typeName)
+    {
+        var entityParam = $"global::{_model.EntityFullTypeName}";
+
+        AppendLine("if (filter.Operator == FilterOperator.In)");
+        Block(() =>
+        {
+            AppendLine("if (global::Pragmatic.Persistence.Query.Adapters.GridValue.Elements(filter.Value) is not { Count: > 0 } values)");
+            IncreaseIndent();
+            AppendLine("throw Unusable(filter);");
+            DecreaseIndent();
+            AppendLine();
+            AppendLine($"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>>? any = null;");
+            AppendLine("foreach (var item in values)");
+            Block(() =>
+            {
+                AppendLine($"if (!global::Pragmatic.Persistence.Query.Adapters.GridValue.TryAs<{typeName}?>(item, out var element) || element is null)");
+                IncreaseIndent();
+                AppendLine("throw Unusable(filter);");
+                DecreaseIndent();
+                AppendLine();
+                AppendLine($"global::System.Linq.Expressions.Expression<global::System.Func<{entityParam}, bool>> equal = e => {entityPath} == element;");
+                AppendLine("any = any is null ? equal : global::Pragmatic.Persistence.Query.Adapters.GridPredicate.Or(any, equal);");
+            });
+            AppendLine();
+            AppendLine("return any!;");
+        });
+        AppendLine();
+    }
+
+    /// <summary>A <c>Between</c>: <c>[min, max]</c>, both ends included, on a field whose type orders.</summary>
+    private void RenderBetweenClause(string entityPath, string typeName)
+    {
+        AppendLine("if (filter.Operator == FilterOperator.Between)");
+        Block(() =>
+        {
+            AppendLine("if (global::Pragmatic.Persistence.Query.Adapters.GridValue.Elements(filter.Value) is not { Count: 2 } bounds");
+            AppendLine($"    || !global::Pragmatic.Persistence.Query.Adapters.GridValue.TryAs<{typeName}?>(bounds[0], out var min) || min is null");
+            AppendLine($"    || !global::Pragmatic.Persistence.Query.Adapters.GridValue.TryAs<{typeName}?>(bounds[1], out var max) || max is null)");
+            IncreaseIndent();
+            AppendLine("throw Unusable(filter);");
+            DecreaseIndent();
+            AppendLine();
+            AppendLine($"return e => {entityPath} >= min && {entityPath} <= max;");
+        });
+        AppendLine();
+    }
+
+    /// <summary>
+    ///     Reads the clause value as the field's own type, once, into a local, or refuses one that is not.
     /// </summary>
     /// <remarks>
     ///     ⚠️ Not a direct cast — <c>(string)filter.Value!</c>. <c>FilterClause.Value</c> is an
@@ -277,55 +392,19 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
     /// </remarks>
     private void RenderValueLocal(string typeName)
     {
-        AppendLine($"var value = global::Pragmatic.Persistence.Query.Adapters.GridValue.As<{typeName}?>(filter.Value);");
-        AppendLine("if (value is null)");
-        Block(() => AppendLine("return null;"));
+        AppendLine($"if (!global::Pragmatic.Persistence.Query.Adapters.GridValue.TryAs<{typeName}?>(filter.Value, out var value) || value is null)");
+        IncreaseIndent();
+        AppendLine("throw Unusable(filter);");
+        DecreaseIndent();
         AppendLine();
     }
 
-    private void RenderStringFilterBody(string entityPath, string typeName)
+    /// <summary>The refusals of a clause on a field the bridge does filter on, as the grid adapters throw them.</summary>
+    private void RenderRefusalHelpers()
     {
-        RenderValueLocal("string");
-        AppendLine("return filter.Operator switch");
-        AppendLine("{");
-        IncreaseIndent();
-        AppendLine($"FilterOperator.Contains => e => {entityPath}.Contains(value),");
-        AppendLine($"FilterOperator.StartsWith => e => {entityPath}.StartsWith(value),");
-        AppendLine($"FilterOperator.EndsWith => e => {entityPath}.EndsWith(value),");
-        AppendLine($"FilterOperator.Equals => e => {entityPath} == value,");
-        AppendLine($"FilterOperator.NotEquals => e => {entityPath} != value,");
-        AppendLine("_ => null");
-        DecreaseIndent();
-        AppendLine("};");
-    }
-
-    private void RenderEqualityOnlyFilterBody(string entityPath, string typeName)
-    {
-        RenderValueLocal(typeName);
-        AppendLine("return filter.Operator switch");
-        AppendLine("{");
-        IncreaseIndent();
-        AppendLine($"FilterOperator.Equals => e => {entityPath} == value,");
-        AppendLine($"FilterOperator.NotEquals => e => {entityPath} != value,");
-        AppendLine("_ => null");
-        DecreaseIndent();
-        AppendLine("};");
-    }
-
-    private void RenderComparableFilterBody(string entityPath, string typeName)
-    {
-        RenderValueLocal(typeName);
-        AppendLine("return filter.Operator switch");
-        AppendLine("{");
-        IncreaseIndent();
-        AppendLine($"FilterOperator.Equals => e => {entityPath} == value,");
-        AppendLine($"FilterOperator.NotEquals => e => {entityPath} != value,");
-        AppendLine($"FilterOperator.GreaterThan => e => {entityPath} > value,");
-        AppendLine($"FilterOperator.GreaterOrEqual => e => {entityPath} >= value,");
-        AppendLine($"FilterOperator.LessThan => e => {entityPath} < value,");
-        AppendLine($"FilterOperator.LessOrEqual => e => {entityPath} <= value,");
-        AppendLine("_ => null");
-        DecreaseIndent();
-        AppendLine("};");
+        const string adapters = "global::Pragmatic.Persistence.Query.Adapters";
+        AppendLine($"private static global::System.Exception Unusable(FilterClause filter) => new {adapters}.GridFilterRejectedException(filter.Field, {adapters}.GridFilterRejection.UnusableValue);");
+        AppendLine();
+        AppendLine($"private static global::System.Exception Unsupported(FilterClause filter) => new {adapters}.GridFilterRejectedException(filter.Field, {adapters}.GridFilterRejection.UnsupportedOperator, filter.Operator.ToString());");
     }
 }

@@ -85,4 +85,11 @@ internal sealed record GridFilterBridgePropertyModel
     ///     Whether the property is a boolean type.
     /// </summary>
     public bool IsBool { get; init; }
+
+    /// <summary>
+    ///     Whether the property is a nullable value type, so a clause against <c>null</c> compares with it. A string
+    ///     always can; any other value type cannot, and <c>e.X == null</c> on it is a compiler warning that is always
+    ///     false.
+    /// </summary>
+    public bool IsNullable { get; init; }
 }
