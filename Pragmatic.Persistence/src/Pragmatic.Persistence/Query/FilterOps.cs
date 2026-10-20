@@ -28,7 +28,10 @@ public enum FilterOps
     Compare = 4,
 
     /// <summary>
-    ///     Range operators (In, Between).
+    ///     A bound named by the property: on a <c>[GridFilter&lt;T&gt;]</c>, a property whose name starts with
+    ///     <c>Min</c> or <c>From</c> filters <c>&gt;=</c>, and one starting with <c>Max</c> or <c>To</c> filters
+    ///     <c>&lt;=</c>. A pair of them is a range. Any other name is reported (<c>PRAG0703</c>), since it would filter
+    ///     with equality. Read only when <c>Operators</c> is declared, and not <see cref="All" />.
     /// </summary>
     Range = 8,
 

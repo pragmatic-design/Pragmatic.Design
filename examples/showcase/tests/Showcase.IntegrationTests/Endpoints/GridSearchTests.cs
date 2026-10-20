@@ -125,17 +125,27 @@ public class GridSearchTests(PostgresFixture fixture) : IntegrationTestBase(fixt
     // Grid Search: star rating range filter
     // =========================================================================
 
+    /// <summary>
+    ///     A minimum and a maximum keep the rows between them (#330).
+    /// </summary>
+    /// <remarks>
+    ///     ⚠️ This asserted only that every returned row was at or above the minimum, and it passed while the bounds
+    ///     filtered with equality: <c>== 4</c> and <c>== 5</c> together returned nothing, and a loop over nothing
+    ///     asserts nothing. The rows are now named, the five-star one present and the three-star one absent.
+    /// </remarks>
     [Fact]
     public async Task GridSearch_StarRatingRange_FiltersResults()
     {
-        // Seed properties with known star ratings
-        await CreatePropertyAsync($"GS-Star3-{Guid.NewGuid():N}"[..20], "Rome", 3);
-        await CreatePropertyAsync($"GS-Star5-{Guid.NewGuid():N}"[..20], "Rome", 5);
+        var tag = $"GS-R{Guid.NewGuid():N}"[..12];
+        await CreatePropertyAsync($"{tag}-Star3", "Rome", 3);
+        await CreatePropertyAsync($"{tag}-Star5", "Rome", 5);
 
         var body = new
         {
             filter = new
             {
+                name = tag,
+                nameOperator = "StartsWith",
                 minStarRating = 4,
                 maxStarRating = 5,
                 page = 1,
@@ -147,14 +157,9 @@ public class GridSearchTests(PostgresFixture fixture) : IntegrationTestBase(fixt
 
         response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
-        var items = json.GetProperty("items");
+        var names = json.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("name").GetString()).ToList();
 
-        // The 3-star property should be excluded; only 4+ stars match
-        foreach (var item in items.EnumerateArray())
-        {
-            item.GetProperty("starRating").GetInt32().Should().BeGreaterOrEqualTo(4,
-                "Range filter minStarRating=4 should exclude properties below 4 stars");
-        }
+        names.Should().Equal([$"{tag}-Star5"], "four to five stars keeps the five-star property and not the three-star one");
     }
 
     // =========================================================================

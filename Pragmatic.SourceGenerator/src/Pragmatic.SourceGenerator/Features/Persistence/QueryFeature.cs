@@ -855,6 +855,23 @@ internal static class QueryFeature
                 + "with your own expression"));
         }
 
+        // FilterOps.Range is a bound named by the property (#330). One whose name says neither bound would filter
+        // with equality, which is not what a declared range asks for.
+        foreach (var property in model.Properties)
+        {
+            if (!property.IsUnnamedRange)
+                continue;
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                QueryPipelineDiagnostics.DeclaredOptionNotHonoured,
+                location: null,
+                $"[Filterable(Operators = FilterOps.Range)] on '{property.PropertyName}'",
+                model.TypeName,
+                "a range is a bound named by the property — Min… or From… filters >=, Max… or To… filters <= — "
+                + "and this name says neither, so it filters with equality. Rename it, or declare the operators "
+                + "it does use"));
+        }
+
         var template = new GridFilterApplyTemplate(model);
         var artifact = template.RenderOutput();
         if (!artifact.IsEmpty)

@@ -245,10 +245,7 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
             ? $"{propAccess}.Value"
             : propAccess;
 
-        if (IsStringType(prop.PropertyType))
-            return $"({nullCheck}{entityPath}.Contains({valueAccess}))";
-
-        return $"({nullCheck}{entityPath} == {valueAccess})";
+        return $"({nullCheck}{FixedCondition(prop, entityPath, valueAccess)})";
     }
 
     private void RenderDynamicOperatorFilter(GridFilterPropertyModel prop, string entityPath, string valueAccess)
@@ -376,16 +373,26 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
            $"{operatorAccess}.ToString())";
 
     private void RenderFixedOperatorFilter(GridFilterPropertyModel prop, string entityPath, string valueAccess)
+        => AppendLine($"query = query.Where(e => {FixedCondition(prop, entityPath, valueAccess)});");
+
+    /// <summary>
+    ///     The comparison of a property with no companion operator: a <c>FilterOps.Range</c> bound by its name, then
+    ///     <c>Contains</c> for a string and equality for the rest.
+    /// </summary>
+    /// <remarks>
+    ///     Shared by <c>Apply</c>, <c>ToSpecification</c> and both group renderings, so they cannot drift. The bound
+    ///     was read nowhere until #330: <c>MinStarRating = 3</c> filtered with equality.
+    /// </remarks>
+    private static string FixedCondition(GridFilterPropertyModel prop, string entityPath, string valueAccess)
     {
-        // Use Contains for strings, Equals for others
-        if (IsStringType(prop.PropertyType))
-        {
-            AppendLine($"query = query.Where(e => {entityPath}.Contains({valueAccess}));");
-        }
-        else
-        {
-            AppendLine($"query = query.Where(e => {entityPath} == {valueAccess});");
-        }
+        if (prop.IsLowerBound)
+            return $"{entityPath} >= {valueAccess}";
+        if (prop.IsUpperBound)
+            return $"{entityPath} <= {valueAccess}";
+
+        return IsStringType(prop.PropertyType)
+            ? $"{entityPath}.Contains({valueAccess})"
+            : $"{entityPath} == {valueAccess}";
     }
 
     private void RenderToSpecificationMethod()
@@ -463,11 +470,7 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
             else
             {
                 // Fixed operator
-                var condition = IsStringType(prop.PropertyType)
-                    ? $"{entityPath}.Contains({valueAccess})"
-                    : $"{entityPath} == {valueAccess}";
-
-                AppendLine($"spec = spec & {specPrefix}.Where(e => {condition});");
+                AppendLine($"spec = spec & {specPrefix}.Where(e => {FixedCondition(prop, entityPath, valueAccess)});");
             }
         });
     }
@@ -576,9 +579,7 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
                 if (IsReferenceType(prop.PropertyType) && prop.IsNullable)
                     valueAccess = $"{propAccess}!";
 
-                var condition = IsStringType(prop.PropertyType)
-                    ? $"{entityPath}.Contains({valueAccess})"
-                    : $"{entityPath} == {valueAccess}";
+                var condition = FixedCondition(prop, entityPath, valueAccess);
 
                 If(nullCheck, () =>
                 {
