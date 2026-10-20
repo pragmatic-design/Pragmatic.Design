@@ -64,7 +64,7 @@ public class TheGridInItsOwnFormatTests(PostgresFixture fixture) : IntegrationTe
     }
 
     /// <summary>
-    ///     A column the adapter does not declare cannot be filtered on — and the request is still served.
+    ///     A column the adapter does not declare cannot be filtered on: the request is refused with a 400.
     /// </summary>
     /// <remarks>
     ///     <para>
@@ -75,27 +75,21 @@ public class TheGridInItsOwnFormatTests(PostgresFixture fixture) : IntegrationTe
     ///         the exclusion a boundary rather than a convention.
     ///     </para>
     ///     <para>
-    ///         The filter is <b>ignored</b> rather than refused, which is what the generated dispatcher
-    ///         does with a name it does not know — so the assertion is that the answer is the unfiltered
-    ///         one, not an error.
+    ///         The filter was <b>ignored</b> until #318, and the answer was the unfiltered page under a 200, which a
+    ///         grid shows as the filtered result. Refused, the answer is neither another tenant's rows nor rows
+    ///         the client did not ask for.
     ///     </para>
     /// </remarks>
     [Fact]
-    public async Task AColumnTheGridDoesNotDeclare_CannotBeFilteredOn()
+    public async Task AColumnTheGridDoesNotDeclare_IsRefused()
     {
-        await SeedPropertyAsync($"Ten{Guid.NewGuid():N}"[..12], starRating: 3);
-
-        var everything = await RowsAsync(new { skip = 0, take = 50 });
-        var asking = await RowsAsync(new
+        var response = await PostAsync(Grid, new
         {
-            filter = new object[] { "tenantId", "=", "another-tenant" },
-            skip = 0,
-            take = 50
+            loadOptions = new { filter = new object[] { "tenantId", "=", "another-tenant" }, skip = 0, take = 50 }
         });
 
-        asking.GetArrayLength().Should().Be(everything.GetArrayLength(),
-            "the grid cannot reach a column it was not given, so the filter does nothing — and it "
-            + "certainly does not answer with another tenant's rows");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("tenantId");
     }
 
     /// <summary>A sort the grid sends is applied, by the name the grid knows the column as.</summary>
@@ -137,29 +131,52 @@ public class TheGridInItsOwnFormatTests(PostgresFixture fixture) : IntegrationTe
     [Fact]
     public async Task TheColumnsOldName_IsNotAnswered()
     {
-        var city = $"Old{Guid.NewGuid():N}"[..12];
-        await SeedPropertyAsync(city, starRating: 5);
-        await SeedPropertyAsync(city, starRating: 2);
-
         // ⚠️ A filter and not a sort: an ignored sort leaves the rows in whatever order the database
         // felt like, which is not something to assert: a test that does passes until the query plan
         // changes.
         //
-        // A composite one, because the city is what narrows this to the two rows the test wrote and
-        // the old name is what is on trial. It is also the only assertion anywhere on the AND branch.
+        // A composite one, because the old name is what is on trial inside a filter that is otherwise
+        // usable: that half was skipped until #318, and the city alone answered for both.
+        var response = await PostAsync(Grid, new
+        {
+            loadOptions = new
+            {
+                filter = new object[]
+                {
+                    new object[] { "city", "=", "Anywhere" }, "and", new object[] { "starRating", ">", 3 }
+                },
+                skip = 0,
+                take = 50
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "'starRating' is not a name this grid knows, and half a filter is not the filter the client sent");
+        (await response.Content.ReadAsStringAsync()).Should().Contain("starRating");
+    }
+
+    /// <summary>
+    ///     The control on the and-branch, now that the case above refuses: both halves known, both apply.
+    /// </summary>
+    [Fact]
+    public async Task AnAndOfTwoKnownColumns_NarrowsByBoth()
+    {
+        var city = $"And{Guid.NewGuid():N}"[..12];
+        await SeedPropertyAsync(city, starRating: 5);
+        await SeedPropertyAsync(city, starRating: 2);
+
         var items = await RowsAsync(new
         {
             filter = new object[]
             {
-                new object[] { "city", "=", city }, "and", new object[] { "starRating", ">", 3 }
+                new object[] { "city", "=", city }, "and", new object[] { "stars", ">", 3 }
             },
             skip = 0,
             take = 50
         });
 
-        items.GetArrayLength().Should().Be(2,
-            "both rows come back: 'starRating' is not a name this grid knows, so that half of the "
-            + "filter did nothing and only the city narrowed it");
+        items.GetArrayLength().Should().Be(1, "the city selects two rows and the stars one of them");
+        items[0].GetProperty("starRating").GetInt32().Should().Be(5);
     }
 
     private async Task<JsonElement> RowsAsync(object loadOptions)

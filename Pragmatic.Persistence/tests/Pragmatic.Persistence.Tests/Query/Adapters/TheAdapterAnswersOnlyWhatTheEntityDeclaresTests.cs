@@ -50,11 +50,14 @@ public class TheAdapterAnswersOnlyWhatTheEntityDeclaresTests
         new Deal { Id = Guid.NewGuid(), Reference = "D-002", Stage = 2, Margin = 90m },
     }.AsQueryable();
 
-    /// <summary>A filter on a field the entity did not declare changes nothing.</summary>
+    /// <summary>
+    ///     A filter on a field the entity did not declare is refused: answering one row would tell the caller which
+    ///     row holds 90, and answering every row would show the grid an unfiltered page as filtered (#318).
+    /// </summary>
     [Fact]
     public void FilteringOnAnUndeclaredField_IsRefused()
     {
-        var filtered = PersistenceQuery.For<Deal>()
+        var act = () => PersistenceQuery.For<Deal>()
             .FromPrimeNG(new PrimeNGLazyLoadEvent
             {
                 Filters = new Dictionary<string, PrimeNGFilterMetadata>
@@ -65,8 +68,8 @@ public class TheAdapterAnswersOnlyWhatTheEntityDeclaresTests
             .Build(Deals())
             .ToList();
 
-        filtered.Should().HaveCount(2,
-            "an undeclared field is not a filter: answering one row would tell the caller which row holds 90");
+        act.Should().Throw<GridFieldRejectedException>()
+            .Where(e => e.Field == "Margin" && e.Rejection == GridFieldRejection.Unknown);
     }
 
     /// <summary>And neither does a sort on one.</summary>
@@ -123,7 +126,7 @@ public class TheAdapterAnswersOnlyWhatTheEntityDeclaresTests
     [Fact]
     public void ASensitiveName_IsStillRefused()
     {
-        var filtered = PersistenceQuery.For<Deal>()
+        var act = () => PersistenceQuery.For<Deal>()
             .FromPrimeNG(new PrimeNGLazyLoadEvent
             {
                 Filters = new Dictionary<string, PrimeNGFilterMetadata>
@@ -134,6 +137,7 @@ public class TheAdapterAnswersOnlyWhatTheEntityDeclaresTests
             .Build(Deals())
             .ToList();
 
-        filtered.Should().HaveCount(2, "Id is not among the declared fields either");
+        act.Should().Throw<GridFieldRejectedException>("Id is not among the declared fields either")
+            .Where(e => e.Field == "Id");
     }
 }

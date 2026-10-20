@@ -106,6 +106,26 @@ public static class PragmaticExceptionMappingExtensions
                     contentType: "application/problem+json",
                     context.RequestAborted).ConfigureAwait(false);
             }
+            // A grid clause the adapter cannot apply: one it cannot read, an operator the field does not support, a
+            // value it cannot be compared with (#318). A 400 that says which, since the client fixes the clause; the
+            // message names only what the client sent, and the field was already found filterable before this.
+            catch (global::Pragmatic.Persistence.Query.Adapters.GridFilterRejectedException ex)
+                when (!context.Response.HasStarted)
+            {
+                context.Response.Clear();
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(
+                    new ProblemDetails
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        Title = "Bad Request",
+                        Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                        Detail = ex.Message
+                    },
+                    PragmaticProblemJsonContext.Default.ProblemDetails,
+                    contentType: "application/problem+json",
+                    context.RequestAborted).ConfigureAwait(false);
+            }
             catch (Exception ex) when (!context.Response.HasStarted && IsConcurrencyConflict(ex))
             {
                 context.Response.Clear();

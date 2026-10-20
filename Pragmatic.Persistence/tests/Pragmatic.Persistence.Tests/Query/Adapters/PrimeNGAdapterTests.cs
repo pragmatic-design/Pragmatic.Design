@@ -253,7 +253,8 @@ public class PrimeNGAdapterTests
         var orders = CreateTestOrders().AsQueryable();
         var lazyLoadEvent = new PrimeNGLazyLoadEvent
         {
-            GlobalFilter = "001"
+            GlobalFilter = "001",
+            GlobalFilterFields = ["OrderNumber", "Total"]
         };
 
         // Act
@@ -262,8 +263,23 @@ public class PrimeNGAdapterTests
             .Build(orders)
             .ToList();
 
-        // Assert - Should match OrderNumber containing "001"
-        result.Should().NotBeEmpty();
+        // Assert - the text column matches, the number column is passed over
+        result.Should().ContainSingle().Which.OrderNumber.Should().Be("ORD-001");
+    }
+
+    /// <summary>
+    ///     A search text with no column to search restricts nothing. It was ignored, and every row came back as the
+    ///     search's result (#318).
+    /// </summary>
+    [Fact]
+    public void FromPrimeNG_WithGlobalFilterAndNoColumns_IsRefused()
+    {
+        var act = () => PersistenceQuery.For<Order>()
+            .FromPrimeNG(new PrimeNGLazyLoadEvent { GlobalFilter = "001" })
+            .Build(CreateTestOrders().AsQueryable())
+            .ToList();
+
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == GridFilterRejection.UnusableValue);
     }
 
     #endregion

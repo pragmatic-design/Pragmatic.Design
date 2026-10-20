@@ -61,7 +61,12 @@ internal static class GridAdapterTransform
             SupportNestedFilters = supportNestedFilters,
             SupportGrouping = supportGrouping,
             Fields = fields,
-            ExcludedProperties = excludedProperties
+            ExcludedProperties = excludedProperties,
+            WithheldProperties = GetAllProperties(entityType)
+                .Where(p => SensitiveFieldNames.IsSensitive(p.Name))
+                .Select(p => p.Name)
+                .Distinct()
+                .ToImmutableArray()
         };
     }
 

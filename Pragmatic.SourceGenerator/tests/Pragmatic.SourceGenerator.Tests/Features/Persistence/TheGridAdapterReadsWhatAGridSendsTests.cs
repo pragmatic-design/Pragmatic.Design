@@ -108,23 +108,23 @@ public class TheGridAdapterReadsWhatAGridSendsTests
     }
 
     /// <summary>
-    ///     A column the adapter excludes cannot be filtered on.
+    ///     A column the adapter excludes cannot be filtered on: the clause is refused, and a column with a sensitive
+    ///     name is refused as withheld, as the bridge refuses it.
     /// </summary>
     /// <remarks>
     ///     ⚠️ This is what <c>[GridExclude]</c> is for and it is why the generated adapter is worth
     ///     having at all: the runtime one resolves any name against the entity, so a tenant column is
-    ///     reachable by whoever types it. An unknown name yields no filter, so the answer is the
-    ///     unfiltered one — not an error, and not somebody else's rows.
+    ///     reachable by whoever types it. The clause used to be ignored, so the answer was the unfiltered page
+    ///     under a success status, which the grid shows as filtered (#318).
     /// </remarks>
     [Fact]
-    public void AnExcludedColumn_IsNotFilteredOn()
+    public void AnExcludedColumn_IsRefused()
     {
-        var grid = Adapter();
+        var act = () => Adapter().Apply(
+            [("Ada", 10, "t1"), ("Grace", 20, "t2")],
+            """{"filter":["tenantId","=","t2"],"skip":0,"take":20}""");
 
-        grid.Apply(
-                [("Ada", 10, "t1"), ("Grace", 20, "t2")],
-                """{"filter":["tenantId","=","t2"],"skip":0,"take":20}""")
-            .Should().HaveCount(2, "the column was taken back, so the grid cannot reach it");
+        Refusal<GridFieldRejectedException>(act).Rejection.Should().Be(GridFieldRejection.Withheld);
     }
 
     /// <summary>A sort the grid sends is applied, in the direction it asked for.</summary>
@@ -196,11 +196,150 @@ public class TheGridAdapterReadsWhatAGridSendsTests
             public partial class OrderGrid;
             """);
 
-        grid.Apply(
-                [("Ada", 10, "t1"), ("Grace", 20, "t1")],
-                """{"filter":["total",">",15],"skip":0,"take":20}""")
-            .Should().HaveCount(2, "the column answers to 'amount' now, and to nothing else");
+        var act = () => grid.Apply(
+            [("Ada", 10, "t1"), ("Grace", 20, "t1")],
+            """{"filter":["total",">",15],"skip":0,"take":20}""");
+
+        Refusal<GridFieldRejectedException>(act).Should().Match<GridFieldRejectedException>(
+            e => e.Field == "total" && e.Rejection == GridFieldRejection.Unknown,
+            "the column answers to 'amount' now, and to nothing else");
     }
+
+    /// <summary>
+    ///     An unknown field inside an or is refused. The clause was skipped, and the or answered with whatever its
+    ///     other half selected: rows the client did not ask for, as the filtered result (#318).
+    /// </summary>
+    [Fact]
+    public void AnOrWithAnUnknownField_IsRefused()
+    {
+        var act = () => Adapter().Apply(
+            [("Ada", 10, "t1"), ("Grace", 20, "t1")],
+            """{"filter":[["customer","=","Ada"],"or",["nope","=",1]]}""");
+
+        Refusal<GridFieldRejectedException>(act).Field.Should().Be("nope");
+    }
+
+    [Theory]
+    [InlineData("""["total","=","abc"]""", "UnusableValue")]
+    [InlineData("""["total","=",99999999999]""", "UnusableValue")]
+    [InlineData("""["customer","contains",null]""", "UnusableValue")]
+    [InlineData("""["total","=",null]""", "UnusableValue")]
+    [InlineData("""["total","contains","1"]""", "UnsupportedOperator")]
+    [InlineData("""["customer","bogus","Ada"]""", "UnsupportedOperator")]
+    [InlineData("""["customer",3,"Ada"]""", "UnsupportedOperator")]
+    [InlineData("""[["customer","=","Ada"],"xor",["total","=",10]]""", "Malformed")]
+    [InlineData("""[["customer","=","Ada"],"or"]""", "Malformed")]
+    [InlineData("""[["customer","=","Ada"],"or",7]""", "Malformed")]
+    [InlineData("""[[]]""", "Malformed")]
+    [InlineData("""["!",3]""", "Malformed")]
+    public void AClauseTheAdapterCannotApply_IsRefused(string filter, string rejection)
+    {
+        var act = () => Adapter().Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], $$"""{"filter":{{filter}}}""");
+
+        Refusal<GridFilterRejectedException>(act).Rejection.ToString().Should().Be(rejection);
+    }
+
+    /// <summary>
+    ///     An operator outside a field's <c>AllowedOperators</c> is refused. The restriction closes the
+    ///     <c>startswith</c> oracle, and a skipped clause answered with every row instead (#318).
+    /// </summary>
+    [Fact]
+    public void AnOperatorTheFieldDoesNotAllow_IsRefused()
+    {
+        var grid = Adapter("""
+            [GridAdapter<Order>(Framework = GridFramework.DevExpress)]
+            [GridField("customer", Property = "Customer", AllowedOperators = new[] { "equals" })]
+            public partial class OrderGrid;
+            """);
+
+        var act = () => grid.Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], """{"filter":["customer","startswith","A"]}""");
+
+        Refusal<GridFilterRejectedException>(act).Should().Match<GridFilterRejectedException>(
+            e => e.Rejection == GridFilterRejection.UnsupportedOperator && e.Operator == "startswith");
+        grid.Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], """{"filter":["customer","=","Ada"]}""").Should().Equal("Ada");
+    }
+
+    /// <summary>
+    ///     Equality against null is a comparison, as the runtime adapter makes it: a clause with a null value was
+    ///     dropped, and <c>["customer","=",null]</c> answered with every row.
+    /// </summary>
+    [Theory]
+    [InlineData("=", "")]
+    [InlineData("<>", "Ada,Grace")]
+    public void AnEqualityAgainstNull_IsApplied(string op, string expected)
+        => Adapter().Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], $$"""{"filter":["customer","{{op}}",null]}""")
+            .Should().Equal(expected.Split(',', StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>A group of one clause is that clause, as the runtime adapter now reads it.</summary>
+    [Fact]
+    public void AGroupOfOneClause_IsReadAsTheClause()
+        => Adapter().Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], """{"filter":[["total",">",15]]}""")
+            .Should().Equal("Grace");
+
+    /// <summary>A negation, which the runtime adapter applied and the generated one dropped with the whole filter.</summary>
+    [Fact]
+    public void ANegation_IsApplied()
+        => Adapter().Apply([("Ada", 10, "t1"), ("Grace", 20, "t1")], """{"filter":["!",["customer","=","Ada"]]}""")
+            .Should().Equal("Grace");
+
+    /// <summary>The control: a usable or still selects what each half names.</summary>
+    [Fact]
+    public void AUsableOr_StillSelectsBothHalves()
+        => Adapter().Apply(
+                [("Ada", 10, "t1"), ("Grace", 20, "t1"), ("Linus", 30, "t1")],
+                """{"filter":[["customer","=","Ada"],"OR",["total",">",25]]}""")
+            .Should().Equal("Ada", "Linus");
+
+    /// <summary>
+    ///     A PrimeNG match mode the adapter does not know is refused. It was read as equals: <c>dateBefore</c>
+    ///     answered with the rows on that date.
+    /// </summary>
+    [Fact]
+    public void APrimeNGMatchModeTheAdapterDoesNotKnow_IsRefused()
+    {
+        var act = () => PrimeNGAdapter().ApplyPrimeNG(
+            [("Ada", 10, "t1")], """{"filters":{"total":{"value":10,"matchMode":"dateBefore"}}}""");
+
+        Refusal<GridFilterRejectedException>(act).Should().Match<GridFilterRejectedException>(
+            e => e.Rejection == GridFilterRejection.UnsupportedOperator && e.Operator == "dateBefore");
+    }
+
+    /// <summary>In and between, which the runtime adapter applies (#317) and the generated one read as equals.</summary>
+    [Theory]
+    [InlineData("""{"filters":{"total":{"value":[10,30],"matchMode":"in"}}}""", "Ada,Linus")]
+    [InlineData("""{"filters":{"total":{"value":[15,35],"matchMode":"between"}}}""", "Grace,Linus")]
+    public void APrimeNGInOrBetween_IsApplied(string lazyEvent, string expected)
+        => PrimeNGAdapter().ApplyPrimeNG([("Ada", 10, "t1"), ("Grace", 20, "t1"), ("Linus", 30, "t1")], lazyEvent)
+            .Should().Equal(expected.Split(','));
+
+    [Theory]
+    [InlineData("""{"filters":{"nope":{"value":1,"matchMode":"equals"}}}""")]
+    [InlineData("""{"globalFilter":"a","globalFilterFields":["customer","nope"]}""")]
+    public void APrimeNGColumnTheAdapterDoesNotKnow_IsRefused(string lazyEvent)
+    {
+        var act = () => PrimeNGAdapter().ApplyPrimeNG([("Ada", 10, "t1")], lazyEvent);
+
+        Refusal<GridFieldRejectedException>(act).Field.Should().Be("nope");
+    }
+
+    [Theory]
+    [InlineData("""{"filters":{"total":{"value":[],"matchMode":"in"}}}""")]
+    [InlineData("""{"filters":{"total":{"value":[1,2,3],"matchMode":"between"}}}""")]
+    [InlineData("""{"globalFilter":"a","globalFilterFields":["total"]}""")]
+    [InlineData("""{"globalFilter":"a"}""")]
+    public void APrimeNGFilterThatSelectsNothingToFilterOn_IsRefused(string lazyEvent)
+    {
+        var act = () => PrimeNGAdapter().ApplyPrimeNG([("Ada", 10, "t1")], lazyEvent);
+
+        Refusal<GridFilterRejectedException>(act).Rejection.Should().Be(GridFilterRejection.UnusableValue);
+    }
+
+    /// <summary>The control: a global filter over a text column, with a number column beside it, still applies.</summary>
+    [Fact]
+    public void APrimeNGGlobalFilter_StillApplies()
+        => PrimeNGAdapter().ApplyPrimeNG(
+                [("Ada", 10, "t1"), ("Grace", 20, "t1")], """{"globalFilter":"Gr","globalFilterFields":["customer","total"]}""")
+            .Should().Equal("Grace");
 
     /// <summary>
     ///     A filter at <see cref="GridFilterTooLargeException.MaxTerms" /> terms is applied; one past it is
@@ -255,16 +394,19 @@ public class TheGridAdapterReadsWhatAGridSendsTests
     }
 
     /// <summary>
-    ///     A string that is not UTF-8 is a value the adapter cannot use, not an exception out of it.
+    ///     A string that is not UTF-8 is refused where it stands, not an exception out of the adapter: as a field
+    ///     name, a filter that is not one; as a value, an unusable one, and not a <c>null</c>.
     /// </summary>
     /// <remarks>
     ///     An element of <c>Filter</c> binds as a <c>JsonElement</c> whose text is validated only when read, and the
-    ///     generated <c>Unwrap</c> read it with <c>GetString</c>, which throws on such bytes (#310).
+    ///     generated <c>Unwrap</c> read it with <c>GetString</c>, which throws on such bytes (#310). Read as null
+    ///     after that, <c>["customer","&lt;&gt;",…]</c> was a clause on nothing (#318).
     /// </remarks>
     [Theory]
-    [InlineData("[\"\u0001customer\",\"=\",\"Ada\"]")]
-    [InlineData("[\"customer\",\"=\",{\"\u0001key\":1}]")]
-    public void AStringThatIsNotUtf8_DoesNotEscape(string filter)
+    [InlineData("[\"\u0001customer\",\"=\",\"Ada\"]", "Malformed")]
+    [InlineData("[\"customer\",\"=\",{\"\u0001key\":1}]", "UnusableValue")]
+    [InlineData("[\"customer\",\"<>\",\"\u0001Ada\"]", "UnusableValue")]
+    public void AStringThatIsNotUtf8_IsRefused(string filter, string rejection)
     {
         // 0x9A, a continuation byte with nothing before it, where the 0x01 is.
         var body = Encoding.UTF8.GetBytes($"{{\"filter\":{filter}}}")
@@ -272,8 +414,22 @@ public class TheGridAdapterReadsWhatAGridSendsTests
 
         var act = () => Adapter().Apply([("Ada", 10, "t1")], body);
 
-        act.Should().NotThrow();
+        Refusal<GridFilterRejectedException>(act).Rejection.ToString().Should().Be(rejection);
     }
+
+    /// <summary>The refusal the generated code threw, out of the reflection call that ran it.</summary>
+    private static TException Refusal<TException>(Func<IReadOnlyList<string>> act) where TException : Exception
+    {
+        var thrown = act.Should().Throw<TargetInvocationException>().Which.InnerException;
+        thrown.Should().BeOfType<TException>();
+        return (TException)thrown!;
+    }
+
+    private static GeneratedGrid PrimeNGAdapter() => Adapter("""
+        [GridAdapter<Order>(Framework = GridFramework.PrimeNG)]
+        [GridExclude("TenantId")]
+        public partial class OrderGrid;
+        """);
 
     private static string Ors(int terms)
         => string.Join(",\"or\",", Enumerable.Range(0, terms).Select(i => $"[\"total\",\"=\",{i}]"));

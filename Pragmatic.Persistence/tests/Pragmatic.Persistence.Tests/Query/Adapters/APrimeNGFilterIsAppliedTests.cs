@@ -56,16 +56,19 @@ public class APrimeNGFilterIsAppliedTests
     public void A_between_filter_with_clr_values_selects_its_rows()
         => Names(Apply(Column("Age", "between", new List<object> { 25, 45 }))).Should().Equal("Rome", "Milan");
 
-    // What an unusable clause does is #318's decision. Until then the adapter drops it, as every other adapter does,
-    // and the other clauses still apply: a value of the wrong type is not a reason to lose the whole filter.
+    // An unusable clause is refused (#318): dropped, it left the other clauses to answer with more rows than the
+    // grid asked for, under a success status.
     [Theory]
-    [InlineData("""{"filters":{"age":{"value":"abc","matchMode":"equals"},"name":{"value":"Rome","matchMode":"equals"}}}""")]
-    [InlineData("""{"filters":{"age":{"value":[30,"abc"],"matchMode":"in"},"name":{"value":"Rome","matchMode":"equals"}}}""")]
-    [InlineData("""{"filters":{"age":{"value":[30],"matchMode":"between"},"name":{"value":"Rome","matchMode":"equals"}}}""")]
-    [InlineData("""{"filters":{"name":{"value":5,"matchMode":"lt"},"age":{"value":30,"matchMode":"equals"}}}""")]
-    public void An_unusable_clause_is_dropped_and_the_others_still_apply(string json)
-        => Names(Apply(JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(json, JsonSerializerOptions.Web)!))
-            .Should().Equal("Rome");
+    [InlineData("""{"filters":{"age":{"value":"abc","matchMode":"equals"},"name":{"value":"Rome","matchMode":"equals"}}}""", GridFilterRejection.UnusableValue)]
+    [InlineData("""{"filters":{"age":{"value":[30,"abc"],"matchMode":"in"},"name":{"value":"Rome","matchMode":"equals"}}}""", GridFilterRejection.UnusableValue)]
+    [InlineData("""{"filters":{"age":{"value":[30],"matchMode":"between"},"name":{"value":"Rome","matchMode":"equals"}}}""", GridFilterRejection.UnusableValue)]
+    [InlineData("""{"filters":{"name":{"value":5,"matchMode":"lt"},"age":{"value":30,"matchMode":"equals"}}}""", GridFilterRejection.UnsupportedOperator)]
+    public void An_unusable_clause_is_refused(string json, GridFilterRejection rejection)
+    {
+        var act = () => Apply(JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(json, JsonSerializerOptions.Web)!);
+
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == rejection);
+    }
 
     private static PrimeNGLazyLoadEvent Column(string field, string matchMode, object value) => new()
     {

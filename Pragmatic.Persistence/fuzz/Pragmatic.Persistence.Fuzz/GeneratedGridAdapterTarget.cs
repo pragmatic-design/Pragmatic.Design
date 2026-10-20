@@ -7,9 +7,11 @@ namespace Pragmatic.Persistence.Fuzz;
 ///     as both formats, the query run against <see cref="FuzzOrder.Rows" />.
 /// </summary>
 /// <remarks>
-///     The declared outcomes are a query that runs and <see cref="GridFilterTooLargeException" />. Those return;
-///     anything else escapes and is a crash. The generated code is in this assembly, which is not instrumented:
-///     it runs, and a crash in it is found, but libFuzzer's coverage does not steer toward it.
+///     The declared outcomes are a query that runs, <see cref="GridFilterTooLargeException" />, and the refusal of a
+///     field or a clause the adapter cannot apply (<see cref="GridFieldRejectedException" />,
+///     <see cref="GridFilterRejectedException" />, #318). Those return; anything else escapes and is a crash. The
+///     generated code is in this assembly, which is not instrumented: it runs, and a crash in it is found, but
+///     libFuzzer's coverage does not steer toward it.
 /// </remarks>
 public static class GeneratedGridAdapterTarget
 {
@@ -28,7 +30,7 @@ public static class GeneratedGridAdapterTarget
         {
             _ = query();
         }
-        catch (GridFilterTooLargeException)
+        catch (Exception e) when (e is GridFilterTooLargeException or GridFieldRejectedException or GridFilterRejectedException)
         {
         }
     }

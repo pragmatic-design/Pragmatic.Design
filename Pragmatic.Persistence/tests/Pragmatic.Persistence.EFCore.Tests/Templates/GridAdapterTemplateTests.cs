@@ -360,8 +360,10 @@ public class GridAdapterTemplateTests
         var template = new GridAdapterTemplate(model);
         var source = template.RenderOutput().Text;
 
-        // The guard rejects any operator outside the (alias-expanded) allow-list before the switch.
-        source.Should().Contain("if (op.ToLowerInvariant() is not (\"=\" or \"==\" or \"equals\")) return null;");
+        // The guard refuses any operator outside the (alias-expanded) allow-list before the switch: refused, not
+        // dropped, since a dropped clause answers with more rows than the client asked for (#318).
+        source.Should().Contain("if (op.ToLowerInvariant() is not (\"=\" or \"==\" or \"equals\"))");
+        source.Should().Contain("throw Unsupported(field, op);");
         // "startswith"/"contains" are not in the allow-list, so no alias for them is permitted.
         source.Should().NotContain("\"startswith\" or");
     }

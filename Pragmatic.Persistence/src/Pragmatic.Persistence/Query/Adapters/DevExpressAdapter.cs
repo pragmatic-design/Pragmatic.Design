@@ -100,9 +100,6 @@ public static class DevExpressAdapter
         IReadOnlyList<object?> elements = [.. filter.Select(FilterValue.Unwrap)];
         var body = ParseFilterExpression<TEntity>(elements, parameter, ref terms);
 
-        if (body == null)
-            return null;
-
         return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
     }
 
@@ -112,32 +109,31 @@ public static class DevExpressAdapter
     ///     the resulting lambda has a single, consistent parameter binding.
     /// </summary>
     /// <remarks>
-    ///     <paramref name="terms" /> counts the clauses across every group, and the filter is refused past
-    ///     <see cref="GridFilterTooLargeException.MaxTerms" /> before a deeper chain is built: what reads the
-    ///     expression walks it recursively, and a wide enough one overflows the stack.
+    ///     <para>
+    ///         <paramref name="terms" /> counts the clauses across every group, and the filter is refused past
+    ///         <see cref="GridFilterTooLargeException.MaxTerms" /> before a deeper chain is built: what reads the
+    ///         expression walks it recursively, and a wide enough one overflows the stack.
+    ///     </para>
+    ///     <para>
+    ///         Every part of the filter becomes a predicate or a refusal, never nothing (#318): a part left out of a
+    ///         restriction answers with more rows than the client asked for, and one left out of a composite made
+    ///         the whole filter nothing.
+    ///     </para>
     /// </remarks>
-    private static Expression? ParseFilterExpression<
+    private static Expression ParseFilterExpression<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
         TEntity>(
         IReadOnlyList<object?> filter, ParameterExpression parameter, ref int terms)
     {
-        if (filter.Count == 0)
-            return null;
+        // A group of one: the clause or the group it holds. A filter builder wraps a single condition this way.
+        if (filter.Count == 1 && ToFilterList(filter[0]) is { } only)
+            return ParseFilterExpression<TEntity>(only, parameter, ref terms);
 
         // Unary NOT: ["!", [subfilter]]
-        if (filter.Count == 2 && filter[0]?.ToString() == "!")
-        {
-            var subFilter = ToFilterList(filter[1]);
-            if (subFilter != null)
-            {
-                var inner = ParseFilterExpression<TEntity>(subFilter, parameter, ref terms);
-                return inner != null ? Expression.Not(inner) : null;
-            }
-
-            return null;
-        }
+        if (filter.Count == 2 && filter[0]?.ToString() == "!" && ToFilterList(filter[1]) is { } negated)
+            return Expression.Not(ParseFilterExpression<TEntity>(negated, parameter, ref terms));
 
         // Simple filter: ["field", "operator", value]
         if (filter.Count == 3 && IsFieldName(filter[0]))
@@ -146,61 +142,36 @@ public static class DevExpressAdapter
                 throw new GridFilterTooLargeException(terms);
 
             var field = filter[0]!.ToString()!;
-            var op = filter[1]?.ToString();
+            var op = filter[1] is string text ? text : null;
 
-            if (!string.IsNullOrEmpty(op))
-                return CreateFilterBody<TEntity>(parameter, field, op, filter[2]);
-
-            return null;
+            return CreateFilterBody<TEntity>(parameter, field, op, filter[2]);
         }
 
         // Composite: [filter, "and"/"or", filter, "and"/"or", filter, ...]
-        // Even indices = sub-filters, odd indices = connective operators
-        if (filter.Count >= 3 && !IsFieldName(filter[0]))
+        // Even indices = sub-filters, odd indices = connective operators; it ends on a sub-filter.
+        if (filter.Count >= 3 && filter.Count % 2 == 1 && !IsFieldName(filter[0]))
         {
-            var subExpressions = new List<Expression>();
-            var connectives = new List<string>();
+            var result = ParseFilterExpression<TEntity>(GroupAt(filter, 0), parameter, ref terms);
 
-            for (var i = 0; i < filter.Count; i++)
+            for (var i = 1; i < filter.Count; i += 2)
             {
-                if (i % 2 == 0)
-                {
-                    var subList = ToFilterList(filter[i]);
-                    if (subList == null)
-                        return null;
+                var connective = filter[i]?.ToString()?.ToLowerInvariant();
+                if (connective is not ("and" or "or"))
+                    throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
 
-                    var sub = ParseFilterExpression<TEntity>(subList, parameter, ref terms);
-                    if (sub == null)
-                        return null;
-
-                    subExpressions.Add(sub);
-                }
-                else
-                {
-                    var connective = filter[i]?.ToString()?.ToLowerInvariant();
-                    if (connective is not ("and" or "or"))
-                        return null;
-
-                    connectives.Add(connective);
-                }
-            }
-
-            if (subExpressions.Count == 0)
-                return null;
-
-            var result = subExpressions[0];
-            for (var i = 0; i < connectives.Count && i + 1 < subExpressions.Count; i++)
-            {
-                result = connectives[i] == "and"
-                    ? Expression.AndAlso(result, subExpressions[i + 1])
-                    : Expression.OrElse(result, subExpressions[i + 1]);
+                var next = ParseFilterExpression<TEntity>(GroupAt(filter, i + 1), parameter, ref terms);
+                result = connective == "and" ? Expression.AndAlso(result, next) : Expression.OrElse(result, next);
             }
 
             return result;
         }
 
-        return null;
+        throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
     }
+
+    // An element of a composite where a clause or a group must stand.
+    private static IReadOnlyList<object?> GroupAt(IReadOnlyList<object?> filter, int index)
+        => ToFilterList(filter[index]) ?? throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
 
     /// <summary>
     ///     Determines whether a filter element represents a field name (string, not a connective).
@@ -227,32 +198,27 @@ public static class DevExpressAdapter
     ///     Builds a comparison/string expression body for a single field filter,
     ///     reusing the shared <paramref name="parameter" />.
     /// </summary>
-    private static Expression? CreateFilterBody<
+    private static Expression CreateFilterBody<
         [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
             global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties
             | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)]
         TEntity>(
-        ParameterExpression parameter, string field, string op, object? value)
+        ParameterExpression parameter, string field, string? op, object? value)
     {
         // The entity's declared fields first, then the names that must never be exposed — see
-        // PrimeNGAdapter for why a caller-supplied field name is the case that needs both.
-        if (AdapterFieldPolicy.ResolveQueryableMember<TEntity>(parameter, field) is not { } property)
-            return null;
+        // PrimeNGAdapter for why a caller-supplied field name is the case that needs both. The field is
+        // refused before the operator and the value are looked at, so neither says whether it exists.
+        var property = AdapterFieldPolicy.ResolveFilterableMember<TEntity>(parameter, field);
+        var opName = op?.ToLowerInvariant();
+
+        if (opName is not ("=" or "==" or "<>" or "!=" or ">" or ">=" or "<" or "<=" or "contains" or "startswith" or "endswith"))
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnsupportedOperator, op);
+
+        var operand = Operand(property, field, value, opName);
 
         try
         {
-
-            // Coerce the value to the property type (handles JsonElement and type mismatches)
-            var coerced = FilterValue.Coerce(value, property.Type);
-            var operand = QueryParameter.Of(coerced, property.Type);
-            var opName = op.ToLowerInvariant();
-
-            // A string match against null means nothing, and string.StartsWith(null) throws on every row it is
-            // evaluated against. The generated adapter drops such a clause; so does this one.
-            if (coerced is null && opName is "contains" or "startswith" or "endswith")
-                return null;
-
-            Expression body = opName switch
+            return opName switch
             {
                 "=" or "==" => Expression.Equal(property, operand),
                 "<>" or "!=" => Expression.NotEqual(property, operand),
@@ -262,26 +228,37 @@ public static class DevExpressAdapter
                 "<=" => Expression.LessThanOrEqual(property, operand),
                 "contains" => CreateStringContains(property, operand),
                 "startswith" => CreateStringStartsWith(property, operand),
-                "endswith" => CreateStringEndsWith(property, operand),
-                _ => null!
+                _ => CreateStringEndsWith(property, operand),
             };
+        }
+        // An operator the column's type does not define: a string match on a number is an ArgumentException, an
+        // ordering on a type with no comparison an InvalidOperationException.
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        {
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnsupportedOperator, op);
+        }
+    }
 
-            return body;
-        }
-        catch (ArgumentException)  // Property not found
+    /// <summary>The value as a parameter of the column's type, or the refusal of a value the column cannot be compared with.</summary>
+    /// <remarks>
+    ///     A value the client sent that is not of the column's type: "abc" or [1,2] for a number, a number past the
+    ///     column's range, a name the enum does not have. Convert.ChangeType answers each with its own exception, and
+    ///     each escaped as a 500 (#310). Against null only equality and inequality mean something, as the generated
+    ///     adapter compares: a string match throws on every row it is evaluated against, string.StartsWith(null).
+    /// </remarks>
+    private static Expression Operand(MemberExpression property, string field, object? value, string opName)
+    {
+        try
         {
-            return null;
+            var coerced = FilterValue.Coerce(value, property.Type);
+            if (coerced is null && opName is not ("=" or "==" or "<>" or "!="))
+                throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
+
+            return QueryParameter.Of(coerced, property.Type);
         }
-        catch (InvalidOperationException) // Type conversion failure
+        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException or ArgumentException)
         {
-            return null;
-        }
-        // A value the client sent that is not of the column's type: "abc" or [1,2] for a number, a number
-        // past the column's range. Convert.ChangeType answers each with its own exception, and each escaped
-        // as a 500 (#310); the clause is unusable, like an unknown operator.
-        catch (Exception e) when (e is FormatException or InvalidCastException or OverflowException)
-        {
-            return null;
+            throw new GridFilterRejectedException(field, GridFilterRejection.UnusableValue);
         }
     }
 

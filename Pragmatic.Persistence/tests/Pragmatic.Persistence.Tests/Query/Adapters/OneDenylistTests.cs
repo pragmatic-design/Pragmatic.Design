@@ -64,18 +64,26 @@ public class OneDenylistTests
             .Build(Accounts())
             .ToList();
 
+    // Refused as withheld (#318): no rows at all, so neither a narrowed result nor the whole set answers the probe.
+    private static void IsWithheld(string field, string probe)
+    {
+        var act = () => FilteredBy(field, probe);
+
+        act.Should().Throw<GridFieldRejectedException>()
+            .Where(e => e.Rejection == GridFieldRejection.Withheld && e.Field == field);
+    }
+
     /// <summary>A credential column cannot be named in a filter.</summary>
     /// <remarks>
     ///     This is the attack the list exists for: <c>startswith</c> over a hash turns the presence of
-    ///     rows into an oracle that reads the value one character at a time. Two rows back means the
-    ///     filter was refused; one would mean it answered.
+    ///     rows into an oracle that reads the value one character at a time. A refusal means the filter
+    ///     was not applied; one row back would mean it answered.
     /// </remarks>
     [Theory]
     [InlineData("PasswordHash", "hash-a")]
     [InlineData("ApiKey", "k-a")]
     public void ACredentialColumn_CannotBeFiltered(string field, string probe)
-        => FilteredBy(field, probe).Should().HaveCount(2,
-            "the filter was refused: a narrowed result is the oracle this list exists to deny");
+        => IsWithheld(field, probe);
 
     /// <summary>Neither can the authorization shape.</summary>
     /// <remarks>
@@ -89,7 +97,7 @@ public class OneDenylistTests
     [InlineData("PersistenceId", "1")]
     [InlineData("RowVersion", "v")]
     public void TheAuthorizationShape_CannotBeFiltered(string field, string probe)
-        => FilteredBy(field, probe).Should().HaveCount(2);
+        => IsWithheld(field, probe);
 
     /// <summary>However the caller spells it.</summary>
     /// <remarks>
@@ -101,7 +109,7 @@ public class OneDenylistTests
     [InlineData("PASSWORDHASH")]
     [InlineData("ownerid")]
     public void TheRefusalIsCaseInsensitive(string field)
-        => FilteredBy(field, "hash-a").Should().HaveCount(2);
+        => IsWithheld(field, "hash-a");
 
     /// <summary>The control: an ordinary column still filters.</summary>
     /// <remarks>

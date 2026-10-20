@@ -128,6 +128,26 @@ public class PragmaticExceptionMappingTests
             "the client has to know how far to shorten the filter");
     }
 
+    /// <summary>
+    ///     A grid clause the adapter cannot apply is a 400 that says which clause and why (#318): dropped, it answered
+    ///     with more rows than the client asked for, under a 200.
+    /// </summary>
+    [Fact]
+    public async Task AGridClauseThatCannotBeApplied_IsMappedTo400()
+    {
+        var pipeline = BuildPipeline(_ => throw new GridFilterRejectedException(
+            "Total", GridFilterRejection.UnsupportedOperator, "contains"));
+        var context = NewContext();
+
+        await pipeline(context);
+
+        context.Response.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        context.Response.ContentType.Should().StartWith("application/problem+json");
+        var body = await BodyOf(context);
+        body.Should().Contain("Total", "the client has to know which clause to fix");
+        body.Should().Contain("contains", "and what in it");
+    }
+
     private sealed class DuplicateWorkEmail : Pragmatic.Result.IError
     {
         public string Code => "DB_CONFLICT";
