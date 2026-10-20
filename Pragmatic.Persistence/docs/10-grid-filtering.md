@@ -359,18 +359,23 @@ public record GroupClause(string Field, SortDirection? SortDirection = null);
 | `GreaterOrEqual` | `property >= value` |
 | `LessThan` | `property < value` |
 | `LessOrEqual` | `property <= value` |
-| `In` | ⚠️ Not generated on the grid path; see below |
-| `Between` | ⚠️ Not generated anywhere; see below |
+| `In` | `values.Contains(property)`: an array of values, each read as the property's type |
+| `Between` | `property >= min && property <= max`: an array of two values |
 
-⚠️ **A clause the generated bridge does not handle is dropped, not refused.** The `switch` ends in
-`_ => query`, so an `In` or `Between` clause arriving from a grid returns the query **unrestricted**:
-more rows than the caller asked for, with no error. The grid adapters refuse such a clause (see "A clause the
-adapter cannot apply" below); the bridge does not yet (#325). What each path really covers:
+What each path really covers:
 
 | Path | Operators generated |
 |---|---|
 | `[Query]` / `[FilterDto]` | everything in the table except `Between`, and `Between` there degrades to `==` rather than being dropped |
-| `[GridFilter<T>]`, `[GenerateGridBridge]` | `Equals`, `NotEquals` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons on comparable types. Not `In`, not `Between` |
+| `[GenerateGridBridge]` | `Equals`, `NotEquals` and `In` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons and `Between` on types that order. `Equals`/`NotEquals` against `null` compare with null on a column that can hold it |
+| `[GridFilter<T>]` | `Equals`, `NotEquals` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons on comparable types. ⚠️ An operator outside the ones a property allows, `In` and `Between` included, is applied as `==` (#328) |
+
+The canonical bridge refuses what it cannot apply, as the grid adapters do (see "A clause the adapter cannot
+apply" below): a field it does not filter on is a `GridFieldRejectedException`; a value the field cannot be
+compared with (another type, past its range, a list where one value goes, `null` in anything but an equality, an
+`In` with no values, a `Between` without two) and an operator the field's type does not support are a
+`GridFilterRejectedException`. The host answers both with 400. Until #325 the bridge dropped such a clause, and the
+request's other clauses answered with more rows than the client asked for.
 
 `FilterLogic` controls how clauses combine: `And` (all must match) or `Or` (any must match).
 

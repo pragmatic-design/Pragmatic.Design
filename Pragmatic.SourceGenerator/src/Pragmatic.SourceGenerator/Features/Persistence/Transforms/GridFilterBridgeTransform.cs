@@ -129,6 +129,7 @@ internal static class GridFilterBridgeTransform
         var type = property.Type;
 
         // Unwrap nullable
+        var isNullable = type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
         if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
             type = nullable.TypeArguments[0];
 
@@ -148,7 +149,8 @@ internal static class GridFilterBridgeTransform
             IsString = isString,
             IsComparable = isComparable,
             IsEnum = isEnum,
-            IsBool = isBool
+            IsBool = isBool,
+            IsNullable = isNullable
         };
     }
 
