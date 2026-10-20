@@ -170,8 +170,9 @@ internal static class GridFilterTransform
 
         // Check for companion operator property
         var operatorPropertyName = $"{propertyName}Operator";
-        var hasOperatorProperty = allProperties.Any(p =>
+        var operatorProperty = allProperties.FirstOrDefault(p =>
             p.Name.Equals(operatorPropertyName, StringComparison.Ordinal));
+        var hasOperatorProperty = operatorProperty is not null;
 
         return new GridFilterPropertyModel
         {
@@ -190,6 +191,7 @@ internal static class GridFilterTransform
             IsPageSizeProperty = isPageSizeProperty,
             OperatorPropertyName = hasOperatorProperty ? operatorPropertyName : null,
             HasOperatorProperty = hasOperatorProperty,
+            OperatorIsNullable = operatorProperty?.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T },
             HandlerTypeName = handlerTypeName,
             HandlerArgs = handlerArgs
         };

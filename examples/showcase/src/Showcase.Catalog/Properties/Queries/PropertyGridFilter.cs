@@ -30,7 +30,12 @@ public partial class PropertyGridFilter
     /// <summary>Dynamic operator for Name.</summary>
     public StringOperator? NameOperator { get; set; }
 
-    [Filterable(Operators = FilterOps.String)]
+    /// <summary>Filter by city — the text operators, and an exact match.</summary>
+    /// <remarks>
+    ///     An operator the property does not allow is refused with a 400. With <c>String</c> alone, the grid's
+    ///     "exact city" was an <c>Equals</c> applied as <c>Contains</c> until #328.
+    /// </remarks>
+    [Filterable(Operators = FilterOps.String | FilterOps.Equality)]
     public string? City { get; set; }
 
     public StringOperator? CityOperator { get; set; }
