@@ -4,6 +4,7 @@
  * assemblies a harness reaches, libFuzzer drives it through libfuzzer-dotnet.
  *
  *   node scripts/fuzz.mjs --list
+ *   node scripts/fuzz.mjs --list-json                   the target names as a JSON array (the nightly's matrix)
  *   node scripts/fuzz.mjs <target> [--seconds N]        one harness, N seconds (default 60)
  *   node scripts/fuzz.mjs --all [--seconds N]           every harness, N seconds each
  *
@@ -189,6 +190,12 @@ function inDocker(args) {
 
 async function main(args) {
   const all = findTargets();
+  // The names alone, as JSON: the nightly's matrix, so a new harness joins it without touching the workflow (#158).
+  if (args.includes('--list-json')) {
+    console.log(JSON.stringify(all.map((t) => t.name)));
+    return 0;
+  }
+
   if (args.includes('--list')) {
     for (const t of all) console.log(`${t.name}  (${t.project})${t.dict ? `  dict: ${t.dict}` : ''}`);
     return 0;
@@ -198,7 +205,7 @@ async function main(args) {
   const seconds = at >= 0 ? Number(args[at + 1]) : 60;
   const names = args.includes('--all') ? all.map((t) => t.name) : args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--seconds');
   if (names.length === 0 || !Number.isInteger(seconds) || seconds <= 0) {
-    console.error('usage: node scripts/fuzz.mjs <target>|--all [--seconds N] | --list');
+    console.error('usage: node scripts/fuzz.mjs <target>|--all [--seconds N] | --list | --list-json');
     return 2;
   }
 

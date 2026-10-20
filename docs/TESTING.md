@@ -297,7 +297,9 @@ The parsers that read untrusted input (`docs/security/untrusted-input.md`) are f
 
 - **Property tests with FsCheck**, in the module's hermetic suite, so every gate runs them. Each property states
   the parser's declared outcomes (a value, or its own refusal) and holds for arbitrary input.
-- **Coverage-guided fuzzing with SharpFuzz and libFuzzer**, every night (`.github/workflows/fuzz.yml`).
+- **Coverage-guided fuzzing with SharpFuzz and libFuzzer**, every night (`.github/workflows/fuzz.yml`), one job
+  per harness with its own corpus cache. The matrix is `node scripts/fuzz.mjs --list-json`, so a new harness joins
+  the night without a change to the workflow.
 
 A harness is a `*.Fuzz` project in the module's `fuzz/` folder (`Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz`):
 
