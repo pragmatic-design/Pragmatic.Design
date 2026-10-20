@@ -97,7 +97,7 @@ public static class DevExpressAdapter
 
         // The top level as the nested groups are read: as CLR values, so that a string is read once, here, and
         // an unreadable one is an unusable value rather than an exception wherever it is next compared.
-        IReadOnlyList<object?> elements = [.. filter.Select(e => e is JsonElement json ? DeserializeJsonElement(json) : e)];
+        IReadOnlyList<object?> elements = [.. filter.Select(FilterValue.Unwrap)];
         var body = ParseFilterExpression<TEntity>(elements, parameter, ref terms);
 
         if (body == null)
@@ -216,7 +216,7 @@ public static class DevExpressAdapter
         // JsonElement string values are also field names
         if (element is JsonElement { ValueKind: JsonValueKind.String } json)
         {
-            var value = ReadString(json);
+            var value = FilterValue.ReadString(json);
             return value is not (null or "and" or "or" or "!");
         }
 
@@ -243,7 +243,7 @@ public static class DevExpressAdapter
         {
 
             // Coerce the value to the property type (handles JsonElement and type mismatches)
-            var coerced = CoerceValue(value, property.Type);
+            var coerced = FilterValue.Coerce(value, property.Type);
             var operand = QueryParameter.Of(coerced, property.Type);
             var opName = op.ToLowerInvariant();
 
@@ -286,40 +286,6 @@ public static class DevExpressAdapter
     }
 
     /// <summary>
-    ///     Converts an object (possibly a <see cref="JsonElement" />) to the target type.
-    /// </summary>
-    private static object? CoerceValue(object? value, Type targetType)
-    {
-        if (value == null)
-            return null;
-
-        // Unwrap JsonElement to a CLR value
-        if (value is JsonElement json)
-            value = DeserializeJsonElement(json);
-
-        if (value == null)
-            return null;
-
-        // Already the correct type
-        if (targetType.IsInstanceOfType(value))
-            return value;
-
-        // Handle Nullable<T> — convert to the underlying type
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        // Enums need Enum.Parse for strings and Enum.ToObject for numeric values;
-        // Convert.ChangeType throws InvalidCastException for both.
-        if (underlyingType.IsEnum)
-        {
-            if (value is string s)
-                return Enum.Parse(underlyingType, s, ignoreCase: true);
-            return Enum.ToObject(underlyingType, value);
-        }
-
-        return Convert.ChangeType(value, underlyingType);
-    }
-
-    /// <summary>
     ///     Converts an object to <see cref="IReadOnlyList{T}" /> for recursive filter parsing.
     ///     Handles <see cref="JsonElement" /> arrays and CLR list types.
     /// </summary>
@@ -330,63 +296,9 @@ public static class DevExpressAdapter
             IReadOnlyList<object?> list => list,
             IList<object?> list => list.ToArray(),
             JsonElement { ValueKind: JsonValueKind.Array } json =>
-                json.EnumerateArray().Select(e => (object?)DeserializeJsonElement(e)).ToList(),
+                json.EnumerateArray().Select(e => (object?)FilterValue.Read(e)).ToList(),
             _ => null
         };
-    }
-
-    /// <summary>
-    ///     Converts a <see cref="JsonElement" /> to the most appropriate CLR type.
-    /// </summary>
-    private static object? DeserializeJsonElement(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.String => ReadString(element),
-            JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDouble(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            JsonValueKind.Array => element.EnumerateArray()
-                .Select(e => (object?)DeserializeJsonElement(e)).ToList() as object,
-            _ => ReadRawText(element)
-        };
-    }
-
-    /// <summary>The text of a JSON string, or <c>null</c> when the bytes the client sent are not UTF-8.</summary>
-    /// <remarks>
-    ///     An element of <see cref="DevExpressLoadOptions.Filter" /> binds as a <see cref="JsonElement" />, and its
-    ///     text is not validated until it is read: <see cref="JsonElement.GetString" /> then throws
-    ///     <see cref="InvalidOperationException" />, which escaped the adapter as a 500 (found by the fuzz harness,
-    ///     #310). An unreadable string is a value the adapter cannot use, like one of the wrong type.
-    /// </remarks>
-    private static string? ReadString(JsonElement element)
-    {
-        try
-        {
-            return element.GetString();
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>The raw text of an object, or <c>null</c> when it holds bytes that are not UTF-8.</summary>
-    /// <remarks>
-    ///     <see cref="JsonElement.GetRawText" /> transcodes like <see cref="JsonElement.GetString" />, and threw the same
-    ///     way on a key the client spelled in such bytes (found by the fuzz harness, #310).
-    /// </remarks>
-    private static string? ReadRawText(JsonElement element)
-    {
-        try
-        {
-            return element.GetRawText();
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
     }
 
     private static Expression CreateStringContains(MemberExpression property, Expression value)
