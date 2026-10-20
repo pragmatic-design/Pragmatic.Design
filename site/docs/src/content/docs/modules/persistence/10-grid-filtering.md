@@ -373,7 +373,7 @@ What each path really covers:
 |---|---|
 | `[Query]` / `[FilterDto]` | everything in the table except `Between`, and `Between` there degrades to `==` rather than being dropped |
 | `[GenerateGridBridge]` | `Equals`, `NotEquals` and `In` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons and `Between` on types that order. `Equals`/`NotEquals` against `null` compare with null on a column that can hold it |
-| `[GridFilter<T>]` | `Equals`, `NotEquals` on any type; `Contains`, `StartsWith`, `EndsWith` on strings; the four comparisons on comparable types. ⚠️ An operator outside the ones a property allows, `In` and `Between` included, is applied as `==` (#328) |
+| `[GridFilter<T>]` | the operators a property's `Operators` allows: `Equals`, `NotEquals` (`Equality`); `Contains`, `StartsWith`, `EndsWith` on strings (`String`); the four comparisons (`Compare`). An operator outside them, `In` and `Between` included, is refused with a `GridFilterRejectedException` (a 400). A companion operator left `null` is the default: `Contains` for a string, `==` otherwise; on a non-nullable companion every value is an operator the client chose |
 
 The canonical bridge refuses what it cannot apply, as the grid adapters do (see "A clause the adapter cannot
 apply" below): a field it does not filter on is a `GridFieldRejectedException`; a value the field cannot be

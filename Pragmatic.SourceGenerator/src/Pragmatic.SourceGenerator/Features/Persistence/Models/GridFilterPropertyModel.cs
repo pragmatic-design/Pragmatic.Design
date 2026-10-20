@@ -69,6 +69,12 @@ internal sealed record GridFilterPropertyModel
     public bool HasOperatorProperty { get; init; }
 
     /// <summary>
+    ///     Whether the companion operator property is nullable, so a client can leave it out: a null operator is the
+    ///     documented default, and a <c>case null</c> on a non-nullable enum does not compile.
+    /// </summary>
+    public bool OperatorIsNullable { get; init; }
+
+    /// <summary>
     ///     Custom filter handler type name.
     /// </summary>
     public string? HandlerTypeName { get; init; }

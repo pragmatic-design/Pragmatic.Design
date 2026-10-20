@@ -293,12 +293,8 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
                     });
                 }
 
-                Default(() =>
-                {
-                    // Default to Contains for strings
-                    AppendLine($"query = query.Where(e => {entityPath}.Contains({valueAccess}));");
-                    Break();
-                });
+                RenderUnsetAndRefusedOperators(prop, operatorAccess,
+                    $"query = query.Where(e => {entityPath}.Contains({valueAccess}));");
             });
         }
         else
@@ -344,14 +340,40 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
                     });
                 }
 
-                Default(() =>
-                {
-                    AppendLine($"query = query.Where(e => {entityPath} == {valueAccess});");
-                    Break();
-                });
+                RenderUnsetAndRefusedOperators(prop, operatorAccess,
+                    $"query = query.Where(e => {entityPath} == {valueAccess});");
             });
         }
     }
+
+    /// <summary>
+    ///     The end of an operator switch: an operator the client left out is the documented default, and one the
+    ///     property does not allow is refused (#328).
+    /// </summary>
+    /// <remarks>
+    ///     The <c>default</c> applied the documented default to both, so a <c>GreaterThan</c> on an equality-only
+    ///     property, or an <c>In</c> that is never generated, answered with the rows equal to the value. Only a
+    ///     nullable operator property can be left out: on a non-nullable one every value is an operator the client
+    ///     chose, and <c>case null</c> would not compile.
+    /// </remarks>
+    private void RenderUnsetAndRefusedOperators(GridFilterPropertyModel prop, string operatorAccess, string unset)
+    {
+        if (prop.OperatorIsNullable)
+        {
+            Case("null", () =>
+            {
+                AppendLine(unset);
+                Break();
+            });
+        }
+
+        Default(() => AppendLine($"throw {OperatorRefusal(prop, operatorAccess)};"));
+    }
+
+    private static string OperatorRefusal(GridFilterPropertyModel prop, string operatorAccess)
+        => "new global::Pragmatic.Persistence.Query.Adapters.GridFilterRejectedException(" +
+           $"\"{prop.PropertyName}\", global::Pragmatic.Persistence.Query.Adapters.GridFilterRejection.UnsupportedOperator, " +
+           $"{operatorAccess}.ToString())";
 
     private void RenderFixedOperatorFilter(GridFilterPropertyModel prop, string entityPath, string valueAccess)
     {
@@ -479,7 +501,9 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
                     $"StringOperator.NotEquals => spec & {specPrefix}.Where(e => {entityPath} != {valueAccess}),");
             }
 
-            AppendLine($"_ => spec & {specPrefix}.Where(e => {entityPath}.Contains({valueAccess})),");
+            if (prop.OperatorIsNullable)
+                AppendLine($"null => spec & {specPrefix}.Where(e => {entityPath}.Contains({valueAccess})),");
+            AppendLine($"_ => throw {OperatorRefusal(prop, operatorAccess)},");
 
             DecreaseIndent();
             AppendLine("};");
@@ -510,7 +534,9 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
                     $"FilterOperator.LessOrEqual => spec & {specPrefix}.Where(e => {entityPath} <= {valueAccess}),");
             }
 
-            AppendLine($"_ => spec & {specPrefix}.Where(e => {entityPath} == {valueAccess}),");
+            if (prop.OperatorIsNullable)
+                AppendLine($"null => spec & {specPrefix}.Where(e => {entityPath} == {valueAccess}),");
+            AppendLine($"_ => throw {OperatorRefusal(prop, operatorAccess)},");
 
             DecreaseIndent();
             AppendLine("};");

@@ -99,6 +99,28 @@ public class GridSearchTests(PostgresFixture fixture) : IntegrationTestBase(fixt
             "Grid search with exact city match should return the seeded property");
     }
 
+    /// <summary>
+    ///     An operator the property does not allow is refused with 400, through the host (#328).
+    /// </summary>
+    /// <remarks>
+    ///     <c>Name</c> allows the text operators only. An <c>Equals</c> on it was applied as <c>Contains</c>, under a
+    ///     200: the grid showed a substring match as the exact one it asked for — which is what the city case above
+    ///     did, until the filter declared the operator it uses.
+    /// </remarks>
+    [Fact]
+    public async Task GridSearch_AnOperatorThePropertyDoesNotAllow_IsRefused()
+    {
+        var response = await PostAsync("/api/properties/grid", new
+        {
+            filter = new { name = "Grand", nameOperator = "Equals", page = 1, pageSize = 10 }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Name");
+        body.Should().Contain("Equals");
+    }
+
     // =========================================================================
     // Grid Search: star rating range filter
     // =========================================================================
