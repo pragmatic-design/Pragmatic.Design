@@ -279,4 +279,46 @@ public class CsvReaderTests
 
         act.Should().Throw<FormatException>().WithMessage("*MaxFieldChars*");
     }
+
+    /// <summary>
+    ///     A row with more fields than <see cref="CsvOptions.MaxFieldsPerRow" /> is refused, by the streaming reader
+    ///     too (#315). A line of delimiters is a row of empty fields under both other limits.
+    /// </summary>
+    [Theory]
+    [InlineData("a,b,c,d\n")]
+    [InlineData("a,b\n,,,,")]
+    [InlineData("\"a\",\"b\",\"c\",\"d\"")]
+    public void ReadRows_RowBeyondMaxFieldsPerRow_Throws(string csv)
+    {
+        var act = () => CsvReader.ReadRows(new MemoryStream(Encoding.UTF8.GetBytes(csv)), new CsvOptions { MaxFieldsPerRow = 3 }).ToList();
+
+        act.Should().Throw<FormatException>().WithMessage("CSV *MaxFieldsPerRow*");
+    }
+
+    /// <summary>The control: a row of exactly <see cref="CsvOptions.MaxFieldsPerRow" /> fields is read.</summary>
+    [Fact]
+    public void ReadRows_RowAtMaxFieldsPerRow_IsRead()
+    {
+        var rows = CsvReader.ReadRows(new MemoryStream(Encoding.UTF8.GetBytes("a,b,c\n,,")), new CsvOptions { MaxFieldsPerRow = 3 }).ToList();
+
+        rows.Should().HaveCount(2);
+        rows[0].Should().Equal("a", "b", "c");
+        rows[1].Should().Equal("", "", "");
+    }
+
+    /// <summary>
+    ///     With the default options, a line of delimiters past Excel's column limit is refused, before the reader has
+    ///     built the row.
+    /// </summary>
+    [Fact]
+    public void Read_ALineOfDelimitersPastTheDefault_Throws()
+    {
+        var csv = new string(',', CsvOptions.Default.MaxFieldsPerRow);
+        var atTheLimit = new string(',', CsvOptions.Default.MaxFieldsPerRow - 1);
+
+        var act = () => CsvReader.Read(Encoding.UTF8.GetBytes(csv));
+
+        act.Should().Throw<FormatException>().WithMessage("*MaxFieldsPerRow*");
+        CsvReader.Read(Encoding.UTF8.GetBytes(atTheLimit)).Headers.Should().HaveCount(CsvOptions.Default.MaxFieldsPerRow);
+    }
 }

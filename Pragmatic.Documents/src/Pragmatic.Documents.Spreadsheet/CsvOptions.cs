@@ -46,6 +46,13 @@ public sealed record CsvOptions
     /// </summary>
     public int MaxFieldChars { get; init; } = 1_000_000;
 
+    /// <summary>
+    /// Maximum fields accepted in a single row when reading. Guards against a line of delimiters, which
+    /// is one row of as many empty fields as it has characters under both limits above: one megabyte of
+    /// commas allocated 40 MB (#315). Default: 16,384, Excel's column limit.
+    /// </summary>
+    public int MaxFieldsPerRow { get; init; } = 16_384;
+
     /// <summary>Default options with comma delimiter and invariant culture.</summary>
     public static CsvOptions Default { get; } = new();
 

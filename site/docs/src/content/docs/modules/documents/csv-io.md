@@ -104,7 +104,7 @@ var italian = new CsvOptions
     HasHeaders = true,                              // default
     FormulaProtection = true,                       // default, see above
 };
-// The same three as CsvOptions.Italian. MaxRows and MaxFieldChars bound what the reader accepts.
+// The same three as CsvOptions.Italian. MaxRows, MaxFieldsPerRow and MaxFieldChars bound what the reader accepts.
 
 CsvWriter.Write(fs, book, italian);
 ```
@@ -176,11 +176,13 @@ An uploaded file is read or refused, and the refusal is a `FormatException` whos
 
 - a quoted field still open at the end of the input;
 - a field longer than `CsvOptions.MaxFieldChars` (1,000,000 characters by default);
-- more rows than `CsvOptions.MaxRows` (1,000,000 by default), the streaming `ReadRows` included.
+- a row with more fields than `CsvOptions.MaxFieldsPerRow` (16,384 by default, Excel's column limit);
+- more rows than `CsvOptions.MaxRows` (1,000,000 by default).
 
-⚠️ Nothing yet bounds the number of fields in one row: a line of delimiters is one row of as many fields
-([#315](https://github.com/pragmatic-design/Pragmatic.Design/issues/315)). The reader is fuzzed
-(`node scripts/fuzz.mjs csv-reader`) and has property tests for these outcomes; anything else it throws is a defect.
+The three hold for the streaming `ReadRows` as well. The fields limit is what bounds a line of delimiters, which is
+one row of as many empty fields as it has characters under the other two: one megabyte of commas allocated 40 MB
+before it existed. The reader is fuzzed (`node scripts/fuzz.mjs csv-reader`) and has property tests for these
+outcomes; anything else it throws is a defect.
 
 ---
 
