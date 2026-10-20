@@ -8,8 +8,9 @@ namespace Pragmatic.Documents.Csv.Tests;
 /// <summary>
 ///     The CSV reader parses files an application's users upload (#158, #309). For any input it has two outcomes and
 ///     no others: rows, or its own refusal, a <see cref="FormatException" /> whose message starts with <c>CSV</c>, for
-///     a quoted field left open at the end of the input, a field over <see cref="CsvOptions.MaxFieldChars" /> or rows
-///     over <see cref="CsvOptions.MaxRows" />. Bytes that are not UTF-8 are read as U+FFFD, not refused.
+///     a quoted field left open at the end of the input, a field over <see cref="CsvOptions.MaxFieldChars" />, a row
+///     over <see cref="CsvOptions.MaxFieldsPerRow" /> fields or rows over <see cref="CsvOptions.MaxRows" />. Bytes that
+///     are not UTF-8 are read as U+FFFD, not refused.
 /// </summary>
 public class CsvReaderPropertyTests
 {
@@ -26,9 +27,11 @@ public class CsvReaderPropertyTests
         from delimiter in Gen.Elements(',', ';', '\t')
         from maxFieldChars in Gen.Frequency((1, Gen.Constant(CsvOptions.Default.MaxFieldChars)), (2, Gen.Choose(0, 12)))
         from maxRows in Gen.Frequency((1, Gen.Constant(CsvOptions.Default.MaxRows)), (2, Gen.Choose(0, 6)))
+        from maxFieldsPerRow in Gen.Frequency((1, Gen.Constant(CsvOptions.Default.MaxFieldsPerRow)), (2, Gen.Choose(1, 6)))
         select new CsvOptions
         {
             Delimiter = delimiter, HasHeaders = false, FormulaProtection = false, MaxFieldChars = maxFieldChars, MaxRows = maxRows,
+            MaxFieldsPerRow = maxFieldsPerRow,
         };
 
     [Fact]
@@ -50,7 +53,8 @@ public class CsvReaderPropertyTests
         => Prop.ForAll(Rows.ToArbitrary(), Options.ToArbitrary(), (rows, options) =>
         {
             var csv = CsvWriter.WriteToArray([], [.. rows.Select(row => (IReadOnlyList<string?>)row)], options);
-            var overALimit = rows.Count > options.MaxRows || rows.Any(row => row.Any(field => field.Length > options.MaxFieldChars));
+            var overALimit = rows.Count > options.MaxRows
+                             || rows.Any(row => row.Length > options.MaxFieldsPerRow || row.Any(field => field.Length > options.MaxFieldChars));
 
             try
             {

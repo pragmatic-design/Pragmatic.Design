@@ -10,9 +10,9 @@ public static class CsvReader
 {
     /// <summary>Read CSV from a stream, returning headers and rows of string arrays.</summary>
     /// <remarks>
-    ///     Materializes every row — bounded by <see cref="CsvOptions.MaxRows"/> /
-    ///     <see cref="CsvOptions.MaxFieldChars"/>. For large files that don't need to be held in
-    ///     memory at once, use the streaming <see cref="ReadRows"/> instead.
+    ///     Materializes every row — bounded by <see cref="CsvOptions.MaxRows"/>,
+    ///     <see cref="CsvOptions.MaxFieldsPerRow"/> and <see cref="CsvOptions.MaxFieldChars"/>. For large
+    ///     files that don't need to be held in memory at once, use the streaming <see cref="ReadRows"/> instead.
     /// </remarks>
     public static (string[] Headers, List<string[]> Rows) Read(Stream stream, CsvOptions? options = null)
     {
@@ -32,7 +32,9 @@ public static class CsvReader
 
     /// <summary>
     ///     Streams CSV rows one at a time (constant memory per row, including the header row when
-    ///     present). The stream is read lazily during enumeration and left open.
+    ///     present). The stream is read lazily during enumeration and left open. A row is bounded by
+    ///     <see cref="CsvOptions.MaxFieldsPerRow"/> fields of <see cref="CsvOptions.MaxFieldChars"/>
+    ///     characters, and the rows by <see cref="CsvOptions.MaxRows"/>.
     /// </summary>
     public static IEnumerable<string[]> ReadRows(Stream stream, CsvOptions? options = null)
     {
@@ -133,7 +135,7 @@ public static class CsvReader
                 // End of stream — flush any pending field
                 if (field.Length > 0 || fields.Count > 0)
                 {
-                    fields.Add(field.ToString());
+                    AddGuarded(fields, field, options);
                     GuardRowCount(++rowCount, options);
                     yield return fields.ToArray();
                 }
@@ -173,14 +175,14 @@ public static class CsvReader
                 }
                 else if (c == delimiter)
                 {
-                    fields.Add(field.ToString());
+                    AddGuarded(fields, field, options);
                     field.Clear();
                 }
                 else if (c == '\r')
                 {
                     // Check for \r\n
                     if (reader.Peek() == '\n') reader.Read();
-                    fields.Add(field.ToString());
+                    AddGuarded(fields, field, options);
                     GuardRowCount(++rowCount, options);
                     yield return fields.ToArray();
                     fields = [];
@@ -188,7 +190,7 @@ public static class CsvReader
                 }
                 else if (c == '\n')
                 {
-                    fields.Add(field.ToString());
+                    AddGuarded(fields, field, options);
                     GuardRowCount(++rowCount, options);
                     yield return fields.ToArray();
                     fields = [];
@@ -200,6 +202,16 @@ public static class CsvReader
                 }
             }
         }
+    }
+
+    // Refused before the field is added: a line of delimiters is a row of empty fields under both other limits, and
+    // the row's list grew to as many fields as the line had characters (#315).
+    private static void AddGuarded(List<string> fields, System.Text.StringBuilder field, CsvOptions options)
+    {
+        if (fields.Count >= options.MaxFieldsPerRow)
+            throw new FormatException(
+                $"CSV row exceeds the {options.MaxFieldsPerRow:N0}-field limit (CsvOptions.MaxFieldsPerRow).");
+        fields.Add(field.ToString());
     }
 
     private static void AppendGuarded(System.Text.StringBuilder field, char c, CsvOptions options)

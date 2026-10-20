@@ -18,7 +18,7 @@ public static class CsvReaderTarget
     [
         CsvOptions.Default,
         CsvOptions.Italian,
-        CsvOptions.Default with { HasHeaders = false, MaxFieldChars = 16, MaxRows = 8 },
+        CsvOptions.Default with { HasHeaders = false, MaxFieldChars = 16, MaxRows = 8, MaxFieldsPerRow = 8 },
     ];
 
     public static void Run(ReadOnlySpan<byte> data)
