@@ -1,13 +1,16 @@
 {
   "targets": {
     "devexpress-adapter": {
-      "instrument": ["Pragmatic.Persistence.dll"]
+      "instrument": ["Pragmatic.Persistence.dll"],
+      "dict": "Dictionaries/devexpress-adapter.dict"
     },
     "grid-adapter-generated": {
-      "instrument": ["Pragmatic.Persistence.dll"]
+      "instrument": ["Pragmatic.Persistence.dll"],
+      "dict": "Dictionaries/grid-adapter-generated.dict"
     },
     "primeng-adapter": {
-      "instrument": ["Pragmatic.Persistence.dll"]
+      "instrument": ["Pragmatic.Persistence.dll"],
+      "dict": "Dictionaries/primeng-adapter.dict"
     }
   }
 }

@@ -45,7 +45,11 @@ const IMAGE = 'mcr.microsoft.com/dotnet/sdk:10.0';
 /**
  * Every harness project and its targets, read from the `fuzz.json` files under the modules' `fuzz/` folders.
  *
- * @returns {{ name: string, project: string, instrument: string[] }[]} `project` relative to the root
+ * A target may name a libFuzzer dictionary (`"dict"`, relative to the project): tokens libFuzzer inserts whole. A
+ * harness that parses JSON through System.Text.Json, which is not instrumented, needs one to get past the
+ * grammar (#321). A dictionary named and absent is refused here, not by libFuzzer in the nightly.
+ *
+ * @returns {{ name: string, project: string, instrument: string[], dict: string | null }[]} paths relative to the root
  */
 export function findTargets(root = ROOT) {
   const targets = [];
@@ -56,8 +60,17 @@ export function findTargets(root = ROOT) {
       const manifest = join(fuzz, project.name, 'fuzz.json');
       if (!project.isDirectory() || !existsSync(manifest)) continue;
       const { targets: declared } = JSON.parse(readFileSync(manifest, 'utf8'));
-      for (const [name, { instrument }] of Object.entries(declared))
-        targets.push({ name, project: relative(root, join(fuzz, project.name)).replaceAll('\\', '/'), instrument });
+      const dir = join(fuzz, project.name);
+      for (const [name, { instrument, dict }] of Object.entries(declared)) {
+        if (dict && !existsSync(join(dir, dict)))
+          throw new Error(`${name} names the dictionary ${dict}, which is not in ${relative(root, dir)}`);
+        targets.push({
+          name,
+          project: relative(root, dir).replaceAll('\\', '/'),
+          instrument,
+          dict: dict ? relative(root, join(dir, dict)).replaceAll('\\', '/') : null,
+        });
+      }
     }
   }
   return targets.sort((a, b) => a.name.localeCompare(b.name));
@@ -67,7 +80,7 @@ export function findTargets(root = ROOT) {
  * libFuzzer's arguments for one run: the driver starts `dotnet <assembly>`, and the harness reads its target
  * from the environment. The grown corpus comes first, so new inputs are written there and not among the seeds.
  */
-export function libFuzzerArgs({ assembly, seconds, corpus, seeds, crashes }) {
+export function libFuzzerArgs({ assembly, seconds, corpus, seeds, crashes, dict }) {
   return [
     '--target_path=dotnet',
     `--target_arg=${assembly}`,
@@ -75,6 +88,7 @@ export function libFuzzerArgs({ assembly, seconds, corpus, seeds, crashes }) {
     `-max_total_time=${seconds}`,
     '-rss_limit_mb=2560',
     `-artifact_prefix=${crashes}/`,
+    ...(dict ? [`-dict=${dict}`] : []),
     corpus,
     seeds,
   ];
@@ -142,7 +156,8 @@ async function fuzzOne(target, seconds, work) {
 
   const assembly = join(bin, `${basename(target.project)}.dll`);
   const seeds = join(project, 'Corpus', target.name);
-  const status = run(await driver(work), libFuzzerArgs({ assembly, seconds, corpus, seeds, crashes }), {
+  const dict = target.dict ? join(ROOT, target.dict) : null;
+  const status = run(await driver(work), libFuzzerArgs({ assembly, seconds, corpus, seeds, crashes, dict }), {
     env: { ...process.env, PRAGMATIC_FUZZ_TARGET: target.name },
   });
 
@@ -175,7 +190,7 @@ function inDocker(args) {
 async function main(args) {
   const all = findTargets();
   if (args.includes('--list')) {
-    for (const t of all) console.log(`${t.name}  (${t.project})`);
+    for (const t of all) console.log(`${t.name}  (${t.project})${t.dict ? `  dict: ${t.dict}` : ''}`);
     return 0;
   }
 
