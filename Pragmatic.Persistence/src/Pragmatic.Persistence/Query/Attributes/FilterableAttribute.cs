@@ -19,8 +19,11 @@ namespace Pragmatic.Persistence.Query.Attributes;
 ///         <see cref="StringOperator" /> can be defined to allow dynamic operator selection.
 ///     </para>
 ///     <para>
-///         For range filtering (Min/Max), define two properties with appropriate names
-///         and set the <see cref="Operators" /> to include <see cref="FilterOps.Range" />.
+///         For range filtering, define the bounds as properties with <see cref="Operators" /> =
+///         <see cref="FilterOps.Range" /> and the same <see cref="MapTo" />, named for their side:
+///         <c>Min…</c> or <c>From…</c> filters <c>&gt;=</c>, <c>Max…</c> or <c>To…</c> filters <c>&lt;=</c>
+///         (<c>MinStarRating</c>, <c>MaxStarRating</c>). A <see cref="FilterOps.Range" /> property named otherwise
+///         is reported (<c>PRAG0703</c>).
 ///     </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property)]

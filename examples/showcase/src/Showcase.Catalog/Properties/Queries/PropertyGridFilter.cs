@@ -45,11 +45,11 @@ public partial class PropertyGridFilter
 
     public StringOperator? CountryOperator { get; set; }
 
-    /// <summary>Minimum star rating (range filter — uses GreaterOrEqual internally).</summary>
+    /// <summary>Minimum star rating: a <c>Range</c> named <c>Min…</c> filters <c>&gt;=</c>.</summary>
     [Filterable(Operators = FilterOps.Range, MapTo = "StarRating")]
     public int? MinStarRating { get; set; }
 
-    /// <summary>Maximum star rating (range filter — uses LessOrEqual internally).</summary>
+    /// <summary>Maximum star rating: a <c>Range</c> named <c>Max…</c> filters <c>&lt;=</c>.</summary>
     [Filterable(Operators = FilterOps.Range, MapTo = "StarRating")]
     public int? MaxStarRating { get; set; }
 

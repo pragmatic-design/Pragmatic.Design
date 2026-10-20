@@ -117,6 +117,7 @@ internal static class GridFilterTransform
 
         // Parse filterable attributes
         var allowedOperators = FilterOpsKind.All;
+        var operatorsDeclared = false;
         string? mapTo = null;
         string? handlerTypeName = null;
         string? handlerArgs = null;
@@ -129,6 +130,7 @@ internal static class GridFilterTransform
                 {
                     case "Operators" when arg.Value.Value is int opsValue:
                         allowedOperators = (FilterOpsKind)opsValue;
+                        operatorsDeclared = true;
                         break;
                     case "MapTo" when arg.Value.Value is string mapToValue:
                         mapTo = mapToValue;
@@ -174,6 +176,17 @@ internal static class GridFilterTransform
             p.Name.Equals(operatorPropertyName, StringComparison.Ordinal));
         var hasOperatorProperty = operatorProperty is not null;
 
+        // FilterOps.Range is a bound named by the property (#330): Min…/From… filters >=, Max…/To… filters <=. Only
+        // when the property declares it, since an undeclared Operators is All and would make every To… a bound; and
+        // not when a companion operator chooses the comparison.
+        var isRange = operatorsDeclared
+                      && allowedOperators != FilterOpsKind.All
+                      && (allowedOperators & FilterOpsKind.Range) != 0
+                      && !hasOperatorProperty;
+        var isLowerBound = isRange && (StartsWithWord(propertyName, "Min") || StartsWithWord(propertyName, "From"));
+        var isUpperBound = isRange && !isLowerBound
+                           && (StartsWithWord(propertyName, "Max") || StartsWithWord(propertyName, "To"));
+
         return new GridFilterPropertyModel
         {
             PropertyName = propertyName,
@@ -192,10 +205,19 @@ internal static class GridFilterTransform
             OperatorPropertyName = hasOperatorProperty ? operatorPropertyName : null,
             HasOperatorProperty = hasOperatorProperty,
             OperatorIsNullable = operatorProperty?.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T },
+            IsLowerBound = isLowerBound,
+            IsUpperBound = isUpperBound,
+            IsUnnamedRange = isRange && !isLowerBound && !isUpperBound,
             HandlerTypeName = handlerTypeName,
             HandlerArgs = handlerArgs
         };
     }
+
+    // The prefix as a word: MinStarRating and ToDate, not Minutes or Total.
+    private static bool StartsWithWord(string name, string prefix)
+        => name.Length > prefix.Length
+           && name.StartsWith(prefix, StringComparison.Ordinal)
+           && char.IsUpper(name[prefix.Length]);
 
     private static bool IsPartialType(SyntaxNode node)
     {

@@ -75,6 +75,24 @@ internal sealed record GridFilterPropertyModel
     public bool OperatorIsNullable { get; init; }
 
     /// <summary>
+    ///     A <c>FilterOps.Range</c> lower bound: the name starts with <c>Min</c> or <c>From</c>, and the property filters
+    ///     <c>&gt;=</c> (#330).
+    /// </summary>
+    public bool IsLowerBound { get; init; }
+
+    /// <summary>
+    ///     A <c>FilterOps.Range</c> upper bound: the name starts with <c>Max</c> or <c>To</c>, and the property filters
+    ///     <c>&lt;=</c> (#330).
+    /// </summary>
+    public bool IsUpperBound { get; init; }
+
+    /// <summary>
+    ///     A property that declares <c>FilterOps.Range</c> and whose name says neither bound: reported, since it would
+    ///     filter with equality.
+    /// </summary>
+    public bool IsUnnamedRange { get; init; }
+
+    /// <summary>
     ///     Custom filter handler type name.
     /// </summary>
     public string? HandlerTypeName { get; init; }
