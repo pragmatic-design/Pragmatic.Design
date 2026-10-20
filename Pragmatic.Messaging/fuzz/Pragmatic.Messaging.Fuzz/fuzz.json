@@ -1,10 +1,12 @@
 {
   "targets": {
     "message-type-registry": {
-      "instrument": ["Pragmatic.Messaging.Core.dll"]
+      "instrument": ["Pragmatic.Messaging.Core.dll"],
+      "dict": "Dictionaries/message-type-registry.dict"
     },
     "sql-headers": {
-      "instrument": ["Pragmatic.Messaging.Sql.dll"]
+      "instrument": ["Pragmatic.Messaging.Sql.dll"],
+      "dict": "Dictionaries/sql-headers.dict"
     }
   }
 }

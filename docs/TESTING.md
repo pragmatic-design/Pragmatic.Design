@@ -301,10 +301,18 @@ The parsers that read untrusted input (`docs/security/untrusted-input.md`) are f
 
 A harness is a `*.Fuzz` project in the module's `fuzz/` folder (`Pragmatic.Agent/fuzz/Pragmatic.Agent.Fuzz`):
 
-- its `fuzz.json` names each target and the assemblies it reaches;
+- its `fuzz.json` names each target, the assemblies it reaches, and optionally a `"dict"`;
 - `FuzzTargets.All` maps the same names to code;
 - `Corpus/<target>/` holds the seeds a run starts from;
-- `Regressions/<target>/` holds every input that once crashed.
+- `Regressions/<target>/` holds every input that once crashed;
+- `Dictionaries/<target>.dict` holds the tokens libFuzzer inserts whole (`-dict`).
+
+A target that parses through System.Text.Json needs a dictionary. The parser is not instrumented, so coverage
+barely moves while the bytes are being read, and blind mutation rarely produces a well-formed `null` or a number
+past `int`. On `gossip-datagram`, three runs of 120 s per side (#321): a seeded overflow on `incarnation` was found
+in 2 of 3 runs with the dictionary and 0 of 3 without, a seeded `"id": null` in 1 of 3 and 0 of 3. Both crashing
+inputs carried a dictionary token. The dictionary raises the odds; it does not make a JSON defect certain to be
+found in one night.
 
 The module's tests check that the two lists of names agree, and replay every seed and regression through its
 harness, so a fixed crash stays fixed in the gate.
@@ -322,7 +330,8 @@ A crash fails the run. Its input goes under `Regressions/<target>/` with the fix
 **Adding a target:**
 1. Write a harness that returns on the parser's declared outcomes and throws on anything else.
 2. Add it to `FuzzTargets.All` and `fuzz.json`.
-3. Seed `Corpus/<target>/` with a few valid inputs.
+3. Seed `Corpus/<target>/` with a few valid inputs. A JSON target also gets `Dictionaries/<target>.dict`: the
+   grammar's tokens, the property names it reads, and numbers at the edges of their types.
 4. Write the property tests beside the module's other tests.
 
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you

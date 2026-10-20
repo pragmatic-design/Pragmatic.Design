@@ -21,9 +21,51 @@ test('every target of every fuzz.json under a module fuzz folder is found, with 
   mkdirSync(join(root, 'Pragmatic.B', 'fuzz', 'NoManifest'), { recursive: true });
 
   assert.deepEqual(findTargets(root), [
-    { name: 'a-thing', project: 'Pragmatic.A/fuzz/Pragmatic.A.Fuzz', instrument: ['Pragmatic.A.dll', 'X.dll'] },
-    { name: 'b-thing', project: 'Pragmatic.A/fuzz/Pragmatic.A.Fuzz', instrument: ['Pragmatic.A.dll'] },
+    { name: 'a-thing', project: 'Pragmatic.A/fuzz/Pragmatic.A.Fuzz', instrument: ['Pragmatic.A.dll', 'X.dll'], dict: null },
+    { name: 'b-thing', project: 'Pragmatic.A/fuzz/Pragmatic.A.Fuzz', instrument: ['Pragmatic.A.dll'], dict: null },
   ]);
+});
+
+test('a target that names a dictionary is found with it, relative to the root (#321)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'fuzz-dict-'));
+  const project = join(root, 'Pragmatic.A', 'fuzz', 'Pragmatic.A.Fuzz');
+  mkdirSync(join(project, 'Dictionaries'), { recursive: true });
+  writeFileSync(join(project, 'Dictionaries', 'json.dict'), '"null"\n');
+  writeFileSync(join(project, 'fuzz.json'), JSON.stringify({
+    targets: { json: { instrument: ['A.dll'], dict: 'Dictionaries/json.dict' } },
+  }));
+
+  assert.equal(findTargets(root)[0].dict, 'Pragmatic.A/fuzz/Pragmatic.A.Fuzz/Dictionaries/json.dict');
+});
+
+// A dictionary named and absent would make libFuzzer refuse to start, in the nightly, hours after the change; a
+// misspelt one found here is a red gate on the pull request.
+test('a target that names a dictionary that is not there is refused', () => {
+  const root = mkdtempSync(join(tmpdir(), 'fuzz-dict-missing-'));
+  const project = join(root, 'Pragmatic.A', 'fuzz', 'Pragmatic.A.Fuzz');
+  mkdirSync(project, { recursive: true });
+  writeFileSync(join(project, 'fuzz.json'), JSON.stringify({
+    targets: { json: { instrument: ['A.dll'], dict: 'Dictionaries/json.dict' } },
+  }));
+
+  assert.throws(() => findTargets(root), /json.*Dictionaries\/json\.dict/);
+});
+
+test('every JSON harness of the repository has a dictionary that exists (#321)', () => {
+  const json = ['devexpress-adapter', 'grid-adapter-generated', 'gossip-datagram', 'i18n-json', 'message-type-registry',
+    'optional-converter', 'primeng-adapter', 'result-converter', 'sql-headers', 'temporal-json'];
+  const targets = findTargets();
+
+  for (const name of json)
+    assert.ok(targets.find((t) => t.name === name)?.dict, `${name} has no dictionary`);
+});
+
+test('libFuzzer is given the dictionary when the target has one, and nothing when it has none', () => {
+  const base = { assembly: '/b/A.dll', seconds: 60, corpus: '/w/corpus', seeds: '/s/Corpus/x', crashes: '/w/crashes' };
+
+  assert.ok(libFuzzerArgs({ ...base, dict: '/s/Dictionaries/x.dict' }).includes('-dict=/s/Dictionaries/x.dict'));
+  assert.ok(!libFuzzerArgs(base).some((a) => a.startsWith('-dict')));
+  assert.equal(libFuzzerArgs({ ...base, dict: '/s/Dictionaries/x.dict' }).at(-1), '/s/Corpus/x');
 });
 
 test('the repository has the frame codec harness', () => {

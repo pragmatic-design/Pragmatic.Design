@@ -4,7 +4,8 @@
       "instrument": ["Pragmatic.Internationalization.dll"]
     },
     "i18n-json": {
-      "instrument": ["Pragmatic.Internationalization.dll", "Pragmatic.Internationalization.AspNetCore.dll"]
+      "instrument": ["Pragmatic.Internationalization.dll", "Pragmatic.Internationalization.AspNetCore.dll"],
+      "dict": "Dictionaries/i18n-json.dict"
     }
   }
 }

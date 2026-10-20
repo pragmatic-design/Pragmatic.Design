@@ -1,7 +1,8 @@
 {
   "targets": {
     "result-converter": {
-      "instrument": ["Pragmatic.Result.dll"]
+      "instrument": ["Pragmatic.Result.dll"],
+      "dict": "Dictionaries/result-converter.dict"
     }
   }
 }

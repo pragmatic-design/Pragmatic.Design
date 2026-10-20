@@ -4,7 +4,8 @@
       "instrument": ["Pragmatic.Agent.Protocol.dll"]
     },
     "gossip-datagram": {
-      "instrument": ["Pragmatic.Agent.dll"]
+      "instrument": ["Pragmatic.Agent.dll"],
+      "dict": "Dictionaries/gossip-datagram.dict"
     }
   }
 }

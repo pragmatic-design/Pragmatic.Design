@@ -1,7 +1,8 @@
 {
   "targets": {
     "optional-converter": {
-      "instrument": ["Pragmatic.Patch.dll"]
+      "instrument": ["Pragmatic.Patch.dll"],
+      "dict": "Dictionaries/optional-converter.dict"
     }
   }
 }
