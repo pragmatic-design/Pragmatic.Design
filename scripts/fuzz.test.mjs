@@ -6,10 +6,38 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DRIVER, SHARPFUZZ_VERSION, findTargets, libFuzzerArgs } from './fuzz.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * The nightly fuzzes one harness per job (#158): run in one job, 15 harnesses of 600 s were 150 minutes against a
+ * 120-minute timeout, and the run was cancelled before it ended, so its corpus cache was never saved. The matrix
+ * reads the targets from the script, so a new harness joins the nightly without touching the workflow.
+ */
+test('--list-json prints every target name, the list the nightly matrix fuzzes', () => {
+  const run = spawnSync(process.execPath, [join(HERE, 'fuzz.mjs'), '--list-json'], { encoding: 'utf8' });
+
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(JSON.parse(run.stdout), findTargets().map((t) => t.name));
+});
+
+test('the nightly fuzzes each target in its own job, with its own corpus cache, and one failure stops no other', () => {
+  const workflow = readFileSync(join(HERE, '..', '.github', 'workflows', 'fuzz.yml'), 'utf8');
+
+  assert.match(workflow, /node scripts\/fuzz\.mjs --list-json/, 'the matrix is read from the script');
+  assert.match(workflow, /target: \$\{\{ fromJSON\(needs\.targets\.outputs\.targets\) \}\}/);
+  assert.match(workflow, /fail-fast: false/, 'a crash in one harness does not cancel the others');
+  assert.match(workflow, /node scripts\/fuzz\.mjs \$\{\{ matrix\.target \}\}/, 'each job fuzzes its one target');
+  assert.match(workflow, /path: artifacts\/fuzz\/\$\{\{ matrix\.target \}\}\/corpus/);
+  assert.match(workflow, /key: fuzz-corpus-\$\{\{ matrix\.target \}\}-\$\{\{ github\.run_id \}\}/);
+  assert.doesNotMatch(workflow, /fuzz\.mjs --all/, 'no job fuzzes every harness in sequence');
+});
 
 test('every target of every fuzz.json under a module fuzz folder is found, with what it instruments', () => {
   const root = mkdtempSync(join(tmpdir(), 'fuzz-targets-'));

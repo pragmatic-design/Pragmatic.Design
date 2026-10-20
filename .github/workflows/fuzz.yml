@@ -1,11 +1,17 @@
 name: Fuzz
 
-# Coverage-guided fuzzing of the .NET parsers that read untrusted input (#158, scripts/fuzz.mjs): every harness,
-# for a fixed time, every night. Not on pull requests: the gate replays every kept input (the seeds and each input
-# that once crashed) on every change, and the property tests run there too; this is where new inputs are found.
+# Coverage-guided fuzzing of the .NET parsers that read untrusted input (#158, scripts/fuzz.mjs): every harness, for
+# a fixed time, every night. A pull request that changes this workflow or the runner runs every harness briefly, to
+# prove the run itself works; the gate replays every kept input (the seeds and each input that once crashed) on
+# every change, and the property tests run there too: this is where new inputs are found.
+#
+# One job per harness, in parallel. Run in one job, 15 harnesses of 600 s were 150 minutes against a 120-minute
+# timeout: the night was cancelled before it ended, and its corpus was never saved. The list comes from the script,
+# so a new harness joins the night without touching this file, and a crash in one harness stops no other.
 #
 # The corpus each harness grows is kept between runs in the cache, so a night starts where the last one stopped.
-# A crash fails the run and uploads its input: commit it under the harness's Regressions/ folder with the fix.
+# A crash fails that harness's job and uploads its input: commit it under the harness's Regressions/ folder with the
+# fix.
 
 on:
   workflow_dispatch:
@@ -35,10 +41,35 @@ permissions:
   contents: read
 
 jobs:
-  fuzz:
-    name: Fuzz every harness
+  targets:
+    name: List the harnesses
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 5
+    outputs:
+      targets: ${{ steps.list.outputs.targets }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: List
+        id: list
+        run: echo "targets=$(node scripts/fuzz.mjs --list-json)" >> "$GITHUB_OUTPUT"
+
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    needs: targets
+    runs-on: ubuntu-24.04
+    # The build and 600 s of fuzzing, with room: one harness, never the sum of them.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.targets.outputs.targets) }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,22 +84,21 @@ jobs:
         with:
           node-version: '22'
 
-      # Restored from the newest run, saved under this one: each night adds to the last.
+      # This harness's corpus: restored from its newest run, saved under this one, so each night adds to the last.
       - name: Corpus
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: artifacts/fuzz/*/corpus
-          key: fuzz-corpus-${{ github.run_id }}
-          restore-keys: fuzz-corpus-
+          path: artifacts/fuzz/${{ matrix.target }}/corpus
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
 
-      # A pull request that changes the harness runs it briefly, to prove the run itself works.
       - name: Fuzz
-        run: node scripts/fuzz.mjs --all --seconds ${{ inputs.seconds || (github.event_name == 'pull_request' && '60') || '600' }}
+        run: node scripts/fuzz.mjs ${{ matrix.target }} --seconds ${{ inputs.seconds || (github.event_name == 'pull_request' && '60') || '600' }}
 
       - name: Upload crashes
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fuzz-crashes
-          path: artifacts/fuzz/*/crashes/
+          name: fuzz-crashes-${{ matrix.target }}
+          path: artifacts/fuzz/${{ matrix.target }}/crashes/
           if-no-files-found: warn
