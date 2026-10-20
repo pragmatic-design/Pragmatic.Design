@@ -39,4 +39,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Messaging.Samples/Pragmatic.Messaging.Samples.csproj" />
   </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Pragmatic.Messaging.Fuzz/Pragmatic.Messaging.Fuzz.csproj" />
+  </Folder>
 </Solution>

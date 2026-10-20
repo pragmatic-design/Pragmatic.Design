@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Pragmatic.Agent.Tests" />
+    <!-- The gossip datagram harness (#312) reads payloads through the internal GossipWire. -->
+    <InternalsVisibleTo Include="Pragmatic.Agent.Fuzz" />
   </ItemGroup>
 
   <ItemGroup>

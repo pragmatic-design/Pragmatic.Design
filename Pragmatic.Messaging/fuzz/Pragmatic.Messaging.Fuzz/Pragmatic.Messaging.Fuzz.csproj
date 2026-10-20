@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Messaging.Sql\Pragmatic.Messaging.Sql.csproj" />
+    <!-- The registry the harness runs is the one the generator writes for the handler in FuzzOrderHandler.cs. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

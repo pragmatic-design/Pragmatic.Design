@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <!-- Both generators, as in Pragmatic.Result.Tests: the converters the harness runs are the ones they emit for the
+         contracts in JsonResultContracts.cs. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Result.SourceGenerator\Pragmatic.Result.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

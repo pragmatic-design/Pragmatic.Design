@@ -162,6 +162,48 @@ public sealed class SqlTransportStorageTests : IDisposable
         cancelled.Should().Be(1, "durable cancel deletes the unclaimed scheduled row");
     }
 
+    // Headers another service wrote that do not parse (#312). The consumer read them before its try, so the
+    // JsonException left the message neither acked nor nacked: the poll loop took it for a storage hiccup, dropped
+    // the rest of the batch with it, and both stayed locked until the lease ran out — then the same again, without
+    // end. Unreadable headers are a delivery that failed, dead-lettered like any other.
+    [Fact]
+    public async Task AMessageWhoseHeadersDoNotParse_IsDeadLettered_AndTheBatchGoesOn()
+    {
+        _options.MaxDeliveryCount = 1;
+        _options.PollingInterval = TimeSpan.FromMilliseconds(20);
+        _options.MaxPollingInterval = TimeSpan.FromMilliseconds(100);
+        await _storage.SendAsync([1], "q5", MessageContext.New());
+        await _storage.SendAsync([2], "q5", MessageContext.New());
+
+        var db = _factory.CreateDbContext();
+        await using (db)
+        {
+            var first = await db.Messages.OrderBy(m => m.Id).FirstAsync();
+            await db.Messages.Where(m => m.Id == first.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.HeadersJson, "{\"broken\":"));
+        }
+
+        var second = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var consumer = new SqlQueueConsumer(_storage, _options, "q5", (payload, _, _) =>
+        {
+            second.TrySetResult(payload.ToArray());
+            return Task.CompletedTask;
+        }, NullLogger.Instance);
+
+        await using (consumer.ConfigureAwait(true))
+        {
+            (await second.Task.WaitAsync(TimeSpan.FromSeconds(10))).Should().Equal([2]);
+        }
+
+        var after = _factory.CreateDbContext();
+        await using (after)
+        {
+            var dead = await after.DeadLetters.SingleAsync();
+            dead.QueueName.Should().Be("q5");
+            dead.Reason.Should().Be("MaxDeliveryCountExceeded");
+        }
+    }
+
     /// <summary>Nack pushes VisibleAt forward — rewind it so the next claim can proceed in-test.</summary>
     private async Task<Pragmatic.Messaging.Sql.Entities.TransportMessage> ClaimIgnoringVisibilityAsync(string queue)
     {

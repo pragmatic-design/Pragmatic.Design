@@ -36,4 +36,16 @@
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FsCheck" />
+  </ItemGroup>
+
+  <!-- The fuzz harnesses, and every input they keep, replayed in the full tier (#312). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\fuzz\Pragmatic.Messaging.Fuzz\Pragmatic.Messaging.Fuzz.csproj" />
+    <None Include="..\..\fuzz\Pragmatic.Messaging.Fuzz\fuzz.json" Link="Fuzz\fuzz.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Messaging.Fuzz\Corpus\**\*" LinkBase="Fuzz\Corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fuzz\Pragmatic.Messaging.Fuzz\Regressions\**\*" LinkBase="Fuzz\Regressions" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

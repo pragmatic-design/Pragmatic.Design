@@ -107,9 +107,13 @@ public sealed partial class SqlQueueConsumer : IAsyncDisposable
 
     private async Task ProcessAsync(TransportMessage message)
     {
-        var context = ToContext(message);
         try
         {
+            // Inside the try: headers that do not parse are a delivery that failed, nacked toward the dead-letter
+            // table. Outside it, their JsonException reached the poll loop, which dropped the rest of the batch and
+            // left the message locked, to be claimed and to fail again once the lease ran out.
+            var context = ToContext(message);
+
             // CancellationToken.None: shutdown must not interrupt in-flight handlers.
             await _handler(message.Payload, context, CancellationToken.None).ConfigureAwait(false);
             await _storage.AckAsync(message.Id, message.LockedBy!, CancellationToken.None).ConfigureAwait(false);
@@ -121,7 +125,8 @@ public sealed partial class SqlQueueConsumer : IAsyncDisposable
         }
     }
 
-    private static MessageContext ToContext(TransportMessage message) => new(
+    // Internal for the fuzz harness and the property test (#312): headers come from whichever service wrote the row.
+    internal static MessageContext ToContext(TransportMessage message) => new(
         MessageId: message.MessageId,
         CorrelationId: message.CorrelationId,
         TenantId: message.TenantId,

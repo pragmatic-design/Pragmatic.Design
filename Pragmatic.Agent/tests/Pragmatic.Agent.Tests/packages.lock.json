@@ -356,6 +356,7 @@
       "pragmatic.agent.fuzz": {
         "type": "Project",
         "dependencies": {
+          "Pragmatic.Agent": "[1.0.0, )",
           "Pragmatic.Agent.Protocol": "[1.0.0, )",
           "SharpFuzz": "[2.3.0, )"
         }

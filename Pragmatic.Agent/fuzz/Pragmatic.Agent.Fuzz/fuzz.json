@@ -2,6 +2,9 @@
   "targets": {
     "frame-codec": {
       "instrument": ["Pragmatic.Agent.Protocol.dll"]
+    },
+    "gossip-datagram": {
+      "instrument": ["Pragmatic.Agent.dll"]
     }
   }
 }
