@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 using Pragmatic.Testing.Assertions;
 using Microsoft.Data.Sqlite;
 using Pragmatic.Migrations.Introspection;
@@ -56,6 +57,37 @@ public class SchemaAuditStoreTests : IAsyncLifetime
         record.ChangeCount.Should().Be(3);
         record.DurationMs.Should().Be(42);
         record.AppliedBy.Should().Be("tester");
+    }
+
+    [Fact]
+    public async Task RecordMigration_WritesTheSchemaJsonTheReflectionSerializerWrote()
+    {
+        // The generated context must not change the recorded text: every part of a schema, compared
+        // with the camelCase, compact output the reflection serializer produced before it.
+        var schema = new SchemaVersion(
+            [
+                new TableSchema(
+                    "Invoices",
+                    "dbo",
+                    [new ColumnSchema("Id", "uuid", false, true), new ColumnSchema("Number", "text", true, false, "''", "Code")],
+                    [new IndexSchema("IX_Invoices_Number", ["Number"], IsUnique: true, Filter: "\"IsDeleted\" = false")],
+                    [new ForeignKeySchema("FK_Invoices_GuestId_Guests", "GuestId", "Guests", "Id", ReferentialAction.Cascade)],
+                    [new CheckConstraintSchema("CK_Invoices_Total", "\"Total\" >= 0")])
+            ],
+            "AppDb",
+            "PostgreSql",
+            "ConnectionStrings:App");
+        var reflected = JsonSerializer.Serialize(schema, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false });
+
+        await SchemaAuditStore.EnsureTableAsync(_connection, _generator);
+        await SchemaAuditStore.RecordMigrationAsync(_connection, schema, "-- sql", changeCount: 1, durationMs: 1, appliedBy: "tester");
+
+        var cmd = _connection.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
+        {
+            cmd.CommandText = "SELECT \"SchemaJson\" FROM \"__PragmaticSchema\"";
+            (await cmd.ExecuteScalarAsync()).Should().Be(reflected);
+        }
     }
 
     [Fact]

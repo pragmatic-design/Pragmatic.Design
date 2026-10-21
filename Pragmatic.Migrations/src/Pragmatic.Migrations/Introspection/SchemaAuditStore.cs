@@ -10,12 +10,6 @@ namespace Pragmatic.Migrations.Introspection;
 /// </summary>
 public static class SchemaAuditStore
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
-
     /// <summary>
     ///     Ensures the audit table and index exist. Idempotent.
     /// </summary>
@@ -54,7 +48,7 @@ public static class SchemaAuditStore
         string auditTableName = MigrationConstants.AuditTableName,
         CancellationToken ct = default)
     {
-        var schemaJson = JsonSerializer.Serialize(schema, JsonOptions);
+        var schemaJson = JsonSerializer.Serialize(schema, SchemaJsonContext.Default.SchemaVersion);
 
         var cmd = connection.CreateCommand();
         await using (cmd.ConfigureAwait(false))

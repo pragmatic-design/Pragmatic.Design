@@ -2258,7 +2258,7 @@ const COUNTS_FILE = 'artifacts/gate-counts.json';
  * `Pragmatic.Authorization.Management`'s five are ten of the warnings counted here. That is surface
  * arriving, not a regression in code that already existed, and it is said in the commit that raises it.
  */
-const TRIM_WARNING_BUDGET = 110;
+const TRIM_WARNING_BUDGET = 108;
 
 /**
  * A ratchet on the OTHER trim family: warnings that say a reflective requirement is not DECLARED.
