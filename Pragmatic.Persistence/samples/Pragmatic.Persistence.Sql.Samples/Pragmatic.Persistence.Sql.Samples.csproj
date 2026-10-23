@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Sql.Samples</RootNamespace>
+    <!-- The samples run as they are (dotnet run) and publish Native AOT (dotnet publish -c Release -r win-x64
+         -p:PragmaticAotSmokeRestore=true): the same code, every trim and AOT warning an error. PublishAot sits here, not on the command line,
+         where it would reach the netstandard2.0 generator project (NETSDK1207); and only while publishing, since on a plain build it puts the
+         machine's runtime identifier in the restore and the committed lock file then fails a locked restore on any other OS. -->
+    <PublishAot Condition="'$(_IsPublishing)' == 'true'">true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
+    <!-- The generated plans, interceptors and maps land in obj/Release/net10.0/generated: the SQL of every call site is there to read. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <!-- The query census as a committed file (queries.census.json): written after every build, compared with the committed one (PRAG3015 when stale). -->
+  <PropertyGroup>
+    <PragmaticCensusFile>$(MSBuildProjectDirectory)\queries.census.json</PragmaticCensusFile>
+  </PropertyGroup>
+  <Import Project="..\..\src\Pragmatic.Persistence.Sql.Generator\build\Pragmatic.Persistence.Sql.Generator.targets" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+  <!-- SQL Server on request (-p:WithSqlClient=true): the provider is not trim-clean, so it is kept apart, as in the AOT smoke. -->
+  <PropertyGroup Condition="'$(WithSqlClient)' == 'true'">
+    <DefineConstants>$(DefineConstants);WITH_SQLCLIENT</DefineConstants>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WithSqlClient)' == 'true'">
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.SqlClient\Pragmatic.Persistence.Sql.SqlClient.csproj" />
+  </ItemGroup>
+
+  <!-- MySQL on request (-p:WithMySql=true, PRAG_SPIKE_MYSQL): kept apart like SQL Server so the default build and the AOT smoke stay as they are. -->
+  <PropertyGroup Condition="'$(WithMySql)' == 'true'">
+    <DefineConstants>$(DefineConstants);WITH_MYSQL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WithMySql)' == 'true'">
+    <PackageReference Include="MySqlConnector" />
+  </ItemGroup>
+
+  <!-- Oracle on request (-p:WithOracle=true, PRAG_SPIKE_ORACLE): ODP.NET Core, as the tests run it; kept apart like the other optional providers. -->
+  <PropertyGroup Condition="'$(WithOracle)' == 'true'">
+    <DefineConstants>$(DefineConstants);WITH_ORACLE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WithOracle)' == 'true'">
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" />
+    <!-- ODP.NET brings Pkcs 8.0.1 (known vulnerabilities, NU1902/NU1903): pinned to the patched version the SqlClient group and the tests use. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The workload's schema snapshot (what the migrations write): the generator reads its indexes, and a WHERE on a column without one is PRAG3011. -->
+    <AdditionalFiles Include="..\..\tests\Fixtures\Pragmatic.Persistence.Workload\schema\workload.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <!-- The provider's bulk load (COPY) behind InsertManyAsync: the session gets the copier in Program.cs. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Npgsql\Pragmatic.Persistence.Sql.Npgsql.csproj" />
+    <ProjectReference Include="..\..\tests\Fixtures\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

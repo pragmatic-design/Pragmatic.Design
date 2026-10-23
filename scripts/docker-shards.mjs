@@ -19,6 +19,9 @@ export const DOCKER_SHARDS = [
     'TimeOff.IntegrationTests', //            6m 11s
     'Invoicing.IntegrationTests', //            25s
     'Pragmatic.Configuration.Redis.Tests', //    2s
+    // Five databases (PostgreSQL, SQL Server with full-text, MySQL, Oracle, SQLite): 3m 28s on a developer machine
+    // (2026-10-23), not yet measured on the runner. Here because this shard was the lightest.
+    'Pragmatic.Persistence.Sql.Tests',
   ],
   // ~403 s
   [

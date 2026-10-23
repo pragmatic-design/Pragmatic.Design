@@ -1,0 +1,511 @@
+{
+  "tables": [
+    {
+      "name": "Assignments",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "ParentId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "ParentType", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Note", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Kind", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Role", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Floor", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "CardPayments",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "PaidAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Last4", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Brand", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Categories",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "ParentId", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Charges",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Description", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Kind", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Last4", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Iban", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Days", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Tier", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Customers",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Email", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Country", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "CreatedAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Documents",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Spec", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Embeddings",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Label", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Vector", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Events",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Kind", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "At", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Version", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "InvoiceLines",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "InvoiceId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Sku", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Quantity", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Invoices",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Number", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Total", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Version", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Active_From", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Active_To", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Labels",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Gauges",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Quantity", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Doubled", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Code", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Bundles",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Labels", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Refs", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Scores", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Vehicles",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Plate", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Version", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Cars",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Seats", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "SportsCars",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "TopSpeed", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Trucks",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Payload", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "TagNotes",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "TagOrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "TagTag", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Text", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Notes",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": true },
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Text", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "OrderLines",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Sku", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Quantity", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "UnitPrice", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [
+        { "name": "IX_OrderLines_OrderId", "columns": [ "OrderId" ], "isUnique": false, "filter": null }
+      ],
+      "foreignKeys": [
+        { "name": "FK_OrderLines_Orders_OrderId", "column": "OrderId", "referencedTable": "Orders", "referencedColumn": "Id" }
+      ]
+    },
+    {
+      "name": "OrderTags",
+      "schemaName": null,
+      "columns": [
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Tag", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Note", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Version", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Orders",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "CustomerId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Number", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Status", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Total", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "CreatedAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "IsDeleted", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [
+        { "name": "IX_Orders_CustomerId", "columns": [ "CustomerId" ], "isUnique": false, "filter": null },
+        { "name": "IX_Orders_Number", "columns": [ "Number" ], "isUnique": false, "filter": null }
+      ],
+      "foreignKeys": [
+        { "name": "FK_Orders_Customers_CustomerId", "column": "CustomerId", "referencedTable": "Customers", "referencedColumn": "Id" }
+      ]
+    },
+    {
+      "name": "Prices",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Sku", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "ProjectLabels",
+      "schemaName": null,
+      "columns": [
+        { "name": "ProjectId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "LabelId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Projects",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Reminders",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "AssignmentId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Text", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Shipments",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Code", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Destination_Street", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Destination_City", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Destination_Floor", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Return_Street", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Return_City", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Return_Floor", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Tickets",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "ProjectId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Title", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Description", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Priority", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "CreatedAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "TypedRows",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "When", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Blob", "sqlType": "BLOB", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Day", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Clock", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Span", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Stamp", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Status", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "MaybeWhen", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "MaybeStamp", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "WirePayments",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false },
+        { "name": "PaidAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Iban", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Days", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Carts",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Units", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "LineCount", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "CartLines",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "CartId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Quantity", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Price", "sqlType": "REAL", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Memberships",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Member", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "ValidFrom", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "ValidTo", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "IsDeleted", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "PricesHistory",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Sku", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Amount", "sqlType": "REAL", "isNullable": true, "isPrimaryKey": false },
+        { "name": "ValidFrom", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "ValidTo", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [
+        { "name": "IX_PricesHistory_Key", "columns": [ "Id", "ValidFrom" ], "isUnique": false, "filter": null }
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "OrderTagLabels",
+      "schemaName": null,
+      "columns": [
+        { "name": "OrderId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Tag", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "LabelId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Dossiers",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "TenantId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "OwnerId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Title", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Scopes", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Venues",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "HallCount", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "IsDeleted", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "DeletedAt", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "DeletedBy", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "CreatedAt", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "CreatedBy", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "UpdatedAt", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "UpdatedBy", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Version", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "Halls",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "VenueId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Seats", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "IsDeleted", "sqlType": "INTEGER", "isNullable": false, "isPrimaryKey": false },
+        { "name": "DeletedAt", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "DeletedBy", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "DossierNotes",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "DossierId", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Text", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    }
+  ],
+  "databaseName": "Workload",
+  "providerName": "Sqlite",
+  "configKey": null
+}

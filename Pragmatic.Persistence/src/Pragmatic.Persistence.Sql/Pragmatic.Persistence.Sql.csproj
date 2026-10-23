@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Sql</RootNamespace>
+    <Description>The Sql persistence engine's runtime: LINQ translated at compile time, run as query fragments, parameters, dialects and readers with fixed ordinals. No provider, no reflection on the hot path.</Description>
+    <PackageTags>pragmatic;persistence;sql;ado.net;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+</Project>

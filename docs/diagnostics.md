@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **426** |
-| Distinct IDs | **426** |
+| Declared descriptors | **458** |
+| Distinct IDs | **458** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -673,6 +673,47 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 *Free inside the used span:* `PRAG2905`.
 
 *First free after the last used:* `PRAG2914`.
+
+### Persistence.Sql: 32 in use · range `PRAG3000`–`PRAG3099`
+
+| ID | Symbol | Severity | Title |
+|---|---|---|---|
+| `PRAG3001` | `UnsupportedMethod` | Error | LINQ operator not translated to SQL |
+| `PRAG3002` | `UnsupportedExpression` | Error | Expression not translated to SQL |
+| `PRAG3003` | `UnsupportedPropertyType` | Error | Entity property type not mapped |
+| `PRAG3004` | `NavigationWithoutKey` | Error | Navigation without a foreign key |
+| `PRAG3005` | `ChainTypedAsQueryable` | Info | Query chain translated at runtime |
+| `PRAG3006` | `QueryShape` | Error | [Query] definition not in the declared shape |
+| `PRAG3007` | `CompositeKey` | Error | Composite key where a single-column key is needed |
+| `PRAG3008` | `HierarchyShape` | Error | [GenerateHierarchy] without a tree to walk |
+| `PRAG3009` | `KeysetNotTotal` | Warning | Keyset ordering not total |
+| `PRAG3010` | `QueryInLoop` | Warning | Query inside a loop over rows |
+| `PRAG3011` | `UnindexedPredicate` | Info | Predicate on a column without an index |
+| `PRAG3012` | `Emulated` | Info | Function emulated on a dialect |
+| `PRAG3013` | `FunctionShape` | Error | [SqlFunction] not in the declared shape |
+| `PRAG3014` | `InheritanceShape` | Error | [Inheritance] hierarchy not in the mapped shape |
+| `PRAG3015` | `CensusStale` | Warning | The committed query census is stale |
+| `PRAG3016` | `SchemaFileInvalid` | Warning | A schema snapshot could not be read |
+| `PRAG3021` | `UnboundedRead` | Info | Unbounded read |
+| `PRAG3022` | `LeadingWildcard` | Info | LIKE with a leading wildcard on an indexed column |
+| `PRAG3023` | `ConstantPredicate` | Info | Constant predicate |
+| `PRAG3024` | `IncludeReadOnce` | Info | Include read for one column |
+| `PRAG3025` | `WritesOutsideTransaction` | Info | Several writes outside a transaction |
+| `PRAG3026` | `RawStatementMismatch` | Error | Hand-written statement does not match the model |
+| `PRAG3027` | `SchemaShape` | Error | A declared database's schema cannot be emitted |
+| `PRAG3028` | `EntityWithoutKey` | Error | An entity has no key |
+| `PRAG3029` | `ChainOverHiddenShape` | Error | A chain reads members only Pragmatic's generator declares |
+| `PRAG3030` | `RuleReadsTheMoment` | Error | A visibility rule of a Pragmatic entity reads a value of the moment |
+| `PRAG3031` | `SpecificationNotCompiled` | Warning | A specification of a Pragmatic entity is not compiled for the Sql engine |
+| `PRAG3032` | `InGeneratedSource` | Error | A chain the Sql engine generated did not translate |
+| `PRAG3033` | `QueryNotCompiled` | Warning | A declared query of a Pragmatic entity is not compiled for the Sql engine |
+| `PRAG3034` | `GridPartlyCompiled` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration |
+| `PRAG3035` | `ScopeRuleNotCompiled` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine |
+| `PRAG3099` | `Translated` | Hidden | LINQ call site translated to SQL |
+
+*Free inside the used span:* `PRAG3017`, `PRAG3018`, `PRAG3019`, `PRAG3020`, `PRAG3036`, `PRAG3037`, `PRAG3038`, `PRAG3039`, `PRAG3040`, `PRAG3041`, `PRAG3042`, `PRAG3043`, `PRAG3044`, `PRAG3045`, `PRAG3046`, `PRAG3047`, `PRAG3048`, `PRAG3049`, `PRAG3050`, `PRAG3051`, `PRAG3052`, `PRAG3053`, `PRAG3054`, `PRAG3055`, `PRAG3056`, `PRAG3057`, `PRAG3058`, `PRAG3059`, `PRAG3060`, `PRAG3061`, `PRAG3062`, `PRAG3063`, `PRAG3064`, `PRAG3065`, `PRAG3066`, `PRAG3067`, `PRAG3068`, `PRAG3069`, `PRAG3070`, `PRAG3071`, `PRAG3072`, `PRAG3073`, `PRAG3074`, `PRAG3075`, `PRAG3076`, `PRAG3077`, `PRAG3078`, `PRAG3079`, `PRAG3080`, `PRAG3081`, `PRAG3082`, `PRAG3083`, `PRAG3084`, `PRAG3085`, `PRAG3086`, `PRAG3087`, `PRAG3088`, `PRAG3089`, `PRAG3090`, `PRAG3091`, `PRAG3092`, `PRAG3093`, `PRAG3094`, `PRAG3095`, `PRAG3096`, `PRAG3097`, `PRAG3098`.
+
+*Range exhausted.*
 
 ### Generator infrastructure: 2 in use · range `PRAG9000`–`PRAG9099`
 

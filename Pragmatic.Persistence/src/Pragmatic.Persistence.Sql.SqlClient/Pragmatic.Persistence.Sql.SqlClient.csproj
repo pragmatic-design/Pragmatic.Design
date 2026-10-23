@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Sql.SqlClient</RootNamespace>
+    <Description>SQL Server for the Sql persistence engine: bulk copy as the bulk load behind InsertManyAsync, and vectors.</Description>
+    <PackageTags>pragmatic;persistence;sql;sqlserver;sqlclient</PackageTags>
+    <!-- SqlClient itself is not trim-clean; the copier is measured in JIT and shipped with the provider's own caveats. -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- What the runtime cannot do without the provider: SQL Server's bulk copy as the bulk load behind InsertManyAsync. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+  </ItemGroup>
+
+</Project>

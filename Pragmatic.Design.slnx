@@ -704,6 +704,10 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.CodeFixers/Pragmatic.Persistence.CodeFixers.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence/Pragmatic.Persistence.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Generator/Pragmatic.Persistence.Sql.Generator.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
@@ -806,6 +810,7 @@
     <Project Path="Pragmatic.Patch/samples/Pragmatic.Patch.Samples/Pragmatic.Patch.Samples.csproj" />
     <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
     <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
+    <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Sql.Samples/Pragmatic.Persistence.Sql.Samples.csproj" />
     <Project Path="Pragmatic.Resilience/samples/Pragmatic.Resilience.Samples/Pragmatic.Resilience.Samples.csproj" />
     <Project Path="Pragmatic.Result/samples/Pragmatic.Result.AspNetCore.Samples/Pragmatic.Result.AspNetCore.Samples.csproj" />
     <Project Path="Pragmatic.Result/samples/Pragmatic.Result.EFCore.Samples/Pragmatic.Result.EFCore.Samples.csproj" />
@@ -921,6 +926,10 @@
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+    <!-- The Sql engine suite's fixtures; Pragmatic.Persistence.Sql.DiagnosticsFixture is left out on purpose (it must not compile). -->
+    <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.E2E.Tests/Pragmatic.Privacy.E2E.Tests.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />

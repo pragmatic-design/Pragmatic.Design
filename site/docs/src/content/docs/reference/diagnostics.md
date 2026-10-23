@@ -49,6 +49,8 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG2750-2799` | Entity lifecycle events | [`Features/Lifecycle/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Lifecycle/Diagnostics/LifecycleEventsDiagnostics.cs) |
 | `PRAG2800-2899` | Serialization / AOT | [`Pragmatic.Abstractions.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Abstractions/src/Pragmatic.Abstractions.Analyzers/DiagnosticDescriptors.cs) |
 | `PRAG2900-2999` | Privacy | [`PrivacyDiagnostics.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Privacy/Diagnostics/PrivacyDiagnostics.cs) |
+| `PRAG3000-3099` | Persistence: the Sql engine | [`Pragmatic.Persistence.Sql.Generator`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Generator/Diagnostics.cs) |
+| `PRAG3100-3199` | Persistence: the documents engine | being ported |
 | `PRAG9000-9099` | Source generator infrastructure | [`SafeSourceOutput.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/SafeSourceOutput.cs) |
 | `PRAGS001-PRAGS999` | Diagnostic suppressors | [`Suppressors/`](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Suppressors) |
 
@@ -625,6 +627,51 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 | `PRAG2911` | Warning | An operation composes through another whose entities cannot be inferred and declares no `[ProcessesData]`, so the Article 30 register does not list it as processing anything. Declare `[ProcessesData<TEntity>]` for each entity it reaches. |
 | `PRAG2912` | Error | `ErasureStrategy.Anonymize` is declared on a type that has no value identifying nobody which a `NOT NULL` column would accept. Make the property nullable, or choose `Pseudonymize`, `Delete` or `Retain`. |
 | `PRAG2913` | Info | `[ProcessesData<T>]` restates what the generator already infers from the operation's repositories, invokers and loads. Remove it: the register lists the entity either way. |
+
+### The Sql engine: `PRAG3001-3099`
+
+A LINQ call site on the Sql engine is translated to SQL at compile time; one the translated subset does not cover is a compile-time
+error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` come from the `PragmaticExplain` build target
+(EXPLAIN against a database), not from the compiler.
+
+| ID | Severity | Meaning and fix |
+|----|----------|-----------------|
+| `PRAG3001` | Error | A LINQ operator is not in the translated subset, so the query would run nothing. The message says which operators are translated at that point of the chain; rewrite with those, or move the query to a declared `[Query]`. |
+| `PRAG3002` | Error | An expression in a predicate, key or projection cannot be translated; the message says why. A value captured from outside the lambda goes in the two-parameter form (`Where((x, a) => …, a)`), which a code fix writes. |
+| `PRAG3003` | Error | An entity property has a type the reader does not map. Mark it `[NotMapped]`, use a mapped type, or give it a `[Convert<TConverter>]` to one. |
+| `PRAG3004` | Error | A navigation has no foreign key to join on (`{Navigation}Id`). Declare the key property. |
+| `PRAG3005` | Info | The chain is typed `IQueryable<T>`, so it is translated at run time from the expression tree: the same subset, with no compile-time check. Keep it typed `SqlQuery<T>` (`var`) up to the terminal to translate it at compile time. |
+| `PRAG3006` | Error | A `[Query]` is not in the declared shape: a static method of a static partial class, taking a `SqlQuery<T>` first, whose body is one chain on that parameter ending in a terminal. |
+| `PRAG3007` | Error | A composite key where the operation needs a single-column one. The message names the operation. |
+| `PRAG3008` | Error | `[GenerateHierarchy]` has no tree to walk: the entity needs a navigation to itself with its foreign key; with several, `Via` names the tree. |
+| `PRAG3009` | Warning | A keyset cursor over an ordering that is not total may skip or repeat rows. End the ordering with the key (`ThenBy(x => x.Id)`) and put its value last in the cursor. |
+| `PRAG3010` | Warning | A query runs once per row of another query's result (N+1). Load the related rows with the parents (Include, a DTO with a collection, an IN list over the keys), or do the work in one query. |
+| `PRAG3011` | Info | A WHERE on a column without an index scans the table. Add the index to the schema (the committed `*.schema.json`, or `[Indexed]`), or filter on an indexed column first. |
+| `PRAG3012` | Info | A function is emulated on a dialect, not run natively; the message says how. |
+| `PRAG3013` | Error | A `[SqlFunction]` is not in the declared shape: a static partial method with a private static `SqlFragment` definition of the same name whose body is a switch on the dialect. |
+| `PRAG3014` | Error | An `[Inheritance]` hierarchy is not in a shape the engine maps; the message says what is missing. |
+| `PRAG3015` | Warning | The committed query census no longer matches the queries this build translated. Build with the Census target (`PragmaticCensusFile` set) and commit the file with the change. |
+| `PRAG3016` | Warning | A schema snapshot passed to the index analysis is not one (the JSON the migrations write). It is not read. |
+| `PRAG3017` | Warning | EXPLAIN shows a sequential scan with a filter at this call site: the WHERE reads every row. |
+| `PRAG3018` | Warning | EXPLAIN shows the planner sorting at this call site: no index serves the ordering. |
+| `PRAG3019` | Warning | EXPLAIN shows a nested loop over many rows at this call site. |
+| `PRAG3020` | Warning | EXPLAIN could not run the statement (the database refused it, or did not answer); the message carries the reason. |
+| `PRAG3021` | Info | A read returns every matching row, however many. Bound it with `Take` (page with `After`/`Before`), stream it with `AsAsyncEnumerable`, or mark a lookup table `[Table(Small = true)]`. |
+| `PRAG3022` | Info | A LIKE starting with a wildcard on an indexed column: no B-tree index serves it. `StartsWith` uses the index; otherwise a trigram or full-text index. |
+| `PRAG3023` | Info | A predicate that does not read the row: it keeps every row or none. |
+| `PRAG3024` | Info | An Include loads the whole related row for one column. Project the column, or read the key. |
+| `PRAG3025` | Info | Several writes with no transaction around them: a failure between two leaves the first applied. Wrap them in `BeginTransaction`/`TransactAsync`, or one `WriteBatch`. |
+| `PRAG3026` | Error | A hand-written statement does not match the model (a table or column it names does not exist). |
+| `PRAG3027` | Error | A declared database's schema cannot describe an entity; the message says why. |
+| `PRAG3028` | Error | An entity has no key. Mark the key `[Key]`, or name it `Id` (or `PersistenceId`, as Pragmatic's `[Entity]` does); a table read and never written is `[Table(ReadOnly = true)]`. |
+| `PRAG3029` | Error | A chain reads members of a Pragmatic entity that only Pragmatic's generator declares, and that generator did not declare them for this engine. |
+| `PRAG3030` | Error | A visibility rule of a Pragmatic entity reads a value of the moment (the caller, the clock); a rule is a fixed predicate on the row (`PRAG0718` on EF Core). Who is asking is decided by `[HasOwner]`, `[HasAccessScopes]` and `ITenantEntity`. |
+| `PRAG3031` | Warning | A specification of a Pragmatic entity is not compiled for the Sql engine; a read through the engine refuses it. EF Core reads it as before. |
+| `PRAG3032` | Error | A chain the Sql engine generated itself did not translate. Please report it with the entity that produced it. |
+| `PRAG3033` | Warning | A declared query of a Pragmatic entity is not compiled for the Sql engine; `IReadRepository.RunAsync` refuses it there. EF Core runs it as before. |
+| `PRAG3034` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration (the message names it). EF Core runs it as before. |
+| `PRAG3035` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine; registered and Computed or Hybrid, it is refused at read. EF Core runs it as before. |
+| `PRAG3099` | Hidden | A call site translated to SQL, with its statement: what a census build (`-p:PragmaticCensus=true`) prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`
 
