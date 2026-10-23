@@ -58,7 +58,4 @@ internal sealed partial class PlanBuilder
         _selectList = string.Join(", ", expressions.Select((e, i) => $"{e} AS \"{members[i].Name}\""));
         return true;
     }
-
-    /// <summary>The C# of the plan's shape columns, for the plan's constructor; null without ShapeAsync.</summary>
-    public string? ShapeColumnsLiteral => ShapeColumns is null ? null : "new global::Pragmatic.Persistence.Sql.SqlShapeColumn[] { " + string.Join(", ", ShapeColumns.Select(c => $"new(\"{c.Name}\", global::Pragmatic.Persistence.Sql.SqlParamKind.{c.Kind})")) + " }";
 }

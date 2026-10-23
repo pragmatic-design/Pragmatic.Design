@@ -6,13 +6,14 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
 /// <summary>The terminals: the whole chain becomes a plan (see <see cref="PlanBuilder" />), and the terminal call site an interceptor that runs it.</summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static bool EmitTerminal(StringBuilder source, StringBuilder plans, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, Func<string, EntityModel?> tables, Compilation compilation, int index, string attribute, List<Diagnostic> diagnostics, List<CensusEntry> census)
+    private static bool EmitTerminal(StringBuilder source, List<PlanSectionModel> plans, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, Func<string, EntityModel?> tables, Compilation compilation, int index, string attribute, List<Diagnostic> diagnostics, List<CensusEntry> census)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -88,7 +89,7 @@ public sealed partial class SqlInterceptorGenerator
 
         var planType = builder.PlanType($"Plan_{index}");
         var origin = Origin(call);
-        builder.WriteClass(plans, $"Plan_{index}", origin: origin, site: Site(call));
+        plans.Add(builder.ToPlan($"Plan_{index}", origin: origin, site: Site(call)));
         source.AppendLine($"        // {origin}");
 
         var elementType = builder.ElementType;

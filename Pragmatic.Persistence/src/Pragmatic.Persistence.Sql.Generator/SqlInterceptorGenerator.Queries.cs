@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -15,7 +16,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static void EmitQuery(StringBuilder declared, HashSet<string> usings, StringBuilder plans, IMethodSymbol method, System.Func<INamedTypeSymbol, EntityModel?> entities, Compilation compilation, List<Diagnostic> diagnostics, List<CensusEntry> census)
+    private static void EmitQuery(StringBuilder declared, HashSet<string> usings, List<PlanSectionModel> plans,IMethodSymbol method, System.Func<INamedTypeSymbol, EntityModel?> entities, Compilation compilation, List<Diagnostic> diagnostics, List<CensusEntry> census)
     {
         var where = method.Locations.FirstOrDefault() ?? Location.None;
         void Shape(string why) => diagnostics.Add(Diagnostic.Create(Diagnostics.QueryShape, where, method.Name, why));
@@ -103,7 +104,7 @@ public sealed partial class SqlInterceptorGenerator
         // file's usings; they go to the top of the queries file, and the plan it runs is not file-scoped.
         var planName = $"Query_{type.Name}_{method.Name}";
         var span = where.GetLineSpan();
-        builder.WriteClass(plans, planName, fileScoped: false, origin: $"[Query] {type.Name}.{method.Name}, {System.IO.Path.GetFileName(span.Path)}({span.StartLinePosition.Line + 1}): {Escape(System.Text.RegularExpressions.Regex.Replace(body.ToString(), @"\s+", " "))}", site: $"{System.IO.Path.GetFileName(span.Path)}({span.StartLinePosition.Line + 1}) [Query] {type.Name}.{method.Name}");
+        plans.Add(builder.ToPlan(planName, fileScoped: false, origin: $"[Query] {type.Name}.{method.Name}, {System.IO.Path.GetFileName(span.Path)}({span.StartLinePosition.Line + 1}): {Escape(System.Text.RegularExpressions.Regex.Replace(body.ToString(), @"\s+", " "))}", site: $"{System.IO.Path.GetFileName(span.Path)}({span.StartLinePosition.Line + 1}) [Query] {type.Name}.{method.Name}"));
         census.Add(new CensusEntry(System.IO.Path.GetFileName(span.Path), $"{type.Name}.{method.Name}", "[Query]", System.Text.RegularExpressions.Regex.Replace(body.ToString(), @"\s+", " "), builder.Sql(SqlDialect.Sqlite), builder.Sql(SqlDialect.PostgreSql), builder.Sql(SqlDialect.SqlServer), builder.Sql(SqlDialect.MySql), builder.Sql(SqlDialect.Oracle), span.Path, span.StartLinePosition.Line + 1, span.StartLinePosition.Character + 1));
         foreach (var directive in syntax.SyntaxTree.GetCompilationUnitRoot().Usings.Concat(syntax.Ancestors().OfType<BaseNamespaceDeclarationSyntax>().SelectMany(n => n.Usings)))
             usings.Add(directive.ToString());

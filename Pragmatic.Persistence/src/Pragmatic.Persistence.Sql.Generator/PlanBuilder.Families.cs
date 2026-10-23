@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -18,8 +20,6 @@ internal sealed partial class PlanBuilder
     /// <summary>The slots holding a predicate composed at runtime (<c>Matching</c>): the plan's <c>predicates:</c>, the runtime renders each in its mark.</summary>
     private readonly List<int> _predicateSlots = [];
 
-    /// <summary>The plan's <c>predicates:</c> argument; null when the chain has no <c>Matching</c>.</summary>
-    private string? PredicateSlotsArgument => _predicateSlots.Count == 0 ? null : "new int[] { " + string.Join(", ", _predicateSlots.Select(Index)) + " }";
     private static readonly Regex ScopesToken = new(@"\{scopes:([^}]*)\}", RegexOptions.Compiled);
 
     /// <summary>
@@ -40,9 +40,9 @@ internal sealed partial class PlanBuilder
 
     /// <summary>
     ///     The statements with their slots numbered (in the ordinal order of their keys, the same in every dialect) and their values on the
-    ///     parameters after the plan's own; the <c>filters:</c> argument of the plan, or null when no statement reads a family.
+    ///     parameters after the plan's own; the plan's filters, or null when no statement reads a family.
     /// </summary>
-    private string? NumberFamilies(string?[] texts)
+    private PlanFiltersModel? NumberFamilies(string?[] texts)
     {
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var text in texts)
@@ -68,8 +68,7 @@ internal sealed partial class PlanBuilder
             texts[t] = text.Replace("{ft}", "@p" + Index(values)).Replace("{fu}", "@p" + Index(values + 1)).Replace("{fs}", "@p" + Index(values + 2)).Replace("{fn}", "@p" + Index(values + 3));
         }
 
-        return "new global::Pragmatic.Persistence.Sql.SqlPlanFilters(new global::Pragmatic.Persistence.Sql.SqlFilterSlot[] { "
-               + string.Join(", ", slots.Select(Slot)) + " }, " + Index(values) + ")";
+        return new PlanFiltersModel(slots.Select(Slot).ToEquatableArray(), values);
     }
 
     /// <summary>The statement as the plan declares it, what PRAG3099 shows: its filter slots numbered, their values on their parameters.</summary>
@@ -80,13 +79,11 @@ internal sealed partial class PlanBuilder
         return texts[0]!;
     }
 
-    /// <summary>A slot's declaration from its key: <c>family|entity|filter class|name|bypass</c>.</summary>
-    private static string Slot(string key)
+    /// <summary>A slot from its key: <c>family|entity|filter class|name|bypass</c>.</summary>
+    private static FilterSlotModel Slot(string key)
     {
         var part = key.Split('|');
-        static string Text(string value) => value.Length == 0 ? "null" : SqlInterceptorGenerator.Literal(value);
-        var filter = part[2].Length == 0 ? "null" : $"typeof(global::{part[2]})";
-        return $"new(typeof(global::{part[1]}), global::Pragmatic.Persistence.Sql.SqlFilterFamily.{part[0]}, {filter}, {Text(part[3])}, {Text(part[4])})";
+        return new FilterSlotModel(part[0], part[1], part[2], part[3], part[4]);
     }
 
     private static string Index(int value) => value.ToString(CultureInfo.InvariantCulture);

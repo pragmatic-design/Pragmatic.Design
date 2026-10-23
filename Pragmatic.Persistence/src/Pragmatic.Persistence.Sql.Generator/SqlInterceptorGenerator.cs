@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Pragmatic.Persistence.Sql.Generator.Models;
 using Pragmatic.Persistence.Sql.Generator.Templates;
 using Pragmatic.SourceGen;
 
@@ -159,22 +160,6 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
         var entities = new Dictionary<INamedTypeSymbol, EntityModel?>(SymbolEqualityComparer.Default);
         foreach (var type in entityTypes)
             entities[type] = EntityModel.Read(type, diagnostics, entityTypes, compilation, schema);
-        // Every plan class written so far (the terminals', the [Query] definitions', the hierarchy walks'), registered lazily at module start for SqlSession.WarmupAsync.
-        static void EmitPlanRegistry(StringBuilder plans)
-        {
-            var names = System.Text.RegularExpressions.Regex.Matches(plans.ToString(), @"^    (?:file|internal) static class (\w+)\s*$", System.Text.RegularExpressions.RegexOptions.Multiline).Cast<System.Text.RegularExpressions.Match>().Select(m => m.Groups[1].Value).ToList();
-            plans.AppendLine("    file static class PlanRegistry");
-            plans.AppendLine("    {");
-            plans.AppendLine("        [global::System.Runtime.CompilerServices.ModuleInitializer]");
-            plans.AppendLine("        internal static void Register()");
-            plans.AppendLine("        {");
-            foreach (var name in names)
-                plans.AppendLine($"            global::Pragmatic.Persistence.Sql.SqlPlans.Add(static () => {name}.Instance);");
-            plans.AppendLine("        }");
-            plans.AppendLine("    }");
-            plans.AppendLine();
-        }
-
         EntityModel? Lookup(INamedTypeSymbol type)
         {
             // An [Entity], or a [MapFrom] DTO as the rows of a hand-written statement (its properties the columns, no table).
@@ -202,7 +187,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
 
         // Interceptors and plans first: translating them discovers the entities of referenced assemblies (the workload's) and their navigations' targets.
         var interceptors = new StringBuilder();
-        var plans = new StringBuilder();
+        var plans = new List<PlanSectionModel>(); // the terminals', then the [Query] definitions', then the hierarchy walks'
         interceptors.AppendLine("    file static class Interceptors");
         interceptors.AppendLine("    {");
         var index = 0;
@@ -237,7 +222,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
                 index++;
         }
 
-        var compiledPredicates = new StringBuilder(); // apart from the plans: the plan registry reads every class there as a plan
+        var compiledPredicates = new StringBuilder();
         EmitSpecifications(interceptors, compiledPredicates, compilation, Lookup, diagnostics); // Pragmatic's specifications, compiled where they are written
         interceptors.AppendLine("    }");
 
@@ -284,7 +269,6 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
         var maps = ReadMaps(models, projections, functions, compilation, Lookup);
         var scopeRules = ReadScopeRules(models, compilation);
         EmitFunctionBodies(declared, functions);
-        EmitPlanRegistry(plans);
         EmitCensus(spc, censusEntries, committedCensus, diagnostics);
 
         foreach (var diagnostic in diagnostics)
@@ -300,7 +284,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
 
             spc.ReportDiagnostic(census && Diagnostics.IsCensus(diagnostic) ? Diagnostics.AsCensus(diagnostic) : diagnostic);
         }
-        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToString(), compiledPredicates.ToString(), interceptors.ToString(), hierarchies.ToString()).RenderOutput());
+        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToString(), interceptors.ToString(), hierarchies.ToString()).RenderOutput());
         if (declared.Length > 0)
             spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToString()).RenderOutput());
     }

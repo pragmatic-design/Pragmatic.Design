@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -11,49 +13,38 @@ namespace Pragmatic.Persistence.Sql.Generator;
 internal sealed partial class PlanBuilder
 {
     /// <summary>
-    ///     Writes the plan class into <paramref name="plans" />: the command text per dialect (companion statements included), the bind, the
-    ///     reader, the loader. <paramref name="origin" /> names the call site the plan belongs to (file, line, the chain as written), as the
-    ///     class's documentation: the plan's name is a counter, the comment is how a reader of the generated file finds its way back.
+    ///     The plan class: the command text per dialect (companion statements included), the bind, the reader, the loader.
+    ///     <paramref name="origin" /> names the call site the plan belongs to (file, line, the chain as written), as the class's documentation:
+    ///     the plan's name is a counter, the comment is how a reader of the generated file finds its way back.
     /// </summary>
-    public void WriteClass(StringBuilder plans, string className, bool fileScoped = true, string? origin = null, string? site = null)
+    public TranslatedPlanModel ToPlan(string className, bool fileScoped = true, string? origin = null, string? site = null)
     {
-        var reader = ReaderExpression();
-        var load = HasLoads && !IsScalar ? Loader() : "null";
-        var kindList = _kinds.Count == 0 ? "global::System.Array.Empty<global::Pragmatic.Persistence.Sql.SqlParamKind>()" : "new global::Pragmatic.Persistence.Sql.SqlParamKind[] { " + string.Join(", ", _kinds.Select(k => "global::Pragmatic.Persistence.Sql.SqlParamKind." + k)) + " }";
         // The statements, then the filter families of Pragmatic's entities numbered in them (null: the plan reads none).
         var texts = new[] { Sql(SqlDialect.Sqlite), Sql(SqlDialect.PostgreSql), Sql(SqlDialect.SqlServer), _returning is not null || _rawFrom is not null ? null : Sql(SqlDialect.MySql), _returning is not null ? null : Sql(SqlDialect.Oracle) };
         var filters = NumberFamilies(texts);
-
-        if (origin is not null)
-            plans.AppendLine($"    /// <summary>{origin}</summary>");
-        plans.AppendLine($"    {(fileScoped ? "file" : "internal")} static class {PlanType(className)}");
-        plans.AppendLine("    {");
-        foreach (var field in _fields)
-            plans.AppendLine($"        {field}");
-        plans.AppendLine($"        internal static readonly SqlPlan<{_elementType}> Instance = new(");
-        plans.AppendLine($"            {SqlInterceptorGenerator.Literal(texts[0]!)},");
-        plans.AppendLine($"            {SqlInterceptorGenerator.Literal(texts[1]!)},");
-        plans.AppendLine($"            {SqlInterceptorGenerator.Literal(texts[2]!)},");
-        plans.AppendLine($"            {kindList},");
-        plans.AppendLine($"            static (in SqlQuery<{_elementType}> q, global::System.Data.Common.DbParameterCollection p, SqlDialect d) =>");
-        plans.AppendLine("            {");
-        foreach (var bind in _binds)
-            plans.AppendLine($"                {bind}");
-        plans.AppendLine("            },");
-        plans.AppendLine($"            {reader},");
-        plans.AppendLine($"            {load},");
-        plans.AppendLine($"            {SqlInterceptorGenerator.Literal((site ?? className).Replace("*/", "* /") + " " + className)}{(Reversed ? ", reversed: true" : "")}{(ShapeColumnsLiteral is { } shaped ? ", shapeColumns: " + shaped : "")},"); // the origin: the tag of the plan's metrics, the comment on its statements; Before: the rows turned back once read; ShapeAsync: the members the client may name
-        plans.AppendLine($"            mySql: {(texts[3] is null ? "null" : SqlInterceptorGenerator.Literal(texts[3]!))},"); // null: no statement on MySQL (RETURNING, a table-valued function), the plan says so when asked
-        var tail = new List<string>();
-        if (filters is not null)
-            tail.Add($"filters: {filters}"); // Pragmatic's filter families: the statement per caller
-        if (PredicateSlotsArgument is { } predicates)
-            tail.Add($"predicates: {predicates}"); // the slots of the predicates composed at runtime (Matching)
-        plans.AppendLine($"            oracle: {(texts[4] is null ? "null" : SqlInterceptorGenerator.Literal(texts[4]!))}{(tail.Count == 0 ? ");" : ",")}"); // null: no RETURNING rows on Oracle
-        for (var i = 0; i < tail.Count; i++)
-            plans.AppendLine($"            {tail[i]}{(i == tail.Count - 1 ? ");" : ",")}");
-        plans.AppendLine("    }");
-        plans.AppendLine();
+        return new TranslatedPlanModel(
+            className,
+            PlanType(className),
+            fileScoped,
+            origin,
+            _fields.ToEquatableArray(),
+            _elementType,
+            texts[0]!,
+            texts[1]!,
+            texts[2]!,
+            texts[3],
+            texts[4],
+            _kinds.ToEquatableArray(),
+            _binds.ToEquatableArray(),
+            ReaderExpression(),
+            HasLoads && !IsScalar ? Loader() : "null",
+            (site ?? className).Replace("*/", "* /") + " " + className,
+            Reversed,
+            ShapeColumns is not null,
+            (ShapeColumns ?? []).Select(c => new ShapeColumnModel(c.Name, c.Kind)).ToEquatableArray(),
+            filters,
+            _predicateSlots.ToEquatableArray(),
+            Registered: !IsAnonymous);
     }
 
     private static readonly Regex LeftJoinAlias = new("^LEFT JOIN \"[^\"]*\" (\\S+) ON ", RegexOptions.Compiled);
