@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <!-- Roslyn for symbol analysis testing -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <!-- Include shared SourceGen files to test (excluding Testing, which is auto-included via Directory.Build.props) -->

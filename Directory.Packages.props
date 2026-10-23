@@ -14,13 +14,15 @@
        Roslyn / Code Analysis
        ══════════════════════════════════════════════════════ -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
-    <!-- 4.8.0 for generators (netstandard2.0); tests override to 4.12.0 in csproj -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <!-- 4.14.0 for generators (netstandard2.0) and tests alike: the Sql engine's generation intercepts call sites, and
+         GetInterceptableLocation is out of [Experimental] from 4.14 (owner's decision, 2026-10-23). A consumer needs a compiler
+         at least that new: the .NET 10 SDK's is. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.2" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
   </ItemGroup>
 
   <!-- ══════════════════════════════════════════════════════
