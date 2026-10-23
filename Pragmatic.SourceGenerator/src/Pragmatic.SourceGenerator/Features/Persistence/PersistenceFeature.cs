@@ -93,11 +93,13 @@ internal static class PersistenceFeature
         context.RegisterSourceOutputSafe(
             resolvedProvider.Combine(ownershipProvider), ReportBoundaryOwnership);
 
-        // Which engine persists each entity: the marker sits on its boundary, which a per-entity transform
-        // cannot see, so it is read from the compilation like the ownership above.
-        var engineChoiceProvider = compilationProvider
+        // Which engine persists each entity: checked on the resolved entities, those of the referenced modules
+        // included, because the host is where two engines first meet one entity.
+        var engineChoiceProvider = resolvedProvider
+            .Combine(ownershipProvider)
             .Combine(features)
-            .Select(static (pair, ct) => PersistenceEngineChoiceReader.Read(pair.Left, pair.Right, ct));
+            .Select(static (pair, _) =>
+                PersistenceEngineChoiceReader.Read(pair.Left.Left.Entities, pair.Left.Right, pair.Right));
         context.RegisterSourceOutputSafe(engineChoiceProvider, ReportPersistenceEngineChoice);
 
         var allEntitiesProvider = resolvedProvider

@@ -93,9 +93,9 @@ internal static partial class EntityMetadataReader
     ///         nobody claims stays unmapped, which is the honest answer rather than a guess.
     ///     </para>
     /// </remarks>
-    internal static Dictionary<string, string> ReadPackageAdoptions(Compilation compilation, CancellationToken ct)
+    internal static Dictionary<string, INamedTypeSymbol> ReadPackageAdoptions(Compilation compilation, CancellationToken ct)
     {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var result = new Dictionary<string, INamedTypeSymbol>(StringComparer.Ordinal);
 
         foreach (var assembly in ModuleBearingAssemblies(compilation, ct))
         {
@@ -124,7 +124,7 @@ internal static partial class EntityMetadataReader
                     if (package.ContainingAssembly?.Name is not { } packageAssembly)
                         continue;
 
-                    result[packageAssembly] = boundary.ToDisplayString();
+                    result[packageAssembly] = boundary;
                 }
             }
         }
@@ -150,27 +150,19 @@ internal static partial class EntityMetadataReader
         }
     }
 
-    /// <summary>The same entity, belonging to the boundary that adopted its package.</summary>
-    internal static EntityMetadataModel Adopted(EntityMetadataModel entity, string? adoptingBoundary)
+    /// <summary>The same entity, belonging to the boundary that adopted its package, and persisted by its engine.</summary>
+    internal static EntityMetadataModel Adopted(EntityMetadataModel entity, INamedTypeSymbol? adoptingBoundary)
     {
         if (adoptingBoundary is null || !string.IsNullOrEmpty(entity.BoundaryTypeFullName))
             return entity;
 
         return entity with
         {
-            BoundaryName = Core.BoundaryOwnershipReader.StripBoundarySuffix(SimpleName(adoptingBoundary)),
-            BoundaryTypeFullName = adoptingBoundary,
+            BoundaryName = Core.BoundaryOwnershipReader.StripBoundarySuffix(adoptingBoundary.Name),
+            BoundaryTypeFullName = adoptingBoundary.ToDisplayString(),
+            NamedPersistenceEngine = Core.PersistenceEngineMarker.NamedOn(adoptingBoundary),
             IsFromImportedPackage = true
         };
-    }
-
-    private static string SimpleName(string fullTypeName)
-    {
-        var name = fullTypeName.StartsWith("global::", StringComparison.Ordinal)
-            ? fullTypeName.Substring(8)
-            : fullTypeName;
-        var lastDot = name.LastIndexOf('.');
-        return lastDot < 0 ? name : name.Substring(lastDot + 1);
     }
 
     private static IEnumerable<INamedTypeSymbol> GetAllNamedTypes(INamespaceSymbol ns, CancellationToken ct)

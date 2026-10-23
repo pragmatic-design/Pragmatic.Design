@@ -118,6 +118,10 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                 builder.Property("boundaryName", entity.BoundaryName);
             if (!string.IsNullOrEmpty(entity.BoundaryTypeFullName))
                 builder.Property("boundaryTypeFullName", entity.BoundaryTypeFullName);
+            // What the boundary declares, absent when it declares nothing: the host decides the engine of an
+            // entity that names none, against the engines the host references.
+            if (!string.IsNullOrEmpty(entity.NamedPersistenceEngine))
+                builder.Property("persistenceEngine", entity.NamedPersistenceEngine);
             // The whole domain key, in declaration order — an array, because it is very often more
             // than one column and the single logicKey/logicKeyType pair could not say so.
             if (entity.LogicKeys.Length > 0)

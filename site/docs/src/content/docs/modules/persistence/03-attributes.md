@@ -322,6 +322,11 @@ The marker is optional while the compilation references one engine: that one is 
 on EF Core alone writes nothing. With two or more referenced, an entity whose boundary names none is `PRAG0743`;
 a boundary naming an engine the compilation does not reference is `PRAG0744`.
 
+The host checks again. The marker reaches it in the module's metadata, and the host decides against the engines
+the host references: a module that references only EF Core and names nothing compiles, and its entities are
+`PRAG0743` in a host that also references Sql. There the diagnostic has no source location, since the entity is
+declared in another project; the message names the entity and its boundary.
+
 ⚠️ EF Core is the only engine in the repository today. The Sql and documents engines (`PersistenceEngineKind.Sql`,
 `PersistenceEngineKind.Documents`) are being ported; until they are, the marker is checked but generation is
 EF Core's.
