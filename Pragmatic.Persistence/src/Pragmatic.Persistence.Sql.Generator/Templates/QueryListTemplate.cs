@@ -22,7 +22,7 @@ internal sealed class QueryListTemplate(string hintName, string symbol, string p
     public override void RenderFile()
     {
         AppendLine($"#if {symbol}");
-        foreach (var line in json.Replace("\r\n", "\n").TrimEnd('\n').Split('\n'))
+        foreach (var line in TextLines.Of(json))
             AppendLine(line);
         AppendLine("#endif");
     }
