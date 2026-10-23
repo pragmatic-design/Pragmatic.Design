@@ -45,13 +45,31 @@ That's it. The SG detects `Pragmatic.Migrations` in your references and auto-gen
 | PostgreSQL | `DO $$ IF NOT EXISTS $$` blocks | `information_schema` + `pg_catalog` | Yes |
 | SQL Server | `IF NOT EXISTS (sys.*)` checks | `sys.*` views | Yes |
 | SQLite | `CREATE IF NOT EXISTS` + table rebuild | `sqlite_master` + `PRAGMA` | Yes |
+| MySQL (8.0.16+) | backtick-quoted DDL, `MODIFY COLUMN` | `information_schema` | Tables only |
+| Oracle (23ai+) | one statement per command, PL/SQL where two are needed | `USER_*` views | Tables and indexes |
 
 Provider is auto-detected from `SchemaVersion.ProviderName` (set by the SG based on your EF Core provider).
 
-SQLite has no `ALTER COLUMN` and cannot add or drop a foreign key on an existing table: those
-changes are applied by rebuilding the table (rename → recreate with the target shape → copy the
+SQLite has no `ALTER COLUMN` and cannot add or drop a foreign key or a check on an existing table:
+those changes are applied by rebuilding the table (rename → recreate with the target shape → copy the
 columns that exist on both sides → drop). The runner does this for you, in the same transaction as
 the rest of the migration.
+
+MySQL and Oracle are not registered by the source generator: name them with
+`UseProvider("MySql", cs => new MySqlConnection(cs))` or `UseProvider("Oracle", cs => new OracleConnection(cs))`.
+What they do differently:
+
+- **DDL is committed statement by statement.** A migration that fails halfway keeps the changes
+  before the failure; the runner's transaction cannot take them back.
+- **No filtered index.** An index with a filter (a soft-deleted entity's `[Unique]`) is refused, not
+  created without its filter.
+- **MySQL** quotes identifiers with double quotes only under `ANSI_QUOTES`, which the runner turns on
+  for every connection it opens. `MODIFY COLUMN` restates the whole column, so a column whose type or
+  nullability changes loses its default until the next run restores it. The migration lock is
+  `GET_LOCK`, named after the database.
+- **Oracle** stores an empty string as `NULL`, so a `NOT NULL` text column refuses `""`. There is no
+  advisory lock (`DBMS_LOCK` needs a grant): the `__PragmaticLock` leader election is what keeps two
+  instances from migrating at once.
 
 ## API
 
@@ -297,8 +315,8 @@ Pragmatic.Migrations/
 ├── Schema/          # SchemaVersion, TableSchema, ColumnSchema, IndexSchema, ForeignKeySchema
 ├── Diff/            # SchemaDiffEngine, SchemaDiff
 │   └── Changes/     # 15 SchemaChange subtypes (CreateTable, AddColumn, AlterPrimaryKey, etc.)
-├── Introspection/   # ISchemaIntrospector (3 providers), IConnectionFactory
-├── Sql/             # ISqlMigrationGenerator, SqlGeneratorBase (3 providers)
+├── Introspection/   # ISchemaIntrospector (5 providers), IConnectionFactory
+├── Sql/             # ISqlMigrationGenerator, SqlGeneratorBase (5 providers)
 ├── Runner/          # IMigrationRunner, MigrationRunner, MigrationResult
 ├── Tenant/          # ITenantMigrationOrchestrator, TenantMigrationOptions
 └── Configuration/   # MigrationsBuilder, MigrationProviderFactory
@@ -306,7 +324,7 @@ Pragmatic.Migrations/
 
 ## Status
 
-**Functional** within 1.0.0-alpha: the declarative schema diff on SQLite, PostgreSQL and SQL Server, the
+**Functional** within 1.0.0-alpha: the declarative schema diff on SQLite, PostgreSQL, SQL Server, MySQL and Oracle, the
 CLI, hooks, and multi-tenant migrations; every reference application migrates with it. See the
 [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
@@ -324,7 +342,7 @@ Samples:
 ## Requirements
 
 - .NET 10.0+
-- PostgreSQL, SQL Server or SQLite; there is no MySQL generator or introspector
+- PostgreSQL, SQL Server, SQLite, MySQL 8.0.16+ or Oracle 23ai+ (the last two through `UseProvider`)
 - `Pragmatic.SourceGenerator` analyzer (emits the desired `SchemaVersion`)
 
 ## License

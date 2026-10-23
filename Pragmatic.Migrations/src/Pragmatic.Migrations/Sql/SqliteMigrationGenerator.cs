@@ -7,7 +7,7 @@ namespace Pragmatic.Migrations.Sql;
 
 /// <summary>
 ///     SQLite SQL generator. SQLite has no <c>ALTER COLUMN</c> and cannot add or drop a foreign
-///     key on an existing table, so those changes are applied by rebuilding the table
+///     key or a check on an existing table, so those changes are applied by rebuilding the table
 ///     (rename → recreate with the desired shape → copy → drop). The runner drives the rebuild
 ///     via <see cref="GetRebuildTableName" /> / <see cref="GenerateTableRebuild" />; everything
 ///     else is a direct, idempotent statement.
@@ -35,6 +35,9 @@ public sealed class SqliteMigrationGenerator : SqlGeneratorBase
         AddForeignKey c => c.TableName,
         DropForeignKey c => c.TableName,
         AlterPrimaryKey c => c.TableName,
+        // A check lives inside the CREATE TABLE text, as a foreign key does.
+        AddCheckConstraint c => c.TableName,
+        DropCheckConstraint c => c.TableName,
         _ => null
     };
 
@@ -165,6 +168,11 @@ public sealed class SqliteMigrationGenerator : SqlGeneratorBase
             parts.Add($"    CONSTRAINT {QuoteIdentifier(fk.Name)} FOREIGN KEY ({QuoteIdentifier(fk.Column)}) " +
                        $"REFERENCES {QuoteIdentifier(fk.ReferencedTable)} ({QuoteIdentifier(fk.ReferencedColumn)}) ON DELETE {onDelete}");
         }
+
+        // And so must checks. Named, because the diff compares checks by name and the introspector
+        // reads the name back from this text.
+        foreach (var check in t.CheckConstraints.IsDefault ? [] : t.CheckConstraints)
+            parts.Add($"    CONSTRAINT {QuoteIdentifier(check.Name)} CHECK ({check.Expression})");
 
         sb.AppendLine(string.Join(",\n", parts));
         sb.AppendLine(");");
@@ -301,16 +309,19 @@ public sealed class SqliteMigrationGenerator : SqlGeneratorBase
     }
 
     /// <summary>
-    ///     ⚠️ SQLite cannot add or drop a check constraint on an existing table: they live inside the
-    ///     CREATE TABLE text and changing them means rebuilding the table. The constraint is emitted with
-    ///     the table when it is created; on an existing one this is a comment rather than a silent
-    ///     no-op, so a reader of the migration sees what was skipped and why.
+    ///     SQLite cannot add or drop a check constraint on an existing table: they live inside the CREATE
+    ///     TABLE text, so the change is a rebuild (<see cref="GetRebuildTableName" />), whose CREATE carries
+    ///     the desired checks. A table created by the same diff has them in its CREATE already.
     /// </summary>
+    /// <remarks>
+    ///     ⚠️ This used to be a comment, on the claim that the check is applied when the table is created —
+    ///     but the CREATE emitted none. A check never reached the database, the introspector found none, and
+    ///     the diff proposed it again on every run.
+    /// </remarks>
     protected override string GenerateAddCheckConstraint(AddCheckConstraint change) =>
-        $"-- SQLite: check constraint {change.Check.Name} on {change.TableName} requires a table rebuild; "
-        + "it is applied when the table is created.\n";
+        throw RebuildRequired($"check constraint {change.Check.Name} on {change.TableName}");
 
     /// <inheritdoc cref="GenerateAddCheckConstraint" />
     protected override string GenerateDropCheckConstraint(DropCheckConstraint change) =>
-        $"-- SQLite: dropping check constraint {change.CheckName} on {change.TableName} requires a table rebuild.\n";
+        throw RebuildRequired($"dropping check constraint {change.CheckName} on {change.TableName}");
 }

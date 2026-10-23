@@ -125,6 +125,21 @@ public class SchemaHasherTests
         HashOf(noAction).Should().NotBe(HashOf(cascade));
     }
 
+    [Fact]
+    public void Hash_ChangesWhen_CheckIsAdded() =>
+        HashOf(Orders()).Should().NotBe(HashOf(Orders() with { CheckConstraints = [new CheckConstraintSchema("CK_Orders_Total", "\"Total\" >= 0")] }),
+            "the diff adds a check the database lacks, so the runner's fast path must not skip it");
+
+    [Fact]
+    public void Hash_IsStableAcross_CheckExpressionSpelling()
+    {
+        // The diff compares checks by name: the database's normalised expression is not a difference.
+        var declared = Orders() with { CheckConstraints = [new CheckConstraintSchema("CK_Orders_Total", "\"Total\" >= 0")] };
+        var introspected = Orders() with { CheckConstraints = [new CheckConstraintSchema("ck_orders_total", "CHECK ((\"Total\" >= (0)::numeric))")] };
+
+        HashOf(declared).Should().Be(HashOf(introspected));
+    }
+
     // =====================================================================================
     // Stability: differences the diff engine does NOT report must not change the hash
     // =====================================================================================

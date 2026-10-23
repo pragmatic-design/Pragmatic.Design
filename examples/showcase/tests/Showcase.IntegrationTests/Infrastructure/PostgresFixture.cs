@@ -188,7 +188,7 @@ public sealed class PostgresFixture : IAsyncLifetime
             // Record in audit table
             await SchemaAuditStore.EnsureTableAsync(connection, sqlGenerator).ConfigureAwait(false);
             await SchemaAuditStore.RecordMigrationAsync(
-                connection, desiredSchema, sql, diff.Changes.Length, 0).ConfigureAwait(false);
+                connection, desiredSchema, sql, diff.Changes.Length, 0, sqlGenerator.ProviderName).ConfigureAwait(false);
         }
     }
 }

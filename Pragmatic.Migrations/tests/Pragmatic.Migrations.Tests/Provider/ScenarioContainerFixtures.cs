@@ -1,3 +1,5 @@
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Testcontainers.MsSql;
 using Testcontainers.PostgreSql;
 
@@ -48,6 +50,53 @@ public sealed class PostgreSqlContainerFixture : IAsyncLifetime
 
     /// <summary>The container's own connection string, pointing at its default database.</summary>
     public string ConnectionString => _container.GetConnectionString();
+
+    public async Task InitializeAsync() => await _container.StartAsync().ConfigureAwait(false);
+
+    public async Task DisposeAsync() => await _container.DisposeAsync().ConfigureAwait(false);
+}
+
+/// <summary>
+///     One MySQL 8.4 container for the whole scenario class, started with Testcontainers' generic builder. See
+///     <see cref="SqlServerContainerFixture" /> for why, and for what is deliberately <em>not</em> shared.
+/// </summary>
+public sealed class MySqlContainerFixture : IAsyncLifetime
+{
+    public const string Password = "scenario";
+
+    private readonly IContainer _container = new ContainerBuilder()
+        .WithImage("mysql:8.4")
+        .WithEnvironment("MYSQL_ROOT_PASSWORD", Password)
+        .WithPortBinding(3306, true)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("ready for connections.*port: 3306"))
+        .Build();
+
+    /// <summary>The server as root, without a database: each test creates its own.</summary>
+    public string ConnectionString => $"Server={_container.Hostname};Port={_container.GetMappedPublicPort(3306)};User ID=root;Password={Password}";
+
+    public async Task InitializeAsync() => await _container.StartAsync().ConfigureAwait(false);
+
+    public async Task DisposeAsync() => await _container.DisposeAsync().ConfigureAwait(false);
+}
+
+/// <summary>
+///     One Oracle 23ai Free container for the whole scenario class. See <see cref="SqlServerContainerFixture" /> for why; on
+///     Oracle a database of its own is a user of its own, created by SYSTEM.
+/// </summary>
+public sealed class OracleContainerFixture : IAsyncLifetime
+{
+    public const string Password = "scenario";
+
+    private readonly IContainer _container = new ContainerBuilder()
+        .WithImage("gvenzl/oracle-free:23-faststart")
+        .WithEnvironment("ORACLE_PASSWORD", Password)
+        .WithPortBinding(1521, true)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("DATABASE IS READY TO USE!"))
+        .Build();
+
+    /// <summary>A connection string for <paramref name="user" /> on the pluggable database.</summary>
+    public string ConnectionString(string user) =>
+        $"User Id={user};Password={Password};Data Source={_container.Hostname}:{_container.GetMappedPublicPort(1521)}/FREEPDB1";
 
     public async Task InitializeAsync() => await _container.StartAsync().ConfigureAwait(false);
 

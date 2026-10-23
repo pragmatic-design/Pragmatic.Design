@@ -455,8 +455,8 @@ public sealed class SchemaDiffEngine : ISchemaDiffEngine
             return newLen.Value < oldLen.Value
                    || (oldScale.HasValue && newScale.HasValue && newScale.Value < oldScale.Value);
 
-        // text → varchar(N) is narrowing
-        if ((oldNorm == "text" || oldNorm.Contains("max")) && newLen.HasValue)
+        // text → varchar(N) is narrowing (MySQL's longtext and Oracle's clob are unbounded text too)
+        if ((oldNorm is "text" or "mediumtext" or "longtext" or "clob" or "nclob" || oldNorm.Contains("max")) && newLen.HasValue)
             return true;
 
         return false;
@@ -476,16 +476,19 @@ public sealed class SchemaDiffEngine : ISchemaDiffEngine
 
         return bare switch
         {
-            "varchar" or "char" or "text" or "nvarchar" or "nchar" or "ntext" or "citext" => "text",
-            "int2" or "int4" or "int8" or "smallint" or "int" or "bigint" or "tinyint" => "integer",
-            "numeric" or "decimal" or "money" or "smallmoney" => "decimal",
-            "float4" or "float8" or "real" or "float" or "double" => "float",
+            // MySQL's tinytext…longtext and Oracle's varchar2/nvarchar2/clob are text too.
+            "varchar" or "char" or "text" or "nvarchar" or "nchar" or "ntext" or "citext"
+                or "tinytext" or "mediumtext" or "longtext" or "varchar2" or "nvarchar2" or "clob" or "nclob" => "text",
+            "int2" or "int4" or "int8" or "smallint" or "int" or "bigint" or "tinyint" or "mediumint" => "integer",
+            // Oracle's number is its integer and its decimal alike: one family.
+            "numeric" or "decimal" or "money" or "smallmoney" or "number" => "decimal",
+            "float4" or "float8" or "real" or "float" or "double" or "binary_float" or "binary_double" => "float",
             "bool" or "bit" => "boolean",
             "date" => "date",
             "time" or "timetz" => "time",
             "timestamp" or "timestamptz" or "datetime" or "datetime2" or "smalldatetime" or "datetimeoffset" => "timestamp",
             "uuid" or "uniqueidentifier" => "uuid",
-            "bytea" or "varbinary" or "binary" or "image" => "binary",
+            "bytea" or "varbinary" or "binary" or "image" or "blob" or "longblob" or "mediumblob" or "raw" => "binary",
             "json" or "jsonb" or "xml" => "document",
             _ => bare
         };
@@ -501,9 +504,11 @@ public sealed class SchemaDiffEngine : ISchemaDiffEngine
         if (string.Equals(inner, "max", StringComparison.OrdinalIgnoreCase))
             return (null, null);
 
+        // The leading digits: Oracle writes a length with its semantics ("450 CHAR"), which is still 450.
+        static string Digits(string part) => new(part.Trim().TakeWhile(char.IsDigit).ToArray());
         var parts = inner.Split(',');
-        int? length = int.TryParse(parts[0], out var len) ? len : null;
-        int? scale = parts.Length > 1 && int.TryParse(parts[1], out var s) ? s : null;
+        int? length = int.TryParse(Digits(parts[0]), out var len) ? len : null;
+        int? scale = parts.Length > 1 && int.TryParse(Digits(parts[1]), out var s) ? s : null;
         return (length, scale);
     }
 }

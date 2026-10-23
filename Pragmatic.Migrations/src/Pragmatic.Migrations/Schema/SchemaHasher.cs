@@ -68,6 +68,16 @@ public static class SchemaHasher
                 .OrderBy(x => x, StringComparer.Ordinal);
             foreach (var fk in foreignKeys)
                 sb.Append("  FK:").Append(fk).Append('\n');
+
+            // Checks are matched by NAME by the diff (their expression comes back normalised), so the
+            // name is their identity here. ⚠️ Left out, adding or dropping a check alone kept the hash,
+            // and the runner's fast path skipped it while reporting success. A table without checks
+            // adds nothing, so its hash is what it was.
+            var checks = (table.CheckConstraints.IsDefault ? [] : table.CheckConstraints)
+                .Select(c => Normalize(c.Name))
+                .OrderBy(x => x, StringComparer.Ordinal);
+            foreach (var check in checks)
+                sb.Append("  CK:").Append(check).Append('\n');
         }
 
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));

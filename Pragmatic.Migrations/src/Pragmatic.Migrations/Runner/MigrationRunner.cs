@@ -397,7 +397,7 @@ public sealed partial class MigrationRunner(
         await SchemaAuditStore.EnsureTableAsync(
             connection, sqlGenerator, ct, context.Options.AuditTableName).ConfigureAwait(false);
         await SchemaAuditStore.RecordMigrationAsync(
-            connection, context.DesiredSchema, fullSql, total, sw.ElapsedMilliseconds,
+            connection, context.DesiredSchema, fullSql, total, sw.ElapsedMilliseconds, sqlGenerator.ProviderName,
             auditTableName: context.Options.AuditTableName, ct: ct).ConfigureAwait(false);
 
         // Phase 6: Run seed providers (only when changes were applied)

@@ -46,7 +46,7 @@ public class SchemaAuditStoreTests : IAsyncLifetime
         await SchemaAuditStore.EnsureTableAsync(_connection, _generator);
 
         await SchemaAuditStore.RecordMigrationAsync(
-            _connection, Schema, "CREATE TABLE Foo;", changeCount: 3, durationMs: 42,
+            _connection, Schema, "CREATE TABLE Foo;", changeCount: 3, durationMs: 42, _generator.ProviderName,
             appliedBy: "tester");
 
         var history = await SchemaAuditStore.ReadHistoryAsync(_connection);
@@ -80,7 +80,7 @@ public class SchemaAuditStoreTests : IAsyncLifetime
         var reflected = JsonSerializer.Serialize(schema, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false });
 
         await SchemaAuditStore.EnsureTableAsync(_connection, _generator);
-        await SchemaAuditStore.RecordMigrationAsync(_connection, schema, "-- sql", changeCount: 1, durationMs: 1, appliedBy: "tester");
+        await SchemaAuditStore.RecordMigrationAsync(_connection, schema, "-- sql", changeCount: 1, durationMs: 1, _generator.ProviderName, appliedBy: "tester");
 
         var cmd = _connection.CreateCommand();
         await using (cmd.ConfigureAwait(false))
@@ -96,7 +96,7 @@ public class SchemaAuditStoreTests : IAsyncLifetime
         await SchemaAuditStore.EnsureTableAsync(_connection, _generator);
 
         await SchemaAuditStore.RecordMigrationAsync(
-            _connection, Schema, "-- sql", changeCount: 1, durationMs: 1, appliedBy: null);
+            _connection, Schema, "-- sql", changeCount: 1, durationMs: 1, _generator.ProviderName, appliedBy: null);
 
         var history = await SchemaAuditStore.ReadHistoryAsync(_connection);
 
