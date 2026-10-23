@@ -28,6 +28,10 @@ internal static class FeatureDetector
         HasScalar = TypeExists(compilation, "Scalar.AspNetCore.ScalarEndpointRouteBuilderExtensions"),
         HasComposition = CompositionDetector.IsCompositionReferenced(compilation),
         HasPersistenceEFCore = TypeExists(compilation, "Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute"),
+        // ASSUMPTION: the bridges' types as the spike names them; the packages that will hold them are not
+        // in the repository yet, and these two names have to follow them when they arrive.
+        HasPersistenceSql = TypeExists(compilation, "Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters"),
+        HasPersistenceDocuments = TypeExists(compilation, "Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters"),
         HasEfCore = TypeExists(compilation, "Microsoft.EntityFrameworkCore.DbContext"),
         HasI18n = TypeExists(compilation, "Pragmatic.Internationalization.Attributes.TranslationKeysAttribute"),
         HasI18nAspNetCore = TypeExists(compilation, "Pragmatic.Internationalization.AspNetCore.Extensions.I18NBuilder"),

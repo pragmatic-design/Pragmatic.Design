@@ -297,6 +297,37 @@ See [DbContext Generation](/modules/persistence/efcore-01-dbcontext-generation/)
 
 ---
 
+## `[PersistenceEngine]`
+
+### Problem
+
+An application's entities are written the same whichever engine stores them, so something has to say which
+one does. Deciding it from the packages a project happens to reference stops working the moment two engines are
+referenced.
+
+### Solution
+
+The boundary names its engine; every entity of that boundary is persisted by it.
+
+```csharp
+[Boundary]
+[PersistenceEngine(PersistenceEngineKind.EfCore)]
+public partial class BillingBoundary;
+```
+
+An entity's boundary is the one the generator already finds: its `[BelongsTo<T>]`, else the boundary that claims
+it with `[Owns<T>]`, else the only `[Boundary]` of its assembly.
+
+The marker is optional while the compilation references one engine: that one is the default, and an application
+on EF Core alone writes nothing. With two or more referenced, an entity whose boundary names none is `PRAG0743`;
+a boundary naming an engine the compilation does not reference is `PRAG0744`.
+
+⚠️ EF Core is the only engine in the repository today. The Sql and documents engines (`PersistenceEngineKind.Sql`,
+`PersistenceEngineKind.Documents`) are being ported; until they are, the marker is checked but generation is
+EF Core's.
+
+---
+
 ## `[Lookup]`
 
 ### Problem

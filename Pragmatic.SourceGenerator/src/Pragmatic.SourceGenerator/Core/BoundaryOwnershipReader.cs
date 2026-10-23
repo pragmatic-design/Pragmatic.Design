@@ -149,6 +149,19 @@ internal static class BoundaryOwnershipReader
         return builder.ToImmutable();
     }
 
+    /// <summary>
+    ///     The same answer as <see cref="BoundaryOf" />, as the boundary's symbol: for what the boundary itself
+    ///     declares, such as its persistence engine. Null when the entity has no boundary.
+    /// </summary>
+    public static INamedTypeSymbol? BoundaryTypeOf(INamedTypeSymbol entity)
+    {
+        if (DeclaredOrOwningBoundaryType(entity) is INamedTypeSymbol declared)
+            return declared;
+
+        var single = SingleBoundaryOf(entity.ContainingAssembly);
+        return single is null ? null : entity.ContainingAssembly.GetTypeByMetadataName(StripGlobal(single));
+    }
+
     public static string? QualifiedBoundaryOf(INamedTypeSymbol entity)
     {
         var declared = DeclaredOrOwningBoundaryType(entity);

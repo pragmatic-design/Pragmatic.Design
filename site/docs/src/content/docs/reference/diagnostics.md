@@ -288,7 +288,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0688` | Warning | `ExecuteUpdate` goes straight to SQL, so the interceptors the entity declares do not run: audit columns are not stamped and the concurrency token does not move. Use the repository, or accept the trade deliberately. |
 | `PRAG0690` | Warning | A host stores instant properties and does not reference `Pragmatic.Temporal.EFCore`, so nothing normalises what reaches the column while the rest of the framework reads it as UTC. Add the package. |
 
-### Persistence query pipeline: `PRAG0701-0736`
+### Persistence query pipeline: `PRAG0701-0744`
 
 | ID | Severity | Meaning and fix |
 |----|----------|-----------------|
@@ -334,6 +334,8 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0740` | Error | A property of a joined query's result that neither the entity nor any joined target answers. The generated step builds the result property by property, so it has to know the source of each. Name it as the entity spells it, prefix it with the joined type (`CustomerName` for `Customer.Name`), or prefix it with the join's `Alias` when two joins reach the same type. Without this it would be a `CS0117` inside a generated file. |
 | `PRAG0741` | Error | A `[Join<T>(Type = …)]` EF Core cannot translate. `Inner`, `Left` and `Cross` generate. `Full` has no LINQ spelling that becomes a FULL OUTER JOIN; `Right` is `Left` with the operands swapped, and the generated step receives the root set **already filtered, sorted and paged**, so rows of the target the root's filters never selected cannot be added back. Swap the query's entity and its join to say the same thing. |
 | `PRAG0742` | Error | A `[Join<T>(ForeignKey = …)]` whose target belongs to another boundary that this one does not read. EF Core composes a join only inside one `DbContext` instance and a host builds one per boundary, so there is no set to join against. Add `[ReadAccess<T>]` to the boundary (which is what puts the other boundary's `DbSet` in this model), or reach the target through its own query. ⚠️ `[ReadAccess]` also requires the two boundaries to share a database; `PRAG0706` reports it when they do not. |
+| `PRAG0743` | Error | The compilation references two or more persistence engines and the entity's boundary names none, so no engine persists it. Add `[PersistenceEngine(PersistenceEngineKind.…)]` to the boundary; with one engine referenced, that one is the default. Reported on the entity. |
+| `PRAG0744` | Error | A boundary's `[PersistenceEngine]` names an engine the compilation does not reference. Reference the engine's package, or name one that is referenced. Reported on the boundary, once. |
 
 ### Messaging: `PRAG0800-0835`
 

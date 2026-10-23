@@ -33,6 +33,12 @@ internal sealed record DetectedFeatures
     public bool HasComposition { get; init; }
     public bool HasPersistenceEFCore { get; init; }
 
+    /// <summary>Whether the Sql engine's bridge is referenced: one of the engines a boundary can name.</summary>
+    public bool HasPersistenceSql { get; init; }
+
+    /// <summary>Whether the documents engine's bridge is referenced: one of the engines a boundary can name.</summary>
+    public bool HasPersistenceDocuments { get; init; }
+
     /// <summary>Whether EF Core itself is referenced, with or without Pragmatic.Persistence.</summary>
     /// <remarks>
     ///     ⚠️ Not the same question as <see cref="HasPersistenceEFCore" />, and the difference
