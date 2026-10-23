@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.Persistence.Sql.Generator.Templates;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -45,28 +47,30 @@ internal static class PragmaticShape
         {
             var text = Text(entity, relations);
             if (text is not null)
-                shapes.Add(($"{entity.ToDisplayString().Replace('.', '_')}.PragmaticShape.g.cs", text));
+                shapes.Add((HintOf(entity), text));
         }
 
         return shapes;
     }
 
+    private static string HintOf(INamedTypeSymbol entity) => $"{entity.ToDisplayString().Replace('.', '_')}.PragmaticShape.g.cs";
+
     private static string? Text(INamedTypeSymbol entity, PragmaticRelations relations)
     {
         var declared = new HashSet<string>(entity.GetMembers().Select(m => m.Name));
         var interfaces = new List<string>();
-        var body = new StringBuilder();
-        void Member(string name, string text)
+        var members = new List<ShapeMemberModel>();
+        void Member(ShapeMemberKind kind)
         {
-            if (declared.Add(name))
-                body.AppendLine(text);
+            if (declared.Add(kind.ToString()))
+                members.Add(new ShapeMemberModel(kind, kind.ToString()));
         }
 
         // [Entity]: the key Pragmatic assigns at construction, and Id as its alias (EntityTraitsTemplate). A derived type has its root's.
         if (!IsDerivedEntity(entity))
         {
-            Member("PersistenceId", "    public global::System.Guid PersistenceId { get; set; } = global::System.Guid.CreateVersion7();");
-            Member("Id", "    public global::System.Guid Id => PersistenceId;");
+            Member(ShapeMemberKind.PersistenceId);
+            Member(ShapeMemberKind.Id);
         }
 
         // A trait whose members the source declares in full is the source's, interface included (EntityTransform.Attributes); a partial
@@ -74,58 +78,52 @@ internal static class PragmaticShape
         if (Has(entity, "SoftDeleteAttribute") && !AllDeclared(declared, "IsDeleted", "DeletedAt", "DeletedBy"))
         {
             interfaces.Add("global::Pragmatic.Persistence.Entity.ISoftDelete");
-            Member("IsDeleted", "    public bool IsDeleted { get; set; }");
-            Member("DeletedAt", "    public global::System.DateTimeOffset? DeletedAt { get; set; }");
-            Member("DeletedBy", "    public string? DeletedBy { get; set; }");
+            Member(ShapeMemberKind.IsDeleted);
+            Member(ShapeMemberKind.DeletedAt);
+            Member(ShapeMemberKind.DeletedBy);
         }
 
         if (Has(entity, "AuditableAttribute") && !AllDeclared(declared, "CreatedAt", "CreatedBy", "UpdatedAt", "UpdatedBy"))
         {
             interfaces.Add("global::Pragmatic.Persistence.Entity.IAuditable");
-            Member("CreatedAt", "    public global::System.DateTimeOffset CreatedAt { get; set; }");
-            Member("CreatedBy", "    public string? CreatedBy { get; set; }");
-            Member("UpdatedAt", "    public global::System.DateTimeOffset? UpdatedAt { get; set; }");
-            Member("UpdatedBy", "    public string? UpdatedBy { get; set; }");
+            Member(ShapeMemberKind.CreatedAt);
+            Member(ShapeMemberKind.CreatedBy);
+            Member(ShapeMemberKind.UpdatedAt);
+            Member(ShapeMemberKind.UpdatedBy);
         }
 
         if (Has(entity, "HasOwnerAttribute") && declared.Add("OwnerId"))
         {
             interfaces.Add("global::Pragmatic.Persistence.Entity.IOwnershipAssignable");
-            body.AppendLine("    public string OwnerId { get; private set; } = string.Empty;");
-            body.AppendLine("    internal void SetOwnerId(string ownerId) => OwnerId = ownerId;");
-            body.AppendLine("    void global::Pragmatic.Persistence.Entity.IOwnershipAssignable.AssignOwner(string ownerId) => OwnerId = ownerId;");
+            members.Add(new ShapeMemberModel(ShapeMemberKind.Owner, "OwnerId"));
         }
 
         if (Has(entity, "HasAccessScopesAttribute") && declared.Add("AccessScopes"))
         {
             interfaces.Add("global::Pragmatic.Persistence.Entity.IScopedEntity");
-            body.AppendLine("    public global::System.Collections.Generic.List<string> AccessScopes { get; private set; } = [];");
-            body.AppendLine("    internal void GrantScope(string scope) { if (!AccessScopes.Contains(scope)) AccessScopes.Add(scope); }");
-            body.AppendLine("    internal void RevokeScope(string scope) => AccessScopes.Remove(scope);");
+            members.Add(new ShapeMemberModel(ShapeMemberKind.AccessScopes, "AccessScopes"));
         }
 
         // [ConcurrencyAware]: the row version (owner's decision of 2026-10-22). Pragmatic's EF configuration keeps it as a shadow property, while
         // the attribute's documentation promises a uint RowVersion; here it is a ulong, wide enough for SQL Server's rowversion as for xmin.
-        if (Has(entity, "ConcurrencyAwareAttribute") && declared.Add("RowVersion"))
-            body.AppendLine("    public ulong RowVersion { get; internal set; }");
+        if (Has(entity, "ConcurrencyAwareAttribute"))
+            Member(ShapeMemberKind.RowVersion);
 
-        relations.AppendMembers(entity, declared, body);
-        AppendChangeTracking(entity, declared, interfaces, body);
-        PragmaticFilters.Append(entity, body);
-        if (body.Length == 0 && interfaces.Count == 0)
+        relations.AppendMembers(entity, declared, members);
+        AppendChangeTracking(entity, declared, interfaces, members);
+        var filters = new List<ShapeFilterModel>();
+        PragmaticFilters.Append(entity, filters);
+        if (members.Count == 0 && filters.Count == 0 && interfaces.Count == 0)
             return null;
-
-        var text = new StringBuilder();
-        text.AppendLine("// <auto-generated/> Pragmatic.Persistence.Sql: the members Pragmatic's generator declares on this entity when EF Core is referenced (PragmaticShape).");
-        text.AppendLine("#nullable enable");
-        if (!entity.ContainingNamespace.IsGlobalNamespace)
-            text.AppendLine($"namespace {entity.ContainingNamespace.ToDisplayString()};");
-        text.AppendLine();
-        text.AppendLine($"partial class {entity.Name}{(interfaces.Count == 0 ? "" : " : " + string.Join(", ", interfaces))}");
-        text.AppendLine("{");
-        text.Append(body);
-        text.AppendLine("}");
-        return text.ToString();
+        var model = new EntityShapeModel(
+            HintOf(entity),
+            entity.ContainingNamespace.IsGlobalNamespace ? null : entity.ContainingNamespace.ToDisplayString(),
+            entity.Name,
+            "global::" + entity.ToDisplayString(),
+            interfaces.ToEquatableArray(),
+            members.ToEquatableArray(),
+            filters.ToEquatableArray());
+        return new EntityShapeTemplate(model).ToSourceText().ToString();
     }
 
     /// <summary>
@@ -133,7 +131,7 @@ internal static class PragmaticShape
     ///     <c>IChangeTracking</c> and one internal <c>Set{Prop}</c> per such property, recording the name when the value changes. Navigations
     ///     are not among them. A derived entity gets the setters only (<c>DerivedEntitySettersTemplate</c>): its root carries the tracking.
     /// </summary>
-    private static void AppendChangeTracking(INamedTypeSymbol entity, HashSet<string> declared, List<string> interfaces, StringBuilder body)
+    private static void AppendChangeTracking(INamedTypeSymbol entity, HashSet<string> declared, List<string> interfaces, List<ShapeMemberModel> members)
     {
         var tracked = entity.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && !p.IsIndexer && p.SetMethod is { } set && set.DeclaredAccessibility != Accessibility.Public && !IsNavigation(p.Type))
@@ -143,12 +141,7 @@ internal static class PragmaticShape
         if (!IsDerivedEntity(entity) && declared.Add("ModifiedProperties"))
         {
             interfaces.Add("global::Pragmatic.Persistence.Entity.IChangeTracking");
-            body.AppendLine("    private readonly global::System.Collections.Generic.HashSet<string> _modifiedProperties = [];");
-            body.AppendLine("    private readonly global::System.Collections.Generic.HashSet<string> _collectionsModified = [];");
-            body.AppendLine("    [global::System.Text.Json.Serialization.JsonIgnore] public global::System.Collections.Generic.IReadOnlySet<string> ModifiedProperties => _modifiedProperties;");
-            body.AppendLine("    [global::System.Text.Json.Serialization.JsonIgnore] public global::System.Collections.Generic.IReadOnlySet<string> CollectionsModified => _collectionsModified;");
-            body.AppendLine("    public void ResetModifiedProperties() { _modifiedProperties.Clear(); _collectionsModified.Clear(); }");
-            body.AppendLine("    [global::System.Text.Json.Serialization.JsonIgnore] [global::System.ComponentModel.DataAnnotations.Schema.NotMapped] public bool IsNew { get; set; }");
+            members.Add(new ShapeMemberModel(ShapeMemberKind.ChangeTracking, "ModifiedProperties"));
         }
 
         foreach (var property in tracked)
@@ -156,8 +149,7 @@ internal static class PragmaticShape
             if (!declared.Add("Set" + property.Name))
                 continue;
             var type = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier | SymbolDisplayMiscellaneousOptions.UseSpecialTypes));
-            var record = IsDerivedEntity(entity) ? "" : $" _modifiedProperties.Add(nameof({property.Name}));";
-            body.AppendLine($"    internal void Set{property.Name}({type} value) {{ if (global::System.Collections.Generic.EqualityComparer<{type}>.Default.Equals({property.Name}, value)) return; {property.Name} = value;{record} }}");
+            members.Add(new ShapeMemberModel(ShapeMemberKind.TrackedSetter, property.Name, type, Required: !IsDerivedEntity(entity))); // a derived entity's root records the change
         }
     }
 

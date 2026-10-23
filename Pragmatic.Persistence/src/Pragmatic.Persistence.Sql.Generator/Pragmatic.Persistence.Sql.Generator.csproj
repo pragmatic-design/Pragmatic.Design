@@ -4,19 +4,12 @@
        there it sees Pragmatic's templates, here it runs the SQL suite. -->
   <PropertyGroup>
     <RootNamespace>Pragmatic.Persistence.Sql.Generator</RootNamespace>
-    <ImplicitUsings>disable</ImplicitUsings>
     <IsAotCompatible>false</IsAotCompatible>
     <!-- Not packed: it ships inside Pragmatic.SourceGenerator once merged. -->
     <IsPackable>false</IsPackable>
     <!-- Roslyn 4.14: GetInterceptableLocation out of [Experimental] (4.12 still marked it RSEXPERIMENTAL002); the SDK 10 compiler loads older analyzers. -->
     <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>
-
-  <!-- The shared generator code Directory.Build.props adds to every *.Generator: this one uses none of it, and it assumes the implicit
-       usings this project turns off. -->
-  <ItemGroup>
-    <Compile Remove="$(SharedSourceGenPath)*.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- The dialect rules (quoting, paging) are the runtime's: linked, so the SQL the generator emits and the SQL the runtime would build agree by construction. -->

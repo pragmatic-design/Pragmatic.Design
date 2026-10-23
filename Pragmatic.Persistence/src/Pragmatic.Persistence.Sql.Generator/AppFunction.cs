@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -50,20 +51,9 @@ internal sealed class AppFunction
     public string? Render(SqlDialect dialect, string[] arguments)
         => Template(dialect) is { } template ? ArgumentToken.Replace(ResolveTypes(template, dialect), m => arguments[int.Parse(m.Groups[1].Value)]) : null;
 
-    /// <summary>The C# of the runtime renderer: the templates as concatenations over <c>a[i]</c>, a dialect without an arm throwing.</summary>
-    public string RuntimeRenderer()
-    {
-        var arms = new List<string>();
-        foreach (var dialect in Dialects)
-        {
-            var template = Template(dialect);
-            arms.Add(template is null
-                ? $"global::Pragmatic.Persistence.Sql.SqlDialect.{dialect} => throw new global::System.NotSupportedException(\"{Name} has no rendering for {dialect}\")"
-                : $"global::Pragmatic.Persistence.Sql.SqlDialect.{dialect} => {Concatenation(ResolveTypes(template, dialect))}");
-        }
-
-        return $"static (d, a) => d switch {{ {string.Join(", ", arms)}, _ => throw new global::System.NotSupportedException(\"{Name}: unknown dialect\") }}";
-    }
+    /// <summary>The runtime renderer's arms: each dialect's template as a concatenation over <c>a[i]</c>, null for a dialect without an arm.</summary>
+    public IEnumerable<FunctionArmModel> RuntimeArms()
+        => Dialects.Select(dialect => new FunctionArmModel(dialect.ToString(), Template(dialect) is { } template ? Concatenation(ResolveTypes(template, dialect)) : null));
 
     private static readonly Regex TypeToken = new(@"\{t(\w+)\}", RegexOptions.Compiled);
 

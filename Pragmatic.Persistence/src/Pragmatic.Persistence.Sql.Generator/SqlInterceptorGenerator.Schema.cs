@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -62,7 +64,7 @@ public sealed partial class SqlInterceptorGenerator
 
     private const string Migrations = "global::Pragmatic.Migrations.Schema.";
 
-    private static void EmitSchemas(StringBuilder extensions, Compilation compilation, List<EntityModel> own, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
+    private static void EmitSchemas(List<TrailerSectionModel> extensions,Compilation compilation, List<EntityModel> own, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
     {
         var databases = AllTypes(compilation.Assembly.GlobalNamespace).Where(t => t.GetAttributes().Any(a => a.AttributeClass?.Name == "SqlDatabaseAttribute")).OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
         if (databases.Count == 0)
@@ -87,22 +89,9 @@ public sealed partial class SqlInterceptorGenerator
             if (tables is null)
                 continue;
             var configKey = database.GetAttributes().First(a => a.AttributeClass?.Name == "SqlDatabaseAttribute").NamedArguments.FirstOrDefault(n => n.Key == "ConfigKey").Value.Value as string;
-            var ns = database.ContainingNamespace.IsGlobalNamespace ? null : database.ContainingNamespace.ToDisplayString();
-            extensions.AppendLine();
-            if (ns is not null)
-                extensions.AppendLine($"namespace {ns}\n{{");
-            extensions.AppendLine($"    partial class {database.Name}");
-            extensions.AppendLine("    {");
-            extensions.AppendLine($"        /// <summary>The schema of {database.Name} for Pragmatic.Migrations ({tables.Count} tables), generated from the entities stored in it: its column types per provider.</summary>");
-            extensions.AppendLine($"        public static {Migrations}SchemaVersion Schema(global::Pragmatic.Persistence.Sql.SqlDialect dialect) => dialect switch");
-            extensions.AppendLine("        {");
-            foreach (var (dialect, provider) in new[] { (SqlDialect.PostgreSql, "ProviderPostgreSql"), (SqlDialect.SqlServer, "ProviderSqlServer"), (SqlDialect.Sqlite, "ProviderSqlite") })
-                extensions.AppendLine($"            global::Pragmatic.Persistence.Sql.SqlDialect.{dialect} => new([{string.Join(", ", tables.Select(t => TableText(t, dialect)))}], {Literal(database.Name)}, global::Pragmatic.Migrations.MigrationConstants.{provider}, {(configKey is null ? "null" : Literal(configKey))}),");
-            extensions.AppendLine($"            _ => throw new global::System.NotSupportedException($\"Pragmatic.Migrations migrates PostgreSQL, SQL Server and SQLite, not {{dialect}}.\"),");
-            extensions.AppendLine("        };");
-            extensions.AppendLine("    }");
-            if (ns is not null)
-                extensions.AppendLine("}");
+            var dialects = new[] { (SqlDialect.PostgreSql, "ProviderPostgreSql"), (SqlDialect.SqlServer, "ProviderSqlServer"), (SqlDialect.Sqlite, "ProviderSqlite") }
+                .Select(d => new DialectSchemaModel(d.Item1.ToString(), d.Item2, tables.Select(t => TableModel(t, d.Item1)).ToEquatableArray()));
+            extensions.Add(new DatabaseSchemaModel(NamespaceOf(database), database.Name, configKey, tables.Count, dialects.ToEquatableArray()));
         }
 
         // An entity no declared database holds, when there are several: say so rather than leave its table out.
@@ -228,11 +217,11 @@ public sealed partial class SqlInterceptorGenerator
         tables[table.Name] = table;
     }
 
-    private static string TableText(SchemaTable table, SqlDialect dialect)
-    {
-        var columns = table.Columns.Select(c => $"new {Migrations}ColumnSchema({Literal(c.Name)}, {Literal(SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed))}, {(c.Nullable ? "true" : "false")}, {(c.Key ? "true" : "false")}{(c.DefaultValue is null ? "" : ", " + Literal(c.DefaultValue))})");
-        var indexes = table.Indexes.Select(i => $"new {Migrations}IndexSchema({Literal(i.Name)}, [{string.Join(", ", i.Columns.Select(Literal))}]{(i.Unique ? ", IsUnique: true" : "")}{(i.Filter is null ? "" : $", Filter: {Literal(SqlDialects.ResolveBooleanLiterals(i.Filter, dialect))}")})");
-        var foreignKeys = table.ForeignKeys.Select(f => $"new {Migrations}ForeignKeySchema({Literal(f.Name)}, {Literal(f.Column)}, {Literal(f.Table)}, {Literal(f.ReferencedColumn)}, {Migrations}ReferentialAction.NoAction)");
-        return $"new {Migrations}TableSchema({Literal(table.Name)}, null, [{string.Join(", ", columns)}], [{string.Join(", ", indexes)}], [{string.Join(", ", foreignKeys)}])";
-    }
+    /// <summary>A table in one dialect: the column types and the index filters are the dialect's.</summary>
+    private static TableSchemaModel TableModel(SchemaTable table, SqlDialect dialect)
+        => new(
+            table.Name,
+            table.Columns.Select(c => new ColumnSchemaModel(c.Name, SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed), c.Nullable, c.Key, c.DefaultValue)).ToEquatableArray(),
+            table.Indexes.Select(i => new IndexSchemaModel(i.Name, i.Columns.ToEquatableArray(), i.Unique, i.Filter is null ? null : SqlDialects.ResolveBooleanLiterals(i.Filter, dialect))).ToEquatableArray(),
+            table.ForeignKeys.Select(f => new ForeignKeySchemaModel(f.Name, f.Column, f.Table, f.ReferencedColumn)).ToEquatableArray());
 }

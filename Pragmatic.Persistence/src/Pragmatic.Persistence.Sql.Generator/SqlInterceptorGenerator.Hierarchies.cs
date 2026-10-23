@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -14,8 +15,11 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    /// <summary>The plans into <paramref name="plans" /> (inside the generated namespace) and the extension classes into <paramref name="extensions" /> (in the entity's namespace, appended after it).</summary>
-    private static void EmitHierarchies(StringBuilder plans, StringBuilder extensions, IEnumerable<EntityModel> entities, List<Diagnostic> diagnostics)
+    /// <summary>The namespace a type's generated companions go in; null for the global one.</summary>
+    private static string? NamespaceOf(INamedTypeSymbol type) => type.ContainingNamespace.IsGlobalNamespace ? null : type.ContainingNamespace.ToDisplayString();
+
+    /// <summary>The plans into <paramref name="plans" /> (inside the generated namespace) and the extension classes into <paramref name="extensions" /> (in the entity's namespace, after it).</summary>
+    private static void EmitHierarchies(List<PlanSectionModel> plans, List<TrailerSectionModel> extensions, IEnumerable<EntityModel> entities, List<Diagnostic> diagnostics)
     {
         foreach (var entity in entities)
         {
@@ -43,52 +47,28 @@ public sealed partial class SqlInterceptorGenerator
                 var foreignKey = entity.Column(navigation.ForeignKey)?.Column ?? navigation.ForeignKey;
                 var descendants = $"Hierarchy_{Safe(entity)}_{navigation.Property}_Descendants";
                 var ancestors = $"Hierarchy_{Safe(entity)}_{navigation.Property}_Ancestors";
-                EmitHierarchyPlan(plans, descendants, entity, key, $"t.\"{foreignKey}\" = @p0", $"t.\"{foreignKey}\" = tree.\"{key.Column}\"");
-                EmitHierarchyPlan(plans, ancestors, entity, key, $"t.\"{key.Column}\" = @p0", $"t.\"{key.Column}\" = tree.\"{foreignKey}\"");
+                plans.Add(HierarchyPlan(descendants, entity, key, $"t.\"{foreignKey}\" = @p0", $"t.\"{foreignKey}\" = tree.\"{key.Column}\""));
+                plans.Add(HierarchyPlan(ancestors, entity, key, $"t.\"{key.Column}\" = @p0", $"t.\"{key.Column}\" = tree.\"{foreignKey}\""));
 
-                var keyType = key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var list = $"global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.List<{entity.FullName}>>";
-                var ns = entity.Type.ContainingNamespace.IsGlobalNamespace ? null : entity.Type.ContainingNamespace.ToDisplayString();
-                extensions.AppendLine();
-                if (ns is not null)
-                    extensions.AppendLine($"namespace {ns}");
-                if (ns is not null)
-                    extensions.AppendLine("{");
-                extensions.AppendLine($"    /// <summary>The tree of <see cref=\"{entity.Type.Name}\" /> along <c>{navigation.Property}</c>, generated from [GenerateHierarchy]: one recursive CTE per call, the node itself excluded.</summary>");
-                extensions.AppendLine($"    public static class {entity.Type.Name}{navigation.Property}Hierarchy");
-                extensions.AppendLine("    {");
-                extensions.AppendLine($"        public static {list} GetDescendantsBy{navigation.Property}(this global::Pragmatic.Persistence.Sql.SqlSession session, {keyType} key, global::System.Threading.CancellationToken ct = default)");
-                extensions.AppendLine($"            => global::Pragmatic.Persistence.Sql.Generated.{descendants}.Instance.ToListAsync(session.Query<{entity.FullName}>().WithSlot(0, key), ct);");
-                extensions.AppendLine();
-                extensions.AppendLine($"        public static {list} GetAncestorsBy{navigation.Property}(this global::Pragmatic.Persistence.Sql.SqlSession session, {keyType} key, global::System.Threading.CancellationToken ct = default)");
-                extensions.AppendLine($"            => global::Pragmatic.Persistence.Sql.Generated.{ancestors}.Instance.ToListAsync(session.Query<{entity.FullName}>().WithSlot(0, key), ct);");
-                extensions.AppendLine("    }");
-                if (ns is not null)
-                    extensions.AppendLine("}");
+                extensions.Add(new HierarchyExtensionModel(NamespaceOf(entity.Type), entity.Type.Name, entity.FullName, navigation.Property, key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), descendants, ancestors));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, $"[GenerateHierarchy] {entity.Type.Name}.{navigation.Property}", HierarchySql(entity, SqlDialect.Sqlite, $"t.\"{foreignKey}\" = @p0", $"t.\"{foreignKey}\" = tree.\"{key.Column}\"", key)));
             }
         }
     }
 
     /// <summary>A plan running the walk: the key as its one parameter, the entity's reader, no loader.</summary>
-    private static void EmitHierarchyPlan(StringBuilder plans, string className, EntityModel entity, ColumnModel key, string anchor, string step)
-    {
-        plans.AppendLine($"    internal static class {className}");
-        plans.AppendLine("    {");
-        plans.AppendLine($"        internal static readonly SqlPlan<{entity.FullName}> Instance = new(");
-        plans.AppendLine($"            {Literal(HierarchySql(entity, SqlDialect.Sqlite, anchor, step, key))},");
-        plans.AppendLine($"            {Literal(HierarchySql(entity, SqlDialect.PostgreSql, anchor, step, key))},");
-        plans.AppendLine($"            {Literal(HierarchySql(entity, SqlDialect.SqlServer, anchor, step, key))},");
-        plans.AppendLine($"            new global::Pragmatic.Persistence.Sql.SqlParamKind[] {{ global::Pragmatic.Persistence.Sql.SqlParamKind.{LambdaTranslator.KindOf(key.Store)} }},");
-        plans.AppendLine($"            static (in SqlQuery<{entity.FullName}> q, global::System.Data.Common.DbParameterCollection p, SqlDialect d) => {{ p[0].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, q.Slot(0)); }},");
-        plans.AppendLine($"            EntityMaps.Read_{Safe(entity)},");
-        plans.AppendLine("            null,");
-        plans.AppendLine($"            {Literal($"[GenerateHierarchy] {entity.Type.Name} {className}")},");
-        plans.AppendLine($"            mySql: {Literal(HierarchySql(entity, SqlDialect.MySql, anchor, step, key))},");
-        plans.AppendLine($"            oracle: {Literal(HierarchySql(entity, SqlDialect.Oracle, anchor, step, key))});");
-        plans.AppendLine("    }");
-        plans.AppendLine();
-    }
+    private static HierarchyPlanModel HierarchyPlan(string className, EntityModel entity, ColumnModel key, string anchor, string step)
+        => new(
+            className,
+            entity.FullName,
+            HierarchySql(entity, SqlDialect.Sqlite, anchor, step, key),
+            HierarchySql(entity, SqlDialect.PostgreSql, anchor, step, key),
+            HierarchySql(entity, SqlDialect.SqlServer, anchor, step, key),
+            HierarchySql(entity, SqlDialect.MySql, anchor, step, key),
+            HierarchySql(entity, SqlDialect.Oracle, anchor, step, key),
+            LambdaTranslator.KindOf(key.Store),
+            Safe(entity),
+            $"[GenerateHierarchy] {entity.Type.Name} {className}");
 
     /// <summary>
     ///     <c>WITH [RECURSIVE] tree AS (anchor UNION ALL step) SELECT … FROM tree t WHERE t.key &lt;&gt; @p0</c>: SQLite and PostgreSQL say

@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -32,7 +33,13 @@ public sealed partial class SqlInterceptorGenerator
             diagnostics.Add(Diagnostic.Create(Diagnostics.Emulated, where, function, dialect, note));
     }
 
-    private static bool EmitOperator(StringBuilder source, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
+    /// <summary>The receiver of an operator's interceptor: the chain, passed by reference.</summary>
+    internal static string On(string element) => $"this in SqlQuery<{element}> q";
+
+    /// <summary>The call's own parameters, substituted and with their nullable annotations: what an interceptor must repeat.</summary>
+    internal static IEnumerable<string> ParametersOf(IMethodSymbol method) => method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}");
+
+    private static bool EmitOperator(List<InterceptorModel> source, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -63,9 +70,7 @@ public sealed partial class SqlInterceptorGenerator
             var declared = dto is null ? null : Projection.TryDeclared(dto, entity, entities, new List<string>(), diagnostics, where, call.Model.Compilation);
             if (declared is null)
                 return false;
-            source.AppendLine($"        {attribute}");
-            source.AppendLine($"        internal static SqlQuery<{declared.ResultName}> Project_{index}(this in SqlQuery<{elementType}> q) => q.As<{declared.ResultName}>();");
-            source.AppendLine();
+            source.Add(new(attribute, $"SqlQuery<{declared.ResultName}>", $"Project_{index}", "", [On(elementType)], $"q.As<{declared.ResultName}>()"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, declared.ColumnList));
             return true;
         }
@@ -83,9 +88,7 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            source.AppendLine($"        {attribute}");
-            source.AppendLine($"        internal static SqlQuery<{elementType}> AsOf_{index}(this in SqlQuery<{elementType}> q, global::System.DateTime utcInstant) => q.WithSlot({slot}, utcInstant);");
-            source.AppendLine();
+            source.Add(new(attribute, $"SqlQuery<{elementType}>", $"AsOf_{index}", "", [On(elementType), "global::System.DateTime utcInstant"], $"q.WithSlot({slot}, utcInstant)"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, $"FOR SYSTEM_TIME AS OF @p (SQL Server); the current rows elsewhere"));
             return true;
         }
@@ -100,10 +103,8 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            source.AppendLine($"        {attribute}");
             var composed = name == "Matching" ? "SqlPredicate" : "SqlOrdering";
-            source.AppendLine($"        internal static SqlQuery<{elementType}> {name}_{index}(this in SqlQuery<{elementType}> q, global::Pragmatic.Persistence.Sql.{composed}<{elementType}> composed) => q.WithSlot({slot}, composed);");
-            source.AppendLine();
+            source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), $"global::Pragmatic.Persistence.Sql.{composed}<{elementType}> composed"], $"q.WithSlot({slot}, composed)"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, name == "Matching" ? "the predicate composed at runtime from compiled leaves" : "the ordering composed at runtime from compiled keys"));
             return true;
         }
@@ -119,9 +120,7 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            source.AppendLine($"        {attribute}");
-            source.AppendLine($"        internal static SqlQuery<{derived.FullName}> OfType_{index}(this in SqlQuery<{elementType}> q) => q.As<{derived.FullName}>();");
-            source.AppendLine();
+            source.Add(new(attribute, $"SqlQuery<{derived.FullName}>", $"OfType_{index}", "", [On(elementType)], $"q.As<{derived.FullName}>()"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, derived.FixedPredicate ?? $"FROM \"{derived.Table}\""));
             return true;
         }
@@ -135,12 +134,8 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            // The call's own parameter types, substituted and with their nullable annotations (the interceptor must match them): not generic, whatever the overload's arity.
-            var annotated = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-            var parameters = string.Join(", ", call.Method.Parameters.Select((p, i) => $"{p.Type.ToDisplayString(annotated)} {p.Name}"));
-            source.AppendLine($"        {attribute}");
-            source.AppendLine($"        internal static SqlQuery<{elementType}> Include_{index}(this in SqlQuery<{elementType}> q, {parameters}) => q;");
-            source.AppendLine();
+            // The call's own parameter types: not generic, whatever the overload's arity.
+            source.Add(new(attribute, $"SqlQuery<{elementType}>", $"Include_{index}", "", [On(elementType), .. ParametersOf(call.Method)], "q"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, string.Join(".", hops.Select(h => h.Property))));
             return true;
         }
@@ -160,9 +155,7 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            source.AppendLine($"        {attribute}");
-            source.AppendLine($"        internal static SqlQuery<TSource> DistinctOn_{index}<TSource, TKey, TOrder>(this in SqlQuery<TSource> q, Func<TSource, TKey> key, Func<TSource, TOrder> order) => q;"); // the arity is the type's and the method's together, as the interceptors of Select
-            source.AppendLine();
+            source.Add(new(attribute, "SqlQuery<TSource>", $"DistinctOn_{index}", "<TSource, TKey, TOrder>", [On("TSource"), "Func<TSource, TKey> key", "Func<TSource, TOrder> order"], "q")); // the arity is the type's and the method's together, as the interceptors of Select
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, "DISTINCT ON (PostgreSQL) / ROW_NUMBER() OVER (PARTITION BY key ORDER BY order) = 1"));
             return true;
         }
@@ -203,13 +196,11 @@ public sealed partial class SqlInterceptorGenerator
                     return false;
                 }
 
-                var parameters = string.Join(", ", call.Method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}"));
-                source.AppendLine($"        {attribute}");
-                if (ContainsAnonymous(call.Element))
-                    source.AppendLine($"        internal static SqlQuery<TElement> Where_{index}<TElement{(arg is null ? "" : ", TArg")}>(this in SqlQuery<TElement> q, Func<TElement, {(arg is null ? "" : "TArg, ")}bool> predicate{(arg is null ? "" : ", TArg arg")}) => {(arg is null ? "q" : $"q.WithSlot({slot}, arg)")};"); // a grouping on an anonymous key: the element has no name
+                var stored = arg is null ? "q" : $"q.WithSlot({slot}, arg)";
+                if (ContainsAnonymous(call.Element)) // a grouping on an anonymous key: the element has no name
+                    source.Add(new(attribute, "SqlQuery<TElement>", $"Where_{index}", arg is null ? "<TElement>" : "<TElement, TArg>", arg is null ? [On("TElement"), "Func<TElement, bool> predicate"] : [On("TElement"), "Func<TElement, TArg, bool> predicate", "TArg arg"], stored));
                 else
-                    source.AppendLine($"        internal static SqlQuery<{elementType}> Where_{index}(this in SqlQuery<{elementType}> q, {parameters}) => {(arg is null ? "q" : $"q.WithSlot({slot}, arg)")};");
-                source.AppendLine();
+                    source.Add(new(attribute, $"SqlQuery<{elementType}>", $"Where_{index}", "", [On(elementType), .. ParametersOf(call.Method)], stored));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, predicate));
                 return true;
             }
@@ -236,16 +227,14 @@ public sealed partial class SqlInterceptorGenerator
 
                 var keyType = call.Method.TypeArguments.Length >= 1 ? call.Method.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) : "object";
                 var receiver = arg is null ? "q" : $"q.WithSlot({slot}, arg)"; // the argument form stores the value in the chain's slot, as Where does
-                source.AppendLine($"        {attribute}");
                 if (ContainsAnonymous(call.Element))
-                    source.AppendLine(arg is null
-                        ? $"        internal static SqlQuery<TElement> {name}_{index}<TElement, TKey>(this in SqlQuery<TElement> q, Func<TElement, TKey> key) => q;"
-                        : $"        internal static SqlQuery<TElement> {name}_{index}<TElement, TKey, TArg>(this in SqlQuery<TElement> q, Func<TElement, TArg, TKey> key, TArg arg) => {receiver};");
+                    source.Add(arg is null
+                        ? new(attribute, "SqlQuery<TElement>", $"{name}_{index}", "<TElement, TKey>", [On("TElement"), "Func<TElement, TKey> key"], "q")
+                        : new(attribute, "SqlQuery<TElement>", $"{name}_{index}", "<TElement, TKey, TArg>", [On("TElement"), "Func<TElement, TArg, TKey> key", "TArg arg"], receiver));
                 else if (arg is null)
-                    source.AppendLine($"        internal static SqlQuery<{elementType}> {name}_{index}(this in SqlQuery<{elementType}> q, Func<{elementType}, {keyType}> key) => q;");
+                    source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), $"Func<{elementType}, {keyType}> key"], "q"));
                 else
-                    source.AppendLine($"        internal static SqlQuery<{elementType}> {name}_{index}(this in SqlQuery<{elementType}> q, {string.Join(", ", call.Method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}"))}) => {receiver};");
-                source.AppendLine();
+                    source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), .. ParametersOf(call.Method)], receiver));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, column));
                 return true;
             }
@@ -259,19 +248,18 @@ public sealed partial class SqlInterceptorGenerator
                     return false;
                 }
 
-                source.AppendLine($"        {attribute}");
                 if (key.Type.IsAnonymousType)
                 {
-                    source.AppendLine($"        internal static SqlQuery<global::System.Linq.IGrouping<TKey, TSource>> GroupBy_{index}<TSource, TKey>(this in SqlQuery<TSource> q, Func<TSource, TKey> key) => q.As<global::System.Linq.IGrouping<TKey, TSource>>();"); // an anonymous key has no name: generic, inferred at the call
+                    const string anonymousGrouping = "global::System.Linq.IGrouping<TKey, TSource>";
+                    source.Add(new(attribute, $"SqlQuery<{anonymousGrouping}>", $"GroupBy_{index}", "<TSource, TKey>", [On("TSource"), "Func<TSource, TKey> key"], $"q.As<{anonymousGrouping}>()")); // an anonymous key has no name: generic, inferred at the call
                 }
                 else
                 {
                     var keyType = key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     var grouping = $"global::System.Linq.IGrouping<{keyType}, {elementType}>";
-                    source.AppendLine($"        internal static SqlQuery<{grouping}> GroupBy_{index}(this in SqlQuery<{elementType}> q, Func<{elementType}, {keyType}> key) => q.As<{grouping}>();");
+                    source.Add(new(attribute, $"SqlQuery<{grouping}>", $"GroupBy_{index}", "", [On(elementType), $"Func<{elementType}, {keyType}> key"], $"q.As<{grouping}>()"));
                 }
 
-                source.AppendLine();
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, key.GroupBy));
                 return true;
             }
@@ -282,12 +270,7 @@ public sealed partial class SqlInterceptorGenerator
                 var projection = key is null ? null : Projection.TryGrouped(call.Model, lambda, call.Method, new EntityRow(entity, "t"), entities, key, diagnostics, where);
                 if (projection is null)
                     return false;
-                source.AppendLine($"        {attribute}");
-                if (projection.IsAnonymous || ContainsAnonymous(call.Element))
-                    source.AppendLine($"        internal static SqlQuery<TResult> Select_{index}<TSource, TResult>(this in SqlQuery<TSource> q, Func<TSource, TResult> projection) => q.As<TResult>();");
-                else
-                    source.AppendLine($"        internal static SqlQuery<{projection.ResultName}> Select_{index}(this in SqlQuery<{elementType}> q, Func<{elementType}, {projection.ResultName}> projection) => q.As<{projection.ResultName}>();");
-                source.AppendLine();
+                source.Add(Select(attribute, index, elementType, projection, projection.IsAnonymous || ContainsAnonymous(call.Element)));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, projection.ColumnList));
                 return true;
             }
@@ -298,12 +281,7 @@ public sealed partial class SqlInterceptorGenerator
                 if (projection is null)
                     return false;
                 ReportEmulations(translator, where, diagnostics);
-                source.AppendLine($"        {attribute}");
-                if (projection.IsAnonymous)
-                    source.AppendLine($"        internal static SqlQuery<TResult> Select_{index}<TSource, TResult>(this in SqlQuery<TSource> q, Func<TSource, TResult> projection) => q.As<TResult>();");
-                else
-                    source.AppendLine($"        internal static SqlQuery<{projection.ResultName}> Select_{index}(this in SqlQuery<{elementType}> q, Func<{elementType}, {projection.ResultName}> projection) => q.As<{projection.ResultName}>();");
-                source.AppendLine();
+                source.Add(Select(attribute, index, elementType, projection, projection.IsAnonymous));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, projection.ColumnList));
                 return true;
             }
@@ -313,4 +291,10 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
         }
     }
+
+    /// <summary>A Select retypes the chain to the projection; into a type with no name (anonymous), generic in both.</summary>
+    private static InterceptorModel Select(string attribute, int index, string elementType, Projection projection, bool generic)
+        => generic
+            ? new(attribute, "SqlQuery<TResult>", $"Select_{index}", "<TSource, TResult>", [On("TSource"), "Func<TSource, TResult> projection"], "q.As<TResult>()")
+            : new(attribute, $"SqlQuery<{projection.ResultName}>", $"Select_{index}", "", [On(elementType), $"Func<{elementType}, {projection.ResultName}> projection"], $"q.As<{projection.ResultName}>()");
 }
