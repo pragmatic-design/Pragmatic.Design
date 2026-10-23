@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.Persistence.Sql.Generator.Templates;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -17,29 +20,6 @@ internal sealed partial class PragmaticGrid
 {
     private const string Attributes = "Pragmatic.Persistence.Query.Attributes.";
 
-    /// <summary>The categories Pragmatic's adapter filters by (<c>PropertyTypeCategory</c>): one family of operators each.</summary>
-    internal enum Category { String, Boolean, Numeric, DateTime, Guid, Enum, Unknown }
-
-    /// <summary>A field of the grid: its name on the wire, the property, how it compares, what the declaration allows.</summary>
-    internal sealed class Field(string json, string property, Category kind, string type, bool nullable, bool filterable, bool sortable, IReadOnlyList<string>? operators)
-    {
-        public string Json { get; } = json;
-
-        public string Property { get; } = property;
-
-        public Category Kind { get; } = kind;
-
-        public string Type { get; } = type;
-
-        public bool Nullable { get; } = nullable;
-
-        public bool Filterable { get; } = filterable;
-
-        public bool Sortable { get; } = sortable;
-
-        public IReadOnlyList<string>? Operators { get; } = operators;
-    }
-
     private PragmaticGrid(INamedTypeSymbol type, INamedTypeSymbol entity)
     {
         Type = type;
@@ -52,7 +32,7 @@ internal sealed partial class PragmaticGrid
 
     public bool Nested { get; private set; } = true;
 
-    public List<Field> Fields { get; } = [];
+    public List<GridFieldModel> Fields { get; } = [];
 
     /// <summary>The properties a client may not name, refused as withheld rather than unknown, as Pragmatic's adapter refuses them.</summary>
     public List<string> Withheld { get; } = [];
@@ -129,27 +109,77 @@ internal sealed partial class PragmaticGrid
             .Select(n => n.ToLowerInvariant()).Distinct());
     }
 
-    private static Field FieldOf(string json, IPropertySymbol property, bool filterable, bool sortable, IReadOnlyList<string>? operators)
+    /// <summary>A field: a <c>[GridField(AllowedOperators)]</c> restriction is kept with its aliases, as the clause checks it.</summary>
+    private static GridFieldModel FieldOf(string json, IPropertySymbol property, bool filterable, bool sortable, IReadOnlyList<string>? operators)
     {
         var type = Unwrap(property.Type);
         var nullable = property.Type.NullableAnnotation == NullableAnnotation.Annotated || property.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
-        return new Field(json, property.Name, CategoryOf(type), type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), nullable, filterable, sortable, operators);
+        var admitted = operators is { Count: > 0 } ? Aliases(operators) : [];
+        return new GridFieldModel(json, property.Name, KindOf(type), type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), nullable, filterable, sortable, admitted.ToEquatableArray());
     }
 
-    private static Category CategoryOf(ITypeSymbol type)
+    private static GridFieldKind KindOf(ITypeSymbol type)
     {
         var name = type.ToDisplayString();
         return type.SpecialType switch
         {
-            SpecialType.System_String => Category.String,
-            SpecialType.System_Boolean => Category.Boolean,
+            SpecialType.System_String => GridFieldKind.String,
+            SpecialType.System_Boolean => GridFieldKind.Boolean,
             SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
-                or SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal => Category.Numeric,
-            _ when name is "System.DateTime" or "System.DateTimeOffset" => Category.DateTime,
-            _ when name == "System.Guid" => Category.Guid,
-            _ when type.TypeKind == TypeKind.Enum => Category.Enum,
-            _ => Category.Unknown,
+                or SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal => GridFieldKind.Numeric,
+            _ when name is "System.DateTime" or "System.DateTimeOffset" => GridFieldKind.DateTime,
+            _ when name == "System.Guid" => GridFieldKind.Guid,
+            _ when type.TypeKind == TypeKind.Enum => GridFieldKind.Enum,
+            _ => GridFieldKind.Unknown,
         };
+    }
+
+    private string EntityName => "global::" + Entity.ToDisplayString();
+
+    /// <summary>
+    ///     The adapter's half an engine declares (hint name, text): the specification and its parsing (engine-neutral, linked by the documents
+    ///     generator), the page read (<paramref name="load" />) and the sort's ordering (<paramref name="ordering" />) the engine's own.
+    /// </summary>
+    internal (string Hint, string Source) SourceText(string package, string engine, GridLoadModel load, GridOrderingModel ordering)
+    {
+        var model = new GridAdapterModel(
+            $"{Type.ToDisplayString().Replace('.', '_')}.PragmaticGrid.g.cs",
+            package,
+            engine,
+            Type.ContainingNamespace.IsGlobalNamespace ? null : Type.ContainingNamespace.ToDisplayString(),
+            Type.Name,
+            Entity.Name,
+            EntityName,
+            Nested,
+            Fields.ToEquatableArray(),
+            Withheld.ToEquatableArray(),
+            load,
+            ordering);
+        return (model.Hint, new GridAdapterTemplate(model).ToSourceText().ToString());
+    }
+
+    /// <summary>The properties a compiled order key is built for: the sortable fields', then the entity's key, the ordering's fallback.</summary>
+    internal IEnumerable<string> OrderKeyColumns() => Fields.Where(f => f.Sortable).Select(f => f.Property).Append("PersistenceId").Distinct();
+
+    /// <summary>
+    ///     The operator names a <c>[GridField(AllowedOperators)]</c> restriction covers, with their aliases, as Pragmatic's template expands them:
+    ///     a restriction to "equals" also admits "=" and "==".
+    /// </summary>
+    private static List<string> Aliases(IReadOnlyList<string> allowed)
+    {
+        string[][] groups =
+        [
+            ["=", "==", "equals"], ["<>", "!=", "notequals"], ["contains"], ["notcontains"], ["startswith"], ["endswith"],
+            [">", "gt", "greaterthan"], [">=", "gte", "greaterthanorequal"], ["<", "lt", "lessthan"], ["<=", "lte", "lessthanorequal"],
+        ];
+        var tokens = new List<string>();
+        foreach (var name in allowed.Select(a => a.ToLowerInvariant()))
+        {
+            var group = groups.FirstOrDefault(g => Array.IndexOf(g, name) >= 0) ?? [name];
+            tokens.AddRange(group.Where(t => !tokens.Contains(t)));
+        }
+
+        return tokens;
     }
 
     /// <summary>A navigation or a complex type, which Pragmatic's adapter never exposes: a collection, or a class other than string.</summary>
