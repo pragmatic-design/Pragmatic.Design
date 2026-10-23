@@ -54,8 +54,8 @@ internal sealed partial class SqlSourceTemplate
         foreach (var bind in plan.Binds)
             AppendLine($"                {bind}");
         AppendLine("            },");
-        AppendLine($"            {plan.Reader},");
-        AppendLine($"            {plan.Load},");
+        AppendLine($"            {Reader(plan.Reader)},");
+        RenderLoader(plan.Load);
         // The origin: the tag of the plan's metrics, the comment on its statements. Before's rows are turned back once read; ShapeAsync names the members the client may ask for.
         var shape = plan.HasShapeColumns ? $", shapeColumns: new {Sql}.SqlShapeColumn[] {{ " + Join(plan.ShapeColumns.Select(c => $"new(\"{c.Name}\", {Sql}.SqlParamKind.{c.Kind})")) + " }" : "";
         AppendLine($"            {Literal(plan.Tag)}{(plan.Reversed ? ", reversed: true" : "")}{shape},");

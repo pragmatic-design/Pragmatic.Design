@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -35,19 +37,15 @@ internal sealed partial class PlanBuilder
     }
 
     /// <summary>The loader of a projected plan: each companion's rows built with the child DTO's constructor, grouped on the parent key read after the DTO's columns.</summary>
-    private string ProjectedLoader()
+    private LoaderModel ProjectedLoader()
     {
-        var text = new StringBuilder();
-        text.Append($"static async (global::System.Data.Common.DbDataReader r, SqlDialect d, global::System.Collections.Generic.List<{_elementType}> parents, global::System.Threading.CancellationToken ct) =>").AppendLine();
-        text.AppendLine("            {");
         var statement = 0;
-        ProjectedLoads(text, _projection!, _entity, "parents", "", ref statement);
-        text.Append("            }");
-        return text.ToString();
+        return new LoaderModel(_elementType, ProjectedLoads(_projection!, _entity, "parents", "", ref statement).ToEquatableArray());
     }
 
-    private void ProjectedLoads(StringBuilder text, SqlInterceptorGenerator.Projection projection, EntityModel parent, string parents, string prefix, ref int statement)
+    private static List<LoadStepModel> ProjectedLoads(SqlInterceptorGenerator.Projection projection, EntityModel parent, string parents, string prefix, ref int statement)
     {
+        var steps = new List<LoadStepModel>();
         var key = parent.Keys[0];
         var composite = projection.KeyProperties is not null; // a composite parent key: the groups on the tuple of its columns
         var keyType = composite ? "(" + string.Join(", ", parent.Keys.Select(k => k.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))) + ")" : key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -58,15 +56,10 @@ internal sealed partial class PlanBuilder
             var keyRead = composite ? "(" + string.Join(", ", parent.Keys.Select((k, i) => k.Read("r", (collection.ChildProjection.ColumnCount + i).ToString(), "d"))) + ")" : key.Read("r", collection.ChildProjection.ColumnCount.ToString(), "d");
             statement++; // this collection's companion, in BuildProjectedChildren's order; the next result set is its
             var child = collection.ChildProjection;
-            var nested = child.Collections.Count > 0;
-            text.AppendLine("                await r.NextResultAsync(ct).ConfigureAwait(false);");
-            text.AppendLine($"                var {name}_groups = new global::System.Collections.Generic.Dictionary<{keyType}, global::System.Collections.Generic.List<{collection.ChildDtoName}>>();");
-            if (nested)
-                text.AppendLine($"                var {name}_rows = new global::System.Collections.Generic.List<{collection.ChildDtoName}>();");
-            text.AppendLine($"                while (await r.ReadAsync(ct).ConfigureAwait(false)) {{ var row = {child.Construct}; var key = {keyRead}; if (!{name}_groups.TryGetValue(key, out var group)) {name}_groups[key] = group = new(); group.Add(row);{(nested ? $" {name}_rows.Add(row);" : "")} }}");
-            text.AppendLine($"                foreach (var parent in {parents}) parent.{collection.Property} = {name}_groups.TryGetValue({parentKey}, out var {name}_mine) ? {name}_mine : new();");
-            if (nested)
-                ProjectedLoads(text, child, collection.Child, $"{name}_rows", name + "_", ref statement);
+            var children = child.Collections.Count > 0 ? ProjectedLoads(child, collection.Child, $"{name}_rows", name + "_", ref statement) : [];
+            steps.Add(new ProjectedLoadModel(name, parents, collection.Property, children.ToEquatableArray(), keyType, collection.ChildDtoName, child.Construct, keyRead, parentKey));
         }
+
+        return steps;
     }
 }

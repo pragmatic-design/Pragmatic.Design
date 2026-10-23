@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -115,15 +116,14 @@ internal sealed partial class PlanBuilder
 
     private static string AliasOf(IncludeNode node, string parentAlias) => parentAlias == "t" ? "j_" + node.Property : parentAlias + "_" + node.Property;
 
-    private string IncludeReader()
+    /// <summary>The entity's reader, then each to-one include read from the columns after the entity's, in the select list's order.</summary>
+    private PlanReaderModel IncludeReader()
     {
-        var text = new StringBuilder();
-        text.Append("static (r, d) => { var e = EntityMaps.Read_").Append(SqlInterceptorGenerator.Safe(_entity)).Append("(r, d);");
         var ordinal = _entity.Columns.Count;
+        var includes = new List<IncludeAssignmentModel>();
         foreach (var node in _includes.Where(n => !n.IsCollection))
-            text.Append(" e.").Append(node.Property).Append(" = ").Append(Hydrate(node, ref ordinal)).Append(';');
-        text.Append(" return e; }");
-        return text.ToString();
+            includes.Add(new IncludeAssignmentModel(node.Property, Hydrate(node, ref ordinal)));
+        return new PlanReaderModel(PlanReaderKind.Include, SqlInterceptorGenerator.Safe(_entity), includes.ToEquatableArray());
     }
 
     /// <summary>The included object read from its columns (null when the join found nothing), its own to-one children nested in the initializer; the ordinals follow the select list's depth-first order.</summary>
@@ -139,13 +139,13 @@ internal sealed partial class PlanBuilder
         return $"(r.IsDBNull({keyOrdinal}) ? null : {target.Construct("r", "d", i => (start + i).ToString(), string.Join(", ", children))})";
     }
 
-    /// <summary>The reader lambda (or method group) that shapes one row of this statement: the entity, with its to-one includes nested; a projection; an aggregate's value; null for a scalar.</summary>
-    public string ReaderExpression()
-        => _returning is not null ? (_returning.Construct.Length == 0 ? $"EntityMaps.Read_{SqlInterceptorGenerator.Safe(_entity)}" : $"static (r, d) => {_returning.Construct}")
-            : IsScalar && !IsAggregate ? "null"
-            : IsAggregate ? $"static (r, d) => {_aggregateReader}"
-            : _projection is not null ? $"static (r, d) => {_projection.Construct}"
-            : !HasToOneIncludes ? $"EntityMaps.Read_{SqlInterceptorGenerator.Safe(_entity)}"
+    /// <summary>The reader that shapes one row of this statement: the entity, with its to-one includes nested; a projection; an aggregate's value; none for a scalar.</summary>
+    public PlanReaderModel Reader()
+        => _returning is not null ? (_returning.Construct.Length == 0 ? new(PlanReaderKind.Method, SqlInterceptorGenerator.Safe(_entity)) : new(PlanReaderKind.Lambda, _returning.Construct))
+            : IsScalar && !IsAggregate ? new(PlanReaderKind.None)
+            : IsAggregate ? new(PlanReaderKind.Lambda, _aggregateReader!)
+            : _projection is not null ? new(PlanReaderKind.Lambda, _projection.Construct)
+            : !HasToOneIncludes ? new(PlanReaderKind.Method, SqlInterceptorGenerator.Safe(_entity))
             : IncludeReader();
 
     // Collection includes: one companion statement per collection, in the same command, read from the result sets after the rows'
@@ -199,21 +199,17 @@ internal sealed partial class PlanBuilder
     }
 
     /// <summary>The loader: reads the companion statements' result sets in <see cref="BuildChildren" />'s order and hangs the children on their parents.</summary>
-    private string Loader()
+    private LoaderModel Loader()
     {
         if (_projection is { Collections.Count: > 0 })
             return ProjectedLoader();
-        var text = new StringBuilder();
-        text.Append($"static async (global::System.Data.Common.DbDataReader r, SqlDialect d, global::System.Collections.Generic.List<{_entity.FullName}> parents, global::System.Threading.CancellationToken ct) =>").AppendLine();
-        text.AppendLine("            {");
         var statement = 0;
-        Loads(text, _includes, _entity, "parents", "", ref statement);
-        text.Append("            }");
-        return text.ToString();
+        return new LoaderModel(_entity.FullName, Loads(_includes, _entity, "parents", "", ref statement).ToEquatableArray());
     }
 
-    private void Loads(StringBuilder text, List<IncludeNode> nodes, EntityModel parent, string parents, string prefix, ref int statement)
+    private List<LoadStepModel> Loads(List<IncludeNode> nodes, EntityModel parent, string parents, string prefix, ref int statement)
     {
+        var steps = new List<LoadStepModel>();
         var key = parent.KeyProperty;
         var keyType = parent.Keys.FirstOrDefault()?.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Guid";
         foreach (var node in nodes)
@@ -223,35 +219,22 @@ internal sealed partial class PlanBuilder
             {
                 var child = node.Target;
                 var companion = _children[statement++];
-                text.AppendLine("                await r.NextResultAsync(ct).ConfigureAwait(false);");
-                text.AppendLine($"                global::System.Func<global::System.Data.Common.DbDataReader, SqlDialect, {child.FullName}> {name}_read = {companion.ReaderExpression()};");
-                text.AppendLine($"                var {name}_rows = new global::System.Collections.Generic.List<{child.FullName}>();");
                 var hop = node.Hop.Collection!;
                 // A composite parent's children grouped on the tuple of their foreign keys, found by the tuple of the parent's key.
                 var groupType = hop.IsComposite ? "(" + string.Join(", ", parent.Keys.Select(k => k.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))) + ")" : keyType;
                 var childKey = hop.IsComposite ? "(" + string.Join(", ", hop.ForeignKeys.Select(fk => "child." + fk)) + ")" : "child." + hop.ForeignKey;
                 var parentKey = hop.IsComposite ? "(" + string.Join(", ", parent.Keys.Select(k => "parent." + k.Property)) + ")" : "parent." + key;
-                text.AppendLine($"                var {name}_groups = new global::System.Collections.Generic.Dictionary<{groupType}, global::System.Collections.Generic.List<{child.FullName}>>();");
-                if (companion._linkKeyReader is { } linkKey)
-                {
-                    // Through a join table: the parent's key is the row's last column, read beside the child.
-                    text.AppendLine($"                while (await r.ReadAsync(ct).ConfigureAwait(false)) {{ var child = {name}_read(r, d); {name}_rows.Add(child); var key = {linkKey}; if (!{name}_groups.TryGetValue(key, out var group)) {name}_groups[key] = group = new(); group.Add(child); }}");
-                }
-                else
-                {
-                    text.AppendLine($"                while (await r.ReadAsync(ct).ConfigureAwait(false)) {name}_rows.Add({name}_read(r, d));");
-                    text.AppendLine($"                foreach (var child in {name}_rows) {{ if (!{name}_groups.TryGetValue({childKey}, out var group)) {name}_groups[{childKey}] = group = new(); group.Add(child); }}");
-                }
-
-                text.AppendLine($"                foreach (var parent in {parents}) parent.{node.Property} = {name}_groups.TryGetValue({parentKey}, out var {name}_mine) ? {name}_mine : new();");
-                Loads(text, node.Children, child, $"{name}_rows", name + "_", ref statement);
+                var reader = companion.Reader();
+                var children = Loads(node.Children, child, $"{name}_rows", name + "_", ref statement);
+                steps.Add(new CollectionLoadModel(name, parents, node.Property, children.ToEquatableArray(), child.FullName, reader, groupType, childKey, parentKey, companion._linkKeyReader));
             }
             else if (node.LoadsAnything)
             {
-                text.AppendLine($"                var {name}_parents = new global::System.Collections.Generic.List<{node.Target.FullName}>({parents}.Count);");
-                text.AppendLine($"                foreach (var parent in {parents}) if (parent.{node.Property} is {{ }} {name}_one) {name}_parents.Add({name}_one);");
-                Loads(text, node.Children, node.Target, $"{name}_parents", name + "_", ref statement);
+                var children = Loads(node.Children, node.Target, $"{name}_parents", name + "_", ref statement);
+                steps.Add(new ToOneLoadModel(name, parents, node.Property, children.ToEquatableArray(), node.Target.FullName));
             }
         }
+
+        return steps;
     }
 }

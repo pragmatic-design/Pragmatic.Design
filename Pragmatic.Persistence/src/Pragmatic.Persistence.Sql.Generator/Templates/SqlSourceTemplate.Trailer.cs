@@ -95,17 +95,9 @@ internal sealed partial class SqlSourceTemplate
         AppendLine($"        public static {Migrations}SchemaVersion Schema({Dialect} dialect) => dialect switch");
         AppendLine("        {");
         foreach (var d in s.Dialects)
-            AppendLine($"            {Dialect}.{d.Dialect} => new([{Join(d.Tables.Select(Table))}], {Literal(s.Name)}, global::Pragmatic.Migrations.MigrationConstants.{d.Provider}, {LiteralOrNull(s.ConfigKey)}),");
+            AppendLine($"            {Dialect}.{d.Dialect} => new([{Join(d.Tables.Select(MigrationSchemaText.Table))}], {Literal(s.Name)}, global::Pragmatic.Migrations.MigrationConstants.{d.Provider}, {LiteralOrNull(s.ConfigKey)}),");
         AppendLine("            _ => throw new global::System.NotSupportedException($\"Pragmatic.Migrations migrates PostgreSQL, SQL Server and SQLite, not {dialect}.\"),");
         AppendLine("        };");
         AppendLine("    }");
-    }
-
-    private static string Table(TableSchemaModel table)
-    {
-        var columns = table.Columns.Select(c => $"new {Migrations}ColumnSchema({Literal(c.Name)}, {Literal(c.Type)}, {Bool(c.Nullable)}, {Bool(c.Key)}{(c.DefaultValue is null ? "" : ", " + Literal(c.DefaultValue))})");
-        var indexes = table.Indexes.Select(i => $"new {Migrations}IndexSchema({Literal(i.Name)}, [{Join(i.Columns.Select(Literal))}]{(i.Unique ? ", IsUnique: true" : "")}{(i.Filter is null ? "" : $", Filter: {Literal(i.Filter)}")})");
-        var foreignKeys = table.ForeignKeys.Select(f => $"new {Migrations}ForeignKeySchema({Literal(f.Name)}, {Literal(f.Column)}, {Literal(f.Table)}, {Literal(f.ReferencedColumn)}, {Migrations}ReferentialAction.NoAction)");
-        return $"new {Migrations}TableSchema({Literal(table.Name)}, null, [{Join(columns)}], [{Join(indexes)}], [{Join(foreignKeys)}])";
     }
 }

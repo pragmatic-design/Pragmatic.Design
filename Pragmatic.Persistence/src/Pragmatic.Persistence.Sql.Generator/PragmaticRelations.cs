@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -36,7 +36,7 @@ internal sealed class PragmaticRelations
     }
 
     // Per entity, in Pragmatic's order: foreign keys (0), references (1), collections (2), setters (3); the first member of a name wins.
-    private readonly Dictionary<INamedTypeSymbol, List<(int Order, string Name, string Text)>> _members = new(SymbolEqualityComparer.Default);
+    private readonly Dictionary<INamedTypeSymbol, List<(int Order, ShapeMemberModel Member)>> _members = new(SymbolEqualityComparer.Default);
 
     // The Sql engine's [ManyToMany] on a many-to-many collection; the documents engine keeps no join table (the relation is not stored there yet).
     private bool _sqlMapping = true;
@@ -50,18 +50,18 @@ internal sealed class PragmaticRelations
         return relations;
     }
 
-    /// <summary>The members of <paramref name="entity" /> not already declared, in order, appended to <paramref name="body" />.</summary>
-    public void AppendMembers(INamedTypeSymbol entity, HashSet<string> declared, StringBuilder body)
+    /// <summary>The members of <paramref name="entity" /> not already declared, in order, appended to <paramref name="shape" />.</summary>
+    public void AppendMembers(INamedTypeSymbol entity, HashSet<string> declared, List<ShapeMemberModel> shape)
     {
         if (!_members.TryGetValue(entity, out var members))
             return;
         var source = new HashSet<string>(entity.GetMembers().Select(m => m.Name));
-        foreach (var member in members.OrderBy(m => m.Order))
+        foreach (var (order, member) in members.OrderBy(m => m.Order))
         {
-            if (member.Order == 3 && source.Contains(member.Name.Substring("Set".Length)))
+            if (order == 3 && source.Contains(member.Name.Substring("Set".Length)))
                 continue; // a foreign key the source declares takes its setter with it (RelationGraphBuilder: per member)
             if (!Reserved.Contains(member.Name) && declared.Add(member.Name))
-                body.AppendLine(member.Text);
+                shape.Add(member);
         }
     }
 
@@ -76,7 +76,7 @@ internal sealed class PragmaticRelations
                 break;
             case "OneToMany":
             {
-                Member(owner, 2, relation.Name ?? PragmaticNames.Pluralize(target.Name), $"    public global::System.Collections.Generic.ICollection<{Full(target)}> {relation.Name ?? PragmaticNames.Pluralize(target.Name)} {{ get; set; }} = [];");
+                Member(owner, 2, new ShapeMemberModel(ShapeMemberKind.Collection, relation.Name ?? PragmaticNames.Pluralize(target.Name), Full(target)));
                 var counterpart = Counterpart(all, target, owner, "ManyToOne", relation.Inverse);
                 if (counterpart is null) // the child's side, inferred: named after the parent unless the parent says Inverse
                     Reference(target, owner, relation.Inverse ?? owner.Name, null, required: true, withKey: true);
@@ -98,11 +98,11 @@ internal sealed class PragmaticRelations
                 var name = relation.Name ?? PragmaticNames.Pluralize(target.Name);
                 var table = relation.JoinTable ?? (string.CompareOrdinal(owner.Name, target.Name) <= 0 ? owner.Name + target.Name : target.Name + owner.Name);
                 var (left, right) = owner.Name != target.Name ? (owner.Name + "Id", target.Name + "Id") : ((relation.Inverse ?? "Inverse") + "Id", name + "Id");
-                Member(owner, 2, name, Collection(target, name, table, left, right));
+                Member(owner, 2, Collection(target, name, table, left, right));
                 if (Counterpart(all, target, owner, "ManyToMany", null) is null)
                 {
                     var inverse = relation.Inverse ?? PragmaticNames.Pluralize(owner.Name);
-                    Member(target, 2, inverse, Collection(owner, inverse, table, right, left));
+                    Member(target, 2, Collection(owner, inverse, table, right, left));
                 }
 
                 break;
@@ -117,24 +117,25 @@ internal sealed class PragmaticRelations
         {
             var fk = foreignKey ?? name + "Id";
             var type = required ? "global::System.Guid" : "global::System.Guid?";
-            Member(owner, 0, fk, $"    public {type} {fk} {{ get; private set; }}");
-            Member(owner, 3, "Set" + fk, $"    internal void Set{fk}({type} value) => {fk} = value;");
+            Member(owner, 0, new ShapeMemberModel(ShapeMemberKind.ForeignKey, fk, type));
+            Member(owner, 3, new ShapeMemberModel(ShapeMemberKind.ForeignKeySetter, "Set" + fk, type));
         }
 
         if (!PragmaticShape.Has(target, "LookupAttribute")) // a [Lookup] target gets a resolver, not a navigation (LookupNavigationTemplate)
-            Member(owner, 1, name, required ? $"    public {Full(target)} {name} {{ get; set; }} = null!;" : $"    public {Full(target)}? {name} {{ get; set; }}");
+            Member(owner, 1, new ShapeMemberModel(ShapeMemberKind.Reference, name, Full(target), required));
     }
 
-    private string Collection(INamedTypeSymbol element, string name, string table, string thisKey, string otherKey)
-        => (_sqlMapping ? $"    [global::Pragmatic.Persistence.Sql.ManyToMany(\"{table}\", \"{thisKey}\", \"{otherKey}\")]\n" : "")
-           + $"    public global::System.Collections.Generic.ICollection<{Full(element)}> {name} {{ get; set; }} = [];";
+    private ShapeMemberModel Collection(INamedTypeSymbol element, string name, string table, string thisKey, string otherKey)
+        => _sqlMapping
+            ? new ShapeMemberModel(ShapeMemberKind.Collection, name, Full(element), JoinTable: table, ThisKey: thisKey, OtherKey: otherKey)
+            : new ShapeMemberModel(ShapeMemberKind.Collection, name, Full(element));
 
-    private void Member(INamedTypeSymbol entity, int order, string name, string text)
+    private void Member(INamedTypeSymbol entity, int order, ShapeMemberModel member)
     {
         if (!_members.TryGetValue(entity, out var members))
             _members[entity] = members = [];
-        if (!members.Any(m => m.Name == name))
-            members.Add((order, name, text));
+        if (!members.Any(m => m.Member.Name == member.Name))
+            members.Add((order, member));
     }
 
     /// <summary>The other side's declaration of the same relation (by its name when the inverse is named), if it declares one.</summary>
