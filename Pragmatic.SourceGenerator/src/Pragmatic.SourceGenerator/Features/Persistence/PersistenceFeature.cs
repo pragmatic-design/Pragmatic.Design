@@ -93,6 +93,13 @@ internal static class PersistenceFeature
         context.RegisterSourceOutputSafe(
             resolvedProvider.Combine(ownershipProvider), ReportBoundaryOwnership);
 
+        // Which engine persists each entity: the marker sits on its boundary, which a per-entity transform
+        // cannot see, so it is read from the compilation like the ownership above.
+        var engineChoiceProvider = compilationProvider
+            .Combine(features)
+            .Select(static (pair, ct) => PersistenceEngineChoiceReader.Read(pair.Left, pair.Right, ct));
+        context.RegisterSourceOutputSafe(engineChoiceProvider, ReportPersistenceEngineChoice);
+
         var allEntitiesProvider = resolvedProvider
             .Select(static (r, _) => r.Entities)
             .WithComparer(ImmutableArraySequenceComparer<EntityMetadataModel>.Instance)
@@ -385,6 +392,28 @@ internal static class PersistenceFeature
                 problem.EntityName,
                 problem.First ?? "",
                 problem.Second ?? ""));
+        }
+    }
+
+    /// <summary>Reports the engine choices <see cref="PersistenceEngineChoiceReader" /> found that cannot stand.</summary>
+    private static void ReportPersistenceEngineChoice(
+        SourceProductionContext context, EquatableArray<PersistenceEngineProblem> problems)
+    {
+        foreach (var problem in problems)
+        {
+            context.ReportDiagnostic(problem.Kind == PersistenceEngineProblemKind.NoEngineNamed
+                ? Diagnostic.Create(
+                    PersistenceEngineDiagnostics.EntityHasNoPersistenceEngine,
+                    problem.LocationInfo?.ToLocation(),
+                    problem.Subject,
+                    problem.Boundary,
+                    problem.Referenced)
+                : Diagnostic.Create(
+                    PersistenceEngineDiagnostics.PersistenceEngineNotReferenced,
+                    problem.LocationInfo?.ToLocation(),
+                    problem.Subject,
+                    problem.Engine,
+                    problem.Referenced));
         }
     }
 
