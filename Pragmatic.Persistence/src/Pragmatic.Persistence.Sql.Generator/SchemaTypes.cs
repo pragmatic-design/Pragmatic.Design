@@ -1,0 +1,164 @@
+using System.Linq;
+using Microsoft.CodeAnalysis;
+
+namespace Pragmatic.Persistence.Sql.Generator;
+
+/// <summary>
+///     A column's SQL type on the providers Pragmatic.Migrations has (PostgreSQL, SQL Server, SQLite), as the repository's
+///     <c>SqlTypeMapper</c> writes them, so the diff compares like with like: the store type (a converter's), an enum as an integer, an array
+///     column as PostgreSQL's native array and JSON text elsewhere, a vector as the vector type, a PostgreSQL cast (<c>jsonb</c>) as the type.
+///     A string with <c>[MaxLength(n)]</c> is <c>varchar(n)</c>/<c>nvarchar(n)</c>; one that is a key or indexed without it is
+///     <c>nvarchar(450)</c> on SQL Server, which indexes no <c>nvarchar(max)</c> (EF Core's convention).
+/// </summary>
+internal static class SchemaTypes
+{
+    public static string Of(ColumnModel column, SqlDialect dialect, int? maxLength, bool keyed)
+    {
+        if (dialect is SqlDialect.MySql or SqlDialect.Oracle)
+            return OfMySqlOrOracle(column, dialect == SqlDialect.MySql, maxLength, keyed);
+        if (column.VectorDimensions is { } dimensions)
+            return dialect == SqlDialect.Sqlite ? "TEXT" : $"vector({dimensions})";
+        if (dialect == SqlDialect.PostgreSql && column.Cast is { } cast)
+            return cast;
+        var store = column.Store;
+        if (EntityModel.ArrayReader(store, out _) is { } elements)
+        {
+            if (dialect != SqlDialect.PostgreSql)
+                return dialect == SqlDialect.SqlServer ? "nvarchar(max)" : "TEXT";
+            return elements switch { "Strings" => "text[]", "Int32s" => "integer[]", "Int64s" => "bigint[]", _ => "uuid[]" };
+        }
+
+        var type = EntityModel.Unwrap(store);
+        if (type.TypeKind == TypeKind.Enum)
+            return dialect switch { SqlDialect.PostgreSql => "integer", SqlDialect.SqlServer => "int", _ => "INTEGER" };
+        if (type.SpecialType == SpecialType.System_String)
+        {
+            if (maxLength is { } length)
+                return dialect switch { SqlDialect.PostgreSql => $"varchar({length})", SqlDialect.SqlServer => $"nvarchar({length})", _ => "TEXT" };
+            return dialect switch { SqlDialect.PostgreSql => "text", SqlDialect.SqlServer => keyed ? "nvarchar(450)" : "nvarchar(max)", _ => "TEXT" };
+        }
+
+        var name = type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_Byte } ? "byte[]" : type.ToDisplayString();
+        return (name, dialect) switch
+        {
+            ("int", SqlDialect.PostgreSql) => "integer",
+            ("int", SqlDialect.SqlServer) => "int",
+            ("long", SqlDialect.PostgreSql or SqlDialect.SqlServer) => "bigint",
+            ("short", SqlDialect.PostgreSql or SqlDialect.SqlServer) => "smallint",
+            ("byte", SqlDialect.PostgreSql) => "smallint",
+            ("byte", SqlDialect.SqlServer) => "tinyint",
+            ("int" or "long" or "short" or "byte", _) => "INTEGER",
+            ("bool", SqlDialect.PostgreSql) => "boolean",
+            ("bool", SqlDialect.SqlServer) => "bit",
+            ("bool", _) => "INTEGER",
+            ("decimal", SqlDialect.PostgreSql) => "numeric(18,2)",
+            ("decimal", SqlDialect.SqlServer) => "decimal(18,2)",
+            ("double", SqlDialect.PostgreSql) => "double precision",
+            ("double", SqlDialect.SqlServer) => "float",
+            ("float", SqlDialect.PostgreSql or SqlDialect.SqlServer) => "real",
+            ("decimal" or "double" or "float", _) => "REAL",
+            ("System.Guid", SqlDialect.PostgreSql) => "uuid",
+            ("System.Guid", SqlDialect.SqlServer) => "uniqueidentifier",
+            ("System.DateTime", SqlDialect.PostgreSql) => "timestamp",
+            ("System.DateTime", SqlDialect.SqlServer) => "datetime2",
+            ("System.DateTimeOffset", SqlDialect.PostgreSql) => "timestamptz",
+            ("System.DateTimeOffset", SqlDialect.SqlServer) => "datetimeoffset",
+            ("System.DateOnly", SqlDialect.PostgreSql or SqlDialect.SqlServer) => "date",
+            ("System.TimeOnly", SqlDialect.PostgreSql or SqlDialect.SqlServer) => "time",
+            ("System.TimeSpan", SqlDialect.PostgreSql) => "interval",
+            ("System.TimeSpan", SqlDialect.SqlServer) => "time",
+            ("byte[]", SqlDialect.PostgreSql) => "bytea",
+            ("byte[]", SqlDialect.SqlServer) => "varbinary(max)",
+            ("byte[]", _) => "BLOB",
+            _ => dialect switch { SqlDialect.PostgreSql => "text", SqlDialect.SqlServer => "nvarchar(max)", _ => "TEXT" },
+        };
+    }
+
+    /// <summary>
+    ///     MySQL's and Oracle's, in the spelling their introspectors read back (MySQL's COLUMN_TYPE, Oracle's rebuilt type): the
+    ///     types the engine's runtime binds there already (the workload's schema): a guid as text, a DateTimeOffset as the UTC
+    ///     instant, a bool as tinyint(1) / BOOLEAN, an array as JSON text. ASSUMPTION: a string without <c>[MaxLength]</c> is
+    ///     varchar(255) / VARCHAR2(450 CHAR) when a key or an index holds it (an index key has a byte limit on both) and
+    ///     longtext / VARCHAR2(4000 CHAR) otherwise — Pomelo's convention on MySQL; on Oracle a CLOB would not compare with =.
+    /// </summary>
+    private static string OfMySqlOrOracle(ColumnModel column, bool mySql, int? maxLength, bool keyed)
+    {
+        var store = column.Store;
+        if (EntityModel.ArrayReader(store, out _) is not null)
+            return mySql ? "json" : "VARCHAR2(4000)";
+        var type = EntityModel.Unwrap(store);
+        if (type.TypeKind == TypeKind.Enum)
+            return mySql ? "int" : "NUMBER(10)";
+        if (type.SpecialType == SpecialType.System_String)
+        {
+            if (maxLength is { } length)
+                return mySql ? $"varchar({length})" : $"VARCHAR2({length} CHAR)";
+            return mySql ? keyed ? "varchar(255)" : "longtext" : keyed ? "VARCHAR2(450 CHAR)" : "VARCHAR2(4000 CHAR)";
+        }
+
+        var name = type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_Byte } ? "byte[]" : type.ToDisplayString();
+        return (name, mySql) switch
+        {
+            ("int", true) => "int",
+            ("int", false) => "NUMBER(10)",
+            ("long", true) => "bigint",
+            ("long", false) => "NUMBER(19)",
+            ("short", true) => "smallint",
+            ("short", false) => "NUMBER(5)",
+            ("byte", true) => "tinyint unsigned",
+            ("byte", false) => "NUMBER(3)",
+            ("bool", true) => "tinyint(1)",
+            ("bool", false) => "BOOLEAN",
+            ("decimal", true) => "decimal(18,2)",
+            ("decimal", false) => "NUMBER(18,2)",
+            ("double", true) => "double",
+            ("double", false) => "BINARY_DOUBLE",
+            ("float", true) => "float",
+            ("float", false) => "BINARY_FLOAT",
+            ("System.Guid", true) => "char(36)",
+            ("System.Guid", false) => "VARCHAR2(36)",
+            ("System.DateTime" or "System.DateTimeOffset", true) => "datetime(6)",
+            ("System.DateTime" or "System.DateTimeOffset", false) => "TIMESTAMP(7)",
+            ("System.DateOnly", true) => "date",
+            ("System.DateOnly", false) => "DATE",
+            ("System.TimeOnly" or "System.TimeSpan", true) => "time(6)",
+            ("System.TimeOnly" or "System.TimeSpan", false) => "INTERVAL DAY(2) TO SECOND(7)",
+            ("byte[]", true) => "longblob",
+            ("byte[]", false) => "BLOB",
+            _ => mySql ? "longtext" : "VARCHAR2(4000 CHAR)",
+        };
+    }
+
+    /// <summary><c>[MaxLength(n)]</c> or <c>[StringLength(n)]</c> on the property, read by name; null without one.</summary>
+    public static int? MaxLength(IPropertySymbol? property)
+        => property?.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name is "MaxLengthAttribute" or "StringLengthAttribute") is { ConstructorArguments.Length: > 0 } mark && mark.ConstructorArguments[0].Value is int length ? length : null;
+
+    /// <summary><c>[Indexed(Unique = true)]</c> on the property.</summary>
+    public static bool IsUnique(IPropertySymbol? property)
+        => property?.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "IndexedAttribute") is { } mark && mark.NamedArguments.Any(n => n.Key == "Unique" && n.Value.Value is true);
+
+    /// <summary><c>[Indexed]</c> on the property (the schema's own declaration: a snapshot's indexes are what the database had).</summary>
+    public static bool IsMarkedIndexed(IPropertySymbol? property)
+        => property?.GetAttributes().Any(a => a.AttributeClass?.Name == "IndexedAttribute") is true;
+
+    /// <summary>The property behind a column: on the entity or a base type, or the owned type's member.</summary>
+    public static IPropertySymbol? PropertyOf(EntityModel entity, ColumnModel column)
+    {
+        if (column.IsDiscriminator)
+            return null;
+        IPropertySymbol? Find(ITypeSymbol? type, string name)
+        {
+            for (var current = type; current is not null; current = current.BaseType)
+            {
+                if (current.GetMembers(name).OfType<IPropertySymbol>().FirstOrDefault() is { } found)
+                    return found;
+            }
+
+            return null;
+        }
+
+        if (column.Owner is null)
+            return Find(entity.Type, column.Property) ?? (column.DerivedOf is not null ? entity.Derived?.Select(d => Find(d.Type, column.Property)).FirstOrDefault(p => p is not null) : null);
+        return Find(EntityModel.Unwrap(Find(entity.Type, column.Owner)?.Type ?? entity.Type), column.Member);
+    }
+}

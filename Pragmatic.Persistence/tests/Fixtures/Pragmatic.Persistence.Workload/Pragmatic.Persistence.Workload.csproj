@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The domain the Sql engine's suite runs on: a test fixture, not a package. -->
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Workload</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Test code, awaited by the tests and the samples only: CA2007 is off there too (Directory.Build.props, samples; the test projects). -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The [Entity] attributes and SqlDialect; the generator registers this assembly's entity maps and [MapFrom] projections at
+         module start, for the runtime path: the assembly that declares an entity is the one that describes it. -->
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

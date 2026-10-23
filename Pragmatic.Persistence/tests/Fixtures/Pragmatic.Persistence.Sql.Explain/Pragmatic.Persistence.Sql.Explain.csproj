@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The PragmaticExplain target's tool: EXPLAIN of every query the generator translated, against the database the build names
+       (-p:PragmaticExplain=<connection string>), its findings printed as MSBuild warnings at the call site. A tool, not an analyzer: an
+       analyzer runs inside the compiler and carries no database driver. Built with the tests, not packed. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Pragmatic.Persistence.Sql.Explain</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsAotCompatible>false</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- A console tool: no synchronization context to leave, so CA2007 has nothing to protect. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+</Project>

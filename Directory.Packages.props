@@ -67,6 +67,9 @@
          Universal-FOSS-exception-1.0: referenced by tests only, never by a packed project. An application
          that declares DatabaseProvider.MySql references it itself. -->
     <PackageVersion Include="MySql.EntityFrameworkCore" Version="10.0.9" />
+    <!-- Oracle's EF Core 10 provider: the Sql engine's suite compares its results with EF Core's on Oracle.
+         Referenced by tests only (owner's approval, 2026-10-23). -->
+    <PackageVersion Include="Oracle.EntityFrameworkCore" Version="10.23.26301" />
   </ItemGroup>
 
   <!-- ══════════════════════════════════════════════════════

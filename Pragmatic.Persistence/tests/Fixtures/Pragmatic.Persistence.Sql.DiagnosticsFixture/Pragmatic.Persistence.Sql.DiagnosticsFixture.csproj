@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A project that must NOT compile: every call site in it is outside the translated subset, one per diagnostic. The
+       diagnostics tests build it and read the compiler's output; no Roslyn testing package is needed. -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!-- Outside the solution (it must not compile), so outside the lock-file check too: the tests build it, and a locked restore of a
+         project with no committed lock file would fail before the compiler says anything. Its packages are its references' own. -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <RestoreLockedMode>false</RestoreLockedMode>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <!-- The generator's targets: PragmaticExplain (EXPLAIN of the translated queries against a database, run here by the diagnostics tests); the census target stays off (no PragmaticCensusFile). -->
+  <Import Project="..\..\..\src\Pragmatic.Persistence.Sql.Generator\build\Pragmatic.Persistence.Sql.Generator.targets" />
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="PragmaticCensus" />
+    <!-- A committed census that no longer matches the queries: PRAG3015 (the Census target is not imported here, so nothing rewrites it). -->
+    <AdditionalFiles Include="queries.census.json" />
+    <!-- The workload's schema snapshot: PRAG3011 comes from its indexes (CustomerId is indexed there, Total is not); a file that is not a snapshot: PRAG3016. -->
+    <AdditionalFiles Include="..\Pragmatic.Persistence.Workload\schema\workload.schema.json" />
+    <AdditionalFiles Include="broken.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

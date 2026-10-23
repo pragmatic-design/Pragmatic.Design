@@ -1,0 +1,57 @@
+<Project>
+
+  <!--
+    The query census as a committed file. A project that sets PragmaticCensusFile (a path, usually queries.census.json next to the
+    project) gets, after every build, the JSON the generator wrote into queries.census.g.cs (EmitCompilerGeneratedFiles must be on, so the
+    generated file is on disk) copied there, comment markers stripped; and the same file among its AdditionalFiles, so the generator
+    compares the committed census with the fresh one and reports PRAG3015 (a warning) while they differ. Committed, the file makes a
+    query change visible in a PR's diff; a CI with warnings as errors refuses a stale one.
+  -->
+
+  <ItemGroup Condition="'$(PragmaticCensusFile)' != '' AND Exists('$(PragmaticCensusFile)')">
+    <AdditionalFiles Include="$(PragmaticCensusFile)" />
+  </ItemGroup>
+
+  <!-- Where the build rewrites the file, a stale census stays a warning even under TreatWarningsAsErrors (the build must complete for the
+       target to rewrite it); PragmaticCensusStrict=true (CI) makes it the error it is meant to be there. -->
+  <PropertyGroup Condition="'$(PragmaticCensusFile)' != '' AND '$(PragmaticCensusStrict)' != 'true'">
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);PRAG3015</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <Target Name="PragmaticCensus" AfterTargets="CoreCompile" Condition="'$(PragmaticCensusFile)' != '' AND '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_PragmaticCensusGenerated>$(CompilerGeneratedFilesOutputPath)\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.SqlInterceptorGenerator\queries.census.g.cs</_PragmaticCensusGenerated>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_PragmaticCensusGenerated)')" Text="PragmaticCensus: the generated census is not on disk ($(_PragmaticCensusGenerated)); set EmitCompilerGeneratedFiles to true." />
+    <ReadLinesFromFile File="$(_PragmaticCensusGenerated)">
+      <Output TaskParameter="Lines" ItemName="_PragmaticCensusLines" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <!-- The first line is the generated-file header, then the #if / #endif around the JSON. -->
+      <_PragmaticCensusLines Remove="@(_PragmaticCensusLines)" Condition="$([System.String]::new('%(Identity)').StartsWith('// '))" />
+      <_PragmaticCensusLines Remove="#if PRAGMATIC_CENSUS_FILE" />
+      <_PragmaticCensusLines Remove="#endif" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(PragmaticCensusFile)" Lines="@(_PragmaticCensusLines)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <!--
+    EXPLAIN at build time. `dotnet build -p:PragmaticExplain=<connection string>` (or the same name as an environment variable, which
+    spares the escaping of its semicolons on the command line) runs the Explain tool over the queries this build translated
+    (queries.explain.g.cs: every call site with its SQL per dialect) against that database: a sequential scan with a filter (PRAG3017), a
+    sort no index serves (PRAG3018), a nested loop over many rows (PRAG3019), a statement that could not be explained (PRAG3020), each a
+    warning at the call site. PostgreSQL (EXPLAIN GENERIC_PLAN, 16+) and SQLite (EXPLAIN QUERY PLAN); the dialect is read from the
+    connection string, PragmaticExplainDialect names it instead. The target also runs alone (-t:PragmaticExplain) on a project built before.
+  -->
+  <Target Name="PragmaticExplain" AfterTargets="CoreCompile" Condition="'$(PragmaticExplain)' != '' AND '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_PragmaticExplainGenerated>$(CompilerGeneratedFilesOutputPath)\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.SqlInterceptorGenerator\queries.explain.g.cs</_PragmaticExplainGenerated>
+      <PragmaticExplainTool Condition="'$(PragmaticExplainTool)' == ''">$(MSBuildThisFileDirectory)..\..\..\tests\Fixtures\Pragmatic.Persistence.Sql.Explain\bin\$(Configuration)\net10.0\Pragmatic.Persistence.Sql.Explain.dll</PragmaticExplainTool>
+      <_PragmaticExplainDialect Condition="'$(PragmaticExplainDialect)' != ''">--dialect $(PragmaticExplainDialect)</_PragmaticExplainDialect>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_PragmaticExplainGenerated)')" Text="PragmaticExplain: the generated explain file is not on disk ($(_PragmaticExplainGenerated)); set EmitCompilerGeneratedFiles to true and build first." />
+    <Error Condition="!Exists('$(PragmaticExplainTool)')" Text="PragmaticExplain: the tool is not built ($(PragmaticExplainTool)); build tests/Fixtures/Pragmatic.Persistence.Sql.Explain, or set PragmaticExplainTool to its dll." />
+    <Exec Command="dotnet &quot;$(PragmaticExplainTool)&quot; --census &quot;$(_PragmaticExplainGenerated)&quot; --connection &quot;$(PragmaticExplain)&quot; $(_PragmaticExplainDialect)" IgnoreExitCode="true" />
+  </Target>
+
+</Project>

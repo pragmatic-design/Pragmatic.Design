@@ -1,0 +1,3 @@
+[
+{ "file": "Outside.cs", "member": "Outside.Stale", "kind": "ToListAsync", "chain": "a query that is not there any more", "sqlite": "", "postgresql": "", "sqlserver": "" }
+]

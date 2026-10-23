@@ -44,16 +44,28 @@
     <Project Path="src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
     <Project Path="src/Pragmatic.Persistence.Analyzers/Pragmatic.Persistence.Analyzers.csproj" />
     <Project Path="src/Pragmatic.Persistence.CodeFixers/Pragmatic.Persistence.CodeFixers.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql.Generator/Pragmatic.Persistence.Sql.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+  </Folder>
+  <!-- The Sql engine suite's fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,
+       and the diagnostics tests build it to read the errors. -->
+  <Folder Name="/tests/Fixtures/">
+    <Project Path="tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
+    <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
     <Project Path="samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
+    <Project Path="samples/Pragmatic.Persistence.Sql.Samples/Pragmatic.Persistence.Sql.Samples.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Pragmatic.Persistence.Benchmarks/Pragmatic.Persistence.Benchmarks.csproj" />

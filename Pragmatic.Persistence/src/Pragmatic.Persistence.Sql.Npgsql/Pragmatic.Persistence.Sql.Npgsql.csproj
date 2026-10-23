@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Sql.Npgsql</RootNamespace>
+    <Description>PostgreSQL for the Sql persistence engine: COPY as the bulk load behind InsertManyAsync.</Description>
+    <PackageTags>pragmatic;persistence;sql;postgresql;npgsql</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- What the runtime cannot do without the provider: PostgreSQL's COPY as the bulk load behind InsertManyAsync. -->
+    <PackageReference Include="Npgsql" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+  </ItemGroup>
+
+</Project>
