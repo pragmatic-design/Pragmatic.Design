@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <ExcludeSharedTesting>true</ExcludeSharedTesting>
-    <!-- RS1036/RS1026: the stand-in analyzer used by the suppressor tests is never shipped. -->
-    <NoWarn>$(NoWarn);CA2007;RS1036;RS1026</NoWarn>
+    <!-- RS1036/RS1026, and RS1038/RS1041 since Microsoft.CodeAnalysis.Analyzers 3.11: the stand-in analyzer used by the suppressor
+         tests is never shipped and never loaded by a compiler; the tests run it in process, beside Workspaces, on net10.0. -->
+    <NoWarn>$(NoWarn);CA2007;RS1036;RS1026;RS1038;RS1041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
   </ItemGroup>
 

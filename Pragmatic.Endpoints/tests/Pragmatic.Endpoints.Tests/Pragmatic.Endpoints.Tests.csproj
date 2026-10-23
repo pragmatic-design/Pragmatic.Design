@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- Generator testing -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <!-- ASP.NET Core testing (includes DI transitively) -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />

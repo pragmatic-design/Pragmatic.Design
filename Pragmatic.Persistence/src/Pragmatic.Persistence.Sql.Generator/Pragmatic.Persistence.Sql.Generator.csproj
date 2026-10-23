@@ -29,10 +29,4 @@
     <Compile Include="$(PragmaticRoot)shared\Contracts\SensitiveGridFieldNames.cs" Link="Shared\SensitiveGridFieldNames.cs" />
   </ItemGroup>
 
-  <!-- 4.14 here only, until the unified generator moves to it in step 4 (owner's decision, 2026-10-23). -->
-  <ItemGroup>
-    <PackageReference Update="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.14.0" />
-    <PackageReference Update="Microsoft.CodeAnalysis.Analyzers" VersionOverride="3.11.0" />
-  </ItemGroup>
-
 </Project>

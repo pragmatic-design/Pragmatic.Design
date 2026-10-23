@@ -178,7 +178,7 @@
     <Compile Include="$(SharedSourceGenPath)*.cs" LinkBase="Shared" />
   </ItemGroup>
 
-  <!-- Roslyn packages for generators (4.8.0 via Directory.Packages.props) -->
+  <!-- Roslyn packages for generators (4.14.0 via Directory.Packages.props) -->
   <ItemGroup Condition="'$(IsGenerator)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all">
@@ -202,7 +202,7 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
-  <!-- Roslyn packages for analyzers (4.8.0 via Directory.Packages.props) -->
+  <!-- Roslyn packages for analyzers (4.14.0 via Directory.Packages.props) -->
   <ItemGroup Condition="'$(IsAnalyzer)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all">
