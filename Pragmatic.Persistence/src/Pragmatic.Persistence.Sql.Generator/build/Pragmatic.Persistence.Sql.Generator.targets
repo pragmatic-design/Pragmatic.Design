@@ -27,10 +27,9 @@
       <Output TaskParameter="Lines" ItemName="_PragmaticCensusLines" />
     </ReadLinesFromFile>
     <ItemGroup>
-      <!-- The first line is the generated-file header, then the #if / #endif around the JSON. -->
-      <_PragmaticCensusLines Remove="@(_PragmaticCensusLines)" Condition="$([System.String]::new('%(Identity)').StartsWith('// '))" />
-      <_PragmaticCensusLines Remove="#if PRAGMATIC_CENSUS_FILE" />
-      <_PragmaticCensusLines Remove="#endif" />
+      <!-- The JSON is an array with one object per line, so each of its lines starts with [, { or ]; the rest is the generated-file
+           header and the #if / #endif around the JSON. -->
+      <_PragmaticCensusLines Remove="@(_PragmaticCensusLines)" Condition="!$([System.String]::new('%(Identity)').StartsWith('[')) AND !$([System.String]::new('%(Identity)').StartsWith('{')) AND !$([System.String]::new('%(Identity)').StartsWith(']'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(PragmaticCensusFile)" Lines="@(_PragmaticCensusLines)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>

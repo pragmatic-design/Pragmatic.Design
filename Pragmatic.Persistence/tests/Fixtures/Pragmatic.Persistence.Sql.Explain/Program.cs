@@ -97,10 +97,10 @@ namespace Pragmatic.Persistence.Sql.Explain
 
     internal static class ExplainFile
     {
-        /// <summary>The JSON between the generated file's #if / #endif, parsed; the header line and the directives are not JSON.</summary>
+        /// <summary>The JSON between the generated file's #if / #endif, parsed: an array with one object per line, so its lines are the ones starting with [, { or ].</summary>
         public static List<ExplainEntry> Read(string path)
         {
-            var lines = File.ReadAllLines(path).Where(l => !l.StartsWith("// ", StringComparison.Ordinal) && !l.StartsWith("#if", StringComparison.Ordinal) && !l.StartsWith("#endif", StringComparison.Ordinal));
+            var lines = File.ReadAllLines(path).Where(l => l.StartsWith('[') || l.StartsWith('{') || l.StartsWith(']'));
             using var document = JsonDocument.Parse(string.Join("\n", lines));
             var entries = new List<ExplainEntry>();
             foreach (var e in document.RootElement.EnumerateArray())
