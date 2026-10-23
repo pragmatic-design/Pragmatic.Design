@@ -181,6 +181,17 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     public string? BoundaryTypeFullName { get; init; }
 
     /// <summary>
+    ///     The engine the entity's boundary names with <c>[PersistenceEngine]</c> — <c>EfCore</c>, <c>Sql</c> or
+    ///     <c>Documents</c> — or null when it names none.
+    /// </summary>
+    /// <remarks>
+    ///     What the boundary declares, not the engine that ends up persisting the entity: without a marker that is
+    ///     the one engine the compilation references, and the module and its host may reference different ones. So
+    ///     the declaration is what crosses to the host, and the host decides.
+    /// </remarks>
+    public string? NamedPersistenceEngine { get; init; }
+
+    /// <summary>
     ///     The entities this entity's boundary reads with <c>[ReadAccess&lt;T&gt;]</c>. A relation to one
     ///     of them generates its navigation: the target is in this boundary's DbContext, read-only.
     /// </summary>
@@ -636,6 +647,7 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                UniqueIndexes.Equals(other.UniqueIndexes) &&
                BoundaryName == other.BoundaryName &&
                BoundaryTypeFullName == other.BoundaryTypeFullName &&
+               NamedPersistenceEngine == other.NamedPersistenceEngine &&
                SequenceEqual(ReadAccessTypes, other.ReadAccessTypes) &&
                IsSoftDelete == other.IsSoftDelete &&
                IsSoftDeleteCascade == other.IsSoftDeleteCascade &&

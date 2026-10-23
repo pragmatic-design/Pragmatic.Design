@@ -311,6 +311,7 @@ internal static partial class EntityMetadataReader
             UsesRelationAttributes = GetJsonBool(element, "usesRelationAttributes"),
             BoundaryName = GetJsonString(element, "boundaryName"),
             BoundaryTypeFullName = GetJsonString(element, "boundaryTypeFullName"),
+            NamedPersistenceEngine = GetJsonString(element, "persistenceEngine"),
             LogicKeys = ReadLogicKeys(element),
             UniqueIndexes = ReadUniqueIndexes(element),
             CustomTableName = GetJsonString(element, "customTableName"),

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Persistence.Models;
@@ -7,131 +6,91 @@ using Pragmatic.SourceGenerator.Features.Persistence.Models;
 namespace Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 
 /// <summary>
-///     Decides the persistence engine of every entity this compilation declares, and returns the choices that cannot
+///     Checks the persistence engine of every entity this compilation knows, and returns the choices that cannot
 ///     stand.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         An entity's engine is the one its boundary names with <c>[PersistenceEngine]</c>, the boundary found by
-///         <see cref="BoundaryOwnershipReader.BoundaryTypeOf" />; without a marker, the only engine the compilation
-///         references. An engine is referenced when its bridge is (<see cref="DetectedFeatures.HasPersistenceEFCore" />,
-///         <see cref="DetectedFeatures.HasPersistenceSql" />, <see cref="DetectedFeatures.HasPersistenceDocuments" />).
+///         An entity's engine is the one its boundary names with <c>[PersistenceEngine]</c>
+///         (<see cref="EntityMetadataModel.NamedPersistenceEngine" />); without a marker, the only engine the
+///         compilation references. An engine is referenced when its bridge is
+///         (<see cref="PersistenceEngineMarker.Referenced" />).
 ///     </para>
 ///     <para>
-///         Read from the compilation because the marker sits on the boundary and the boundary is not visible from a
-///         per-entity transform. A compilation that references no engine reports nothing: a module that leaves the
-///         engine to its host has nothing to check the marker against.
+///         ⚠️ Every entity, not only the ones declared here. A module that references one engine has nothing to
+///         choose between, so it reports nothing; the host that references two is the first compilation where the
+///         choice exists, and the entity reached it through the module's metadata. A compilation that references
+///         no engine reports nothing: a module that leaves the engine to its host has nothing to check the marker
+///         against.
 ///     </para>
 /// </remarks>
 internal static class PersistenceEngineChoiceReader
 {
-    private const string EntityAttributeName = "Pragmatic.Persistence.Entity.EntityAttribute";
-    private const string MarkerAttributeName = "Pragmatic.Persistence.Entity.PersistenceEngineAttribute";
-
-    // The numbers of Pragmatic.Persistence.Entity.PersistenceEngineKind, which is what the attribute carries.
-    private static readonly string[] EngineNames = ["EfCore", "Sql", "Documents"];
-
-    public static EquatableArray<PersistenceEngineProblem> Read(Compilation compilation, DetectedFeatures features, CancellationToken ct)
+    public static EquatableArray<PersistenceEngineProblem> Read(
+        ImmutableArray<EntityMetadataModel> entities, BoundaryOwnership ownership, DetectedFeatures features)
     {
-        var referenced = Referenced(features);
-        if (referenced.Count == 0)
+        var referenced = PersistenceEngineMarker.Referenced(features);
+        if (referenced.IsEmpty)
             return EquatableArray<PersistenceEngineProblem>.Empty;
 
-        var entityAttribute = compilation.GetTypeByMetadataName(EntityAttributeName);
-        var marker = compilation.GetTypeByMetadataName(MarkerAttributeName);
-        if (entityAttribute is null || marker is null)
-            return EquatableArray<PersistenceEngineProblem>.Empty;
-
-        var referencedText = string.Join(", ", referenced.Select(e => EngineNames[e]));
+        var referencedText = string.Join(", ", referenced);
         var problems = ImmutableArray.CreateBuilder<PersistenceEngineProblem>();
-        var reportedBoundaries = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        var reportedBoundaries = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var entity in EnumerateTypes(compilation.Assembly.GlobalNamespace, ct))
+        foreach (var entity in entities)
         {
-            if (!HasAttribute(entity, entityAttribute))
+            // A package nobody adopted reaches no DbContext and no schema, so no engine either.
+            if (entity.IsFromReference && string.IsNullOrEmpty(entity.BoundaryTypeFullName))
                 continue;
 
-            var boundary = BoundaryOwnershipReader.BoundaryTypeOf(entity);
-            var named = boundary is null ? null : NamedEngine(boundary, marker);
+            // Normalised: the per-symbol transforms write the display string, EntityBoundaryResolver the
+            // fully qualified name of the boundary it found, and one boundary must be reported once.
+            var boundary = string.IsNullOrEmpty(entity.BoundaryTypeFullName)
+                ? "(none)"
+                : StripGlobal(entity.BoundaryTypeFullName!);
 
-            if (named is { } engine)
+            if (entity.NamedPersistenceEngine is { } engine)
             {
                 // Once per boundary, where the fix is: every entity of that boundary has the same problem.
-                if (!referenced.Contains(engine) && reportedBoundaries.Add(boundary!))
+                if (!referenced.Contains(engine) && reportedBoundaries.Add(boundary))
                     problems.Add(new PersistenceEngineProblem(
                         PersistenceEngineProblemKind.EngineNotReferenced,
-                        boundary!.ToDisplayString(),
-                        boundary.ToDisplayString(),
-                        EngineName(engine),
+                        boundary,
+                        boundary,
+                        engine,
                         referencedText,
-                        LocationInfo.From(boundary.Locations.FirstOrDefault())));
+                        LocationOf(boundary, ownership)));
             }
-            else if (referenced.Count >= 2)
+            else if (referenced.Length >= 2)
             {
                 problems.Add(new PersistenceEngineProblem(
                     PersistenceEngineProblemKind.NoEngineNamed,
-                    entity.ToDisplayString(),
-                    boundary?.ToDisplayString() ?? "(none)",
+                    entity.FullTypeName,
+                    boundary,
                     null,
                     referencedText,
-                    LocationInfo.From(entity.Locations.FirstOrDefault())));
+                    entity.DeclarationLocation));
             }
         }
 
         return problems.ToImmutable();
     }
 
-    private static List<int> Referenced(DetectedFeatures features)
+    /// <summary>
+    ///     Where a boundary of this assembly is declared; null for one in a referenced assembly, which has no source
+    ///     here to point at.
+    /// </summary>
+    private static LocationInfo? LocationOf(string boundary, BoundaryOwnership ownership)
     {
-        var referenced = new List<int>(3);
-        if (features.HasPersistenceEFCore) referenced.Add(0);
-        if (features.HasPersistenceSql) referenced.Add(1);
-        if (features.HasPersistenceDocuments) referenced.Add(2);
-        return referenced;
-    }
-
-    private static int? NamedEngine(INamedTypeSymbol boundary, INamedTypeSymbol marker)
-    {
-        foreach (var attribute in boundary.GetAttributes())
+        foreach (var declared in ownership.Boundaries)
         {
-            if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, marker)
-                && attribute.ConstructorArguments.Length == 1
-                && attribute.ConstructorArguments[0].Value is int value)
-                return value;
+            if (StripGlobal(declared.FullTypeName) == boundary)
+                return declared.LocationInfo;
         }
 
         return null;
     }
 
-    private static string EngineName(int engine)
-        => engine >= 0 && engine < EngineNames.Length ? EngineNames[engine] : engine.ToString();
-
-    private static bool HasAttribute(INamedTypeSymbol type, INamedTypeSymbol attribute)
-    {
-        foreach (var candidate in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(candidate.AttributeClass, attribute))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static IEnumerable<INamedTypeSymbol> EnumerateTypes(INamespaceSymbol ns, CancellationToken ct)
-    {
-        foreach (var member in ns.GetMembers())
-        {
-            ct.ThrowIfCancellationRequested();
-            switch (member)
-            {
-                case INamespaceSymbol nested:
-                    foreach (var type in EnumerateTypes(nested, ct))
-                        yield return type;
-                    break;
-                case INamedTypeSymbol type:
-                    yield return type;
-                    break;
-            }
-        }
-    }
+    private static string StripGlobal(string name)
+        => name.StartsWith("global::", StringComparison.Ordinal) ? name.Substring(8) : name;
 }
