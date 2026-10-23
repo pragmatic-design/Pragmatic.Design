@@ -1154,6 +1154,9 @@ public partial class Invoice
 ### Rules
 
 - Each `.g.cs` file contains at most 1 `partial class` with at most 1 nested class.
+  - Declared exception: `_Infra.Sql.Interceptors.g.cs` (`Features/Persistence/Sql/`) holds the assembly's Sql plans, entity maps
+    and interceptors as `file` types. They are reached only through `[InterceptsLocation]` and the registrations in the same file,
+    so keeping them `file`-scoped is what stops application code from naming them. The Sql feature's per-type outputs follow the rule.
 - Nested classes referenced from the host (filters, repositories, invokers) must be `public`, not `internal`.
 - Invokers are nested: `PlaceOrder.Invoker`, not `PlaceOrderInvoker`.
 - Filters are nested: `Invoice.SoftDeleteFilter`, not `SoftDeleteFilter_Invoice`.

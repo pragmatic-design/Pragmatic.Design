@@ -1,7 +1,16 @@
 namespace Pragmatic.Persistence.Sql;
 
 /// <summary>The SQL the database speaks: quoting, paging, and what it stores the .NET types as.</summary>
-public enum SqlDialect
+/// <remarks>
+///     Linked into Pragmatic.SourceGenerator as source, where it is internal: a public copy there would make a project that references
+///     both the generator and this runtime (the generator's tests) fail with CS0433.
+/// </remarks>
+#if PRAGMATIC_SOURCE_GENERATOR
+internal
+#else
+public
+#endif
+    enum SqlDialect
 {
     Sqlite,
     PostgreSql,
@@ -22,7 +31,12 @@ public enum SqlDialect
 }
 
 /// <summary>What differs between dialects in the text of a query.</summary>
-public static class SqlDialects
+#if PRAGMATIC_SOURCE_GENERATOR
+internal
+#else
+public
+#endif
+    static class SqlDialects
 {
     /// <summary>Every SQL dialect, in the order the enum names them: what a per-dialect rendering is written for.</summary>
     public static readonly SqlDialect[] All = [SqlDialect.Sqlite, SqlDialect.PostgreSql, SqlDialect.SqlServer, SqlDialect.MySql, SqlDialect.Oracle];

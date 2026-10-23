@@ -244,6 +244,10 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         Features.Glossary.ArchitectureFeature.Register(context);
         Features.Glossary.AsyncApiFeature.Register(context);
         Features.Glossary.UseCaseCatalogFeature.Register(context);
+
+        // The Sql engine's translation of query chains. Standalone and guarded by its own symbol lookup (the engine's runtime referenced):
+        // its inputs are the call sites and the engine's own attributes, nothing the features above produce.
+        Features.Persistence.Sql.SqlFeature.Register(context);
     }
 
     private static IncrementalValueProvider<EquatableArray<Features.Composition.Models.MetadataEntry>> Combine(

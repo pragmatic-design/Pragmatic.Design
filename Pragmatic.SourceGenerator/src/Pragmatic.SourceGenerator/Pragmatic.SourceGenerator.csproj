@@ -37,6 +37,19 @@
     <Compile Include="..\..\..\shared\Contracts\SensitiveGridFieldNames.cs" Link="Shared\SensitiveGridFieldNames.cs" />
   </ItemGroup>
 
+  <!-- The Sql engine's dialect rules (quoting, paging) and its typed catalog's rendering are the runtime's, linked: the SQL the generator
+       emits and the SQL the runtime would build agree by construction. PRAGMATIC_SOURCE_GENERATOR makes the runtime's public ones
+       internal here (see SqlDialect.cs). -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);PRAGMATIC_SOURCE_GENERATOR</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlDialect.cs" Link="Shared\Sql\SqlDialect.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.cs" Link="Shared\Sql\SqlCatalog.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.Json.cs" Link="Shared\Sql\SqlCatalog.Json.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.FullText.cs" Link="Shared\Sql\SqlCatalog.FullText.cs" />
+  </ItemGroup>
+
   <!-- MetadataCategory is deliberately NOT linked in as source. Doing so puts a second public
        Pragmatic.Composition.Metadata.MetadataCategory in this assembly, and every project that
        references both this one and Pragmatic.Abstractions — the test projects today, tooling

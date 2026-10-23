@@ -14,8 +14,8 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <!-- The generator's targets: PragmaticExplain (EXPLAIN of the translated queries against a database, run here by the diagnostics tests); the census target stays off (no PragmaticCensusFile). -->
-  <Import Project="..\..\..\src\Pragmatic.Persistence.Sql.Generator\build\Pragmatic.Persistence.Sql.Generator.targets" />
+  <!-- The engine's targets: PragmaticExplain (EXPLAIN of the translated queries against a database, run here by the diagnostics tests); the census target stays off (no PragmaticCensusFile). -->
+  <Import Project="..\..\..\src\Pragmatic.Persistence.Sql\build\Pragmatic.Persistence.Sql.targets" />
 
   <ItemGroup>
     <CompilerVisibleProperty Include="PragmaticCensus" />
@@ -29,7 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
-    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

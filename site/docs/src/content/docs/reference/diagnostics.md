@@ -49,7 +49,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG2750-2799` | Entity lifecycle events | [`Features/Lifecycle/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Lifecycle/Diagnostics/LifecycleEventsDiagnostics.cs) |
 | `PRAG2800-2899` | Serialization / AOT | [`Pragmatic.Abstractions.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Abstractions/src/Pragmatic.Abstractions.Analyzers/DiagnosticDescriptors.cs) |
 | `PRAG2900-2999` | Privacy | [`PrivacyDiagnostics.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Privacy/Diagnostics/PrivacyDiagnostics.cs) |
-| `PRAG3000-3099` | Persistence: the Sql engine | [`Pragmatic.Persistence.Sql.Generator`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Generator/Diagnostics.cs) |
+| `PRAG3000-3099` | Persistence: the Sql engine | [`Pragmatic.SourceGenerator`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Persistence/Sql/Transforms/Diagnostics.cs) |
 | `PRAG3100-3199` | Persistence: the documents engine | being ported |
 | `PRAG9000-9099` | Source generator infrastructure | [`SafeSourceOutput.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/SafeSourceOutput.cs) |
 | `PRAGS001-PRAGS999` | Diagnostic suppressors | [`Suppressors/`](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Suppressors) |

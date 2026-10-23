@@ -47,7 +47,6 @@
     <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Sql.Generator/Pragmatic.Persistence.Sql.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
