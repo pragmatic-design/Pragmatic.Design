@@ -23,17 +23,19 @@ internal static class EntityCoreFeature
         IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> entitiesWithFeatures)
     {
         // Per-entity outputs: Relations, Create, Specs, Traits, Diagnostics
-        // Only regenerated when the specific entity changes
+        // Only regenerated when the specific entity changes. The entity's shape: every engine reads these
+        // members, so they are emitted whichever engine persists the entity.
         context.RegisterSourceOutputSafe(perEntityWithFeatures, static (ctx, pair) =>
         {
-            if (!pair.Features.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.HasEngine(pair.Entity, pair.Features))
                 return;
             GeneratePerEntityOutputs(ctx, pair.Entity, pair.Features);
         });
 
         // PRAG0705 — required navigation to a [SoftDelete] target (INNER JOIN hides the dependent).
         // Aggregate, not per-entity: deciding whether the target owns the dependent needs the target's
-        // own navigations, which only the full entity set carries.
+        // own navigations, which only the full entity set carries. EF Core's entities only: the INNER JOIN is
+        // EF Core's translation of a required navigation.
         context.RegisterSourceOutputSafe(entitiesWithFeatures, static (ctx, pair) =>
         {
             if (!pair.Features.HasPersistenceEFCore)
@@ -85,12 +87,12 @@ internal static class EntityCoreFeature
             .Select(static (pair, _) => BuildCascadeSourceMap(pair.Left, pair.Right));
 
         // Entity.Set{Property} for private setters (enriched with cascade event emission)
-        // Per-entity: only regenerate setters for the entity that changed
+        // Per-entity: only regenerate setters for the entity that changed. Shape: change tracking.
         var settersProvider = perEntityWithFeatures.Combine(cascadeSourcesProvider);
         context.RegisterSourceOutputSafe(settersProvider, static (ctx, pair) =>
         {
             var ((entity, detectedFeatures), cascadeSources) = pair;
-            if (!detectedFeatures.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.HasEngine(entity, detectedFeatures))
                 return;
             GenerateEntitySetters(ctx, entity, cascadeSources);
         });
@@ -105,9 +107,10 @@ internal static class EntityCoreFeature
             .Select(static (m, _) => m!)
             .Combine(features);
 
+        // Shape: the transitions are methods on the entity, whichever engine stores it.
         context.RegisterSourceOutputSafe(stateMachineProvider, static (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.AnyReferenced(pair.Right))
                 return;
             GenerateStateMachine(ctx, pair.Left);
         });
@@ -178,8 +181,10 @@ internal static class EntityCoreFeature
             return;
 
         // Diagnostics
-        ReportEntityDiagnostics(context, entity);
-        ReportUnstorableProtectedValues(context, entity, features);
+        var isEfCore = PersistenceEngineMarker.IsEfCore(entity, features);
+        ReportEntityDiagnostics(context, entity, isEfCore);
+        if (isEfCore)
+            ReportUnstorableProtectedValues(context, entity, features);
 
         // Entity.Relations (FK, collection, ref nav properties from [Relation.*])
         if (entity.HasGeneratedRelationProperties)
@@ -399,7 +404,8 @@ internal static class EntityCoreFeature
 
     private static void ReportEntityDiagnostics(
         SourceProductionContext context,
-        EntityMetadataModel entity)
+        EntityMetadataModel entity,
+        bool isEfCore)
     {
         // [Relation.*] rule violations (PRAG0612-PRAG0615), validated against symbols at transform time.
         foreach (var relationDiagnostic in entity.RelationDiagnostics)
@@ -524,7 +530,8 @@ internal static class EntityCoreFeature
         // And a sixth: a ProtectedValue. EntityConfigurationTemplate now gives it
         // ProtectedValueConverter, which is the mapping this warning would ask the author to supply —
         // and could not be supplied, since there is no seam on the generated context.
-        foreach (var prop in entity.Properties)
+        // EF Core's entities only: the mapping it asks for is an EF Core value converter.
+        foreach (var prop in isEfCore ? entity.Properties.AsImmutableArray() : ImmutableArray<PropertyMetadataModel>.Empty)
         {
             if (prop.IsEnum || prop.IsValueObject || primitiveCollections.Contains(prop.Name)
                 || navigations.Contains(prop.Name) || LocalizedStringType.Matches(prop.TypeName)

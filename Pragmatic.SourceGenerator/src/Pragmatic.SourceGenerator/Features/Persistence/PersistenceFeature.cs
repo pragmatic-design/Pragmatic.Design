@@ -107,12 +107,24 @@ internal static class PersistenceFeature
             .WithComparer(ImmutableArraySequenceComparer<EntityMetadataModel>.Instance)
             .WithTrackingName(TrackingNames.PersistenceAllEntities);
 
-        // Gate on HasPersistenceEFCore (aggregate — for features that need all entities)
-        var entitiesWithFeatures = allEntitiesProvider.Combine(features);
+        // Two sets, because two kinds of output. The entity's shape (key, stamps, owner, scopes, relations, change
+        // tracking, filter classes) is what every engine reads, so it is emitted for every entity an engine of
+        // this compilation persists. What only EF Core runs (repository, DbContext, configuration, projections
+        // over IQueryable) sees only the entities EF Core persists. With EF Core the only engine the two sets are
+        // the same, and so is the output.
+        var efEntitiesProvider = allEntitiesProvider
+            .Combine(features)
+            .Select(static (pair, _) => pair.Left
+                .Where(e => PersistenceEngineMarker.IsEfCore(e, pair.Right))
+                .ToImmutableArray())
+            .WithComparer(ImmutableArraySequenceComparer<EntityMetadataModel>.Instance);
+        var entitiesWithFeatures = efEntitiesProvider.Combine(features);
+        var shapeEntitiesWithFeatures = allEntitiesProvider.Combine(features);
 
         ReportInstantsWithoutUtcNormalisation(context, entitiesWithFeatures);
 
-        // Per-entity fan-out: change 1 entity → regenerate only that entity's artifacts
+        // Per-entity fan-out: change 1 entity → regenerate only that entity's artifacts. Every entity: each
+        // output below asks the entity's engine for itself.
         var perEntityProvider = allEntitiesProvider
             .SelectMany(static (entities, _) => entities);
         var perEntityWithFeatures = perEntityProvider.Combine(features);
@@ -133,20 +145,24 @@ internal static class PersistenceFeature
             RepositoryFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures, isDebugProvider, localTraitEntities);
 
         var (derivedQueryEndpoints, queryModels) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
-        ProjectionFeature.Register(context, allEntitiesProvider, features);
+        ProjectionFeature.Register(context, efEntitiesProvider, features);
         AdvancedFeature.Register(context, entitiesWithFeatures, features);
-        var persistedStores = DbContextFeature.Register(context, allEntitiesProvider, features, localTraitEntities);
+        var persistedStores = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);
 
         // TPH/TPT/TPC derived type setters — generates SetX() for properties declared on derived types.
         // The raw Compilation is required: derived types are discovered by resolving each entity SYMBOL
         // (GetTypeByMetadataName) and walking the namespace tree, so this stage re-runs on every edit.
-        var derivedSetterProvider = entitiesWithFeatures.Combine(compilationProvider);
+        // Shape: change tracking is read by every engine.
+        var derivedSetterProvider = shapeEntitiesWithFeatures.Combine(compilationProvider);
         context.RegisterSourceOutputSafe(derivedSetterProvider, static (ctx, pair) =>
         {
             var ((entities, detectedFeatures), compilation) = pair;
-            if (!detectedFeatures.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.AnyReferenced(detectedFeatures))
                 return;
-            GenerateDerivedTypeSetters(ctx, entities, compilation);
+            GenerateDerivedTypeSetters(
+                ctx,
+                entities.Where(e => PersistenceEngineMarker.HasEngine(e, detectedFeatures)).ToImmutableArray(),
+                compilation);
         });
 
         // The {Boundary}Permissions classes are PermissionsClassFeature's: they hold the declared permissions

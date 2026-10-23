@@ -74,8 +74,10 @@ internal static class LocalIdentityStoreFeature
         if (ownStore || !features.HasPersistenceEFCore || entities.IsDefaultOrEmpty)
             return ImmutableArray<EntityMetadataModel>.Empty;
 
+        // EF Core's entities only: the store reads and writes through the boundary's DbContext.
         return entities
-            .Where(static e => e.IsValid && !e.IsFromReference && !string.IsNullOrEmpty(e.LocalIdentityProperty))
+            .Where(e => e.IsValid && !e.IsFromReference && !string.IsNullOrEmpty(e.LocalIdentityProperty)
+                        && PersistenceEngineMarker.IsEfCore(e, features))
             .ToImmutableArray();
     }
 

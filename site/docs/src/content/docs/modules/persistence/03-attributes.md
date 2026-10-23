@@ -327,9 +327,15 @@ the host references: a module that references only EF Core and names nothing com
 `PRAG0743` in a host that also references Sql. There the diagnostic has no source location, since the entity is
 declared in another project; the message names the entity and its boundary.
 
+The generator splits its output by the entity's engine. The entity's shape (the key, the stamps, the owner and scopes,
+the relations, the change tracking, the filter classes a caller names, the specifications, the CRUD permissions) is
+emitted for every engine, since every engine reads the same members. The repository, the `DbContext`, the
+configuration, the projections over `IQueryable` and the queries are EF Core's, and only an entity EF Core persists
+gets them.
+
 ⚠️ EF Core is the only engine in the repository today. The Sql and documents engines (`PersistenceEngineKind.Sql`,
-`PersistenceEngineKind.Documents`) are being ported; until they are, the marker is checked but generation is
-EF Core's.
+`PersistenceEngineKind.Documents`) are being ported; until they are, an entity on either gets its shape and nothing
+that reads or writes it.
 
 ---
 
