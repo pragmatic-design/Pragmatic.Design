@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -12,7 +13,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static bool EmitSetOperator(StringBuilder source, CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics, bool grouped)
+    private static bool EmitSetOperator(List<InterceptorModel> source,CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics, bool grouped)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -49,13 +50,12 @@ public sealed partial class SqlInterceptorGenerator
             return false; // otherwise reported at the member's own call site
         }
 
-        source.AppendLine($"        {attribute}");
         var anonymous = ContainsAnonymous(call.Element); // a joined row or an anonymous projection: the interceptor is generic in the element
         var element = anonymous ? "TElement" : elementType;
         var typeParameters = anonymous ? "<TElement>" : "";
         if (name == "Distinct")
         {
-            source.AppendLine($"        internal static SqlQuery<{element}> Distinct_{index}{typeParameters}(this in SqlQuery<{element}> q) => q;");
+            source.Add(new(attribute, $"SqlQuery<{element}>", $"Distinct_{index}", typeParameters, [On(element)], "q"));
         }
         else
         {
@@ -67,10 +67,9 @@ public sealed partial class SqlInterceptorGenerator
                 return false;
             }
 
-            source.AppendLine($"        internal static SqlQuery<{element}> {name}_{index}{typeParameters}(this in SqlQuery<{element}> q, SqlQuery<{element}> other) => {(count == 0 ? "q" : $"q.WithSlots(other, {offset}, {count})")};");
+            source.Add(new(attribute, $"SqlQuery<{element}>", $"{name}_{index}", typeParameters, [On(element), $"SqlQuery<{element}> other"], count == 0 ? "q" : $"q.WithSlots(other, {offset}, {count})"));
         }
 
-        source.AppendLine();
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, probe.MembersSummary));
         return true;
     }

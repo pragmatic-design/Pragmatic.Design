@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -29,7 +30,7 @@ public sealed partial class SqlInterceptorGenerator
         return lastJoin > lastClose;
     }
 
-    private static bool EmitOnRow(StringBuilder source, CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
+    private static bool EmitOnRow(List<InterceptorModel> source,CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -64,35 +65,26 @@ public sealed partial class SqlInterceptorGenerator
             return false;
         }
 
-        source.AppendLine($"        {attribute}");
-        switch (name)
+        const string grouping = "global::System.Linq.IGrouping<TKey, TSource>";
+        InterceptorModel? interceptor = name switch
         {
-            case "Where":
-                source.AppendLine(takesArg
-                    ? $"        internal static SqlQuery<TElement> Where_{index}<TElement, TArg>(this in SqlQuery<TElement> q, Func<TElement, TArg, bool> predicate, TArg arg) => q.WithSlot({slot}, arg);"
-                    : $"        internal static SqlQuery<TElement> Where_{index}<TElement>(this in SqlQuery<TElement> q, Func<TElement, bool> predicate) => q;");
-                break;
-            case "OrderBy" or "OrderByDescending" or "ThenBy" or "ThenByDescending":
-                source.AppendLine($"        internal static SqlQuery<TElement> {name}_{index}<TElement, TKey>(this in SqlQuery<TElement> q, Func<TElement, TKey> key) => q;");
-                break;
-            case "GroupBy":
-                source.AppendLine($"        internal static SqlQuery<global::System.Linq.IGrouping<TKey, TSource>> GroupBy_{index}<TSource, TKey>(this in SqlQuery<TSource> q, Func<TSource, TKey> key) => q.As<global::System.Linq.IGrouping<TKey, TSource>>();");
-                break;
-            case "Select":
-                source.AppendLine($"        internal static SqlQuery<TResult> Select_{index}<TSource, TResult>(this in SqlQuery<TSource> q, Func<TSource, TResult> projection) => q.As<TResult>();");
-                break;
-            case "After" or "Before":
-                source.AppendLine($"        internal static SqlQuery<TElement> {name}_{index}<TElement, TCursor>(this in SqlQuery<TElement> q, TCursor cursor) => q.WithSlot({slot}, cursor);");
-                break;
-            case "SelectMany":
-                source.AppendLine($"        internal static SqlQuery<TResult> SelectMany_{index}<TSource, TCollection, TResult>(this in SqlQuery<TSource> q, Func<TSource, global::System.Collections.Generic.IEnumerable<TCollection>> collection, Func<TSource, TCollection, TResult> result) => q.As<TResult>();");
-                break;
-            default:
-                diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedMethod, where, name, "not an operator of a joined row"));
-                return false;
+            "Where" => takesArg
+                ? new(attribute, "SqlQuery<TElement>", $"Where_{index}", "<TElement, TArg>", [On("TElement"), "Func<TElement, TArg, bool> predicate", "TArg arg"], $"q.WithSlot({slot}, arg)")
+                : new(attribute, "SqlQuery<TElement>", $"Where_{index}", "<TElement>", [On("TElement"), "Func<TElement, bool> predicate"], "q"),
+            "OrderBy" or "OrderByDescending" or "ThenBy" or "ThenByDescending" => new(attribute, "SqlQuery<TElement>", $"{name}_{index}", "<TElement, TKey>", [On("TElement"), "Func<TElement, TKey> key"], "q"),
+            "GroupBy" => new(attribute, $"SqlQuery<{grouping}>", $"GroupBy_{index}", "<TSource, TKey>", [On("TSource"), "Func<TSource, TKey> key"], $"q.As<{grouping}>()"),
+            "Select" => new(attribute, "SqlQuery<TResult>", $"Select_{index}", "<TSource, TResult>", [On("TSource"), "Func<TSource, TResult> projection"], "q.As<TResult>()"),
+            "After" or "Before" => new(attribute, "SqlQuery<TElement>", $"{name}_{index}", "<TElement, TCursor>", [On("TElement"), "TCursor cursor"], $"q.WithSlot({slot}, cursor)"),
+            "SelectMany" => new(attribute, "SqlQuery<TResult>", $"SelectMany_{index}", "<TSource, TCollection, TResult>", [On("TSource"), "Func<TSource, global::System.Collections.Generic.IEnumerable<TCollection>> collection", "Func<TSource, TCollection, TResult> result"], "q.As<TResult>()"),
+            _ => null,
+        };
+        if (interceptor is null)
+        {
+            diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedMethod, where, name, "not an operator of a joined row"));
+            return false;
         }
 
-        source.AppendLine();
+        source.Add(interceptor);
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, arguments.Count > 0 ? arguments[0].ToString() : name));
         return true;
     }

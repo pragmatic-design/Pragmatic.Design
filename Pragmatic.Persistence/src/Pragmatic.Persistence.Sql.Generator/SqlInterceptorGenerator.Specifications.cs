@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -20,12 +22,11 @@ public sealed partial class SqlInterceptorGenerator
 {
     private const string CompiledSpecification = "Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification`1";
 
-    /// <summary>The compiled predicates (a class of fields, in <paramref name="predicates" />) and the interceptors of the calls that build them.</summary>
-    private static void EmitSpecifications(StringBuilder interceptors, StringBuilder predicates, Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
+    /// <summary>The compiled predicates (the fields of <c>CompiledPredicates</c>) and the interceptors of the calls that build them.</summary>
+    private static void EmitSpecifications(List<InterceptorModel> interceptors, List<CompiledPredicateModel> predicates, Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
     {
         if (compilation.GetTypeByMetadataName(CompiledSpecification) is null || compilation.GetTypeByMetadataName("Pragmatic.Specification.Spec`1") is not { } spec)
             return;
-        var fields = new StringBuilder();
         var count = 0;
         var engines = PragmaticEngines.Of(compilation);
         foreach (var tree in compilation.SyntaxTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal))
@@ -50,24 +51,13 @@ public sealed partial class SqlInterceptorGenerator
                 if (model.GetInterceptableLocation(invocation) is not { } location)
                     continue;
                 var type = entity.FullName;
-                fields.AppendLine($"        internal static readonly global::Pragmatic.Persistence.Sql.SqlCompiledPredicate P{count} = new({Literal(texts[0])}, {Literal(texts[1])}, {Literal(texts[2])}, {Literal(texts[3])}, {Literal(texts[4])}, new global::Pragmatic.Persistence.Sql.SqlParamKind[] {{ {string.Join(", ", kinds.Select(k => "global::Pragmatic.Persistence.Sql.SqlParamKind." + k))} }});");
-                interceptors.AppendLine($"        {location.GetInterceptsLocationAttributeSyntax()}");
-                interceptors.AppendLine($"        internal static global::Pragmatic.Specification.Specification<{type}> SpecWhere_{count}(Expression<Func<{type}, bool>> predicate)");
-                interceptors.AppendLine($"            => new global::Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification<{type}>(CompiledPredicates.P{count}, new object?[] {{ {string.Join(", ", values)} }}, predicate);");
-                interceptors.AppendLine();
+                predicates.Add(new CompiledPredicateModel($"P{count}", texts[0], texts[1], texts[2], texts[3], texts[4], kinds.ToEquatableArray()));
+                interceptors.Add(new(location.GetInterceptsLocationAttributeSyntax(), $"global::Pragmatic.Specification.Specification<{type}>", $"SpecWhere_{count}", "", [$"Expression<Func<{type}, bool>> predicate"],
+                    $"new global::Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification<{type}>(CompiledPredicates.P{count}, new object?[] {{ {string.Join(", ", values)} }}, predicate)", BodyOnNextLine: true));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, invocation.GetLocation(), $"Spec<{entityType.Name}>.Where", texts[0]));
                 count++;
             }
         }
-
-        if (count == 0)
-            return;
-        predicates.AppendLine("    /// <summary>The predicates of the specifications written in this compilation, compiled where they are written.</summary>");
-        predicates.AppendLine("    file static class CompiledPredicates");
-        predicates.AppendLine("    {");
-        predicates.Append(fields);
-        predicates.AppendLine("    }");
-        predicates.AppendLine();
     }
 
     /// <summary>

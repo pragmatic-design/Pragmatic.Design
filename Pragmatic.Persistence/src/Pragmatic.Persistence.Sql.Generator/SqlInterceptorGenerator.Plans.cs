@@ -7,13 +7,14 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
 /// <summary>The terminals: the whole chain becomes a plan (see <see cref="PlanBuilder" />), and the terminal call site an interceptor that runs it.</summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static bool EmitTerminal(StringBuilder source, List<PlanSectionModel> plans, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, Func<string, EntityModel?> tables, Compilation compilation, int index, string attribute, List<Diagnostic> diagnostics, List<CensusEntry> census)
+    private static bool EmitTerminal(List<InterceptorModel> source,List<PlanSectionModel> plans, CallSite call, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, Func<string, EntityModel?> tables, Compilation compilation, int index, string attribute, List<Diagnostic> diagnostics, List<CensusEntry> census)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -90,50 +91,48 @@ public sealed partial class SqlInterceptorGenerator
         var planType = builder.PlanType($"Plan_{index}");
         var origin = Origin(call);
         plans.Add(builder.ToPlan($"Plan_{index}", origin: origin, site: Site(call)));
-        source.AppendLine($"        // {origin}");
 
         var elementType = builder.ElementType;
         var typeParameters = builder.IsAnonymous ? "<TElement>" : "";
-        var receiverType = $"SqlQuery<{builder.ChainElement}>";
+        var receiver = On(builder.ChainElement);
         var (returnType, execute) = builder.Terminal;
-        source.AppendLine($"        {attribute}");
+        const string token = "global::System.Threading.CancellationToken ct = default";
+        InterceptorModel Terminal(string returns, string method, string generics, EquatableArray<string> parameters, string body, string constraint = "")
+            => new(attribute, returns, method, generics, parameters, body, constraint, Comment: origin);
         if (deferred is not null)
         {
             // Recorded on the batch with the chain's values; the item answers once the batch has run (the plan's reader over the batch's reader).
             var read = deferred switch { "ToListAsync" => "ReadListAsync", "FirstOrDefaultAsync" => "ReadFirstOrDefaultAsync", "CountAsync" => "ReadCountAsync", _ => "ReadAnyAsync" };
             const string valueTask = "global::System.Threading.Tasks.ValueTask<";
             var itemType = returnType.Substring(valueTask.Length, returnType.Length - valueTask.Length - 1);
-            source.AppendLine($"        internal static global::Pragmatic.Persistence.Sql.SqlBatchItem<{itemType}> {name}_{index}{typeParameters}(this in {receiverType} q, global::Pragmatic.Persistence.Sql.SqlBatch batch) => batch.Add({planType}.Instance, q, static (plan, query, r, d, ct) => plan.{read}(query, r, d, ct));");
+            source.Add(Terminal($"global::Pragmatic.Persistence.Sql.SqlBatchItem<{itemType}>", $"{name}_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.SqlBatch batch"], $"batch.Add({planType}.Instance, q, static (plan, query, r, d, ct) => plan.{read}(query, r, d, ct))"));
         }
         else if (name == "ToSql")
-            source.AppendLine($"        internal static string ToSql_{index}{typeParameters}(this in {receiverType} q) => {planType}.Instance.RunnableSql(q.Session);"); // the session's dialect as its database runs it, and its schema when it has one
+            source.Add(Terminal("string", $"ToSql_{index}", typeParameters, [receiver], $"{planType}.Instance.RunnableSql(q.Session)")); // the session's dialect as its database runs it, and its schema when it has one
         else if (name == "ToCommand")
-            source.AppendLine($"        internal static global::System.Data.Common.DbCommand ToCommand_{index}{typeParameters}(this in {receiverType} q) => {planType}.Instance.ToCommand(q);");
+            source.Add(Terminal("global::System.Data.Common.DbCommand", $"ToCommand_{index}", typeParameters, [receiver], $"{planType}.Instance.ToCommand(q)"));
         else if (builder.IsAggregate)
-            source.AppendLine($"        internal static {returnType} {name}_{index}(this in {receiverType} q, Func<{builder.ChainElement}, {call.Method.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}> value, global::System.Threading.CancellationToken ct = default) => {planType}.Instance.ScalarAsync(q.As<{elementType}>(), ct);");
+            source.Add(Terminal(returnType, $"{name}_{index}", "", [receiver, $"Func<{builder.ChainElement}, {call.Method.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}> value", token], $"{planType}.Instance.ScalarAsync(q.As<{elementType}>(), ct)"));
         else if (name == "ToDictionaryAsync")
         {
             var keyType = builder.IsAnonymous ? "TKey" : call.Method.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var dictionaryParameters = builder.IsAnonymous ? "<TElement, TKey>" : "";
-            var constraint = builder.IsAnonymous ? " where TKey : notnull" : "";
-            source.AppendLine($"        internal static global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.Dictionary<{keyType}, {elementType}>> ToDictionaryAsync_{index}{dictionaryParameters}(this in {receiverType} q, Func<{elementType}, {keyType}> key, global::System.Threading.CancellationToken ct = default){constraint} => {planType}.Instance.ToDictionaryAsync(q, key, ct);");
+            source.Add(Terminal($"global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.Dictionary<{keyType}, {elementType}>>", $"ToDictionaryAsync_{index}", builder.IsAnonymous ? "<TElement, TKey>" : "", [receiver, $"Func<{elementType}, {keyType}> key", token], $"{planType}.Instance.ToDictionaryAsync(q, key, ct)", builder.IsAnonymous ? " where TKey : notnull" : ""));
         }
         else if (name == "ShapeAsync")
-            source.AppendLine($"        internal static {returnType} ShapeAsync_{index}{typeParameters}(this in {receiverType} q, global::Pragmatic.Persistence.Sql.SqlShape shape, global::System.Threading.CancellationToken ct = default) => {planType}.Instance.ShapeAsync(q, shape, ct);");
+            source.Add(Terminal(returnType, $"ShapeAsync_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.SqlShape shape", token], $"{planType}.Instance.ShapeAsync(q, shape, ct)"));
         else if (name == "SyncAsync")
-            source.AppendLine($"        internal static {returnType} SyncAsync_{index}(this in {receiverType} q, global::System.Collections.Generic.IReadOnlyList<{builder.ChainElement}> rows, global::System.Threading.CancellationToken ct = default) => {planType}.Instance.SyncAsync(q, rows, ct);");
+            source.Add(Terminal(returnType, $"SyncAsync_{index}", "", [receiver, $"global::System.Collections.Generic.IReadOnlyList<{builder.ChainElement}> rows", token], $"{planType}.Instance.SyncAsync(q, rows, ct)"));
         else if (predicateTerminal || setTerminal || returning || insertSelect)
         {
             // The call's own parameters (the lambda, the argument of the two-parameter form, the token): the argument goes to the chain's last slot.
-            var parameters = string.Join(", ", call.Method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}{(p.HasExplicitDefaultValue ? " = default" : "")}"));
-            var receiver = TakesArg(call.Method) ? $"q.WithSlot({builder.Slots - 1}, arg)" : "q";
+            var parameters = call.Method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}{(p.HasExplicitDefaultValue ? " = default" : "")}");
+            var chain = TakesArg(call.Method) ? $"q.WithSlot({builder.Slots - 1}, arg)" : "q";
             if (returning)
-                receiver += $".As<{elementType}>()"; // the rows read back are the plan's element, the chain's rows the command's
-            source.AppendLine($"        internal static {returnType} {name}_{index}{typeParameters}(this in {receiverType} q, {parameters}) => {planType}.Instance.{execute}({receiver}, ct);");
+                chain += $".As<{elementType}>()"; // the rows read back are the plan's element, the chain's rows the command's
+            source.Add(Terminal(returnType, $"{name}_{index}", typeParameters, [receiver, .. parameters], $"{planType}.Instance.{execute}({chain}, ct)"));
         }
         else
-            source.AppendLine($"        internal static {returnType} {name}_{index}{typeParameters}(this in {receiverType} q, global::System.Threading.CancellationToken ct = default) => {planType}.Instance.{execute}(q, ct);");
-        source.AppendLine();
+            source.Add(Terminal(returnType, $"{name}_{index}", typeParameters, [receiver, token], $"{planType}.Instance.{execute}(q, ct)"));
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, builder.DeclaredSql(SqlDialect.Sqlite)));
         census.Add(CensusOf(call, name, builder));
         ReportQueryInLoop(call, diagnostics);

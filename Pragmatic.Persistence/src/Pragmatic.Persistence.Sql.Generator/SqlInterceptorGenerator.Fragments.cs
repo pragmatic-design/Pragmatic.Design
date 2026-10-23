@@ -3,6 +3,8 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -14,7 +16,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 public sealed partial class SqlInterceptorGenerator
 {
     /// <summary>The call of a declared chain: validated by replaying the chain up to it; the interceptor stores one slot per argument.</summary>
-    private static bool EmitFragmentCall(StringBuilder source, CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
+    private static bool EmitFragmentCall(List<InterceptorModel> source,CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
     {
         var where = call.Invocation.GetLocation();
         var method = call.Method;
@@ -45,13 +47,9 @@ public sealed partial class SqlInterceptorGenerator
             return false;
         }
 
-        var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}"));
-        var chain = new StringBuilder(method.Parameters[0].Name);
-        for (var j = 1; j < method.Parameters.Length; j++)
-            chain.Append($".WithSlot({offset + j - 1}, {method.Parameters[j].Name})");
-        source.AppendLine($"        {attribute}");
-        source.AppendLine($"        internal static {method.ReturnType.ToDisplayString(Annotated)} {method.Name}_{index}({parameters}) => {chain};");
-        source.AppendLine();
+        // The chain, each argument after it stored in the next slot.
+        var chain = method.Parameters[0].Name + string.Concat(method.Parameters.Skip(1).Select((p, j) => $".WithSlot({offset + j}, {p.Name})"));
+        source.Add(new(attribute, method.ReturnType.ToDisplayString(Annotated), $"{method.Name}_{index}", "", ParametersOf(method).ToEquatableArray(), chain));
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, method.Name, string.Join(" ", body.Select(s => s.Name))));
         return true;
     }

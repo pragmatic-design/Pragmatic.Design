@@ -186,10 +186,8 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
         }
 
         // Interceptors and plans first: translating them discovers the entities of referenced assemblies (the workload's) and their navigations' targets.
-        var interceptors = new StringBuilder();
+        var interceptors = new List<InterceptorModel>();
         var plans = new List<PlanSectionModel>(); // the terminals', then the [Query] definitions', then the hierarchy walks'
-        interceptors.AppendLine("    file static class Interceptors");
-        interceptors.AppendLine("    {");
         var index = 0;
         foreach (var call in calls.Where(c => c is not null).Select(c => c!).OrderBy(c => c.Invocation.SyntaxTree.FilePath, StringComparer.Ordinal).ThenBy(c => c.Invocation.SpanStart))
         {
@@ -222,9 +220,8 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
                 index++;
         }
 
-        var compiledPredicates = new StringBuilder();
+        var compiledPredicates = new List<CompiledPredicateModel>();
         EmitSpecifications(interceptors, compiledPredicates, compilation, Lookup, diagnostics); // Pragmatic's specifications, compiled where they are written
-        interceptors.AppendLine("    }");
 
         var declared = new StringBuilder();
         var usings = new HashSet<string>(StringComparer.Ordinal);
@@ -284,7 +281,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
 
             spc.ReportDiagnostic(census && Diagnostics.IsCensus(diagnostic) ? Diagnostics.AsCensus(diagnostic) : diagnostic);
         }
-        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToString(), interceptors.ToString(), hierarchies.ToString()).RenderOutput());
+        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToEquatableArray(), interceptors.ToEquatableArray(), hierarchies.ToString()).RenderOutput());
         if (declared.Length > 0)
             spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToString()).RenderOutput());
     }

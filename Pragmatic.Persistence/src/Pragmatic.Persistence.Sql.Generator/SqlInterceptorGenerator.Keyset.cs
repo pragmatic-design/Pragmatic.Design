@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -69,7 +70,7 @@ public sealed partial class SqlInterceptorGenerator
         return null;
     }
 
-    private static bool EmitCursor(StringBuilder source, CallSite call, string name, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics, bool grouped)
+    private static bool EmitCursor(List<InterceptorModel> source,CallSite call, string name, EntityModel entity, Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics, bool grouped)
     {
         var where = call.Invocation.GetLocation();
         var elementType = call.Element.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -108,9 +109,7 @@ public sealed partial class SqlInterceptorGenerator
             return false;
         }
 
-        source.AppendLine($"        {attribute}");
-        source.AppendLine($"        internal static SqlQuery<{elementType}> {name}_{index}(this in SqlQuery<{elementType}> q, {cursorType.ToDisplayString(Annotated)} cursor) => q.WithSlot({slot}, cursor);");
-        source.AppendLine();
+        source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), $"{cursorType.ToDisplayString(Annotated)} cursor"], $"q.WithSlot({slot}, cursor)"));
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, string.Join(", ", keys.Select(k => k.Sql + (k.Descending ? " DESC" : "")))));
         return true;
     }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -12,7 +13,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static bool EmitJoin(StringBuilder source, CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
+    private static bool EmitJoin(List<InterceptorModel> source,CallSite call, EntityModel entity, System.Func<INamedTypeSymbol, EntityModel?> entities, int index, string attribute, List<Diagnostic> diagnostics)
     {
         var name = call.Name;
         var where = call.Invocation.GetLocation();
@@ -47,9 +48,7 @@ public sealed partial class SqlInterceptorGenerator
 
         var receiver = count == 0 ? "q" : $"q.WithSlots(inner, {offset}, {count})";
         var selector = name == "GroupJoin" ? "Func<TSource, global::System.Collections.Generic.IEnumerable<TInner>, TResult>" : "Func<TSource, TInner, TResult>";
-        source.AppendLine($"        {attribute}");
-        source.AppendLine($"        internal static SqlQuery<TResult> {name}_{index}<TSource, TInner, TKey, TResult>(this in SqlQuery<TSource> q, SqlQuery<TInner> inner, Func<TSource, TKey> outerKey, Func<TInner, TKey> innerKey, {selector} result) => {receiver}.As<TResult>();");
-        source.AppendLine();
+        source.Add(new(attribute, "SqlQuery<TResult>", $"{name}_{index}", "<TSource, TInner, TKey, TResult>", [On("TSource"), "SqlQuery<TInner> inner", "Func<TSource, TKey> outerKey", "Func<TInner, TKey> innerKey", $"{selector} result"], $"{receiver}.As<TResult>()"));
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, probe.JoinsSummary));
         return true;
     }
