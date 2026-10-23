@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -65,20 +66,14 @@ internal sealed partial class EntityModel
         return true;
     }
 
-    /// <summary>The <c>new SqlStamps&lt;T&gt;(…)</c> the root writer carries; null when the entity stamps nothing.</summary>
-    public string? StampsText()
+    /// <summary>The columns the root writer stamps; null when the entity stamps nothing.</summary>
+    public StampsModel? Stamps()
     {
         if (_isDeleted is null && _createdAt is null && _createdBy is null && _updatedAt is null && _updatedBy is null)
             return null;
-        string Set(ColumnModel? column, string value) => column is null ? "" : $"e.{column.Property} = {value}; ";
-        string Clock(ColumnModel column) => Unwrap(column.Type).SpecialType == SpecialType.System_DateTime ? "now.UtcDateTime" : "now";
-        string Setter(ColumnModel? at, ColumnModel? by)
-            => at is null && by is null ? "null" : $"static (e, now, user) => {{ {Set(at, at is null ? "" : Clock(at))}{Set(by, "user")}}}";
-        var deleted = _isDeleted is null
-            ? "null"
-            : $"static (e, deleted, now, user) => {{ {Set(_isDeleted, "deleted")}{Set(_deletedAt, _deletedAt is null ? "" : $"deleted ? {Clock(_deletedAt)} : null")}{Set(_deletedBy, "deleted ? user : null")}}}";
-        string Names(params ColumnModel?[] columns) => "new string[] { " + string.Join(", ", columns.Where(c => c is not null).Select(c => $"\"{c!.Column}\"")) + " }";
-        return $"new global::Pragmatic.Persistence.Sql.SqlStamps<{FullName}>({Setter(_createdAt, _createdBy)}, {Setter(_updatedAt, _updatedBy)}, {deleted}, {Names(_createdAt, _createdBy)}, {Names(_updatedAt, _updatedBy)}, {Names(_isDeleted, _deletedAt, _deletedBy)})";
+        static StampColumnModel? Of(ColumnModel? column)
+            => column is null ? null : new StampColumnModel(column.Property, column.Column, Unwrap(column.Type).SpecialType == SpecialType.System_DateTime);
+        return new StampsModel(FullName, Of(_createdAt), Of(_createdBy), Of(_updatedAt), Of(_updatedBy), Of(_isDeleted), Of(_deletedAt), Of(_deletedBy));
     }
 
     [System.Flags]

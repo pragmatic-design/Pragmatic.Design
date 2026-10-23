@@ -281,10 +281,8 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
             spc.AddSource(pragmaticSchema.Hint, pragmaticSchema.Text);
 
         var models = entities.Values.Where(e => e is not null).Select(e => e!).OrderBy(e => e.FullName, StringComparer.Ordinal).ToList();
-        var readers = new StringBuilder();
-        EmitReaders(readers, models, projections, functions, compilation, Lookup);
-        var scopeRules = new StringBuilder();
-        EmitScopeRules(scopeRules, models, compilation);
+        var maps = ReadMaps(models, projections, functions, compilation, Lookup);
+        var scopeRules = ReadScopeRules(models, compilation);
         EmitFunctionBodies(declared, functions);
         EmitPlanRegistry(plans);
         EmitCensus(spc, censusEntries, committedCensus, diagnostics);
@@ -302,7 +300,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
 
             spc.ReportDiagnostic(census && Diagnostics.IsCensus(diagnostic) ? Diagnostics.AsCensus(diagnostic) : diagnostic);
         }
-        spc.AddSource(new SqlSourceTemplate(readers.ToString(), scopeRules.ToString(), plans.ToString(), compiledPredicates.ToString(), interceptors.ToString(), hierarchies.ToString()).RenderOutput());
+        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToString(), compiledPredicates.ToString(), interceptors.ToString(), hierarchies.ToString()).RenderOutput());
         if (declared.Length > 0)
             spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToString()).RenderOutput());
     }

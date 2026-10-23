@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -59,17 +61,15 @@ public sealed partial class SqlInterceptorGenerator
         }
     }
 
-    /// <summary>The registration lines (in the module initializer): the method, from a delegate (no reflection by name), and its renderer.</summary>
-    private static void EmitFunctionRegistrations(StringBuilder source, IEnumerable<AppFunction> functions)
-    {
-        foreach (var function in functions.Where(f => !f.IsBroken))
-        {
-            var method = function.Method;
-            var parameterTypes = method.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToList();
-            var delegateType = $"global::System.Func<{string.Join(", ", parameterTypes.Append(method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))}>";
-            source.AppendLine($"            global::Pragmatic.Persistence.Sql.SqlFunctions.Register((({delegateType}){method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{method.Name}).Method, {function.RuntimeRenderer()}, isPredicate: {(function.IsPredicate ? "true" : "false")});");
-        }
-    }
+    /// <summary>The registrations (in the module initializer): the method, from a delegate (no reflection by name), and its renderer.</summary>
+    private static IEnumerable<FunctionRegistrationModel> FunctionRegistrations(IEnumerable<AppFunction> functions)
+        => functions.Where(f => !f.IsBroken).Select(f => new FunctionRegistrationModel(
+            f.Method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            f.Method.Name,
+            f.Method.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray(),
+            f.Method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            f.RuntimeArms().ToEquatableArray(),
+            f.IsPredicate));
 
     private static string AccessModifier(Microsoft.CodeAnalysis.Accessibility accessibility) => accessibility switch
     {

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -14,31 +15,16 @@ public sealed partial class SqlInterceptorGenerator
 {
     private const string CompiledScopeRules = "Pragmatic.Persistence.Sql.Pragmatic.CompiledScopeRules";
 
-    private static void EmitScopeRules(StringBuilder source, List<EntityModel> entities, Compilation compilation)
+    /// <summary>The rules to register; none without the bridge.</summary>
+    private static EquatableArray<ScopeRuleModel> ReadScopeRules(List<EntityModel> entities, Compilation compilation)
     {
         if (compilation.GetTypeByMetadataName(CompiledScopeRules) is null)
-            return;
-        var registrations = new List<string>();
-        foreach (var entity in entities.Where(e => e.IsPragmatic && SymbolEqualityComparer.Default.Equals(e.Type.ContainingAssembly, compilation.Assembly)))
-        {
-            var type = entity.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            foreach (var rule in PragmaticScopeRules.Of(compilation, entity.Type))
-            {
-                var readable = entity.ComputedScopes.Any(c => c.Rule == rule.ToDisplayString()) ? "true" : "false";
-                registrations.Add($"global::{CompiledScopeRules}.Register(typeof({rule.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), static rule => {{ var matches = ((global::Pragmatic.Persistence.Scopes.DataScopeRule<{type}>)rule).ToExpression().Compile(preferInterpretation: true); return row => matches(({type})row); }}, readable: {readable});");
-            }
-        }
-
-        if (registrations.Count == 0)
-            return;
-        source.AppendLine("    file static class ScopeRuleRegistrations");
-        source.AppendLine("    {");
-        source.AppendLine("        [global::System.Runtime.CompilerServices.ModuleInitializer]");
-        source.AppendLine("        internal static void Register()");
-        source.AppendLine("        {");
-        foreach (var registration in registrations)
-            source.AppendLine("            " + registration);
-        source.AppendLine("        }");
-        source.AppendLine("    }");
+            return EquatableArray<ScopeRuleModel>.Empty;
+        return entities.Where(e => e.IsPragmatic && SymbolEqualityComparer.Default.Equals(e.Type.ContainingAssembly, compilation.Assembly))
+            .SelectMany(entity => PragmaticScopeRules.Of(compilation, entity.Type).Select(rule => new ScopeRuleModel(
+                rule.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                entity.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                entity.ComputedScopes.Any(c => c.Rule == rule.ToDisplayString()))))
+            .ToEquatableArray();
     }
 }

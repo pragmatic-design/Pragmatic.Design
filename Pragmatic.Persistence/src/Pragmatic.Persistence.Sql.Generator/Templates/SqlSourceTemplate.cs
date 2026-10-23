@@ -1,3 +1,4 @@
+using Pragmatic.Persistence.Sql.Generator.Models;
 using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator.Templates;
@@ -7,7 +8,7 @@ namespace Pragmatic.Persistence.Sql.Generator.Templates;
 ///     a row and the compiled predicates live in one namespace as file-local types, so that only the interceptors reach them; the hierarchy
 ///     walks, the views and the schemas follow, in the entities' namespaces.
 /// </summary>
-internal sealed class SqlSourceTemplate(string readers, string scopeRules, string plans, string predicates, string interceptors, string trailer) : CSharpTemplate
+internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableArray<ScopeRuleModel> scopeRules, string plans, string predicates, string interceptors, string trailer) : CSharpTemplate
 {
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
@@ -33,8 +34,8 @@ internal sealed class SqlSourceTemplate(string readers, string scopeRules, strin
         AppendLine("    using global::System.Linq.Expressions;");
         AppendLine("    using global::Pragmatic.Persistence.Sql;");
         AppendLine();
-        Text(readers);
-        Text(scopeRules);
+        RenderMaps(maps);
+        RenderScopeRules(scopeRules);
         Text(plans);
         Text(predicates);
         Text(interceptors);
