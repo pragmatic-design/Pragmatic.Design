@@ -15,8 +15,11 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    /// <summary>The plans into <paramref name="plans" /> (inside the generated namespace) and the extension classes into <paramref name="extensions" /> (in the entity's namespace, appended after it).</summary>
-    private static void EmitHierarchies(List<PlanSectionModel> plans, StringBuilder extensions, IEnumerable<EntityModel> entities, List<Diagnostic> diagnostics)
+    /// <summary>The namespace a type's generated companions go in; null for the global one.</summary>
+    private static string? NamespaceOf(INamedTypeSymbol type) => type.ContainingNamespace.IsGlobalNamespace ? null : type.ContainingNamespace.ToDisplayString();
+
+    /// <summary>The plans into <paramref name="plans" /> (inside the generated namespace) and the extension classes into <paramref name="extensions" /> (in the entity's namespace, after it).</summary>
+    private static void EmitHierarchies(List<PlanSectionModel> plans, List<TrailerSectionModel> extensions, IEnumerable<EntityModel> entities, List<Diagnostic> diagnostics)
     {
         foreach (var entity in entities)
         {
@@ -47,25 +50,7 @@ public sealed partial class SqlInterceptorGenerator
                 plans.Add(HierarchyPlan(descendants, entity, key, $"t.\"{foreignKey}\" = @p0", $"t.\"{foreignKey}\" = tree.\"{key.Column}\""));
                 plans.Add(HierarchyPlan(ancestors, entity, key, $"t.\"{key.Column}\" = @p0", $"t.\"{key.Column}\" = tree.\"{foreignKey}\""));
 
-                var keyType = key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var list = $"global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.List<{entity.FullName}>>";
-                var ns = entity.Type.ContainingNamespace.IsGlobalNamespace ? null : entity.Type.ContainingNamespace.ToDisplayString();
-                extensions.AppendLine();
-                if (ns is not null)
-                    extensions.AppendLine($"namespace {ns}");
-                if (ns is not null)
-                    extensions.AppendLine("{");
-                extensions.AppendLine($"    /// <summary>The tree of <see cref=\"{entity.Type.Name}\" /> along <c>{navigation.Property}</c>, generated from [GenerateHierarchy]: one recursive CTE per call, the node itself excluded.</summary>");
-                extensions.AppendLine($"    public static class {entity.Type.Name}{navigation.Property}Hierarchy");
-                extensions.AppendLine("    {");
-                extensions.AppendLine($"        public static {list} GetDescendantsBy{navigation.Property}(this global::Pragmatic.Persistence.Sql.SqlSession session, {keyType} key, global::System.Threading.CancellationToken ct = default)");
-                extensions.AppendLine($"            => global::Pragmatic.Persistence.Sql.Generated.{descendants}.Instance.ToListAsync(session.Query<{entity.FullName}>().WithSlot(0, key), ct);");
-                extensions.AppendLine();
-                extensions.AppendLine($"        public static {list} GetAncestorsBy{navigation.Property}(this global::Pragmatic.Persistence.Sql.SqlSession session, {keyType} key, global::System.Threading.CancellationToken ct = default)");
-                extensions.AppendLine($"            => global::Pragmatic.Persistence.Sql.Generated.{ancestors}.Instance.ToListAsync(session.Query<{entity.FullName}>().WithSlot(0, key), ct);");
-                extensions.AppendLine("    }");
-                if (ns is not null)
-                    extensions.AppendLine("}");
+                extensions.Add(new HierarchyExtensionModel(NamespaceOf(entity.Type), entity.Type.Name, entity.FullName, navigation.Property, key.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), descendants, ancestors));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, $"[GenerateHierarchy] {entity.Type.Name}.{navigation.Property}", HierarchySql(entity, SqlDialect.Sqlite, $"t.\"{foreignKey}\" = @p0", $"t.\"{foreignKey}\" = tree.\"{key.Column}\"", key)));
             }
         }

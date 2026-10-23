@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -14,7 +16,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static void EmitTpcViews(StringBuilder extensions, IEnumerable<EntityModel> entities, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
+    private static void EmitTpcViews(List<TrailerSectionModel> extensions,IEnumerable<EntityModel> entities, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
     {
         foreach (var root in entities.Where(e => e.Tpc && e.IsHierarchyRoot))
         {
@@ -41,34 +43,7 @@ public sealed partial class SqlInterceptorGenerator
             }
 
             var select = TpcSelect(root, tables);
-            var ns = root.Type.ContainingNamespace.IsGlobalNamespace ? null : root.Type.ContainingNamespace.ToDisplayString();
-            const string dialect = "global::Pragmatic.Persistence.Sql.SqlDialect";
-            extensions.AppendLine();
-            if (ns is not null)
-                extensions.AppendLine($"namespace {ns}");
-            if (ns is not null)
-                extensions.AppendLine("{");
-            extensions.AppendLine($"    /// <summary>The view \"{root.Table}\" over the tables of <see cref=\"{root.Type.Name}\" />'s derived types ({string.Join(", ", tables.Select(t => $"\"{t.Model.Table}\""))}), generated from [Inheritance(Strategy = Tpc)]: its text per dialect, for the application's schema.</summary>");
-            extensions.AppendLine($"    public static class {root.Type.Name}View");
-            extensions.AppendLine("    {");
-            extensions.AppendLine($"        public const string Name = {Literal(root.Table)};");
-            extensions.AppendLine();
-            extensions.AppendLine("        /// <summary>The view's body: one SELECT per derived type, UNION ALL, the type's name as the discriminator.</summary>");
-            extensions.AppendLine($"        public static string SelectSql({dialect} dialect) => dialect == {dialect}.SqlServer ? {Literal(PlanBuilder.ForDialectText(select, SqlDialect.SqlServer))} : {Literal(select)};");
-            extensions.AppendLine();
-            extensions.AppendLine("        /// <summary>CREATE VIEW (CREATE OR REPLACE on PostgreSQL and MySQL, CREATE OR ALTER on SQL Server; SQLite has neither: DropSql first).</summary>");
-            extensions.AppendLine($"        public static string CreateSql({dialect} dialect) => dialect switch");
-            extensions.AppendLine("        {");
-            extensions.AppendLine($"            {dialect}.PostgreSql or {dialect}.MySql or {dialect}.Oracle => \"CREATE OR REPLACE VIEW \\\"{root.Table}\\\" AS \" + SelectSql(dialect),");
-            extensions.AppendLine($"            {dialect}.SqlServer => \"CREATE OR ALTER VIEW [{root.Table}] AS \" + SelectSql(dialect),");
-            extensions.AppendLine($"            _ => \"CREATE VIEW \\\"{root.Table}\\\" AS \" + SelectSql(dialect),");
-            extensions.AppendLine("        };");
-            extensions.AppendLine();
-            extensions.AppendLine("        /// <summary>DROP VIEW when it exists.</summary>");
-            extensions.AppendLine($"        public static string DropSql({dialect} dialect) => dialect == {dialect}.SqlServer ? \"IF OBJECT_ID('{root.Table}', 'V') IS NOT NULL DROP VIEW [{root.Table}]\" : \"DROP VIEW IF EXISTS \\\"{root.Table}\\\"\";");
-            extensions.AppendLine("    }");
-            if (ns is not null)
-                extensions.AppendLine("}");
+            extensions.Add(new InheritanceViewModel(NamespaceOf(root.Type), root.Type.Name, root.Table, Tpt: false, WriteTable: null, tables.Select(t => t.Model.Table).ToEquatableArray(), select, PlanBuilder.ForDialectText(select, SqlDialect.SqlServer)));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, $"[Inheritance(Strategy = Tpc)] {root.Type.Name}", select));
         }
     }

@@ -253,7 +253,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
         }
 
         // The hierarchy walks of this assembly's entities: their plans with the others, their extensions in the entities' namespaces.
-        var hierarchies = new StringBuilder();
+        var hierarchies = new List<TrailerSectionModel>();
         var own = entities.Values.Where(e => e is not null && !e.IsRawShape && SymbolEqualityComparer.Default.Equals(e.Type.ContainingAssembly, compilation.Assembly)).Select(e => e!).OrderBy(e => e.FullName, StringComparer.Ordinal).ToList();
         EmitHierarchies(plans, hierarchies, own, diagnostics);
         EmitTpcViews(hierarchies, own, Lookup, diagnostics); // the views of the table-per-concrete-type roots, as DDL text
@@ -281,7 +281,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
 
             spc.ReportDiagnostic(census && Diagnostics.IsCensus(diagnostic) ? Diagnostics.AsCensus(diagnostic) : diagnostic);
         }
-        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToEquatableArray(), interceptors.ToEquatableArray(), hierarchies.ToString()).RenderOutput());
+        spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToEquatableArray(), interceptors.ToEquatableArray(), hierarchies.ToEquatableArray()).RenderOutput());
         if (declared.Length > 0)
             spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToString()).RenderOutput());
     }

@@ -8,7 +8,7 @@ namespace Pragmatic.Persistence.Sql.Generator.Templates;
 ///     a row and the compiled predicates live in one namespace as file-local types, so that only the interceptors reach them; the hierarchy
 ///     walks, the views and the schemas follow, in the entities' namespaces.
 /// </summary>
-internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableArray<ScopeRuleModel> scopeRules, EquatableArray<PlanSectionModel> plans, EquatableArray<CompiledPredicateModel> predicates, EquatableArray<InterceptorModel> interceptors, string trailer) : CSharpTemplate
+internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableArray<ScopeRuleModel> scopeRules, EquatableArray<PlanSectionModel> plans, EquatableArray<CompiledPredicateModel> predicates, EquatableArray<InterceptorModel> interceptors, EquatableArray<TrailerSectionModel> trailer) : CSharpTemplate
 {
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
@@ -40,14 +40,6 @@ internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableA
         RenderCompiledPredicates(predicates);
         RenderInterceptors(interceptors);
         AppendLine("}");
-        Text(trailer);
-    }
-
-    /// <summary>A section already written, line by line.</summary>
-    /// <remarks>TODO: the sections become models one at a time (the engines' port, step 4); this goes with the last of them.</remarks>
-    private void Text(string text)
-    {
-        foreach (var line in TextLines.Of(text))
-            AppendLine(line);
+        RenderTrailer(trailer);
     }
 }
