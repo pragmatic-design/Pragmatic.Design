@@ -117,7 +117,9 @@ immutable model from `Models/`. No `StringBuilder`, no string concatenation, no 
 - Names derived from a type name go through `NamingHelper.AppendSuffix`, so `UpdateAmenityMutation` does
   not become `UpdateAmenityMutationMutationInvoker`.
 - A generated `.g.cs` holds at most one `partial` class and one nested class. Nested types the host
-  references are `public`.
+  references are `public`. One declared exception: the Sql engine's `_Infra.Sql.Interceptors.g.cs` holds
+  every plan, entity map and interceptor of the assembly as `file` types, because they are wired to the
+  call sites they intercept and nothing in the application may name them.
 - Registration is one `_Infra.{Category}.Registration.g.cs` per assembly, exposing
   `Add{Prefix}{Feature}()` on `IServiceCollection`.
 

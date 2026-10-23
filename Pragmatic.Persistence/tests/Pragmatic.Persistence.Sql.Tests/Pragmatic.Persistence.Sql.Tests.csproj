@@ -42,7 +42,7 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Npgsql\Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.SqlClient\Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Generator\Pragmatic.Persistence.Sql.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The Explain tool, built with the tests and copied beside them: the diagnostics tests run the fixture's PragmaticExplain target,
          which needs its dll, and the gate builds into artifacts/, so the tool's own bin/ is not where it is. -->
     <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Sql.Explain\Pragmatic.Persistence.Sql.Explain.csproj" />

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Pragmatic.Persistence.Sql.Explain;
 
-// dotnet Pragmatic.Persistence.Sql.Explain.dll --census <queries.explain.g.cs> --connection <connection string> [--dialect sqlite|postgresql|sqlserver]
+// dotnet Pragmatic.Persistence.Sql.Explain.dll --census <_Infra.Sql.Explain.g.cs> --connection <connection string> [--dialect sqlite|postgresql|sqlserver]
 //
 // Reads the queries the generator translated (the explain file: one object per call site with its SQL per dialect), runs EXPLAIN for
 // each statement on the database named, and prints what the planner says costs more than it should, in MSBuild's canonical format
@@ -28,7 +28,7 @@ for (var i = 0; i < args.Length; i++)
 
 if (census is null || connection is null)
 {
-    Console.Error.WriteLine("usage: --census <queries.explain.g.cs> --connection <connection string> [--dialect sqlite|postgresql|sqlserver]");
+    Console.Error.WriteLine("usage: --census <_Infra.Sql.Explain.g.cs> --connection <connection string> [--dialect sqlite|postgresql|sqlserver]");
     return 2;
 }
 
@@ -83,7 +83,7 @@ return 0;
 
 namespace Pragmatic.Persistence.Sql.Explain
 {
-    /// <summary>One translated query with its call site and its SQL per dialect, as the generator wrote it into queries.explain.g.cs.</summary>
+    /// <summary>One translated query with its call site and its SQL per dialect, as the generator wrote it into _Infra.Sql.Explain.g.cs.</summary>
     internal sealed record ExplainEntry(string Path, int Line, int Column, string Member, string Kind, string Sqlite, string PostgreSql, string SqlServer)
     {
         public string? Sql(string dialect) => dialect switch
