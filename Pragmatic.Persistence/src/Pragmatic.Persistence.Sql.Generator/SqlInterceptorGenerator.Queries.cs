@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.Persistence.Sql.Generator.Models;
+using Pragmatic.SourceGen;
 
 namespace Pragmatic.Persistence.Sql.Generator;
 
@@ -16,7 +17,7 @@ namespace Pragmatic.Persistence.Sql.Generator;
 /// </summary>
 public sealed partial class SqlInterceptorGenerator
 {
-    private static void EmitQuery(StringBuilder declared, HashSet<string> usings, List<PlanSectionModel> plans,IMethodSymbol method, System.Func<INamedTypeSymbol, EntityModel?> entities, Compilation compilation, List<Diagnostic> diagnostics, List<CensusEntry> census)
+    private static void EmitQuery(List<DeclaredSectionModel> declared, HashSet<string> usings, List<PlanSectionModel> plans, IMethodSymbol method, System.Func<INamedTypeSymbol, EntityModel?> entities, Compilation compilation, List<Diagnostic> diagnostics, List<CensusEntry> census)
     {
         var where = method.Locations.FirstOrDefault() ?? Location.None;
         void Shape(string why) => diagnostics.Add(Diagnostic.Create(Diagnostics.QueryShape, where, method.Name, why));
@@ -111,24 +112,15 @@ public sealed partial class SqlInterceptorGenerator
 
         // The generated body: the chain's values in the slots, the paging as written, the plan run.
         string Chain(string root)
-        {
-            var chain = new StringBuilder($"{root}.Query<{entity.FullName}>()");
-            for (var i = 0; i < builder.ValueSlots.Count; i++)
-                chain.Append($".WithSlot({i}, {builder.ValueSlots[i]})");
-            foreach (var skip in builder.SkipTexts)
-                chain.Append($".Skip({skip})");
-            foreach (var take in builder.TakeTexts)
-                chain.Append($".Take({take})");
-            if (builder.ChainElement != entity.FullName)
-                chain.Append($".As<{builder.ChainElement}>()");
-            return chain.ToString();
-        }
+            => $"{root}.Query<{entity.FullName}>()"
+               + string.Concat(builder.ValueSlots.Select((value, i) => $".WithSlot({i}, {value})"))
+               + string.Concat(builder.SkipTexts.Select(skip => $".Skip({skip})"))
+               + string.Concat(builder.TakeTexts.Select(take => $".Take({take})"))
+               + (builder.ChainElement != entity.FullName ? $".As<{builder.ChainElement}>()" : "");
 
         var chain = Chain("session");
         var plan = $"global::Pragmatic.Persistence.Sql.Generated.{planName}.Instance";
         var (returnType, execute) = builder.Terminal;
-        var parameters = string.Join(", ", method.Parameters.Skip(1).Select(p => $"{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {p.Name}"));
-        var separator = parameters.Length > 0 ? ", " : "";
         string call;
         string? batchRead = null; // the plan's reader off a batch's reader, for the batch overload; null where the query cannot join one
         if (builder.IsAggregate)
@@ -166,34 +158,21 @@ public sealed partial class SqlInterceptorGenerator
         // The batch overload: the same query recorded on a SqlBatch, answered by its item once the batch has run.
         const string valueTask = "global::System.Threading.Tasks.ValueTask<";
         var resultType = returnType.StartsWith(valueTask, System.StringComparison.Ordinal) ? returnType.Substring(valueTask.Length, returnType.Length - valueTask.Length - 1) : null;
-        var batch = batchRead is null || resultType is null ? null
-            : $"        public static global::Pragmatic.Persistence.Sql.SqlBatchItem<{resultType}> {method.Name}(this global::Pragmatic.Persistence.Sql.SqlBatch batch{separator}{parameters})\n            => batch.Add({plan}, {Chain("batch.Session")}{(builder.IsAggregate ? $".As<{builder.ElementType}>()" : "")}, {batchRead}{(execute == "ExecuteAsync" ? ", counted: true" : "")});";
-
-        var global = type.ContainingNamespace.IsGlobalNamespace;
-        declared.AppendLine();
-        if (!global)
-        {
-            declared.AppendLine($"namespace {type.ContainingNamespace.ToDisplayString()}");
-            declared.AppendLine("{");
-        }
-
-        declared.AppendLine($"    static partial class {type.Name}");
-        declared.AppendLine("    {");
-        declared.AppendLine($"        /// <summary>Generated from the [Query] definition <c>{Escape(method.Name)}({Escape(string.Join(", ", method.Parameters.Select(p => p.Type.ToDisplayString())))})</c>: <c>{Escape(builder.Sql(SqlDialect.PostgreSql))}</c></summary>");
-        declared.AppendLine($"        public static {returnType} {method.Name}(this global::Pragmatic.Persistence.Sql.SqlSession session{separator}{parameters}, global::System.Threading.CancellationToken ct = default)");
-        declared.AppendLine($"            => {call};");
-        if (batch is not null)
-        {
-            declared.AppendLine();
-            declared.AppendLine($"        /// <summary>The same query in a batch: recorded now, run by <c>batch.ExecuteAsync()</c>, answered by the item's <c>Result</c>.</summary>");
-            declared.AppendLine(batch);
-        }
-
-        declared.AppendLine("    }");
-        if (!global)
-            declared.AppendLine("}");
+        var batched = batchRead is not null && resultType is not null;
+        declared.Add(new DeclaredQueryModel(
+            NamespaceOf(type),
+            type.Name,
+            method.Name,
+            method.Parameters.Select(p => p.Type.ToDisplayString()).ToEquatableArray(),
+            builder.Sql(SqlDialect.PostgreSql),
+            returnType,
+            method.Parameters.Skip(1).Select(p => $"{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {p.Name}").ToEquatableArray(),
+            call,
+            batched ? resultType : null,
+            batched ? $"batch.Add({plan}, {Chain("batch.Session")}{(builder.IsAggregate ? $".As<{builder.ElementType}>()" : "")}, {batchRead}{(execute == "ExecuteAsync" ? ", counted: true" : "")})" : null));
         diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, "[Query] " + method.Name, builder.DeclaredSql(SqlDialect.Sqlite)));
     }
 
+    /// <summary>A text for a doc comment: the markup characters escaped.</summary>
     private static string Escape(string text) => text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 }

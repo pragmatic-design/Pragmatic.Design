@@ -223,7 +223,7 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
         var compiledPredicates = new List<CompiledPredicateModel>();
         EmitSpecifications(interceptors, compiledPredicates, compilation, Lookup, diagnostics); // Pragmatic's specifications, compiled where they are written
 
-        var declared = new StringBuilder();
+        var declared = new List<DeclaredSectionModel>();
         var usings = new HashSet<string>(StringComparer.Ordinal);
         foreach (var query in queries.OrderBy(q => q.ContainingType.ToDisplayString(), StringComparer.Ordinal).ThenBy(q => q.Name, StringComparer.Ordinal))
             EmitQuery(declared, usings, plans, query, Lookup, compilation, diagnostics, censusEntries);
@@ -282,8 +282,8 @@ public sealed partial class SqlInterceptorGenerator : IIncrementalGenerator
             spc.ReportDiagnostic(census && Diagnostics.IsCensus(diagnostic) ? Diagnostics.AsCensus(diagnostic) : diagnostic);
         }
         spc.AddSource(new SqlSourceTemplate(maps, scopeRules, plans.ToEquatableArray(), compiledPredicates.ToEquatableArray(), interceptors.ToEquatableArray(), hierarchies.ToEquatableArray()).RenderOutput());
-        if (declared.Length > 0)
-            spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToString()).RenderOutput());
+        if (declared.Count > 0)
+            spc.AddSource(new SqlQueriesTemplate(usings.OrderBy(u => u, StringComparer.Ordinal), declared.ToEquatableArray()).RenderOutput());
     }
 
     internal static string Safe(EntityModel entity) => entity.FullName.Replace("global::", "").Replace('.', '_');
