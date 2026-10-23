@@ -449,6 +449,11 @@ public class SqlTypeNormalizationTests
     [InlineData("varchar(512)", "varchar(256)", true)]
     [InlineData("varchar(256)", "varchar(512)", false)]
     [InlineData("integer", "bigint", false)]
+    // Oracle writes a length with its semantics, and MySQL's longtext is unbounded text.
+    [InlineData("VARCHAR2(4000 CHAR)", "VARCHAR2(450 CHAR)", true)]
+    [InlineData("VARCHAR2(450 CHAR)", "VARCHAR2(4000 CHAR)", false)]
+    [InlineData("longtext", "varchar(255)", true)]
+    [InlineData("varchar(255)", "longtext", false)]
     public void IsNarrowingTypeChange_DetectsCorrectly(string oldType, string newType, bool expected)
     {
         SchemaDiffEngine.IsNarrowingTypeChange(oldType, newType).Should().Be(expected);

@@ -5,10 +5,10 @@ namespace Pragmatic.Migrations.Runner;
 
 /// <summary>
 ///     Provider-agnostic leader election using a <c>__PragmaticLock</c> table.
-///     Works on PostgreSQL, SQL Server, and SQLite. First instance to claim the
-///     row wins; others poll until the leader releases or the lock expires.
+///     Works on PostgreSQL, SQL Server, SQLite, MySQL and Oracle (its statements: DatabaseLeaderElection.Sql.cs).
+///     First instance to claim the row wins; others poll until the leader releases or the lock expires.
 /// </summary>
-public sealed class DatabaseLeaderElection : IMigrationLeaderElection
+public sealed partial class DatabaseLeaderElection : IMigrationLeaderElection
 {
     private readonly Func<Task<DbConnection>> _connectionFactory;
     private readonly string _providerName;
@@ -56,8 +56,10 @@ public sealed class DatabaseLeaderElection : IMigrationLeaderElection
             await using (cmd.ConfigureAwait(false))
             {
                 cmd.CommandText = BuildTryAcquireSql();
-                AddParameter(cmd, "@holderId", _hostId);
-                AddParameter(cmd, "@timeoutMinutes", (int)_lockTimeout.TotalMinutes);
+                AddParameter(cmd, Name("holderId"), _hostId);
+                AddParameter(cmd, Name("timeoutMinutes"), (int)_lockTimeout.TotalMinutes);
+                if (_providerName == MigrationConstants.ProviderOracle)
+                    AddParameter(cmd, Name("holderIdAgain"), _hostId); // Oracle's statement names each parameter once
 
                 var rows = await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
                 IsLeader = rows > 0;
@@ -95,7 +97,7 @@ public sealed class DatabaseLeaderElection : IMigrationLeaderElection
                 await using (cmd.ConfigureAwait(false))
                 {
                     cmd.CommandText = BuildReleaseSql();
-                    AddParameter(cmd, "@holderId", _hostId);
+                    AddParameter(cmd, Name("holderId"), _hostId);
                     await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
                 }
             }
@@ -217,108 +219,8 @@ public sealed class DatabaseLeaderElection : IMigrationLeaderElection
         }
     }
 
-    private string BuildCreateTableSql() => _providerName switch
-    {
-        "SqlServer" => """
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '__PragmaticLock')
-            CREATE TABLE __PragmaticLock (
-                LockName    NVARCHAR(128) NOT NULL PRIMARY KEY,
-                HolderId    NVARCHAR(64)  NULL,
-                AcquiredAt  DATETIMEOFFSET NULL,
-                ExpiresAt   DATETIMEOFFSET NULL
-            )
-            """,
-        "Sqlite" => """
-            CREATE TABLE IF NOT EXISTS __PragmaticLock (
-                LockName    TEXT NOT NULL PRIMARY KEY,
-                HolderId    TEXT NULL,
-                AcquiredAt  TEXT NULL,
-                ExpiresAt   TEXT NULL
-            )
-            """,
-        _ => // PostgreSQL (default)
-            """
-            CREATE TABLE IF NOT EXISTS "__PragmaticLock" (
-                "LockName"    VARCHAR(128) NOT NULL PRIMARY KEY,
-                "HolderId"    VARCHAR(64)  NULL,
-                "AcquiredAt"  TIMESTAMPTZ  NULL,
-                "ExpiresAt"   TIMESTAMPTZ  NULL
-            )
-            """,
-    };
-
-    private string BuildSeedSql() => _providerName switch
-    {
-        "SqlServer" => """
-            IF NOT EXISTS (SELECT 1 FROM __PragmaticLock WHERE LockName = 'migration')
-            INSERT INTO __PragmaticLock (LockName) VALUES ('migration')
-            """,
-        "Sqlite" =>
-            "INSERT OR IGNORE INTO __PragmaticLock (LockName) VALUES ('migration')",
-        _ => // PostgreSQL
-            """INSERT INTO "__PragmaticLock" ("LockName") VALUES ('migration') ON CONFLICT ("LockName") DO NOTHING""",
-    };
-
-    private string BuildTryAcquireSql() => _providerName switch
-    {
-        "SqlServer" => """
-            UPDATE __PragmaticLock
-            SET HolderId = @holderId,
-                AcquiredAt = SYSUTCDATETIME(),
-                ExpiresAt = DATEADD(MINUTE, @timeoutMinutes, SYSUTCDATETIME())
-            WHERE LockName = 'migration'
-              AND (HolderId IS NULL OR HolderId = @holderId OR ExpiresAt < SYSUTCDATETIME())
-            """,
-        "Sqlite" => """
-            UPDATE __PragmaticLock
-            SET HolderId = @holderId,
-                AcquiredAt = datetime('now'),
-                ExpiresAt = datetime('now', '+' || @timeoutMinutes || ' minutes')
-            WHERE LockName = 'migration'
-              AND (HolderId IS NULL OR HolderId = @holderId OR ExpiresAt < datetime('now'))
-            """,
-        _ => // PostgreSQL
-            """
-            UPDATE "__PragmaticLock"
-            SET "HolderId" = @holderId,
-                "AcquiredAt" = NOW(),
-                "ExpiresAt" = NOW() + MAKE_INTERVAL(mins => @timeoutMinutes)
-            WHERE "LockName" = 'migration'
-              AND ("HolderId" IS NULL OR "HolderId" = @holderId OR "ExpiresAt" < NOW())
-            """,
-    };
-
-    private string BuildReleaseSql() => _providerName switch
-    {
-        "SqlServer" => """
-            UPDATE __PragmaticLock
-            SET HolderId = NULL, AcquiredAt = NULL, ExpiresAt = NULL
-            WHERE LockName = 'migration' AND HolderId = @holderId
-            """,
-        "Sqlite" => """
-            UPDATE __PragmaticLock
-            SET HolderId = NULL, AcquiredAt = NULL, ExpiresAt = NULL
-            WHERE LockName = 'migration' AND HolderId = @holderId
-            """,
-        _ => // PostgreSQL
-            """
-            UPDATE "__PragmaticLock"
-            SET "HolderId" = NULL, "AcquiredAt" = NULL, "ExpiresAt" = NULL
-            WHERE "LockName" = 'migration' AND "HolderId" = @holderId
-            """,
-    };
-
-    // Returns the current HolderId when the lock IS held and not yet expired.
-    // WaitForLeaderCompletionAsync loops until the result is NULL/DBNull (lock released/expired).
-    private string BuildCheckSql() => _providerName switch
-    {
-        "SqlServer" =>
-            "SELECT HolderId FROM __PragmaticLock WHERE LockName = 'migration' AND HolderId IS NOT NULL AND ExpiresAt >= SYSUTCDATETIME()",
-        "Sqlite" =>
-            "SELECT HolderId FROM __PragmaticLock WHERE LockName = 'migration' AND HolderId IS NOT NULL AND ExpiresAt >= datetime('now')",
-        _ => // PostgreSQL
-            """SELECT "HolderId" FROM "__PragmaticLock" WHERE "LockName" = 'migration' AND "HolderId" IS NOT NULL AND "ExpiresAt" >= NOW()""",
-    };
+    /// <summary>A parameter's name as the provider's driver takes it (Oracle's carry no prefix).</summary>
+    private string Name(string name) => Sql.SqlParameterSyntax.ParameterName(_providerName, name);
 
     private static void AddParameter(DbCommand cmd, string name, object value)
     {

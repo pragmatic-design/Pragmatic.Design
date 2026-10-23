@@ -38,17 +38,23 @@ public static class SchemaAuditStore
     /// <summary>
     ///     Records a migration result in the audit table.
     /// </summary>
+    /// <remarks>
+    ///     The provider name says how the connection's parameters are written (Oracle's are <c>:name</c>, the others'
+    ///     <c>@name</c>). It is required, so that no caller falls back to a spelling its driver rejects.
+    /// </remarks>
     public static async Task RecordMigrationAsync(
         DbConnection connection,
         SchemaVersion schema,
         string sqlScript,
         int changeCount,
         long durationMs,
+        string providerName,
         string? appliedBy = null,
         string auditTableName = MigrationConstants.AuditTableName,
         CancellationToken ct = default)
     {
         var schemaJson = JsonSerializer.Serialize(schema, SchemaJsonContext.Default.SchemaVersion);
+        string P(string name) => SqlParameterSyntax.Placeholder(providerName, name);
 
         var cmd = connection.CreateCommand();
         await using (cmd.ConfigureAwait(false))
@@ -57,15 +63,15 @@ public static class SchemaAuditStore
             // so double any embedded quote rather than letting it terminate the quoted identifier.
             cmd.CommandText = $"""
                 INSERT INTO "{auditTableName.Replace("\"", "\"\"")}" ("Hash", "SchemaJson", "DurationMs", "ChangeCount", "SqlScript", "AppliedBy")
-                VALUES (@hash, @json, @duration, @changes, @sql, @appliedBy)
+                VALUES ({P("hash")}, {P("json")}, {P("duration")}, {P("changes")}, {P("sql")}, {P("appliedBy")})
                 """;
 
-            AddParameter(cmd, "@hash", schema.Hash);
-            AddParameter(cmd, "@json", schemaJson);
-            AddParameter(cmd, "@duration", durationMs);
-            AddParameter(cmd, "@changes", changeCount);
-            AddParameter(cmd, "@sql", sqlScript);
-            AddParameter(cmd, "@appliedBy", appliedBy ?? Environment.MachineName);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "hash"), schema.Hash);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "json"), schemaJson);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "duration"), durationMs);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "changes"), changeCount);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "sql"), sqlScript);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "appliedBy"), appliedBy ?? Environment.MachineName);
 
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
@@ -147,7 +153,9 @@ public static class SchemaAuditStore
         // PostgreSQL: relation "..." does not exist
         // SQL Server: Invalid object name '...'
         // SQLite: no such table: ...
+        // MySQL: Table '...' doesn't exist; Oracle: ORA-00942: table or view does not exist
         return msg.Contains("does not exist", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("doesn't exist", StringComparison.OrdinalIgnoreCase)
             || msg.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase)
             || msg.Contains("no such table", StringComparison.OrdinalIgnoreCase);
     }

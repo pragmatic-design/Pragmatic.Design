@@ -96,7 +96,7 @@ public sealed partial class MigrationRunner
                 var stepSw = Stopwatch.StartNew();
                 await dm.MigrateAsync(connection, tx, ct).ConfigureAwait(false);
                 stepSw.Stop();
-                await DataMigrationStore.RecordAsync(connection, tx, dm.Name, stepSw.ElapsedMilliseconds, ct)
+                await DataMigrationStore.RecordAsync(connection, tx, dm.Name, stepSw.ElapsedMilliseconds, sqlGenerator.ProviderName, ct)
                     .ConfigureAwait(false);
                 applied++;
                 progressStream?.Report(new MigrationProgressEvent("migration",

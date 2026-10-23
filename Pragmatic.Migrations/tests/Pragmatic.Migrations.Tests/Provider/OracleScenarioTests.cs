@@ -1,0 +1,83 @@
+#pragma warning disable CA2007
+
+using System.Collections.Immutable;
+using System.Data.Common;
+using Oracle.ManagedDataAccess.Client;
+using Pragmatic.Migrations.Diff;
+using Pragmatic.Migrations.Diff.Changes;
+using Pragmatic.Migrations.Introspection;
+using Pragmatic.Migrations.Schema;
+using Pragmatic.Migrations.Sql;
+using Pragmatic.Testing.Assertions;
+using Xunit;
+
+namespace Pragmatic.Migrations.Tests.Provider;
+
+/// <summary>
+///     Oracle provider tests via Testcontainers: one container for the class (<see cref="OracleContainerFixture" />) and one
+///     user per test, which is Oracle's database of its own. The driver binds by position, its default: the library's
+///     statements name each parameter once, so they bind the same either way.
+/// </summary>
+public class OracleScenarioTests(OracleContainerFixture fixture)
+    : SchemaScenarioTestBase, IClassFixture<OracleContainerFixture>
+{
+    private readonly string _user = "S" + Guid.NewGuid().ToString("N")[..20].ToUpperInvariant();
+
+    private bool _created;
+
+    protected override ISqlMigrationGenerator CreateGenerator() => new OracleMigrationGenerator();
+    protected override ISchemaIntrospector CreateIntrospector() => new OracleSchemaIntrospector();
+
+    protected override async Task<DbConnection> CreateConnectionAsync()
+    {
+        if (!_created)
+        {
+            var system = new OracleConnection(fixture.ConnectionString("system"));
+            await using (system)
+            {
+                await system.OpenAsync();
+                // The name is a GUID this class made, never user input.
+                foreach (var statement in new[]
+                         {
+                             $"CREATE USER {_user} IDENTIFIED BY {OracleContainerFixture.Password} QUOTA UNLIMITED ON USERS",
+                             $"GRANT CREATE SESSION, CREATE TABLE TO {_user}"
+                         })
+                {
+                    var command = system.CreateCommand();
+                    await using (command)
+                    {
+                        command.CommandText = statement;
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+
+            _created = true;
+        }
+
+        var conn = new OracleConnection(fixture.ConnectionString(_user));
+        await conn.OpenAsync();
+        return conn;
+    }
+
+    /// <summary>Oracle has no partial index: the filtered index is refused with its name, not created without its filter.</summary>
+    [Fact]
+    public override Task Scenario21_FilteredIndex_ConvergesAfterOneApply()
+    {
+        var index = new IndexSchema("IX_Sagas_CorrelationId", ImmutableArray.Create("CorrelationId"), true, "\"Status\" = 0");
+        var script = () => CreateGenerator().GenerateScript(new SchemaDiff(ImmutableArray.Create<SchemaChange>(new AddIndex("Sagas", index)), false));
+
+        script.Should().Throw<NotSupportedException>();
+        return Task.CompletedTask;
+    }
+
+    protected override string PkType() => "VARCHAR2(36)";
+    protected override string TextType() => "VARCHAR2(4000 CHAR)";
+    protected override string IndexableTextType() => "VARCHAR2(450 CHAR)";
+    protected override string IntType() => "NUMBER(10)";
+    protected override string BoolType() => "BOOLEAN";
+    protected override string DecimalType() => "NUMBER(18,2)";
+    protected override string TimestampType() => "TIMESTAMP(7)";
+    protected override string DefaultFalse() => "FALSE";
+    protected override string DefaultTrue() => "TRUE";
+}

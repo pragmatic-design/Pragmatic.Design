@@ -43,18 +43,19 @@ internal static class DataMigrationStore
         return names;
     }
 
-    /// <summary>Records a data migration as applied.</summary>
+    /// <summary>Records a data migration as applied; <paramref name="providerName" /> says how its parameters are written.</summary>
     public static async Task RecordAsync(
-        DbConnection connection, DbTransaction transaction, string name, long durationMs, CancellationToken ct = default)
+        DbConnection connection, DbTransaction transaction, string name, long durationMs, string providerName, CancellationToken ct = default)
     {
         var cmd = connection.CreateCommand();
         await using (cmd.ConfigureAwait(false))
         {
             cmd.Transaction = transaction;
             cmd.CommandText =
-                $"INSERT INTO \"{MigrationConstants.DataMigrationTableName}\" (\"Name\", \"DurationMs\") VALUES (@name, @duration)";
-            AddParameter(cmd, "@name", name);
-            AddParameter(cmd, "@duration", durationMs);
+                $"INSERT INTO \"{MigrationConstants.DataMigrationTableName}\" (\"Name\", \"DurationMs\") " +
+                $"VALUES ({SqlParameterSyntax.Placeholder(providerName, "name")}, {SqlParameterSyntax.Placeholder(providerName, "duration")})";
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "name"), name);
+            AddParameter(cmd, SqlParameterSyntax.ParameterName(providerName, "duration"), durationMs);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
     }

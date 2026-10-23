@@ -6,13 +6,13 @@ namespace Pragmatic.Migrations.Introspection;
 /// <summary>
 ///     Reads SQLite schema from sqlite_master and the pragma table-valued functions.
 ///     <para>
-///     Five queries, whatever the size of the database. A bare <c>PRAGMA table_info(x)</c> can only
+///     Six queries, whatever the size of the database. A bare <c>PRAGMA table_info(x)</c> can only
 ///     describe one table, which is what forced the old three-round-trips-per-table shape; the
 ///     <c>pragma_*</c> table-valued functions (SQLite 3.16+) can be joined against
 ///     <c>sqlite_master</c> instead, describing every table in one statement.
 ///     </para>
 /// </summary>
-public sealed class SqliteSchemaIntrospector : ISchemaIntrospector
+public sealed partial class SqliteSchemaIntrospector : ISchemaIntrospector
 {
     // Excludes SQLite's own internal tables from every bulk query.
     private const string UserTables = @"m.type = 'table' AND m.name NOT LIKE 'sqlite\_%' ESCAPE '\'";
@@ -38,6 +38,7 @@ public sealed class SqliteSchemaIntrospector : ISchemaIntrospector
         var columns = await ReadAllColumnsAsync(connection, wanted, ct).ConfigureAwait(false);
         var indexes = await ReadAllIndexesAsync(connection, wanted, ct).ConfigureAwait(false);
         var foreignKeys = await ReadAllForeignKeysAsync(connection, wanted, columns, ct).ConfigureAwait(false);
+        var checks = await ReadAllCheckConstraintsAsync(connection, wanted, ct).ConfigureAwait(false);
 
         var tables = tableNames
             .Select(name => new TableSchema(
@@ -45,7 +46,8 @@ public sealed class SqliteSchemaIntrospector : ISchemaIntrospector
                 null,
                 columns.TryGetValue(name, out var c) ? [.. c] : [],
                 indexes.TryGetValue(name, out var i) ? [.. i] : [],
-                foreignKeys.TryGetValue(name, out var f) ? [.. f] : []))
+                foreignKeys.TryGetValue(name, out var f) ? [.. f] : [],
+                checks.TryGetValue(name, out var k) ? [.. k] : []))
             .ToList();
 
         // The hash is derived by SchemaVersion itself, from the same canonical function the

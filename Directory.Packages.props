@@ -97,6 +97,8 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
     <PackageVersion Include="MySqlConnector" Version="2.4.0" />
     <PackageVersion Include="Npgsql" Version="10.0.0" />
+    <!-- Oracle's managed driver: Pragmatic.Migrations' Oracle provider is tested against it (the library itself references no driver). -->
+    <PackageVersion Include="Oracle.ManagedDataAccess.Core" Version="23.26.301" />
     <!-- Transitive pin (CVE-2025-6965): the native SQLite lib pulled by Microsoft.Data.Sqlite /
          EFCore.Sqlite was ≤ 2.1.11 (SQLite < 3.50.2, memory corruption). 3.50.x retracks the
          lib version to the bundled SQLite version; core/bundle stay 2.1.x and accept this lib. -->

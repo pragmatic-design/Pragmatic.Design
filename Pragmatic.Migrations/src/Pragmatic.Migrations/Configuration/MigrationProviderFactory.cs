@@ -58,6 +58,6 @@ public sealed class MigrationProviderFactory(IServiceProvider serviceProvider)
         throw new InvalidOperationException(
             $"No {typeof(T).Name} registered for provider '{provider}'. " +
             "Ensure the provider's NuGet package is referenced and registered (e.g. via UseProvider), " +
-            "and that the provider name matches one of: PostgreSql, SqlServer, Sqlite.");
+            "and that the provider name matches one of: PostgreSql, SqlServer, Sqlite, MySql, Oracle.");
     }
 }

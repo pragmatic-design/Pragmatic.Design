@@ -7,8 +7,8 @@ namespace Pragmatic.Migrations.Introspection;
 /// <summary>
 ///     Reads SQL Server schema from sys.* catalog views.
 ///     <para>
-///     Four queries, whatever the size of the database: one for the tables, one for every column,
-///     one for every index, one for every foreign key — then grouped in memory. The previous shape
+///     Five queries, whatever the size of the database: one for the tables, one for every column,
+///     one for every index, one for every foreign key, one for every check — then grouped in memory. The previous shape
 ///     issued three round-trips per table, so introspection cost grew with the schema.
 ///     </para>
 /// </summary>
@@ -37,6 +37,7 @@ public sealed class SqlServerSchemaIntrospector : ISchemaIntrospector
         var columns = await ReadAllColumnsAsync(connection, wanted, ct).ConfigureAwait(false);
         var indexes = await ReadAllIndexesAsync(connection, wanted, ct).ConfigureAwait(false);
         var foreignKeys = await ReadAllForeignKeysAsync(connection, wanted, ct).ConfigureAwait(false);
+        var checks = await ReadAllCheckConstraintsAsync(connection, wanted, ct).ConfigureAwait(false);
 
         var tables = tableNames
             .Select(t => new TableSchema(
@@ -44,7 +45,8 @@ public sealed class SqlServerSchemaIntrospector : ISchemaIntrospector
                 t.Schema,
                 columns.TryGetValue(t, out var c) ? [.. c] : [],
                 indexes.TryGetValue(t, out var i) ? [.. i] : [],
-                foreignKeys.TryGetValue(t, out var f) ? [.. f] : []))
+                foreignKeys.TryGetValue(t, out var f) ? [.. f] : [],
+                checks.TryGetValue(t, out var k) ? [.. k] : []))
             .ToList();
 
         // The hash is derived by SchemaVersion itself, from the same canonical function the
@@ -293,6 +295,49 @@ public sealed class SqlServerSchemaIntrospector : ISchemaIntrospector
                         reader.GetString(2), reader.GetString(3),
                         reader.GetString(4), reader.GetString(5),
                         deleteAction));
+                }
+            }
+        }
+
+        return byTable;
+    }
+
+    /// <summary>
+    ///     Every check constraint, grouped by table.
+    /// </summary>
+    /// <remarks>
+    ///     ⚠️ Without it the diff, which compares checks by name, finds every declared check missing on
+    ///     every run: the second migration of a schema with one re-issues <c>ADD CONSTRAINT</c> and fails
+    ///     with "There is already an object named … in the database", so the schema cannot evolve.
+    /// </remarks>
+    private static async Task<Dictionary<(string, string), List<CheckConstraintSchema>>> ReadAllCheckConstraintsAsync(
+        DbConnection connection, HashSet<(string Schema, string Table)> wanted, CancellationToken ct)
+    {
+        var byTable = new Dictionary<(string, string), List<CheckConstraintSchema>>();
+
+        var cmd = connection.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
+        {
+            cmd.CommandText = """
+                SELECT s.name AS schema_name, t.name AS table_name, cc.name, cc.definition
+                FROM sys.check_constraints cc
+                JOIN sys.tables t ON t.object_id = cc.parent_object_id
+                JOIN sys.schemas s ON t.schema_id = s.schema_id
+                WHERE t.is_ms_shipped = 0
+                ORDER BY s.name, t.name, cc.name
+                """;
+
+            var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                while (await reader.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    var key = (reader.GetString(0), reader.GetString(1));
+                    if (!wanted.Contains(key)) continue;
+
+                    // The definition comes back normalised ("([ValidTo] IS NULL OR ...)") — kept verbatim, as
+                    // the diff compares checks by name only.
+                    Add(byTable, key, new CheckConstraintSchema(reader.GetString(2), reader.GetString(3)));
                 }
             }
         }

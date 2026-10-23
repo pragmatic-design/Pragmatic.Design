@@ -62,4 +62,10 @@ public static class MigrationConstants
 
     /// <summary>Provider name: SQLite.</summary>
     public const string ProviderSqlite = "Sqlite";
+
+    /// <summary>Provider name: MySQL (8.0.16 or later: the checks are enforced from that version).</summary>
+    public const string ProviderMySql = "MySql";
+
+    /// <summary>Provider name: Oracle (23ai or later: IF [NOT] EXISTS and BOOLEAN are 23ai's).</summary>
+    public const string ProviderOracle = "Oracle";
 }

@@ -199,6 +199,15 @@ public sealed class MigrationsBuilder
             new SqliteMigrationGenerator(),
             new SqliteSchemaIntrospector { ExcludedTables = excluded });
 
+        RegisterProviderIfAvailable(MigrationConstants.ProviderMySql,
+            new MySqlMigrationGenerator(),
+            new MySqlSchemaIntrospector { ExcludedTables = excluded },
+            MySqlMigrationGenerator.SessionSetup);
+
+        RegisterProviderIfAvailable(MigrationConstants.ProviderOracle,
+            new OracleMigrationGenerator(),
+            new OracleSchemaIntrospector { ExcludedTables = excluded });
+
         // Say it here rather than let DI fail later on a missing IConnectionFactory. The probe this
         // replaced could not tell "no driver referenced" from "generator never ran"; naming both is
         // the difference between a clear message at startup and a confusing one deep in the runner.
@@ -207,7 +216,7 @@ public sealed class MigrationsBuilder
                 "Migrations found no usable database provider. Reference a driver package (Npgsql, "
                 + "Microsoft.Data.SqlClient or Microsoft.Data.Sqlite) together with the Pragmatic source "
                 + "generator, which registers its connection factory — or call UseProvider(...) to supply "
-                + "one explicitly.");
+                + "one explicitly (MySQL and Oracle: UseProvider(\"MySql\" or \"Oracle\", ...), the generator registers neither).");
     }
 
     private readonly HashSet<string> _registeredProviders = new(StringComparer.OrdinalIgnoreCase);
@@ -215,12 +224,13 @@ public sealed class MigrationsBuilder
     private void RegisterProviderIfAvailable(
         string providerName,
         ISqlMigrationGenerator generator,
-        ISchemaIntrospector introspector)
+        ISchemaIntrospector introspector,
+        string? sessionSetup = null)
     {
         // Explicit factory always wins.
         if (_connectionFactories.TryGetValue(providerName, out var explicitFactory))
         {
-            RegisterProvider(providerName, generator, introspector, explicitFactory);
+            RegisterProvider(providerName, generator, introspector, explicitFactory, sessionSetup);
             return;
         }
 
@@ -235,25 +245,26 @@ public sealed class MigrationsBuilder
         if (factory is null)
             return;
 
-        RegisterProvider(providerName, generator, introspector, factory);
+        RegisterProvider(providerName, generator, introspector, factory, sessionSetup);
     }
 
     private void RegisterProvider(
         string providerName,
         ISqlMigrationGenerator generator,
         ISchemaIntrospector introspector,
-        Func<string, DbConnection> connectionFactory)
+        Func<string, DbConnection> connectionFactory,
+        string? sessionSetup)
     {
         _registeredProviders.Add(providerName);
 
         Services.AddKeyedSingleton<ISqlMigrationGenerator>(providerName, generator);
         Services.AddKeyedSingleton<ISchemaIntrospector>(providerName, introspector);
         Services.AddKeyedSingleton<IConnectionFactory>(providerName,
-            new GenericConnectionFactory(providerName, connectionFactory));
+            new GenericConnectionFactory(providerName, connectionFactory, sessionSetup));
 
         // Default fallback (last-wins for single-provider hosts)
         Services.AddSingleton(generator);
         Services.AddSingleton(introspector);
-        Services.AddSingleton<IConnectionFactory>(new GenericConnectionFactory(providerName, connectionFactory));
+        Services.AddSingleton<IConnectionFactory>(new GenericConnectionFactory(providerName, connectionFactory, sessionSetup));
     }
 }
