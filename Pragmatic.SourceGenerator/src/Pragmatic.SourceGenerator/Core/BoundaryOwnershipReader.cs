@@ -106,16 +106,6 @@ internal static class BoundaryOwnershipReader
     }
 
     /// <summary>
-    ///     The same answer as <see cref="BoundaryOf" />, fully qualified.
-    /// </summary>
-    /// <remarks>
-    ///     Two formats because two consumers want different ones and both are right: the Actions and
-    ///     Endpoints models compare against names carrying <c>global::</c>, the Persistence models
-    ///     against the plain display string. One rule, two methods named for the format they serve —
-    ///     rather than one method whose callers each normalise, which is how the two spellings of one
-    ///     name silently stopped matching once already.
-    /// </remarks>
-    /// <summary>
     ///     The entities the entity's boundary declares <c>[ReadAccess&lt;T&gt;]</c> to, as plain display
     ///     names — empty when the boundary cannot be found or reads nothing.
     /// </summary>
@@ -162,6 +152,16 @@ internal static class BoundaryOwnershipReader
         return single is null ? null : entity.ContainingAssembly.GetTypeByMetadataName(StripGlobal(single));
     }
 
+    /// <summary>
+    ///     The same answer as <see cref="BoundaryOf" />, fully qualified.
+    /// </summary>
+    /// <remarks>
+    ///     Two formats because two consumers want different ones and both are right: the Actions and
+    ///     Endpoints models compare against names carrying <c>global::</c>, the Persistence models
+    ///     against the plain display string. One rule, two methods named for the format they serve —
+    ///     rather than one method whose callers each normalise, which is how the two spellings of one
+    ///     name silently stopped matching once already.
+    /// </remarks>
     public static string? QualifiedBoundaryOf(INamedTypeSymbol entity)
     {
         var declared = DeclaredOrOwningBoundaryType(entity);

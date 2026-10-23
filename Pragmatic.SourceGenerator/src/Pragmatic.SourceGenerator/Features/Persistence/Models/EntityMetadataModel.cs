@@ -405,10 +405,6 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
         EquatableArray<PartialTraitModel>.Empty;
 
     /// <summary>
-    ///     All property names declared in source code (including those filtered out as navigations).
-    ///     Used by RelationGraphBuilder for deduplication — prevents generating properties that already exist in source.
-    /// </summary>
-    /// <summary>
     ///     The <c>VisibilityRule&lt;T&gt;</c> types declared with <c>[VisibleWhen&lt;TRule&gt;]</c>,
     ///     fully qualified. Each is registered as an <c>IQueryFilter</c>, so it applies to every query
     ///     of the entity.
@@ -419,6 +415,10 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     /// </remarks>
     public EquatableArray<string> VisibilityRules { get; init; } = EquatableArray<string>.Empty;
 
+    /// <summary>
+    ///     All property names declared in source code (including those filtered out as navigations).
+    ///     Used by RelationGraphBuilder for deduplication — prevents generating properties that already exist in source.
+    /// </summary>
     public EquatableArray<string> AllSourceMemberNames { get; init; } =
         EquatableArray<string>.Empty;
 
@@ -679,6 +679,9 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                StateMachineInitialStateExpression == other.StateMachineInitialStateExpression &&
                UsesRelationAttributes == other.UsesRelationAttributes &&
                IsFromReference == other.IsFromReference &&
+               IsFromImportedPackage == other.IsFromImportedPackage &&
+               LocalIdentityProperty == other.LocalIdentityProperty &&
+               RegistersFromLocalIdentity == other.RegistersFromLocalIdentity &&
                HasParentVisibilityFilter == other.HasParentVisibilityFilter &&
                HasInternalVisibilityFilter == other.HasInternalVisibilityFilter &&
                ParentTenantNavigation == other.ParentTenantNavigation &&
@@ -704,8 +707,10 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                SequenceEqual(PartialTraits, other.PartialTraits) &&
                SequenceEqual(GeneratedRelationProperties, other.GeneratedRelationProperties) &&
                SequenceEqual(AllSourceMemberNames, other.AllSourceMemberNames) &&
+               SequenceEqual(VisibilityRules, other.VisibilityRules) &&
                SequenceEqual(IgnoredPropertyNames, other.IgnoredPropertyNames) &&
-               SequenceEqual(KeyColumns, other.KeyColumns);
+               SequenceEqual(KeyColumns, other.KeyColumns) &&
+               SequenceEqual(UniqueColumns, other.UniqueColumns);
     }
 
     public override int GetHashCode()
