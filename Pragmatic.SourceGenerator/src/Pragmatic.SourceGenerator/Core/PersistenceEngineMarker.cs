@@ -42,11 +42,47 @@ internal static class PersistenceEngineMarker
         return null;
     }
 
+    /// <summary>The name of the EF Core engine, as <see cref="EngineOf" /> answers it.</summary>
+    public const string EfCore = "EfCore";
+
+    /// <summary>
+    ///     The engine that persists <paramref name="entity" /> in this compilation: the one its boundary names, else
+    ///     the only engine the compilation references. Null when that is undecided (two referenced, none named:
+    ///     <c>PRAG0743</c>) or there is no engine at all.
+    /// </summary>
+    /// <remarks>
+    ///     Decided here, against this compilation's references, and nowhere else: the module's metadata carries only
+    ///     what the boundary named, since a module and its host may reference different engines.
+    /// </remarks>
+    public static string? EngineOf(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
+    {
+        if (entity.NamedPersistenceEngine is { } named)
+            return named;
+
+        var referenced = Referenced(features);
+        return referenced.Length == 1 ? referenced[0] : null;
+    }
+
+    /// <summary>Whether EF Core persists <paramref name="entity" />: what every EF-only output asks of it.</summary>
+    public static bool IsEfCore(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
+        => EngineOf(entity, features) == EfCore;
+
+    /// <summary>
+    ///     Whether an engine the compilation references persists <paramref name="entity" />: what the entity's shape
+    ///     asks, since every engine reads the same members.
+    /// </summary>
+    public static bool HasEngine(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
+        => EngineOf(entity, features) is { } engine && Referenced(features).Contains(engine);
+
+    /// <summary>Whether the compilation references any engine's bridge.</summary>
+    public static bool AnyReferenced(DetectedFeatures features)
+        => features.HasPersistenceEFCore || features.HasPersistenceSql || features.HasPersistenceDocuments;
+
     /// <summary>The engines whose bridge the compilation references, in the order of the enum.</summary>
     public static ImmutableArray<string> Referenced(DetectedFeatures features)
     {
         var referenced = ImmutableArray.CreateBuilder<string>(3);
-        if (features.HasPersistenceEFCore) referenced.Add(Names[0]);
+        if (features.HasPersistenceEFCore) referenced.Add(EfCore);
         if (features.HasPersistenceSql) referenced.Add(Names[1]);
         if (features.HasPersistenceDocuments) referenced.Add(Names[2]);
         return referenced.ToImmutable();

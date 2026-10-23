@@ -29,9 +29,10 @@ internal static class RepositoryFeature
         // Only regenerated when the specific entity changes
         context.RegisterSourceOutputSafe(perEntityWithFeatures, static (ctx, pair) =>
         {
-            if (!pair.Features.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.HasEngine(pair.Entity, pair.Features))
                 return;
-            GeneratePerEntityOutputs(ctx, pair.Entity, pair.Features.EfCoreProvider);
+            GeneratePerEntityOutputs(
+                ctx, pair.Entity, pair.Features.EfCoreProvider, PersistenceEngineMarker.IsEfCore(pair.Entity, pair.Features));
         });
 
         // Aggregate: FilterMapRegistry + QueryFilterRegistration (need all entities)
@@ -128,19 +129,32 @@ internal static class RepositoryFeature
     // Per-entity generation
     // =========================================================================
 
+    /// <summary>
+    ///     The entity's repository, EF Core's only, and its filter classes, which are part of its shape.
+    /// </summary>
+    /// <remarks>
+    ///     The filter classes are declared for every engine because callers name them —
+    ///     <c>Disable&lt;Reservation.OwnershipFilter&gt;()</c>, <c>[WithoutFilter&lt;T&gt;]</c> — and those names have to
+    ///     be the same types whichever engine stores the entity. The temporal query extensions over
+    ///     <c>IQueryable</c>, its validation and its virtual navigations are EF Core's.
+    /// </remarks>
     private static void GeneratePerEntityOutputs(
         SourceProductionContext context,
         EntityMetadataModel entity,
-        EfCoreProvider provider)
+        EfCoreProvider provider,
+        bool isEfCore)
     {
         if (!entity.IsValid || entity.IsFromReference)
             return;
 
         // Repository
-        var repoTemplate = new RepositoryTemplate(entity, provider);
-        var repoArtifact = repoTemplate.RenderOutput();
-        if (!repoArtifact.IsEmpty)
-            context.AddSource(repoArtifact);
+        if (isEfCore)
+        {
+            var repoTemplate = new RepositoryTemplate(entity, provider);
+            var repoArtifact = repoTemplate.RenderOutput();
+            if (!repoArtifact.IsEmpty)
+                context.AddSource(repoArtifact);
+        }
 
         // Query filters
         if (entity.IsSoftDelete)
@@ -190,17 +204,20 @@ internal static class RepositoryFeature
             if (!tfArtifact.IsEmpty)
                 context.AddSource(tfArtifact);
 
-            var temporalTemplate = new TemporalQueryExtensionsTemplate(entity);
-            var artifact = temporalTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
-
             // The scope that lets a read see closed stretches, on every temporal entity — not only the
             // ones with a MaxActive, which is what gates the validation template below.
             var historyScopeTemplate = new TemporalHistoryScopeTemplate(entity);
             var historyArtifact = historyScopeTemplate.RenderOutput();
             if (!historyArtifact.IsEmpty)
                 context.AddSource(historyArtifact);
+
+            if (!isEfCore)
+                return;
+
+            var temporalTemplate = new TemporalQueryExtensionsTemplate(entity);
+            var artifact = temporalTemplate.RenderOutput();
+            if (!artifact.IsEmpty)
+                context.AddSource(artifact);
 
             var validationTemplate = new TemporalValidationTemplate(entity);
             var valArtifact = validationTemplate.RenderOutput();
