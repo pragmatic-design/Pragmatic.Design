@@ -9,6 +9,28 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 /// </summary>
 internal static partial class EntityTransform
 {
+    private const string TraitOfAttributeName = "Pragmatic.Persistence.Entity.TraitOfAttribute";
+
+    /// <summary>
+    ///     The parent <c>[TraitOf&lt;TParent&gt;]</c> names, with the restrictions on its rows; null when the entity carries no mark.
+    /// </summary>
+    private static TraitParentModel? TraitParentOf(INamedTypeSymbol typeSymbol)
+    {
+        foreach (var attribute in typeSymbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is not { IsGenericType: true, TypeArguments.Length: 1 } mark
+                || mark.ConstructedFrom.ToDisplayString() != TraitOfAttributeName + "<TParent>"
+                || mark.TypeArguments[0] is not INamedTypeSymbol parent)
+                continue;
+
+            return new TraitParentModel(parent.Name,
+                HasAttribute(parent, HasOwnerAttributeName),
+                HasAttribute(parent, HasAccessScopesAttributeName));
+        }
+
+        return null;
+    }
+
     /// <summary>
     ///     Detects which trait properties (PersistenceId, IAuditable, ISoftDelete, IOwnedEntity) are manually declared
     ///     and which interfaces are explicitly implemented on the entity type.

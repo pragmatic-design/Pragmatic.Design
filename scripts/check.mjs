@@ -1181,6 +1181,7 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-generated.ps1',
     'examples/aot-smoke/publish-and-smoke-web.ps1',
     'examples/aot-smoke/publish-and-smoke-logging.ps1',
+    'examples/aot-smoke/publish-and-smoke-sql.ps1',
   ];
 
   let good = true;

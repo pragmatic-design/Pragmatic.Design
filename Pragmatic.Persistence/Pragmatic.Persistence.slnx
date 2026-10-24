@@ -47,6 +47,7 @@
     <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
@@ -54,6 +55,7 @@
     <Project Path="tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
   </Folder>
   <!-- The Sql engine suite's fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,
        and the diagnostics tests build it to read the errors. -->

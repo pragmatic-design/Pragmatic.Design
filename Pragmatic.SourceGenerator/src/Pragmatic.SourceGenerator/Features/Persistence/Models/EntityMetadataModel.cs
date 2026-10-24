@@ -462,6 +462,12 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     public bool HasParentVisibilityFilter { get; init; }
 
     /// <summary>
+    ///     The parent an entity marked <c>[TraitOf&lt;TParent&gt;]</c> is the child of; null for any other entity. Its
+    ///     <c>ParentVisibilityFilter</c> is part of the shape, declared on every engine.
+    /// </summary>
+    public TraitParentModel? TraitParent { get; init; }
+
+    /// <summary>
     ///     The entity carries a generated <c>InternalVisibilityFilter</c> — a comment trait whose rows
     ///     marked Internal are read only with the <c>comments.view-internal</c> permission.
     /// </summary>
@@ -683,6 +689,7 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                LocalIdentityProperty == other.LocalIdentityProperty &&
                RegistersFromLocalIdentity == other.RegistersFromLocalIdentity &&
                HasParentVisibilityFilter == other.HasParentVisibilityFilter &&
+               Equals(TraitParent, other.TraitParent) &&
                HasInternalVisibilityFilter == other.HasInternalVisibilityFilter &&
                ParentTenantNavigation == other.ParentTenantNavigation &&
                IsValid == other.IsValid &&

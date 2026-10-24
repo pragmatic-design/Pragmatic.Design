@@ -62,6 +62,23 @@ public class TheSqlEngineReadsTheTraitChildsMarkTests
         => Interceptors(Source.Replace("/*MARK*/", ""))
             .Should().NotContain("OwnerId", "nothing says whose child it is");
 
+    /// <summary>
+    ///     The child's filter class is part of its shape, as on the children TraitFeature generates: callers name it, and the Sql
+    ///     engine's slots do. The parent's bypass permission lifts it.
+    /// </summary>
+    [Fact]
+    public void AMarkedChild_DeclaresItsParentVisibilityFilter()
+    {
+        var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(Source.Replace("/*MARK*/", "[TraitOf<Review>]"), References);
+        var filter = result.OutputCompilation.GetTypeByMetadataName("Contoso.Reviews.ReviewComment+ParentVisibilityFilter");
+
+        filter.Should().NotBeNull("the mark says whose child the comment is");
+        filter!.AllInterfaces.Select(i => i.ToDisplayString())
+            .Should().Contain("Pragmatic.Persistence.Query.Filters.IPermissionBasedFilter<Contoso.Reviews.ReviewComment>");
+        GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Single(s => s.Key == "Contoso.Reviews.ReviewComment.ParentVisibilityFilter.g.cs").Value
+            .Should().Contain("\"review.view-all\"", "whoever may see every review may see every comment");
+    }
+
     /// <summary>The plan of the one chain, the read of the comments: the review's map names OwnerId whatever the comment is.</summary>
     private static string Interceptors(string source)
     {

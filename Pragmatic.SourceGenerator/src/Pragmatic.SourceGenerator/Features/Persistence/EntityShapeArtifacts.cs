@@ -59,6 +59,20 @@ internal static class EntityShapeArtifacts
             // ones with a MaxActive, which is what gates the validation template.
             yield return new TemporalHistoryScopeTemplate(entity).RenderOutput();
         }
+
+        // A trait's child declared as an entity and marked [TraitOf<TParent>]: visible where its parent is, as the children
+        // TraitFeature generates are (the template is theirs). The parent's bypass permission is the child's boundary's.
+        if (entity.TraitParent is { } parent)
+        {
+            yield return new Traits.Templates.TraitParentVisibilityFilterTemplate(new Traits.Templates.TraitParentVisibilityModel(
+                entity.Namespace,
+                entity.TypeName,
+                parent.TypeName,
+                parent.TypeName,
+                PermissionNaming.ViewAllPermission(entity.BoundaryName, parent.TypeName),
+                parent.IsOwned,
+                parent.IsScoped)).RenderOutput();
+        }
     }
 
     /// <summary>
