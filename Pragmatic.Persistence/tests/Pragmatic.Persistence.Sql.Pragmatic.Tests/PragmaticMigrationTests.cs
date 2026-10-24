@@ -7,7 +7,8 @@ namespace PragmaticEntities.Tests;
 /// <summary>
 ///     The schema the Sql engine describes for Pragmatic's entities (<c>DefaultSchema</c>) through Pragmatic.Migrations' runner, on the three
 ///     databases it migrates: created from nothing, converged (a second run finds nothing to do), evolved (a column and an index more, the rows
-///     kept). And the two departures from Pragmatic's own schema on SQL Server (<c>SchemaParityTests</c>), each put back alone: neither migrates.
+///     kept). And the two forms EF Core's branch used to write on SQL Server (an unbounded indexed string, a <c>false</c> default), each put
+///     back alone: neither migrates, which is why both branches now write <c>nvarchar(450)</c> and <c>0</c> there.
 /// </summary>
 [Collection("pragmatic databases")]
 public class PragmaticMigrationTests(PragmaticDatabases databases)
@@ -70,7 +71,7 @@ public class PragmaticMigrationTests(PragmaticDatabases databases)
         }
     }
 
-    /// <summary>Pragmatic's schema on SQL Server, one departure put back: its string type for the indexed columns, or its false default.</summary>
+    /// <summary>The schema on SQL Server with one of the old forms put back: an unbounded indexed string, or a false default.</summary>
     [Theory]
     [InlineData("nvarchar(max) indexed")]
     [InlineData("DEFAULT false")]

@@ -17,7 +17,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 ///     MySQL and Oracle), and
 ///     <c>For(SqlDialect)</c> for each. The database is <c>Default</c>: a topology of <c>[Include&lt;TModule, TDatabase&gt;]</c> is reported, not
 ///     followed. Its own source, needing Pragmatic.Migrations and the engine's <c>SqlDialect</c> only, so it compiles alone (<c>SchemaParity</c>).
-///     Where Pragmatic's schema cannot migrate on a provider the spike departs from it, each departure listed in <c>SchemaParityTests</c>.
+///     Where it differs from EF Core's branch, each difference is listed in <c>TheSqlEnginesSchemaIsPragmaticsTests</c>.
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
@@ -94,7 +94,7 @@ internal static partial class SqlInterceptorGenerator
     private static List<TableSchemaModel> PragmaticTables(List<EntityModel> entities, Func<INamedTypeSymbol, EntityModel?> lookup, SqlDialect dialect)
     {
         var schema = dialect switch { SqlDialect.PostgreSql => "public", SqlDialect.SqlServer => "dbo", _ => null };
-        // DEPARTURE: Pragmatic writes false everywhere, which T-SQL has no literal for; MySQL's bool is tinyint(1), Oracle's BOOLEAN reads FALSE back.
+        // T-SQL has no boolean literal (EF Core's branch writes 0 there too); MySQL's bool is tinyint(1), Oracle's BOOLEAN reads FALSE back.
         var falsy = dialect switch { SqlDialect.SqlServer or SqlDialect.MySql => "0", SqlDialect.Oracle => "FALSE", _ => "false" };
         var live = $"\"IsDeleted\" = {falsy}";
         var tables = new SortedDictionary<string, TableSchemaModel>(StringComparer.Ordinal);
@@ -149,7 +149,7 @@ internal static partial class SqlInterceptorGenerator
                 }
 
                 var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type); // Pragmatic's scopes column admits null
-                var type = SchemaTypes.Of(column, dialect, SchemaTypes.MaxLength(SchemaTypes.PropertyOf(entity, column)), keyed.Contains(column.Column)); // DEPARTURE on SQL Server: an indexed string is nvarchar(450), not nvarchar(max)
+                var type = SchemaTypes.Of(column, dialect, SchemaTypes.MaxLength(SchemaTypes.PropertyOf(entity, column)), keyed.Contains(column.Column)); // on SQL Server an indexed string is nvarchar(450), as EF Core's branch writes it
                 columns.Add(new ColumnSchemaModel(column.Column, type, nullable, entity.Keys.Contains(column), softDelete && column.Column == "IsDeleted" ? falsy : null));
             }
 

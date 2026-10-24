@@ -16,9 +16,9 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Each departure is a place where the schema EF Core's branch writes would not migrate as written, or would not be the engine's.
-///         Each becomes a change to <c>SqlTypeMapper</c> when the schemas become one (step 7 of the persistence engines' port), and
-///         this list shrinks with it.
+///         Each departure is a place where the two branches describe the same entity differently. The SQL Server ones that were defects of
+///         EF Core's branch (an unbounded indexed string, a <c>false</c> default: neither migrates) are fixed there; what is left is
+///         <c>[ConcurrencyAware]</c>'s column, a column of its own on the Sql engine and a shadow property EF Core's schema does not list.
 ///     </para>
 ///     <para>
 ///         EF Core's branch emits the schema in a host (an executable) that references Pragmatic.Migrations, with EF Core referenced and a
@@ -40,17 +40,6 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         ["PostgreSql"] = [],
         ["SqlServer"] =
         [
-            // SQL Server indexes no nvarchar(max) (900 bytes a key): a string column a key or an index holds is nvarchar(450), EF Core's own
-            // convention. SqlTypeMapper gives nvarchar(max) to every string without [MaxLength], so the IX_..._OwnerId, _TenantId and
-            // [Unique] indexes would fail to create.
-            "- column Amenities.Name nvarchar(max) NOT NULL", "+ column Amenities.Name nvarchar(450) NOT NULL",
-            "- column Properties.TenantId nvarchar(max) NOT NULL", "+ column Properties.TenantId nvarchar(450) NOT NULL",
-            "- column Reservations.OwnerId nvarchar(max) NOT NULL", "+ column Reservations.OwnerId nvarchar(450) NOT NULL",
-            "- column Reviews.OwnerId nvarchar(max) NOT NULL", "+ column Reviews.OwnerId nvarchar(450) NOT NULL",
-            // T-SQL has no boolean literal: Pragmatic.Migrations writes the default as given (SqlGeneratorBase: DEFAULT {value}), so false fails.
-            "- column Categories.IsDeleted bit NOT NULL DEFAULT false", "+ column Categories.IsDeleted bit NOT NULL DEFAULT 0",
-            "- column Reservations.IsDeleted bit NOT NULL DEFAULT false", "+ column Reservations.IsDeleted bit NOT NULL DEFAULT 0",
-            "- column RoomTypes.IsDeleted bit NOT NULL DEFAULT false", "+ column RoomTypes.IsDeleted bit NOT NULL DEFAULT 0",
             // [ConcurrencyAware]: a column of the database's own on the Sql engine; EF Core keeps a shadow property, which its schema does
             // not list. timestamp is rowversion's name in SQL Server's catalog: what the introspector reads back.
             "+ column Amenities.RowVersion timestamp NOT NULL",
@@ -78,6 +67,24 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         foreach (var line in differences)
             output.WriteLine(line);
         differences.Order(StringComparer.Ordinal).ToList().Should().Equal(Departures[provider].Order(StringComparer.Ordinal).ToList());
+    }
+
+    /// <summary>
+    ///     EF Core's branch on SQL Server alone, as the comparison above cannot see it (both branches wrong alike would still compare equal):
+    ///     no unbounded string a key or an index holds, no <c>false</c> default. Either fails the migration (<c>PragmaticMigrationTests</c>).
+    /// </summary>
+    [Fact]
+    public void EfCoresBranch_OnSqlServer_WritesWhatSqlServerMigrates()
+    {
+        var schema = EfCoreSchema("SqlServer", SqlPragmaticEntities());
+        foreach (var table in schema.Tables)
+        {
+            var keyed = table.Indexes.SelectMany(i => i.Columns).Concat(table.Columns.Where(c => c.IsPrimaryKey).Select(c => c.Name)).ToHashSet(StringComparer.Ordinal);
+            table.Columns.Where(c => keyed.Contains(c.Name) && c.SqlType == "nvarchar(max)").Select(c => $"{table.Name}.{c.Name}").Should().BeEmpty("SQL Server indexes no nvarchar(max)");
+            table.Columns.Where(c => c.DefaultValue == "false").Select(c => $"{table.Name}.{c.Name}").Should().BeEmpty("T-SQL has no boolean literal");
+        }
+
+        schema.Tables.SelectMany(t => t.Columns).Should().Contain(c => c.Name == "IsDeleted" && c.DefaultValue == "0", "the control: a soft-deleted entity is there");
     }
 
     /// <summary>The control: the schemas are not empty, so an equality of nothing to nothing cannot pass.</summary>
