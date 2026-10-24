@@ -62,6 +62,32 @@ public class DocumentTransactionTests(MongoReplicaSet mongo)
         Assert.Throws<InvalidOperationException>(() => { session.BeginTransaction(); session.BeginTransaction(); });
     }
 
+    // A using, not an await using: the abort and the end of the session go out on the driver's synchronous calls.
+    [Fact]
+    public async Task A_transaction_disposed_synchronously_aborts_its_writes()
+    {
+        if (mongo.Unavailable is not null)
+            return;
+        var database = MongoServer.Database();
+        var session = new DocSession(mongo.Client, database);
+        var outside = new DocSession(mongo.Client, database);
+        var customer = Guid.NewGuid();
+        await session.InsertAsync(New(customer, "ORD-S0"));
+
+        var transaction = session.BeginTransaction();
+        using (transaction)
+        {
+            await session.InsertAsync(New(customer, "ORD-S1"));
+            Assert.Equal(2, await session.Query<OrderDocument>().CountAsync((o, c) => o.CustomerId == c, customer));
+        }
+
+        Assert.Null(session.Transaction);
+        Assert.False(transaction.AbortedByServer);
+        Assert.Equal(["ORD-S0"], (await outside.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ToListAsync()).Select(o => o.Number));
+        await using (session.BeginTransaction()) // the session takes a transaction again: the one before ended
+            await session.InsertAsync(New(customer, "ORD-S2"));
+    }
+
     private static OrderDocument New(Guid customer, string number) => new()
     {
         Id = Guid.NewGuid(),

@@ -10,6 +10,7 @@
   <ItemGroup>
     <!-- The decision and the phases are the bridges' internals, one source for every engine: shared with the bridges, not public. -->
     <InternalsVisibleTo Include="Pragmatic.Persistence.Sql.Pragmatic" />
+    <InternalsVisibleTo Include="Pragmatic.Persistence.Documents.Pragmatic" />
   </ItemGroup>
 
   <ItemGroup>

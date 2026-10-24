@@ -10,10 +10,11 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 internal sealed partial class PragmaticQuery
 {
     /// <summary>The query's shape on the Sql engine.</summary>
-    public (string Hint, string Source) Shape() => ShapeText("Pragmatic.Persistence.Sql", "Sql engine", SqlOrdering());
+    public (string Hint, string Source) Shape() => ShapeText("Pragmatic.Persistence.Sql", "Sql engine", "SqlQueryShape", SqlOrdering());
 
-    private SqlOrderingModel SqlOrdering()
+    private QueryOrderingModel SqlOrdering()
         => new(
+            "ToSqlOrdering", $"global::Pragmatic.Persistence.Sql.SqlOrdering<{EntityName}>", "global::Pragmatic.Persistence.Sql.SqlOrderKey",
             Sorts.OrderBy(s => s.Priority).Select(s => new QuerySortModel(s.Name, s.Column.Replace('.', '_'), s.Direction)).ToEquatableArray(),
             Sorts.Select(s => s.Column).Append("PersistenceId").Distinct().Select(c => new OrderKeyModel(c.Replace('.', '_'), OrderKeyDialects(c).ToEquatableArray())).ToEquatableArray());
 

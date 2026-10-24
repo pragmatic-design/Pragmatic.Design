@@ -1,0 +1,127 @@
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Entity;
+
+namespace PragmaticDocuments.Tests;
+
+/// <summary>A property: audited, a tenant's (partitioned by it on Cosmos DB), shared by scope.</summary>
+[Entity]
+[Auditable]
+[HasAccessScopes]
+[Relation.OneToMany<Reservation>]
+public partial class Property : IEntity, ITenantEntity
+{
+    public string Name { get; set; } = "";
+
+    public string TenantId { get; set; } = "";
+}
+
+/// <summary>A stay at a property: soft deleted, owned; the relation kept as its key (PropertyId).</summary>
+[Entity]
+[SoftDelete]
+[HasOwner]
+[Relation.ManyToOne<Property>]
+public partial class Reservation : IEntity
+{
+    public DateTimeOffset CheckIn { get; set; }
+
+    public int Nights { get; set; }
+}
+
+/// <summary>A guest's review: a tenant's (partitioned by it), owned, of a property (its key), the published ones only (a fixed rule on the document).</summary>
+[Entity]
+[HasOwner]
+[Relation.ManyToOne<Property>]
+[VisibleWhen<PublishedReviews>]
+public partial class Review : IEntity, ITenantEntity
+{
+    public string Text { get; set; } = "";
+
+    public bool Published { get; set; }
+
+    public int Stars { get; set; }
+
+    public string TenantId { get; set; } = "";
+}
+
+/// <summary>A stretch of time a person works at a property: a <c>[TemporalRelation]</c>, read at the caller's instant; the property as its key.</summary>
+[Entity]
+[TemporalRelation]
+[Relation.ManyToOne<Property>]
+public partial class StaffAssignment : IEntity, ITemporalRelation
+{
+    public string Person { get; set; } = "";
+
+    public DateTimeOffset ValidFrom { get; set; }
+
+    public DateTimeOffset? ValidTo { get; set; }
+}
+
+/// <summary>A comment on a review, as TraitFeature generates a trait's child ("generated at porting"): visible where its review is (its owner).</summary>
+[Entity]
+[TraitOf<Review>]
+[Relation.ManyToOne<Review>]
+public partial class ReviewComment : IEntity
+{
+    public string Text { get; set; } = "";
+}
+
+/// <summary>A note on a property, as TraitFeature generates one ("generated at porting"): visible where its property is (its scopes).</summary>
+[Entity]
+[TraitOf<Property>]
+[Relation.ManyToOne<Property>]
+public partial class PropertyNote : IEntity
+{
+    public string Text { get; set; } = "";
+}
+
+/// <summary>A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted.</summary>
+[Entity]
+[SoftDelete]
+[GenerateHierarchy]
+[Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]
+public partial class Category : IEntity
+{
+    public string Name { get; set; } = "";
+}
+
+/// <summary>A data scope rule computed at read time: the properties by the sea belong to the scope "seaside" (a caller holding it sees them).</summary>
+public sealed class SeasidePropertiesRule : Pragmatic.Persistence.Scopes.DataScopeRule<Property>
+{
+    public override string ScopeName => "seaside";
+
+    public override Pragmatic.Persistence.Scopes.ScopeStrategy Strategy => Pragmatic.Persistence.Scopes.ScopeStrategy.Computed;
+
+    public override System.Linq.Expressions.Expression<Func<Property, bool>> ToExpression() => p => p.Name == "MARE";
+}
+
+/// <summary>A data scope rule written on the saved documents (Materialized): the properties whose name starts with "A" carry "scope:alpine".</summary>
+public sealed class AlpinePropertiesRule : Pragmatic.Persistence.Scopes.DataScopeRule<Property>
+{
+    public override string ScopeName => "alpine";
+
+    public override System.Linq.Expressions.Expression<Func<Property, bool>> ToExpression() => p => p.Name.StartsWith("A");
+}
+
+/// <summary>The reviews anyone may read: a fixed condition, as Pragmatic's rules are.</summary>
+public sealed class PublishedReviews : Pragmatic.Persistence.Query.Filters.VisibilityRule<Review>
+{
+    public override System.Linq.Expressions.Expression<Func<Review, bool>> ToExpression() => r => r.Published;
+}
+
+/// <summary>An amenity, versioned: its RowVersion is the document's _v. It raises its lifecycle as domain events, as the Sql engine's test entity does.</summary>
+[Entity]
+[ConcurrencyAware]
+public partial class Amenity : IEntity, Pragmatic.Events.IHasDomainEvents, Pragmatic.Events.IRaisesLifecycleEvents
+{
+    private readonly List<Pragmatic.Events.IDomainEvent> _events = [];
+
+    public string Name { get; set; } = "";
+
+    public IReadOnlyList<Pragmatic.Events.IDomainEvent> DomainEvents => _events;
+
+    public void ClearDomainEvents() => _events.Clear();
+
+    public void RaiseLifecycleEvents(Pragmatic.Events.EntityLifecycle lifecycle) => _events.Add(new AmenityChanged(Name, lifecycle, DateTimeOffset.UnixEpoch));
+}
+
+public sealed record AmenityChanged(string Name, Pragmatic.Events.EntityLifecycle Lifecycle, DateTimeOffset OccurredAt) : Pragmatic.Events.IDomainEvent;

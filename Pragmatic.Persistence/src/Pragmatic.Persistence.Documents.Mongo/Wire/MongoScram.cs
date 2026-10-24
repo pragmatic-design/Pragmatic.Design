@@ -14,14 +14,15 @@ internal static class MongoScram
 {
     private const string Mechanism = "SCRAM-SHA-256";
 
-    public static async Task AuthenticateAsync(MongoConnection connection, string user, string password, string source, CancellationToken ct)
+    /// <summary>The exchange on <paramref name="connection" />'s asynchronous calls, or its synchronous ones (<paramref name="useAsync" />, as <c>MongoConnection</c>).</summary>
+    public static async ValueTask AuthenticateCoreAsync(MongoConnection connection, string user, string password, string source, bool useAsync, CancellationToken ct)
     {
         var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
         var clientFirstBare = "n=" + Escape(user) + ",r=" + nonce;
         BsonDocument reply;
         try
         {
-            reply = await connection.CommandAsync(SaslStart(clientFirstBare, source), ct).ConfigureAwait(false);
+            reply = await connection.CommandCoreAsync(SaslStart(clientFirstBare, source), useAsync, ct).ConfigureAwait(false);
         }
         catch (MongoCommandException e)
         {
@@ -50,7 +51,7 @@ internal static class MongoScram
 
         try
         {
-            reply = await connection.CommandAsync(SaslContinue((int)conversation, withoutProof + ",p=" + Convert.ToBase64String(proof), source), ct).ConfigureAwait(false);
+            reply = await connection.CommandCoreAsync(SaslContinue((int)conversation, withoutProof + ",p=" + Convert.ToBase64String(proof), source), useAsync, ct).ConfigureAwait(false);
         }
         catch (MongoCommandException e)
         {
@@ -64,7 +65,7 @@ internal static class MongoScram
             throw new MongoAuthenticationException("The server's signature does not match: it does not know the password, or the exchange was tampered with.");
         // skipEmptyExchange: the server ends the conversation here; an older one asks for one more empty round.
         while (!(reply.TryGetBoolean("done", out var done) && done))
-            reply = await connection.CommandAsync(SaslContinue((int)conversation, "", source), ct).ConfigureAwait(false);
+            reply = await connection.CommandCoreAsync(SaslContinue((int)conversation, "", source), useAsync, ct).ConfigureAwait(false);
     }
 
     private static ReadOnlyMemory<byte> SaslStart(string clientFirstBare, string source)

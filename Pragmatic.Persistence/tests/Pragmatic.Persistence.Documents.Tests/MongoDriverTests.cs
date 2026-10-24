@@ -28,6 +28,22 @@ public class MongoDriverTests(MongoServer mongo)
         Assert.True(status.TryGetDocument("authInfo", out var auth) && auth.TryGetDocument("authenticatedUsers", out var users) && users.Documents().Count == 1);
     }
 
+    // A client of its own: its first command opens the connection, so the handshake and SCRAM run on the synchronous calls too.
+    [Fact]
+    public async Task A_synchronous_command_opens_authenticates_and_answers()
+    {
+        if (mongo.Unavailable is not null)
+            return;
+        await using var client = new MongoClient(mongo.ConnectionString);
+        var reply = client.RunCommand("admin", w => w.Write("ping", 1));
+        Assert.True(reply.TryGetNumber("ok", out var ok) && ok == 1);
+        var status = client.RunCommand("admin", w => w.Write("connectionStatus", 1));
+        Assert.True(status.TryGetDocument("authInfo", out var auth) && auth.TryGetDocument("authenticatedUsers", out var users) && users.Documents().Count == 1);
+        var settings = MongoSettings.Parse(mongo.ConnectionString) with { Password = "not-the-password" };
+        await using var refusing = new MongoClient(settings);
+        Assert.Throws<MongoAuthenticationException>(() => refusing.RunCommand("admin", w => w.Write("ping", 1)));
+    }
+
     [Fact]
     public async Task A_wrong_password_is_refused()
     {

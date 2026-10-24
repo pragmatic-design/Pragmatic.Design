@@ -34,6 +34,19 @@ public sealed class MongoClient : IAsyncDisposable
     ///     for <c>ok: 0</c> and <see cref="MongoWriteException" /> for a refused document.
     /// </summary>
     public Task<BsonDocument> RunCommandAsync(string database, Action<BsonWriter> build, CancellationToken ct = default)
+        => RunCommandAsync(Encode(database, build), ct);
+
+    /// <summary>
+    ///     The command of <see cref="RunCommandAsync(string, Action{BsonWriter}, CancellationToken)" /> run synchronously, on the socket's and the
+    ///     stream's synchronous calls: for what has to finish where no await is possible (a transaction's synchronous dispose).
+    /// </summary>
+    public BsonDocument RunCommand(string database, Action<BsonWriter> build)
+        => Synchronous.Result(RunCommandCoreAsync(Encode(database, build), useAsync: false, CancellationToken.None));
+
+    /// <summary>Runs a command already encoded (its <c>$db</c> included).</summary>
+    public Task<BsonDocument> RunCommandAsync(ReadOnlyMemory<byte> command, CancellationToken ct = default) => RunCommandCoreAsync(command, useAsync: true, ct).AsTask();
+
+    private static ReadOnlyMemory<byte> Encode(string database, Action<BsonWriter> build)
     {
         ArgumentNullException.ThrowIfNull(build);
         var writer = new BsonWriter();
@@ -43,19 +56,21 @@ public sealed class MongoClient : IAsyncDisposable
             throw new InvalidOperationException("The command left a document or an array open.");
         writer.Write("$db", database);
         writer.EndDocument();
-        return RunCommandAsync(writer.Written, ct);
+        return writer.Written;
     }
 
-    /// <summary>Runs a command already encoded (its <c>$db</c> included).</summary>
-    public async Task<BsonDocument> RunCommandAsync(ReadOnlyMemory<byte> command, CancellationToken ct = default)
+    private async ValueTask<BsonDocument> RunCommandCoreAsync(ReadOnlyMemory<byte> command, bool useAsync, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        await _slots.WaitAsync(ct).ConfigureAwait(false);
+        if (useAsync)
+            await _slots.WaitAsync(ct).ConfigureAwait(false);
+        else
+            _slots.Wait(ct);
         MongoConnection? connection = null;
         try
         {
-            connection = _idle.TryTake(out var kept) ? kept : await MongoConnection.OpenAsync(Settings, ct).ConfigureAwait(false);
-            return await connection.CommandAsync(command, ct).ConfigureAwait(false);
+            connection = _idle.TryTake(out var kept) ? kept : useAsync ? await MongoConnection.OpenAsync(Settings, ct).ConfigureAwait(false) : MongoConnection.Open(Settings);
+            return await connection.CommandCoreAsync(command, useAsync, ct).ConfigureAwait(false);
         }
         finally
         {
@@ -63,8 +78,10 @@ public sealed class MongoClient : IAsyncDisposable
             {
                 if (connection.Healthy && !_disposed)
                     _idle.Add(connection);
-                else
+                else if (useAsync)
                     await connection.DisposeAsync().ConfigureAwait(false);
+                else
+                    connection.Dispose();
             }
 
             _slots.Release();

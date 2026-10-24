@@ -56,6 +56,41 @@ internal static class DocDiagnostics
         DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor TooManyTracked = new(
+        "PRAG3107",
+        "A Pragmatic entity has more fields than a save tracks",
+        "'{0}' has {1} document fields besides its key and version: a unit of work tracks up to 64 (one bit each); move some into an embedded document",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    /// <summary>A warning, as the Sql engine's PRAG3033: EF Core runs the query as before; the documents engine refuses it at run time.</summary>
+    public static readonly DiagnosticDescriptor QueryNotCompiled = new(
+        "PRAG3108",
+        "A declared query is not compiled for the documents engine",
+        "{0} is not compiled for the documents engine: {1}. IReadRepository.RunAsync refuses it on the documents engine; EF Core runs it as before.",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    /// <summary>A warning, as the Sql engine's PRAG3034: a grid adapter compiled without a part of its declaration.</summary>
+    public static readonly DiagnosticDescriptor GridPartlyCompiled = new(
+        "PRAG3109",
+        "A grid adapter is compiled without a part of its declaration",
+        "{0} is compiled for the documents engine without {1}. EF Core runs it as before.",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    /// <summary>A warning, as the Sql engine's PRAG3035: EF Core runs the rule as before; registered and computed, the documents engine refuses it at read.</summary>
+    public static readonly DiagnosticDescriptor ScopeRuleNotCompiled = new(
+        "PRAG3110",
+        "A data scope rule of a Pragmatic entity is not compiled for the documents engine",
+        "The data scope rule {0} is not compiled for the documents engine: {1}. Registered and Computed or Hybrid, it is refused at read; EF Core runs it as before.",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>Information: the call site's query as the generator wrote it (shown with -p:PragmaticCensus=true promoted, or in the IDE).</summary>
     public static readonly DiagnosticDescriptor Translated = new(
         "PRAG3199",
