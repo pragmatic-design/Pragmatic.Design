@@ -1184,6 +1184,8 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-sql.ps1',
     // Starts MongoDB in Docker for the driver to talk to, and fails without it.
     'examples/aot-smoke/publish-and-smoke-documents.ps1',
+    // Two boundaries on two engines: SQLite in the process, MongoDB in Docker as above.
+    'examples/aot-smoke/publish-and-smoke-boundaries.ps1',
   ];
 
   let good = true;

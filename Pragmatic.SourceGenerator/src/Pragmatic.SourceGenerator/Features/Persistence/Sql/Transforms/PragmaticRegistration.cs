@@ -19,11 +19,13 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
 {
     public static readonly PragmaticRegistration Sql = new(new(
         "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.ISqlFilters", "global::Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters",
-        "global::Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.Pragmatic.ISqlSavePhase", "SqlRepository"));
+        "global::Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.Pragmatic.ISqlSavePhase", "SqlRepository",
+        "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(
         "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.IDocFilters", "global::Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters",
-        "global::Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.Pragmatic.IDocSavePhase", "DocRepository"));
+        "global::Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.Pragmatic.IDocSavePhase", "DocRepository",
+        "DocPersistence", "Pragmatic.Persistence.Documents"));
 
     /// <summary>
     ///     One source per boundary of <paramref name="entities" /> (the ones the engine serves); none without the dependency injection abstractions
@@ -42,7 +44,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
             if (!SymbolEqualityComparer.Default.Equals(boundary.ContainingAssembly, compilation.Assembly))
                 continue; // a boundary of a referenced assembly registers there
             var model = new BoundaryPersistenceModel(
-                VirtualFolderHints.ForType(boundary.Name, "SqlPersistence", boundary.ContainingNamespace.ToDisplayString()),
+                VirtualFolderHints.ForType(boundary.Name, engine.Artifact, boundary.ContainingNamespace.ToDisplayString()),
                 boundary.ContainingNamespace.IsGlobalNamespace ? null : boundary.ContainingNamespace.ToDisplayString(),
                 boundary.Name,
                 boundary.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),

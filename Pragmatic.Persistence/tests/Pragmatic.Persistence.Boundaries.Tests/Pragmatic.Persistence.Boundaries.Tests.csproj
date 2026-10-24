@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Two boundaries on two engines in one host: Catalog on the Sql engine (SQLite in memory), Reviews on the documents engine (mongo:8),
+       each named by [PersistenceEngine] on its [Boundary], each registered by the code the generator emits for it (Add{Boundary}Persistence). -->
+  <PropertyGroup>
+    <!-- Starts a Testcontainer (MongoDB): scripts/check.mjs runs these one at a time. -->
+    <RequiresDocker>true</RequiresDocker>
+    <IsTestProject>true</IsTestProject>
+    <!-- Not the folder's namespace, on purpose, as the two bridge suites: under Pragmatic.Persistence a simple name resolves to the engines'
+         own types (their attributes) before the usings bring in Pragmatic's. -->
+    <RootNamespace>PragmaticBoundaries.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <!-- MongoDB as a generic container. -->
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Pragmatic\Pragmatic.Persistence.Sql.Pragmatic.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Pragmatic\Pragmatic.Persistence.Documents.Pragmatic.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- The callers the two bridge suites read as (TestUser): the same callers on both engines. -->
+    <Compile Include="..\Pragmatic.Persistence.Sql.Pragmatic.Tests\Callers.cs" Link="Shared\Callers.cs" />
+  </ItemGroup>
+
+</Project>

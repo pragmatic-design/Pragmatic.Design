@@ -14,7 +14,7 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
     private const string Services = "global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions";
     private const string Keyed = "global::Microsoft.Extensions.DependencyInjection.ServiceProviderKeyedServiceExtensions";
 
-    protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
+    protected override string? GeneratorName => model.Engine.Generator;
 
     protected override string? SourceInfo => $"the persistence of {model.BoundaryName}";
 
