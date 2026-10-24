@@ -149,6 +149,14 @@
           "Pragmatic.Specification": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
       "pragmatic.persistence.sql": {
         "type": "Project"
       },

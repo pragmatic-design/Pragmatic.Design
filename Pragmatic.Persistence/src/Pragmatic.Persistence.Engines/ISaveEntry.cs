@@ -1,7 +1,7 @@
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
 
-namespace Pragmatic.Persistence.Sql.Pragmatic;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>What the save's phases read and change of a tracked entity, whatever engine tracks it.</summary>
 internal interface ISaveEntry

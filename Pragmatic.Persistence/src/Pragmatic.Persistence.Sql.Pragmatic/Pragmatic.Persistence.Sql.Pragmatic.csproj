@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <!-- What every engine's bridge shares: the filter decision, the save's phases, the scope rule registry, the grid page. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Engines\Pragmatic.Persistence.Engines.csproj" />
     <!-- Pragmatic's contracts the engine serves: the filters and their toggle, the repositories, the unit of work, the scopes. -->
     <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <!-- The unit of work's events: dispatched after the commit, or deferred to the commit scope's batch, as EfCoreUnitOfWork's. -->

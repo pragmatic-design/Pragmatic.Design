@@ -3,7 +3,7 @@ using Pragmatic.Events;
 using Pragmatic.Persistence.Lifecycle;
 using Pragmatic.Persistence.Repository;
 
-namespace Pragmatic.Persistence.Sql.Pragmatic;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>The steps of a save before and after its phases that no engine changes: the generated values, then the domain events out.</summary>
 internal static class SaveSteps

@@ -1,6 +1,7 @@
 using Pragmatic.Events;
 using Pragmatic.Identity;
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Engines;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Lifecycle;
 using Pragmatic.Persistence.Repository;

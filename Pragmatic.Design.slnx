@@ -708,6 +708,7 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />

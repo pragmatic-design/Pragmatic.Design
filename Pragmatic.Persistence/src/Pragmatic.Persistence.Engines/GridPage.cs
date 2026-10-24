@@ -1,4 +1,4 @@
-namespace Pragmatic.Persistence.Sql.Pragmatic;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>
 ///     The page a grid asked for, as a <c>[GridAdapter]</c> reads it: its rows, and its total when the grid asked for one (DevExpress

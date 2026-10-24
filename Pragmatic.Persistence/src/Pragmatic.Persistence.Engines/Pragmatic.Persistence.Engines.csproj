@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Engines</RootNamespace>
+    <Description>What the bridges of Pragmatic's persistence engines other than EF Core share: how a filter of an entity is decided, the phases a unit of work's save runs, the registry of compiled data scope rules, a grid's page.</Description>
+    <PackageTags>pragmatic;persistence;engines</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The decision and the phases are the bridges' internals, one source for every engine: shared with the bridges, not public. -->
+    <InternalsVisibleTo Include="Pragmatic.Persistence.Sql.Pragmatic" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- The save's domain events: dispatched after the commit, or deferred to the commit scope's batch. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -3,7 +3,7 @@ using Pragmatic.Identity;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Scopes;
 
-namespace Pragmatic.Persistence.Sql.Pragmatic;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>
 ///     How Pragmatic decides a filter of its entities with EF Core, for either engine: the mode and the lifts of <see cref="IQueryFilterToggle" />,
@@ -12,7 +12,7 @@ namespace Pragmatic.Persistence.Sql.Pragmatic;
 ///     filters EF installs on the model: where a family is both (soft delete, tenant), the rows come back only when both halves are lifted.
 ///     Read by the Sql engine's bridge (<c>PragmaticSqlFilters</c>); it names no engine, so another engine's bridge decides the same way.
 /// </summary>
-internal sealed class PragmaticFilterDecision(ICurrentUser? currentUser, IQueryFilterToggle? toggle, QueryFilterOptions? options, IEnumerable<DataScopeRule>? scopeRules = null)
+internal sealed class PragmaticFilterDecision(ICurrentUser? currentUser, IQueryFilterToggle? toggle, QueryFilterOptions? options, CompiledScopeRuleRegistry compiledRules, IEnumerable<DataScopeRule>? scopeRules = null)
 {
     private const string TenantQueryFilterName = "Tenant"; // EfCoreQueryExecutor.TenantQueryFilterName
 
@@ -40,8 +40,8 @@ internal sealed class PragmaticFilterDecision(ICurrentUser? currentUser, IQueryF
     {
         foreach (var rule in _scopeRules)
         {
-            if (rule.EntityType == entity && rule.Strategy is ScopeStrategy.Computed or ScopeStrategy.Hybrid && !CompiledScopeRules.IsCompiled(rule.GetType()))
-                throw CompiledScopeRules.NotCompiled(rule);
+            if (rule.EntityType == entity && rule.Strategy is ScopeStrategy.Computed or ScopeStrategy.Hybrid && !compiledRules.IsCompiled(rule.GetType()))
+                throw CompiledScopeRuleRegistry.NotCompiled(rule);
         }
     }
 

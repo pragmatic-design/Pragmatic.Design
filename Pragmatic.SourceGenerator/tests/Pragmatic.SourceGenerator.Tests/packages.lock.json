@@ -917,16 +917,6 @@
       "pragmatic.persistence.sql": {
         "type": "Project"
       },
-      "pragmatic.persistence.sql.pragmatic": {
-        "type": "Project",
-        "dependencies": {
-          "Pragmatic.Actions": "[1.0.0, )",
-          "Pragmatic.Events": "[1.0.0, )",
-          "Pragmatic.Persistence": "[1.0.0, )",
-          "Pragmatic.Persistence.Sql": "[1.0.0, )",
-          "Pragmatic.Result": "[1.0.0, )"
-        }
-      },
       "pragmatic.privacy": {
         "type": "Project",
         "dependencies": {

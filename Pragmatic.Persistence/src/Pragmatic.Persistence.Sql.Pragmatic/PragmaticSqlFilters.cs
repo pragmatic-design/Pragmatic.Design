@@ -1,6 +1,7 @@
 using Pragmatic.Authorization;
 using Pragmatic.Identity;
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Engines;
 using Pragmatic.Persistence.Query.Filters;
 
 namespace Pragmatic.Persistence.Sql.Pragmatic;
@@ -23,7 +24,7 @@ public sealed class PragmaticSqlFilters(
     TimeProvider? timeProvider = null,
     IEnumerable<global::Pragmatic.Persistence.Scopes.DataScopeRule>? scopeRules = null) : ISqlFilters
 {
-    private readonly PragmaticFilterDecision _decision = new(currentUser, toggle, options, scopeRules);
+    private readonly PragmaticFilterDecision _decision = new(currentUser, toggle, options, CompiledScopeRules.Registry, scopeRules);
 
     /// <summary>The mode in effect: the toggle's, Normal without one.</summary>
     public FilterMode Mode => _decision.Mode;
