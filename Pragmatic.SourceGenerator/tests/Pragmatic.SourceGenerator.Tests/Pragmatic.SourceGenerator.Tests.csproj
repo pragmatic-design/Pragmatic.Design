@@ -40,6 +40,9 @@
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
     <!-- The Sql engine's runtime: the chains the Sql feature translates are written on its SqlQuery<T>. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <!-- The documents engine's runtime (and its MongoDB driver): the chains the documents feature translates are written on its
+         DocQuery<T>. Not its bridge, for the reason below. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <!-- The schema type both schemas are described in: TheSqlEnginesSchemaIsPragmaticsTests. Not the Sql engine's bridge: a test
          compilation sees this project's references, and the bridge there would make the Sql engine referenced in every test. -->
     <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />

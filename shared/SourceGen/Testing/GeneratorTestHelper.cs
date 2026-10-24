@@ -157,17 +157,37 @@ public static class GeneratorTestHelper
         return generated.ToMetadataReference();
     }
 
+    /// <summary>
+    ///     Runs a source generator whose output intercepts call sites: the compilation opts in to interceptors in
+    ///     <paramref name="interceptorsNamespace" />, as a consumer's project does with <c>InterceptorsNamespaces</c>, so that
+    ///     <see cref="GetCompilationErrors" /> checks the generated interceptors like the rest of the output.
+    /// </summary>
+    /// <param name="source">The C# source code to compile.</param>
+    /// <param name="interceptorsNamespace">The namespace the generated interceptors live in.</param>
+    /// <param name="additionalReferences">Optional additional metadata references.</param>
+    public static SourceGenRunResult RunGeneratorWithInterceptors<TGenerator>(
+        string source,
+        string interceptorsNamespace,
+        params MetadataReference[] additionalReferences)
+        where TGenerator : IIncrementalGenerator, new()
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
+            .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", interceptorsNamespace)]);
+        return RunGenerator(new TGenerator(), source, OutputKind.DynamicallyLinkedLibrary, additionalReferences, parseOptions: parseOptions);
+    }
+
     private static SourceGenRunResult RunGenerator(
         IIncrementalGenerator generator,
         string source,
         OutputKind outputKind,
         MetadataReference[] additionalReferences,
-        AdditionalText[]? additionalTexts = null)
+        AdditionalText[]? additionalTexts = null,
+        CSharpParseOptions? parseOptions = null)
     {
         // Parse with a file path so the tree has a non-empty FilePath. LocationInfo.From returns null
         // for a path-less tree, which makes diagnostics guarded on a non-null location silently
         // suppress themselves under test (real compilations always have a file path).
-        var syntaxTree = CSharpSyntaxTree.ParseText(source, path: "TestSource.cs");
+        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions, path: "TestSource.cs");
         var references = GetBaseReferences().Concat(additionalReferences).ToArray();
 
         var compilation = CSharpCompilation.Create(
@@ -178,7 +198,7 @@ public static class GeneratorTestHelper
                 .WithNullableContextOptions(NullableContextOptions.Enable));
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            [generator.AsSourceGenerator()], additionalTexts: additionalTexts ?? []);
+            [generator.AsSourceGenerator()], additionalTexts: additionalTexts ?? [], parseOptions: parseOptions);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         var runResult = driver.GetRunResult();
