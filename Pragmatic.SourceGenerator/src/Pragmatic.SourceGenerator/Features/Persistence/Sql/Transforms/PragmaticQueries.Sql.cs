@@ -14,7 +14,7 @@ internal sealed partial class PragmaticQuery
 
     private QueryOrderingModel SqlOrdering()
         => new(
-            "ToSqlOrdering", $"global::Pragmatic.Persistence.Sql.SqlOrdering<{EntityName}>", "global::Pragmatic.Persistence.Sql.SqlOrderKey",
+            "ToSqlOrdering", $"global::Pragmatic.Persistence.Sql.Planning.SqlOrdering<{EntityName}>", "global::Pragmatic.Persistence.Sql.Planning.SqlOrderKey",
             Sorts.OrderBy(s => s.Priority).Select(s => new QuerySortModel(s.Name, s.Column.Replace('.', '_'), s.Direction)).ToEquatableArray(),
             Sorts.Select(s => s.Column).Append("PersistenceId").Distinct().Select(c => new OrderKeyModel(c.Replace('.', '_'), OrderKeyDialects(c).ToEquatableArray())).ToEquatableArray());
 

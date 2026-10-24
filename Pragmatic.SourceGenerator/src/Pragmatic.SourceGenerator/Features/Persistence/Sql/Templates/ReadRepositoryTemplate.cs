@@ -13,7 +13,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
     private const string Task = "global::System.Threading.Tasks.Task";
     private const string Token = "global::System.Threading.CancellationToken ct = default";
     private const string Spec = "global::Pragmatic.Specification.ISpecification";
-    private const string Matching = "Matching(global::Pragmatic.Persistence.Sql.Pragmatic.SqlSpecifications.ToPredicate(spec))";
+    private const string Matching = "Matching(global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate(spec))";
 
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
@@ -95,7 +95,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
 
         var type = model.EntityType;
         var project = query.Projected ? $".Project<{query.ResultType}>()" : "";
-        var filtered = $"session.Query<{type}>().Matching(global::Pragmatic.Persistence.Sql.Pragmatic.SqlSpecifications.ToPredicate(q.ToSpecification()))";
+        var filtered = $"session.Query<{type}>().Matching(global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate(q.ToSpecification()))";
         AppendLine($"                case {query.QueryType} q:");
         AppendLine("                {");
         if (paged)
@@ -125,7 +125,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
+        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
         AppendLine("    {");
         AppendLine("        private readonly SqlReadRepository _read = new(unitOfWork.Session);");
         AppendLine();

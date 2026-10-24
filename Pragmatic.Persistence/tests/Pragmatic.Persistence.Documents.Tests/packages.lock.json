@@ -232,7 +232,7 @@
       "pragmatic.persistence.expressions": {
         "type": "Project"
       },
-      "pragmatic.persistence.sql": {
+      "pragmatic.persistence.sql.core": {
         "type": "Project",
         "dependencies": {
           "Pragmatic.Persistence.Expressions": "[1.0.0, )"
@@ -241,7 +241,7 @@
       "pragmatic.persistence.workload": {
         "type": "Project",
         "dependencies": {
-          "Pragmatic.Persistence.Sql": "[1.0.0, )"
+          "Pragmatic.Persistence.Sql.Core": "[1.0.0, )"
         }
       },
       "pragmatic.testing": {

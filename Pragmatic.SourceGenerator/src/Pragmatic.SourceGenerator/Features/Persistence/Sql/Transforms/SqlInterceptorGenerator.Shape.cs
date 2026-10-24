@@ -54,7 +54,7 @@ internal static partial class SqlInterceptorGenerator
             {
                 if (PragmaticReadRepository.For(entity, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList()) is { } repository)
                     repositories.Add(repository);
-                if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.SqlHierarchy.KeysAsync") is { } hierarchy)
+                if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
                     repositories.Add(hierarchy); // its chains are bound and intercepted, as a repository's
             }
 

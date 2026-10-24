@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- What the runtime cannot do without the provider: SQL Server's bulk copy as the bulk load behind InsertManyAsync. -->
     <PackageReference Include="Microsoft.Data.SqlClient" />
-    <ProjectReference Include="..\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
   </ItemGroup>
 
 </Project>

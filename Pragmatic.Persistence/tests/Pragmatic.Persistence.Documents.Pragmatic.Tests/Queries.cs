@@ -4,7 +4,7 @@ using Pragmatic.Persistence.Query.Attributes;
 
 namespace PragmaticDocuments.Tests;
 
-// The Sql engine's test declarations (tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Queries.cs), on the documents engine's entities.
+// The Sql engine's test declarations (tests/Pragmatic.Persistence.Sql.Tests/Queries.cs), on the documents engine's entities.
 
 /// <summary>A paged search over reviews, declared as Pragmatic declares queries: filters, a sort with its default, a page.</summary>
 [Query<Review>]

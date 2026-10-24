@@ -96,7 +96,7 @@ internal sealed partial class EntityModel
                             ?? attribute.NamedArguments.FirstOrDefault(n => n.Key == "Discriminator").Value.Value as string ?? "Discriminator";
         var tpc = IsTpc(root);
         var stringType = compilation?.GetSpecialType(SpecialType.System_String) ?? throw new InvalidOperationException("a hierarchy needs the compilation to type its discriminator");
-        const string reader = "global::Pragmatic.Persistence.Sql.SqlValue.String({r}, {i})";
+        const string reader = "global::Pragmatic.Persistence.Sql.Planning.SqlValue.String({r}, {i})";
         var isRoot = SymbolEqualityComparer.Default.Equals(type, root);
         // Every [Entity] below this type, at any depth (a table per concrete type: one level only, its view unions the concrete tables).
         _ = entities;

@@ -1,6 +1,9 @@
 using System.Data;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using Pragmatic.Persistence.Sql.Planning;
+using Pragmatic.Persistence.Sql.Schema;
+using Pragmatic.Persistence.Sql.Writing;
 
 namespace Pragmatic.Persistence.Sql.SqlClient;
 

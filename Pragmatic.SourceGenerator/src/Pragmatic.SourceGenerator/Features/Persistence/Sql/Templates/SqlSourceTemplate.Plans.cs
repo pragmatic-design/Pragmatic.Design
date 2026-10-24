@@ -28,7 +28,7 @@ internal sealed partial class SqlSourceTemplate
         AppendLine("        internal static void Register()");
         AppendLine("        {");
         foreach (var plan in plans.Where(p => p.Registered))
-            AppendLine($"            {Sql}.SqlPlans.Add(static () => {plan.ClassName}.Instance);");
+            AppendLine($"            {Sql}.Planning.SqlPlans.Add(static () => {plan.ClassName}.Instance);");
         AppendLine("        }");
         AppendLine("    }");
         AppendLine();
@@ -37,8 +37,8 @@ internal sealed partial class SqlSourceTemplate
     private void RenderPlan(TranslatedPlanModel plan)
     {
         var kinds = plan.Kinds.Count == 0
-            ? $"global::System.Array.Empty<{Sql}.SqlParamKind>()"
-            : $"new {Sql}.SqlParamKind[] {{ " + Join(plan.Kinds.Select(k => $"{Sql}.SqlParamKind.{k}")) + " }";
+            ? $"global::System.Array.Empty<{Sql}.Planning.SqlParamKind>()"
+            : $"new {Sql}.Planning.SqlParamKind[] {{ " + Join(plan.Kinds.Select(k => $"{Sql}.Planning.SqlParamKind.{k}")) + " }";
         if (plan.Origin is not null)
             AppendLine($"    /// <summary>{plan.Origin}</summary>");
         AppendLine($"    {(plan.FileScoped ? "file" : "internal")} static class {plan.TypeName}");
@@ -58,7 +58,7 @@ internal sealed partial class SqlSourceTemplate
         AppendLine($"            {Reader(plan.Reader)},");
         RenderLoader(plan.Load);
         // The origin: the tag of the plan's metrics, the comment on its statements. Before's rows are turned back once read; ShapeAsync names the members the client may ask for.
-        var shape = plan.HasShapeColumns ? $", shapeColumns: new {Sql}.SqlShapeColumn[] {{ " + Join(plan.ShapeColumns.Select(c => $"new(\"{c.Name}\", {Sql}.SqlParamKind.{c.Kind})")) + " }" : "";
+        var shape = plan.HasShapeColumns ? $", shapeColumns: new {Sql}.Shapes.SqlShapeColumn[] {{ " + Join(plan.ShapeColumns.Select(c => $"new(\"{c.Name}\", {Sql}.Planning.SqlParamKind.{c.Kind})")) + " }" : "";
         AppendLine($"            {Literal(plan.Tag)}{(plan.Reversed ? ", reversed: true" : "")}{shape},");
         // No MySQL statement (RETURNING, a table-valued function) or Oracle one (RETURNING rows): the plan says so when asked.
         AppendLine($"            mySql: {LiteralOrNull(plan.MySql)},");
@@ -77,8 +77,8 @@ internal sealed partial class SqlSourceTemplate
     private static string Filters(PlanFiltersModel filters)
     {
         static string Text(string value) => value.Length == 0 ? "null" : Literal(value);
-        var slots = filters.Slots.Select(s => $"new(typeof(global::{s.Entity}), {Sql}.SqlFilterFamily.{s.Family}, {(s.FilterClass.Length == 0 ? "null" : $"typeof(global::{s.FilterClass})")}, {Text(s.Name)}, {Text(s.Bypass)})");
-        return $"new {Sql}.SqlPlanFilters(new {Sql}.SqlFilterSlot[] {{ " + Join(slots) + " }, " + filters.FirstValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
+        var slots = filters.Slots.Select(s => $"new(typeof(global::{s.Entity}), {Sql}.Filters.SqlFilterFamily.{s.Family}, {(s.FilterClass.Length == 0 ? "null" : $"typeof(global::{s.FilterClass})")}, {Text(s.Name)}, {Text(s.Bypass)})");
+        return $"new {Sql}.Planning.SqlPlanFilters(new {Sql}.Filters.SqlFilterSlot[] {{ " + Join(slots) + " }, " + filters.FirstValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
     }
 
     private void RenderHierarchyPlan(HierarchyPlanModel plan)
@@ -89,8 +89,8 @@ internal sealed partial class SqlSourceTemplate
         AppendLine($"            {Literal(plan.Sqlite)},");
         AppendLine($"            {Literal(plan.PostgreSql)},");
         AppendLine($"            {Literal(plan.SqlServer)},");
-        AppendLine($"            new {Sql}.SqlParamKind[] {{ {Sql}.SqlParamKind.{plan.KeyKind} }},");
-        AppendLine($"            static (in SqlQuery<{plan.EntityType}> q, global::System.Data.Common.DbParameterCollection p, SqlDialect d) => {{ p[0].Value = {Sql}.SqlValue.ToDatabase(d, q.Slot(0)); }},");
+        AppendLine($"            new {Sql}.Planning.SqlParamKind[] {{ {Sql}.Planning.SqlParamKind.{plan.KeyKind} }},");
+        AppendLine($"            static (in SqlQuery<{plan.EntityType}> q, global::System.Data.Common.DbParameterCollection p, SqlDialect d) => {{ p[0].Value = {Sql}.Planning.SqlValue.ToDatabase(d, q.Slot(0)); }},");
         AppendLine($"            EntityMaps.Read_{plan.ReaderName},");
         AppendLine("            null,");
         AppendLine($"            {Literal(plan.Tag)},");

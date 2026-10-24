@@ -63,7 +63,7 @@ internal sealed partial class PlanBuilder
             var column = _orderKeys[i].Column!;
             var item = _orderKeys.Count == 1 ? variable : $"{variable}.Item{i + 1}";
             _cursorParameters[i] = "@p" + _kinds.Count;
-            _binds.Add($"p[{_kinds.Count}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {column.Bind(item)});");
+            _binds.Add($"p[{_kinds.Count}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {column.Bind(item)});");
             _kinds.Add(LambdaTranslator.KindOf(column.Store));
         }
 

@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <!-- The engine's targets: PragmaticExplain (EXPLAIN of the translated queries against a database, run here by the diagnostics tests); the census target stays off (no PragmaticCensusFile). -->
-  <Import Project="..\..\..\src\Pragmatic.Persistence.Sql\build\Pragmatic.Persistence.Sql.targets" />
+  <Import Project="..\..\..\src\Pragmatic.Persistence.Sql.Core\build\Pragmatic.Persistence.Sql.Core.targets" />
 
   <ItemGroup>
     <CompilerVisibleProperty Include="PragmaticCensus" />
@@ -26,8 +26,14 @@
     <AdditionalFiles Include="broken.schema.json" />
   </ItemGroup>
 
+  <!-- The engine's namespaces the call sites read: without them the attributes do not resolve, and the generator reports nothing on them. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <Using Include="Pragmatic.Persistence.Sql.Attributes" />
+    <Using Include="Pragmatic.Persistence.Sql.Functions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

@@ -27,7 +27,7 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
-    <Compile Include="..\Pragmatic.Persistence.Sql.Pragmatic.Tests\Callers.cs" Link="Shared\Callers.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
   </ItemGroup>
 
 </Project>

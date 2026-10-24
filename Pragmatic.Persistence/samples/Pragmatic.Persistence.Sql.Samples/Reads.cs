@@ -1,4 +1,7 @@
 using Pragmatic.Persistence.Workload;
+using Pragmatic.Persistence.Sql.Attributes;
+using Pragmatic.Persistence.Sql.Shapes;
+using Pragmatic.Persistence.Sql.Execution;
 
 namespace Pragmatic.Persistence.Sql.Samples;
 

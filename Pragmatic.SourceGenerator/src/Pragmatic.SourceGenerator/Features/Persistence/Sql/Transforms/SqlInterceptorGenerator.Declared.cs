@@ -300,7 +300,7 @@ internal static partial class SqlInterceptorGenerator
                 }
 
                 value = "COUNT(*)";
-                reader = "global::Pragmatic.Persistence.Sql.SqlValue.Count({r}, {i}, {d})";
+                reader = "global::Pragmatic.Persistence.Sql.Planning.SqlValue.Count({r}, {i}, {d})";
             }
             else
             {
@@ -332,7 +332,7 @@ internal static partial class SqlInterceptorGenerator
                     var factor = !EntityModel.IsInteger(column.Store) ? "" : averaged == SpecialType.System_Double ? " * 1E0" : " * 1.0";
                     value = $"AVG(c.\"{column.Column}\"{factor})";
                     var cast = averaged == SpecialType.System_Decimal ? "(decimal?)(decimal)" : "(double?)";
-                    reader = $"({{r}}.IsDBNull({{i}}) ? null : {cast}global::Pragmatic.Persistence.Sql.SqlValue.Average({{r}}, {{i}}, {{d}}))";
+                    reader = $"({{r}}.IsDBNull({{i}}) ? null : {cast}global::Pragmatic.Persistence.Sql.Planning.SqlValue.Average({{r}}, {{i}}, {{d}}))";
                     return $"(SELECT {value} FROM \"{child.Table}\" c{(linkJoin is null ? "" : " " + linkJoin)} WHERE {predicate})";
                 }
 

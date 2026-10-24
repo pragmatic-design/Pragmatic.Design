@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlTypes;
+using Pragmatic.Persistence.Sql.Functions;
 
 namespace Pragmatic.Persistence.Sql.SqlClient;
 

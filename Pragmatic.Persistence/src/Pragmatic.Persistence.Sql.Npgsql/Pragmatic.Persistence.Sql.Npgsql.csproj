@@ -9,7 +9,7 @@
   <ItemGroup>
     <!-- What the runtime cannot do without the provider: PostgreSQL's COPY as the bulk load behind InsertManyAsync. -->
     <PackageReference Include="Npgsql" />
-    <ProjectReference Include="..\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
   </ItemGroup>
 
 </Project>

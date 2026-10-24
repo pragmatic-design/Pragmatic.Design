@@ -18,8 +18,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
 {
     public static readonly PragmaticRegistration Sql = new(new(
-        "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.ISqlFilters", "global::Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters",
-        "global::Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.Pragmatic.ISqlSavePhase", "SqlRepository",
+        "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Filters.ISqlFilters", "global::Pragmatic.Persistence.Sql.PragmaticSqlFilters",
+        "global::Pragmatic.Persistence.Sql.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.ISqlSavePhase", "SqlRepository",
         "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(

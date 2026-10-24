@@ -106,7 +106,7 @@ internal static partial class SqlInterceptorGenerator
             var read = deferred switch { "ToListAsync" => "ReadListAsync", "FirstOrDefaultAsync" => "ReadFirstOrDefaultAsync", "CountAsync" => "ReadCountAsync", _ => "ReadAnyAsync" };
             const string valueTask = "global::System.Threading.Tasks.ValueTask<";
             var itemType = returnType.Substring(valueTask.Length, returnType.Length - valueTask.Length - 1);
-            source.Add(Terminal($"global::Pragmatic.Persistence.Sql.SqlBatchItem<{itemType}>", $"{name}_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.SqlBatch batch"], $"batch.Add({planType}.Instance, q, static (plan, query, r, d, ct) => plan.{read}(query, r, d, ct))"));
+            source.Add(Terminal($"global::Pragmatic.Persistence.Sql.Writing.SqlBatchItem<{itemType}>", $"{name}_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.Writing.SqlBatch batch"], $"batch.Add({planType}.Instance, q, static (plan, query, r, d, ct) => plan.{read}(query, r, d, ct))"));
         }
         else if (name == "ToSql")
             source.Add(Terminal("string", $"ToSql_{index}", typeParameters, [receiver], $"{planType}.Instance.RunnableSql(q.Session)")); // the session's dialect as its database runs it, and its schema when it has one
@@ -120,7 +120,7 @@ internal static partial class SqlInterceptorGenerator
             source.Add(Terminal($"global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.Dictionary<{keyType}, {elementType}>>", $"ToDictionaryAsync_{index}", builder.IsAnonymous ? "<TElement, TKey>" : "", [receiver, $"Func<{elementType}, {keyType}> key", token], $"{planType}.Instance.ToDictionaryAsync(q, key, ct)", builder.IsAnonymous ? " where TKey : notnull" : ""));
         }
         else if (name == "ShapeAsync")
-            source.Add(Terminal(returnType, $"ShapeAsync_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.SqlShape shape", token], $"{planType}.Instance.ShapeAsync(q, shape, ct)"));
+            source.Add(Terminal(returnType, $"ShapeAsync_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.Shapes.SqlShape shape", token], $"{planType}.Instance.ShapeAsync(q, shape, ct)"));
         else if (name == "SyncAsync")
             source.Add(Terminal(returnType, $"SyncAsync_{index}", "", [receiver, $"global::System.Collections.Generic.IReadOnlyList<{builder.ChainElement}> rows", token], $"{planType}.Instance.SyncAsync(q, rows, ct)"));
         else if (predicateTerminal || setTerminal || returning || insertSelect)

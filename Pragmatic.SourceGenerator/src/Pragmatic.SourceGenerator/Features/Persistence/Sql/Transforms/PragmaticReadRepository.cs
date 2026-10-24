@@ -21,8 +21,8 @@ internal static class PragmaticReadRepository
 
     /// <summary>True when the compilation has what the repositories are written against: Pragmatic's contracts and the Sql engine's bridge to them.</summary>
     public static bool Applies(Compilation compilation)
-        => compilation.GetTypeByMetadataName(ReadRepository) is not null && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification`1") is not null
-           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork") is not null;
+        => compilation.GetTypeByMetadataName(ReadRepository) is not null && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.CompiledSpecification`1") is not null
+           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.SqlUnitOfWork") is not null;
 
     /// <summary>The repository nested in <paramref name="entity" />'s partial class (hint name, text); null for an entity that is not an <c>IEntity</c>.</summary>
     public static (string Hint, string Source)? For(INamedTypeSymbol entity, IReadOnlyList<PragmaticQuery> queries)

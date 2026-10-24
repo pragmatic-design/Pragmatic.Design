@@ -26,7 +26,7 @@ public class TheSqlEngineReadsTheBoundarysEngineTests
             public class SqlSession { }
         }
 
-        namespace Pragmatic.Persistence.Sql.Pragmatic
+        namespace Pragmatic.Persistence.Sql
         {
             public static class PragmaticSqlFilters { }
             public class CompiledSpecification<T> { }

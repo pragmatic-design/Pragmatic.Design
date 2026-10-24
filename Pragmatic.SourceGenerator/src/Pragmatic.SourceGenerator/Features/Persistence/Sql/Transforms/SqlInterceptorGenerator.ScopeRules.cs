@@ -13,7 +13,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private const string CompiledScopeRules = "Pragmatic.Persistence.Sql.Pragmatic.CompiledScopeRules";
+    private const string CompiledScopeRules = "Pragmatic.Persistence.Sql.CompiledScopeRules";
 
     /// <summary>The rules to register; none without the bridge.</summary>
     private static EquatableArray<ScopeRuleModel> ReadScopeRules(List<EntityModel> entities, Compilation compilation)

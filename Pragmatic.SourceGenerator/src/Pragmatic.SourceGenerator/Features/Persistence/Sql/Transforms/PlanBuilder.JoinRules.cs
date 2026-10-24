@@ -138,7 +138,7 @@ internal sealed partial class PlanBuilder
                 var offset = _kinds.Count;
                 for (var i = 0; i < translator.ParameterPaths.Count; i++)
                 {
-                    _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {Value(translator, i, field)});");
+                    _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {Value(translator, i, field)});");
                     _kinds.Add(translator.ParameterKinds[i]);
                 }
 

@@ -2,21 +2,30 @@
 
   <PropertyGroup>
     <RootNamespace>Pragmatic.Persistence.Sql</RootNamespace>
-    <Description>The Sql persistence engine's runtime: LINQ translated at compile time, run as query fragments, parameters, dialects and readers with fixed ordinals. No provider, no reflection on the hot path.</Description>
-    <PackageTags>pragmatic;persistence;sql;ado.net;aot</PackageTags>
+    <Description>The Sql persistence engine as an engine of Pragmatic: its filter families, unit of work, compiled specifications and grids over Pragmatic's contracts, beside Pragmatic.Persistence.EFCore. The engine itself is Pragmatic.Persistence.Sql.Core.</Description>
+    <PackageTags>pragmatic;persistence;sql;unitofwork;aot</PackageTags>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Captured: the values a chain's lambda captured, read by the generated code and by the runtime path. -->
-    <ProjectReference Include="..\Pragmatic.Persistence.Expressions\Pragmatic.Persistence.Expressions.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
+    <!-- What every engine's bridge shares: the filter decision, the save's phases, the scope rule registry, the grid page. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Engines\Pragmatic.Persistence.Engines.csproj" />
+    <!-- Pragmatic's contracts the engine serves: the filters and their toggle, the repositories, the unit of work, the scopes. -->
+    <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- The unit of work's events: dispatched after the commit, or deferred to the commit scope's batch, as EfCoreUnitOfWork's. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <!-- A broken rule is answered with the records EF Core's unit of work answers with (Pragmatic.Result.Database). -->
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
   </ItemGroup>
 
-  <!-- The census and EXPLAIN targets over the files Pragmatic.SourceGenerator writes for this engine: a project opts in with
-       PragmaticCensusFile or PragmaticExplain. buildTransitive/, so a project that gets the engine through another package has them too. -->
+  <!-- The engine's folders the bridge reads, in scope inside this project only. -->
   <ItemGroup>
-    <None Include="build\Pragmatic.Persistence.Sql.targets"
-          Pack="true" PackagePath="buildTransitive\Pragmatic.Persistence.Sql.targets" />
+    <Using Include="Pragmatic.Persistence.Sql.Filters" />
+    <Using Include="Pragmatic.Persistence.Sql.Planning" />
+    <Using Include="Pragmatic.Persistence.Sql.Schema" />
+    <Using Include="Pragmatic.Persistence.Sql.Writing" />
   </ItemGroup>
 
 </Project>

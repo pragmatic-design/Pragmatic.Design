@@ -215,7 +215,7 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor ChainOverHiddenShape = new(
         "PRAG3029",
         "A chain reads members no referenced engine declares",
-        "'{0}' on {1} does not bind for the Sql engine: it reads members of a Pragmatic entity that Pragmatic's generator declares only for an engine the compilation references, and none is referenced. Reference the Sql engine's bridge (Pragmatic.Persistence.Sql.Pragmatic), or the chain runs nothing.",
+        "'{0}' on {1} does not bind for the Sql engine: it reads members of a Pragmatic entity that Pragmatic's generator declares only for an engine the compilation references, and none is referenced. Reference the Sql engine's bridge (Pragmatic.Persistence.Sql), or the chain runs nothing.",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

@@ -39,7 +39,7 @@
     <ProjectReference Include="..\..\..\Pragmatic.Attachments\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
     <!-- The Sql engine's runtime: the chains the Sql feature translates are written on its SqlQuery<T>. -->
-    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <!-- The documents engine's runtime (and its MongoDB driver): the chains the documents feature translates are written on its
          DocQuery<T>. Not its bridge, for the reason below. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
@@ -85,7 +85,7 @@
   <ItemGroup>
     <!-- The entities the Sql bridge's suite migrates: TheSqlEnginesSchemaIsPragmaticsTests compares the two schemas of these, the
          same file, not a copy that could drift from it. -->
-    <EmbeddedResource Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Pragmatic.Tests\Entities.cs"
+    <EmbeddedResource Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Tests\Entities.cs"
                       LogicalName="SqlPragmaticEntities.cs" Link="Features\Persistence\SqlPragmaticEntities.cs" />
   </ItemGroup>
 

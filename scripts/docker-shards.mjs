@@ -21,7 +21,7 @@ export const DOCKER_SHARDS = [
     'Pragmatic.Configuration.Redis.Tests', //    2s
     // Five databases (PostgreSQL, SQL Server with full-text, MySQL, Oracle, SQLite): 3m 28s on a developer machine
     // (2026-10-23), not yet measured on the runner. Here because this shard was the lightest.
-    'Pragmatic.Persistence.Sql.Tests',
+    'Pragmatic.Persistence.Sql.Core.Tests',
     // Two boundaries on two engines (SQLite in process, one standalone MongoDB), not yet measured on the runner. Here because this shard
     // was the lightest (15m 57s against 15m 59s and 16m 04s, the pull request of the documents engine's bridge, 2026-10-24).
     'Pragmatic.Persistence.Boundaries.Tests',
@@ -35,7 +35,7 @@ export const DOCKER_SHARDS = [
     'Pragmatic.Privacy.E2E.Tests', //            27s
     // The Sql bridge on the same five databases, not yet measured on the runner. Here because this shard was the lightest
     // (12m 09s against 19m 32s and 15m 56s, run 40066188335, 2026-10-24).
-    'Pragmatic.Persistence.Sql.Pragmatic.Tests',
+    'Pragmatic.Persistence.Sql.Tests',
     // MongoDB, a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this shard was the
     // lightest (14m 36s against 18m 13s and 16m 30s, the pull request of the engines' shared assembly, 2026-10-24).
     'Pragmatic.Persistence.Documents.Tests',

@@ -44,11 +44,11 @@
     <Project Path="src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
     <Project Path="src/Pragmatic.Persistence.Analyzers/Pragmatic.Persistence.Analyzers.csproj" />
     <Project Path="src/Pragmatic.Persistence.CodeFixers/Pragmatic.Persistence.CodeFixers.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql.Core/Pragmatic.Persistence.Sql.Core.csproj" />
     <Project Path="src/Pragmatic.Persistence.Expressions/Pragmatic.Persistence.Expressions.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
@@ -60,9 +60,9 @@
     <Project Path="tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
-    <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Sql.Core.Tests/Pragmatic.Persistence.Sql.Core.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Samples.Tests/Pragmatic.Persistence.Documents.Samples.Tests.csproj" />
-    <Project Path="tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Boundaries.Tests/Pragmatic.Persistence.Boundaries.Tests.csproj" />

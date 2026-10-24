@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Pragmatic.Persistence.Workload;
+using Pragmatic.Persistence.Sql.Execution;
 
 namespace Pragmatic.Persistence.Sql.Samples;
 

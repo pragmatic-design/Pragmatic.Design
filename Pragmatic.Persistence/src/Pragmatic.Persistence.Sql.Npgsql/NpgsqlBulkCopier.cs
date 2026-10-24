@@ -2,6 +2,9 @@ using System.Data.Common;
 using System.Text;
 using global::Npgsql;
 using NpgsqlTypes;
+using Pragmatic.Persistence.Sql.Planning;
+using Pragmatic.Persistence.Sql.Schema;
+using Pragmatic.Persistence.Sql.Writing;
 
 namespace Pragmatic.Persistence.Sql.Npgsql;
 

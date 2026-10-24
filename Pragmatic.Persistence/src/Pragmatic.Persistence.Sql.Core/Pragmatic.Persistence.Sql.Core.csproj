@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The package is .Core, as Pragmatic.Messaging.Core is: the engine with no dependency on the framework's contracts. Its namespaces are
+         the engine's own, without the suffix; Pragmatic.Persistence.Sql is the bridge an application references. -->
+    <RootNamespace>Pragmatic.Persistence.Sql</RootNamespace>
+    <Description>The Sql persistence engine's runtime: LINQ translated at compile time, run as query fragments, parameters, dialects and readers with fixed ordinals. No provider, no reflection on the hot path.</Description>
+    <PackageTags>pragmatic;persistence;sql;ado.net;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Captured: the values a chain's lambda captured, read by the generated code and by the runtime path. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Expressions\Pragmatic.Persistence.Expressions.csproj" />
+  </ItemGroup>
+
+  <!-- The engine's own folders read one another: their namespaces are in scope inside this project only, not for its consumers. -->
+  <ItemGroup>
+    <Using Include="Pragmatic.Persistence.Sql.Attributes" />
+    <Using Include="Pragmatic.Persistence.Sql.Conversion" />
+    <Using Include="Pragmatic.Persistence.Sql.Dialects" />
+    <Using Include="Pragmatic.Persistence.Sql.Dynamic" />
+    <Using Include="Pragmatic.Persistence.Sql.Execution" />
+    <Using Include="Pragmatic.Persistence.Sql.Filters" />
+    <Using Include="Pragmatic.Persistence.Sql.Functions" />
+    <Using Include="Pragmatic.Persistence.Sql.Planning" />
+    <Using Include="Pragmatic.Persistence.Sql.Schema" />
+    <Using Include="Pragmatic.Persistence.Sql.Shapes" />
+    <Using Include="Pragmatic.Persistence.Sql.Writing" />
+  </ItemGroup>
+
+  <!-- The census and EXPLAIN targets over the files Pragmatic.SourceGenerator writes for this engine: a project opts in with
+       PragmaticCensusFile or PragmaticExplain. buildTransitive/, so a project that gets the engine through the bridge has them too; the file
+       is named after the package, which is how NuGet imports it. -->
+  <ItemGroup>
+    <None Include="build\Pragmatic.Persistence.Sql.Core.targets"
+          Pack="true" PackagePath="buildTransitive\Pragmatic.Persistence.Sql.Core.targets" />
+  </ItemGroup>
+
+</Project>
