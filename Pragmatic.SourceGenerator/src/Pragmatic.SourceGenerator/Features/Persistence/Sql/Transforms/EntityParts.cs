@@ -169,7 +169,7 @@ internal sealed class ColumnModel
     public string Read(string reader, string ordinal, string dialect) => Reader.Replace("{r}", reader).Replace("{i}", ordinal).Replace("{d}", dialect);
 
     /// <summary>The C# that yields <paramref name="value" /> (an expression of the property's type) as the column stores it: through the converter, null staying null.</summary>
-    public string Bind(string value) => Converter is null ? EntityModel.IsArrayColumn(Store) ? $"global::Pragmatic.Persistence.Sql.SqlArrays.ToStore(d, {value})" : value : Convert(Converter, value, DerivedOf is null ? Type : Type.WithNullableAnnotation(NullableAnnotation.Annotated), Store);
+    public string Bind(string value) => Converter is null ? EntityModel.IsArrayColumn(Store) ? $"global::Pragmatic.Persistence.Sql.Functions.SqlArrays.ToStore(d, {value})" : value : Convert(Converter, value, DerivedOf is null ? Type : Type.WithNullableAnnotation(NullableAnnotation.Annotated), Store);
 
     /// <summary>A value of <paramref name="type" /> as <paramref name="store" /> through <paramref name="converter" />: <c>ToStore</c> directly, or the null-keeping helpers for a nullable value.</summary>
     public static string Convert(string converter, string value, ITypeSymbol type, ITypeSymbol store)
@@ -179,7 +179,7 @@ internal sealed class ColumnModel
         var model = EntityModel.Unwrap(type).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var stored = EntityModel.Unwrap(store).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var helper = type.IsValueType ? "Converted" : "ConvertedRef";
-        return $"global::Pragmatic.Persistence.Sql.SqlValue.{helper}<{model}, {stored}, {converter}>({value})";
+        return $"global::Pragmatic.Persistence.Sql.Planning.SqlValue.{helper}<{model}, {stored}, {converter}>({value})";
     }
 }
 

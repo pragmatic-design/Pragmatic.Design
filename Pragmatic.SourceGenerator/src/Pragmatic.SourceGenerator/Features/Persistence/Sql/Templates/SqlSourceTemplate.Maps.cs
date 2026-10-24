@@ -20,21 +20,21 @@ internal sealed partial class SqlSourceTemplate
         AppendLine("    file static class EntityMaps");
         AppendLine("    {");
         foreach (var pool in maps.Pools)
-            AppendLine($"        internal static readonly {Sql}.SqlInternPool {pool.Field} = {Sql}.SqlInternPool.For({Literal(pool.Key)});");
+            AppendLine($"        internal static readonly {Sql}.Execution.SqlInternPool {pool.Field} = {Sql}.Execution.SqlInternPool.For({Literal(pool.Key)});");
         AppendLine("        [global::System.Runtime.CompilerServices.ModuleInitializer]");
         AppendLine("        internal static void Register()");
         AppendLine("        {");
         foreach (var map in maps.Maps)
         {
             foreach (var rollUp in map.RollUps)
-                AppendLine($"            {Sql}.SqlRollUp.Register(new({Literal(rollUp.ParentTable)}, {Literal(rollUp.ParentKeyColumn)}, {Literal(rollUp.Column)}, {Literal(rollUp.ChildTable)}, {Literal(rollUp.ForeignKey)}, {LiteralOrNull(rollUp.AmountColumn)}){(rollUp.LiveColumn is null ? "" : $" {{ LiveColumn = {Literal(rollUp.LiveColumn)} }}")});");
-            AppendLine($"            {Sql}.SqlEntityMap<{map.EntityType}>.Register(new(\"{map.Table}\", {Strings(map.KeyColumns)}, new {Sql}.SqlColumn[] {{ {Join(map.Columns.Select(Column))} }}, new {Sql}.SqlNavigation[] {{ {Join(map.Navigations.Select(Navigation))} }}, new {Sql}.SqlCollection[] {{ {Join(map.Collections.Select(Collection))} }}, new global::System.Func<global::System.Linq.Expressions.LambdaExpression>[] {{ {Join(map.RuleTypes.Select(r => $"static () => new {r}().ToExpression()"))} }}, Read_{map.ReaderName}, static e => e.{map.KeySelectorProperty}, {LiteralOrNull(map.FixedPredicate)}) {{ {MapTail(map)} }});");
+                AppendLine($"            {Sql}.Writing.SqlRollUp.Register(new({Literal(rollUp.ParentTable)}, {Literal(rollUp.ParentKeyColumn)}, {Literal(rollUp.Column)}, {Literal(rollUp.ChildTable)}, {Literal(rollUp.ForeignKey)}, {LiteralOrNull(rollUp.AmountColumn)}){(rollUp.LiveColumn is null ? "" : $" {{ LiveColumn = {Literal(rollUp.LiveColumn)} }}")});");
+            AppendLine($"            {Sql}.Schema.SqlEntityMap<{map.EntityType}>.Register(new(\"{map.Table}\", {Strings(map.KeyColumns)}, new {Sql}.Schema.SqlColumn[] {{ {Join(map.Columns.Select(Column))} }}, new {Sql}.Schema.SqlNavigation[] {{ {Join(map.Navigations.Select(Navigation))} }}, new {Sql}.Schema.SqlCollection[] {{ {Join(map.Collections.Select(Collection))} }}, new global::System.Func<global::System.Linq.Expressions.LambdaExpression>[] {{ {Join(map.RuleTypes.Select(r => $"static () => new {r}().ToExpression()"))} }}, Read_{map.ReaderName}, static e => e.{map.KeySelectorProperty}, {LiteralOrNull(map.FixedPredicate)}) {{ {MapTail(map)} }});");
         }
 
         foreach (var projection in maps.Projections)
-            AppendLine($"            {Sql}.SqlProjectionMap<{projection.EntityType}, {projection.DtoType}>.Register(new({Strings(projection.Columns)}, {Strings(projection.Joins)}, static (r, d) => {projection.Construct}){ProjectedCollections(projection)});");
+            AppendLine($"            {Sql}.Planning.SqlProjectionMap<{projection.EntityType}, {projection.DtoType}>.Register(new({Strings(projection.Columns)}, {Strings(projection.Joins)}, static (r, d) => {projection.Construct}){ProjectedCollections(projection)});");
         foreach (var function in maps.Functions)
-            AppendLine($"            {Sql}.SqlFunctions.Register(((global::System.Func<{Join(function.ParameterTypes.Append(function.ReturnType))}>){function.ContainingType}.{function.Name}).Method, {FunctionRenderer(function)}, isPredicate: {Bool(function.IsPredicate)});");
+            AppendLine($"            {Sql}.Functions.SqlFunctions.Register(((global::System.Func<{Join(function.ParameterTypes.Append(function.ReturnType))}>){function.ContainingType}.{function.Name}).Method, {FunctionRenderer(function)}, isPredicate: {Bool(function.IsPredicate)});");
         AppendLine("        }");
         AppendLine();
         foreach (var reader in maps.Readers)
@@ -72,7 +72,7 @@ internal sealed partial class SqlSourceTemplate
         AppendLine("        internal static void Register()");
         AppendLine("        {");
         foreach (var rule in rules)
-            AppendLine($"            global::Pragmatic.Persistence.Sql.Pragmatic.CompiledScopeRules.Register(typeof({rule.RuleType}), static rule => {{ var matches = ((global::Pragmatic.Persistence.Scopes.DataScopeRule<{rule.EntityType}>)rule).ToExpression().Compile(preferInterpretation: true); return row => matches(({rule.EntityType})row); }}, readable: {Bool(rule.Readable)});");
+            AppendLine($"            global::Pragmatic.Persistence.Sql.CompiledScopeRules.Register(typeof({rule.RuleType}), static rule => {{ var matches = ((global::Pragmatic.Persistence.Scopes.DataScopeRule<{rule.EntityType}>)rule).ToExpression().Compile(preferInterpretation: true); return row => matches(({rule.EntityType})row); }}, readable: {Bool(rule.Readable)});");
         AppendLine("        }");
         AppendLine("    }");
     }
@@ -85,7 +85,7 @@ internal sealed partial class SqlSourceTemplate
                 ? " { IsJson = true }"
                 : $" {{ IsJson = true, JsonNames = new global::System.Collections.Generic.Dictionary<string, string>(global::System.StringComparer.Ordinal) {{ {Join(column.JsonRenames.Select(r => $"[{Literal(r.Path)}] = {Literal(r.Name)}"))} }} }}"
             : column.FullTextTable is not null ? $" {{ FullTextTable = {Literal(column.FullTextTable)}, FullTextKey = {Literal(column.FullTextKey!)} }}" : "";
-        return $"new {Sql}.SqlColumn(\"{column.Property}\", \"{column.Column}\", {Sql}.SqlParamKind.{column.Kind}, static (r, i, d) => {column.Read}, {toStore}){initializer}";
+        return $"new {Sql}.Schema.SqlColumn(\"{column.Property}\", \"{column.Column}\", {Sql}.Planning.SqlParamKind.{column.Kind}, static (r, i, d) => {column.Read}, {toStore}){initializer}";
     }
 
     /// <summary>The setter takes a missing row as null whatever the property's annotation: a cast of null to a class is null.</summary>
@@ -95,13 +95,13 @@ internal sealed partial class SqlSourceTemplate
             ? "static (r, o, d) => throw new global::System.InvalidOperationException(\"" + navigation.TargetType + " is not an [Entity] the generator could read\")"
             : $"static (r, o, d) => {navigation.TargetConstruct}";
         var composite = navigation.ForeignKeyColumns.Count == 0 ? "" : $" {{ ForeignKeyColumns = {Strings(navigation.ForeignKeyColumns)} }}";
-        return $"new {Sql}.SqlNavigation(\"{navigation.Property}\", \"{navigation.JoinColumn}\", {Bool(navigation.Required)}, typeof({navigation.TargetType}), {readAt}, static e => (({navigation.OwnerType})e).{navigation.Property}, static (e, v) => (({navigation.OwnerType})e).{navigation.Property} = ({navigation.TargetType})v!){composite}";
+        return $"new {Sql}.Schema.SqlNavigation(\"{navigation.Property}\", \"{navigation.JoinColumn}\", {Bool(navigation.Required)}, typeof({navigation.TargetType}), {readAt}, static e => (({navigation.OwnerType})e).{navigation.Property}, static (e, v) => (({navigation.OwnerType})e).{navigation.Property} = ({navigation.TargetType})v!){composite}";
     }
 
     private static string Collection(CollectionMapModel collection)
     {
         var childKey = collection.CompositeChildKey
-            ? $"new {Sql}.SqlCompositeKey({Join(collection.ChildKeyProperties.Select(k => $"(({collection.ChildType})c).{k}"))})"
+            ? $"new {Sql}.Planning.SqlCompositeKey({Join(collection.ChildKeyProperties.Select(k => $"(({collection.ChildType})c).{k}"))})"
             : $"((({collection.ChildType})c).{collection.ChildKeyProperties[0]})";
         var initializers = new List<string>();
         if (collection.LinkTable is not null)
@@ -111,7 +111,7 @@ internal sealed partial class SqlSourceTemplate
         if (collection.ForeignKeyColumns.Count > 0)
             initializers.Add($"ForeignKeyColumns = {Strings(collection.ForeignKeyColumns)}");
         var link = initializers.Count == 0 ? "" : " { " + Join(initializers) + " }";
-        return $"new {Sql}.SqlCollection(\"{collection.Property}\", typeof({collection.ChildType}), \"{collection.ForeignKeyColumn}\", static c => {childKey}, static e => (({collection.OwnerType})e).{collection.Property}, static (e, rows) => (({collection.OwnerType})e).{collection.Property} = rows.ConvertAll(static x => ({collection.ChildType})x)){link}";
+        return $"new {Sql}.Schema.SqlCollection(\"{collection.Property}\", typeof({collection.ChildType}), \"{collection.ForeignKeyColumn}\", static c => {childKey}, static e => (({collection.OwnerType})e).{collection.Property}, static (e, rows) => (({collection.OwnerType})e).{collection.Property} = rows.ConvertAll(static x => ({collection.ChildType})x)){link}";
     }
 
     /// <summary>How the map writes, then what its runtime path's reads need: the soft-delete column, the caller's families, a composite parent's key.</summary>
@@ -129,7 +129,7 @@ internal sealed partial class SqlSourceTemplate
         if (map.CallerFiltered)
             tail += ", CallerFiltered = true";
         if (map.CompositeKeyProperties.Count > 0)
-            tail += $", CompositeKeyOf = static e => new {Sql}.SqlCompositeKey({Join(map.CompositeKeyProperties.Select(k => $"(({map.EntityType})e).{k}"))})";
+            tail += $", CompositeKeyOf = static e => new {Sql}.Planning.SqlCompositeKey({Join(map.CompositeKeyProperties.Select(k => $"(({map.EntityType})e).{k}"))})";
         return tail;
     }
 
@@ -142,23 +142,23 @@ internal sealed partial class SqlSourceTemplate
             : $"static e => \"(\" + {string.Join(" + \", \" + ", writer.KeyProperties.Select(k => $"e.{k}"))} + \")\"";
         var identity = writer.Identity is null
             ? "null"
-            : $"new {Sql}.SqlIdentity<{writer.EntityType}>(static (e, p, o, d) => {{ {Binds(writer.Identity.BindsWithoutKey)} }}, static (e, r, d) => e.{writer.Identity.KeyProperty} = {writer.Identity.KeyRead})";
+            : $"new {Sql}.Writing.SqlIdentity<{writer.EntityType}>(static (e, p, o, d) => {{ {Binds(writer.Identity.BindsWithoutKey)} }}, static (e, r, d) => e.{writer.Identity.KeyProperty} = {writer.Identity.KeyRead})";
         var casts = columns.Any(c => c.Cast is not null) ? "new string?[] { " + Join(columns.Select(c => LiteralOrNull(c.Cast))) + " }" : "null";
         var generated = writer.Generated.Count == 0
             ? "null"
-            : $"new {Sql}.SqlGenerated<{writer.EntityType}>({Strings(writer.Generated.Select(g => g.Column))}, {Bool(writer.GeneratedOnUpdates)}, static (e, r, d) => {{ {string.Join(" ", writer.Generated.Select(g => $"e.{g.Property} = {g.Read};"))} }})";
-        var text = $"new {Sql}.SqlWriter<{writer.EntityType}>(\"{writer.Table}\", {Strings(columns.Select(c => c.Column))}, new {Sql}.SqlParamKind[] {{ {Join(columns.Select(c => $"{Sql}.SqlParamKind.{c.Kind}"))} }}, new int[] {{ {Join(writer.KeyIndexes.Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)))} }}, {writer.VersionIndex}, static (e, p, o, d) => {{ {Binds(columns.Select(c => c.Bind))} }}, static (e, p, o, d) => {{ {Binds(writer.KeyBinds)} }}, {keyText}, {(versioned ? $"static e => e.{writer.VersionProperty}" : "null")}, {(versioned ? $"static e => e.{writer.VersionProperty}++" : "null")}, {(versioned ? $"static (e, r, d) => e.{writer.VersionProperty} = {writer.VersionRead}" : "null")}, {identity}, {casts}, {Strings(columns.Select(c => c.Property))}, static (e, c, p, i, d) => {{ switch (c) {{ {string.Join(" ", columns.Select((c, i) => $"case {i}: p[i].Value = {Sql}.SqlValue.ToDatabase(d, {c.Bind}); break;"))} }} }}, {generated}, {(writer.Part is null ? "null" : Writer(writer.Part))}, static (e, c, d) => c switch {{ {Join(columns.Select((c, i) => $"{i} => {Sql}.SqlValue.ToDatabase(d, {c.Bind})"))}, _ => null }})";
+            : $"new {Sql}.Writing.SqlGenerated<{writer.EntityType}>({Strings(writer.Generated.Select(g => g.Column))}, {Bool(writer.GeneratedOnUpdates)}, static (e, r, d) => {{ {string.Join(" ", writer.Generated.Select(g => $"e.{g.Property} = {g.Read};"))} }})";
+        var text = $"new {Sql}.Writing.SqlWriter<{writer.EntityType}>(\"{writer.Table}\", {Strings(columns.Select(c => c.Column))}, new {Sql}.Planning.SqlParamKind[] {{ {Join(columns.Select(c => $"{Sql}.Planning.SqlParamKind.{c.Kind}"))} }}, new int[] {{ {Join(writer.KeyIndexes.Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)))} }}, {writer.VersionIndex}, static (e, p, o, d) => {{ {Binds(columns.Select(c => c.Bind))} }}, static (e, p, o, d) => {{ {Binds(writer.KeyBinds)} }}, {keyText}, {(versioned ? $"static e => e.{writer.VersionProperty}" : "null")}, {(versioned ? $"static e => e.{writer.VersionProperty}++" : "null")}, {(versioned ? $"static (e, r, d) => e.{writer.VersionProperty} = {writer.VersionRead}" : "null")}, {identity}, {casts}, {Strings(columns.Select(c => c.Property))}, static (e, c, p, i, d) => {{ switch (c) {{ {string.Join(" ", columns.Select((c, i) => $"case {i}: p[i].Value = {Sql}.Planning.SqlValue.ToDatabase(d, {c.Bind}); break;"))} }} }}, {generated}, {(writer.Part is null ? "null" : Writer(writer.Part))}, static (e, c, d) => c switch {{ {Join(columns.Select((c, i) => $"{i} => {Sql}.Planning.SqlValue.ToDatabase(d, {c.Bind})"))}, _ => null }})";
         var initializers = new List<string>();
         if (writer.Stamps is not null)
             initializers.Add($"Stamps = {Stamps(writer.Stamps)}");
         if (writer.HasNativeVersion)
-            initializers.Add($"NativeVersion = new {Sql}.SqlNativeVersion<{writer.EntityType}>(static (e, p, o, d) => {{ {Binds(writer.NativeVersionBinds)} }})");
+            initializers.Add($"NativeVersion = new {Sql}.Writing.SqlNativeVersion<{writer.EntityType}>(static (e, p, o, d) => {{ {Binds(writer.NativeVersionBinds)} }})");
         return initializers.Count == 0 ? text : text + " { " + Join(initializers) + " }";
     }
 
     /// <summary>Each value bound at its parameter, in order from the writer's offset.</summary>
     private static string Binds(IEnumerable<string> binds)
-        => string.Join(" ", binds.Select((bind, i) => $"p[o + {i}].Value = {Sql}.SqlValue.ToDatabase(d, {bind});"));
+        => string.Join(" ", binds.Select((bind, i) => $"p[o + {i}].Value = {Sql}.Planning.SqlValue.ToDatabase(d, {bind});"));
 
     private static string Stamps(StampsModel stamps)
     {
@@ -170,7 +170,7 @@ internal sealed partial class SqlSourceTemplate
         var deleted = stamps.IsDeleted is null
             ? "null"
             : $"static (e, deleted, now, user) => {{ {Set(stamps.IsDeleted, "deleted")}{Set(stamps.DeletedAt, stamps.DeletedAt is null ? "" : $"deleted ? {Clock(stamps.DeletedAt)} : null")}{Set(stamps.DeletedBy, "deleted ? user : null")}}}";
-        return $"new {Sql}.SqlStamps<{stamps.EntityType}>({Setter(stamps.CreatedAt, stamps.CreatedBy)}, {Setter(stamps.UpdatedAt, stamps.UpdatedBy)}, {deleted}, {Names(stamps.CreatedAt, stamps.CreatedBy)}, {Names(stamps.UpdatedAt, stamps.UpdatedBy)}, {Names(stamps.IsDeleted, stamps.DeletedAt, stamps.DeletedBy)})";
+        return $"new {Sql}.Writing.SqlStamps<{stamps.EntityType}>({Setter(stamps.CreatedAt, stamps.CreatedBy)}, {Setter(stamps.UpdatedAt, stamps.UpdatedBy)}, {deleted}, {Names(stamps.CreatedAt, stamps.CreatedBy)}, {Names(stamps.UpdatedAt, stamps.UpdatedBy)}, {Names(stamps.IsDeleted, stamps.DeletedAt, stamps.DeletedBy)})";
     }
 
     /// <summary>The DTO's collection members: the child DTO's own registration gives its columns and reader; here the key the loader groups on and the assignment.</summary>
@@ -179,9 +179,9 @@ internal sealed partial class SqlSourceTemplate
         if (projection.Collections.Count == 0)
             return "";
         var dto = projection.DtoType;
-        return $" {{ Collections = new {Sql}.SqlProjectedCollection[] {{ " + Join(projection.Collections.Select(c => projection.CompositeKey
-            ? $"new {Sql}.SqlProjectedCollection(\"{c.Property}\", typeof({c.ChildEntityType}), typeof({c.ChildDtoType}), \"{c.ForeignKeyColumn}\", static p => new {Sql}.SqlCompositeKey({Join(projection.CompositeKeyProperties.Select(k => $"(({dto})p).{k}"))}), static (p, rows) => (({dto})p).{c.Property} = rows.ConvertAll(static x => ({c.ChildDtoType})x)) {{ ForeignKeyColumns = {Strings(c.ForeignKeyColumns)} }}"
-            : $"new {Sql}.SqlProjectedCollection(\"{c.Property}\", typeof({c.ChildEntityType}), typeof({c.ChildDtoType}), \"{c.ForeignKeyColumn}\", static p => (({dto})p).{projection.KeyProperty}, static (p, rows) => (({dto})p).{c.Property} = rows.ConvertAll(static x => ({c.ChildDtoType})x))")) + " } }";
+        return $" {{ Collections = new {Sql}.Planning.SqlProjectedCollection[] {{ " + Join(projection.Collections.Select(c => projection.CompositeKey
+            ? $"new {Sql}.Planning.SqlProjectedCollection(\"{c.Property}\", typeof({c.ChildEntityType}), typeof({c.ChildDtoType}), \"{c.ForeignKeyColumn}\", static p => new {Sql}.Planning.SqlCompositeKey({Join(projection.CompositeKeyProperties.Select(k => $"(({dto})p).{k}"))}), static (p, rows) => (({dto})p).{c.Property} = rows.ConvertAll(static x => ({c.ChildDtoType})x)) {{ ForeignKeyColumns = {Strings(c.ForeignKeyColumns)} }}"
+            : $"new {Sql}.Planning.SqlProjectedCollection(\"{c.Property}\", typeof({c.ChildEntityType}), typeof({c.ChildDtoType}), \"{c.ForeignKeyColumn}\", static p => (({dto})p).{projection.KeyProperty}, static (p, rows) => (({dto})p).{c.Property} = rows.ConvertAll(static x => ({c.ChildDtoType})x))")) + " } }";
     }
 
     /// <summary>The method's renderer: an arm per dialect, a dialect without a rendering throwing.</summary>

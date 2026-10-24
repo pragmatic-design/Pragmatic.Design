@@ -58,7 +58,7 @@ internal sealed partial class PlanBuilder
             _binds.Add($"var {argVariable} = ({arg.Type.ToDisplayString(SqlInterceptorGenerator.Annotated)})q.Slot({_slot})!;");
         for (var i = 0; i < translator.ParameterPaths.Count; i++)
         {
-            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {Value(translator, i, tree)});");
+            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {Value(translator, i, tree)});");
             _kinds.Add(translator.ParameterKinds[i]);
         }
 
@@ -93,7 +93,7 @@ internal sealed partial class PlanBuilder
         var offset = _kinds.Count;
         for (var i = 0; i < translator.ParameterPaths.Count; i++)
         {
-            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {Value(translator, i, null)});");
+            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {Value(translator, i, null)});");
             _kinds.Add(translator.ParameterKinds[i]);
         }
 

@@ -23,14 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Pragmatic\Pragmatic.Persistence.Sql.Pragmatic.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Pragmatic\Pragmatic.Persistence.Documents.Pragmatic.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the two bridge suites read as (TestUser): the same callers on both engines. -->
-    <Compile Include="..\Pragmatic.Persistence.Sql.Pragmatic.Tests\Callers.cs" Link="Shared\Callers.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using Pragmatic.Persistence.Sql;
+using Pragmatic.Persistence.Sql.Schema;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -119,7 +120,7 @@ internal sealed partial class PlanBuilder
                 else
                     value = valueText; // argN.Member
 
-                _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {value});");
+                _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {value});");
                 _kinds.Add(LambdaTranslator.KindOf(model.GetTypeInfo(arguments[1].Expression).Type));
                 text = "@p" + index;
             }

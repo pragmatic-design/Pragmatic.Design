@@ -664,7 +664,7 @@ error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` 
 | `PRAG3026` | Error | A hand-written statement does not match the model (a table or column it names does not exist). |
 | `PRAG3027` | Error | A declared database's schema cannot describe an entity; the message says why. |
 | `PRAG3028` | Error | An entity has no key. Mark the key `[Key]`, or name it `Id` (or `PersistenceId`, as Pragmatic's `[Entity]` does); a table read and never written is `[Table(ReadOnly = true)]`. |
-| `PRAG3029` | Error | A chain reads members of a Pragmatic entity that Pragmatic's generator declares only for an engine the compilation references, and no engine's bridge is referenced. Reference `Pragmatic.Persistence.Sql.Pragmatic`. |
+| `PRAG3029` | Error | A chain reads members of a Pragmatic entity that Pragmatic's generator declares only for an engine the compilation references, and no engine's bridge is referenced. Reference `Pragmatic.Persistence.Sql`. |
 | `PRAG3030` | Error | A visibility rule of a Pragmatic entity reads a value of the moment (the caller, the clock); a rule is a fixed predicate on the row (`PRAG0718` on EF Core). Who is asking is decided by `[HasOwner]`, `[HasAccessScopes]` and `ITenantEntity`. |
 | `PRAG3031` | Warning | A specification of a Pragmatic entity is not compiled for the Sql engine; a read through the engine refuses it. EF Core reads it as before. |
 | `PRAG3032` | Error | A chain the Sql engine generated itself did not translate. Please report it with the entity that produced it. |

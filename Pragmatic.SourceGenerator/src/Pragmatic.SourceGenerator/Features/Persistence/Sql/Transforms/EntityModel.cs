@@ -318,7 +318,7 @@ internal sealed partial class EntityModel
         var rowVersion = owner is null && IsRowVersionProperty(property);
         if (rowVersion)
         {
-            converter = "global::Pragmatic.Persistence.Sql.SqlRowVersion";
+            converter = "global::Pragmatic.Persistence.Sql.Conversion.SqlRowVersion";
             store = property.Type.ContainingAssembly.GetTypeByMetadataName("System.Int64")!; // ulong's assembly is the core library's: long is there
         }
 
@@ -343,7 +343,7 @@ internal sealed partial class EntityModel
 
             internKey = declaring.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString() + "." + property.Name;
             internPool = "Interned_" + System.Text.RegularExpressions.Regex.Replace(internKey, "[^A-Za-z0-9_]", "_");
-            reader = $"global::Pragmatic.Persistence.Sql.SqlValue.{(IsNullable(property.Type) ? "NullableInterned" : "Interned")}({{r}}, {{i}}, {{d}}, EntityMaps.{internPool})";
+            reader = $"global::Pragmatic.Persistence.Sql.Planning.SqlValue.{(IsNullable(property.Type) ? "NullableInterned" : "Interned")}({{r}}, {{i}}, {{d}}, EntityMaps.{internPool})";
         }
 
         var columnAttribute = property.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "ColumnAttribute");

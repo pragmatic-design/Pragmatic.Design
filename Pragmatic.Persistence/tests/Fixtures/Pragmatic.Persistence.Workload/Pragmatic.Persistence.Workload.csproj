@@ -13,8 +13,20 @@
   <ItemGroup>
     <!-- The [Entity] attributes and SqlDialect; the generator registers this assembly's entity maps and [MapFrom] projections at
          module start, for the runtime path: the assembly that declares an entity is the one that describes it. -->
-    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- The engine's namespaces, in scope for the fixture: its entities, schema and seeder read most of them. -->
+  <ItemGroup>
+    <Using Include="Pragmatic.Persistence.Sql.Attributes" />
+    <Using Include="Pragmatic.Persistence.Sql.Conversion" />
+    <Using Include="Pragmatic.Persistence.Sql.Dialects" />
+    <Using Include="Pragmatic.Persistence.Sql.Filters" />
+    <Using Include="Pragmatic.Persistence.Sql.Functions" />
+    <Using Include="Pragmatic.Persistence.Sql.Planning" />
+    <Using Include="Pragmatic.Persistence.Sql.Schema" />
+    <Using Include="Pragmatic.Persistence.Sql.Writing" />
   </ItemGroup>
 
 </Project>

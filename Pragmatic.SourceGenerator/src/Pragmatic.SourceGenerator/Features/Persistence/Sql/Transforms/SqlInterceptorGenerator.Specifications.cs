@@ -20,7 +20,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private const string CompiledSpecification = "Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification`1";
+    private const string CompiledSpecification = "Pragmatic.Persistence.Sql.CompiledSpecification`1";
 
     /// <summary>The compiled predicates (the fields of <c>CompiledPredicates</c>) and the interceptors of the calls that build them.</summary>
     private static void EmitSpecifications(List<InterceptorModel> interceptors, List<CompiledPredicateModel> predicates, Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
@@ -53,7 +53,7 @@ internal static partial class SqlInterceptorGenerator
                 var type = entity.FullName;
                 predicates.Add(new CompiledPredicateModel($"P{count}", texts[0], texts[1], texts[2], texts[3], texts[4], kinds.ToEquatableArray()));
                 interceptors.Add(new(location.GetInterceptsLocationAttributeSyntax(), $"global::Pragmatic.Specification.Specification<{type}>", $"SpecWhere_{count}", "", [$"Expression<Func<{type}, bool>> predicate"],
-                    $"new global::Pragmatic.Persistence.Sql.Pragmatic.CompiledSpecification<{type}>(CompiledPredicates.P{count}, new object?[] {{ {string.Join(", ", values)} }}, predicate)", BodyOnNextLine: true));
+                    $"new global::Pragmatic.Persistence.Sql.CompiledSpecification<{type}>(CompiledPredicates.P{count}, new object?[] {{ {string.Join(", ", values)} }}, predicate)", BodyOnNextLine: true));
                 diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, invocation.GetLocation(), $"Spec<{entityType.Name}>.Where", texts[0]));
                 count++;
             }

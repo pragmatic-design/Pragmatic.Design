@@ -4,7 +4,6 @@ using Pragmatic.Identity;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Sql;
-using Pragmatic.Persistence.Sql.Pragmatic;
 using Pragmatic.Result.Database;
 using Pragmatic.Specification.Specifications;
 using Pragmatic.Aot.SqlEngine;

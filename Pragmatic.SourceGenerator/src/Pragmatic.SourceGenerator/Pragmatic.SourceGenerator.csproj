@@ -44,10 +44,11 @@
     <DefineConstants>$(DefineConstants);PRAGMATIC_SOURCE_GENERATOR</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlDialect.cs" Link="Shared\Sql\SqlDialect.cs" />
-    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.cs" Link="Shared\Sql\SqlCatalog.cs" />
-    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.Json.cs" Link="Shared\Sql\SqlCatalog.Json.cs" />
-    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\SqlCatalog.FullText.cs" Link="Shared\Sql\SqlCatalog.FullText.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\SqlDialect.cs" Link="Shared\Sql\SqlDialect.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\SqlDialects.cs" Link="Shared\Sql\SqlDialects.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Schema\SqlCatalog.cs" Link="Shared\Sql\Schema\SqlCatalog.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Schema\SqlCatalog.Json.cs" Link="Shared\Sql\Schema\SqlCatalog.Json.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Schema\SqlCatalog.FullText.cs" Link="Shared\Sql\Schema\SqlCatalog.FullText.cs" />
   </ItemGroup>
 
   <!-- MetadataCategory is deliberately NOT linked in as source. Doing so puts a second public

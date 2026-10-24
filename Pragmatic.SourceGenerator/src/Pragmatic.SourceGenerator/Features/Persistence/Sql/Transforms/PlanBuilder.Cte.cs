@@ -201,7 +201,7 @@ internal sealed partial class PlanBuilder
         var offset = _kinds.Count; // the step's values (its constants) bound after the anchor's, as a Where's
         for (var i = 0; i < translator.ParameterPaths.Count; i++)
         {
-            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, {Value(translator, i, null)});");
+            _binds.Add($"p[{offset + i}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, {Value(translator, i, null)});");
             _kinds.Add(translator.ParameterKinds[i]);
         }
 

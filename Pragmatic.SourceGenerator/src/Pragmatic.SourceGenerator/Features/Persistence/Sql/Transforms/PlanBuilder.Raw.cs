@@ -28,7 +28,7 @@ internal sealed partial class PlanBuilder
                     // The hole is a parameter: never text. Its kind from the expression's type, its value from the root's values at bind time.
                     var index = _kinds.Count;
                     text.Append("@p").Append(index);
-                    _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, q.Raw!.Values[{index}]);");
+                    _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, q.Raw!.Values[{index}]);");
                     _kinds.Add(LambdaTranslator.KindOf(model.GetTypeInfo(hole.Expression).Type));
                     break;
                 default:
@@ -61,7 +61,7 @@ internal sealed partial class PlanBuilder
         {
             var index = _kinds.Count;
             text.Append(i > 1 ? ", @p" : "@p").Append(index);
-            _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, q.Raw!.Values[{i - 1}]);");
+            _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, q.Raw!.Values[{i - 1}]);");
             _kinds.Add(LambdaTranslator.KindOf(model.GetTypeInfo(arguments[i].Expression).Type));
         }
 

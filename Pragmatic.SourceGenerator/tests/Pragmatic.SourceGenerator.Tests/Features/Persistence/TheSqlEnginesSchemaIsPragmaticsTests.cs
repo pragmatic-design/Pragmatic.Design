@@ -32,7 +32,7 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     private const string Host = "public static class SchemaProbeHost { public static void Main() { } }";
 
     /// <summary>The Sql engine's bridge, by the type the generator recognises it by.</summary>
-    private const string SqlBridge = "namespace Pragmatic.Persistence.Sql.Pragmatic { public static class PragmaticSqlFilters { } }";
+    private const string SqlBridge = "namespace Pragmatic.Persistence.Sql { public static class PragmaticSqlFilters { } }";
 
     /// <summary>Per provider, the lines only EF Core's schema has (-) and only the Sql engine's has (+).</summary>
     private static readonly Dictionary<string, string[]> Departures = new()

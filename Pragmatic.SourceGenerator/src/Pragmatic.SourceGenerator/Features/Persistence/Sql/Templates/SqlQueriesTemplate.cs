@@ -55,7 +55,7 @@ internal sealed class SqlQueriesTemplate(IEnumerable<string> usings, EquatableAr
             return;
         AppendLine();
         AppendLine("        /// <summary>The same query in a batch: recorded now, run by <c>batch.ExecuteAsync()</c>, answered by the item's <c>Result</c>.</summary>");
-        AppendLine($"        public static {Sql}.SqlBatchItem<{q.BatchResultType}> {q.MethodName}(this {Sql}.SqlBatch batch{parameters})");
+        AppendLine($"        public static {Sql}.Writing.SqlBatchItem<{q.BatchResultType}> {q.MethodName}(this {Sql}.Writing.SqlBatch batch{parameters})");
         AppendLine($"            => {q.BatchBody};");
     }
 

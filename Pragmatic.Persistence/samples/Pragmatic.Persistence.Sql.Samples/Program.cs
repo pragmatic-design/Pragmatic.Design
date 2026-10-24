@@ -3,6 +3,7 @@ using Npgsql;
 using Pragmatic.Persistence.Sql;
 using Pragmatic.Persistence.Sql.Samples;
 using Pragmatic.Persistence.Workload;
+using Pragmatic.Persistence.Sql.Dialects;
 
 // Pragmatic.Persistence.Sql by example: every feature of the spike, one area per file (Reads, Includes, Writes,
 // Declared, Runtime, Model, Sessions), each sample saying what it shows and checking what it got against the seed.

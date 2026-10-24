@@ -72,7 +72,7 @@ internal static partial class SqlInterceptorGenerator
     internal static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
     {
         var entities = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Pragmatic.Persistence.Sql.EntityAttribute",
+            "Pragmatic.Persistence.Sql.Attributes.EntityAttribute",
             static (node, _) => node is ClassDeclarationSyntax,
             static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
 
@@ -87,12 +87,12 @@ internal static partial class SqlInterceptorGenerator
         context.RegisterSourceOutput(querySyntax.Where(static l => l is not null), static (spc, location) => spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedMethod, location, "query syntax", QuerySyntaxReason)));
 
         var queries = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Pragmatic.Persistence.Sql.QueryAttribute",
+            "Pragmatic.Persistence.Sql.Attributes.QueryAttribute",
             static (node, _) => node is MethodDeclarationSyntax,
             static (ctx, _) => (IMethodSymbol)ctx.TargetSymbol);
 
         var dtos = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Pragmatic.Persistence.Sql.MapFromAttribute`1",
+            "Pragmatic.Persistence.Sql.Attributes.MapFromAttribute`1",
             static (node, _) => node is TypeDeclarationSyntax, // a class, a record, or a record struct (no object per row)
             static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
 
@@ -101,7 +101,7 @@ internal static partial class SqlInterceptorGenerator
         var census = context.AnalyzerConfigOptionsProvider.Select(static (options, _) => options.GlobalOptions.TryGetValue("build_property.PragmaticCensus", out var value) && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
 
         var functions = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Pragmatic.Persistence.Sql.SqlFunctionAttribute",
+            "Pragmatic.Persistence.Sql.Attributes.SqlFunctionAttribute",
             static (node, _) => node is MethodDeclarationSyntax,
             static (ctx, _) => (IMethodSymbol)ctx.TargetSymbol);
 

@@ -273,9 +273,9 @@ internal static partial class SqlInterceptorGenerator
                     column = sql;
                     reader = kind switch
                     {
-                        GroupAggregate.Kind.Count => "global::Pragmatic.Persistence.Sql.SqlValue.Count({r}, {i}, {d})",
-                        GroupAggregate.Kind.Average => type?.SpecialType == SpecialType.System_Decimal ? "(decimal)global::Pragmatic.Persistence.Sql.SqlValue.Average({r}, {i}, {d})" : "global::Pragmatic.Persistence.Sql.SqlValue.Average({r}, {i}, {d})",
-                        GroupAggregate.Kind.Text => "global::Pragmatic.Persistence.Sql.SqlValue.NullableString({r}, {i})",
+                        GroupAggregate.Kind.Count => "global::Pragmatic.Persistence.Sql.Planning.SqlValue.Count({r}, {i}, {d})",
+                        GroupAggregate.Kind.Average => type?.SpecialType == SpecialType.System_Decimal ? "(decimal)global::Pragmatic.Persistence.Sql.Planning.SqlValue.Average({r}, {i}, {d})" : "global::Pragmatic.Persistence.Sql.Planning.SqlValue.Average({r}, {i}, {d})",
+                        GroupAggregate.Kind.Text => "global::Pragmatic.Persistence.Sql.Planning.SqlValue.NullableString({r}, {i})",
                         _ => type is null ? null : EntityModel.ReaderFor(type), // a filtered aggregate over no matching row is NULL: declare the member nullable ((decimal?)g.Where(…).Sum(…))
                     };
                 }

@@ -34,6 +34,17 @@ internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableA
         AppendLine("    using global::System;");
         AppendLine("    using global::System.Linq.Expressions;");
         AppendLine("    using global::Pragmatic.Persistence.Sql;");
+        // The engine's folders the plans and interceptors name by their simple names. Not its attributes: names like Key and Entity there
+        // would compete with an application's.
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Conversion;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Dynamic;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Execution;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Filters;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Functions;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Planning;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Schema;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Shapes;");
+        AppendLine("    using global::Pragmatic.Persistence.Sql.Writing;");
         AppendLine("    using global::Pragmatic.Persistence.Expressions;");
         AppendLine();
         RenderMaps(maps);

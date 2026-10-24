@@ -162,7 +162,7 @@ internal sealed partial class PlanBuilder
     {
         "ToListAsync" => ($"global::System.Threading.Tasks.ValueTask<global::System.Collections.Generic.List<{_elementType}>>", "ToListAsync"),
         "ToArrayAsync" => ($"global::System.Threading.Tasks.ValueTask<{_elementType}[]>", "ToArrayAsync"),
-        "ShapeAsync" => ($"global::System.Threading.Tasks.ValueTask<global::Pragmatic.Persistence.Sql.SqlShapeResult<{_elementType}>>", "ShapeAsync"),
+        "ShapeAsync" => ($"global::System.Threading.Tasks.ValueTask<global::Pragmatic.Persistence.Sql.Shapes.SqlShapeResult<{_elementType}>>", "ShapeAsync"),
         "AsAsyncEnumerable" => ($"global::System.Collections.Generic.IAsyncEnumerable<{_elementType}>", "Enumerate"),
         "FirstOrDefaultAsync" => ($"global::System.Threading.Tasks.ValueTask<{_elementType}{OrDefault}>", "FirstOrDefaultAsync"),
         "FirstAsync" => ($"global::System.Threading.Tasks.ValueTask<{_elementType}>", "FirstAsync"),
@@ -277,7 +277,7 @@ internal sealed partial class PlanBuilder
             if (terminal == "AverageAsync" && EntityModel.IsInteger(valueType))
                 _aggregateColumn += " * 1E0";
             _elementType = terminal == "AverageAsync" ? "double" : valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            _aggregateReader = terminal == "AverageAsync" ? "global::Pragmatic.Persistence.Sql.SqlValue.Average(r, 0, d)" : valueReader!.Replace("{r}", "r").Replace("{i}", "0").Replace("{d}", "d");
+            _aggregateReader = terminal == "AverageAsync" ? "global::Pragmatic.Persistence.Sql.Planning.SqlValue.Average(r, 0, d)" : valueReader!.Replace("{r}", "r").Replace("{i}", "0").Replace("{d}", "d");
         }
 
         // Paging parameters come after the captured values, and only where the statement uses them: a count has no

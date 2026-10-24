@@ -45,7 +45,7 @@ internal sealed class PragmaticEngines
     private static readonly (PragmaticEngine Engine, string Probe)[] Probes =
     [
         (PragmaticEngine.EfCore, "Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute"),
-        (PragmaticEngine.Sql, "Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters"),
+        (PragmaticEngine.Sql, "Pragmatic.Persistence.Sql.PragmaticSqlFilters"),
         (PragmaticEngine.Documents, "Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters"),
     ];
 

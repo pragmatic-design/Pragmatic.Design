@@ -30,7 +30,7 @@ internal static class FeatureDetector
         HasPersistenceEFCore = TypeExists(compilation, "Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute"),
         // ASSUMPTION: the bridges' types as the spike names them; the packages that will hold them are not
         // in the repository yet, and these two names have to follow them when they arrive.
-        HasPersistenceSql = TypeExists(compilation, "Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters"),
+        HasPersistenceSql = TypeExists(compilation, "Pragmatic.Persistence.Sql.PragmaticSqlFilters"),
         HasPersistenceDocuments = TypeExists(compilation, "Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters"),
         HasEfCore = TypeExists(compilation, "Microsoft.EntityFrameworkCore.DbContext"),
         HasI18n = TypeExists(compilation, "Pragmatic.Internationalization.Attributes.TranslationKeysAttribute"),

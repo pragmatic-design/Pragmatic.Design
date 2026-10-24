@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers (PostgreSQL, SQL Server, MySQL, Oracle; SQLite in process): scripts/check.mjs runs these one at a
+         time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Persistence.Sql.Core.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1861;xUnit1004</NoWarn>
+    <!-- The generator's interceptors live in this namespace; the generated code is kept under obj/ to be read. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core is the oracle of equivalence, not a dependency of the library. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <!-- MySQL: the ADO provider the sessions run on, and Oracle's EF Core provider as the oracle (the only one on EF Core 10). -->
+    <PackageReference Include="MySqlConnector" />
+    <PackageReference Include="MySql.EntityFrameworkCore" />
+    <!-- Oracle: ODP.NET Core and Oracle's EF Core 10 provider as the oracle. -->
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.MsSql" />
+  </ItemGroup>
+
+  <!-- The engine's namespaces, every one of them: the suite exercises the whole engine. -->
+  <ItemGroup>
+    <Using Include="Pragmatic.Persistence.Sql.Attributes" />
+    <Using Include="Pragmatic.Persistence.Sql.Conversion" />
+    <Using Include="Pragmatic.Persistence.Sql.Dialects" />
+    <Using Include="Pragmatic.Persistence.Sql.Execution" />
+    <Using Include="Pragmatic.Persistence.Sql.Filters" />
+    <Using Include="Pragmatic.Persistence.Sql.Functions" />
+    <Using Include="Pragmatic.Persistence.Sql.Planning" />
+    <Using Include="Pragmatic.Persistence.Sql.Schema" />
+    <Using Include="Pragmatic.Persistence.Sql.Shapes" />
+    <Using Include="Pragmatic.Persistence.Sql.Writing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The workload's schema snapshot: the generator reads its indexes for PRAG3011 (a WHERE on a column without one). -->
+    <AdditionalFiles Include="..\Fixtures\Pragmatic.Persistence.Workload\schema\workload.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Npgsql\Pragmatic.Persistence.Sql.Npgsql.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.SqlClient\Pragmatic.Persistence.Sql.SqlClient.csproj" />
+    <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- The Explain tool, built with the tests and copied beside them: the diagnostics tests run the fixture's PragmaticExplain target,
+         which needs its dll, and the gate builds into artifacts/, so the tool's own bin/ is not where it is. -->
+    <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Sql.Explain\Pragmatic.Persistence.Sql.Explain.csproj" />
+  </ItemGroup>
+
+</Project>

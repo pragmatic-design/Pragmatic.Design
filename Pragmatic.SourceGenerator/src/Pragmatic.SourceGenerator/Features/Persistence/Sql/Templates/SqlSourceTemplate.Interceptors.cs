@@ -18,7 +18,7 @@ internal sealed partial class SqlSourceTemplate
         AppendLine("    file static class CompiledPredicates");
         AppendLine("    {");
         foreach (var p in predicates)
-            AppendLine($"        internal static readonly {Sql}.SqlCompiledPredicate {p.Field} = new({Literal(p.Sqlite)}, {Literal(p.PostgreSql)}, {Literal(p.SqlServer)}, {Literal(p.MySql)}, {Literal(p.Oracle)}, new {Sql}.SqlParamKind[] {{ {Join(p.Kinds.Select(k => $"{Sql}.SqlParamKind.{k}"))} }});");
+            AppendLine($"        internal static readonly {Sql}.Planning.SqlCompiledPredicate {p.Field} = new({Literal(p.Sqlite)}, {Literal(p.PostgreSql)}, {Literal(p.SqlServer)}, {Literal(p.MySql)}, {Literal(p.Oracle)}, new {Sql}.Planning.SqlParamKind[] {{ {Join(p.Kinds.Select(k => $"{Sql}.Planning.SqlParamKind.{k}"))} }});");
         AppendLine("    }");
         AppendLine();
     }

@@ -49,7 +49,7 @@ public sealed class TwoEnginesTests(MongoServer mongo) : IClassFixture<MongoServ
             Assert.Equal("anna", product!.OwnerId); // the Sql engine's save stamped the owner
             var review = Assert.Single(reviews);
             Assert.Equal(("Bright", 5, "anna"), (review.Text, review.Stars, review.OwnerId)); // and the documents engine's
-            Assert.IsType<Pragmatic.Persistence.Sql.Pragmatic.SqlUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)));
+            Assert.IsType<Pragmatic.Persistence.Sql.SqlUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)));
             Assert.IsType<Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(ReviewsBoundary)));
         }
 

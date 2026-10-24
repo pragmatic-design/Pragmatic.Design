@@ -430,18 +430,18 @@
       "pragmatic.persistence.sql": {
         "type": "Project",
         "dependencies": {
-          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
-        }
-      },
-      "pragmatic.persistence.sql.pragmatic": {
-        "type": "Project",
-        "dependencies": {
           "Pragmatic.Actions": "[1.0.0, )",
           "Pragmatic.Events": "[1.0.0, )",
           "Pragmatic.Persistence": "[1.0.0, )",
           "Pragmatic.Persistence.Engines": "[1.0.0, )",
-          "Pragmatic.Persistence.Sql": "[1.0.0, )",
+          "Pragmatic.Persistence.Sql.Core": "[1.0.0, )",
           "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.sql.core": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
         }
       },
       "pragmatic.result": {

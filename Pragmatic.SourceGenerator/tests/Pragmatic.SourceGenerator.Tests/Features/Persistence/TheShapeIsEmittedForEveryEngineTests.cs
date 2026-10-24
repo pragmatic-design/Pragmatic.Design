@@ -24,7 +24,7 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 public class TheShapeIsEmittedForEveryEngineTests
 {
     private const string SqlBridge = """
-        namespace Pragmatic.Persistence.Sql.Pragmatic
+        namespace Pragmatic.Persistence.Sql
         {
             public static class PragmaticSqlFilters { }
         }

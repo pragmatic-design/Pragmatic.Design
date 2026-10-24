@@ -1,4 +1,5 @@
 using Pragmatic.Persistence.Sql;
+using Pragmatic.Persistence.Sql.Schema;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -17,7 +18,7 @@ internal sealed partial class LambdaTranslator
     /// <summary>The JSON column and path the last member access translated to (<c>d.Spec</c>, <c>Pages</c>), for an update of that member; null otherwise.</summary>
     public (string Column, string Path)? LastJson { get; private set; }
 
-    internal static bool IsJsonConverter(string? converter) => converter is not null && converter.StartsWith("global::Pragmatic.Persistence.Sql.SqlJson<", System.StringComparison.Ordinal);
+    internal static bool IsJsonConverter(string? converter) => converter is not null && converter.StartsWith("global::Pragmatic.Persistence.Sql.Conversion.SqlJson<", System.StringComparison.Ordinal);
 
     /// <summary>The JSON path of the segments below the column, and the type the path ends on; null with the error when a segment is not a member of the JSON type.</summary>
     private string? JsonPath(ColumnModel json, List<string> segments, int from, int to, SyntaxNode where, out ITypeSymbol? leaf)

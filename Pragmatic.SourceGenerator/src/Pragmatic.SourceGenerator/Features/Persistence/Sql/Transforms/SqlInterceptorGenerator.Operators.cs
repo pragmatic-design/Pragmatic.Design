@@ -104,7 +104,7 @@ internal static partial class SqlInterceptorGenerator
             }
 
             var composed = name == "Matching" ? "SqlPredicate" : "SqlOrdering";
-            source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), $"global::Pragmatic.Persistence.Sql.{composed}<{elementType}> composed"], $"q.WithSlot({slot}, composed)"));
+            source.Add(new(attribute, $"SqlQuery<{elementType}>", $"{name}_{index}", "", [On(elementType), $"global::Pragmatic.Persistence.Sql.Planning.{composed}<{elementType}> composed"], $"q.WithSlot({slot}, composed)"));
             diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, name, name == "Matching" ? "the predicate composed at runtime from compiled leaves" : "the ordering composed at runtime from compiled keys"));
             return true;
         }

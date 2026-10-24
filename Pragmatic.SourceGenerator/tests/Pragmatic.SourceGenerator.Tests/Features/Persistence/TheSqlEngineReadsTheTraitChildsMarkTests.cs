@@ -45,7 +45,7 @@ public class TheSqlEngineReadsTheTraitChildsMarkTests
             }
         }
 
-        namespace Pragmatic.Persistence.Sql.Pragmatic
+        namespace Pragmatic.Persistence.Sql
         {
             public static class PragmaticSqlFilters { }
         }

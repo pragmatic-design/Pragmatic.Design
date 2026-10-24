@@ -19,7 +19,7 @@
   <PropertyGroup>
     <PragmaticCensusFile>$(MSBuildProjectDirectory)\queries.census.json</PragmaticCensusFile>
   </PropertyGroup>
-  <Import Project="..\..\src\Pragmatic.Persistence.Sql\build\Pragmatic.Persistence.Sql.targets" />
+  <Import Project="..\..\src\Pragmatic.Persistence.Sql.Core\build\Pragmatic.Persistence.Sql.Core.targets" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
@@ -64,7 +64,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <!-- The provider's bulk load (COPY) behind InsertManyAsync: the session gets the copier in Program.cs. -->
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Npgsql\Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <ProjectReference Include="..\..\tests\Fixtures\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />

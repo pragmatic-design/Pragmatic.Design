@@ -70,7 +70,7 @@ internal sealed partial class PlanBuilder
                 else
                     slot = _slot++;
                 _asOfParameter = "@p" + _kinds.Count;
-                _binds.Add($"p[{_kinds.Count}].Value = global::Pragmatic.Persistence.Sql.SqlValue.ToDatabase(d, q.Slot({slot}));");
+                _binds.Add($"p[{_kinds.Count}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, q.Slot({slot}));");
                 _kinds.Add("DateTime");
                 if (!_entity.Temporal) // [Temporal]: the history table SqlTemporal's triggers keep, read at the instant
                 {

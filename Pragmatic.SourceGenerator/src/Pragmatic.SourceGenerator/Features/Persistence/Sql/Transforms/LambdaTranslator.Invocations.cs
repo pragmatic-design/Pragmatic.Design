@@ -1,4 +1,5 @@
 using Pragmatic.Persistence.Sql;
+using Pragmatic.Persistence.Sql.Schema;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -32,7 +33,7 @@ internal sealed partial class LambdaTranslator
         var target = (invocation.Expression as MemberAccessExpressionSyntax)?.Expression;
         if (_groupKey is not null && GroupAggregate.IsOnGroup(invocation, _model, _parameter))
             return Aggregate(invocation);
-        if (method.ContainingType.ToDisplayString() == "Pragmatic.Persistence.Sql.SqlDateRange" && method.Name == "Contains" && target is not null && invocation.ArgumentList.Arguments.Count == 1)
+        if (method.ContainingType.ToDisplayString() == "Pragmatic.Persistence.Sql.Functions.SqlDateRange" && method.Name == "Contains" && target is not null && invocation.ArgumentList.Arguments.Count == 1)
             return RangeContains(invocation, target, path);
         if (method.Name == "Contains" && target is MemberAccessExpressionSyntax jsonArray && invocation.ArgumentList.Arguments.Count == 1 && IsJsonArray(jsonArray))
             return JsonArrayContains(invocation, jsonArray, invocation.ArgumentList.Arguments[0].Expression, path); // an element of a JSON array
@@ -202,7 +203,7 @@ internal sealed partial class LambdaTranslator
         if (query.Length > 2 && query[0] == '{' && query[query.Length - 1] == '}' && int.TryParse(query.Substring(1, query.Length - 2), out var index))
         {
             // The query's parameter carried as a SqlFullTextQuery: bound as the engine's condition, every word required (a literal is turned in the catalog).
-            _parameterTexts[index] = $"global::Pragmatic.Persistence.Sql.SqlFullTextQuery.Of({_parameterTexts[index]})";
+            _parameterTexts[index] = $"global::Pragmatic.Persistence.Sql.Functions.SqlFullTextQuery.Of({_parameterTexts[index]})";
             _parameterPaths[index] = $"SqlFullTextQuery.Of(global::Pragmatic.Persistence.Expressions.{_parameterPaths[index]})";
         }
 

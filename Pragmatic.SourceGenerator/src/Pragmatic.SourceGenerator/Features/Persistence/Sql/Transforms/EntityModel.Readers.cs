@@ -57,7 +57,7 @@ internal sealed partial class EntityModel
         if (ArrayReader(type, out var list) is { } elements)
         {
             // An array column: a native array on PostgreSQL, the JSON text elsewhere (SqlArrays); a List built over the array.
-            var read = $"global::Pragmatic.Persistence.Sql.SqlArrays.{elements}({{r}}, {{i}}, {{d}})";
+            var read = $"global::Pragmatic.Persistence.Sql.Functions.SqlArrays.{elements}({{r}}, {{i}}, {{d}})";
             var typed = list ? $"new {type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}({read})" : read;
             return forceNullable || type.NullableAnnotation == NullableAnnotation.Annotated ? $"({{r}}.IsDBNull({{i}}) ? null : {typed})" : typed;
         }
@@ -104,7 +104,7 @@ internal sealed partial class EntityModel
         if (name is null)
             return null;
         var dialectArgument = name is "String" or "Int32" or "Int64" or "Double" or "TimeSpan" or "Bytes" ? "" : ", {d}";
-        return $"global::Pragmatic.Persistence.Sql.SqlValue.{prefix}{name}({{r}}, {{i}}{dialectArgument})";
+        return $"global::Pragmatic.Persistence.Sql.Planning.SqlValue.{prefix}{name}({{r}}, {{i}}{dialectArgument})";
     }
 
     public static string Pluralize(string name) => PragmaticNames.Pluralize(name);
