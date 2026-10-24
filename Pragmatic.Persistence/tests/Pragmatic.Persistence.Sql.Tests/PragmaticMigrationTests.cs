@@ -19,7 +19,7 @@ public class PragmaticMigrationTests(PragmaticDatabases databases)
     [MemberData(nameof(Dialects))]
     public async Task The_generated_schema_is_created_from_nothing_and_converges(SqlDialect dialect)
     {
-        var schema = DefaultSchema.For(dialect);
+        var schema = DialectSchemas.For(dialect);
         var connectionString = await databases.CreateAsync(dialect, "created");
 
         var created = await PragmaticMigrations.MigrateAsync(connectionString, schema);
@@ -38,7 +38,7 @@ public class PragmaticMigrationTests(PragmaticDatabases databases)
     [MemberData(nameof(Dialects))]
     public async Task The_schema_evolves_by_a_column_and_an_index_without_losing_rows(SqlDialect dialect)
     {
-        var v1 = DefaultSchema.For(dialect);
+        var v1 = DialectSchemas.For(dialect);
         var connectionString = await databases.CreateAsync(dialect, "evolve");
         Assert.True((await PragmaticMigrations.MigrateAsync(connectionString, v1)).Success);
         await using (var connection = await PragmaticMigrations.OpenAsync(dialect, connectionString))
@@ -77,7 +77,7 @@ public class PragmaticMigrationTests(PragmaticDatabases databases)
     [InlineData("DEFAULT false")]
     public async Task On_SQL_Server_Pragmatics_schema_as_written_does_not_migrate(string departure)
     {
-        var spike = DefaultSchema.For(SqlDialect.SqlServer);
+        var spike = DialectSchemas.For(SqlDialect.SqlServer);
         ColumnSchema Back(ColumnSchema c) => departure == "DEFAULT false"
             ? c.DefaultValue == "0" ? c with { DefaultValue = "false" } : c
             : c.SqlType == "nvarchar(450)" ? c with { SqlType = "nvarchar(max)" } : c;

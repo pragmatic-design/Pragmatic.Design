@@ -24,9 +24,10 @@ internal static class DbContextFeature
     /// </remarks>
     /// <returns>
     ///     The stores these outputs write into a host, for Composition to name only those
-    ///     (see <see cref="PersistedStoresModel" />).
+    ///     (see <see cref="PersistedStoresModel" />); and the schema of each database's EF Core entities, which
+    ///     <see cref="SchemaFeature" /> writes with the other engines' tables.
     /// </returns>
-    public static IncrementalValueProvider<PersistedStoresModel> Register(
+    public static (IncrementalValueProvider<PersistedStoresModel> Stores, IncrementalValueProvider<EquatableArray<SchemaMetadataModel>> Schemas) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<ImmutableArray<EntityMetadataModel>> allEntitiesProvider,
         IncrementalValueProvider<DetectedFeatures> features,
@@ -207,12 +208,14 @@ internal static class DbContextFeature
             .Combine(batchBoundariesProvider)
             .Combine(jobBoundariesProvider)
             .Combine(notificationBoundariesProvider);
-        context.RegisterSourceOutputSafe(schemaMetadataProvider, (ctx, pair) =>
+        // The models, not the files: the schema of a database is written once with the tables every engine contributes to it
+        // (SchemaFeature), and the Sql engine's are not known here.
+        var schemaModels = schemaMetadataProvider.Select(static (pair, _) =>
         {
             var ((((((((dbCtxInput, compilation), traitEnts), outboxBoundaries), sagaBoundaries), messagingOutboxBoundaries), batchBoundaries), jobBoundaries), notificationBoundaries) = pair;
             var features = dbCtxInput.Right;
             if (!features.HasPersistenceEFCore || !features.HasMigrations)
-                return;
+                return EquatableArray<SchemaMetadataModel>.Empty;
 
             // Inject trait entities as minimal EntityMetadataModel into the entity list
             var input = dbCtxInput.Left;
@@ -257,7 +260,7 @@ internal static class DbContextFeature
             }
 
             var schemaContext = BuildSchemaResolutionContext(compilation, input);
-            GenerateSchemaMetadata(ctx, input, features.EfCoreProvider, schemaContext, features.IsHostMode,
+            return BuildSchemaMetadata(input, features.EfCoreProvider, schemaContext, features.IsHostMode,
                 compilation.AssemblyName,
                 features.HasEventsEFCore ? outboxBoundaries : EquatableArray<string>.Empty,
                 features.HasMessagingEFCore ? sagaBoundaries : EquatableArray<string>.Empty,
@@ -430,7 +433,7 @@ internal static class DbContextFeature
         // references Persistence.EFCore.
         // The registration class is named by the same rule GenerateDbContextRegistration declares it with,
         // over the same entities and assembly name: the two cannot drift apart.
-        return allEntitiesProvider
+        var stores = allEntitiesProvider
             .Combine(topologyProvider)
             .Combine(features)
             .Combine(assemblyNameProvider)
@@ -442,6 +445,7 @@ internal static class DbContextFeature
                         DbContextRegistrationTemplate.QualifiedClassFor(HostArtifactNamespace(assemblyName, entities)))
                     : PersistedStoresModel.None;
             });
+        return (stores, schemaModels);
     }
 
     /// <summary>
@@ -1347,8 +1351,7 @@ internal static class DbContextFeature
     // Schema metadata generation (Pragmatic.Migrations integration)
     // =========================================================================
 
-    private static void GenerateSchemaMetadata(
-        SourceProductionContext context,
+    private static EquatableArray<SchemaMetadataModel> BuildSchemaMetadata(
         (((ImmutableArray<EntityMetadataModel> Entities,
             EquatableDictionary<string, EquatableArray<string>> ReadAccessByBoundary) Input,
             bool HasI18nEFCore),
@@ -1370,17 +1373,17 @@ internal static class DbContextFeature
         var topology = input.Topology;
 
         if (entities.Length == 0)
-            return;
+            return EquatableArray<SchemaMetadataModel>.Empty;
 
         // Host mode, for the reason spelled out on GenerateBoundaryDbContexts. The per-entity filter goes
         // with it: the schema of a host's database covers every entity that lands in its DbContexts, and
         // where an entity was declared is not what decides that.
         if (!isHostMode)
-            return;
+            return EquatableArray<SchemaMetadataModel>.Empty;
 
         var validEntities = entities.Where(e => e.IsValid).ToImmutableArray();
         if (validEntities.Length == 0)
-            return;
+            return EquatableArray<SchemaMetadataModel>.Empty;
 
         // A database needs the __EventOutbox table when any of its boundaries is [EnableEventOutbox].
         static string StripGlobalPrefix(string s) =>
@@ -1424,6 +1427,7 @@ internal static class DbContextFeature
             && group.Any(e => notificationBoundarySet.Contains(StripGlobalPrefix(e.BoundaryTypeFullName ?? "")));
 
         var rootNs = HostArtifactNamespace(assemblyName, validEntities);
+        var schemas = new List<SchemaMetadataModel>();
 
         if (topology.HasTopology)
         {
@@ -1461,20 +1465,22 @@ internal static class DbContextFeature
                 // Resolve ConfigKey from topology assignment
                 var configKey = topology.BoundaryToDatabase.Values
                     .FirstOrDefault(a => a.DatabaseClassName == kvp.Key)?.ConfigKey;
-                EmitSchemaMetadata(context, kvp.Value.ToImmutableArray(), efCoreProvider, kvp.Key, rootNs, schemaContext,
+                schemas.Add(SchemaMetadataTransform.Transform(kvp.Value.ToImmutableArray(), efCoreProvider, kvp.Key, rootNs, schemaContext,
                     configKey, HasOutbox(kvp.Value), HasSaga(kvp.Value), HasMessagingOutbox(kvp.Value), HasBatch(kvp.Value),
-                    hasPrivacyEFCore, hasCryptographyEFCore, HasJobs(kvp.Value), HasNotifications(kvp.Value));
+                    hasPrivacyEFCore, hasCryptographyEFCore, HasJobs(kvp.Value), HasNotifications(kvp.Value)));
             }
         }
         else
         {
             // Single database: all entities → one SchemaMetadata
-            EmitSchemaMetadata(context, validEntities, efCoreProvider, "Default", rootNs, schemaContext,
+            schemas.Add(SchemaMetadataTransform.Transform(validEntities, efCoreProvider, "Default", rootNs, schemaContext,
                 hasEventOutbox: HasOutbox(validEntities), hasSagaPersistence: HasSaga(validEntities),
                 hasMessagingOutbox: HasMessagingOutbox(validEntities), hasBatchProgress: HasBatch(validEntities),
                 hasPrivacyEFCore: hasPrivacyEFCore, hasCryptographyEFCore: hasCryptographyEFCore,
-                hasJobPersistence: HasJobs(validEntities), hasNotificationStore: HasNotifications(validEntities));
+                hasJobPersistence: HasJobs(validEntities), hasNotificationStore: HasNotifications(validEntities)));
         }
+
+        return schemas.ToEquatableArray();
     }
 
     /// <summary>
@@ -1636,30 +1642,6 @@ internal static class DbContextFeature
             current = current.BaseType;
         }
         return false;
-    }
-
-    private static void EmitSchemaMetadata(
-        SourceProductionContext context,
-        ImmutableArray<EntityMetadataModel> entities,
-        EfCoreProvider provider,
-        string databaseName,
-        string rootNamespace,
-        SchemaMetadataTransform.SchemaResolutionContext schemaContext,
-        string? configKey = null,
-        bool hasEventOutbox = false,
-        bool hasSagaPersistence = false,
-        bool hasMessagingOutbox = false,
-        bool hasBatchProgress = false,
-        bool hasPrivacyEFCore = false,
-        bool hasCryptographyEFCore = false,
-        bool hasJobPersistence = false,
-        bool hasNotificationStore = false)
-    {
-        var model = SchemaMetadataTransform.Transform(entities, provider, databaseName, rootNamespace, schemaContext, configKey, hasEventOutbox, hasSagaPersistence, hasMessagingOutbox, hasBatchProgress, hasPrivacyEFCore, hasCryptographyEFCore, hasJobPersistence, hasNotificationStore);
-        var template = new SchemaMetadataTemplate(model);
-        var artifact = template.RenderOutput();
-        if (!artifact.IsEmpty)
-            context.AddSource(artifact);
     }
 
     /// <summary>

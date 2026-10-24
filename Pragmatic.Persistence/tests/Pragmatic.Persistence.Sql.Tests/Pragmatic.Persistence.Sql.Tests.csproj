@@ -33,8 +33,16 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <!-- The schema the Sql engine describes for the entities migrates the databases (DefaultSchema, Pragmatic.Migrations' runner). -->
+    <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
+         typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->
     <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" Aliases="generator" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The entities' source, which DialectSchemas hands the generator. -->
+    <EmbeddedResource Include="Entities.cs" LogicalName="Entities.cs" />
   </ItemGroup>
 
   <!-- The engine's namespaces the suite reads. Not its attributes: [Entity] here is Pragmatic's. -->

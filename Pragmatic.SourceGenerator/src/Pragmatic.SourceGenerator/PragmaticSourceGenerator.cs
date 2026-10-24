@@ -67,7 +67,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             ? resourceQueries.Combine(traitOutput.Queries.Value)
                 .Select(static (pair, _) => pair.Left.AddRange(pair.Right))
             : resourceQueries;
-        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources) = PersistenceFeature.Register(context, features,
+        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources, efCoreSchemas) = PersistenceFeature.Register(context, features,
             resourceQueries: allProgrammaticQueries,
             localTraitEntities: traitOutput.TraitEntities);
 
@@ -248,7 +248,10 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // The Sql engine's translation of query chains, guarded by its own symbol lookup (the engine's runtime referenced). Its inputs
         // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
         // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
-        Features.Persistence.Sql.SqlFeature.Register(context, shapeSources);
+        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, shapeSources, features);
+
+        // Each database's schema once, with the tables of every engine that persists a boundary on it.
+        Features.Persistence.SchemaFeature.Register(context, efCoreSchemas, sqlSchemas);
 
         // The documents engine's: the [Document] types' readers and writers and the chains on DocQuery<T>, guarded the same way (the
         // engine's runtime referenced), with the same shape for Pragmatic's entities.

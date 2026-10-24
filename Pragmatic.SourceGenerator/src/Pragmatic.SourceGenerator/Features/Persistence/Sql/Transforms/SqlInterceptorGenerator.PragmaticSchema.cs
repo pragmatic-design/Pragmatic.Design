@@ -1,65 +1,177 @@
 using Pragmatic.Persistence.Sql;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
-using Pragmatic.SourceGenerator.Features.Persistence.Sql.Templates;
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
+using Pragmatic.SourceGenerator.Features.Persistence.Transforms;
+using EngineSchemaModel = Pragmatic.SourceGenerator.Features.Persistence.Models.EngineSchemaModel;
+using MigratedTableModel = Pragmatic.SourceGenerator.Features.Persistence.Models.TableSchemaModel;
+using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
 /// <summary>
-///     The schema of Pragmatic's <c>[Entity]</c> types the Sql engine serves, for Pragmatic.Migrations, in the shape Pragmatic's EF branch gives it
-///     (<c>SchemaMetadataTemplate</c>, <c>SchemaMetadataTransform</c>): <c>{Database}Schema</c> in the host's root namespace, its <c>Current</c> the
-///     provider of the driver the compilation references (PostgreSQL, then SQL Server, then SQLite, the order EF's provider is detected in, then
-///     MySQL and Oracle), and
-///     <c>For(SqlDialect)</c> for each. The database is <c>Default</c>: a topology of <c>[Include&lt;TModule, TDatabase&gt;]</c> is reported, not
-///     followed. Its own source, needing Pragmatic.Migrations and the engine's <c>SqlDialect</c> only, so it compiles alone (<c>SchemaParity</c>).
-///     Where it differs from EF Core's branch, each difference is listed in <c>TheSqlEnginesSchemaIsPragmaticsTests</c>.
+///     The tables of Pragmatic's <c>[Entity]</c> types the Sql engine serves, for Pragmatic.Migrations: per database of the host's topology
+///     (<c>[Include&lt;TModule, TDatabase&gt;]</c>, <c>Default</c> without one), typed for that database's provider, and handed to
+///     <c>SchemaFeature</c>, which writes them in the same <c>{Database}Schema</c> as the EF Core entities of the database. In the shape
+///     Pragmatic's EF branch gives a table (<c>SchemaMetadataTransform</c>); where they differ, each difference is listed in
+///     <c>TheSqlEnginesSchemaIsPragmaticsTests</c>.
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private static readonly SqlDialect[] PragmaticSchemaDialects = [SqlDialect.PostgreSql, SqlDialect.SqlServer, SqlDialect.Sqlite, SqlDialect.MySql, SqlDialect.Oracle];
+    private const string SchemaVersionType = "Pragmatic.Migrations.Schema.SchemaVersion";
 
-    /// <summary>The schema source (hint, text), or null: no Pragmatic.Migrations, no Pragmatic entity the engine serves, or one it cannot describe.</summary>
-    private static (string Hint, string Text)? EmitPragmaticSchema(Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
+    /// <summary>
+    ///     The schema of each database the host's Sql-served entities live in; empty outside a host, without Pragmatic.Migrations, without a
+    ///     provider to type the tables for, or when an entity cannot be described yet (reported where it is declared,
+    ///     <see cref="ReportPragmaticSchemaProblems" />).
+    /// </summary>
+    internal static EquatableArray<EngineSchemaModel> PragmaticSchemas(Compilation compilation, ImmutableArray<INamedTypeSymbol> entityTypes,
+        EquatableArray<ShapeSourceModel> shapeSources, DetectedFeatures features, CancellationToken ct)
     {
-        if (compilation.GetTypeByMetadataName("Pragmatic.Migrations.Schema.SchemaVersion") is null)
-            return null;
-        var engines = PragmaticEngines.Of(compilation);
-        var served = PragmaticNames.AllTypes(compilation.Assembly.GlobalNamespace)
-            .Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql))
-            .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
-        if (served.Count == 0)
-            return null;
-        var entities = served.Select(lookup).Where(e => e is not null).Select(e => e!).ToList();
+        if (!UsesSql(compilation) || !features.IsHostMode || compilation.GetTypeByMetadataName(SchemaVersionType) is null)
+            return EquatableArray<EngineSchemaModel>.Empty;
+        if (SchemaDialect(compilation, features) is not { } dialect)
+            return EquatableArray<EngineSchemaModel>.Empty;
 
-        if (HasDatabaseTopology(compilation) is { } include)
-            diagnostics.Add(Diagnostic.Create(Diagnostics.SchemaShape, include, "the host", "its databases", "[Include<TModule, TDatabase>] names a database: the spike emits the Default schema only (the topology is a porting item)"));
-        foreach (var entity in entities)
+        // The members the shape gives this compilation's entities (the key, the stamps): the columns read them. A referenced assembly's
+        // entities have theirs compiled in.
+        if (!shapeSources.IsDefaultOrEmpty)
         {
-            var problem = entity.Columns.FirstOrDefault(c => c.Owner is not null) is { } owned ? $"'{owned.Owner}' is an owned type: the spike does not flatten one into the schema yet"
-                : entity.Type.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute") || entity.Type.GetMembers().Any(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute")) ? "[LogicKey]: the spike does not describe its unique index yet"
-                : null;
-            if (problem is null)
-                continue;
-            diagnostics.Add(Diagnostic.Create(Diagnostics.SchemaShape, entity.Type.Locations.FirstOrDefault() ?? Location.None, "DefaultSchema", entity.Type.Name, problem));
-            return null;
+            var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
+            compilation = compilation.AddSyntaxTrees(shapeSources.Select(s => CSharpSyntaxTree.ParseText(s.Text, options, s.HintName, cancellationToken: ct)));
+            entityTypes = Rebound(entityTypes, compilation);
         }
 
-        var current = compilation.GetTypeByMetadataName("Npgsql.NpgsqlConnection") is not null ? SqlDialect.PostgreSql
+        var topology = DatabaseTopologyReader.Read(compilation, ct);
+        var databases = new Dictionary<string, string>(StringComparer.Ordinal); // boundary, without global:: → database
+        var configKeys = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var assignment in topology.BoundaryToDatabase)
+        {
+            var boundary = assignment.Key.StartsWith("global::", StringComparison.Ordinal) ? assignment.Key.Substring("global::".Length) : assignment.Key;
+            databases[boundary] = assignment.Value.DatabaseClassName;
+            configKeys[assignment.Value.DatabaseClassName] = assignment.Value.ConfigKey;
+        }
+
+        string? DatabaseOf(INamedTypeSymbol entity)
+        {
+            if (!topology.HasTopology)
+                return "Default";
+            return PragmaticPermissions.BoundaryOf(entity) is { } boundary && databases.TryGetValue(boundary.ToDisplayString(), out var database) ? database : null;
+        }
+
+        var engines = PragmaticEngines.Of(compilation);
+        var served = SchemaCandidates(compilation, topology.HasTopology)
+            .Where(t => PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql) && DatabaseOf(t) is not null)
+            .OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+        if (served.Count == 0)
+            return EquatableArray<EngineSchemaModel>.Empty;
+
+        var diagnostics = new List<Diagnostic>(); // the entities' problems are Emit's to report, at their declarations
+        var models = new Dictionary<INamedTypeSymbol, EntityModel?>(SymbolEqualityComparer.Default);
+        EntityModel? Lookup(INamedTypeSymbol type)
+        {
+            if (!models.TryGetValue(type, out var model))
+                models[type] = model = EntityModel.IsEntity(type) ? EntityModel.Read(type, diagnostics, entityTypes, compilation) : null;
+            return model;
+        }
+
+        var schemas = new List<EngineSchemaModel>();
+        foreach (var database in served.GroupBy(t => DatabaseOf(t)!, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
+        {
+            var entities = database.Select(Lookup).Where(e => e is not null).Select(e => e!).ToList();
+            if (entities.Count == 0 || entities.Any(e => PragmaticSchemaProblem(e) is not null))
+                continue;
+            // The namespace Pragmatic's EF branch derives from the database's entities: one of the application's, the first by name.
+            var representative = database.FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.ContainingAssembly, compilation.Assembly)) ?? database.First();
+            var ns = RootNamespace(representative.ContainingNamespace.IsGlobalNamespace ? compilation.AssemblyName ?? "" : representative.ContainingNamespace.ToDisplayString());
+            schemas.Add(new EngineSchemaModel(database.Key, ns, ProviderName(dialect), configKeys.TryGetValue(database.Key, out var key) ? key : null,
+                PragmaticTables(entities, Lookup, dialect).Select(SchemaTableOf).ToEquatableArray()));
+        }
+
+        return schemas.ToEquatableArray();
+    }
+
+    /// <summary>
+    ///     Reports, where they are declared, the Sql-served entities of this compilation the schema cannot describe yet: their database then
+    ///     gets none of the engine's tables (<see cref="PragmaticSchemas" />). Only with Pragmatic.Migrations referenced, the schema's reader.
+    /// </summary>
+    private static void ReportPragmaticSchemaProblems(Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
+    {
+        if (compilation.GetTypeByMetadataName(SchemaVersionType) is null)
+            return;
+        var engines = PragmaticEngines.Of(compilation);
+        foreach (var type in PragmaticNames.AllTypes(compilation.Assembly.GlobalNamespace)
+                     .Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql))
+                     .OrderBy(t => t.Name, StringComparer.Ordinal))
+        {
+            if (lookup(type) is { } entity && PragmaticSchemaProblem(entity) is { } problem)
+                diagnostics.Add(Diagnostic.Create(Diagnostics.SchemaShape, entity.Type.Locations.FirstOrDefault() ?? Location.None, "its database", entity.Type.Name, problem));
+        }
+    }
+
+    /// <summary>Why <paramref name="entity" /> cannot be described in the schema yet, or null.</summary>
+    private static string? PragmaticSchemaProblem(EntityModel entity)
+        => entity.Columns.FirstOrDefault(c => c.Owner is not null) is { } owned ? $"'{owned.Owner}' is an owned type: the schema does not flatten one yet"
+            : entity.Type.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute") || entity.Type.GetMembers().Any(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute")) ? "[LogicKey]: the schema does not describe its unique index yet"
+            : null;
+
+    /// <summary>
+    ///     The types a Sql-served entity of the schema can be: this compilation's, and with a topology the referenced assemblies' that see
+    ///     Pragmatic.Persistence too, since a host's boundaries are libraries it references and its <c>[Include]</c> says which of them it
+    ///     composes. Without a topology the database is the compilation's own entities', as it was before there was one.
+    /// </summary>
+    private static IEnumerable<INamedTypeSymbol> SchemaCandidates(Compilation compilation, bool hasTopology)
+    {
+        foreach (var type in PragmaticNames.AllTypes(compilation.Assembly.GlobalNamespace))
+            yield return type;
+        if (!hasTopology)
+            yield break;
+        foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols)
+        {
+            if (!assembly.Modules.Any(m => m.ReferencedAssemblies.Any(r => r.Name == "Pragmatic.Persistence")))
+                continue;
+            foreach (var type in PragmaticNames.AllTypes(assembly.GlobalNamespace))
+                yield return type;
+        }
+    }
+
+    /// <summary>
+    ///     The dialect the tables are typed for: EF Core's provider when EF Core is referenced (the database's other tables are typed for it),
+    ///     else the driver the compilation references (PostgreSQL, then SQL Server, then SQLite, the order EF's provider is detected in, then
+    ///     MySQL and Oracle); null with neither.
+    /// </summary>
+    /// <remarks>ASSUMPTION: one provider per compilation, as EF Core's branch has it; a topology of databases on two providers is not described.</remarks>
+    private static SqlDialect? SchemaDialect(Compilation compilation, DetectedFeatures features)
+    {
+        if (features.HasPersistenceEFCore && features.EfCoreProvider switch
+            {
+                EfCoreProvider.PostgreSql => SqlDialect.PostgreSql, EfCoreProvider.SqlServer => SqlDialect.SqlServer, EfCoreProvider.Sqlite => SqlDialect.Sqlite, _ => (SqlDialect?)null,
+            } is { } efCore)
+            return efCore;
+        return compilation.GetTypeByMetadataName("Npgsql.NpgsqlConnection") is not null ? SqlDialect.PostgreSql
             : compilation.GetTypeByMetadataName("Microsoft.Data.SqlClient.SqlConnection") is not null ? SqlDialect.SqlServer
             : compilation.GetTypeByMetadataName("Microsoft.Data.Sqlite.SqliteConnection") is not null ? SqlDialect.Sqlite
             : compilation.GetTypeByMetadataName("MySqlConnector.MySqlConnection") is not null ? SqlDialect.MySql
             : compilation.GetTypeByMetadataName("Oracle.ManagedDataAccess.Client.OracleConnection") is not null ? SqlDialect.Oracle
-            : (SqlDialect?)null;
-        var ns = RootNamespace(served[0].ContainingNamespace.IsGlobalNamespace ? compilation.AssemblyName ?? "" : served[0].ContainingNamespace.ToDisplayString());
-        var dialects = PragmaticSchemaDialects.Select(d => new DialectSchemaModel(d.ToString(), ProviderName(d), PragmaticTables(entities, lookup, d).ToEquatableArray()));
-        var template = new PragmaticSchemaTemplate(new PragmaticSchemaModel(ns.Length > 0 ? ns : null, entities.Count, current?.ToString(), dialects.ToEquatableArray()));
-        return (VirtualFolderHints.ForAssembly("Sql", "PragmaticSchema"), template.ToSourceText().ToString());
+            : null;
     }
+
+    /// <summary>A table of the engine's model in the shape the schema template writes.</summary>
+    private static MigratedTableModel SchemaTableOf(TableSchemaModel table) => new(
+        table.Name,
+        table.Schema,
+        null,
+        table.Columns.Select(c => new Persistence.Models.ColumnSchemaModel(c.Name, c.Type, c.Nullable, c.Key, c.DefaultValue)).ToEquatableArray(),
+        table.Indexes.Select(i => new Persistence.Models.IndexSchemaModel(i.Name, i.Columns, i.Unique, i.Filter)).ToEquatableArray(),
+        table.ForeignKeys.Select(f => new Persistence.Models.ForeignKeySchemaModel(f.Name, f.Column, f.Table, f.ReferencedColumn, f.OnDelete)).ToEquatableArray(),
+        table.Checks.IsDefaultOrEmpty ? default : table.Checks.Select(c => new Persistence.Models.CheckConstraintSchemaModel(c.Name, c.Expression)).ToEquatableArray());
 
     /// <summary>The provider name Pragmatic's template writes (and Pragmatic.Migrations' <c>MigrationConstants</c> holds).</summary>
     private static string ProviderName(SqlDialect dialect) => dialect switch
@@ -74,20 +186,6 @@ internal static partial class SqlInterceptorGenerator
             ns = ns.Substring(0, ns.Length - ".Entities".Length);
         var parts = ns.Split('.');
         return parts.Length >= 2 ? string.Join(".", parts.Take(parts.Length - 1)) : ns;
-    }
-
-    /// <summary>The first <c>[Include&lt;TModule, TDatabase&gt;]</c> on a <c>[Module]</c> of the compilation, or null.</summary>
-    private static Location? HasDatabaseTopology(Compilation compilation)
-    {
-        foreach (var type in PragmaticNames.AllTypes(compilation.Assembly.GlobalNamespace))
-        {
-            if (!type.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Composition.Attributes.ModuleAttribute"))
-                continue;
-            if (type.GetAttributes().FirstOrDefault(a => a.AttributeClass is { IsGenericType: true, TypeArguments.Length: 2 } c && c.OriginalDefinition.ToDisplayString().StartsWith("Pragmatic.Composition.Attributes.IncludeAttribute", StringComparison.Ordinal)) is { } include)
-                return include.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? type.Locations.FirstOrDefault();
-        }
-
-        return null;
     }
 
     /// <summary>The tables of <paramref name="entities" /> on <paramref name="dialect" />, in table order, the join tables with them.</summary>
@@ -131,7 +229,7 @@ internal static partial class SqlInterceptorGenerator
                 var column = entity.Column(navigation.ForeignKey)!.Column;
                 Index([column]);
                 if (!Holds(navigation.Target) || lookup(navigation.Target) is not { } target)
-                    continue; // another engine's or boundary's row: the key without the constraint, as Pragmatic skips a cross-boundary one
+                    continue; // another engine's, boundary's or database's row: the key without the constraint, as Pragmatic skips a cross-boundary one
                 foreignKeys.Add(ForeignKey($"FK_{entity.Table}_{column}_{target.Table}", column, target.Table, target.KeyColumn, PragmaticRelations.OnDelete(entity.Type, navigation.Property, navigation.Target)));
             }
 
