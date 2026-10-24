@@ -61,6 +61,7 @@
     <Project Path="tests/Pragmatic.Persistence.Analyzers.Tests/Pragmatic.Persistence.Analyzers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Documents.Samples.Tests/Pragmatic.Persistence.Documents.Samples.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
@@ -77,6 +78,7 @@
     <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
     <Project Path="samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
     <Project Path="samples/Pragmatic.Persistence.Sql.Samples/Pragmatic.Persistence.Sql.Samples.csproj" />
+    <Project Path="samples/Pragmatic.Persistence.Documents.Samples/Pragmatic.Persistence.Documents.Samples.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Pragmatic.Persistence.Benchmarks/Pragmatic.Persistence.Benchmarks.csproj" />

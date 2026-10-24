@@ -39,6 +39,9 @@ export const DOCKER_SHARDS = [
     // MongoDB, a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this shard was the
     // lightest (14m 36s against 18m 13s and 16m 30s, the pull request of the engines' shared assembly, 2026-10-24).
     'Pragmatic.Persistence.Documents.Tests',
+    // The documents samples on a standalone MongoDB and the Cosmos DB emulator: 1m 09s on a developer machine (2026-10-24), not yet measured on
+    // the runner. Here beside the documents suite, whose servers it starts the same way.
+    'Pragmatic.Persistence.Documents.Samples.Tests',
   ],
   // ~407 s
   [

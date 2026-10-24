@@ -817,6 +817,8 @@
     <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.EFCore.Samples/Pragmatic.Persistence.EFCore.Samples.csproj" />
     <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />
     <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Sql.Samples/Pragmatic.Persistence.Sql.Samples.csproj" />
+    <Project Path="Pragmatic.Persistence/samples/Pragmatic.Persistence.Documents.Samples/Pragmatic.Persistence.Documents.Samples.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Samples.Tests/Pragmatic.Persistence.Documents.Samples.Tests.csproj" />
     <Project Path="Pragmatic.Resilience/samples/Pragmatic.Resilience.Samples/Pragmatic.Resilience.Samples.csproj" />
     <Project Path="Pragmatic.Result/samples/Pragmatic.Result.AspNetCore.Samples/Pragmatic.Result.AspNetCore.Samples.csproj" />
     <Project Path="Pragmatic.Result/samples/Pragmatic.Result.EFCore.Samples/Pragmatic.Result.EFCore.Samples.csproj" />

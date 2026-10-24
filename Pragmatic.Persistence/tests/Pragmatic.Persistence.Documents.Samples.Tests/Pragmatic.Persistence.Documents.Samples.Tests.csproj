@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The documents samples run where the gate can run them: on a standalone MongoDB 8 and on the Cosmos DB emulator, in containers. The
+       samples' own program needs a server named in the environment, so the hermetic sample run leaves it out (scripts/samples-excluded.json). -->
+  <PropertyGroup>
+    <!-- Starts Testcontainers (MongoDB, the Cosmos DB emulator): scripts/check.mjs runs these one at a time. -->
+    <RequiresDocker>true</RequiresDocker>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
+    <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\samples\Pragmatic.Persistence.Documents.Samples\Pragmatic.Persistence.Documents.Samples.csproj" />
+    <!-- The documents suite's servers, as they start there: MongoDB with a root user (standalone), the Cosmos DB emulator at its pinned build. -->
+    <Compile Include="..\Pragmatic.Persistence.Documents.Tests\MongoServer.cs" Link="Shared\MongoServer.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Documents.Tests\CosmosServer.cs" Link="Shared\CosmosServer.cs" />
+  </ItemGroup>
+
+</Project>
