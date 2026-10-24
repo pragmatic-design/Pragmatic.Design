@@ -859,6 +859,15 @@
           "Pragmatic.Resilience": "[1.0.0, )"
         }
       },
+      "pragmatic.migrations": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )"
+        }
+      },
       "pragmatic.notes": {
         "type": "Project",
         "dependencies": {
@@ -907,6 +916,16 @@
       },
       "pragmatic.persistence.sql": {
         "type": "Project"
+      },
+      "pragmatic.persistence.sql.pragmatic": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Sql": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
       },
       "pragmatic.privacy": {
         "type": "Project",

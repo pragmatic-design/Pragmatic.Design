@@ -30,6 +30,9 @@ export const DOCKER_SHARDS = [
     'Pragmatic.Messaging.Tests', //            1m 09s
     'Pragmatic.Configuration.Aws.Tests', //      31s
     'Pragmatic.Privacy.E2E.Tests', //            27s
+    // The Sql bridge on the same five databases, not yet measured on the runner. Here because this shard was the lightest
+    // (12m 09s against 19m 32s and 15m 56s, run 40066188335, 2026-10-24).
+    'Pragmatic.Persistence.Sql.Pragmatic.Tests',
   ],
   // ~407 s
   [

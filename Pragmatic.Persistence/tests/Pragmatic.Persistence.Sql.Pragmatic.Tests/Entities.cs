@@ -1,0 +1,141 @@
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Entity;
+
+namespace PragmaticEntities.Tests;
+
+/// <summary>A stay at a property: the key, the stamps, the owner and the navigation are the shape's (Pragmatic's members).</summary>
+[Entity]
+[SoftDelete]
+[HasOwner]
+[Relation.ManyToOne<Property>]
+public partial class Reservation : IEntity
+{
+    public DateTimeOffset CheckIn { get; set; }
+}
+
+/// <summary>A property: audited, shared by scope, with its room types (one-to-many) and amenities (many-to-many through PropertyAmenities).</summary>
+[Entity]
+[Auditable]
+[HasAccessScopes]
+[Relation.OneToMany<RoomType>]
+[Relation.OneToMany<Review>]
+[Relation.OneToMany<StaffAssignment>]
+[Relation.ManyToMany<Amenity>.WithNavigation("Amenities", JoinTable = "PropertyAmenities")]
+public partial class Property : IEntity, ITenantEntity
+{
+    public string Name { get; set; } = "";
+
+    public string TenantId { get; set; } = "";
+}
+
+/// <summary>A type of room of a property: the inverse of the one-to-many (PropertyId, Property) is the shape's.</summary>
+[Entity]
+[SoftDelete(Cascade = true)]
+public partial class RoomType : IEntity
+{
+    public string Code { get; set; } = "";
+}
+
+/// <summary>A guest's review of a property: owned (each guest sees their own), the published ones only (a fixed rule on the row).</summary>
+[Entity]
+[HasOwner]
+[VisibleWhen<PublishedReviews>]
+public partial class Review : IEntity
+{
+    public string Text { get; set; } = "";
+
+    public bool Published { get; set; }
+
+    public int Stars { get; set; }
+}
+
+/// <summary>A stretch of time a person works at a property: a <c>[TemporalRelation]</c>, read at the caller's instant (its validity its own).</summary>
+[Entity]
+[TemporalRelation]
+public partial class StaffAssignment : IEntity, ITemporalRelation
+{
+    public string Person { get; set; } = "";
+
+    public DateTimeOffset ValidFrom { get; set; }
+
+    public DateTimeOffset? ValidTo { get; set; }
+}
+
+/// <summary>
+///     A comment on a review, written as Pragmatic's TraitFeature generates a trait's child for [HasComments] ("generated at porting"): visible
+///     only where its review is (the review's owner), marked as TraitFeature marks the children it generates (<c>[TraitOf&lt;Review&gt;]</c>).
+/// </summary>
+[Entity]
+[TraitOf<Review>]
+[Relation.ManyToOne<Review>]
+public partial class ReviewComment : IEntity
+{
+    public string Text { get; set; } = "";
+}
+
+/// <summary>A note on a property, as TraitFeature generates one for [HasNotes] ("generated at porting"): visible where its property is (its scopes).</summary>
+[Entity]
+[TraitOf<Property>]
+[Relation.ManyToOne<Property>]
+public partial class PropertyNote : IEntity
+{
+    public string Text { get; set; } = "";
+}
+
+/// <summary>A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted.</summary>
+[Entity]
+[SoftDelete]
+[GenerateHierarchy]
+[Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]
+public partial class Category : IEntity
+{
+    public string Name { get; set; } = "";
+}
+
+/// <summary>A data scope rule computed at read time: the properties by the sea belong to the scope "seaside" (a caller holding it sees them).</summary>
+public sealed class SeasidePropertiesRule : Pragmatic.Persistence.Scopes.DataScopeRule<Property>
+{
+    public override string ScopeName => "seaside";
+
+    public override Pragmatic.Persistence.Scopes.ScopeStrategy Strategy => Pragmatic.Persistence.Scopes.ScopeStrategy.Computed;
+
+    public override System.Linq.Expressions.Expression<Func<Property, bool>> ToExpression() => p => p.Name == "MARE";
+}
+
+/// <summary>A data scope rule written on the saved rows (Materialized): the properties whose name starts with "A" carry "scope:alpine".</summary>
+public sealed class AlpinePropertiesRule : Pragmatic.Persistence.Scopes.DataScopeRule<Property>
+{
+    public override string ScopeName => "alpine";
+
+    public override System.Linq.Expressions.Expression<Func<Property, bool>> ToExpression() => p => p.Name.StartsWith("A");
+}
+
+/// <summary>The reviews anyone may read: a fixed predicate on the row, as Pragmatic's rules are.</summary>
+public sealed class PublishedReviews : Pragmatic.Persistence.Query.Filters.VisibilityRule<Review>
+{
+    public override System.Linq.Expressions.Expression<Func<Review, bool>> ToExpression() => r => r.Published;
+}
+
+/// <summary>
+///     An amenity: its side of the many-to-many (Properties) is the shape's. It raises its lifecycle as events, as a <c>[Raises&lt;T&gt;]</c> entity
+///     does, and it is <c>[ConcurrencyAware]</c>: its RowVersion is the shape's, PostgreSQL's xmin and SQL Server's rowversion where they have one.
+///     Its name is unique (the rule a unit of work's save meets in UnitOfWorkRuleTests).
+/// </summary>
+[Entity]
+[ConcurrencyAware]
+[Unique(nameof(Name))]
+public partial class Amenity : IEntity, Pragmatic.Events.IHasDomainEvents, Pragmatic.Events.IRaisesLifecycleEvents
+{
+    private readonly List<Pragmatic.Events.IDomainEvent> _events = [];
+
+    public string Name { get; set; } = "";
+
+    public IReadOnlyList<Pragmatic.Events.IDomainEvent> DomainEvents => _events;
+
+    public void ClearDomainEvents() => _events.Clear();
+
+    public void RaiseLifecycleEvents(Pragmatic.Events.EntityLifecycle lifecycle) => _events.Add(new AmenityChanged(Name, lifecycle, DateTimeOffset.UnixEpoch));
+}
+
+/// <summary>What happened to an amenity, raised by its lifecycle.</summary>
+public sealed record AmenityChanged(string Name, Pragmatic.Events.EntityLifecycle Lifecycle, DateTimeOffset OccurredAt) : Pragmatic.Events.IDomainEvent;

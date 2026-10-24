@@ -40,6 +40,9 @@
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
     <!-- The Sql engine's runtime: the chains the Sql feature translates are written on its SqlQuery<T>. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <!-- The schema type both schemas are described in: TheSqlEnginesSchemaIsPragmaticsTests. Not the Sql engine's bridge: a test
+         compilation sees this project's references, and the bridge there would make the Sql engine referenced in every test. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
@@ -74,6 +77,13 @@
     <!-- [TemplateData] and its members, so TheTemplateDataEntryPointsAreAllSeenTests compares the
          names the generator looks for with the members the runtime really marks. -->
     <ProjectReference Include="..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Templating\Pragmatic.Documents.Templating.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The entities the Sql bridge's suite migrates: TheSqlEnginesSchemaIsPragmaticsTests compares the two schemas of these, the
+         same file, not a copy that could drift from it. -->
+    <EmbeddedResource Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Pragmatic.Tests\Entities.cs"
+                      LogicalName="SqlPragmaticEntities.cs" Link="Features\Persistence\SqlPragmaticEntities.cs" />
   </ItemGroup>
 
 </Project>
