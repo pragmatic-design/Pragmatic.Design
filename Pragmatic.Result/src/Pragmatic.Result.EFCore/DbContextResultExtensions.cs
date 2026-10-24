@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pragmatic.Result.Database;
 
 namespace Pragmatic.Result.EntityFrameworkCore;
 

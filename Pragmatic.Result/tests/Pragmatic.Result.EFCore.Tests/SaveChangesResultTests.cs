@@ -1,3 +1,4 @@
+using Pragmatic.Result.Database;
 using Pragmatic.Testing.Assertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

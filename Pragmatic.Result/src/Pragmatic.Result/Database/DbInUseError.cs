@@ -1,4 +1,4 @@
-namespace Pragmatic.Result.EntityFrameworkCore;
+namespace Pragmatic.Result.Database;
 
 /// <summary>
 ///     A row could not be deleted because another row still references it, and the relation between

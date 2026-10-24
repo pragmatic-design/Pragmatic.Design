@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Result.Database;
 
 namespace Pragmatic.Result.EntityFrameworkCore;
 

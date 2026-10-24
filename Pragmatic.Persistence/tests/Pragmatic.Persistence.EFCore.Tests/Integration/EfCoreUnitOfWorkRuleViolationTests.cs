@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pragmatic.Persistence.EFCore.UnitOfWork;
 using Pragmatic.Persistence.Repository;
+using Pragmatic.Result.Database;
 using Pragmatic.Testing.Assertions;
 
 namespace Pragmatic.Persistence.EFCore.Tests.Integration;
@@ -147,7 +148,7 @@ public sealed class EfCoreUnitOfWorkRuleViolationTests
 
         var violation = await Assert.ThrowsAsync<PersistenceRuleViolationException>(() => uow.SaveChangesAsync());
 
-        var inUse = violation.Error.Should().BeOfType<Pragmatic.Result.EntityFrameworkCore.DbInUseError>().Subject;
+        var inUse = violation.Error.Should().BeOfType<Pragmatic.Result.Database.DbInUseError>().Subject;
         inUse.StatusCode.Should().Be(409);
         inUse.Code.Should().Be("ENTITY_IN_USE");
         inUse.EntityType.Should().Be(nameof(TestCategory));

@@ -17,7 +17,8 @@ Namespaces:
 | `Pragmatic.Result.Serialization` | JSON converters, `ErrorTypeRegistry`, `SerializedError` |
 | `Pragmatic.Result.AspNetCore` | Filters, ProblemDetails, HTTP conversion extensions |
 | `Pragmatic.Result.AspNetCore.OpenApi` | OpenAPI transformers and enrichers |
-| `Pragmatic.Result.EntityFrameworkCore` | EF Core `SaveChanges`/query extensions, `Db*` errors (package `Pragmatic.Result.EFCore`) |
+| `Pragmatic.Result.Database` | The database rule errors every persistence engine answers with (`DbConflictError`, `DbConstraintError`, `DbInUseError`) |
+| `Pragmatic.Result.EntityFrameworkCore` | EF Core `SaveChanges`/query extensions, the EF-only `Db*` errors (package `Pragmatic.Result.EFCore`) |
 
 `IError` lives in the `Pragmatic.Abstractions` package under the `Pragmatic.Result` namespace.
 
@@ -847,12 +848,14 @@ var result = await context.Users.FindAsResultAsync(id, "User");
 
 ### Database Error Types
 
-All extend `Error`:
+All extend `Error`. The first three are in the core package, namespace `Pragmatic.Result.Database`: they name no
+persistence engine, so every engine's unit of work answers a broken rule with the same records. The others are
+`Pragmatic.Result.EFCore`'s, produced by its exception parsers.
 
 | Type | Code | Status | Properties / Factories |
 |------|------|--------|------------------------|
-| `DbConflictError` | `DB_CONFLICT` | 409 | `EntityType`, `EntityId`, `Reason`, `FieldName`; `ConcurrencyConflict(entityType, id?)`, `UniqueViolation(entityType, fieldName?)` |
-| `DbConstraintError` | `DB_CONSTRAINT` | 400 | `ConstraintName`, `ConstraintType`, `TableName`, `Details`; `ForeignKeyViolation(tableName, constraintName?)`, `NotNullViolation(tableName, columnName?)`, `FromDetails(details?)` |
+| `DbConflictError` | `DB_CONFLICT` | 409 | `EntityType`, `EntityId`, `Reason`, `FieldName`, `ConstraintName`; `ConcurrencyConflict(entityType, id?)`, `UniqueViolation(entityType, fieldName?, constraintName?)` |
+| `DbConstraintError` | `DB_CONSTRAINT` | 400 | `ConstraintName`, `ConstraintType`, `TableName`, `Details`; `ForeignKeyViolation(tableName, constraintName?)`, `FromDetails(details?)` |
 | `DbInUseError` | `ENTITY_IN_USE` | 409 | `EntityType`, `UsedBy` (both written as problem extensions). A delete refused by a restricting relation: produced by the unit of work in `Pragmatic.Persistence.EFCore`, which has the model to name both sides; the `SaveChanges*AsResultAsync` extensions here still answer such a violation with `DbConstraintError` |
 | `DbNullConstraintError` | `DB_NULL_CONSTRAINT` | 400 | `TableName`, `ColumnName`; `Create(tableName, columnName?)` |
 | `DbMaxLengthError` | `DB_MAX_LENGTH` | 400 | `TableName`, `ColumnName`, `MaxLength`; `Create(tableName, columnName?, maxLength?)` |

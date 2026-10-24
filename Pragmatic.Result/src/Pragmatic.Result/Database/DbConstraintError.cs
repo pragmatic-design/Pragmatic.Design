@@ -1,12 +1,12 @@
-namespace Pragmatic.Result.EntityFrameworkCore;
+namespace Pragmatic.Result.Database;
 
 /// <summary>
 ///     Represents a database constraint violation error.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This error is returned when EF Core throws DbUpdateException for constraint
-///         violations other than unique constraints (which use <see cref="DbConflictError" />).
+///         Returned by a persistence engine for constraint violations other than unique constraints
+///         (which use <see cref="DbConflictError" />). It names no persistence engine.
 ///     </para>
 ///     <para>
 ///         Common cases include: foreign key violations, check constraint violations,

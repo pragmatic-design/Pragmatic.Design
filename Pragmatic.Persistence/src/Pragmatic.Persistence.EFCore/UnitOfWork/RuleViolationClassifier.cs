@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Pragmatic.Result.Database;
 using Pragmatic.Result;
 using Pragmatic.Result.EntityFrameworkCore;
 
