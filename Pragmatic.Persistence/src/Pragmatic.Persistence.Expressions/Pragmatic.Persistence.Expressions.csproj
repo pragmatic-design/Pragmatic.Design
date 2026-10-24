@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Expressions</RootNamespace>
+    <Description>What the persistence engines' generated code reads off a lambda's expression tree at run time: the values it captured, by the path the generator chose at compile time. No dependency beyond the BCL.</Description>
+    <PackageTags>pragmatic;persistence;expressions;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+</Project>

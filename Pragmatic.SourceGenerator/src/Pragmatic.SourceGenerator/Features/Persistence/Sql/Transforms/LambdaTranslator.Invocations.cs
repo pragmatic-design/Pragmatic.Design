@@ -203,7 +203,7 @@ internal sealed partial class LambdaTranslator
         {
             // The query's parameter carried as a SqlFullTextQuery: bound as the engine's condition, every word required (a literal is turned in the catalog).
             _parameterTexts[index] = $"global::Pragmatic.Persistence.Sql.SqlFullTextQuery.Of({_parameterTexts[index]})";
-            _parameterPaths[index] = $"SqlFullTextQuery.Of(global::Pragmatic.Persistence.Sql.{_parameterPaths[index]})";
+            _parameterPaths[index] = $"SqlFullTextQuery.Of(global::Pragmatic.Persistence.Expressions.{_parameterPaths[index]})";
         }
 
         return Rendered(SqlCatalog.Find(entry.Name + "Native", 5)!, [column, query, table, marked.Column, key], $"Sql.{method.Name}");

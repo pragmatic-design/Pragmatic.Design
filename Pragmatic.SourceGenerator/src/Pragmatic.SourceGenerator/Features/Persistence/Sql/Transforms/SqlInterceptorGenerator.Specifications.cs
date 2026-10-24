@@ -91,7 +91,7 @@ internal static partial class SqlInterceptorGenerator
 
         var values = new List<string>();
         for (var i = 0; i < translator.ParameterPaths.Count; i++)
-            values.Add(translator.ParameterIsConstant[i] ? translator.ParameterTexts[i] : "global::Pragmatic.Persistence.Sql." + translator.ParameterPaths[i].Replace("(lambda)", "(predicate)"));
+            values.Add(translator.ParameterIsConstant[i] ? translator.ParameterTexts[i] : "global::Pragmatic.Persistence.Expressions." + translator.ParameterPaths[i].Replace("(lambda)", "(predicate)"));
         return (PlanBuilder.CompileLeaf(translator, predicate), translator.ParameterKinds, values);
     }
 }

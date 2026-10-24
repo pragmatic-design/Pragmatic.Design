@@ -13,7 +13,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 /// </summary>
 internal static class DocTreePaths
 {
-    private const string Captured = "global::Pragmatic.Persistence.Documents.Pragmatic.Captured";
+    private const string Captured = "global::Pragmatic.Persistence.Expressions.Captured";
 
     /// <summary>The paths of <paramref name="lambda" />'s body and its parts, from <c>Captured.Body(<paramref name="variable" />)</c>.</summary>
     public static Dictionary<SyntaxNode, string> Of(LambdaExpressionSyntax lambda, SemanticModel model, string variable)

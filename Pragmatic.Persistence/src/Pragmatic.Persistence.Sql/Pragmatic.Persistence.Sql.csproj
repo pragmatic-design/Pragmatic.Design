@@ -7,6 +7,11 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Captured: the values a chain's lambda captured, read by the generated code and by the runtime path. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Expressions\Pragmatic.Persistence.Expressions.csproj" />
+  </ItemGroup>
+
   <!-- The census and EXPLAIN targets over the files Pragmatic.SourceGenerator writes for this engine: a project opts in with
        PragmaticCensusFile or PragmaticExplain. buildTransitive/, so a project that gets the engine through another package has them too. -->
   <ItemGroup>

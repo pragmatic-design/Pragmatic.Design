@@ -34,6 +34,7 @@ internal sealed partial class SqlSourceTemplate(EntityMapsModel maps, EquatableA
         AppendLine("    using global::System;");
         AppendLine("    using global::System.Linq.Expressions;");
         AppendLine("    using global::Pragmatic.Persistence.Sql;");
+        AppendLine("    using global::Pragmatic.Persistence.Expressions;");
         AppendLine();
         RenderMaps(maps);
         RenderScopeRules(scopeRules);

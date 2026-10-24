@@ -705,6 +705,7 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.EFCore/Pragmatic.Persistence.EFCore.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence/Pragmatic.Persistence.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Expressions/Pragmatic.Persistence.Expressions.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Npgsql/Pragmatic.Persistence.Sql.Npgsql.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />

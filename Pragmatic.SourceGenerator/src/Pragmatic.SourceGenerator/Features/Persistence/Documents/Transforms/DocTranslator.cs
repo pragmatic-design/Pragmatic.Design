@@ -238,7 +238,7 @@ internal sealed partial class DocTranslator
             if (_treePaths is null || !_treePaths.TryGetValue(expression, out var path))
                 return Fail<DocValue>(expression, "a captured value of a specification is read where the compiler's tree has it: a variable, a member, or a call on them");
             var slot = _captures.Count;
-            _captures.Add($"global::Pragmatic.Persistence.Documents.Pragmatic.Captured.Evaluate({path})");
+            _captures.Add($"global::Pragmatic.Persistence.Expressions.Captured.Evaluate({path})");
             var valueType = _model.GetTypeInfo(expression).Type;
             code = valueType is null ? $"s[{slot}]" : $"(({valueType.ToDisplayString(DocModel.Qualified)})s[{slot}]!)";
         }
