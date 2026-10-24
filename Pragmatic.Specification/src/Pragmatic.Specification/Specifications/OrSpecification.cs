@@ -5,14 +5,18 @@ namespace Pragmatic.Specification.Specifications;
 /// <summary>
 ///     Represents a logical OR combination of two specifications.
 /// </summary>
+/// <remarks>
+///     Public so an engine that translates a composed specification itself, the Sql engine, can walk its structure
+///     and compose the leaves it compiled along it. Built only by <c>|</c> or <c>Or</c>.
+/// </remarks>
 /// <typeparam name="T">The entity type.</typeparam>
-internal sealed class OrSpecification<T> : Specification<T>
+public sealed class OrSpecification<T> : Specification<T>
 {
     private readonly Specification<T> _left;
     private readonly Specification<T> _right;
     private readonly Lazy<Expression<Func<T, bool>>> _cachedExpression;
 
-    public OrSpecification(Specification<T> left, Specification<T> right)
+    internal OrSpecification(Specification<T> left, Specification<T> right)
     {
         Ensure.Ensure.ThrowIfNull(left);
         Ensure.Ensure.ThrowIfNull(right);
@@ -20,6 +24,12 @@ internal sealed class OrSpecification<T> : Specification<T>
         _right = right;
         _cachedExpression = new Lazy<Expression<Func<T, bool>>>(BuildExpression);
     }
+
+    /// <summary>The left operand.</summary>
+    public Specification<T> Left => _left;
+
+    /// <summary>The right operand.</summary>
+    public Specification<T> Right => _right;
 
     public override Expression<Func<T, bool>> ToExpression() => _cachedExpression.Value;
 

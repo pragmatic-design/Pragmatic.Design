@@ -5,18 +5,25 @@ namespace Pragmatic.Specification.Specifications;
 /// <summary>
 ///     Represents a logical NOT of a specification.
 /// </summary>
+/// <remarks>
+///     Public so an engine that translates a composed specification itself, the Sql engine, can walk its structure
+///     and compose the leaves it compiled along it. Built only by <c>!</c> or <c>Not</c>.
+/// </remarks>
 /// <typeparam name="T">The entity type.</typeparam>
-internal sealed class NotSpecification<T> : Specification<T>
+public sealed class NotSpecification<T> : Specification<T>
 {
     private readonly Specification<T> _inner;
     private readonly Lazy<Expression<Func<T, bool>>> _cachedExpression;
 
-    public NotSpecification(Specification<T> specification)
+    internal NotSpecification(Specification<T> specification)
     {
         Ensure.Ensure.ThrowIfNull(specification);
         _inner = specification;
         _cachedExpression = new Lazy<Expression<Func<T, bool>>>(BuildExpression);
     }
+
+    /// <summary>The negated specification.</summary>
+    public Specification<T> Inner => _inner;
 
     public override Expression<Func<T, bool>> ToExpression() => _cachedExpression.Value;
 

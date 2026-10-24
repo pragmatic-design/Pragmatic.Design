@@ -514,9 +514,11 @@ No mocking, no database setup, no HTTP requests. Create an entity, pass it to th
 
 ---
 
-## Internal Specification Types
+## Specification Types
 
-The library provides six internal implementations of `Specification<T>`. You never instantiate these directly -- they are created by `Spec<T>.Where()`, `And()`, `Or()`, and `Not()`.
+The library provides six implementations of `Specification<T>`. You never instantiate these directly -- they are created by `Spec<T>.Where()`, `And()`, `Or()`, and `Not()`.
+
+The composition nodes `AndSpecification<T>`, `OrSpecification<T>`, `NotSpecification<T>` and `TrueSpecification<T>` are public, with their operands (`Left`, `Right`, `Inner`), so an engine that translates a composed specification itself can walk its structure: the Sql engine compiles each leaf at build time and composes them along it. Their constructors stay internal; `ExpressionSpecification<T>` and `FalseSpecification<T>` stay internal.
 
 | Type | Created By | Expression |
 |------|-----------|------------|
