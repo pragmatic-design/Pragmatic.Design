@@ -1,4 +1,6 @@
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Features.Persistence.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql;
@@ -10,5 +12,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql;
 /// </summary>
 internal static class SqlFeature
 {
-    public static void Register(IncrementalGeneratorInitializationContext context) => SqlInterceptorGenerator.Register(context);
+    /// <param name="context">The generator's context.</param>
+    /// <param name="shapeSources">The entities' shape files as Persistence emits them: the members the chains are bound against.</param>
+    public static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
+        => SqlInterceptorGenerator.Register(context, shapeSources);
 }

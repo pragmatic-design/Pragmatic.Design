@@ -67,7 +67,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             ? resourceQueries.Combine(traitOutput.Queries.Value)
                 .Select(static (pair, _) => pair.Left.AddRange(pair.Right))
             : resourceQueries;
-        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores) = PersistenceFeature.Register(context, features,
+        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources) = PersistenceFeature.Register(context, features,
             resourceQueries: allProgrammaticQueries,
             localTraitEntities: traitOutput.TraitEntities);
 
@@ -245,9 +245,10 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         Features.Glossary.AsyncApiFeature.Register(context);
         Features.Glossary.UseCaseCatalogFeature.Register(context);
 
-        // The Sql engine's translation of query chains. Standalone and guarded by its own symbol lookup (the engine's runtime referenced):
-        // its inputs are the call sites and the engine's own attributes, nothing the features above produce.
-        Features.Persistence.Sql.SqlFeature.Register(context);
+        // The Sql engine's translation of query chains, guarded by its own symbol lookup (the engine's runtime referenced). Its inputs
+        // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
+        // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
+        Features.Persistence.Sql.SqlFeature.Register(context, shapeSources);
     }
 
     private static IncrementalValueProvider<EquatableArray<Features.Composition.Models.MetadataEntry>> Combine(

@@ -1,24 +1,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
 /// <summary>
-///     The members Pragmatic's generator derives from <c>[Relation.*]</c> (<c>RelationGraphBuilder</c>, <c>EntityRelationsTemplate</c>): foreign
-///     keys, reference navigations, collections, the foreign keys' setters, on the declaring entity and the inverse on the other. Rules:
-///     a reference is named after its target, a collection after its target pluralized; a foreign key is the navigation's name and Id (a Guid,
-///     nullable when a ManyToOne says Required = false); OneToMany puts the inverse on the child; ManyToOne puts nothing on its target;
-///     ManyToMany puts the other side's collection unless that side declares it; a member the source declares, or a trait's name, is skipped.
-///     A many-to-many collection carries the Sql engine's <c>[ManyToMany]</c> with Pragmatic's join table and columns (<c>JoinTableNaming</c>,
-///     <c>JoinColumnNaming</c>): the same member, read by this engine.
-///     ASSUMPTION: the entities share a boundary (across boundaries Pragmatic leaves some navigations out, which is not reproduced here).
+///     What the Sql engine reads off Pragmatic's <c>[Relation.*]</c> declarations beyond the members Persistence's shape declares: a
+///     many-to-many's join table, a tree's self-reference, the delete behavior of a foreign key.
 /// </summary>
-internal sealed class PragmaticRelations
+internal static class PragmaticRelations
 {
-    private static readonly HashSet<string> Reserved = ["PersistenceId", "Id", "CreatedAt", "CreatedBy", "UpdatedAt", "UpdatedBy", "IsDeleted", "DeletedAt", "DeletedBy", "OwnerId"];
-
     /// <summary>One <c>[Relation.X&lt;T&gt;]</c> as declared (a class, not a record: the generator compiles for netstandard2.0).</summary>
     private sealed class Declared(string kind, INamedTypeSymbol owner, INamedTypeSymbol target, string? name, string? inverse, string? foreignKey, bool required, bool isPrincipal, string? joinTable, string? onDelete)
     {
@@ -35,107 +26,35 @@ internal sealed class PragmaticRelations
         public string? JoinTable { get; } = joinTable;
     }
 
-    // Per entity, in Pragmatic's order: foreign keys (0), references (1), collections (2), setters (3); the first member of a name wins.
-    private readonly Dictionary<INamedTypeSymbol, List<(int Order, ShapeMemberModel Member)>> _members = new(SymbolEqualityComparer.Default);
-
-    // The Sql engine's [ManyToMany] on a many-to-many collection; the documents engine keeps no join table (the relation is not stored there yet).
-    private bool _sqlMapping = true;
-
-    public static PragmaticRelations Read(List<INamedTypeSymbol> entities, bool sqlMapping = true)
+    /// <summary>
+    ///     The join table and columns of <paramref name="entity" />'s many-to-many collection <paramref name="property" /> of
+    ///     <paramref name="other" />, as Pragmatic names them (<c>JoinTableNaming</c>, <c>JoinColumnNaming</c>): the table the relation
+    ///     says, else the two names in ordinal order; the columns each side's name and <c>Id</c>. Null when no
+    ///     <c>[Relation.ManyToMany&lt;T&gt;]</c> on either side makes that collection.
+    /// </summary>
+    /// <remarks>
+    ///     The collection is declared by Persistence's shape, which names no join table: the Sql engine reads it from the
+    ///     relation, as EF Core's configuration does. A collection declared on one side gets its inverse on the other unless that
+    ///     side declares the relation itself.
+    /// </remarks>
+    public static (string Table, string ThisKey, string OtherKey)? ManyToMany(INamedTypeSymbol entity, string property, INamedTypeSymbol other)
     {
-        var relations = new PragmaticRelations { _sqlMapping = sqlMapping };
-        var declared = entities.SelectMany(Declarations).ToList();
-        foreach (var relation in declared)
-            relations.Add(relation, declared);
-        return relations;
-    }
-
-    /// <summary>The members of <paramref name="entity" /> not already declared, in order, appended to <paramref name="shape" />.</summary>
-    public void AppendMembers(INamedTypeSymbol entity, HashSet<string> declared, List<ShapeMemberModel> shape)
-    {
-        if (!_members.TryGetValue(entity, out var members))
-            return;
-        var source = new HashSet<string>(entity.GetMembers().Select(m => m.Name));
-        foreach (var (order, member) in members.OrderBy(m => m.Order))
+        var all = Declarations(entity).Concat(SymbolEqualityComparer.Default.Equals(entity, other) ? [] : Declarations(other)).ToList();
+        foreach (var relation in all.Where(d => d.Kind == "ManyToMany"))
         {
-            if (order == 3 && source.Contains(member.Name.Substring("Set".Length)))
-                continue; // a foreign key the source declares takes its setter with it (RelationGraphBuilder: per member)
-            if (!Reserved.Contains(member.Name) && declared.Add(member.Name))
-                shape.Add(member);
-        }
-    }
-
-    private void Add(Declared relation, List<Declared> all)
-    {
-        var owner = relation.Owner;
-        var target = relation.Target;
-        switch (relation.Kind)
-        {
-            case "ManyToOne":
-                Reference(owner, target, relation.Name ?? target.Name, relation.ForeignKey, relation.Required, withKey: true);
-                break;
-            case "OneToMany":
-            {
-                Member(owner, 2, new ShapeMemberModel(ShapeMemberKind.Collection, relation.Name ?? PragmaticNames.Pluralize(target.Name), Full(target)));
-                var counterpart = Counterpart(all, target, owner, "ManyToOne", relation.Inverse);
-                if (counterpart is null) // the child's side, inferred: named after the parent unless the parent says Inverse
-                    Reference(target, owner, relation.Inverse ?? owner.Name, null, required: true, withKey: true);
-                break;
-            }
-
-            case "OneToOne":
-            {
-                var name = relation.Name ?? target.Name;
-                Reference(owner, target, name, relation.ForeignKey, required: true, withKey: !relation.IsPrincipal);
-                // The principal's navigation back, when it does not declare one. INVESTIGATE: a principal declaring end leaves its dependent unshaped here.
-                if (!relation.IsPrincipal && Counterpart(all, target, owner, "OneToOne", relation.Inverse) is null)
-                    Reference(target, owner, relation.Inverse ?? owner.Name, null, required: true, withKey: false);
-                break;
-            }
-
-            case "ManyToMany":
-            {
-                var name = relation.Name ?? PragmaticNames.Pluralize(target.Name);
-                var table = relation.JoinTable ?? (string.CompareOrdinal(owner.Name, target.Name) <= 0 ? owner.Name + target.Name : target.Name + owner.Name);
-                var (left, right) = owner.Name != target.Name ? (owner.Name + "Id", target.Name + "Id") : ((relation.Inverse ?? "Inverse") + "Id", name + "Id");
-                Member(owner, 2, Collection(target, name, table, left, right));
-                if (Counterpart(all, target, owner, "ManyToMany", null) is null)
-                {
-                    var inverse = relation.Inverse ?? PragmaticNames.Pluralize(owner.Name);
-                    Member(target, 2, Collection(owner, inverse, table, right, left));
-                }
-
-                break;
-            }
-        }
-    }
-
-    /// <summary>A reference: its foreign key (a Guid, nullable when optional) and its setter when it has one, and the navigation.</summary>
-    private void Reference(INamedTypeSymbol owner, INamedTypeSymbol target, string name, string? foreignKey, bool required, bool withKey)
-    {
-        if (withKey)
-        {
-            var fk = foreignKey ?? name + "Id";
-            var type = required ? "global::System.Guid" : "global::System.Guid?";
-            Member(owner, 0, new ShapeMemberModel(ShapeMemberKind.ForeignKey, fk, type));
-            Member(owner, 3, new ShapeMemberModel(ShapeMemberKind.ForeignKeySetter, "Set" + fk, type));
+            var owner = relation.Owner;
+            var target = relation.Target;
+            var name = relation.Name ?? PragmaticNames.Pluralize(target.Name);
+            var table = relation.JoinTable ?? (string.CompareOrdinal(owner.Name, target.Name) <= 0 ? owner.Name + target.Name : target.Name + owner.Name);
+            var (left, right) = owner.Name != target.Name ? (owner.Name + "Id", target.Name + "Id") : ((relation.Inverse ?? "Inverse") + "Id", name + "Id");
+            if (SymbolEqualityComparer.Default.Equals(owner, entity) && SymbolEqualityComparer.Default.Equals(target, other) && name == property)
+                return (table, left, right);
+            if (SymbolEqualityComparer.Default.Equals(owner, other) && SymbolEqualityComparer.Default.Equals(target, entity)
+                && (relation.Inverse ?? PragmaticNames.Pluralize(owner.Name)) == property && Counterpart(all, entity, other, "ManyToMany", null) is null)
+                return (table, right, left);
         }
 
-        if (!PragmaticShape.Has(target, "LookupAttribute")) // a [Lookup] target gets a resolver, not a navigation (LookupNavigationTemplate)
-            Member(owner, 1, new ShapeMemberModel(ShapeMemberKind.Reference, name, Full(target), required));
-    }
-
-    private ShapeMemberModel Collection(INamedTypeSymbol element, string name, string table, string thisKey, string otherKey)
-        => _sqlMapping
-            ? new ShapeMemberModel(ShapeMemberKind.Collection, name, Full(element), JoinTable: table, ThisKey: thisKey, OtherKey: otherKey)
-            : new ShapeMemberModel(ShapeMemberKind.Collection, name, Full(element));
-
-    private void Member(INamedTypeSymbol entity, int order, ShapeMemberModel member)
-    {
-        if (!_members.TryGetValue(entity, out var members))
-            _members[entity] = members = [];
-        if (!members.Any(m => m.Member.Name == member.Name))
-            members.Add((order, member));
+        return null;
     }
 
     /// <summary>The other side's declaration of the same relation (by its name when the inverse is named), if it declares one.</summary>
@@ -197,6 +116,4 @@ internal sealed class PragmaticRelations
             yield return new Declared(kindType.Name, entity, target, name, Named("Inverse"), Named("ForeignKey"), required, principal, Named("JoinTable"), onDelete);
         }
     }
-
-    private static string Full(INamedTypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 }

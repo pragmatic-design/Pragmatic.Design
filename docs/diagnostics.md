@@ -702,7 +702,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG3026` | `RawStatementMismatch` | Error | Hand-written statement does not match the model |
 | `PRAG3027` | `SchemaShape` | Error | A declared database's schema cannot be emitted |
 | `PRAG3028` | `EntityWithoutKey` | Error | An entity has no key |
-| `PRAG3029` | `ChainOverHiddenShape` | Error | A chain reads members only Pragmatic's generator declares |
+| `PRAG3029` | `ChainOverHiddenShape` | Error | A chain reads members no referenced engine declares |
 | `PRAG3030` | `RuleReadsTheMoment` | Error | A visibility rule of a Pragmatic entity reads a value of the moment |
 | `PRAG3031` | `SpecificationNotCompiled` | Warning | A specification of a Pragmatic entity is not compiled for the Sql engine |
 | `PRAG3032` | `InGeneratedSource` | Error | A chain the Sql engine generated did not translate |

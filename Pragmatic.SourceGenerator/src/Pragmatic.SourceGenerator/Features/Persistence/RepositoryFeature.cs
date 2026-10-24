@@ -156,61 +156,15 @@ internal static class RepositoryFeature
                 context.AddSource(repoArtifact);
         }
 
-        // Query filters
-        if (entity.IsSoftDelete)
+        // The filter classes and the history scope: the list the Sql engine binds against too.
+        foreach (var filter in EntityShapeArtifacts.Filters(entity))
         {
-            var softDeleteTemplate = new SoftDeleteFilterTemplate(entity);
-            var artifact = softDeleteTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
-        }
-
-        if (entity.IsTenantEntity)
-        {
-            var tenantTemplate = new TenantFilterTemplate(entity);
-            var artifact = tenantTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
-        }
-
-        // Data access filters — mutually exclusive: combined L1+L2 OR individual
-        if (entity is { IsOwnedEntity: true, IsScopedEntity: true })
-        {
-            // Combined: DataAccessFilter with OR logic
-            var dataAccessTemplate = new DataAccessFilterTemplate(entity);
-            var artifact = dataAccessTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
-        }
-        else if (entity.IsOwnedEntity)
-        {
-            var ownershipTemplate = new OwnershipFilterTemplate(entity);
-            var artifact = ownershipTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
-        }
-        else if (entity.IsScopedEntity)
-        {
-            var scopedTemplate = new ScopedDataFilterTemplate(entity);
-            var artifact = scopedTemplate.RenderOutput();
-            if (!artifact.IsEmpty)
-                context.AddSource(artifact);
+            if (!filter.IsEmpty)
+                context.AddSource(filter);
         }
 
         if (entity.IsTemporalRelation)
         {
-            var temporalFilterTemplate = new TemporalFilterTemplate(entity);
-            var tfArtifact = temporalFilterTemplate.RenderOutput();
-            if (!tfArtifact.IsEmpty)
-                context.AddSource(tfArtifact);
-
-            // The scope that lets a read see closed stretches, on every temporal entity — not only the
-            // ones with a MaxActive, which is what gates the validation template below.
-            var historyScopeTemplate = new TemporalHistoryScopeTemplate(entity);
-            var historyArtifact = historyScopeTemplate.RenderOutput();
-            if (!historyArtifact.IsEmpty)
-                context.AddSource(historyArtifact);
-
             if (!isEfCore)
                 return;
 

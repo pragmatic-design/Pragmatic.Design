@@ -905,6 +905,9 @@
           "Pragmatic.Result.EFCore": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.sql": {
+        "type": "Project"
+      },
       "pragmatic.privacy": {
         "type": "Project",
         "dependencies": {
