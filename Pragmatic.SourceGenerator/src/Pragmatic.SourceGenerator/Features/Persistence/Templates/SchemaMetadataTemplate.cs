@@ -59,16 +59,9 @@ internal sealed class SchemaMetadataTemplate : CSharpTemplate
 
         DecreaseIndent();
         AppendLine("],");
-        var providerName = _model.Provider switch
-        {
-            Core.EfCoreProvider.PostgreSql => "PostgreSql",
-            Core.EfCoreProvider.SqlServer => "SqlServer",
-            Core.EfCoreProvider.Sqlite => "Sqlite",
-            _ => "Generic"
-        };
         AppendLine($"DatabaseName: \"{_model.DatabaseName}\",");
         var configKeyArg = _model.ConfigKey is not null ? $"\"{_model.ConfigKey}\"" : "null";
-        AppendLine($"ProviderName: \"{providerName}\",");
+        AppendLine($"ProviderName: \"{_model.ProviderName}\",");
         AppendLine($"ConfigKey: {configKeyArg});");
         DecreaseIndent();
     }

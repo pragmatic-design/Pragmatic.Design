@@ -26,7 +26,7 @@ internal static class PragmaticMigrations
 {
     private static readonly List<string> Excluded = [MigrationConstants.AuditTableName, MigrationConstants.DataMigrationTableName, MigrationConstants.LockTableName, MigrationConstants.EfMigrationsTableName];
 
-    private static readonly Lazy<string> SqliteCreate = new(() => new SqliteMigrationGenerator().GenerateScript(new SchemaDiffEngine().ComputeDiff(DefaultSchema.For(SqlDialect.Sqlite), null)));
+    private static readonly Lazy<string> SqliteCreate = new(() => new SqliteMigrationGenerator().GenerateScript(new SchemaDiffEngine().ComputeDiff(DialectSchemas.For(SqlDialect.Sqlite), null)));
 
     /// <summary>The statements that create the schema on an empty SQLite database, as Pragmatic.Migrations writes them.</summary>
     public static string SqliteScript => SqliteCreate.Value;

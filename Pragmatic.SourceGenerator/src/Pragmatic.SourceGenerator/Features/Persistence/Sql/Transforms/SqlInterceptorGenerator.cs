@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Text;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Templates;
 using Pragmatic.SourceGen;
+using EngineSchemaModel = Pragmatic.SourceGenerator.Features.Persistence.Models.EngineSchemaModel;
 using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
@@ -68,8 +69,12 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>Fully qualified, with the nullable annotations of reference types: the form an interceptor's parameters must repeat.</summary>
     internal static readonly SymbolDisplayFormat Annotated = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    /// <summary>The Sql engine's generation, registered by <c>PragmaticSourceGenerator</c>.</summary>
-    internal static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
+    /// <summary>
+    ///     The Sql engine's generation, registered by <c>PragmaticSourceGenerator</c>; returns the tables of Pragmatic's entities it serves, per
+    ///     database, which <c>SchemaFeature</c> writes in the database's schema.
+    /// </summary>
+    internal static IncrementalValueProvider<EquatableArray<EngineSchemaModel>> Register(IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources, IncrementalValueProvider<Core.DetectedFeatures> features)
     {
         var entities = context.SyntaxProvider.ForAttributeWithMetadataName(
             "Pragmatic.Persistence.Sql.Attributes.EntityAttribute",
@@ -113,6 +118,9 @@ internal static partial class SqlInterceptorGenerator
 
         var combined = calls.Where(static c => c is not null).Collect().Combine(entities.Collect()).Combine(queries.Collect()).Combine(dtos.Collect()).Combine(functions.Collect()).Combine(context.CompilationProvider).Combine(census).Combine(committed).Combine(schemas).Combine(shapeSources);
         context.RegisterSourceOutput(combined, static (spc, all) => { var (source, shape) = all; Emit(spc, source.Left.Left.Left.Left.Left.Left.Left.Left!, source.Left.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Right, source.Left.Left.Left.Right, source.Left.Left.Right, source.Left.Right.FirstOrDefault(), source.Right, shape); });
+
+        return entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
+            .Select(static (all, ct) => PragmaticSchemas(all.Left.Left.Right, all.Left.Left.Left, all.Left.Right, all.Right, ct));
     }
 
     /// <summary>One operator of a chain, in the order the chain applies them.</summary>
@@ -272,8 +280,7 @@ internal static partial class SqlInterceptorGenerator
         EmitTpcViews(hierarchies, own, Lookup, diagnostics); // the views of the table-per-concrete-type roots, as DDL text
         EmitTptViews(hierarchies, own, Lookup, diagnostics); // and of the table-per-type roots
         EmitSchemas(hierarchies, compilation, own, Lookup, diagnostics); // the [SqlDatabase] classes' schemas, for Pragmatic.Migrations
-        if (EmitPragmaticSchema(compilation, Lookup, diagnostics) is { } pragmaticSchema) // and Pragmatic's entities', apart: it compiles alone
-            spc.AddSource(pragmaticSchema.Hint, pragmaticSchema.Text);
+        ReportPragmaticSchemaProblems(compilation, Lookup, diagnostics); // Pragmatic's entities' tables go to their database's schema (PragmaticSchemas)
 
         var models = entities.Values.Where(e => e is not null).Select(e => e!).OrderBy(e => e.FullName, StringComparer.Ordinal).ToList();
         var maps = ReadMaps(models, projections, functions, compilation, Lookup);

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Persistence.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
@@ -14,6 +15,9 @@ internal static class SqlFeature
 {
     /// <param name="context">The generator's context.</param>
     /// <param name="shapeSources">The entities' shape files as Persistence emits them: the members the chains are bound against.</param>
-    public static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
-        => SqlInterceptorGenerator.Register(context, shapeSources);
+    /// <param name="features">What the compilation references: a host's schema is typed for its EF Core provider when there is one.</param>
+    /// <returns>The tables of Pragmatic's entities the engine serves, per database, for <see cref="SchemaFeature" />.</returns>
+    public static IncrementalValueProvider<EquatableArray<EngineSchemaModel>> Register(IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources, IncrementalValueProvider<DetectedFeatures> features)
+        => SqlInterceptorGenerator.Register(context, shapeSources, features);
 }

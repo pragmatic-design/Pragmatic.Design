@@ -125,8 +125,17 @@ internal static partial class SchemaMetadataTransform
         if (provider == EfCoreProvider.SqlServer)
             entityTables = entityTables.Select(WithIndexableStrings).ToList();
 
-        return new SchemaMetadataModel(databaseName, rootNamespace, provider, entityTables.ToImmutableArray(), configKey);
+        return new SchemaMetadataModel(databaseName, rootNamespace, ProviderName(provider), entityTables.ToImmutableArray(), configKey);
     }
+
+    /// <summary>The Pragmatic.Migrations provider name of an EF Core provider.</summary>
+    private static string ProviderName(EfCoreProvider provider) => provider switch
+    {
+        EfCoreProvider.PostgreSql => "PostgreSql",
+        EfCoreProvider.SqlServer => "SqlServer",
+        EfCoreProvider.Sqlite => "Sqlite",
+        _ => "Generic",
+    };
 
     /// <summary>
     ///     Emits the <c>__Notifications</c> table. Mirrors

@@ -54,7 +54,7 @@ public sealed class PragmaticDatabases : IAsyncLifetime
         await Task.WhenAll(_postgres.StartAsync(), _sqlServer.StartAsync(), _mySql.StartAsync(), _oracle.StartAsync());
         foreach (var dialect in new[] { SqlDialect.PostgreSql, SqlDialect.SqlServer, SqlDialect.MySql, SqlDialect.Oracle })
         {
-            var migrated = await PragmaticMigrations.MigrateAsync(ConnectionString(dialect), DefaultSchema.For(dialect));
+            var migrated = await PragmaticMigrations.MigrateAsync(ConnectionString(dialect), DialectSchemas.For(dialect));
             if (!migrated.Success)
                 throw new InvalidOperationException($"The generated schema did not migrate on {dialect}: {migrated.Error}\n{migrated.GeneratedSql}");
         }

@@ -10,9 +10,9 @@ using Xunit.Abstractions;
 namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 
 /// <summary>
-///     The schema the Sql engine describes for Pragmatic's entities (<c>DefaultSchema.For</c>) against the one EF Core's branch describes
-///     for Pragmatic.Migrations (<c>SchemaMetadataTemplate</c>'s <c>DefaultSchema.Current</c>), on the entities the Sql bridge's suite
-///     migrates: line for line, but for the departures listed here.
+///     The schema the Sql engine describes for Pragmatic's entities against the one EF Core's branch describes for Pragmatic.Migrations, on
+///     the entities the Sql bridge's suite migrates: line for line, but for the departures listed here. Both are the database's
+///     <c>DefaultSchema.Current</c>, of a host whose boundaries one engine persists, then the other.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -118,12 +118,23 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         return Read(Generated(generated, "_Infra.Persistence.SchemaMetadata.g.cs"), "DefaultSchema", "Current");
     }
 
-    /// <summary>The schema the Sql engine describes for <paramref name="entities" /> on <paramref name="dialect" />, and what was reported.</summary>
+    /// <summary>
+    ///     The schema the Sql engine describes for <paramref name="entities" /> on <paramref name="dialect" />, and what was reported: the host's
+    ///     database schema, typed for the driver the compilation references (a type of the name the generator probes).
+    /// </summary>
     private static (SchemaVersion Schema, ImmutableArray<Diagnostic> Diagnostics) SqlSchema(string dialect, string entities)
     {
-        var (generated, diagnostics) = Run([entities, Host, SqlBridge], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
-        return (Read(Generated(generated, "_Infra.Sql.PragmaticSchema.g.cs"), "DefaultSchema", "For", dialect), diagnostics);
+        var (generated, diagnostics) = Run([entities, Host, SqlBridge, DriverProbe(dialect)], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
+        return (Read(Generated(generated, "_Infra.Persistence.SchemaMetadata.g.cs"), "DefaultSchema", "Current"), diagnostics);
     }
+
+    /// <summary>The driver type the Sql engine's schema probes for each dialect (<c>SqlInterceptorGenerator.SchemaDialect</c>).</summary>
+    private static string DriverProbe(string dialect) => dialect switch
+    {
+        "PostgreSql" => "namespace Npgsql { public sealed class NpgsqlConnection { } }",
+        "SqlServer" => "namespace Microsoft.Data.SqlClient { public sealed class SqlConnection { } }",
+        _ => "namespace Microsoft.Data.Sqlite { public sealed class SqliteConnection { } }",
+    };
 
     private static string Generated(Compilation output, string hint)
         => output.SyntaxTrees.SingleOrDefault(t => t.FilePath.EndsWith(hint, StringComparison.Ordinal))?.ToString()

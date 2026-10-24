@@ -39,7 +39,9 @@ internal static class PersistenceFeature
         // The DbContexts, schemas and migration contexts a host gets, for Composition to call only those.
         IncrementalValueProvider<PersistedStoresModel> PersistedStores,
         // The entities' shape files as emitted, for the Sql engine's translation to bind its chains against.
-        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> ShapeSources) Register(
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> ShapeSources,
+        // The schema of each database's EF Core entities, written once with the other engines' tables (SchemaFeature).
+        IncrementalValueProvider<EquatableArray<SchemaMetadataModel>> EfCoreSchemas) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<Models.QueryModel>>? resourceQueries = null,
@@ -149,7 +151,7 @@ internal static class PersistenceFeature
         var (derivedQueryEndpoints, queryModels) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
         ProjectionFeature.Register(context, efEntitiesProvider, features);
         AdvancedFeature.Register(context, entitiesWithFeatures, features);
-        var persistedStores = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);
+        var (persistedStores, efCoreSchemas) = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);
 
         // TPH/TPT/TPC derived type setters — generates SetX() for properties declared on derived types.
         // The raw Compilation is required: derived types are discovered by resolving each entity SYMBOL
@@ -173,7 +175,7 @@ internal static class PersistenceFeature
         var shapeSources = shapeEntitiesWithFeatures
             .Select(static (pair, _) => EntityShapeArtifacts.ForBinding(pair.Left, pair.Right));
 
-        return (allEntitiesProvider, localRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources);
+        return (allEntitiesProvider, localRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources, efCoreSchemas);
     }
 
     // ================================================================
