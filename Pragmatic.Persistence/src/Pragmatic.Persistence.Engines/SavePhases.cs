@@ -4,7 +4,7 @@ using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Scopes;
 
-namespace Pragmatic.Persistence.Sql.Pragmatic;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>
 ///     The unit of work's own phases, in the order Pragmatic registers its interceptors on EF Core (<c>DbContextRegistrationTemplate</c>):
@@ -16,13 +16,13 @@ namespace Pragmatic.Persistence.Sql.Pragmatic;
 /// </summary>
 internal static class SavePhases
 {
-    public static void Apply(IReadOnlyList<ISaveEntry> entries, DateTimeOffset now, string? userId, ITenantContext? tenant, bool requireTenant, IReadOnlyList<DataScopeRule>? scopeRules = null)
+    public static void Apply(IReadOnlyList<ISaveEntry> entries, DateTimeOffset now, string? userId, ITenantContext? tenant, bool requireTenant, CompiledScopeRuleRegistry compiledRules, IReadOnlyList<DataScopeRule>? scopeRules = null)
     {
         Audit(entries, now, userId);
         SoftDelete(entries, now, userId);
         Own(entries, userId);
         Scope(entries, userId);
-        MaterializeScopes(entries, scopeRules ?? []);
+        MaterializeScopes(entries, compiledRules, scopeRules ?? []);
         Tenant(entries, tenant, requireTenant);
         RaiseLifecycleEvents(entries);
     }
@@ -30,9 +30,9 @@ internal static class SavePhases
     /// <summary>
     ///     The data scope rules on the rows a save writes (Pragmatic's <c>ScopeMaterializer</c>, which <c>ScopeMaterializationStep</c> runs on EF's
     ///     added and modified entries): each registered rule but a Computed one adds <c>scope:{ScopeName}</c> to a row it matches and removes it
-    ///     from one it does not. The predicate is the rule's own, compiled by the engine's generator (<see cref="CompiledScopeRules" />).
+    ///     from one it does not. The predicate is the rule's own, compiled by the engine's generator (<see cref="CompiledScopeRuleRegistry" />, the engine's own).
     /// </summary>
-    private static void MaterializeScopes(IReadOnlyList<ISaveEntry> entries, IReadOnlyList<DataScopeRule> rules)
+    private static void MaterializeScopes(IReadOnlyList<ISaveEntry> entries, CompiledScopeRuleRegistry compiledRules, IReadOnlyList<DataScopeRule> rules)
     {
         if (rules.Count == 0)
             return;
@@ -45,7 +45,7 @@ internal static class SavePhases
                 if (rule.Strategy is ScopeStrategy.Computed || !rule.EntityType.IsInstanceOfType(entry.Entity))
                     continue;
                 var scope = ScopeIdentifiers.ForScope(rule.ScopeName);
-                if (CompiledScopeRules.Matches(rule, entry.Entity))
+                if (compiledRules.Matches(rule, entry.Entity))
                 {
                     if (!scoped.AccessScopes.Contains(scope))
                         scoped.AccessScopes.Add(scope);

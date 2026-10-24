@@ -1,4 +1,5 @@
 using Pragmatic.Identity;
+using Pragmatic.Persistence.Engines;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Result.Http;
@@ -30,7 +31,7 @@ public sealed partial class SqlUnitOfWork
         var written = _entries.Where(e => e.State != SqlEntryState.Unchanged).ToList();
         if (written.Count == 0)
             return 0;
-        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, _scopeRules);
+        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
 
         // The rows staged without a read are checked in the save's transaction: the caller may write only a row it may see.
         var checks = written.Where(e => e.Visible is not null).ToList();
