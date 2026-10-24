@@ -10,9 +10,14 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static class PragmaticFilters
 {
-    /// <summary>The parent a trait's child names (<c>[TraitOf&lt;TParent&gt;]</c>, read by name); null for any other entity.</summary>
+    /// <summary>
+    ///     The parent a trait's child names (<c>[TraitOf&lt;TParent&gt;]</c>, which TraitFeature emits on the children it generates);
+    ///     null for any other entity.
+    /// </summary>
     public static INamedTypeSymbol? TraitParent(INamedTypeSymbol entity)
-        => entity.GetAttributes().Select(a => a.AttributeClass).FirstOrDefault(c => c is { Name: "TraitOfAttribute", TypeArguments.Length: 1 })?.TypeArguments[0] as INamedTypeSymbol;
+        => entity.GetAttributes().Select(a => a.AttributeClass)
+            .FirstOrDefault(c => c is { Name: "TraitOfAttribute", TypeArguments.Length: 1 } && c.ContainingNamespace.ToDisplayString() == "Pragmatic.Persistence.Entity")
+            ?.TypeArguments[0] as INamedTypeSymbol;
 
     /// <summary>A <c>[TemporalRelation]</c> entity (its validity, <c>ITemporalRelation</c>'s ValidFrom and ValidTo, its own).</summary>
     public static bool IsTemporal(INamedTypeSymbol entity) => PragmaticShape.Has(entity, "TemporalRelationAttribute");
