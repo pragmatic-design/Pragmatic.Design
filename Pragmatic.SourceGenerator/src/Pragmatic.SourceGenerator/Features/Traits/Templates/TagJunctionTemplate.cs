@@ -27,6 +27,8 @@ internal sealed class TagJunctionTemplate : CSharpTemplate
         AppendLine();
 
         XmlSummary($"SG-generated M:N junction between <see cref=\"{_model.ParentTypeName}\"/> and <see cref=\"{_model.TagTypeName}\"/>.");
+        // Whose child it is, for an engine other than EF Core to apply the parent's visibility.
+        AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
         Class(_model.JunctionTypeName, RenderBody,
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true, Sealed = true },

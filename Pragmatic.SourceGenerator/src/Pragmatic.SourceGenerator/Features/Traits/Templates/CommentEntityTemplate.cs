@@ -26,6 +26,8 @@ internal sealed class CommentEntityTemplate : CSharpTemplate
         AppendLine();
 
         XmlSummary($"SG-generated comment entity for <see cref=\"{_model.ParentTypeName}\"/>.");
+        // Whose child it is, for an engine other than EF Core to apply the parent's visibility.
+        AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
         Class(_model.CommentTypeName, RenderBody,
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true, Sealed = true },

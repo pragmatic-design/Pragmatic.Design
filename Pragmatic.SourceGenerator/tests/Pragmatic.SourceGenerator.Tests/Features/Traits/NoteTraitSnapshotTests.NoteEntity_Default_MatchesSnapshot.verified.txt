@@ -10,6 +10,7 @@ namespace Showcase.Booking.Entities;
 /// <summary>
 /// SG-generated note entity for <see cref="Guest"/>.
 /// </summary>
+[global::Pragmatic.Persistence.Entity.TraitOf<global::Showcase.Booking.Entities.Guest>]
 public sealed partial class GuestNote : NoteBase<Guid>
 {
     /// <summary>

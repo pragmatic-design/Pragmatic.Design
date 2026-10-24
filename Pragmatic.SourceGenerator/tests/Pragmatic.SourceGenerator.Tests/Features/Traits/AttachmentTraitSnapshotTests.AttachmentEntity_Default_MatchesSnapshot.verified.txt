@@ -10,6 +10,7 @@ namespace Showcase.Booking.Entities;
 /// <summary>
 /// SG-generated attachment entity for <see cref="Reservation"/>.
 /// </summary>
+[global::Pragmatic.Persistence.Entity.TraitOf<global::Showcase.Booking.Entities.Reservation>]
 public sealed partial class ReservationAttachment : AttachmentBase<Guid>
 {
     /// <summary>

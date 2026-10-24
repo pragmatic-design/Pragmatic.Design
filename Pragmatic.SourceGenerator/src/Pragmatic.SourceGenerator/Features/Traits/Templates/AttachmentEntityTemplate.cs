@@ -21,6 +21,8 @@ internal sealed class AttachmentEntityTemplate : CSharpTemplate
         AppendNamespace(_model.ParentNamespace);
         AppendLine();
         XmlSummary($"SG-generated attachment entity for <see cref=\"{_model.ParentTypeName}\"/>.");
+        // Whose child it is, for an engine other than EF Core to apply the parent's visibility.
+        AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
         Class(_model.AttachmentTypeName, RenderBody,
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true, Sealed = true },

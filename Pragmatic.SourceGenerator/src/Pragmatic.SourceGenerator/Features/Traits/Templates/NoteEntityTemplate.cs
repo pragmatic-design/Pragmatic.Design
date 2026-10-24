@@ -21,6 +21,8 @@ internal sealed class NoteEntityTemplate : CSharpTemplate
         AppendNamespace(_model.ParentNamespace);
         AppendLine();
         XmlSummary($"SG-generated note entity for <see cref=\"{_model.ParentTypeName}\"/>.");
+        // Whose child it is, for an engine other than EF Core to apply the parent's visibility.
+        AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
         Class(_model.NoteTypeName, RenderBody,
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true, Sealed = true },

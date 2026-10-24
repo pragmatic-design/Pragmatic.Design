@@ -10,6 +10,7 @@ namespace Showcase.Booking.Entities;
 /// <summary>
 /// SG-generated comment entity for <see cref="Reservation"/>.
 /// </summary>
+[global::Pragmatic.Persistence.Entity.TraitOf<global::Showcase.Booking.Entities.Reservation>]
 public sealed partial class ReservationComment : CommentBase<Guid>
 {
     /// <summary>
