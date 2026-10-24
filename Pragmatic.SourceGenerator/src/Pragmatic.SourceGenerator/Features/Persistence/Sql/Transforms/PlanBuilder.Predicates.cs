@@ -114,7 +114,7 @@ internal sealed partial class PlanBuilder
         if (translator.ParameterIsConstant[i])
             return ConstantField(translator.ParameterTexts[i]);
         if (tree is not null)
-            return "global::Pragmatic.Persistence.Sql." + translator.ParameterPaths[i].Replace("(lambda)", $"({tree})");
+            return "global::Pragmatic.Persistence.Expressions." + translator.ParameterPaths[i].Replace("(lambda)", $"({tree})");
         if (_valuesInSlots)
         {
             ValueSlots.Add(translator.ParameterTexts[i]);

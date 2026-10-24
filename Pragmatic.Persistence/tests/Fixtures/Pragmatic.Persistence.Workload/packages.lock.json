@@ -14,8 +14,14 @@
         "resolved": "6.0.0",
         "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
       },
-      "pragmatic.persistence.sql": {
+      "pragmatic.persistence.expressions": {
         "type": "Project"
+      },
+      "pragmatic.persistence.sql": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
+        }
       }
     }
   }

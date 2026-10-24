@@ -23,8 +23,14 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
         }
       },
-      "pragmatic.persistence.sql": {
+      "pragmatic.persistence.expressions": {
         "type": "Project"
+      },
+      "pragmatic.persistence.sql": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
+        }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "CentralTransitive",

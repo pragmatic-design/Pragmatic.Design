@@ -2,12 +2,7 @@ using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 
-// One file, two assemblies (the documents bridge links it): a namespace each, or a project seeing both engines has the type twice (CS0433).
-#if PRAGMATIC_DOCUMENTS
-namespace Pragmatic.Persistence.Documents.Pragmatic;
-#else
-namespace Pragmatic.Persistence.Sql;
-#endif
+namespace Pragmatic.Persistence.Expressions;
 
 /// <summary>
 ///     The values a lambda captured, read off the expression tree the compiler built for it. The
@@ -15,8 +10,8 @@ namespace Pragmatic.Persistence.Sql;
 ///     closure, a field, a property chain, a constant); at runtime the interceptor walks exactly that
 ///     node and reads it. No compilation, no interpretation of operators: only constants and member
 ///     reads. <c>FieldInfo.GetValue</c> on a member the tree itself references is reflection on metadata
-///     the compiler emitted and the trimmer keeps; whether Native AOT keeps it is the first thing the
-///     spike tests (see the AOT smoke).
+///     the compiler emitted and the trimmer keeps; the Sql engine's AOT smoke runs it published Native AOT.
+///     One source for every persistence engine whose generated code reads a lambda's values.
 /// </summary>
 public static class Captured
 {

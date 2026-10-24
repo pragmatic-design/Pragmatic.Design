@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Pragmatic.Persistence.Expressions;
 
 namespace Pragmatic.Persistence.Sql;
 
