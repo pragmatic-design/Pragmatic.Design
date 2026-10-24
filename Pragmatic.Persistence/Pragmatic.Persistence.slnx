@@ -49,6 +49,10 @@
     <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />
     <Project Path="src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents.Generator/Pragmatic.Persistence.Documents.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
@@ -57,12 +61,14 @@
     <Project Path="tests/Pragmatic.Persistence.CodeFixers.Tests/Pragmatic.Persistence.CodeFixers.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
   </Folder>
-  <!-- The Sql engine suite's fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,
+  <!-- The engine suites' fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,
        and the diagnostics tests build it to read the errors. -->
   <Folder Name="/tests/Fixtures/">
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
+    <Project Path="tests/Fixtures/Pragmatic.Persistence.Documents.Workload/Pragmatic.Persistence.Documents.Workload.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />

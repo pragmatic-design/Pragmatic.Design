@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Documents.Mongo</RootNamespace>
+    <Description>A MongoDB driver for Native AOT: the wire protocol (OP_MSG), BSON on spans, SCRAM-SHA-256, TLS. No dependency beyond the BCL, no reflection.</Description>
+    <PackageTags>pragmatic;persistence;documents;mongodb;driver;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+</Project>

@@ -50,7 +50,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG2800-2899` | Serialization / AOT | [`Pragmatic.Abstractions.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Abstractions/src/Pragmatic.Abstractions.Analyzers/DiagnosticDescriptors.cs) |
 | `PRAG2900-2999` | Privacy | [`PrivacyDiagnostics.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Privacy/Diagnostics/PrivacyDiagnostics.cs) |
 | `PRAG3000-3099` | Persistence: the Sql engine | [`Pragmatic.SourceGenerator`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Persistence/Sql/Transforms/Diagnostics.cs) |
-| `PRAG3100-3199` | Persistence: the documents engine | being ported |
+| `PRAG3100-3199` | Persistence: the documents engine | [`Pragmatic.Persistence.Documents.Generator`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Generator/DocDiagnostics.cs) |
 | `PRAG9000-9099` | Source generator infrastructure | [`SafeSourceOutput.cs`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/shared/SourceGen/SafeSourceOutput.cs) |
 | `PRAGS001-PRAGS999` | Diagnostic suppressors | [`Suppressors/`](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Suppressors) |
 
@@ -672,6 +672,21 @@ error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` 
 | `PRAG3034` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration (the message names it). EF Core runs it as before. |
 | `PRAG3035` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine; registered and Computed or Hybrid, it is refused at read. EF Core runs it as before. |
 | `PRAG3099` | Hidden | A call site translated to SQL, with its statement: what a census build (`-p:PragmaticCensus=true`) prints for every call site. |
+
+### The documents engine: `PRAG3101-3199`
+
+A chain on a `DocQuery<T>` is translated at compile time into the backend's query (MongoDB's query language, Cosmos DB's SQL); one the
+translated subset does not cover is a compile-time error with its remedy, never a query that runs in memory.
+
+| ID | Severity | Meaning and fix |
+|----|----------|-----------------|
+| `PRAG3101` | Error | An operator or an expression is not translated to a document query; the message says why and what the subset is at that point of the chain. |
+| `PRAG3102` | Error | A lambda reads a value of the enclosing method. Pass it as the argument of the two-parameter form, `Where((o, a) => o.Field == a, value)`. |
+| `PRAG3103` | Error | A `[Document]` or `[Embedded]` type is not `partial`: the generator adds its document reader and writer to it. |
+| `PRAG3104` | Error | A property has a type that is not a document field; the message says which types are. |
+| `PRAG3105` | Error | A chain does not start at `session.Query<T>()`: one handed over by a method or a field cannot be followed back, and throws at run time. Write the chain where it starts. |
+| `PRAG3106` | Info | On Cosmos DB the chain runs in one partition only, and it does not name the partition key in an equality, so it throws there. Add the equality, or keep the chain to MongoDB. |
+| `PRAG3199` | Hidden | A call site translated to a document query, with the query: what a census build prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`
 

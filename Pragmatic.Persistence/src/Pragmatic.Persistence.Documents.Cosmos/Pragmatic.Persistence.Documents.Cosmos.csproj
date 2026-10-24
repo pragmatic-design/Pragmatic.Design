@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Documents.Cosmos</RootNamespace>
+    <Description>Azure Cosmos DB (NoSQL API) through its REST API for Native AOT: master-key signatures, documents and queries over HttpClient, JSON with Utf8JsonWriter and JsonDocument. No SDK, no reflection.</Description>
+    <PackageTags>pragmatic;persistence;documents;cosmosdb;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+</Project>

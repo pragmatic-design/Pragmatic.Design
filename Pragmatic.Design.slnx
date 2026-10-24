@@ -709,6 +709,10 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.Pragmatic/Pragmatic.Persistence.Sql.Pragmatic.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Generator/Pragmatic.Persistence.Documents.Generator.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
@@ -929,9 +933,11 @@
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.EFCore.Tests/Pragmatic.Persistence.EFCore.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
-    <!-- The Sql engine suite's fixtures; Pragmatic.Persistence.Sql.DiagnosticsFixture is left out on purpose (it must not compile). -->
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
+    <!-- The engine suites' fixtures; Pragmatic.Persistence.Sql.DiagnosticsFixture is left out on purpose (it must not compile). -->
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Documents.Workload/Pragmatic.Persistence.Documents.Workload.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.E2E.Tests/Pragmatic.Privacy.E2E.Tests.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />

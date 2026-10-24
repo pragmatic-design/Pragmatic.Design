@@ -1182,6 +1182,8 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-web.ps1',
     'examples/aot-smoke/publish-and-smoke-logging.ps1',
     'examples/aot-smoke/publish-and-smoke-sql.ps1',
+    // Starts MongoDB in Docker for the driver to talk to, and fails without it.
+    'examples/aot-smoke/publish-and-smoke-documents.ps1',
   ];
 
   let good = true;

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Documents</RootNamespace>
+    <Description>The documents persistence engine's runtime: aggregates stored as documents (children embedded), LINQ chains on DocQuery&lt;T&gt; translated at compile time into the backend's query. MongoDB and Azure Cosmos DB, no reflection.</Description>
+    <PackageTags>pragmatic;persistence;documents;mongodb;cosmosdb;aot</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Documents.Cosmos\Pragmatic.Persistence.Documents.Cosmos.csproj" />
+  </ItemGroup>
+
+</Project>
