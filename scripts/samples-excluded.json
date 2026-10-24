@@ -5,6 +5,7 @@
     "Pragmatic.Result.AspNetCore.Samples": "A web host: it serves on http://localhost:5000 until stopped, so it never exits.",
     "Pragmatic.Ensure.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it.",
     "Pragmatic.Jobs.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it.",
-    "Pragmatic.Logging.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it."
+    "Pragmatic.Logging.Consumer": "Builds against the published packages (PackageReference to the local feed), not the repository; the gate's build does not produce it.",
+    "Pragmatic.Persistence.Documents.Samples": "Needs a MongoDB or Cosmos DB server named in the environment, which the hermetic run does not start; Pragmatic.Persistence.Documents.Samples.Tests runs it on both, in containers."
   }
 }
