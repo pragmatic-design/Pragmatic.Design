@@ -27,7 +27,7 @@ internal sealed class DocValue
 /// </summary>
 internal abstract class DocCondition
 {
-    private const string Values = "global::Pragmatic.Persistence.Documents.DocValues";
+    private const string Values = "global::Pragmatic.Persistence.Documents.Conversion.DocValues";
 
     public abstract void Render(StringBuilder source, string indent);
 
@@ -86,7 +86,7 @@ internal abstract class DocCondition
         public override string RenderCosmos(DocCosmosText context, string root)
         {
             var values = enumElements ? $"global::System.Linq.Enumerable.Select({list.Code}, static x => (int)x)" : list.Code;
-            var parameter = context.Parameter($"global::Pragmatic.Persistence.Documents.DocJson.WriteArray(w, {values}, global::Pragmatic.Persistence.Documents.DocJson.WriteValue)");
+            var parameter = context.Parameter($"global::Pragmatic.Persistence.Documents.Conversion.DocJson.WriteArray(w, {values}, global::Pragmatic.Persistence.Documents.Conversion.DocJson.WriteValue)");
             return $"ARRAY_CONTAINS({parameter}, {DocCosmosText.Path(path, root)})";
         }
     }
@@ -105,7 +105,7 @@ internal abstract class DocCondition
 
         public override string RenderCosmos(DocCosmosText context, string root)
         {
-            var parameter = context.Parameter($"global::Pragmatic.Persistence.Documents.DocJson.WriteText(w, {text.Code})");
+            var parameter = context.Parameter($"global::Pragmatic.Persistence.Documents.Conversion.DocJson.WriteText(w, {text.Code})");
             var function = start && end ? "STRINGEQUALS" : start ? "STARTSWITH" : end ? "ENDSWITH" : "CONTAINS"; // the text as it is; the case as asked
             return $"{function}({DocCosmosText.Path(path, root)}, {parameter}{(ignoreCase ? ", true" : "")})";
         }

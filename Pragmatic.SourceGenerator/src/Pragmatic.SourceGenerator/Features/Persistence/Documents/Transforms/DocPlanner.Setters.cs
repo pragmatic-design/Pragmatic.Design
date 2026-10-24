@@ -97,7 +97,7 @@ internal sealed partial class DocPlanner
                 return;
             }
 
-            set.Append(value.IsNull ? $"w.WriteNull({DocTypeEmitter.Literal(path)}); " : $"global::Pragmatic.Persistence.Documents.DocValues.Write(w, {DocTypeEmitter.Literal(path)}, {value.Code}); ");
+            set.Append(value.IsNull ? $"w.WriteNull({DocTypeEmitter.Literal(path)}); " : $"global::Pragmatic.Persistence.Documents.Conversion.DocValues.Write(w, {DocTypeEmitter.Literal(path)}, {value.Code}); ");
         }
 
         var version = _entity.Version is { } v ? $"w.StartDocument(\"$inc\"); w.Write({DocTypeEmitter.Literal(v.Name)}, 1); w.EndDocument(); " : "";

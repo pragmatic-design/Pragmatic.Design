@@ -16,9 +16,9 @@ internal static class DocGrids
     {
         var entity = "global::" + grid.Entity.ToDisplayString();
         return grid.SourceText("Pragmatic.Persistence.Documents", "documents engine", "DocGrid",
-            new GridLoadModel("global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Pragmatic.DocSpecifications.ToPredicate",
+            new GridLoadModel("global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.DocSpecifications.ToPredicate",
                 $"global::Pragmatic.Persistence.Engines.GridPage<{entity}>", CountsInLong: true),
-            new GridOrderingModel($"global::Pragmatic.Persistence.Documents.DocOrdering<{entity}>", "global::Pragmatic.Persistence.Documents.DocOrderKey",
+            new GridOrderingModel($"global::Pragmatic.Persistence.Documents.Planning.DocOrdering<{entity}>", "global::Pragmatic.Persistence.Documents.Planning.DocOrderKey",
                 // A property the document does not store sorts as a missing field.
                 grid.OrderKeyColumns().Select(c => new OrderKeyModel(c, (DocOrderKeys.Texts(model, c) ?? DocOrderKeys.Named(c)).ToEquatableArray())).ToEquatableArray()));
     }

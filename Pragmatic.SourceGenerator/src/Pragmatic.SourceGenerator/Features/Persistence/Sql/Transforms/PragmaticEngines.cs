@@ -46,7 +46,7 @@ internal sealed class PragmaticEngines
     [
         (PragmaticEngine.EfCore, "Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute"),
         (PragmaticEngine.Sql, "Pragmatic.Persistence.Sql.PragmaticSqlFilters"),
-        (PragmaticEngine.Documents, "Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters"),
+        (PragmaticEngine.Documents, "Pragmatic.Persistence.Documents.PragmaticDocFilters"),
     ];
 
     private static readonly ConditionalWeakTable<Compilation, PragmaticEngines> Cache = new();

@@ -23,8 +23,8 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(
-        "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.IDocFilters", "global::Pragmatic.Persistence.Documents.Pragmatic.PragmaticDocFilters",
-        "global::Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.Pragmatic.IDocSavePhase", "DocRepository",
+        "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Filters.IDocFilters", "global::Pragmatic.Persistence.Documents.PragmaticDocFilters",
+        "global::Pragmatic.Persistence.Documents.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.IDocSavePhase", "DocRepository",
         "DocPersistence", "Pragmatic.Persistence.Documents"));
 
     /// <summary>

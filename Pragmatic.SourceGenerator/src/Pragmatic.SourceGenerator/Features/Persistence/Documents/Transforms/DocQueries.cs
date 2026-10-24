@@ -55,7 +55,7 @@ internal static class DocQueries
     /// <summary>The query's shape on the documents engine (hint name, text).</summary>
     public static (string Hint, string Source) Shape(PragmaticQuery query, DocModel model)
         => query.ShapeText("Pragmatic.Persistence.Documents", "documents engine", "DocQueryShape", new QueryOrderingModel(
-            "ToDocOrdering", $"global::Pragmatic.Persistence.Documents.DocOrdering<{query.EntityName}>", "global::Pragmatic.Persistence.Documents.DocOrderKey",
+            "ToDocOrdering", $"global::Pragmatic.Persistence.Documents.Planning.DocOrdering<{query.EntityName}>", "global::Pragmatic.Persistence.Documents.Planning.DocOrderKey",
             query.Sorts.OrderBy(s => s.Priority).Select(s => new QuerySortModel(s.Name, s.Column.Replace('.', '_'), s.Direction)).ToEquatableArray(),
             query.Sorts.Select(s => s.Column).Append("PersistenceId").Distinct()
                 .Select(c => new OrderKeyModel(c.Replace('.', '_'), (DocOrderKeys.Texts(model, c) ?? DocOrderKeys.Named(c)).ToEquatableArray())).ToEquatableArray()));

@@ -17,6 +17,7 @@ public class TheDocumentsEngineReportsWhatItCannotTranslateTests
         using System.Linq;
         using System.Threading.Tasks;
         using Pragmatic.Persistence.Documents;
+        using Pragmatic.Persistence.Documents.Attributes;
 
         [Document("items")]
         public sealed partial class Item
@@ -107,6 +108,7 @@ public class TheDocumentsEngineReportsWhatItCannotTranslateTests
         var result = Run("""
             using System;
             using Pragmatic.Persistence.Documents;
+            using Pragmatic.Persistence.Documents.Attributes;
 
             [Document("plain")]
             public sealed class Plain
@@ -125,6 +127,7 @@ public class TheDocumentsEngineReportsWhatItCannotTranslateTests
         var result = Run("""
             using System;
             using Pragmatic.Persistence.Documents;
+            using Pragmatic.Persistence.Documents.Attributes;
 
             [Document("links")]
             public sealed partial class Link

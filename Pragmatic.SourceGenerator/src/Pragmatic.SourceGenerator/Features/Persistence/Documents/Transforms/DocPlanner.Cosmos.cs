@@ -54,8 +54,8 @@ internal sealed partial class DocPlanner
         if (stateful is not null && partition is null)
             _diagnostics.Add(Diagnostic.Create(DocDiagnostics.CosmosNeedsPartition, _call.Invocation.GetLocation(), _call.Name, stateful, _entity.PartitionKey?.Property.Name ?? "the key"));
         var parameters = context.HasParameters ? $"static (w, s) => {{ {context.Parameters}}}" : "null";
-        var partitionWriter = partition is null ? "null" : $"static (w, s) => global::Pragmatic.Persistence.Documents.DocJson.WriteValue(w, {partition.Code})";
-        _cosmos = $"new global::Pragmatic.Persistence.Documents.DocCosmosQuery({DocTypeEmitter.Literal(text)}, {parameters}, {partitionWriter}, {(stateful is null ? "false" : "true")}, {PointId(partition)}, {PredicateSlot}, {OrderingSlot}, {SortKeysInitializer()})";
+        var partitionWriter = partition is null ? "null" : $"static (w, s) => global::Pragmatic.Persistence.Documents.Conversion.DocJson.WriteValue(w, {partition.Code})";
+        _cosmos = $"new global::Pragmatic.Persistence.Documents.Planning.DocCosmosQuery({DocTypeEmitter.Literal(text)}, {parameters}, {partitionWriter}, {(stateful is null ? "false" : "true")}, {PointId(partition)}, {PredicateSlot}, {OrderingSlot}, {SortKeysInitializer()})";
         CosmosText = text;
     }
 

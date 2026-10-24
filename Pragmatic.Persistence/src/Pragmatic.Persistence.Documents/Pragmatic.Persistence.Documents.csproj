@@ -2,14 +2,31 @@
 
   <PropertyGroup>
     <RootNamespace>Pragmatic.Persistence.Documents</RootNamespace>
-    <Description>The documents persistence engine's runtime: aggregates stored as documents (children embedded), LINQ chains on DocQuery&lt;T&gt; translated at compile time into the backend's query. MongoDB and Azure Cosmos DB, no reflection.</Description>
-    <PackageTags>pragmatic;persistence;documents;mongodb;cosmosdb;aot</PackageTags>
+    <Description>The documents persistence engine as an engine of Pragmatic: its filter families, unit of work, compiled specifications and grids over Pragmatic's contracts, on MongoDB and Azure Cosmos DB, beside Pragmatic.Persistence.EFCore.</Description>
+    <PackageTags>pragmatic;persistence;documents;mongodb;cosmosdb;unitofwork;aot</PackageTags>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
-    <ProjectReference Include="..\Pragmatic.Persistence.Documents.Cosmos\Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <ProjectReference Include="..\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
+    <!-- What every engine's bridge shares: the filter decision, the save's phases, the scope rule registry, the grid page. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Engines\Pragmatic.Persistence.Engines.csproj" />
+    <!-- Captured: the values a specification's lambda captured, read by the code the generator writes for it. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Expressions\Pragmatic.Persistence.Expressions.csproj" />
+    <!-- Pragmatic's contracts the engine serves: the filters and their toggle, the repositories, the unit of work, the scopes. -->
+    <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- The unit of work's events: dispatched after the commit, or deferred to the commit scope's batch, as EfCoreUnitOfWork's. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <!-- A broken rule is answered with the records EF Core's unit of work answers with (Pragmatic.Result.Database). -->
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+  </ItemGroup>
+
+  <!-- The engine's folders the bridge reads, in scope inside this project only. -->
+  <ItemGroup>
+    <Using Include="Pragmatic.Persistence.Documents.Filters" />
+    <Using Include="Pragmatic.Persistence.Documents.Planning" />
+    <Using Include="Pragmatic.Persistence.Documents.Writing" />
   </ItemGroup>
 
 </Project>

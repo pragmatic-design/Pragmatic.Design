@@ -1,4 +1,4 @@
-using Pragmatic.Persistence.Documents.Tests;
+using Pragmatic.Persistence.Documents.Core.Tests;
 using PragmaticDocumentSamples;
 using Xunit;
 

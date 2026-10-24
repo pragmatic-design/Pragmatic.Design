@@ -899,7 +899,7 @@
           "Pragmatic.Specification": "[1.0.0, )"
         }
       },
-      "pragmatic.persistence.documents": {
+      "pragmatic.persistence.documents.core": {
         "type": "Project",
         "dependencies": {
           "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",

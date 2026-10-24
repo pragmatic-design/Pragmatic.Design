@@ -356,7 +356,7 @@ internal sealed partial class DocPlanner
     public string Initializer(string origin)
     {
         var source = new StringBuilder();
-        source.Append($"new global::Pragmatic.Persistence.Documents.DocPlan<{_entity.FullName}>({DocTypeEmitter.Literal(origin)}, ");
+        source.Append($"new global::Pragmatic.Persistence.Documents.Planning.DocPlan<{_entity.FullName}>({DocTypeEmitter.Literal(origin)}, ");
         var filter = DocCondition.All(_conditions);
         if (filter is null)
         {

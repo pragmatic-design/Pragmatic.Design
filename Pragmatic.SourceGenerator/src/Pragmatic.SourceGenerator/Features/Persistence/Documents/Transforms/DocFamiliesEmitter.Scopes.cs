@@ -29,7 +29,7 @@ internal static partial class DocFamiliesEmitter
                 continue;
             }
 
-            var ruleSlot = $"new {Runtime}.DocFilterSlot(typeof({type}), {Runtime}.DocFilterFamily.ComputedScope, typeof({rule.ToDisplayString(DocModel.Qualified)}), null)";
+            var ruleSlot = $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.ComputedScope, typeof({rule.ToDisplayString(DocModel.Qualified)}), null)";
             computed.Add((rule.ToDisplayString(), ruleSlot, condition.Mongo, condition.Cosmos, condition.Parameters, index));
         }
 
@@ -46,7 +46,7 @@ internal static partial class DocFamiliesEmitter
         var type = model.Type.ToDisplayString(DocModel.Qualified);
         foreach (var rule in PragmaticScopeRules.Of(compilation, model.Type))
         {
-            yield return $"global::Pragmatic.Persistence.Documents.Pragmatic.CompiledScopeRules.Register(typeof({rule.ToDisplayString(DocModel.Qualified)}), static rule => {{ var matches = ((global::Pragmatic.Persistence.Scopes.DataScopeRule<{type}>)rule).ToExpression().Compile(preferInterpretation: true); return row => matches(({type})row); }}, readable: {(readable.Contains(rule.ToDisplayString()) ? "true" : "false")});";
+            yield return $"global::Pragmatic.Persistence.Documents.CompiledScopeRules.Register(typeof({rule.ToDisplayString(DocModel.Qualified)}), static rule => {{ var matches = ((global::Pragmatic.Persistence.Scopes.DataScopeRule<{type}>)rule).ToExpression().Compile(preferInterpretation: true); return row => matches(({type})row); }}, readable: {(readable.Contains(rule.ToDisplayString()) ? "true" : "false")});";
         }
     }
 
@@ -64,12 +64,12 @@ internal static partial class DocFamiliesEmitter
         var scopes = PragmaticShape.Has(parent, "HasAccessScopesAttribute") ? parentModel.Field("AccessScopes")?.Name : null;
         if (owner is null && scopes is null)
             return null;
-        var slot = $"new {Runtime}.DocFilterSlot(typeof({type}), {Runtime}.DocFilterFamily.Permission, typeof({type}.ParentVisibilityFilter), null, {DocTypeEmitter.Literal(PragmaticPermissions.ViewAll(parent))})";
-        var mongo = $"w.StartDocument({DocTypeEmitter.Literal(foreignKey.Name)}); {Runtime}.DocValues.WriteArray(w, \"$in\", {Runtime}.DocFamilies.VisibleParents<{type}>(), {Runtime}.DocValues.Write); w.EndDocument();";
+        var slot = $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.Permission, typeof({type}.ParentVisibilityFilter), null, {DocTypeEmitter.Literal(PragmaticPermissions.ViewAll(parent))})";
+        var mongo = $"w.StartDocument({DocTypeEmitter.Literal(foreignKey.Name)}); {Runtime}.Conversion.DocValues.WriteArray(w, \"$in\", {Runtime}.Filters.DocFamilies.VisibleParents<{type}>(), {Runtime}.Conversion.DocValues.Write); w.EndDocument();";
         var cosmos = $"ARRAY_CONTAINS(@__parents, {DocCosmosText.Path(foreignKey.Name, "c")})";
-        var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"@__parents\"); w.WriteStartArray(\"value\"); foreach (var id in {Runtime}.DocFamilies.VisibleParents<{type}>()) w.WriteStringValue(id.ToString(\"D\")); w.WriteEndArray(); w.WriteEndObject();";
-        var read = $"static (s, f, ct) => {Runtime}.DocFamilies.ParentKeysAsync<{parent.ToDisplayString(DocModel.Qualified)}>(s, f, {(owner is null ? "null" : DocTypeEmitter.Literal(owner))}, {(scopes is null ? "null" : DocTypeEmitter.Literal(scopes))}, ct)";
-        return $"new {Runtime}.DocFamily({slot}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, static (w, f) => {{ {parameter} }}, false, {read})";
+        var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"@__parents\"); w.WriteStartArray(\"value\"); foreach (var id in {Runtime}.Filters.DocFamilies.VisibleParents<{type}>()) w.WriteStringValue(id.ToString(\"D\")); w.WriteEndArray(); w.WriteEndObject();";
+        var read = $"static (s, f, ct) => {Runtime}.Filters.DocFamilies.ParentKeysAsync<{parent.ToDisplayString(DocModel.Qualified)}>(s, f, {(owner is null ? "null" : DocTypeEmitter.Literal(owner))}, {(scopes is null ? "null" : DocTypeEmitter.Literal(scopes))}, ct)";
+        return $"new {Runtime}.Filters.DocFamily({slot}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, static (w, f) => {{ {parameter} }}, false, {read})";
     }
 
     /// <summary>Each computed scope after the scopes' own condition: in MongoDB's <c>$or</c> when active, in Cosmos DB's behind its boolean.</summary>
@@ -77,7 +77,7 @@ internal static partial class DocFamiliesEmitter
     {
         foreach (var rule in computed)
         {
-            var active = $"f is {{ }} c{rule.Index} && c{rule.Index}.StateOf({rule.Slot}) == {Runtime}.DocFilterState.Active";
+            var active = $"f is {{ }} c{rule.Index} && c{rule.Index}.StateOf({rule.Slot}) == {Runtime}.Filters.DocFilterState.Active";
             mongo.Append($"if ({active}) {{ w.StartDocument(i++); {rule.Mongo} w.EndDocument(); }} ");
             cosmos.Append($" OR (@__cs{rule.Index} = true AND ({rule.Cosmos}))");
             parameters.Append($"w.WriteStartObject(); w.WriteString(\"name\", \"@__cs{rule.Index}\"); w.WriteBoolean(\"value\", {active}); w.WriteEndObject(); ");

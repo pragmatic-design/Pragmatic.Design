@@ -146,6 +146,18 @@
       "pragmatic.persistence.documents": {
         "type": "Project",
         "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Core": "[1.0.0, )",
+          "Pragmatic.Persistence.Engines": "[1.0.0, )",
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.documents.core": {
+        "type": "Project",
+        "dependencies": {
           "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",
           "Pragmatic.Persistence.Documents.Mongo": "[1.0.0, )"
         }
@@ -156,22 +168,10 @@
       "pragmatic.persistence.documents.mongo": {
         "type": "Project"
       },
-      "pragmatic.persistence.documents.pragmatic": {
-        "type": "Project",
-        "dependencies": {
-          "Pragmatic.Actions": "[1.0.0, )",
-          "Pragmatic.Events": "[1.0.0, )",
-          "Pragmatic.Persistence": "[1.0.0, )",
-          "Pragmatic.Persistence.Documents": "[1.0.0, )",
-          "Pragmatic.Persistence.Engines": "[1.0.0, )",
-          "Pragmatic.Persistence.Expressions": "[1.0.0, )",
-          "Pragmatic.Result": "[1.0.0, )"
-        }
-      },
       "pragmatic.persistence.documents.workload": {
         "type": "Project",
         "dependencies": {
-          "Pragmatic.Persistence.Documents": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Core": "[1.0.0, )",
           "Pragmatic.Persistence.Workload": "[1.0.0, )"
         }
       },

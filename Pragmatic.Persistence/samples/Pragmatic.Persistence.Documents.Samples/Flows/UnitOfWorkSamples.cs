@@ -1,6 +1,5 @@
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Documents;
-using Pragmatic.Persistence.Documents.Pragmatic;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Specification;
 using PragmaticDocumentSamples.Callers;

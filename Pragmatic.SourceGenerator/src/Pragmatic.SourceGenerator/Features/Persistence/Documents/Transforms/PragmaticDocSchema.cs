@@ -22,7 +22,7 @@ internal static class PragmaticDocSchema
     public static List<DocSchemaModel> For(Compilation compilation, List<INamedTypeSymbol> entities, Dictionary<string, DocModel> models, List<PragmaticQuery> queries)
     {
         var schemas = new List<DocSchemaModel>();
-        if (compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.DocSchema") is null)
+        if (compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.Schema.DocSchema") is null)
             return schemas;
         foreach (var group in entities.Where(e => models.ContainsKey(e.ToDisplayString()))
                      .GroupBy(e => PragmaticPermissions.BoundaryOf(e), SymbolEqualityComparer.Default)
@@ -94,8 +94,8 @@ internal static class PragmaticDocSchema
         }
 
         var partition = "/" + (model.PartitionKey is { } p ? DocModel.JsonName(p) : "id");
-        var indexText = indexes.Select(i => $"new global::Pragmatic.Persistence.Documents.DocIndex({DocTypeEmitter.Literal(i.Name)}, [{string.Join(", ", i.Fields.Select(DocTypeEmitter.Literal))}]{(i.Unique ? ", Unique: true" : "")}{(i.Live is null ? "" : ", LiveField: " + DocTypeEmitter.Literal(i.Live))})");
-        return $"new global::Pragmatic.Persistence.Documents.DocCollectionSchema({DocTypeEmitter.Literal(model.Collection!)}, {DocTypeEmitter.Literal(partition)}, [{string.Join(", ", indexText)}], [{string.Join(", ", composites)}])";
+        var indexText = indexes.Select(i => $"new global::Pragmatic.Persistence.Documents.Schema.DocIndex({DocTypeEmitter.Literal(i.Name)}, [{string.Join(", ", i.Fields.Select(DocTypeEmitter.Literal))}]{(i.Unique ? ", Unique: true" : "")}{(i.Live is null ? "" : ", LiveField: " + DocTypeEmitter.Literal(i.Live))})");
+        return $"new global::Pragmatic.Persistence.Documents.Schema.DocCollectionSchema({DocTypeEmitter.Literal(model.Collection!)}, {DocTypeEmitter.Literal(partition)}, [{string.Join(", ", indexText)}], [{string.Join(", ", composites)}])";
     }
 
     /// <summary>Pragmatic's <c>DeriveRootNamespace</c>, as the Sql engine's <c>DefaultSchema</c> uses it.</summary>

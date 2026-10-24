@@ -66,8 +66,8 @@ internal sealed class DocField
 /// <summary>A [Document] or [Embedded] type as the generator reads it: its fields, its key and version, the collection it is stored in.</summary>
 internal sealed class DocModel
 {
-    public const string DocumentAttribute = "Pragmatic.Persistence.Documents.DocumentAttribute";
-    public const string EmbeddedAttribute = "Pragmatic.Persistence.Documents.EmbeddedAttribute";
+    public const string DocumentAttribute = "Pragmatic.Persistence.Documents.Attributes.DocumentAttribute";
+    public const string EmbeddedAttribute = "Pragmatic.Persistence.Documents.Attributes.EmbeddedAttribute";
 
     /// <summary>Pragmatic's <c>[Entity]</c>: a document too, its shape Pragmatic's (<c>PragmaticShape</c>), the relations kept as their keys.</summary>
     public const string EntityAttribute = "Pragmatic.Persistence.Entity.EntityAttribute";
@@ -140,8 +140,8 @@ internal sealed class DocModel
         foreach (var property in Properties(type, pragmatic))
         {
             // Pragmatic's shape: the key PersistenceId, the row version of a [ConcurrencyAware] entity (owner's decision of 2026-10-22: _v).
-            var isKey = pragmatic ? property.Name == "PersistenceId" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.KeyAttribute");
-            var isVersion = pragmatic ? versioned && property.Name == "RowVersion" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.VersionAttribute");
+            var isKey = pragmatic ? property.Name == "PersistenceId" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.Attributes.KeyAttribute");
+            var isVersion = pragmatic ? versioned && property.Name == "RowVersion" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.Attributes.VersionAttribute");
             var field = FieldOf(property, isKey ? "_id" : isVersion ? "_v" : property.Name, out var reason);
             if (field is null)
             {

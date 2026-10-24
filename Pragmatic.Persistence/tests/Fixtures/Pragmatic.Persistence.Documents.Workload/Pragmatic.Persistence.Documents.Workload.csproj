@@ -9,8 +9,13 @@
     <NoWarn>$(NoWarn);CA2007</NoWarn>
   </PropertyGroup>
 
+  <!-- The engine's attributes, which its documents carry. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <Using Include="Pragmatic.Persistence.Documents.Attributes" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The same deterministic data as the Sql workload (Seed): customers and orders become documents, an order's lines inside it. -->
     <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
