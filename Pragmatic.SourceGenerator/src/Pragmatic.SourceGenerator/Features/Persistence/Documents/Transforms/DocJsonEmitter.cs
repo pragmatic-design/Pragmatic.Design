@@ -1,4 +1,4 @@
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     The JSON expressions of a document's partial, for Cosmos DB: a field written under its name (the key as <c>id</c>, a string), read back

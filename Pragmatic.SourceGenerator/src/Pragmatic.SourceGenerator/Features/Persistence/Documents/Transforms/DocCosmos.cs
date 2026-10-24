@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     The context of a Cosmos DB rendering: the parameters (<c>@p0</c>, <c>@p1</c>…) collected as the statements that write them into the

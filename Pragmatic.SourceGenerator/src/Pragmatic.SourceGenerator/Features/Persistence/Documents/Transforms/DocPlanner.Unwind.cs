@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     <c>SelectMany(o => o.Lines)</c>: the elements of an embedded list, one result per element, after the chain's filter and ordering of the

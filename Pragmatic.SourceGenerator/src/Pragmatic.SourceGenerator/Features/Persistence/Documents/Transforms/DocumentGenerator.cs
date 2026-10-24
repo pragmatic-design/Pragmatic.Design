@@ -7,36 +7,42 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pragmatic.Persistence.Documents.Generator.Models;
-using Pragmatic.Persistence.Documents.Generator.Templates;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
-///     The document generator: for each [Document] and [Embedded] partial class of the compilation, its reader and writer
+///     The documents engine's generation: for each [Document] and [Embedded] partial class of the compilation, its reader and writer
 ///     (<see cref="DocTypeEmitter" />); for each call on a <c>DocQuery&lt;T&gt;</c>, an interceptor: an operator stores its argument in a slot,
-///     a terminal runs a plan (<see cref="DocPlanner" />) built from the chain. What it cannot translate is a PRAGD diagnostic at the call site.
+///     a terminal runs a plan (<see cref="DocPlanner" />) built from the chain. What it cannot translate is a PRAG31xx diagnostic at the call site.
 /// </summary>
-[Generator(LanguageNames.CSharp)]
-public sealed partial class DocumentGenerator : IIncrementalGenerator
+internal static class DocumentGenerator
 {
     private const string Query = "global::Pragmatic.Persistence.Documents.DocQuery";
     private const string Execution = "global::Pragmatic.Persistence.Documents.DocExecution";
+    private const string Session = "Pragmatic.Persistence.Documents.DocSession";
 
     /// <summary>Fully qualified with the nullable annotations: an interceptor's parameters repeat the intercepted method's exactly.</summary>
     private static readonly SymbolDisplayFormat Annotated = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public void Initialize(IncrementalGeneratorInitializationContext context)
+    /// <summary>True when the compilation references the documents engine's runtime: what the call sites check before binding.</summary>
+    private static bool UsesDocuments(Compilation compilation) => compilation.GetTypeByMetadataName(Session) is not null;
+
+    /// <summary>The documents engine's generation, registered by <c>PragmaticSourceGenerator</c>.</summary>
+    internal static void Register(IncrementalGeneratorInitializationContext context)
     {
         var documents = context.SyntaxProvider.ForAttributeWithMetadataName(DocModel.DocumentAttribute, static (node, _) => node is ClassDeclarationSyntax, static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
         var embedded = context.SyntaxProvider.ForAttributeWithMetadataName(DocModel.EmbeddedAttribute, static (node, _) => node is ClassDeclarationSyntax, static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
         context.RegisterSourceOutput(documents.Collect().Combine(embedded.Collect()), static (spc, types) => EmitTypes(spc, types.Left.Concat(types.Right)));
 
+        // Every member call of every file reaches the transform: the binding is skipped where the compilation has no documents engine.
         var calls = context.SyntaxProvider.CreateSyntaxProvider(
             static (node, _) => node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax },
-            static (ctx, ct) => DocCall.TryCreate(ctx, ct));
-        // Pragmatic's entities (their shape, families, repositories and specifications) join with the unified generator, not here.
+            static (ctx, ct) => UsesDocuments(ctx.SemanticModel.Compilation) ? DocCall.TryCreate(ctx, ct) : null);
+        // Pragmatic's entities (their shape, families, repositories and specifications) are not served yet: the next part of the port.
         context.RegisterSourceOutput(calls.Where(static c => c is not null).Collect(), static (spc, found) => EmitInterceptors(spc, found!));
     }
 
@@ -46,10 +52,10 @@ public sealed partial class DocumentGenerator : IIncrementalGenerator
         foreach (var type in types.Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default).OrderBy(t => t.ToDisplayString(), StringComparer.Ordinal))
         {
             if (DocModel.IsPragmatic(type))
-                continue; // a Pragmatic entity with a [Document] is read with its shape, which this standalone generator does not emit
+                continue; // a Pragmatic entity with a [Document] is read with its shape, not served yet
             var model = DocModel.Read(type, diagnostics);
-            if (model is not null && DocTypeEmitter.Model(model, type.ToDisplayString().Replace('<', '_').Replace('>', '_') + ".Document.g.cs", diagnostics) is { } typeModel)
-                spc.AddSource(new Templates.DocumentTypeTemplate(typeModel).RenderOutput());
+            if (model is not null && DocTypeEmitter.Model(model, VirtualFolderHints.ForType(type.Name, "Document", type.ContainingNamespace.ToDisplayString()), diagnostics) is { } typeModel)
+                spc.AddSource(new DocumentTypeTemplate(typeModel).RenderOutput());
         }
 
         foreach (var diagnostic in diagnostics)

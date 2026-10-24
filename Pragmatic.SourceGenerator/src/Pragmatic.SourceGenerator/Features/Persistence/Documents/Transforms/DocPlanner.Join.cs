@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     <c>Join(session.Query&lt;TInner&gt;().Where(…), o => o.Key, i => i.Key, (o, i) => …)</c>: the inner chain's conditions (its own slots, read from

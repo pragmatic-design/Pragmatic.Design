@@ -1,6 +1,6 @@
 using Pragmatic.SourceGen;
 
-namespace Pragmatic.Persistence.Documents.Generator.Models;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 
 /// <summary>
 ///     A [Document] or [Embedded] partial class as its generated half implements it: the contract, the fields in declaration order, and for a

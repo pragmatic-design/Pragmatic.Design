@@ -712,7 +712,6 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
-    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Generator/Pragmatic.Persistence.Documents.Generator.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />

@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pragmatic.Persistence.Documents.Generator.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 using Pragmatic.SourceGen;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
-///     The model of a [Document] or [Embedded] partial class's generated half (<see cref="Templates.DocumentTypeTemplate" />), and the BSON
+///     The model of a [Document] or [Embedded] partial class's generated half (<see cref="DocumentTypeTemplate" />), and the BSON
 ///     expressions that read and write a field, which the planner's code uses too.
 /// </summary>
 internal static class DocTypeEmitter

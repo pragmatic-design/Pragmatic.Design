@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>A value in a condition: C# code that computes it from constants and the chain's slots (<c>s</c>), or BSON null.</summary>
 internal sealed class DocValue

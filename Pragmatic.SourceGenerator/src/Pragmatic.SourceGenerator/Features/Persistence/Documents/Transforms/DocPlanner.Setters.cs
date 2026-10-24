@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     The commands' part of a plan: <c>ExecuteDeleteAsync</c> takes the chain's filter only; <c>ExecuteUpdateAsync</c>'s setters

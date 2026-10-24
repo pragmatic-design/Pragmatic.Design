@@ -1157,6 +1157,8 @@ public partial class Invoice
   - Declared exception: `_Infra.Sql.Interceptors.g.cs` (`Features/Persistence/Sql/`) holds the assembly's Sql plans, entity maps
     and interceptors as `file` types. They are reached only through `[InterceptsLocation]` and the registrations in the same file,
     so keeping them `file`-scoped is what stops application code from naming them. The Sql feature's per-type outputs follow the rule.
+  - The same exception, for the same reason: `_Infra.Documents.Interceptors.g.cs` (`Features/Persistence/Documents/`), the documents
+    engine's plans and interceptors. Its per-type outputs (`{Type}.Document.g.cs`) follow the rule.
 - Nested classes referenced from the host (filters, repositories, invokers) must be `public`, not `internal`.
 - Invokers are nested: `PlaceOrder.Invoker`, not `PlaceOrderInvoker`.
 - Filters are nested: `Invoice.SoftDeleteFilter`, not `SoftDeleteFilter_Invoice`.

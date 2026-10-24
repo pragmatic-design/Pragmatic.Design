@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     A string field compared without its case, as Pragmatic's <c>[Filter(IgnoreCase = true)]</c> writes it: <c>e.Text.ToLower()</c> (or

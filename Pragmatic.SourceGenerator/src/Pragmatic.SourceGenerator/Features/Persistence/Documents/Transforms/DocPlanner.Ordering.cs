@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     An ordering composed at runtime (<c>OrderedBy(DocOrdering&lt;T&gt;)</c>, a declared query's or a grid's sorts): kept in a slot, in place of

@@ -1,8 +1,8 @@
 using System.Linq;
-using Pragmatic.Persistence.Documents.Generator.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 using Pragmatic.SourceGen;
 
-namespace Pragmatic.Persistence.Documents.Generator.Templates;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 
 /// <summary>
 ///     The other half of a [Document] or [Embedded] partial class: <c>IDocumentEntity&lt;T&gt;</c> (or <c>IEmbeddedDocument&lt;T&gt;</c>) implemented

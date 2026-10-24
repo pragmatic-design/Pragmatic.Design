@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
-    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents.Generator\Pragmatic.Persistence.Documents.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The same deterministic data as the Sql workload (Seed): customers and orders become documents, an order's lines inside it. -->
     <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
   </ItemGroup>
