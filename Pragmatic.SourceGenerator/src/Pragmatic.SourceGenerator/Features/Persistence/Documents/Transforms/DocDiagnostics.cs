@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>What the document generator reports at the call site or the type, with the remedy.</summary>
 internal static class DocDiagnostics

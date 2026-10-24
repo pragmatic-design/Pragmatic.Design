@@ -1,4 +1,4 @@
-namespace Pragmatic.Persistence.Documents.Generator.Models;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 
 /// <summary>
 ///     One field of a document type as its partial reads and writes it: the expressions the translation produced (a field's BSON and JSON

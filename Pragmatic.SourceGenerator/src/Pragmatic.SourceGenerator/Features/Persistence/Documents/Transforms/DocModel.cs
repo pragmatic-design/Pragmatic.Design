@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>The kinds of value a document field holds, each written and read one way.</summary>
 internal enum DocKind

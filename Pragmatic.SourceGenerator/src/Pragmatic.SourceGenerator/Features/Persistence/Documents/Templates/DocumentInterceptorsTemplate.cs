@@ -1,7 +1,8 @@
-using Pragmatic.Persistence.Documents.Generator.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 
-namespace Pragmatic.Persistence.Documents.Generator.Templates;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 
 /// <summary>
 ///     The document chains translated at compile time: every intercepted call, and each terminal's plan, as file-local members, so that only the
@@ -13,7 +14,7 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
 
     protected override string? SourceInfo => "the document chains translated at compile time";
 
-    public override Artifact RenderOutput() => new("Pragmatic.Persistence.Documents.g.cs", ToSourceText());
+    public override Artifact RenderOutput() => new(VirtualFolderHints.ForAssembly("Documents", "Interceptors"), ToSourceText());
 
     protected override bool Validate() => interceptors.Count > 0;
 

@@ -1,4 +1,4 @@
-namespace Pragmatic.Persistence.Documents.Generator.Models;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 
 /// <summary>
 ///     One intercepted call of a document chain: an operator stores its argument in the chain's slot, a terminal runs its plan. The method's

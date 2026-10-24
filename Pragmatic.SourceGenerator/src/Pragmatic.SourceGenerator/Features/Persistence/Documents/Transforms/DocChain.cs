@@ -4,7 +4,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>One operator of a chain: its name, its call, its lambda and the argument of the two-parameter form.</summary>
 internal sealed class DocStep

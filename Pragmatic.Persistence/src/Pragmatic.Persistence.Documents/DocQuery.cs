@@ -2,7 +2,7 @@ namespace Pragmatic.Persistence.Documents;
 
 /// <summary>
 ///     A query chain on a document collection, translated at compile time: every operator and terminal written on it is intercepted by the
-///     generator (Pragmatic.Persistence.Documents.Generator), which turns the chain into the backend's query (a MongoDB <c>find</c>,
+///     generator (Pragmatic.SourceGenerator), which turns the chain into the backend's query (a MongoDB <c>find</c>,
 ///     <c>count</c> or <c>aggregate</c>). The lambdas are read as source and never run, except a <c>Select</c>'s, which projects each document
 ///     read; a value of the caller goes in the two-parameter form (<c>Where((o, id) =&gt; o.CustomerId == id, id)</c>) and travels in a slot of
 ///     the chain. A call the generator did not translate throws <see cref="NotSupportedException" /> with the reason it reported at build.
@@ -160,5 +160,5 @@ public readonly struct DocQuery<T>
     public ValueTask<long> ExecuteUpdateAsync<TArg>(Action<DocSetters<T>, TArg> set, TArg arg, CancellationToken ct = default) => throw NotTranslated(nameof(ExecuteUpdateAsync));
 
     private static NotSupportedException NotTranslated(string method)
-        => new($"DocQuery.{method} was not translated at compile time: the generator reported why at the call site (PRAGD diagnostics). Is Pragmatic.Persistence.Documents.Generator referenced, and InterceptorsNamespaces set to Pragmatic.Persistence.Documents.Generated?");
+        => new($"DocQuery.{method} was not translated at compile time: the generator reported why at the call site (PRAG31xx diagnostics). Is Pragmatic.SourceGenerator referenced, and InterceptorsNamespaces set to Pragmatic.Persistence.Documents.Generated?");
 }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>The chain rendered for Cosmos DB: the query's text and parameters, the partition key's value, and a point read when the chain names one document.</summary>
 internal sealed partial class DocPlanner

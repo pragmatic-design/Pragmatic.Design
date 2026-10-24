@@ -23,7 +23,7 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Cosmos\Pragmatic.Persistence.Documents.Cosmos.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Generator\Pragmatic.Persistence.Documents.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Documents.Workload\Pragmatic.Persistence.Documents.Workload.csproj" />
   </ItemGroup>
 

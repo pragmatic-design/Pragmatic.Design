@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pragmatic.Persistence.Documents.Generator;
+namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     A grouped chain: <c>GroupBy(o => o.Field)</c> then <c>Select(g => new { g.Key, N = g.Count(), T = g.Sum(o => o.Total) })</c> into a

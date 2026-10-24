@@ -249,6 +249,10 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
         // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
         Features.Persistence.Sql.SqlFeature.Register(context, shapeSources);
+
+        // The documents engine's: the [Document] types' readers and writers and the chains on DocQuery<T>, guarded the same way (the
+        // engine's runtime referenced).
+        Features.Persistence.Documents.DocumentsFeature.Register(context);
     }
 
     private static IncrementalValueProvider<EquatableArray<Features.Composition.Models.MetadataEntry>> Combine(

@@ -52,7 +52,6 @@
     <Project Path="src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Documents.Generator/Pragmatic.Persistence.Documents.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
