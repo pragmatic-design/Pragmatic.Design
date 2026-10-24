@@ -63,6 +63,22 @@ internal sealed record PersistedStoresModel
         => databaseTypeName is not null
            && Databases.AsImmutableArray().Contains(StripGlobal(databaseTypeName));
 
+    /// <summary>
+    ///     Databases with a <c>{Db}Schema</c>, by class name: the ones the host migrates with Pragmatic.Migrations. A superset of
+    ///     <see cref="Databases" /> wherever another engine than EF Core persists a boundary, since its database has a schema and no EF Core
+    ///     migration context.
+    /// </summary>
+    public EquatableArray<string> SchemaDatabases { get; init; } = EquatableArray<string>.Empty;
+
+    public bool HasSchema(string? databaseTypeName)
+    {
+        if (databaseTypeName is null)
+            return false;
+        var name = StripGlobal(databaseTypeName);
+        var simple = name.Substring(name.LastIndexOf('.') + 1);
+        return SchemaDatabases.AsImmutableArray().Contains(simple);
+    }
+
     public static PersistedStoresModel From(
         ImmutableArray<EntityMetadataModel> entities,
         DatabaseTopologyInfo topology,

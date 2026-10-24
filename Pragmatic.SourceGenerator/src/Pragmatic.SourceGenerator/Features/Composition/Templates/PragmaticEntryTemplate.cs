@@ -349,7 +349,9 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
             return;
         }
 
-        AddUsing("Microsoft.EntityFrameworkCore");
+        // The EF Core fallback's DbContextOptionsBuilder: a host whose databases another engine persists may not reference EF Core.
+        if (databaseGroups.Any(g => g.First().MigrationDbContextFqn is not null))
+            AddUsing("Microsoft.EntityFrameworkCore");
 
         RenderDeclaredConnectionStringChecks(databaseGroups);
 
@@ -365,7 +367,7 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
     }
 
     /// <summary>
-    ///     The databases with an entity behind them: the only ones with a schema and a migration context.
+    ///     The databases with an entity behind them: the ones with a schema (any engine's) or an EF Core migration context.
     /// </summary>
     /// <remarks>
     ///     The block below is rendered for these only. Rendered with none, it would open its branches,
@@ -375,7 +377,7 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
     /// </remarks>
     private static List<IGrouping<string, HostIncludeModel>> MigratableGroups(
         List<IGrouping<string, HostIncludeModel>> databaseGroups)
-        => databaseGroups.Where(g => g.First().MigrationDbContextFqn is not null).ToList();
+        => databaseGroups.Where(g => g.First().HasSchema || g.First().MigrationDbContextFqn is not null).ToList();
 
     /// <summary>
     ///     Checks every connection string a database declares before the first line that uses one.
@@ -550,7 +552,7 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
                 if (configKey is null) continue;
 
                 // No entity behind the database, so no {Db}Schema to migrate to.
-                if (representative.MigrationDbContextFqn is null) continue;
+                if (!representative.HasSchema) continue;
 
                 Comment($"Migrate: {dbSimpleName}");
                 AppendLine($"progressStream?.Report(new global::Pragmatic.Maintenance.MigrationProgressEvent(\"migration\", \"Migrating {dbSimpleName}...\", DatabaseName: \"{dbSimpleName}\"));");

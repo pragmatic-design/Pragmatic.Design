@@ -467,6 +467,15 @@
           "Pragmatic.Result.EFCore": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.expressions": {
+        "type": "Project"
+      },
+      "pragmatic.persistence.sql.core": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
+        }
+      },
       "pragmatic.privacy": {
         "type": "Project",
         "dependencies": {

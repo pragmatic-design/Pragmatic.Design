@@ -412,9 +412,9 @@ internal sealed partial class PragmaticHostTemplate
 
         Comment("MigrateCommand handler — no-op-with-log unless a host migration coordinator is present");
         AppendLine("services.AddSingleton<global::Pragmatic.ControlPlane.IHostCommandHandler<global::Pragmatic.ControlPlane.MigrateCommand>, global::Pragmatic.Composition.ControlPlane.MigrateCommandHandler>();");
-        // Guarded on the same condition GenerateMigrationCoordinator emits on — a database with an
-        // entity behind it — so registering the type never names a class that was not produced.
-        if (f.HasMigrations && _model.HostIncludes.Any(i => i.MigrationDbContextFqn is not null))
+        // Guarded on the same condition GenerateMigrationCoordinator emits on — a database with a
+        // schema behind it — so registering the type never names a class that was not produced.
+        if (f.HasMigrations && _model.HostIncludes.Any(i => i.HasSchema))
         {
             Comment("On-demand migration coordinator (SG-generated) — makes MigrateCommand actually migrate");
             AppendLine($"services.AddSingleton<global::Pragmatic.ControlPlane.IHostMigrationCoordinator>(sp => new global::{_model.RootNamespace}.PragmaticMigrationCoordinator(sp, global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Microsoft.Extensions.Configuration.IConfiguration>(sp)));");

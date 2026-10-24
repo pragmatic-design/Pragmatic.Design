@@ -220,10 +220,21 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             .Select(static (pair, _) => new EquatableArray<Features.Composition.Models.ServiceModel>(
                 pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())));
 
+        // The Sql engine's translation of query chains, guarded by its own symbol lookup (the engine's runtime referenced). Its inputs
+        // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
+        // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
+        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, shapeSources, features);
+
+        // Each database's schema once, with the tables of every engine that persists a boundary on it; the host migrates each
+        // database that has one, so the names travel with the persisted stores.
+        var schemaDatabases = Features.Persistence.SchemaFeature.Register(context, efCoreSchemas, sqlSchemas);
+        var storesWithSchemas = persistedStores.Combine(schemaDatabases)
+            .Select(static (pair, _) => pair.Left with { SchemaDatabases = pair.Right });
+
         // The jobs go on the other channel: JobsFeature registers each of them itself, and what was
         // missing was anyone checking what they take — a missing registration surfaced on a schedule,
         // in a background worker, as a log line.
-        CompositionFeature.Register(context, features, persistedStores,
+        CompositionFeature.Register(context, features, storesWithSchemas,
             generatedEventHandlers: cacheInvalidationHandlers,
             localRegistrations: localRegistrations,
             localDomainModules: localDomainModules,
@@ -244,14 +255,6 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         Features.Glossary.ArchitectureFeature.Register(context);
         Features.Glossary.AsyncApiFeature.Register(context);
         Features.Glossary.UseCaseCatalogFeature.Register(context);
-
-        // The Sql engine's translation of query chains, guarded by its own symbol lookup (the engine's runtime referenced). Its inputs
-        // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
-        // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
-        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, shapeSources, features);
-
-        // Each database's schema once, with the tables of every engine that persists a boundary on it.
-        Features.Persistence.SchemaFeature.Register(context, efCoreSchemas, sqlSchemas);
 
         // The documents engine's: the [Document] types' readers and writers and the chains on DocQuery<T>, guarded the same way (the
         // engine's runtime referenced), with the same shape for Pragmatic's entities.

@@ -82,4 +82,10 @@ internal sealed record HostIncludeModel
     ///     context nor the database's schema, and every consumer skips the database on it.
     /// </summary>
     public string? MigrationDbContextFqn { get; init; }
+
+    /// <summary>
+    ///     Whether the database has a <c>{Db}Schema</c>: what Pragmatic.Migrations' runner migrates it to. True for a database of the Sql
+    ///     engine as for one of EF Core, where <see cref="MigrationDbContextFqn" /> is only EF Core's, and only its fallback reads it.
+    /// </summary>
+    public bool HasSchema { get; init; }
 }
