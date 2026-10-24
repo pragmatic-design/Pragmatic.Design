@@ -1,7 +1,6 @@
 using Pragmatic.Authorization;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Documents;
-using Pragmatic.Persistence.Documents.Pragmatic;
 using Pragmatic.Persistence.Query.Filters;
 using PragmaticDocumentSamples.Callers;
 using PragmaticDocumentSamples.Entities;

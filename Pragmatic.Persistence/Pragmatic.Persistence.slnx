@@ -50,10 +50,10 @@
     <Project Path="src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
     <Project Path="src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents.Core/Pragmatic.Persistence.Documents.Core.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
     <Project Path="src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
-    <Project Path="src/Pragmatic.Persistence.Documents.Pragmatic/Pragmatic.Persistence.Documents.Pragmatic.csproj" />
+    <Project Path="src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />
@@ -63,8 +63,8 @@
     <Project Path="tests/Pragmatic.Persistence.Sql.Core.Tests/Pragmatic.Persistence.Sql.Core.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Samples.Tests/Pragmatic.Persistence.Documents.Samples.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Documents.Core.Tests/Pragmatic.Persistence.Documents.Core.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
-    <Project Path="tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Boundaries.Tests/Pragmatic.Persistence.Boundaries.Tests.csproj" />
   </Folder>
   <!-- The engine suites' fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,

@@ -42,6 +42,6 @@ internal static class DocTrackingEmitter
     /// <summary>The field's value as the snapshot keeps it.</summary>
     private static string Value(DocField field, string typeName)
         => field.Kind is DocKind.Embedded or DocKind.List
-            ? $"{Runtime}.DocTracking.Bytes<{typeName}>(e, static (w, x) => {DocTypeEmitter.WriteField(field, "x." + field.Property.Name)})"
+            ? $"{Runtime}.Writing.DocTracking.Bytes<{typeName}>(e, static (w, x) => {DocTypeEmitter.WriteField(field, "x." + field.Property.Name)})"
             : $"(object?)e.{field.Property.Name}";
 }

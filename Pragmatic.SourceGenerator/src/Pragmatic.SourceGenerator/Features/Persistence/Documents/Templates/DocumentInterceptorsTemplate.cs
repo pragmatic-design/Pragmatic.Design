@@ -47,7 +47,7 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
     private void RenderSpecification(DocSpecificationModel specification)
     {
         var (index, type) = (specification.Index, specification.EntityType);
-        AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.DocCompiledPredicate Specification_{index} = new(static (w, s) =>");
+        AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.Planning.DocCompiledPredicate Specification_{index} = new(static (w, s) =>");
         AppendLine("            {");
         foreach (var line in TextLines.Of(specification.Mongo))
             AppendLine(line);
@@ -55,7 +55,7 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
         AppendLine();
         AppendLine($"        {specification.Attribute}");
         AppendLine($"        internal static global::Pragmatic.Specification.Specification<{type}> SpecWhere_{index}(global::System.Linq.Expressions.Expression<global::System.Func<{type}, bool>> predicate)");
-        AppendLine($"            => new global::Pragmatic.Persistence.Documents.Pragmatic.DocCompiledSpecification<{type}>(Specification_{index}, new object?[] {{ {specification.Captures} }}, predicate);");
+        AppendLine($"            => new global::Pragmatic.Persistence.Documents.DocCompiledSpecification<{type}>(Specification_{index}, new object?[] {{ {specification.Captures} }}, predicate);");
         AppendLine();
     }
 
@@ -64,9 +64,9 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
         var index = interceptor.Index;
         if (interceptor.PlanInitializer is { } plan)
         {
-            AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.DocPlan<{interceptor.PlanEntity}> Plan_{index} = {plan};");
+            AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.Planning.DocPlan<{interceptor.PlanEntity}> Plan_{index} = {plan};");
             if (interceptor.JoinInitializer is { } join)
-                AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.DocJoin<{interceptor.JoinInner}> Join_{index} = {join};");
+                AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.Planning.DocJoin<{interceptor.JoinInner}> Join_{index} = {join};");
             AppendLine();
         }
 

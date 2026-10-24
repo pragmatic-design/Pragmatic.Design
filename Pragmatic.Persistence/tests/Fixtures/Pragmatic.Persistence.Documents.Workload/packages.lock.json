@@ -14,7 +14,7 @@
         "resolved": "6.0.0",
         "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
       },
-      "pragmatic.persistence.documents": {
+      "pragmatic.persistence.documents.core": {
         "type": "Project",
         "dependencies": {
           "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",

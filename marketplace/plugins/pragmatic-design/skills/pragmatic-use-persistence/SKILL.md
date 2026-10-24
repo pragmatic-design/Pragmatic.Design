@@ -33,9 +33,9 @@ For HTTP APIs exposed from these mutations/queries: see `pragmatic-use-actions-e
 
 Identifiers (`Guid7`, `OpaqueId`, `ShortGuid`, `Slug`) are in `Pragmatic.Persistence.Identifiers` (same package `Pragmatic.Persistence`).
 
-EF Core is the default engine. A boundary can be persisted by the Sql engine instead
-(`Pragmatic.Persistence.Sql`, SQL written at compile time) with `[PersistenceEngine]`: packages, the
-choice and the engine's own attributes are in **[references/sql-engine.md](references/sql-engine.md)**.
+EF Core is the default engine; `[PersistenceEngine]` on a boundary picks another: the Sql engine
+([references/sql-engine.md](references/sql-engine.md)) or the documents engine on MongoDB and Cosmos DB
+([references/documents-engine.md](references/documents-engine.md)).
 
 ## API surface
 

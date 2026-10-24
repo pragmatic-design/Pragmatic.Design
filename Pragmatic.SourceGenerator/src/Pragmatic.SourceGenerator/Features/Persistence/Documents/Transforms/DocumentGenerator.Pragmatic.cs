@@ -83,14 +83,14 @@ internal static partial class DocumentGenerator
                 var own = queries.Where(q => SymbolEqualityComparer.Default.Equals(q.Query.Entity, entity)).ToList();
                 if (DocReadRepository.For(entity, own) is { } repository)
                     written.Add(Add(new DocReadRepositoryTemplate(repository).RenderOutput())); // its chains are bound and intercepted with the application's
-                if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.DocHierarchy.KeysAsync") is { } hierarchy)
+                if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Execution.DocHierarchy.KeysAsync") is { } hierarchy)
                     written.Add(AddText(hierarchy)); // [GenerateHierarchy]: its chains too
             }
         }
 
         var shadow = compilation.AddSyntaxTrees(trees);
         var scopeRules = new List<string>();
-        var bridged = shadow.GetTypeByMetadataName("Pragmatic.Persistence.Documents.Pragmatic.CompiledScopeRules") is not null;
+        var bridged = shadow.GetTypeByMetadataName("Pragmatic.Persistence.Documents.CompiledScopeRules") is not null;
         foreach (var entity in entities)
         {
             if (shadow.GetTypeByMetadataName(entity.ToDisplayString()) is not { } shapedEntity || DocModel.Read(shapedEntity, diagnostics) is not { } model)

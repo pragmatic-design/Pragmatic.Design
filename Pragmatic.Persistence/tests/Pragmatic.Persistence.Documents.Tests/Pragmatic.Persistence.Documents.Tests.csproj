@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Pragmatic's declarations ([Entity], [Relation.*], the traits) on the documents engine, end to end, on MongoDB and on Cosmos DB: the
+       shape Persistence declares, the documents' readers and writers, the chains bound on the shape, the filter families, the unit of work. -->
   <PropertyGroup>
-    <!-- Starts Testcontainers (MongoDB, a MongoDB replica set, the Cosmos DB emulator): scripts/check.mjs runs these one at a time
-         (see docs/TESTING.md). -->
+    <!-- Starts Testcontainers (a MongoDB replica set, the Cosmos DB emulator): scripts/check.mjs runs these one at a time. -->
     <RequiresDocker>true</RequiresDocker>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>Pragmatic.Persistence.Documents.Tests</RootNamespace>
-    <NoWarn>$(NoWarn);CA1707;CA2007;CA1861;xUnit1004</NoWarn>
-    <!-- The document chains' interceptors live in this namespace; the generated code is kept under obj/ to be read. -->
+    <!-- Not the folder's namespace, on purpose, as the Sql bridge suite: under Pragmatic.Persistence.Documents a simple name resolves to the
+         documents engine's own types (its attributes) before the usings bring in Pragmatic's. -->
+    <RootNamespace>PragmaticDocuments.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
@@ -15,16 +17,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- MongoDB and the Cosmos DB emulator as generic containers. -->
+    <!-- A MongoDB replica set and the Cosmos DB emulator as generic containers. -->
     <PackageReference Include="Testcontainers" />
   </ItemGroup>
 
+  <!-- The engine's folders the suite reads. -->
   <ItemGroup>
+    <Using Include="Pragmatic.Persistence.Documents.Filters" />
+    <Using Include="Pragmatic.Persistence.Documents.Schema" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Cosmos\Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Documents.Workload\Pragmatic.Persistence.Documents.Workload.csproj" />
+    <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
+    <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
   </ItemGroup>
 
 </Project>

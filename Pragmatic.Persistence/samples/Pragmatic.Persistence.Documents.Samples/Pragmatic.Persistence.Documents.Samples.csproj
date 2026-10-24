@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- Not the folder's namespace, on purpose, as the documents bridge suite: under Pragmatic.Persistence.Documents, `Pragmatic` names the
-         bridge's namespace (Pragmatic.Persistence.Documents.Pragmatic) before the usings bring in Pragmatic's own. -->
+         bridge's namespace (Pragmatic.Persistence.Documents) before the usings bring in Pragmatic's own. -->
     <RootNamespace>PragmaticDocumentSamples</RootNamespace>
     <!-- The samples run as they are (dotnet run) and publish Native AOT (dotnet publish -c Release -r win-x64
          -p:PragmaticAotSmokeRestore=true), as the Sql engine's samples: PublishAot only while publishing (see there why). -->
@@ -16,8 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
-    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Pragmatic\Pragmatic.Persistence.Documents.Pragmatic.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\tests\Fixtures\Pragmatic.Persistence.Documents.Workload\Pragmatic.Persistence.Documents.Workload.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

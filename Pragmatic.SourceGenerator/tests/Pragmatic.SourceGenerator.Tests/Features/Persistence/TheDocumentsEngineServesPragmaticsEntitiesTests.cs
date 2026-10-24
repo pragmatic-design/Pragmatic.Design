@@ -13,12 +13,12 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 /// <remarks>
 ///     The bridges are stubs of the types the generator recognises them by: none is referenced by the repository's generator tests. So these
 ///     tests read the hints, the diagnostics and the generated text, not a compiled output; the documents bridge suite
-///     (<c>Pragmatic.Persistence.Documents.Pragmatic.Tests</c>) compiles and runs the same generation against the real bridge.
+///     (<c>Pragmatic.Persistence.Documents.Tests</c>) compiles and runs the same generation against the real bridge.
 /// </remarks>
 public class TheDocumentsEngineServesPragmaticsEntitiesTests
 {
     private const string DocumentsBridge = """
-        namespace Pragmatic.Persistence.Documents.Pragmatic
+        namespace Pragmatic.Persistence.Documents
         {
             public static class PragmaticDocFilters { }
             public sealed class DocCompiledSpecification<T> { }
@@ -27,7 +27,7 @@ public class TheDocumentsEngineServesPragmaticsEntitiesTests
             // What the generated repository's chains call: without it they do not bind, and the generator reports them as not followed.
             public static class DocSpecifications
             {
-                public static global::Pragmatic.Persistence.Documents.DocPredicate<T> ToPredicate<T>(global::Pragmatic.Specification.ISpecification<T> specification) => throw null!;
+                public static global::Pragmatic.Persistence.Documents.Planning.DocPredicate<T> ToPredicate<T>(global::Pragmatic.Specification.ISpecification<T> specification) => throw null!;
             }
         }
         """;
@@ -155,7 +155,7 @@ public class TheDocumentsEngineServesPragmaticsEntitiesTests
             {
                 public static class Reads
                 {
-                    public static System.Threading.Tasks.ValueTask<System.Collections.Generic.List<Room>> Twice(Pragmatic.Persistence.Documents.DocSession s, Pragmatic.Persistence.Documents.DocOrdering<Room> o)
+                    public static System.Threading.Tasks.ValueTask<System.Collections.Generic.List<Room>> Twice(Pragmatic.Persistence.Documents.DocSession s, Pragmatic.Persistence.Documents.Planning.DocOrdering<Room> o)
                         => s.Query<Room>().OrderedBy(o).OrderBy(r => r.Beds).ToListAsync();
 
                     public static System.Threading.Tasks.ValueTask<long> Lowered(Pragmatic.Persistence.Documents.DocSession s)

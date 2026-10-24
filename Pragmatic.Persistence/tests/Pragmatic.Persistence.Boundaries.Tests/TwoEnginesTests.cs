@@ -50,7 +50,7 @@ public sealed class TwoEnginesTests(MongoServer mongo) : IClassFixture<MongoServ
             var review = Assert.Single(reviews);
             Assert.Equal(("Bright", 5, "anna"), (review.Text, review.Stars, review.OwnerId)); // and the documents engine's
             Assert.IsType<Pragmatic.Persistence.Sql.SqlUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)));
-            Assert.IsType<Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(ReviewsBoundary)));
+            Assert.IsType<Pragmatic.Persistence.Documents.DocUnitOfWork>(scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(ReviewsBoundary)));
         }
 
         // Another caller: the owner family of each boundary, on its engine, hides anna's rows.

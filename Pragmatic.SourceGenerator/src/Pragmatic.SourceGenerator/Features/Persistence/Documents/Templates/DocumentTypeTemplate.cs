@@ -104,13 +104,13 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
 
         // A Pragmatic entity's filter families, applied to every read of it.
         AppendLine();
-        AppendLine($"    private static readonly {Runtime}.DocFamily[] __documentFamilies =");
+        AppendLine($"    private static readonly {Runtime}.Filters.DocFamily[] __documentFamilies =");
         AppendLine("    [");
         foreach (var family in model.Families)
             AppendLine("        " + family + ",");
         AppendLine("    ];");
         AppendLine();
-        AppendLine($"    static {Runtime}.DocFamily[] {contract}.Families => __documentFamilies;");
+        AppendLine($"    static {Runtime}.Filters.DocFamily[] {contract}.Families => __documentFamilies;");
     }
 
     private void RenderJson(string name, string contract)

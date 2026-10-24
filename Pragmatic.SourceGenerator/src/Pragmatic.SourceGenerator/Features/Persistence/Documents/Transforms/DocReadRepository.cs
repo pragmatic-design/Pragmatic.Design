@@ -18,8 +18,8 @@ internal static class DocReadRepository
     /// <summary>True when the compilation has what the repositories are written against: Pragmatic's contracts and the documents engine's bridge.</summary>
     public static bool Applies(Compilation compilation)
         => compilation.GetTypeByMetadataName("Pragmatic.Persistence.Repository.IReadRepository`1") is not null
-           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.Pragmatic.DocCompiledSpecification`1") is not null
-           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork") is not null;
+           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.DocCompiledSpecification`1") is not null
+           && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.DocUnitOfWork") is not null;
 
     /// <summary>The repositories nested in <paramref name="entity" />'s partial class; null for an entity that is not an <c>IEntity</c>.</summary>
     public static DocReadRepositoryModel? For(INamedTypeSymbol entity, IReadOnlyList<(PragmaticQuery Query, string? Projection)> queries)

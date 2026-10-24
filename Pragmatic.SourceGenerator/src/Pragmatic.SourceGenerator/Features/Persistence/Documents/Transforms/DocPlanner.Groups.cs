@@ -124,7 +124,7 @@ internal sealed partial class DocPlanner
     /// <summary>A result field read as the member's type (an enum through its Int32).</summary>
     private static string Read(ITypeSymbol type, string field)
     {
-        const string values = "global::Pragmatic.Persistence.Documents.DocValues";
+        const string values = "global::Pragmatic.Persistence.Documents.Conversion.DocValues";
         var nullable = type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapper ? wrapper.TypeArguments[0] : null;
         var underlying = nullable ?? type;
         if (underlying.TypeKind == TypeKind.Enum)

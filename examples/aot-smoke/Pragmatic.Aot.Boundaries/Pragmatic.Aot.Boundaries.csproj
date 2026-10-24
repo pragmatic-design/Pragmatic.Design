@@ -31,8 +31,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
-    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Pragmatic\Pragmatic.Persistence.Documents.Pragmatic.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

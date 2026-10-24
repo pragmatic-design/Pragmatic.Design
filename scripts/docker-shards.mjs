@@ -38,7 +38,7 @@ export const DOCKER_SHARDS = [
     'Pragmatic.Persistence.Sql.Tests',
     // MongoDB, a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this shard was the
     // lightest (14m 36s against 18m 13s and 16m 30s, the pull request of the engines' shared assembly, 2026-10-24).
-    'Pragmatic.Persistence.Documents.Tests',
+    'Pragmatic.Persistence.Documents.Core.Tests',
     // The documents samples on a standalone MongoDB and the Cosmos DB emulator: 1m 09s on a developer machine (2026-10-24), not yet measured on
     // the runner. Here beside the documents suite, whose servers it starts the same way.
     'Pragmatic.Persistence.Documents.Samples.Tests',
@@ -47,7 +47,7 @@ export const DOCKER_SHARDS = [
   [
     // The documents engine's bridge on a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this
     // shard was the lightest after shard 2 took the documents suite (16m 30s against 18m 13s, the pull request of the engines' shared assembly).
-    'Pragmatic.Persistence.Documents.Pragmatic.Tests',
+    'Pragmatic.Persistence.Documents.Tests',
     'Showcase.IntegrationTests', //            3m 00s
     'Pragmatic.Mapping.EFCore.Tests', //       1m 08s
     'Pragmatic.Migrations.Tests', //             40s
