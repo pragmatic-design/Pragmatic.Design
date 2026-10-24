@@ -1,6 +1,7 @@
 using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
+using Pragmatic.SourceGenerator.Features.Persistence.Sql.Templates;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 
@@ -8,7 +9,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
 ///     The document chains translated at compile time: every intercepted call, and each terminal's plan, as file-local members, so that only the
 ///     interceptors reach the plans.
 /// </summary>
-internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterceptorModel> interceptors) : CSharpTemplate
+internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterceptorModel> interceptors, EquatableArray<DocSpecificationModel> specifications = default) : CSharpTemplate
 {
     protected override string? GeneratorName => "Pragmatic.Persistence.Documents";
 
@@ -16,7 +17,7 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
 
     public override Artifact RenderOutput() => new(VirtualFolderHints.ForAssembly("Documents", "Interceptors"), ToSourceText());
 
-    protected override bool Validate() => interceptors.Count > 0;
+    protected override bool Validate() => interceptors.Count > 0 || specifications.Count > 0;
 
     public override void RenderFile()
     {
@@ -36,8 +37,26 @@ internal sealed class DocumentInterceptorsTemplate(EquatableArray<DocumentInterc
         AppendLine("    {");
         foreach (var interceptor in interceptors)
             RenderInterceptor(interceptor);
+        foreach (var specification in specifications)
+            RenderSpecification(specification);
         AppendLine("    }");
         AppendLine("}");
+    }
+
+    /// <summary>A compiled specification's condition, and the interceptor of its call.</summary>
+    private void RenderSpecification(DocSpecificationModel specification)
+    {
+        var (index, type) = (specification.Index, specification.EntityType);
+        AppendLine($"        private static readonly global::Pragmatic.Persistence.Documents.DocCompiledPredicate Specification_{index} = new(static (w, s) =>");
+        AppendLine("            {");
+        foreach (var line in TextLines.Of(specification.Mongo))
+            AppendLine(line);
+        AppendLine($"            }}, {specification.CosmosLiteral}, {specification.CosmosWrites}, {specification.CosmosWriter});");
+        AppendLine();
+        AppendLine($"        {specification.Attribute}");
+        AppendLine($"        internal static global::Pragmatic.Specification.Specification<{type}> SpecWhere_{index}(global::System.Linq.Expressions.Expression<global::System.Func<{type}, bool>> predicate)");
+        AppendLine($"            => new global::Pragmatic.Persistence.Documents.Pragmatic.DocCompiledSpecification<{type}>(Specification_{index}, new object?[] {{ {specification.Captures} }}, predicate);");
+        AppendLine();
     }
 
     private void RenderInterceptor(DocumentInterceptorModel interceptor)

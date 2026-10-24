@@ -713,6 +713,7 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents/Pragmatic.Persistence.Documents.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Pragmatic/Pragmatic.Persistence.Documents.Pragmatic.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
@@ -934,6 +935,7 @@
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Tests/Pragmatic.Persistence.Sql.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
     <!-- The engine suites' fixtures; Pragmatic.Persistence.Sql.DiagnosticsFixture is left out on purpose (it must not compile). -->
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />

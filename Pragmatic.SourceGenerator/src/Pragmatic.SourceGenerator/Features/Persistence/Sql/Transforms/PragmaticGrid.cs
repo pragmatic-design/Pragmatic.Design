@@ -139,12 +139,13 @@ internal sealed partial class PragmaticGrid
 
     /// <summary>
     ///     The adapter's half an engine declares (hint name, text): the specification and its parsing (engine-neutral, linked by the documents
-    ///     generator), the page read (<paramref name="load" />) and the sort's ordering (<paramref name="ordering" />) the engine's own.
+    ///     generator), the page read (<paramref name="load" />) and the sort's ordering (<paramref name="ordering" />) the engine's own;
+    ///     <paramref name="artifact" /> names the file.
     /// </summary>
-    internal (string Hint, string Source) SourceText(string package, string engine, GridLoadModel load, GridOrderingModel ordering)
+    internal (string Hint, string Source) SourceText(string package, string engine, string artifact, GridLoadModel load, GridOrderingModel ordering)
     {
         var model = new GridAdapterModel(
-            VirtualFolderHints.ForType(Type.Name, "SqlGrid", Type.ContainingNamespace.ToDisplayString()),
+            VirtualFolderHints.ForType(Type.Name, artifact, Type.ContainingNamespace.ToDisplayString()),
             package,
             engine,
             Type.ContainingNamespace.IsGlobalNamespace ? null : Type.ContainingNamespace.ToDisplayString(),

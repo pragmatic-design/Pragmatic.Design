@@ -165,12 +165,12 @@ internal sealed partial class PragmaticQuery
 
     /// <summary>
     ///     The query's shape (hint name, text): its interface, the refused Apply, the filters as a specification, then the engine's ordering
-    ///     (<paramref name="sqlOrdering" /> on the Sql engine), written only for a query the engine compiles.
+    ///     (<paramref name="ordering" />), written only for a query the engine compiles. <paramref name="artifact" /> names the file.
     /// </summary>
-    internal (string Hint, string Source) ShapeText(string package, string engine, SqlOrderingModel? sqlOrdering)
+    internal (string Hint, string Source) ShapeText(string package, string engine, string artifact, QueryOrderingModel? ordering)
     {
         var model = new QueryShapeModel(
-            VirtualFolderHints.ForType(Type.Name, "SqlQueryShape", Type.ContainingNamespace.ToDisplayString()),
+            VirtualFolderHints.ForType(Type.Name, artifact, Type.ContainingNamespace.ToDisplayString()),
             package,
             engine,
             Type.ContainingNamespace.IsGlobalNamespace ? null : Type.ContainingNamespace.ToDisplayString(),
@@ -180,7 +180,7 @@ internal sealed partial class PragmaticQuery
             ResultName,
             Unsupported is null,
             _conditions.ToEquatableArray(),
-            sqlOrdering);
+            ordering);
         return (model.Hint, new QueryShapeTemplate(model).ToSourceText().ToString());
     }
 

@@ -686,6 +686,10 @@ translated subset does not cover is a compile-time error with its remedy, never 
 | `PRAG3104` | Error | A property has a type that is not a document field; the message says which types are. |
 | `PRAG3105` | Error | A chain does not start at `session.Query<T>()`: one handed over by a method or a field cannot be followed back, and throws at run time. Write the chain where it starts. |
 | `PRAG3106` | Info | On Cosmos DB the chain runs in one partition only, and it does not name the partition key in an equality, so it throws there. Add the equality, or keep the chain to MongoDB. |
+| `PRAG3107` | Error | A Pragmatic entity has more than 64 document fields besides its key and version: a unit of work tracks one bit per field. Move some into an embedded document. |
+| `PRAG3108` | Warning | A declared query is not compiled for the documents engine (its projection does not map, for one); the message says why. `IReadRepository.RunAsync` refuses it on the documents engine; EF Core runs it as before. |
+| `PRAG3109` | Warning | A grid adapter is compiled for the documents engine without a part of its declaration, which the message names. EF Core runs it as before. |
+| `PRAG3110` | Warning | A data scope rule of a Pragmatic entity is not compiled for the documents engine; the message says why. Registered and Computed or Hybrid, it is refused at read; EF Core runs it as before. |
 | `PRAG3199` | Hidden | A call site translated to a document query, with the query: what a census build prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`

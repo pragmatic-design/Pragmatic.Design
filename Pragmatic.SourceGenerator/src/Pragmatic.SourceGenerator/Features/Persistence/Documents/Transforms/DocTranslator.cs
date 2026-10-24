@@ -154,6 +154,14 @@ internal sealed partial class DocTranslator
             return condition is null ? null : new DocCondition.ElemMatch(arrayPath, condition);
         }
 
+        // A scalar field's Equals with one value (e.PersistenceId.Equals(id), as Pragmatic's generated specifications write a read by key): ==.
+        if (name == "Equals" && !method.IsStatic && arguments.Count == 1 && Path(access.Expression, out var equalsField) is { } equalsPath
+            && equalsField is not null && equalsField.Kind is not (DocKind.Embedded or DocKind.List))
+        {
+            var value = Value(arguments[0].Expression, equalsField);
+            return value is null ? null : new DocCondition.Compare(equalsPath, "$eq", value);
+        }
+
         // A list of values' Contains with a field as the argument: $in.
         if (name == "Contains")
         {
@@ -164,7 +172,7 @@ internal sealed partial class DocTranslator
             return values is null ? null : new DocCondition.In(itemPath, values, itemField.Kind == DocKind.Enum);
         }
 
-        return Fail(invocation, $"{method.ContainingType.Name}.{name} is not translated: the calls are a string field's Contains, StartsWith, EndsWith, a list's Contains, an array's Any");
+        return Fail(invocation, $"{method.ContainingType.Name}.{name} is not translated: the calls are a string field's Contains, StartsWith, EndsWith, a field's Equals, a list's Contains, an array's Any");
     }
 
     /// <summary>A member path on the lambda's parameter (<c>o.Address.City</c>): the stored path (<c>Address.City</c>, the key as <c>_id</c>), and the last field.</summary>

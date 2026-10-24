@@ -39,20 +39,19 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
             AppendLine("        return spec;");
             AppendLine("    }");
             AppendLine();
-            if (model.SqlOrdering is not null)
-                RenderSqlOrdering(model.SqlOrdering);
+            if (model.Ordering is not null)
+                RenderOrdering(model.Ordering);
         }
 
         AppendLine("}");
     }
 
-    /// <summary>The sorts as an ordering of compiled keys, the entity's key last so the order is total.</summary>
-    private void RenderSqlOrdering(SqlOrderingModel ordering)
+    /// <summary>The sorts as an ordering of the engine's keys, the entity's key last so the order is total.</summary>
+    private void RenderOrdering(QueryOrderingModel ordering)
     {
-        var entity = model.EntityType;
-        AppendLine($"    internal global::Pragmatic.Persistence.Sql.SqlOrdering<{entity}> ToSqlOrdering()");
+        AppendLine($"    internal {ordering.Ordering} {ordering.Method}()");
         AppendLine("    {");
-        AppendLine($"        var ordering = global::Pragmatic.Persistence.Sql.SqlOrdering<{entity}>.By(__OrderBy_PersistenceId);");
+        AppendLine($"        var ordering = {ordering.Ordering}.By(__OrderBy_PersistenceId);");
         foreach (var sort in ordering.Sorts)
         {
             var fallback = sort.Direction < 0 ? "null" : $"(global::Pragmatic.Persistence.Query.SortDirection)({sort.Direction})";
@@ -63,6 +62,6 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
         AppendLine("        return ordering;");
         AppendLine("    }");
         foreach (var key in ordering.Keys)
-            AppendLine($"    private static readonly global::Pragmatic.Persistence.Sql.SqlOrderKey __OrderBy_{key.Key} = new({string.Join(", ", key.Texts.Select(SqlInterceptorGenerator.Literal))});");
+            AppendLine($"    private static readonly {ordering.Key} __OrderBy_{key.Key} = new({string.Join(", ", key.Texts.Select(SqlInterceptorGenerator.Literal))});");
     }
 }

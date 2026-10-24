@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Documents.Templates;
+using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 
@@ -19,7 +20,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 ///     (<see cref="DocTypeEmitter" />); for each call on a <c>DocQuery&lt;T&gt;</c>, an interceptor: an operator stores its argument in a slot,
 ///     a terminal runs a plan (<see cref="DocPlanner" />) built from the chain. What it cannot translate is a PRAG31xx diagnostic at the call site.
 /// </summary>
-internal static class DocumentGenerator
+internal static partial class DocumentGenerator
 {
     private const string Query = "global::Pragmatic.Persistence.Documents.DocQuery";
     private const string Execution = "global::Pragmatic.Persistence.Documents.DocExecution";
@@ -32,7 +33,9 @@ internal static class DocumentGenerator
     private static bool UsesDocuments(Compilation compilation) => compilation.GetTypeByMetadataName(Session) is not null;
 
     /// <summary>The documents engine's generation, registered by <c>PragmaticSourceGenerator</c>.</summary>
-    internal static void Register(IncrementalGeneratorInitializationContext context)
+    /// <param name="context">The generator's context.</param>
+    /// <param name="shapeSources">The entities' shape files as Persistence emits them: the members a chain over a Pragmatic entity is bound against.</param>
+    internal static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
     {
         var documents = context.SyntaxProvider.ForAttributeWithMetadataName(DocModel.DocumentAttribute, static (node, _) => node is ClassDeclarationSyntax, static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
         var embedded = context.SyntaxProvider.ForAttributeWithMetadataName(DocModel.EmbeddedAttribute, static (node, _) => node is ClassDeclarationSyntax, static (ctx, _) => (INamedTypeSymbol)ctx.TargetSymbol);
@@ -42,8 +45,14 @@ internal static class DocumentGenerator
         var calls = context.SyntaxProvider.CreateSyntaxProvider(
             static (node, _) => node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax },
             static (ctx, ct) => UsesDocuments(ctx.SemanticModel.Compilation) ? DocCall.TryCreate(ctx, ct) : null);
-        // Pragmatic's entities (their shape, families, repositories and specifications) are not served yet: the next part of the port.
-        context.RegisterSourceOutput(calls.Where(static c => c is not null).Collect(), static (spc, found) => EmitInterceptors(spc, found!));
+        // With Pragmatic's entities the chains are bound again on a compilation that has their shape (DocumentGenerator.Pragmatic).
+        var combined = calls.Where(static c => c is not null).Collect().Combine(context.CompilationProvider).Combine(shapeSources);
+        context.RegisterSourceOutput(combined, static (spc, found) =>
+        {
+            var ((sites, compilation), shape) = found;
+            var shaped = UsesDocuments(compilation) ? WithPragmaticShape(spc, compilation, shape) : null;
+            EmitInterceptors(spc, shaped is not { } s ? sites! : BindAgain(s.Written, s.Shadow, spc.CancellationToken), shaped?.Shadow);
+        });
     }
 
     private static void EmitTypes(SourceProductionContext spc, IEnumerable<INamedTypeSymbol> types)
@@ -52,7 +61,7 @@ internal static class DocumentGenerator
         foreach (var type in types.Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default).OrderBy(t => t.ToDisplayString(), StringComparer.Ordinal))
         {
             if (DocModel.IsPragmatic(type))
-                continue; // a Pragmatic entity with a [Document] is read with its shape, not served yet
+                continue; // a Pragmatic entity with a [Document] is read with its shape (WithPragmaticShape)
             var model = DocModel.Read(type, diagnostics);
             if (model is not null && DocTypeEmitter.Model(model, VirtualFolderHints.ForType(type.Name, "Document", type.ContainingNamespace.ToDisplayString()), diagnostics) is { } typeModel)
                 spc.AddSource(new DocumentTypeTemplate(typeModel).RenderOutput());
@@ -62,10 +71,10 @@ internal static class DocumentGenerator
             spc.ReportDiagnostic(diagnostic);
     }
 
-    /// <summary>The chains' interceptors.</summary>
-    private static void EmitInterceptors(SourceProductionContext spc, ImmutableArray<DocCall> calls)
+    /// <summary>The chains' interceptors; with <paramref name="shadow" /> (Pragmatic's entities, their shape), the specifications' too.</summary>
+    private static void EmitInterceptors(SourceProductionContext spc, ImmutableArray<DocCall> calls, Compilation? shadow)
     {
-        if (calls.IsEmpty)
+        if (calls.IsEmpty && shadow is null)
             return;
         var diagnostics = new List<Diagnostic>();
         var models = new Dictionary<INamedTypeSymbol, DocModel?>(SymbolEqualityComparer.Default);
@@ -101,9 +110,21 @@ internal static class DocumentGenerator
                 interceptors.Add(interceptor);
         }
 
-        spc.AddSource(new DocumentInterceptorsTemplate(interceptors.ToEquatableArray()).RenderOutput());
+        var specifications = shadow is null ? [] : Specifications(shadow, Model, diagnostics);
+        spc.AddSource(new DocumentInterceptorsTemplate(interceptors.ToEquatableArray(), specifications.ToEquatableArray()).RenderOutput());
+        // A diagnostic in a file this generator added (a repository's chain) has no place in the compilation: a note is dropped, a failure kept unplaced.
+        var generated = shadow is null ? null : new HashSet<string>(shadow.SyntaxTrees.Where(t => t.FilePath.EndsWith(".g.cs", StringComparison.Ordinal)).Select(t => t.FilePath));
         foreach (var diagnostic in diagnostics.GroupBy(d => (d.Id, d.Location.SourceSpan, d.Location.SourceTree?.FilePath)).Select(g => g.First()))
+        {
+            if (generated is not null && diagnostic.Location.SourceTree?.FilePath is { } path && generated.Contains(path))
+            {
+                if (diagnostic.Severity >= DiagnosticSeverity.Warning)
+                    spc.ReportDiagnostic(Diagnostic.Create(DocDiagnostics.Unsupported, Location.None, path, diagnostic.GetMessage(System.Globalization.CultureInfo.InvariantCulture)));
+                continue;
+            }
+
             spc.ReportDiagnostic(diagnostic);
+        }
     }
 
     private static DocumentInterceptorModel? Operator(DocCall call, DocModel entity, int index, string attribute, List<Diagnostic> diagnostics)

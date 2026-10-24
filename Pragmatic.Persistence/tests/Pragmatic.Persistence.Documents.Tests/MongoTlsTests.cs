@@ -77,6 +77,22 @@ public class MongoTlsTests(MongoTlsServer server) : IClassFixture<MongoTlsServer
         await Assert.ThrowsAnyAsync<IOException>(() => plain.RunCommandAsync("admin", w => w.Write("ping", 1))); // the server closes a plaintext connection
     }
 
+    // A client of its own: the connection is opened by the synchronous command, so the TLS handshake runs on the stream's synchronous calls.
+    [Fact]
+    public async Task A_synchronous_command_speaks_tls_and_checks_the_certificate()
+    {
+        if (server.Unavailable is not null)
+            return;
+        await using (var tls = new MongoClient($"mongodb://{MongoServer.User}:{MongoServer.Password}@{server.Address}/?tls=true&tlsAllowInvalidCertificates=true"))
+        {
+            var reply = tls.RunCommand("admin", w => w.Write("ping", 1));
+            Assert.True(reply.TryGetNumber("ok", out var ok) && ok == 1);
+        }
+
+        await using var strict = new MongoClient($"mongodb://{MongoServer.User}:{MongoServer.Password}@{server.Address}/?tls=true");
+        Assert.Throws<System.Security.Authentication.AuthenticationException>(() => strict.RunCommand("admin", w => w.Write("ping", 1)));
+    }
+
     [Fact]
     public async Task An_unvalidated_self_signed_certificate_is_refused()
     {

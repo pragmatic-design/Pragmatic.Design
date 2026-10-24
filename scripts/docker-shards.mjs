@@ -39,6 +39,9 @@ export const DOCKER_SHARDS = [
   ],
   // ~407 s
   [
+    // The documents engine's bridge on a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this
+    // shard was the lightest after shard 2 took the documents suite (16m 30s against 18m 13s, the pull request of the engines' shared assembly).
+    'Pragmatic.Persistence.Documents.Pragmatic.Tests',
     'Showcase.IntegrationTests', //            3m 00s
     'Pragmatic.Mapping.EFCore.Tests', //       1m 08s
     'Pragmatic.Migrations.Tests', //             40s

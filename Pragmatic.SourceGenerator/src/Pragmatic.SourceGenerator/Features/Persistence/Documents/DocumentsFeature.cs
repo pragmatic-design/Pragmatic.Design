@@ -1,5 +1,7 @@
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
+using Pragmatic.SourceGenerator.Features.Persistence.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Documents;
 
@@ -10,5 +12,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents;
 /// </summary>
 internal static class DocumentsFeature
 {
-    public static void Register(IncrementalGeneratorInitializationContext context) => DocumentGenerator.Register(context);
+    /// <param name="context">The generator's context.</param>
+    /// <param name="shapeSources">The entities' shape files as Persistence emits them: the members a chain over a Pragmatic entity is bound against.</param>
+    public static void Register(IncrementalGeneratorInitializationContext context, IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources)
+        => DocumentGenerator.Register(context, shapeSources);
 }

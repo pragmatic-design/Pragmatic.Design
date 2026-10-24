@@ -8,8 +8,10 @@ namespace Pragmatic.Persistence.Documents;
 ///     sends while it is open carries the logical session (<c>lsid</c>), its <c>txnNumber</c> and <c>autocommit: false</c>, the first one
 ///     <c>startTransaction</c>; <see cref="CommitAsync" /> sends <c>commitTransaction</c>, disposing without it <c>abortTransaction</c>, then
 ///     the logical session ends. One transaction at a time per session, its commands one after the other. Cosmos DB: not translated (refused).
+///     The rollback is written once and runs on the driver's asynchronous calls or its synchronous ones (<see cref="Dispose" />), never blocking
+///     on asynchronous work.
 /// </summary>
-public sealed class DocTransaction : IAsyncDisposable
+public sealed class DocTransaction : IAsyncDisposable, IDisposable
 {
     private readonly DocSession _session;
     private readonly Guid _id = Guid.NewGuid();
@@ -43,18 +45,23 @@ public sealed class DocTransaction : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_finished, this);
         if (_started)
-            await EndAsync("commitTransaction", ct).ConfigureAwait(false);
-        await FinishAsync(ct).ConfigureAwait(false);
+            await EndAsync("commitTransaction", useAsync: true, ct).ConfigureAwait(false);
+        await FinishAsync(useAsync: true, ct).ConfigureAwait(false);
     }
 
-    public async Task RollbackAsync(CancellationToken ct = default)
+    public Task RollbackAsync(CancellationToken ct = default) => RollbackCoreAsync(useAsync: true, ct).AsTask();
+
+    /// <summary>The rollback on the driver's synchronous calls.</summary>
+    public void Rollback() => Completed(RollbackCoreAsync(useAsync: false, CancellationToken.None));
+
+    private async ValueTask RollbackCoreAsync(bool useAsync, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_finished, this);
         if (_started)
         {
             try
             {
-                await EndAsync("abortTransaction", ct).ConfigureAwait(false);
+                await EndAsync("abortTransaction", useAsync, ct).ConfigureAwait(false);
             }
             catch (MongoCommandException e) when (e.Code == NoSuchTransaction)
             {
@@ -62,7 +69,7 @@ public sealed class DocTransaction : IAsyncDisposable
             }
         }
 
-        await FinishAsync(ct).ConfigureAwait(false);
+        await FinishAsync(useAsync, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -81,28 +88,55 @@ public sealed class DocTransaction : IAsyncDisposable
             await RollbackAsync().ConfigureAwait(false);
     }
 
-    private Task<BsonDocument> EndAsync(string command, CancellationToken ct)
-        => _session.MongoClient.RunCommandAsync("admin", w =>
+    /// <summary>Not committed: aborted, synchronously (a <c>using</c> rather than an <c>await using</c>).</summary>
+    public void Dispose()
+    {
+        if (!_finished)
+            Rollback();
+    }
+
+    private async ValueTask EndAsync(string command, bool useAsync, CancellationToken ct)
+    {
+        void Build(BsonWriter w)
         {
             w.Write(command, 1);
             Session(w);
             w.Write("txnNumber", 1L);
             w.Write("autocommit", false);
-        }, ct);
+        }
+
+        if (useAsync)
+            await _session.MongoClient.RunCommandAsync("admin", Build, ct).ConfigureAwait(false);
+        else
+            _session.MongoClient.RunCommand("admin", Build);
+    }
 
     /// <summary>The session's commands go on outside a transaction; the server forgets the logical session.</summary>
-    private async Task FinishAsync(CancellationToken ct)
+    private async ValueTask FinishAsync(bool useAsync, CancellationToken ct)
     {
         _finished = true;
         _session.Ended(this);
-        await _session.MongoClient.RunCommandAsync("admin", w =>
+        void Build(BsonWriter w)
         {
             w.StartArray("endSessions");
             w.StartDocument(0);
             w.Write("id", _id);
             w.EndDocument();
             w.EndArray();
-        }, ct).ConfigureAwait(false);
+        }
+
+        if (useAsync)
+            await _session.MongoClient.RunCommandAsync("admin", Build, ct).ConfigureAwait(false);
+        else
+            _session.MongoClient.RunCommand("admin", Build);
+    }
+
+    /// <summary>A rollback made of synchronous calls has completed when it returns: its result is read, not waited for.</summary>
+    private static void Completed(ValueTask task)
+    {
+        if (!task.IsCompleted)
+            throw new InvalidOperationException("A synchronous rollback did not complete synchronously.");
+        task.GetAwaiter().GetResult();
     }
 }
 
