@@ -1,12 +1,12 @@
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Documents;
-using Pragmatic.Persistence.Documents.Pragmatic;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Specification;
 using PragmaticDocumentSamples.Callers;
 using PragmaticDocumentSamples.Entities;
 using PragmaticDocumentSamples.Queries;
+using Pragmatic.Persistence.Documents.Filters;
 
 namespace PragmaticDocumentSamples.Flows;
 

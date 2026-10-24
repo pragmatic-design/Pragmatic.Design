@@ -28,25 +28,25 @@ internal static partial class DocFamiliesEmitter
         var entity = model.Type;
         var type = entity.ToDisplayString(DocModel.Qualified);
         string Slot(string family, string? filter, string? name, string? bypass = null)
-            => $"new {Runtime}.DocFilterSlot(typeof({type}), {Runtime}.DocFilterFamily.{family}, {(filter is null ? "null" : $"typeof({type}.{filter})")}, {(name is null ? "null" : DocTypeEmitter.Literal(name))}{(bypass is null ? "" : ", " + DocTypeEmitter.Literal(bypass))})";
+            => $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.{family}, {(filter is null ? "null" : $"typeof({type}.{filter})")}, {(name is null ? "null" : DocTypeEmitter.Literal(name))}{(bypass is null ? "" : ", " + DocTypeEmitter.Literal(bypass))})";
         string Field(string property) => model.Field(property)?.Name ?? property;
         string Path(string property) => DocCosmosText.Path(Field(property), "c");
 
         if (PragmaticShape.Has(entity, "SoftDeleteAttribute") && model.Field("IsDeleted") is not null)
-            families.Add($"new {Runtime}.DocFamily({Slot("SoftDelete", "SoftDeleteFilter", "SoftDelete")}, static (w, f) => w.Write({DocTypeEmitter.Literal(Field("IsDeleted"))}, false), {DocTypeEmitter.Literal(Path("IsDeleted") + " = false")}, null)");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("SoftDelete", "SoftDeleteFilter", "SoftDelete")}, static (w, f) => w.Write({DocTypeEmitter.Literal(Field("IsDeleted"))}, false), {DocTypeEmitter.Literal(Path("IsDeleted") + " = false")}, null)");
 
         if (entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && model.Field("TenantId") is not null)
         {
             var partitions = model.PartitionKey?.Property.Name == "TenantId" ? "true" : "false";
-            families.Add($"new {Runtime}.DocFamily({Slot("Tenant", "TenantFilter", "Tenant")}, static (w, f) => {{ if (f?.TenantId is {{ }} tenant) {Runtime}.DocValues.Write(w, {DocTypeEmitter.Literal(Field("TenantId"))}, tenant); else {{ {Nothing} }} }}, "
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Tenant", "TenantFilter", "Tenant")}, static (w, f) => {{ if (f?.TenantId is {{ }} tenant) {Runtime}.Conversion.DocValues.Write(w, {DocTypeEmitter.Literal(Field("TenantId"))}, tenant); else {{ {Nothing} }} }}, "
                          + $"{DocTypeEmitter.Literal(Path("TenantId") + " = @__tenant")}, static (w, f) => {Text("@__tenant", "f?.TenantId")}, {partitions})");
         }
 
         var owner = PragmaticShape.Has(entity, "HasOwnerAttribute") && model.Field("OwnerId") is not null;
         var scoped = PragmaticShape.Has(entity, "HasAccessScopesAttribute") && model.Field("AccessScopes") is not null;
         var bypass = PragmaticPermissions.ViewAll(entity);
-        var ownerMongo = $"if (f?.UserId is {{ }} user) {Runtime}.DocValues.Write(w, {DocTypeEmitter.Literal(Field("OwnerId"))}, user); else {{ {Nothing} }}";
-        var scopesMongo = $"w.StartDocument({DocTypeEmitter.Literal(Field("AccessScopes"))}); {Runtime}.DocValues.WriteArray(w, \"$in\", f?.Scopes ?? global::System.Array.Empty<string>(), {Runtime}.DocValues.Write); w.EndDocument();";
+        var ownerMongo = $"if (f?.UserId is {{ }} user) {Runtime}.Conversion.DocValues.Write(w, {DocTypeEmitter.Literal(Field("OwnerId"))}, user); else {{ {Nothing} }}";
+        var scopesMongo = $"w.StartDocument({DocTypeEmitter.Literal(Field("AccessScopes"))}); {Runtime}.Conversion.DocValues.WriteArray(w, \"$in\", f?.Scopes ?? global::System.Array.Empty<string>(), {Runtime}.Conversion.DocValues.Write); w.EndDocument();";
         var ownerCosmos = Path("OwnerId") + " = @__user";
         var scopesCosmos = $"EXISTS(SELECT VALUE s FROM s IN {Path("AccessScopes")} WHERE ARRAY_CONTAINS(@__scopes, s))";
         var scopesParameter = "w.WriteStartObject(); w.WriteString(\"name\", \"@__scopes\"); w.WriteStartArray(\"value\"); foreach (var scope in f?.Scopes ?? global::System.Array.Empty<string>()) w.WriteStringValue(scope); w.WriteEndArray(); w.WriteEndObject();";
@@ -57,19 +57,19 @@ internal static partial class DocFamiliesEmitter
             var cosmos = new StringBuilder($"({ownerCosmos} OR {scopesCosmos}");
             var parameters = new StringBuilder($"{Text("@__user", "f?.UserId")}; {scopesParameter} ");
             AppendComputed(computed, mongo, cosmos, parameters);
-            families.Add($"new {Runtime}.DocFamily({Slot("Permission", "DataAccessFilter", null, bypass)}, static (w, f) => {{ {mongo}w.EndArray(); }}, {DocTypeEmitter.Literal(cosmos + ")")}, static (w, f) => {{ {parameters}}})");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Permission", "DataAccessFilter", null, bypass)}, static (w, f) => {{ {mongo}w.EndArray(); }}, {DocTypeEmitter.Literal(cosmos + ")")}, static (w, f) => {{ {parameters}}})");
         }
         else if (owner)
-            families.Add($"new {Runtime}.DocFamily({Slot("Permission", "OwnershipFilter", null, bypass)}, static (w, f) => {{ {ownerMongo} }}, {DocTypeEmitter.Literal(ownerCosmos)}, static (w, f) => {Text("@__user", "f?.UserId")})");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Permission", "OwnershipFilter", null, bypass)}, static (w, f) => {{ {ownerMongo} }}, {DocTypeEmitter.Literal(ownerCosmos)}, static (w, f) => {Text("@__user", "f?.UserId")})");
         else if (scoped && computed.Count == 0)
-            families.Add($"new {Runtime}.DocFamily({Slot("Permission", "ScopedDataFilter", null, bypass)}, static (w, f) => {{ {scopesMongo} }}, {DocTypeEmitter.Literal(scopesCosmos)}, static (w, f) => {{ {scopesParameter} }})");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Permission", "ScopedDataFilter", null, bypass)}, static (w, f) => {{ {scopesMongo} }}, {DocTypeEmitter.Literal(scopesCosmos)}, static (w, f) => {{ {scopesParameter} }})");
         else if (scoped)
         {
             var mongo = new StringBuilder($"w.StartArray(\"$or\"); var i = 0; w.StartDocument(i++); {scopesMongo} w.EndDocument(); ");
             var cosmos = new StringBuilder($"({scopesCosmos}");
             var parameters = new StringBuilder($"{scopesParameter} ");
             AppendComputed(computed, mongo, cosmos, parameters);
-            families.Add($"new {Runtime}.DocFamily({Slot("Permission", "ScopedDataFilter", null, bypass)}, static (w, f) => {{ {mongo}w.EndArray(); }}, {DocTypeEmitter.Literal(cosmos + ")")}, static (w, f) => {{ {parameters}}})");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Permission", "ScopedDataFilter", null, bypass)}, static (w, f) => {{ {mongo}w.EndArray(); }}, {DocTypeEmitter.Literal(cosmos + ")")}, static (w, f) => {{ {parameters}}})");
         }
 
         if (ParentVisibility(model, compilation, type) is { } parent)
@@ -79,11 +79,11 @@ internal static partial class DocFamiliesEmitter
         if (PragmaticFilters.IsTemporal(entity) && model.Field("ValidFrom") is not null && model.Field("ValidTo") is not null)
         {
             var (from, to) = (DocTypeEmitter.Literal(Field("ValidFrom")), DocTypeEmitter.Literal(Field("ValidTo")));
-            var mongo = $"if (f is {{ }} c) {{ var now = c.Now; w.StartDocument({from}); {Runtime}.DocValues.Write(w, \"$lte\", now); w.EndDocument(); "
-                        + $"w.StartArray(\"$or\"); w.StartDocument(0); w.WriteNull({to}); w.EndDocument(); w.StartDocument(1); w.StartDocument({to}); {Runtime}.DocValues.Write(w, \"$gt\", now); w.EndDocument(); w.EndDocument(); w.EndArray(); }} else {{ {Nothing} }}";
+            var mongo = $"if (f is {{ }} c) {{ var now = c.Now; w.StartDocument({from}); {Runtime}.Conversion.DocValues.Write(w, \"$lte\", now); w.EndDocument(); "
+                        + $"w.StartArray(\"$or\"); w.StartDocument(0); w.WriteNull({to}); w.EndDocument(); w.StartDocument(1); w.StartDocument({to}); {Runtime}.Conversion.DocValues.Write(w, \"$gt\", now); w.EndDocument(); w.EndDocument(); w.EndArray(); }} else {{ {Nothing} }}";
             var cosmos = $"({Path("ValidFrom")} <= @__now AND (NOT IS_DEFINED({Path("ValidTo")}) OR IS_NULL({Path("ValidTo")}) OR {Path("ValidTo")} > @__now))";
-            var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"@__now\"); if (f is {{ }} c) w.WriteString(\"value\", {Runtime}.DocJson.Instant(c.Now)); else w.WriteNull(\"value\"); w.WriteEndObject();";
-            families.Add($"new {Runtime}.DocFamily({Slot("Temporal", "TemporalFilter", null)}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, static (w, f) => {{ {parameter} }})");
+            var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"@__now\"); if (f is {{ }} c) w.WriteString(\"value\", {Runtime}.Conversion.DocJson.Instant(c.Now)); else w.WriteNull(\"value\"); w.WriteEndObject();";
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Temporal", "TemporalFilter", null)}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, static (w, f) => {{ {parameter} }})");
         }
 
         var index = 0;
@@ -92,7 +92,7 @@ internal static partial class DocFamiliesEmitter
             if (Rule(model, rule, compilation, diagnostics, $"@__r{index++}_") is not { } condition)
                 continue;
             var (mongo, cosmos, parameters) = condition;
-            families.Add($"new {Runtime}.DocFamily({Slot("Rule", null, "Visibility:" + rule.ToDisplayString())}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, {(parameters is null ? "null" : $"static (w, f) => {{ {parameters} }}")})");
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Rule", null, "Visibility:" + rule.ToDisplayString())}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, {(parameters is null ? "null" : $"static (w, f) => {{ {parameters} }}")})");
         }
 
         return families;

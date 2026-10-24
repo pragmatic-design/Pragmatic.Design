@@ -18,8 +18,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\samples\Pragmatic.Persistence.Documents.Samples\Pragmatic.Persistence.Documents.Samples.csproj" />
     <!-- The documents suite's servers, as they start there: MongoDB with a root user (standalone), the Cosmos DB emulator at its pinned build. -->
-    <Compile Include="..\Pragmatic.Persistence.Documents.Tests\MongoServer.cs" Link="Shared\MongoServer.cs" />
-    <Compile Include="..\Pragmatic.Persistence.Documents.Tests\CosmosServer.cs" Link="Shared\CosmosServer.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Documents.Core.Tests\MongoServer.cs" Link="Shared\MongoServer.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Documents.Core.Tests\CosmosServer.cs" Link="Shared\CosmosServer.cs" />
   </ItemGroup>
 
 </Project>

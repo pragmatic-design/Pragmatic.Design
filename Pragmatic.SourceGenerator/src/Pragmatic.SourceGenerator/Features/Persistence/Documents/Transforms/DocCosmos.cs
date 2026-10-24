@@ -10,7 +10,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 /// </summary>
 internal sealed class DocCosmosText(string prefix = "@p")
 {
-    private const string Json = "global::Pragmatic.Persistence.Documents.DocJson";
+    private const string Json = "global::Pragmatic.Persistence.Documents.Conversion.DocJson";
     private readonly StringBuilder _parameters = new();
     private int _count;
     private int _aliases;

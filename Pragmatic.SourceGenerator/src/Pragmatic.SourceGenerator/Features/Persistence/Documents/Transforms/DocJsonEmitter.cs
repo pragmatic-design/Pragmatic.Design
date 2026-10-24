@@ -7,7 +7,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 /// </summary>
 internal static class DocJsonEmitter
 {
-    private const string Json = "global::Pragmatic.Persistence.Documents.DocJson";
+    private const string Json = "global::Pragmatic.Persistence.Documents.Conversion.DocJson";
 
     /// <summary>The expression that writes a document's partition key value to <c>w</c> from <c>e</c>: the key's text, or the field's value.</summary>
     public static string PartitionKeyWrite(DocField key, DocField partition)

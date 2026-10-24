@@ -19,7 +19,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 /// </summary>
 internal static partial class DocumentGenerator
 {
-    private const string CompiledSpecification = "Pragmatic.Persistence.Documents.Pragmatic.DocCompiledSpecification`1";
+    private const string CompiledSpecification = "Pragmatic.Persistence.Documents.DocCompiledSpecification`1";
 
     /// <summary>The compiled specifications of <paramref name="compilation" />'s trees (the shape's and the generated repositories' among them).</summary>
     private static List<DocSpecificationModel> Specifications(Compilation compilation, Func<INamedTypeSymbol, DocModel?> models, List<Diagnostic> diagnostics)

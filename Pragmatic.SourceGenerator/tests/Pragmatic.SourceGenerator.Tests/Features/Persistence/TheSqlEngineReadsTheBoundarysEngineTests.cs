@@ -33,7 +33,7 @@ public class TheSqlEngineReadsTheBoundarysEngineTests
             public class SqlUnitOfWork { }
         }
 
-        namespace Pragmatic.Persistence.Documents.Pragmatic
+        namespace Pragmatic.Persistence.Documents
         {
             public static class PragmaticDocFilters { }
         }

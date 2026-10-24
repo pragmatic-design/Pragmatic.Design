@@ -14,7 +14,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
     private const string Task = "global::System.Threading.Tasks.Task";
     private const string Token = "global::System.Threading.CancellationToken ct = default";
     private const string Spec = "global::Pragmatic.Specification.ISpecification";
-    private const string ToPredicate = "global::Pragmatic.Persistence.Documents.Pragmatic.DocSpecifications.ToPredicate";
+    private const string ToPredicate = "global::Pragmatic.Persistence.Documents.DocSpecifications.ToPredicate";
 
     protected override string? GeneratorName => "Pragmatic.Persistence.Documents";
 
@@ -128,7 +128,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the documents engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class DocRepository(global::Pragmatic.Persistence.Documents.Pragmatic.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
+        AppendLine($"    public sealed class DocRepository(global::Pragmatic.Persistence.Documents.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
         AppendLine("    {");
         AppendLine("        private readonly DocReadRepository _read = new(unitOfWork.Session);");
         AppendLine();

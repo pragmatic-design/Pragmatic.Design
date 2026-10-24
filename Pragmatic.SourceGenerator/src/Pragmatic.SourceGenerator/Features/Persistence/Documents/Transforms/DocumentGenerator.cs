@@ -23,7 +23,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 internal static partial class DocumentGenerator
 {
     private const string Query = "global::Pragmatic.Persistence.Documents.DocQuery";
-    private const string Execution = "global::Pragmatic.Persistence.Documents.DocExecution";
+    private const string Execution = "global::Pragmatic.Persistence.Documents.Execution.DocExecution";
     private const string Session = "Pragmatic.Persistence.Documents.DocSession";
 
     /// <summary>Fully qualified with the nullable annotations: an interceptor's parameters repeat the intercepted method's exactly.</summary>

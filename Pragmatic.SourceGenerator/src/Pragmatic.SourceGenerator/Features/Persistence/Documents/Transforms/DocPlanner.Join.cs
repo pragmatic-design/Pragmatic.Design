@@ -79,7 +79,7 @@ internal sealed partial class DocPlanner
         var parameters = context.HasParameters ? $"static (w, s) => {{ {context.Parameters}}}" : "null";
         JoinInner = innerType.ToDisplayString(DocModel.Qualified);
         JoinKey = step.Method.TypeArguments[1].ToDisplayString(DocModel.Qualified);
-        JoinInitializer = $"new global::Pragmatic.Persistence.Documents.DocJoin<{JoinInner}>({writer}, {DocTypeEmitter.Literal(local)}, {DocTypeEmitter.Literal(foreign)}, {DocTypeEmitter.Literal(text)}, {parameters}, {_slot})";
+        JoinInitializer = $"new global::Pragmatic.Persistence.Documents.Planning.DocJoin<{JoinInner}>({writer}, {DocTypeEmitter.Literal(local)}, {DocTypeEmitter.Literal(foreign)}, {DocTypeEmitter.Literal(text)}, {parameters}, {_slot})";
         _slot += 4; // the inner chain, the two keys, the result: the interceptor's order
     }
 }

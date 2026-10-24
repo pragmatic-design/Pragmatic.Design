@@ -39,7 +39,7 @@ internal sealed class DocumentTrackingTemplate(DocumentTrackingModel model) : CS
         AppendLine("    {");
         AppendLine("        ulong m = 0;");
         for (var i = 0; i < fields.Count; i++)
-            AppendLine($"        if (!{Runtime}.DocTracking.Same(s[{i}], {fields[i].Value})) m |= 1UL << {i};");
+            AppendLine($"        if (!{Runtime}.Writing.DocTracking.Same(s[{i}], {fields[i].Value})) m |= 1UL << {i};");
         AppendLine("        return m;");
         AppendLine("    }");
         AppendLine();
@@ -50,7 +50,7 @@ internal sealed class DocumentTrackingTemplate(DocumentTrackingModel model) : CS
         AppendLine("    }");
         AppendLine();
         AppendLine("    [global::System.Runtime.CompilerServices.ModuleInitializer]");
-        AppendLine($"    internal static void __RegisterDocumentTracker() => {Runtime}.DocTrackers.Register<{name}>();");
+        AppendLine($"    internal static void __RegisterDocumentTracker() => {Runtime}.Writing.DocTrackers.Register<{name}>();");
         AppendLine("}");
     }
 }

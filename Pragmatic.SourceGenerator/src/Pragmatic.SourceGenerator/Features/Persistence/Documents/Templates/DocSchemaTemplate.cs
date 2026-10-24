@@ -25,15 +25,15 @@ internal sealed class DocSchemaTemplate(DocSchemaModel model) : CSharpTemplate
         AppendLine($"/// <summary>The collections of {model.Owner} ({model.Collections.Count}): their indexes, their Cosmos DB partition key and composite indexes.</summary>");
         AppendLine($"public static class {model.ClassName}");
         AppendLine("{");
-        AppendLine($"    public static readonly global::System.Collections.Generic.IReadOnlyList<{Runtime}.DocCollectionSchema> Collections =");
+        AppendLine($"    public static readonly global::System.Collections.Generic.IReadOnlyList<{Runtime}.Schema.DocCollectionSchema> Collections =");
         AppendLine("    [");
         foreach (var collection in model.Collections)
             AppendLine("        " + collection + ",");
         AppendLine("    ];");
         AppendLine();
         AppendLine("    /// <summary>Applies the schema to <paramref name=\"session\" />'s database; what the backend cannot apply is in the report, with its reason.</summary>");
-        AppendLine($"    public static global::System.Threading.Tasks.Task<{Runtime}.DocSchemaReport> EnsureAsync({Runtime}.DocSession session, global::System.Threading.CancellationToken ct = default)");
-        AppendLine($"        => {Runtime}.DocSchema.EnsureAsync(session, Collections, ct);");
+        AppendLine($"    public static global::System.Threading.Tasks.Task<{Runtime}.Schema.DocSchemaReport> EnsureAsync({Runtime}.DocSession session, global::System.Threading.CancellationToken ct = default)");
+        AppendLine($"        => {Runtime}.Schema.DocSchema.EnsureAsync(session, Collections, ct);");
         AppendLine("}");
     }
 }

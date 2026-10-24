@@ -68,21 +68,21 @@ internal static class DocTypeEmitter
         switch (field.Kind)
         {
             case DocKind.Embedded:
-                return $"{Runtime}.DocMapping.WriteEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value})";
+                return $"{Runtime}.Conversion.DocMapping.WriteEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value})";
             case DocKind.List when field.ElementKind == DocKind.Embedded:
-                return $"{Runtime}.DocMapping.WriteEmbeddedList<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value})";
+                return $"{Runtime}.Conversion.DocMapping.WriteEmbeddedList<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value})";
             case DocKind.List:
-                return $"{Runtime}.DocMapping.WriteList<{field.Element!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value}, {Runtime}.DocValues.Write)";
+                return $"{Runtime}.Conversion.DocMapping.WriteList<{field.Element!.ToDisplayString(DocModel.Qualified)}>(w, {name}, {value}, {Runtime}.Conversion.DocValues.Write)";
             case DocKind.Enum:
                 return field.Nullable
-                    ? $"{Runtime}.DocValues.Write(w, {name}, {value} is {{ }} v ? (int?)(int)v : null)"
+                    ? $"{Runtime}.Conversion.DocValues.Write(w, {name}, {value} is {{ }} v ? (int?)(int)v : null)"
                     : $"w.Write({name}, (int){value})";
             case DocKind.DateTime:
-                return field.Nullable ? $"{Runtime}.DocMapping.Write(w, {name}, {value})" : $"{Runtime}.DocValues.Write(w, {name}, {value})";
+                return field.Nullable ? $"{Runtime}.Conversion.DocMapping.Write(w, {name}, {value})" : $"{Runtime}.Conversion.DocValues.Write(w, {name}, {value})";
             case DocKind.UInt64:
-                return $"{Runtime}.DocValues.Write(w, {name}, unchecked((long){value}))";
+                return $"{Runtime}.Conversion.DocValues.Write(w, {name}, unchecked((long){value}))";
             default:
-                return $"{Runtime}.DocValues.Write(w, {name}, {value})";
+                return $"{Runtime}.Conversion.DocValues.Write(w, {name}, {value})";
         }
     }
 
@@ -91,11 +91,11 @@ internal static class DocTypeEmitter
         switch (field.Kind)
         {
             case DocKind.Embedded:
-                return $"{Runtime}.DocMapping.ReadEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument())";
+                return $"{Runtime}.Conversion.DocMapping.ReadEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument())";
             case DocKind.List when field.ElementKind == DocKind.Embedded:
-                return $"{Runtime}.DocMapping.ReadEmbeddedList<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument())";
+                return $"{Runtime}.Conversion.DocMapping.ReadEmbeddedList<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument())";
             case DocKind.List:
-                return $"{Runtime}.DocMapping.ReadList<{field.Element!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument(), static (ref {Bson}.BsonReader x) => {ReadScalar(field.ElementKind, "x", field.Element!.ToDisplayString(DocModel.Qualified))})";
+                return $"{Runtime}.Conversion.DocMapping.ReadList<{field.Element!.ToDisplayString(DocModel.Qualified)}>(r.ReadDocument(), static (ref {Bson}.BsonReader x) => {ReadScalar(field.ElementKind, "x", field.Element!.ToDisplayString(DocModel.Qualified))})";
             default:
                 return ReadScalar(field.Kind, "r", field.ScalarName);
         }
@@ -104,16 +104,16 @@ internal static class DocTypeEmitter
     private static string ReadScalar(DocKind kind, string reader, string typeName) => kind switch
     {
         DocKind.String => $"{reader}.ReadString()",
-        DocKind.Int32 => $"{Runtime}.DocMapping.ReadInt32(ref {reader})",
-        DocKind.Int64 => $"{Runtime}.DocMapping.ReadInt64(ref {reader})",
-        DocKind.UInt64 => $"unchecked((ulong){Runtime}.DocMapping.ReadInt64(ref {reader}))",
-        DocKind.Double => $"{Runtime}.DocMapping.ReadDouble(ref {reader})",
-        DocKind.Decimal => $"{Runtime}.DocMapping.ReadDecimal(ref {reader})",
+        DocKind.Int32 => $"{Runtime}.Conversion.DocMapping.ReadInt32(ref {reader})",
+        DocKind.Int64 => $"{Runtime}.Conversion.DocMapping.ReadInt64(ref {reader})",
+        DocKind.UInt64 => $"unchecked((ulong){Runtime}.Conversion.DocMapping.ReadInt64(ref {reader}))",
+        DocKind.Double => $"{Runtime}.Conversion.DocMapping.ReadDouble(ref {reader})",
+        DocKind.Decimal => $"{Runtime}.Conversion.DocMapping.ReadDecimal(ref {reader})",
         DocKind.Boolean => $"{reader}.ReadBoolean()",
         DocKind.Guid => $"{reader}.ReadGuid()",
         DocKind.DateTimeOffset => $"{reader}.ReadDateTime()",
-        DocKind.DateTime => $"{Runtime}.DocMapping.ReadDateTime(ref {reader})",
-        DocKind.Enum => $"({typeName}){Runtime}.DocMapping.ReadInt32(ref {reader})",
+        DocKind.DateTime => $"{Runtime}.Conversion.DocMapping.ReadDateTime(ref {reader})",
+        DocKind.Enum => $"({typeName}){Runtime}.Conversion.DocMapping.ReadInt32(ref {reader})",
         _ => $"default! /* {kind} */",
     };
 
