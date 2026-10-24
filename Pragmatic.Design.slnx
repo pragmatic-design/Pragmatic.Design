@@ -936,6 +936,7 @@
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Boundaries.Tests/Pragmatic.Persistence.Boundaries.Tests.csproj" />
     <!-- The engine suites' fixtures; Pragmatic.Persistence.Sql.DiagnosticsFixture is left out on purpose (it must not compile). -->
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />

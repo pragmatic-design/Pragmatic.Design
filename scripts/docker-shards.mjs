@@ -22,6 +22,9 @@ export const DOCKER_SHARDS = [
     // Five databases (PostgreSQL, SQL Server with full-text, MySQL, Oracle, SQLite): 3m 28s on a developer machine
     // (2026-10-23), not yet measured on the runner. Here because this shard was the lightest.
     'Pragmatic.Persistence.Sql.Tests',
+    // Two boundaries on two engines (SQLite in process, one standalone MongoDB), not yet measured on the runner. Here because this shard
+    // was the lightest (15m 57s against 15m 59s and 16m 04s, the pull request of the documents engine's bridge, 2026-10-24).
+    'Pragmatic.Persistence.Boundaries.Tests',
   ],
   // ~403 s
   [

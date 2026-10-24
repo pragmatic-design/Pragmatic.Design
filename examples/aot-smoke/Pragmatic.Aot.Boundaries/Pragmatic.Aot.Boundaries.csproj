@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsSample>true</IsSample>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Prove two boundaries on two engines in one host published Native AOT, with every trim and AOT warning an error: the boundaries,
+         entities and service of Pragmatic.Persistence.Boundaries.Tests, each boundary registered by the method the generator emits for
+         its engine. MongoDB from PRAGMATIC_AOT_MONGO, as the documents smoke. -->
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- CA2007: a console program has no SynchronizationContext to leave. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The repository adds SQLitePCLRaw.lib.e_sqlite3 beside it (Directory.Build.props). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Pragmatic\Pragmatic.Persistence.Sql.Pragmatic.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Pragmatic\Pragmatic.Persistence.Documents.Pragmatic.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The suite's boundaries, entities and service, compiled here as they are there: the same declarations, tested and published. -->
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\CatalogBoundary.cs" Link="Shared\CatalogBoundary.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ReviewsBoundary.cs" Link="Shared\ReviewsBoundary.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\Product.cs" Link="Shared\Product.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ProductReview.cs" Link="Shared\ProductReview.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\Specs.cs" Link="Shared\Specs.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ReviewDesk.cs" Link="Shared\ReviewDesk.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Pragmatic.Tests\Callers.cs" Link="Shared\Callers.cs" />
+  </ItemGroup>
+
+</Project>

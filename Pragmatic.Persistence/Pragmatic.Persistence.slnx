@@ -64,6 +64,7 @@
     <Project Path="tests/Pragmatic.Persistence.Sql.Pragmatic.Tests/Pragmatic.Persistence.Sql.Pragmatic.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Tests/Pragmatic.Persistence.Documents.Tests.csproj" />
     <Project Path="tests/Pragmatic.Persistence.Documents.Pragmatic.Tests/Pragmatic.Persistence.Documents.Pragmatic.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Persistence.Boundaries.Tests/Pragmatic.Persistence.Boundaries.Tests.csproj" />
   </Folder>
   <!-- The engine suites' fixtures. Pragmatic.Persistence.Sql.DiagnosticsFixture is not here on purpose: it must not compile,
        and the diagnostics tests build it to read the errors. -->
