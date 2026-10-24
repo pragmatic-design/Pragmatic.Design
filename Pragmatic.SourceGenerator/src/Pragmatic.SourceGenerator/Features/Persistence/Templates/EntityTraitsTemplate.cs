@@ -13,10 +13,17 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 internal sealed class EntityTraitsTemplate : CSharpTemplate
 {
     private readonly EntityMetadataModel _model;
+    private readonly bool _declaresRowVersion;
 
-    public EntityTraitsTemplate(EntityMetadataModel model)
+    /// <param name="model">The entity.</param>
+    /// <param name="declaresRowVersion">
+    ///     Whether <c>[ConcurrencyAware]</c>'s token is a member: on an engine other than EF Core, which keeps it as a shadow
+    ///     property instead (owner's decision of 2026-10-22).
+    /// </param>
+    public EntityTraitsTemplate(EntityMetadataModel model, bool declaresRowVersion = false)
     {
         _model = model;
+        _declaresRowVersion = declaresRowVersion && model.IsConcurrencyAware && !model.AllSourceMemberNames.Contains("RowVersion");
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";
@@ -33,7 +40,7 @@ internal sealed class EntityTraitsTemplate : CSharpTemplate
     protected override bool Validate()
     {
         // Only generate for valid, non-reference entities that need at least one trait
-        return _model is { IsValid: true, NeedsTraitGeneration: true };
+        return _model.IsValid && (_model.NeedsTraitGeneration || _declaresRowVersion);
     }
 
     public override void RenderFile()
@@ -89,7 +96,24 @@ internal sealed class EntityTraitsTemplate : CSharpTemplate
                 AppendLine();
 
             RenderSoftDeleteProperties();
+            needsSeparator = true;
         }
+
+        if (_declaresRowVersion)
+        {
+            if (needsSeparator)
+                AppendLine();
+
+            RenderRowVersionProperty();
+        }
+    }
+
+    private void RenderRowVersionProperty()
+    {
+        // A ulong, wide enough for SQL Server's rowversion as for PostgreSQL's xmin. Its setter is internal because the
+        // engine's maps, generated into this assembly, write it back after every save.
+        Comment("[ConcurrencyAware]");
+        AppendLine("public ulong RowVersion { get; internal set; }");
     }
 
     private void RenderPersistenceIdProperties()

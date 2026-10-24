@@ -37,7 +37,9 @@ internal static class PersistenceFeature
         // catalog exists, and the catalog is built from the entities returned above.
         IncrementalValueProvider<ImmutableArray<Models.QueryModel>> QueryModels,
         // The DbContexts, schemas and migration contexts a host gets, for Composition to call only those.
-        IncrementalValueProvider<PersistedStoresModel> PersistedStores) Register(
+        IncrementalValueProvider<PersistedStoresModel> PersistedStores,
+        // The entities' shape files as emitted, for the Sql engine's translation to bind its chains against.
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> ShapeSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<Models.QueryModel>>? resourceQueries = null,
@@ -168,7 +170,10 @@ internal static class PersistenceFeature
         // The {Boundary}Permissions classes are PermissionsClassFeature's: they hold the declared permissions
         // too, which are Identity's to read, so they are registered after it.
 
-        return (allEntitiesProvider, localRegistrations, derivedQueryEndpoints, queryModels, persistedStores);
+        var shapeSources = shapeEntitiesWithFeatures
+            .Select(static (pair, _) => EntityShapeArtifacts.ForBinding(pair.Left, pair.Right));
+
+        return (allEntitiesProvider, localRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources);
     }
 
     // ================================================================

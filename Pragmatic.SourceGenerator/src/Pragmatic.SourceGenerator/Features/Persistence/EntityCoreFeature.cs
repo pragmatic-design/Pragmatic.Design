@@ -186,49 +186,11 @@ internal static class EntityCoreFeature
         if (isEfCore)
             ReportUnstorableProtectedValues(context, entity, features);
 
-        // Entity.Relations (FK, collection, ref nav properties from [Relation.*])
-        if (entity.HasGeneratedRelationProperties)
+        // Relations, Create, Specs, Traits, Ownership, Scoping: the list the Sql engine binds against too.
+        foreach (var artifact in EntityShapeArtifacts.Members(entity, isEfCore))
         {
-            var relationsTemplate = new EntityRelationsTemplate(entity);
-            var relArtifact = relationsTemplate.RenderOutput();
-            if (!relArtifact.IsEmpty)
-                context.AddSource(relArtifact);
-        }
-
-        // Entity.Create factory methods
-        var createTemplate = new EntityCreateTemplate(entity);
-        var createArtifact = createTemplate.RenderOutput();
-        if (!createArtifact.IsEmpty)
-            context.AddSource(createArtifact);
-
-        // Specifications
-        var specTemplate = new SpecificationTemplate(entity);
-        var specArtifact = specTemplate.RenderOutput();
-        if (!specArtifact.IsEmpty)
-            context.AddSource(specArtifact);
-
-        // Entity.Traits (PersistenceId, Id, IAuditable, ISoftDelete auto-generated)
-        var traitsTemplate = new EntityTraitsTemplate(entity);
-        var traitsArtifact = traitsTemplate.RenderOutput();
-        if (!traitsArtifact.IsEmpty)
-            context.AddSource(traitsArtifact);
-
-        // Entity.Ownership (OwnerId, SetOwnerId, IOwnedEntity)
-        if (entity.IsOwnedEntity)
-        {
-            var ownershipTemplate = new OwnershipPropertyTemplate(entity);
-            var ownershipArtifact = ownershipTemplate.RenderOutput();
-            if (!ownershipArtifact.IsEmpty)
-                context.AddSource(ownershipArtifact);
-        }
-
-        // Entity.Scoping (AccessScopes, GrantScope, RevokeScope, IScopedEntity)
-        if (entity.IsScopedEntity)
-        {
-            var scopedTemplate = new ScopedPropertyTemplate(entity);
-            var scopedArtifact = scopedTemplate.RenderOutput();
-            if (!scopedArtifact.IsEmpty)
-                context.AddSource(scopedArtifact);
+            if (!artifact.IsEmpty)
+                context.AddSource(artifact);
         }
     }
 
@@ -253,24 +215,9 @@ internal static class EntityCoreFeature
         EntityMetadataModel entity,
         ImmutableDictionary<string, ImmutableHashSet<string>> cascadeSources)
     {
-        if (!entity.IsValid || !entity.HasPrivateSetterProperties)
-            return;
-        if (entity.IsFromReference)
-            return;
-
-        if (entity.BaseEntityFullTypeName is not null)
-        {
-            var derivedArtifact = new DerivedEntitySettersTemplate(entity).RenderOutput();
-            if (!derivedArtifact.IsEmpty)
-                context.AddSource(derivedArtifact);
-            return;
-        }
-
         cascadeSources.TryGetValue(entity.FullTypeName, out var cascadeProps);
 
-        var template = new EntitySettersTemplate(entity, cascadeProps);
-        var artifact = template.RenderOutput();
-        if (!artifact.IsEmpty)
+        if (EntityShapeArtifacts.Setters(entity, cascadeProps) is { IsEmpty: false } artifact)
             context.AddSource(artifact);
     }
 

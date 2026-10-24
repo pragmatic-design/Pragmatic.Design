@@ -5,37 +5,36 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.SourceGen;
+using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
 /// <summary>
-///     The shadow binding: with Pragmatic's entities and no EF Core, the members their shape declares (<see cref="PragmaticShape" />) are
-///     emitted, and the analysis runs on the compilation that has them. The incremental call sites were bound without them (a chain reading
-///     <c>r.Property</c> did not bind at all), so the chains are bound again there, with the entities, the declared queries, the DTOs and the
-///     functions read from that compilation.
+///     The shadow binding: the members of Pragmatic's entities are this generator's own output (Persistence's shape), which the
+///     compilation it is handed does not have. Those files, as Persistence emits them, are added to a private compilation, with what
+///     this feature emits for the Sql engine (repositories, hierarchies, grids, the declared queries' shape, each boundary's
+///     registration). The incremental call sites were bound without them (a chain reading <c>r.Property</c> did not bind at all), so
+///     the chains are bound again there, with the entities, the declared queries, the DTOs and the functions read from it.
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    /// <summary>The Sql engine's bridge, as <c>FeatureDetector.HasPersistenceSql</c> recognizes it.</summary>
-    private const string SqlBridgeFilters = "Pragmatic.Persistence.Sql.Pragmatic.PragmaticSqlFilters";
-
-    private static bool WithPragmaticShape(SourceProductionContext spc, ref Compilation compilation, ref ImmutableArray<CallSite?> calls, ref ImmutableArray<INamedTypeSymbol> entityTypes,
-        ref ImmutableArray<IMethodSymbol> queries, ref ImmutableArray<INamedTypeSymbol> dtos, ref ImmutableArray<IMethodSymbol> functionMethods)
+    private static bool WithPragmaticShape(SourceProductionContext spc, EquatableArray<ShapeSourceModel> shapeSources, ref Compilation compilation, ref ImmutableArray<CallSite?> calls,
+        ref ImmutableArray<INamedTypeSymbol> entityTypes, ref ImmutableArray<IMethodSymbol> queries, ref ImmutableArray<INamedTypeSymbol> dtos, ref ImmutableArray<IMethodSymbol> functionMethods)
     {
-        if (PragmaticShape.DeclaredByPragmatic(compilation))
+        // The entities' shape is what Persistence emits for every engine a compilation references (EntityShapeArtifacts). With none
+        // referenced nobody declares it, and a chain over a Pragmatic entity reads members that do not exist.
+        if (shapeSources.IsDefaultOrEmpty)
         {
-            ReportHiddenShape(spc, compilation);
+            if (compilation.GetTypeByMetadataName(PragmaticShape.EntityAttribute) is not null)
+                ReportHiddenShape(spc, compilation);
             return false;
         }
 
         // The engine choice itself is reported by Pragmatic's generator (PRAG0743, PRAG0744), which sees the module's metadata too.
         var engines = PragmaticEngines.Of(compilation);
-        var shapes = PragmaticShape.For(compilation, PragmaticEngine.Sql);
-        // With the engine's bridge referenced the entities' shape is Pragmatic's own (EntityTraitsTemplate and the others emit it for every
-        // engine): this copy is only what the chains are bound against here, and is not emitted a second time.
-        var boundOnly = compilation.GetTypeByMetadataName(SqlBridgeFilters) is not null
-            ? new HashSet<string>(shapes.Select(s => s.Hint), StringComparer.Ordinal)
-            : [];
+        // What this feature emits for Pragmatic's entities on the Sql engine; the shape itself is bound against, not emitted again.
+        var shapes = new List<(string Hint, string Source)>();
         // Pragmatic's read repository per entity, as chains this generator binds and intercepts like the application's (PragmaticReadRepository).
         // Their declared queries' shape too (PragmaticQuery), which the repository's RunAsync dispatches on; their grids with them.
         var repositories = new List<(string Hint, string Source)>();
@@ -68,15 +67,14 @@ internal static partial class SqlInterceptorGenerator
             }
         }
 
-        if (shapes.Count == 0 && repositories.Count == 0)
-            return false;
         var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
         var written = compilation.SyntaxTrees.ToList();
         var trees = new List<SyntaxTree>();
+        foreach (var shape in shapeSources)
+            trees.Add(CSharpSyntaxTree.ParseText(shape.Text, options, shape.HintName, cancellationToken: spc.CancellationToken));
         foreach (var (hint, text) in shapes.Concat(repositories))
         {
-            if (!boundOnly.Contains(hint))
-                spc.AddSource(hint, text);
+            spc.AddSource(hint, text);
             var tree = CSharpSyntaxTree.ParseText(text, options, hint, cancellationToken: spc.CancellationToken);
             trees.Add(tree);
             if (repositories.Any(r => r.Hint == hint))
@@ -93,9 +91,9 @@ internal static partial class SqlInterceptorGenerator
     }
 
     /// <summary>
-    ///     With EF Core referenced, Pragmatic's generator declares the entities' members and this one cannot see them: a chain reading them
-    ///     does not bind here and would run nothing. Each operator whose receiver is a SqlQuery of a Pragmatic entity and that does not bind
-    ///     itself is reported (PRAG3029), once per chain: the operators after it do not bind their receiver either.
+    ///     With no engine's bridge referenced nobody declares the entities' members: a chain reading them does not bind and would run
+    ///     nothing. Each operator whose receiver is a SqlQuery of a Pragmatic entity and that does not bind itself is reported (PRAG3029),
+    ///     once per chain: the operators after it do not bind their receiver either.
     /// </summary>
     private static void ReportHiddenShape(SourceProductionContext spc, Compilation compilation)
     {

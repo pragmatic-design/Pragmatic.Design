@@ -220,6 +220,13 @@ internal sealed partial class EntityModel
                     continue;
                 }
 
+                // A Pragmatic entity's many-to-many: Persistence's shape declares the collection, the relation names the join table.
+                if (PragmaticShape.IsPragmaticEntity(type) && PragmaticRelations.ManyToMany(type, property.Name, child) is { } pragmaticLink)
+                {
+                    collections.Add(new CollectionModel(property.Name, child, pragmaticLink.ThisKey, pragmaticLink.Table, pragmaticLink.OtherKey));
+                    continue;
+                }
+
                 if (CollectionForeignKeys(type, child) is { } foreignKeys) // {Parent}Id, or one per key column of a composite parent
                     collections.Add(new CollectionModel(property.Name, child, foreignKeys[0]) { ForeignKeys = foreignKeys });
                 else

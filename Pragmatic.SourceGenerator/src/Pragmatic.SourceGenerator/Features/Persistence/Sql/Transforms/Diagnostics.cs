@@ -214,8 +214,8 @@ internal static class Diagnostics
 
     public static readonly DiagnosticDescriptor ChainOverHiddenShape = new(
         "PRAG3029",
-        "A chain reads members only Pragmatic's generator declares",
-        "'{0}' on {1} does not bind for the Sql engine: it reads members Pragmatic's generator declares when EF Core is referenced, which no other generator sees. The Sql engine declares the shape of Pragmatic's entities itself only without EF Core; with both, the chain runs nothing.",
+        "A chain reads members no referenced engine declares",
+        "'{0}' on {1} does not bind for the Sql engine: it reads members of a Pragmatic entity that Pragmatic's generator declares only for an engine the compilation references, and none is referenced. Reference the Sql engine's bridge (Pragmatic.Persistence.Sql.Pragmatic), or the chain runs nothing.",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
