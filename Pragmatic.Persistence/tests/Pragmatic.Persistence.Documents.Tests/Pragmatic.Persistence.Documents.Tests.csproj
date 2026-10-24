@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers (MongoDB, a MongoDB replica set, the Cosmos DB emulator): scripts/check.mjs runs these one at a time
+         (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Pragmatic.Persistence.Documents.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1861;xUnit1004</NoWarn>
+    <!-- The document chains' interceptors live in this namespace; the generated code is kept under obj/ to be read. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MongoDB and the Cosmos DB emulator as generic containers. -->
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Cosmos\Pragmatic.Persistence.Documents.Cosmos.csproj" />
+    <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Generator\Pragmatic.Persistence.Documents.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Documents.Workload\Pragmatic.Persistence.Documents.Workload.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -33,6 +33,9 @@ export const DOCKER_SHARDS = [
     // The Sql bridge on the same five databases, not yet measured on the runner. Here because this shard was the lightest
     // (12m 09s against 19m 32s and 15m 56s, run 40066188335, 2026-10-24).
     'Pragmatic.Persistence.Sql.Pragmatic.Tests',
+    // MongoDB, a MongoDB replica set and the Cosmos DB emulator, not yet measured on the runner. Here because this shard was the
+    // lightest (14m 36s against 18m 13s and 16m 30s, the pull request of the engines' shared assembly, 2026-10-24).
+    'Pragmatic.Persistence.Documents.Tests',
   ],
   // ~407 s
   [

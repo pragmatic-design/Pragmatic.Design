@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The domain the documents engine's suite runs on: a test fixture, not a package. -->
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Documents.Workload</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents.Generator\Pragmatic.Persistence.Documents.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- The same deterministic data as the Sql workload (Seed): customers and orders become documents, an order's lines inside it. -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Workload\Pragmatic.Persistence.Workload.csproj" />
+  </ItemGroup>
+
+</Project>
