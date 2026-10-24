@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Pragmatic.Persistence.EFCore.UnitOfWork;
+using Pragmatic.Result.Database;
 using Pragmatic.Result;
 using Pragmatic.Result.EntityFrameworkCore;
 using Pragmatic.Result.EntityFrameworkCore.PostgreSQL;

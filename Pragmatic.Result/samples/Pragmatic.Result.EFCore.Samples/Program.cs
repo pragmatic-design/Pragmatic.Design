@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Pragmatic.Result.Database;
 using Pragmatic.Result.EntityFrameworkCore;
 using Pragmatic.Result.EntityFrameworkCore.Samples;
 

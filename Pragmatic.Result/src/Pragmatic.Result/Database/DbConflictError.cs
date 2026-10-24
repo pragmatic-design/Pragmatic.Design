@@ -1,12 +1,13 @@
-namespace Pragmatic.Result.EntityFrameworkCore;
+namespace Pragmatic.Result.Database;
 
 /// <summary>
 ///     Represents a database conflict error such as concurrency conflicts or unique violations.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This error is returned when EF Core throws DbUpdateConcurrencyException or
-///         when a unique constraint is violated.
+///         Returned when a write meets a concurrency conflict or violates a unique constraint. It names no
+///         persistence engine, so every engine's unit of work answers a broken rule with this same record
+///         (EF Core's: <c>Pragmatic.Result.EFCore</c>'s <c>SaveChanges</c> extensions and its unit of work).
 ///     </para>
 ///     <para>
 ///         Status code 409 (Conflict).
