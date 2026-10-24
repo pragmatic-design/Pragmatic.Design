@@ -122,6 +122,9 @@ internal static partial class SchemaMetadataTransform
         if (hasNotificationStore)
             entityTables.Add(BuildNotificationsTable(provider));
 
+        if (provider == EfCoreProvider.SqlServer)
+            entityTables = entityTables.Select(WithIndexableStrings).ToList();
+
         return new SchemaMetadataModel(databaseName, rootNamespace, provider, entityTables.ToImmutableArray(), configKey);
     }
 
@@ -918,7 +921,9 @@ internal static partial class SchemaMetadataTransform
 
         if (entity.IsSoftDelete)
         {
-            TryAdd("IsDeleted", "System.Boolean", false, "false");
+            // T-SQL has no boolean literal and Pragmatic.Migrations writes the default as given, so `false` fails the migration on SQL Server.
+            // The other providers keep `false`: a different spelling of the same default would be a change to every existing database.
+            TryAdd("IsDeleted", "System.Boolean", false, provider == EfCoreProvider.SqlServer ? "0" : "false");
             TryAdd("DeletedAt", "System.DateTimeOffset?", true, null);
             TryAdd("DeletedBy", "System.String", true, null);
         }
