@@ -899,6 +899,19 @@
           "Pragmatic.Specification": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.documents": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Mongo": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.documents.cosmos": {
+        "type": "Project"
+      },
+      "pragmatic.persistence.documents.mongo": {
+        "type": "Project"
+      },
       "pragmatic.persistence.efcore": {
         "type": "Project",
         "dependencies": {
