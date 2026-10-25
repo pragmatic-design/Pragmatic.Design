@@ -20,10 +20,10 @@ internal static class SchemaFeature
     /// <param name="efCoreSchemas">The schema of each database's EF Core entities.</param>
     /// <param name="engineSchemas">The tables each other engine contributes, per database.</param>
     /// <returns>
-    ///     The databases that have a schema, by name: the host migrates those (<see cref="PersistedStoresModel.SchemaDatabases" />), and
-    ///     cannot see this output to find out.
+    ///     The databases that have a schema, by name, with the namespace each was written in: the host migrates those
+    ///     (<see cref="PersistedStoresModel.SchemaDatabases" />), and cannot see this output to find out, or to find out where.
     /// </returns>
-    public static IncrementalValueProvider<EquatableArray<string>> Register(IncrementalGeneratorInitializationContext context,
+    public static IncrementalValueProvider<EquatableArray<SchemaDatabaseModel>> Register(IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<EquatableArray<SchemaMetadataModel>> efCoreSchemas,
         IncrementalValueProvider<EquatableArray<EngineSchemaModel>> engineSchemas)
     {
@@ -34,7 +34,7 @@ internal static class SchemaFeature
             foreach (var schema in all)
                 ctx.AddSource(new SchemaMetadataTemplate(schema).RenderOutput());
         });
-        return schemas.Select(static (all, _) => all.Select(s => s.DatabaseName).ToEquatableArray());
+        return schemas.Select(static (all, _) => all.Select(s => new SchemaDatabaseModel(s.DatabaseName, s.Namespace)).ToEquatableArray());
     }
 
     /// <summary>

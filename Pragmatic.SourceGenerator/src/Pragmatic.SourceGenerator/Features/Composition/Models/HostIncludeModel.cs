@@ -84,8 +84,12 @@ internal sealed record HostIncludeModel
     public string? MigrationDbContextFqn { get; init; }
 
     /// <summary>
-    ///     Whether the database has a <c>{Db}Schema</c>: what Pragmatic.Migrations' runner migrates it to. True for a database of the Sql
-    ///     engine as for one of EF Core, where <see cref="MigrationDbContextFqn" /> is only EF Core's, and only its fallback reads it.
+    ///     The database's <c>{Db}Schema</c>, fully qualified, as the persistence generator wrote it: what Pragmatic.Migrations' runner migrates
+    ///     it to. Set for a database of the Sql engine as for one of EF Core, where <see cref="MigrationDbContextFqn" /> is only EF Core's, and
+    ///     only its fallback reads it. Null when no schema was written.
     /// </summary>
-    public bool HasSchema { get; init; }
+    public string? SchemaTypeName { get; init; }
+
+    /// <summary>Whether the database has a <c>{Db}Schema</c> (<see cref="SchemaTypeName" />).</summary>
+    public bool HasSchema => SchemaTypeName is not null;
 }

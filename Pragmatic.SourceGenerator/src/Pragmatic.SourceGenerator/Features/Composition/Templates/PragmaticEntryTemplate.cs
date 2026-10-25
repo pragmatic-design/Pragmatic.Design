@@ -617,12 +617,8 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
                 Comment($"Migrate: {dbSimpleName}");
                 AppendLine($"progressStream?.Report(new global::Pragmatic.Maintenance.MigrationProgressEvent(\"migration\", \"Migrating {dbSimpleName}...\", DatabaseName: \"{dbSimpleName}\"));");
 
-                // SchemaMetadata namespace derives from module namespace root (e.g. Showcase), not host (e.g. Showcase.Host)
-                var moduleNs = representative.ModuleTypeName?.Replace("global::", "") ?? "";
-                var schemaNs = moduleNs.Contains('.') ? moduleNs.Substring(0, moduleNs.LastIndexOf('.')) : moduleNs;
-                if (schemaNs.Contains('.'))
-                    schemaNs = schemaNs.Substring(0, schemaNs.LastIndexOf('.'));
-                var schemaClassName = $"global::{schemaNs}.{dbSimpleName}Schema";
+                // The schema as the persistence generator wrote it (HostIncludeModel.SchemaTypeName), not derived again from the module.
+                var schemaClassName = representative.SchemaTypeName!;
 
                 // Runner creates and manages its own connection via IConnectionFactory (per-provider)
                 // Use MigrationConfigKey (DDL privileges) if set, otherwise fall back to ConfigKey

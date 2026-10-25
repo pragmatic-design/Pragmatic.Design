@@ -440,9 +440,11 @@ internal static class DbContextFeature
             .Select(static (pair, _) =>
             {
                 var (((entities, topology), feats), assemblyName) = pair;
+                // The migration contexts' namespace by the rule and over the entities GenerateMigrationDbContexts declares them with.
                 return feats.HasPersistenceEFCore && feats.IsHostMode
                     ? PersistedStoresModel.From(entities, topology,
                         DbContextRegistrationTemplate.QualifiedClassFor(HostArtifactNamespace(assemblyName, entities)))
+                      with { MigrationContextNamespace = HostArtifactNamespace(assemblyName, entities.Where(e => e.IsValid).ToImmutableArray()) }
                     : PersistedStoresModel.None;
             });
         return (stores, schemaModels);
