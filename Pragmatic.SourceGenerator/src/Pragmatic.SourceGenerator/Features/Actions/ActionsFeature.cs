@@ -25,7 +25,8 @@ internal static partial class ActionsFeature
         IncrementalValueProvider<EquatableArray<DerivedPermissionEntry>> DerivedPermissions,
         IncrementalValueProvider<EquatableArray<Composition.Models.DiscoveredModuleInfo>> LocalDomainModules,
         IncrementalValueProvider<PermissionDerivationInputs> Derivation,
-        IncrementalValueProvider<EquatableArray<Persistence.Models.ShapeSourceModel>> InvokerSources) Register(
+        IncrementalValueProvider<EquatableArray<Persistence.Models.ShapeSourceModel>> InvokerSources,
+        IncrementalValueProvider<EquatableArray<Persistence.Models.EngineReadModel>> EngineReads) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<ActionModel>>? traitActions = null,
@@ -150,7 +151,11 @@ internal static partial class ActionsFeature
                 LoadFromQueries = LoadFromQueries.Resolve(pair.Left.LoadFromQueries, pair.Right)
             })
             .Combine(features)
-            .Select(static (pair, _) => pair.Left with { LoadEntities = ResolveLoadEngines(pair.Left.LoadEntities, pair.Right) })
+            .Select(static (pair, _) => pair.Left with
+            {
+                LoadEntities = ResolveLoadEngines(pair.Left.LoadEntities, pair.Right),
+                Engine = PersistenceEngineMarker.EngineOf(pair.Left.EntityNamedEngine, pair.Right)
+            })
             .WithTrackingName(TrackingNames.ActionsMutations);
 
         context.RegisterSourceOutputSafe(mutationProvider, static (ctx, mutation) => ReportLoadReadPermissions(
@@ -173,6 +178,7 @@ internal static partial class ActionsFeature
         var validMutations = mutationProvider.Where(static m => m.IsValid);
 
         context.RegisterSourceOutputSafe(validMutations, GenerateMutationSetDependencies);
+        context.RegisterSourceOutputSafe(validMutations, ReportEngineRefusals);
         context.RegisterSourceOutputSafe(validMutations, GenerateMutationLoadEntity);
         context.RegisterSourceOutputSafe(validMutations, GenerateMutationId);
         context.RegisterSourceOutputSafe(validMutations, GenerateMutationLogicalKey);
@@ -204,6 +210,8 @@ internal static partial class ActionsFeature
         // The invokers as the engines bind them, from the models they are emitted from (ActionsFeature.Binding).
         var invokerSources = InvokerSources(allActions, allMutations,
             programmaticMutations ?? context.CompilationProvider.Select(static (_, _) => ImmutableArray<MutationModel>.Empty), features);
+        // The reads with navigations the mutations' invokers ask of the Sql engine, for its generator to compile.
+        var engineReads = EngineReads(allMutations);
 
         // Mutations another feature builds as models rather than reading from syntax — [Resource] CRUD.
         // The same shape as traitActions above, and for the same reason: they must reach every stage a
@@ -431,7 +439,7 @@ internal static partial class ActionsFeature
         var localDomainModules = validBoundaries.Collect().Combine(assemblyName.Combine(compilationInfo))
             .Select(static (input, _) => LocalDomainModulesOf(input.Left, input.Right.Left, input.Right.Right));
 
-        return (registrations, derivedPermissions, localDomainModules, derivationInputs, invokerSources);
+        return (registrations, derivedPermissions, localDomainModules, derivationInputs, invokerSources, engineReads);
     }
 
     /// <summary>

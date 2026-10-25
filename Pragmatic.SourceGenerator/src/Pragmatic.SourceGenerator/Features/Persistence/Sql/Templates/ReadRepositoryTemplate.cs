@@ -88,7 +88,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
             AppendLine($"            await {Task}.CompletedTask; // no load of this entity declares an Include: every call is refused below");
         }
 
-        AppendLine($"            throw new global::System.NotSupportedException($\"No [LoadEntity] of {model.EntityName} the Sql engine compiled includes '{{includes}}'.\");");
+        AppendLine($"            throw new global::System.NotSupportedException($\"No load of {model.EntityName} the Sql engine compiled ([LoadEntity] or a mutation's) includes '{{includes}}'.\");");
         AppendLine("        }");
         AppendLine();
     }

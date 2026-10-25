@@ -37,8 +37,7 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         }
         """;
 
-    private const string Loads = """
-        using Pragmatic.Actions.Attributes;
+    private const string Entities = """
         using Pragmatic.Persistence.Entity;
 
         namespace Probe.Loads
@@ -50,8 +49,14 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
                 public string Code { get; set; } = "";
                 public System.Collections.Generic.List<Bed> Beds { get; set; } = [];
             }
+        }
+        """;
 
-            [LoadEntity<Room>(nameof(Id), Include = nameof(Room.Beds))]
+    private const string Loads = Entities + """
+
+        namespace Probe.Loads
+        {
+            [Pragmatic.Actions.Attributes.LoadEntity<Room>(nameof(Id), Include = nameof(Room.Beds))]
             public partial class ReadBeds { public System.Guid Id { get; init; } }
         }
         """;
@@ -99,6 +104,123 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         refused[0].GetMessage().Should().Contain("[LoadEntity<Room>] on ReadBeds loads with Include");
         refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
         GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3036").Should().BeEmpty("the Sql engine is not referenced");
+    }
+
+    private const string EagerMutation = """
+
+        namespace Probe.Loads
+        {
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            [Pragmatic.Actions.Mutation.EagerLoad(nameof(Room.Beds))]
+            public partial class RenameRoomMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+
+                public string? Code { get; init; }
+            }
+        }
+        """;
+
+    [Fact]
+    public void OnTheDocumentsEngine_AMutationThatLoadsANavigation_IsPrag3112()
+    {
+        var result = Run(Entities + EagerMutation + DocumentsBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3112").ToList();
+        refused.Count.Should().Be(1);
+        refused[0].GetMessage().Should().Contain("RenameRoomMutation loads the navigations Beds of Room");
+        refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void OnTheSqlEngine_AMutationThatLoadsANavigation_IsAReadTheRepositoryCompiles()
+    {
+        var result = Run(Entities + EagerMutation + SqlBridge);
+
+        var sources = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result);
+        sources["Probe.Loads.Room.SqlReadRepository.g.cs"].Should().Contain("case \"Beds\":");
+        sources.Values.Should().Contain(s => s.Contains("class RenameRoomMutation", StringComparison.Ordinal)
+                                             && s.Contains(".GetByIdIncludingAsync(mutation.Id, \"Beds\", ct)", StringComparison.Ordinal));
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").Should().BeEmpty("the mutation writes no children");
+    }
+
+    private const string ChildWrites = """
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.Writes
+        {
+            [Entity] public partial class Room : IEntity
+            {
+                public string Code { get; set; } = "";
+                public System.Collections.Generic.List<Bed> Beds { get; set; } = [];
+            }
+
+            [Entity]
+            [Relation.ManyToOne<Room>]
+            [PartOf<Room>]
+            public partial class Bed : IEntity { public string Label { get; set; } = ""; }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class WriteBedMutation : Pragmatic.Actions.Mutation.Mutation<Bed>
+            {
+                public System.Guid Id { get; init; }
+
+                public string Label { get; init; } = "";
+            }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class SetBedsMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+
+                public required System.Collections.Generic.List<WriteBedMutation> Beds { get; init; }
+            }
+        }
+        """;
+
+    [Fact]
+    public void OnTheSqlEngine_AMutationThatWritesChildren_IsPrag3037()
+    {
+        var result = Run(ChildWrites + SqlBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").ToList();
+        refused.Count.Should().Be(1);
+        refused[0].GetMessage().Should().Contain("SetBedsMutation writes the children of Room (Beds)");
+        refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
+    }
+
+    private const string CascadingDelete = """
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.Cascades
+        {
+            [Entity]
+            [SoftDelete(Cascade = true)]
+            [Relation.OneToMany<Bed>.WithNavigation("Beds")]
+            public partial class Room : IEntity { public string Code { get; set; } = ""; }
+
+            [Entity]
+            [SoftDelete]
+            [Relation.ManyToOne<Room>]
+            public partial class Bed : IEntity { public string Label { get; set; } = ""; }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Delete)]
+            public partial class CloseRoomMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+            }
+        }
+        """;
+
+    /// <summary>A delete whose soft delete cascades writes the children it hides: the same graph the unit of work would not save.</summary>
+    [Fact]
+    public void OnTheSqlEngine_ADeleteThatCascades_IsPrag3037()
+    {
+        var result = Run(CascadingDelete + SqlBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").ToList();
+        refused.Count.Should().Be(1);
+        refused[0].GetMessage().Should().Contain("CloseRoomMutation writes the children of Room (Beds)");
     }
 
     private static SourceGenRunResult Run(string source)

@@ -51,6 +51,12 @@ internal sealed partial class MutationInvokerTemplate
                 AppendLine($"using var _ = _filterToggle?.Disable(typeof({entityType}.SoftDeleteFilter));");
             }
 
+            if (_model.Engine is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents)
+            {
+                RenderEngineLoad(entityType);
+                return;
+            }
+
             // Merge explicit includes with auto-includes for cascade soft-delete targets
             var allIncludes = _model.HasIncludes
                 ? _model.Includes.ToList()
@@ -152,6 +158,38 @@ internal sealed partial class MutationInvokerTemplate
                     $"return await _repository.GetByIdAsync(mutation.{_model.IdPropertyName}, ct).ConfigureAwait(false);");
             }
         });
+    }
+
+    /// <summary>
+    ///     The load on an engine that compiles its reads: there is no <c>Query()</c> to include through, so the navigations are the ones known at
+    ///     build (<see cref="MutationModel.EngineLoadPaths" />), read by the Sql engine's compiled read of that set.
+    /// </summary>
+    private void RenderEngineLoad(string entityType)
+    {
+        // The engines decide soft delete as EF Core does, with both halves lifted: the filter type (the scope above) and the name
+        // "SoftDelete", which on EF Core the IgnoreQueryFilters below names. Here only the toggle can carry it; with the type alone the
+        // restore found nothing.
+        if (_model.IsRestore && _model.EntityDeclaresSoftDelete)
+            AppendLine("using var __liftSoftDelete = _filterToggle?.DisableQueryFilter(\"SoftDelete\");");
+
+        var id = $"mutation.{_model.IdPropertyName}";
+        if (_model.EngineLoadPaths.Count == 0)
+        {
+            AppendLine($"return await _repository.GetByIdAsync({id}, ct).ConfigureAwait(false);");
+            return;
+        }
+
+        if (_model.Engine == PersistenceEngineMarker.Sql)
+        {
+            var key = StringHelper.CSharpLiteral(Transforms.IncludePaths.Key(_model.EngineLoadPaths));
+            AppendLine($"return await ((global::Pragmatic.Persistence.Repository.IIncludingReadRepository<{entityType}>)_repository)"
+                       + $".GetByIdIncludingAsync({id}, \"{key}\", ct).ConfigureAwait(false);");
+            return;
+        }
+
+        // The documents engine has no navigation to load: reported at build (PRAG3112), so this only keeps the invoker compiling.
+        AppendLine($"return await global::System.Threading.Tasks.Task.FromException<{entityType}?>(new global::System.NotSupportedException("
+                   + $"\"{_model.TypeName} loads navigations, which the documents engine does not keep.\")).ConfigureAwait(false);");
     }
 
     /// <summary>

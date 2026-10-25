@@ -69,6 +69,94 @@ public class GeneratedInvokerTests(PragmaticDatabases databases)
     }
 
     /// <summary>
+    ///     A mutation's load with <c>[EagerLoad]</c>: the entity read by key with its navigation, compiled by the engine for the paths the
+    ///     generator knows at build, then changed and saved.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_mutations_load_reads_its_eager_navigation(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid riva;
+            using (_toggle.UseMode(FilterMode.Raw))
+                riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA").Id;
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var invoker = new RenamePropertyMutation.Invoker(new Property.SqlRepository(unitOfWork), unitOfWork, new ServiceCollection().BuildServiceProvider());
+
+            var renamed = await invoker.InvokeAsync(new RenamePropertyMutation { Id = riva, Name = "RIVA DEL SOLE" });
+
+            Assert.Equal("RIVA DEL SOLE", renamed.Value!.Name);
+            Assert.Equal(["STD"], renamed.Value.RoomTypes.Select(t => t.Code));
+        }
+    }
+
+    /// <summary>
+    ///     A mutation that answers with a DTO reading a navigation, and declares no <c>[EagerLoad]</c>: the load reads what the response maps
+    ///     from (its <c>RequiredNavigations</c>, computed at build), so the DTO built from the entity carries the room types.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_mutation_answering_with_a_dto_loads_what_the_dto_maps_from(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid riva;
+            using (_toggle.UseMode(FilterMode.Raw))
+                riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA").Id;
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var invoker = new RetitlePropertyMutation.Invoker(new Property.SqlRepository(unitOfWork), unitOfWork, new ServiceCollection().BuildServiceProvider());
+
+            var retitled = await invoker.InvokeAsync(new RetitlePropertyMutation { Id = riva, Name = "RIVA NUOVA" });
+
+            var response = PropertyRoomsDto.FromEntity(retitled.Value!);
+            Assert.Equal("RIVA NUOVA", response.Name);
+            Assert.Equal(["STD"], response.RoomTypes.Select(t => t.Code));
+        }
+    }
+
+    /// <summary>
+    ///     A restore on the Sql engine: the invoker reads the soft-deleted row by key with the entity's soft delete filter lifted, and saves it
+    ///     restored; every other filter stays, so a caller cannot restore a row that is not theirs.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_restore_lifts_the_soft_delete_filter_and_no_other(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid suite, annas, brunos;
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                suite = (await session.Query<RoomType>().ToListAsync()).Single(t => t.Code == "SUI").Id;
+                var stays = await session.Query<Reservation>().ToListAsync();
+                var (hers, his) = (stays.First(r => r.OwnerId == "anna"), stays.Single(r => r.OwnerId == "bruno"));
+                await session.DeleteAsync(hers);
+                await session.DeleteAsync(his);
+                (annas, brunos) = (hers.Id, his.Id);
+            }
+
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var services = new ServiceCollection().BuildServiceProvider();
+            var restoreType = new RestoreRoomTypeMutation.Invoker(new RoomType.SqlRepository(unitOfWork), unitOfWork, services, filterToggle: _toggle);
+            var restoreStay = new RestoreReservationMutation.Invoker(new Reservation.SqlRepository(unitOfWork), unitOfWork, services, filterToggle: _toggle);
+
+            var restoredType = await restoreType.InvokeAsync(new RestoreRoomTypeMutation { Id = suite });
+            Assert.True(restoredType.IsSuccess, restoredType.IsSuccess ? "" : restoredType.Error.ToString());
+            Assert.Equal(["STD", "SUI"], (await session.Query<RoomType>().ToListAsync()).Select(t => t.Code).Order());
+
+            Assert.True((await restoreStay.InvokeAsync(new RestoreReservationMutation { Id = annas })).IsSuccess);
+            Assert.IsType<NotFoundError>((await restoreStay.InvokeAsync(new RestoreReservationMutation { Id = brunos })).Error); // bruno's: not anna's
+        }
+    }
+
+    /// <summary>
     ///     <c>[RequireExists]</c>: the specification the template writes in the invoker (<c>Spec&lt;Review&gt;.Where(__row =&gt; …)</c>), a leaf in
     ///     generated code, answered by the engine inside the caller's filters.
     /// </summary>

@@ -65,6 +65,21 @@ internal sealed record MutationModel
     public string? ResponseDtoFullTypeName { get; init; }
 
     /// <summary>
+    ///     The navigations the load reads on an engine that compiles its reads, known at build: the <see cref="Includes" />, then the
+    ///     response DTO's <c>RequiredNavigations</c> as Mapping computes them. EF Core's load reads the DTO's list at run time instead.
+    /// </summary>
+    public EquatableArray<string> EngineLoadPaths { get; init; } = EquatableArray<string>.Empty;
+
+    /// <summary>The engine the entity's boundary names with <c>[PersistenceEngine]</c>, as the transform read it; null when it names none.</summary>
+    public string? EntityNamedEngine { get; init; }
+
+    /// <summary>
+    ///     The engine that persists the entity in this compilation (<c>PersistenceEngineMarker.EngineOf</c>): resolved in the pipeline, where the
+    ///     referenced engines are known.
+    /// </summary>
+    public string? Engine { get; init; }
+
+    /// <summary>
     ///     Whether the id this mutation loads by is of the wrong type (PRAG0435). Only ever set for a
     ///     mode that loads an existing row and declares its own id — Create has nothing to address, and
     ///     a missing one is now generated rather than reported.

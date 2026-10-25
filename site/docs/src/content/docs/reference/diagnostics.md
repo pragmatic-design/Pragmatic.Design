@@ -672,6 +672,7 @@ error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` 
 | `PRAG3034` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration (the message names it). EF Core runs it as before. |
 | `PRAG3035` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine; registered and Computed or Hybrid, it is refused at read. EF Core runs it as before. |
 | `PRAG3036` | Error | A `[LoadEntity(Include = …)]` the Sql engine does not compile: it loads by the logic key (`By`) or by a specification, or its entity is declared in another assembly. The engine compiles a load with `Include` by key, in the entity's own assembly; otherwise read the navigation with a second load. |
+| `PRAG3037` | Error | A mutation of an entity on the Sql engine writes its children: a collection merged into the entity, or the children a cascading soft delete hides or a restore brings back. The engine's unit of work saves each row it tracks, not a graph, so the children would not be saved. Write each child with a mutation of its own. |
 | `PRAG3099` | Hidden | A call site translated to SQL, with its statement: what a census build (`-p:PragmaticCensus=true`) prints for every call site. |
 
 ### The documents engine: `PRAG3101-3199`
@@ -692,6 +693,7 @@ translated subset does not cover is a compile-time error with its remedy, never 
 | `PRAG3109` | Warning | A grid adapter is compiled for the documents engine without a part of its declaration, which the message names. EF Core runs it as before. |
 | `PRAG3110` | Warning | A data scope rule of a Pragmatic entity is not compiled for the documents engine; the message says why. Registered and Computed or Hybrid, it is refused at read; EF Core runs it as before. |
 | `PRAG3111` | Error | A `[LoadEntity(Include = …)]` of an entity on the documents engine: a document keeps a relation as its key, so there is no navigation to load. Load the other entity with a second `[LoadEntity]` by that key. |
+| `PRAG3112` | Error | A mutation of an entity on the documents engine loads navigations (`[EagerLoad]`, what its response DTO maps from) or writes children (merged, or reached by a cascading soft delete): a document keeps a relation as its key. Read the other entity by that key, and write it with a mutation of its own. |
 | `PRAG3199` | Hidden | A call site translated to a document query, with the query: what a census build prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`
