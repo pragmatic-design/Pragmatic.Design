@@ -184,7 +184,7 @@ error.
 
 ## Concurrency Conflict
 
-`DbUpdateConcurrencyException` is thrown when saving an entity.
+Saving an entity fails with a `ConcurrencyError` (`CONCURRENCY_CONFLICT`, 409).
 
 ### Checklist
 
@@ -206,9 +206,17 @@ error.
        failure: e => Results.Problem(statusCode: e.StatusCode, detail: e.Message));
    ```
 
-   Through `IUnitOfWork.SaveChangesAsync` the `DbUpdateConcurrencyException` travels out as-is, on
-   purpose: a stale row is two writers meeting, not a rule the schema enforces, so it is not
-   reclassified alongside constraint violations.
+   Through `IUnitOfWork.SaveChangesAsync` it is a `PersistenceRuleViolationException` whose `Error` is
+   the `ConcurrencyError`, on every engine, with the provider's exception as `InnerException`. Catch that
+   to retry:
+
+   ```csharp
+   catch (PersistenceRuleViolationException conflict) when (conflict.Error is ConcurrencyError) { /* reload, retry */ }
+   ```
+
+   It is not classified alongside constraint violations: a stale row is two writers meeting, not a rule
+   the schema enforces. Only a save made on a `DbContext` directly still throws EF Core's
+   `DbUpdateConcurrencyException`.
 
 4. **Bulk operations and concurrency.** Bulk insert/upsert operations may bypass EF Core's concurrency token checking. Use `UpsertOptions.ConcurrencyCheck` for bulk upserts if you need conflict detection.
 

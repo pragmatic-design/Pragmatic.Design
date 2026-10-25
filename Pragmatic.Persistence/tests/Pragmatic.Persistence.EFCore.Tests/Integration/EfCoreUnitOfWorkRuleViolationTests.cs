@@ -91,17 +91,16 @@ public sealed class EfCoreUnitOfWorkRuleViolationTests
     }
 
     /// <summary>
-    ///     A concurrency conflict is not reframed: it stays the exception EF Core threw.
+    ///     A concurrency conflict is a <c>ConcurrencyError</c>, as on the Sql and documents engines, with EF
+    ///     Core's exception underneath.
     /// </summary>
     /// <remarks>
-    ///     Two writers meeting on one row is not a rule the schema enforces, and the generated
-    ///     repository answers it with <c>ConcurrencyError</c> — which it can only do while this is still
-    ///     a <see cref="DbUpdateConcurrencyException" />. Classified, it would become a
-    ///     <c>DbConflictError</c>, the same type a duplicate key produces, and a lost update would be
-    ///     indistinguishable from a violated unique index.
+    ///     Not through the classifier: two writers meeting on one row is not a rule the schema enforces,
+    ///     and classified it would become a <c>DbConflictError</c>, the same type a duplicate key
+    ///     produces, so a lost update would be indistinguishable from a violated unique index.
     /// </remarks>
     [Fact]
-    public async Task AConcurrencyConflict_StaysItsOwnException()
+    public async Task AConcurrencyConflict_IsAConcurrencyError_NotAClassifiedRule()
     {
         using var db = CreateContext();
         IUnitOfWork uow = new EfCoreUnitOfWork(db);
@@ -119,7 +118,12 @@ public sealed class EfCoreUnitOfWorkRuleViolationTests
 
         article.Title = "Renamed";
 
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => uow.SaveChangesAsync());
+        var violation = await Assert.ThrowsAsync<PersistenceRuleViolationException>(() => uow.SaveChangesAsync());
+        var conflict = violation.Error.Should().BeOfType<ConcurrencyError>().Subject;
+        conflict.StatusCode.Should().Be(409);
+        conflict.EntityTypeName.Should().Be(typeof(TestArticle).FullName);
+        violation.InnerException.Should().BeOfType<DbUpdateConcurrencyException>(
+            "what it was raised from stays reachable");
     }
 
     /// <summary>

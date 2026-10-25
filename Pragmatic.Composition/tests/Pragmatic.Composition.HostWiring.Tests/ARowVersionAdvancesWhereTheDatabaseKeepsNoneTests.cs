@@ -1,8 +1,12 @@
 // Pragmatic.Composition.HostWiring.Tests - A row version advances where the database keeps none
 
+using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Pragmatic.Persistence.EFCore.UnitOfWork;
+using Pragmatic.Persistence.Repository;
+using Pragmatic.Result;
 using Pragmatic.Testing.Assertions;
 using Xunit;
 
@@ -56,7 +60,42 @@ public sealed class ARowVersionAdvancesWhereTheDatabaseKeepsNoneTests
         """;
 
     [Fact]
-    public async Task AStaleCopy_IsRefused_AfterAnotherWritersSave()
+    public Task AStaleCopy_IsRefused_AfterAnotherWritersSave()
+        => AfterAnotherWritersSave(async (other, _, _) =>
+        {
+            var refused = async () => await other.SaveChangesAsync().ConfigureAwait(false);
+            await refused.Should().ThrowAsync<DbUpdateConcurrencyException>("the stale copy names the version the other writer moved past").ConfigureAwait(false);
+        });
+
+    /// <summary>
+    ///     Through the generated repository the same stale save is its <c>ConcurrencyError</c>, read from the unit of work's rule violation:
+    ///     a value, not an exception, as the repository's contract says.
+    /// </summary>
+    [Fact]
+    public Task AStaleCopy_SavedThroughTheRepository_IsAConcurrencyError()
+        => AfterAnotherWritersSave(async (other, employeeType, _) =>
+        {
+            var repositoryType = employeeType.GetNestedType("Repository")!;
+            var repository = Activator.CreateInstance(
+                repositoryType,
+                BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.Instance | BindingFlags.OptionalParamBinding,
+                binder: null,
+                [other, new EfCoreUnitOfWork(other)],
+                culture: null)!;
+            var save = (Task<Result<int, ConcurrencyError>>)repositoryType.GetMethod("SaveChangesAsync", [typeof(CancellationToken)])!
+                .Invoke(repository, [CancellationToken.None])!;
+
+            var saved = await save.ConfigureAwait(false);
+
+            saved.IsFailure.Should().BeTrue("the stale copy is refused");
+            saved.Error.EntityTypeName.Should().Be(employeeType.FullName);
+        });
+
+    /// <summary>
+    ///     A row two contexts read, saved by the first after a change: <paramref name="act" /> gets the second, still holding the version
+    ///     the first moved past, with its copy changed.
+    /// </summary>
+    private static async Task AfterAnotherWritersSave(Func<DbContext, Type, object, Task> act)
     {
         var (errors, module, host) = ModuleAndHost.Emit(
             "TimeOff.Leave", [AModuleWithoutEntitiesOnADatabaseTests.ModuleWithoutEntities, Entity], "TimeOff.Host", Host,
@@ -74,25 +113,24 @@ public sealed class ARowVersionAdvancesWhereTheDatabaseKeepsNoneTests
             var employeeType = moduleAssembly.GetType("TimeOff.Leave.Entities.Employee", throwOnError: true)!;
 
             using var connection = new SqliteConnection("Data Source=:memory:");
-            await connection.OpenAsync();
+            await connection.OpenAsync().ConfigureAwait(false);
 
-            await using var writer = NewContext(contextType, connection);
-            await writer.Database.EnsureCreatedAsync();
+            using var writer = NewContext(contextType, connection);
+            await writer.Database.EnsureCreatedAsync().ConfigureAwait(false);
             var employee = Activator.CreateInstance(employeeType)!;
             Rename(employee, "Ada");
             writer.Add(employee);
-            await writer.SaveChangesAsync();
+            await writer.SaveChangesAsync().ConfigureAwait(false);
 
-            await using var other = NewContext(contextType, connection);
-            var stale = (await other.FindAsync(employeeType, Key(employee)))!;
+            using var other = NewContext(contextType, connection);
+            var stale = (await other.FindAsync(employeeType, Key(employee)).ConfigureAwait(false))!;
 
             Rename(employee, "Grace");
-            await writer.SaveChangesAsync();
+            await writer.SaveChangesAsync().ConfigureAwait(false);
             RowVersion(employee).Should().Be(1UL, "the update advanced the version from the one the insert wrote");
 
             Rename(stale, "Edsger");
-            var refused = async () => await other.SaveChangesAsync().ConfigureAwait(false);
-            await refused.Should().ThrowAsync<DbUpdateConcurrencyException>("the stale copy names the version the other writer moved past");
+            await act(other, employeeType, stale).ConfigureAwait(false);
         }
         finally
         {

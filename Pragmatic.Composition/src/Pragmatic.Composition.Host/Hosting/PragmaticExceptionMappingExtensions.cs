@@ -15,9 +15,11 @@ namespace Pragmatic.Composition.Hosting;
 ///         business pipeline or endpoint runs, so it wraps every downstream request.
 ///     </para>
 ///     <para>
-///         The concurrency exception is matched by its type <em>name</em>
-///         (<c>DbUpdateConcurrencyException</c>) rather than a type reference, so
-///         <c>Pragmatic.Composition.Host</c> stays free of an Entity Framework Core dependency.
+///         A stale row saved through a unit of work arrives as a <c>PersistenceRuleViolationException</c> carrying a
+///         <c>ConcurrencyError</c>, on every engine, and is rendered as that error. The match on the type <em>name</em>
+///         <c>DbUpdateConcurrencyException</c> is the fallback for a save made on a <c>DbContext</c> directly, which no
+///         unit of work saw; a name rather than a type reference keeps <c>Pragmatic.Composition.Host</c> free of an
+///         Entity Framework Core dependency.
 ///     </para>
 /// </remarks>
 public static class PragmaticExceptionMappingExtensions

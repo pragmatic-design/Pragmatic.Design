@@ -179,6 +179,25 @@ public class PragmaticExceptionMappingTests
         body.Should().Contain("Duplicate value for WorkEmail.");
     }
 
+    /// <summary>
+    ///     A stale row raised by a unit of work, whichever engine's, is its <c>ConcurrencyError</c> on the wire: a 409 with the
+    ///     conflict's own code, read from the violation and not from the provider exception underneath it.
+    /// </summary>
+    [Fact]
+    public async Task AStaleRow_IsItsConcurrencyError_CodeIncluded()
+    {
+        var pipeline = BuildPipeline(_ => throw new Pragmatic.Persistence.Repository.PersistenceRuleViolationException(
+            new Pragmatic.Persistence.Repository.ConcurrencyError { Message = "stale", EntityTypeName = "Shop.Order" },
+            new DbUpdateConcurrencyException()));
+        var context = NewContext();
+
+        await pipeline(context);
+
+        context.Response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
+        (await BodyOf(context)).Should().Contain("\"code\":\"CONCURRENCY_CONFLICT\"",
+            "the conflict's code, which the name-matched fallback does not carry");
+    }
+
     private sealed class KindInUse : Pragmatic.Result.IError
     {
         public string Code => "ENTITY_IN_USE";

@@ -205,7 +205,7 @@ Two users open the same entity, edit it, and save. Without concurrency control, 
 
 ### Solution
 
-Optimistic concurrency: each entity has a `RowVersion` that the database increments on every update. If you try to save with an outdated version, EF Core throws `DbUpdateConcurrencyException`.
+Optimistic concurrency: each entity has a `RowVersion` that the database increments on every update. If you try to save with an outdated version, the save is refused with a `ConcurrencyError`.
 
 ```csharp
 // ═══ What YOU write ═══
@@ -258,9 +258,11 @@ public Task<int> SaveChangesAsync(CancellationToken ct = default);
 So the conflict arrives as a `ConcurrencyError` (`Code = "CONCURRENCY_CONFLICT"`, `StatusCode = 409`)
 and you handle it like any other `Result` failure: reload, merge, retry.
 
-⚠️ Saving through `IUnitOfWork.SaveChangesAsync` instead of the repository does not classify it: there
-the `DbUpdateConcurrencyException` travels out as-is, deliberately, because a stale row is two writers
-meeting rather than a rule the schema enforces.
+Saving through `IUnitOfWork.SaveChangesAsync` instead of the repository, the same conflict is a
+`PersistenceRuleViolationException` whose `Error` is that `ConcurrencyError`, on every engine; the host
+renders it as a 409. It is not run through the constraint classifier: a stale row is two writers meeting
+rather than a rule the schema enforces, and it keeps an error of its own instead of becoming a
+`DbConflictError` beside a duplicate key.
 
 ---
 
