@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using Pragmatic.Persistence.Documents.Mongo.Bson;
@@ -86,19 +88,61 @@ internal sealed class MongoConnection : IAsyncDisposable, IDisposable
     }
 
     /// <summary>The synchronous connect, within the settings' connect timeout as the asynchronous one.</summary>
+    /// <remarks>
+    ///     Each of the host's addresses in turn, on a non-blocking socket waited for with <see cref="Socket.Select(System.Collections.IList?, System.Collections.IList?, System.Collections.IList?, TimeSpan)" />,
+    ///     until one connects or the timeout runs out. Not <c>BeginConnect</c> and a wait on its handle: on the Linux runner that handle was
+    ///     sometimes already disposed when the wait began, and the open threw <see cref="ObjectDisposedException" /> instead of connecting.
+    /// </remarks>
     private static void Connect(TcpClient client, MongoSettings settings)
     {
-        var pending = client.BeginConnect(settings.Host, settings.Port, null, null);
-        using (pending.AsyncWaitHandle)
+        var started = Stopwatch.GetTimestamp();
+        SocketException? refused = null;
+        foreach (var address in Dns.GetHostAddresses(settings.Host))
         {
-            if (!pending.AsyncWaitHandle.WaitOne(settings.ConnectTimeout))
-            {
-                client.Dispose(); // ends the pending connect; EndConnect is not called on a closed client
-                throw new TimeoutException($"MongoDB at {settings.Host}:{settings.Port} did not accept a connection within {settings.ConnectTimeout}.");
-            }
+            var remaining = settings.ConnectTimeout - Stopwatch.GetElapsedTime(started);
+            if (remaining <= TimeSpan.Zero)
+                break;
 
-            client.EndConnect(pending);
+            var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true, Blocking = false };
+            try
+            {
+                try
+                {
+                    socket.Connect(address, settings.Port);
+                }
+                catch (SocketException e) when (e.SocketErrorCode is SocketError.WouldBlock or SocketError.InProgress)
+                {
+                    // Writable: connected, or refused on Linux. In error: refused on Windows. Neither within the time left: the timeout.
+                    // Both sets in one wait: a Poll on the write set alone sits out the whole timeout of a refusal on Windows.
+                    var writable = new List<Socket> { socket };
+                    var failed = new List<Socket> { socket };
+                    Socket.Select(null, writable, failed, remaining);
+                    if (writable.Count == 0 && failed.Count == 0)
+                        break;
+                    var error = (SocketError)(int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error)!;
+                    if (error != SocketError.Success)
+                        throw new SocketException((int)error);
+                }
+
+                socket.Blocking = true;
+                client.Client.Dispose();
+                client.Client = socket;
+                socket = null;
+                return;
+            }
+            catch (SocketException e)
+            {
+                refused = e; // the next address, if there is one: a host can resolve to one nothing listens on (::1 before 127.0.0.1)
+            }
+            finally
+            {
+                socket?.Dispose();
+            }
         }
+
+        if (refused is not null && Stopwatch.GetElapsedTime(started) < settings.ConnectTimeout)
+            throw refused;
+        throw new TimeoutException($"MongoDB at {settings.Host}:{settings.Port} did not accept a connection within {settings.ConnectTimeout}.");
     }
 
     /// <summary>Sends one command (a whole BSON document, its <c>$db</c> included) and returns the reply's body, <c>ok</c> checked.</summary>
