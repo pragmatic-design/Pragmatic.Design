@@ -15,15 +15,16 @@ internal sealed class EntityTraitsTemplate : CSharpTemplate
     private readonly EntityMetadataModel _model;
     private readonly bool _declaresRowVersion;
 
-    /// <param name="model">The entity.</param>
-    /// <param name="declaresRowVersion">
-    ///     Whether <c>[ConcurrencyAware]</c>'s token is a member: on an engine other than EF Core, which keeps it as a shadow
-    ///     property instead (owner's decision of 2026-10-22).
+    /// <param name="model">
+    ///     The entity. A <c>[ConcurrencyAware]</c> one gets its token as a member, <c>RowVersion</c>, whichever engine persists it
+    ///     (owner's decision of 2026-10-25: one form, EF Core's shadow property gone).
     /// </param>
-    public EntityTraitsTemplate(EntityMetadataModel model, bool declaresRowVersion = false)
+    public EntityTraitsTemplate(EntityMetadataModel model)
     {
         _model = model;
-        _declaresRowVersion = declaresRowVersion && model.IsConcurrencyAware && !model.AllSourceMemberNames.Contains("RowVersion");
+        // Never on a derived entity, for the reason PersistenceId is not: the root of the hierarchy declares it.
+        _declaresRowVersion = model is { IsConcurrencyAware: true, BaseEntityFullTypeName: null }
+                              && !model.AllSourceMemberNames.Contains("RowVersion");
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";

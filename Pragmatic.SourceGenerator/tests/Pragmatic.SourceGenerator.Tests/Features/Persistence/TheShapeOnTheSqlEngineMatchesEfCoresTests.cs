@@ -8,7 +8,7 @@ using Xunit;
 namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 
 /// <summary>
-///     On the Sql engine an entity declares the members and filter classes it declares on EF Core, plus <c>RowVersion</c>.
+///     On the Sql engine an entity declares the members and filter classes it declares on EF Core.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -17,8 +17,8 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 ///         ShapeParity, taken from what this generator emitted on EF Core for the same entities.
 ///     </para>
 ///     <para>
-///         The one divergence is decided (owner, 2026-10-22): <c>[ConcurrencyAware]</c> declares <c>RowVersion</c> on the
-///         Sql engine, the token it reads back and compares, where EF Core keeps it as a shadow property.
+///         <c>[ConcurrencyAware]</c> declares <c>RowVersion</c> on every engine (owner, 2026-10-25): the token the Sql engine reads
+///         back and compares is the member EF Core maps as the provider's row version, no longer a shadow property beside it.
 ///     </para>
 ///     <para>
 ///         The bridge is a stub of the type the generator recognises it by; the Sql runtime is not referenced, so the Sql
@@ -142,15 +142,16 @@ public class TheShapeOnTheSqlEngineMatchesEfCoresTests
         GeneratorTestHelper.GetCompilationErrors(result).Should().BeEmpty("the shape names nothing of EF Core");
     }
 
-    /// <summary>The control: EF Core keeps the token as a shadow property, so its entity has no such member.</summary>
+    /// <summary>On EF Core the token is the same member: the one the context maps as the provider's row version.</summary>
     [Fact]
-    public void OnEfCore_TheRowVersionIsNotAMember()
+    public void OnEfCore_TheRowVersionIsTheSameMember()
     {
         var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(Entities,
             [.. References, GeneratorTestHelper.FromType<global::Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute>()]);
         var reservation = result.OutputCompilation.GetTypeByMetadataName("Probe.Binding.Reservation")!;
 
-        reservation.GetMembers("RowVersion").Should().BeEmpty("EF Core maps the token without a CLR property");
+        reservation.GetMembers("RowVersion").OfType<IPropertySymbol>().Select(p => p.Type.ToDisplayString())
+            .Should().Equal(["ulong"], "one form of the token, whichever engine persists the entity");
     }
 
     /// <summary>A RowVersion the entity declares itself is the entity's: the trait does not add a second one.</summary>

@@ -171,8 +171,11 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
 
         AppendLine();
 
-        // The guarantee the name already implied.
+        // The guarantee the name already implied, and the version a database without a native one does not advance.
         RenderReadAccessWriteGuard();
+        var versioned = VersionsAdvancedHere();
+        RenderRowVersionAdvance(versioned);
+        RenderSaveChanges(_model.ReadAccessEntities.Any(e => !e.IsAbstract), versioned.Count > 0);
 
         // OnModelCreating
         RenderOnModelCreating();
@@ -242,28 +245,79 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
         [new MethodParameter("global::System.Type", "clrType")],
         AccessModifier.Private,
         new MethodModifiers { IsStatic = true });
+    }
 
-        // The check has just run a change-detection pass over every entry, so the save is told not to run
+    /// <summary>
+    ///     The <c>[ConcurrencyAware]</c> entities whose version the save advances: on a provider whose database does not (SQL Server's
+    ///     <c>rowversion</c> and PostgreSQL's <c>xmin</c> move by themselves; anywhere else nothing would, and a stale copy would never be
+    ///     refused).
+    /// </summary>
+    private List<DbContextEntityModel> VersionsAdvancedHere()
+        => _model.EfCoreProvider is EfCoreProvider.SqlServer or EfCoreProvider.PostgreSql
+            ? []
+            : ConcurrencyRoots();
+
+    /// <summary>Advances the version of every modified <c>[ConcurrencyAware]</c> row: the update matches the version read, and writes the next.</summary>
+    private void RenderRowVersionAdvance(List<DbContextEntityModel> versioned)
+    {
+        if (versioned.Count == 0)
+            return;
+
+        AppendLine();
+        XmlSummary("Advances the row version of every modified concurrency-aware entity: its database does not.");
+
+        Method("AdvanceRowVersions", () =>
+        {
+            foreach (var entity in versioned)
+            {
+                AppendLine($"foreach (var entry in ChangeTracker.Entries<{entity.FullTypeName}>())");
+                Block(() =>
+                {
+                    AppendLine("if (entry.State != global::Microsoft.EntityFrameworkCore.EntityState.Modified)");
+                    Block(() => AppendLine("continue;"));
+                    AppendLine("var version = entry.Property(e => e.RowVersion);");
+                    AppendLine("version.CurrentValue = version.OriginalValue + 1;");
+                });
+            }
+        }, "void", null, AccessModifier.Private);
+    }
+
+    /// <summary>The two overloads, running the save's steps first: the read-only guard, the versions' advance.</summary>
+    private void RenderSaveChanges(bool guardsReadAccess, bool advancesVersions)
+    {
+        if (!guardsReadAccess && !advancesVersions)
+            return;
+
+        // The steps have just run a change-detection pass over every entry, so the save is told not to run
         // another before EF's own (SaveChangesDetection). Awaited in the async overload, or the scope would
         // close before the interceptors run.
-        XmlSummary("Saves, refusing any change to an entity this boundary only reads.");
+        var summary = guardsReadAccess ? "Saves, refusing any change to an entity this boundary only reads." : "Saves, advancing the row versions first.";
+        void Steps()
+        {
+            if (guardsReadAccess)
+                AppendLine("EnsureReadAccessEntitiesAreUnchanged();");
+            if (advancesVersions)
+                AppendLine("AdvanceRowVersions();");
+            AppendLine("using var detected = global::Pragmatic.Persistence.SaveChangesDetection.Detected(this);");
+        }
+
+        AppendLine();
+        XmlSummary(summary);
 
         Method("SaveChanges", () =>
         {
-            AppendLine("EnsureReadAccessEntitiesAreUnchanged();");
-            AppendLine("using var detected = global::Pragmatic.Persistence.SaveChangesDetection.Detected(this);");
+            Steps();
             AppendLine("return base.SaveChanges(acceptAllChangesOnSuccess);");
         }, "int",
         [new MethodParameter("bool", "acceptAllChangesOnSuccess")],
         AccessModifier.Public,
         new MethodModifiers { IsOverride = true });
 
-        XmlSummary("Saves, refusing any change to an entity this boundary only reads.");
+        XmlSummary(summary);
 
         Method("SaveChangesAsync", () =>
         {
-            AppendLine("EnsureReadAccessEntitiesAreUnchanged();");
-            AppendLine("using var detected = global::Pragmatic.Persistence.SaveChangesDetection.Detected(this);");
+            Steps();
             AppendLine("return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);");
         }, "global::System.Threading.Tasks.Task<int>",
         [
@@ -664,9 +718,16 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
                 $".IsUnique().HasFilter(\"{quote.Item1}ValidTo{quote.Item2} IS NULL\");");
     }
 
+    /// <summary>
+    ///     Maps the <c>ulong RowVersion</c> the shape declares as the provider's row version: the same member the Sql and documents
+    ///     engines read and write back.
+    /// </summary>
+    /// <remarks>
+    ///     Configured on the root of a hierarchy only: the derived types inherit the member and its mapping.
+    /// </remarks>
     private void RenderConcurrencyConfiguration()
     {
-        var concurrencyEntities = _model.Entities.Where(e => e.IsConcurrencyAware).ToList();
+        var concurrencyEntities = ConcurrencyRoots();
         if (concurrencyEntities.Count == 0)
             return;
 
@@ -675,25 +736,29 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
         switch (_model.EfCoreProvider)
         {
             case EfCoreProvider.SqlServer:
-                Comment("Optimistic concurrency: SQL Server native rowversion (auto-managed by database)");
+                Comment("Optimistic concurrency: SQL Server's rowversion, advanced by the database, read as a ulong");
                 foreach (var entity in concurrencyEntities)
-                    AppendLine($"modelBuilder.Entity<{entity.FullTypeName}>().Property<byte[]>(\"RowVersion\").IsRowVersion();");
+                    AppendLine($"modelBuilder.Entity<{entity.FullTypeName}>().Property(e => e.RowVersion).IsRowVersion().HasConversion<byte[]>();");
                 break;
 
             case EfCoreProvider.PostgreSql:
-                // Npgsql 10+ auto-detects uint + IsConcurrencyToken + ValueGeneratedOnAddOrUpdate
-                // and maps it to the PostgreSQL xmin system column (no migration, no entity property needed).
-                Comment("Optimistic concurrency: PostgreSQL xmin via uint shadow property (Npgsql auto-maps to xmin)");
+                // xmin is a system column every table has: nothing to create, and the database advances it on every update.
+                Comment("Optimistic concurrency: PostgreSQL's xmin, advanced by the database, read as a ulong");
                 foreach (var entity in concurrencyEntities)
                     AppendLine(
-                        $"modelBuilder.Entity<{entity.FullTypeName}>().Property<uint>(\"RowVersion\").IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();");
+                        $"modelBuilder.Entity<{entity.FullTypeName}>().Property(e => e.RowVersion).HasColumnName(\"xmin\").HasColumnType(\"xid\")" +
+                        ".HasConversion<uint>().IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();");
                 break;
 
             default:
-                Comment("Optimistic concurrency: uint shadow property with IsConcurrencyToken (portable)");
+                Comment("Optimistic concurrency: a version column the save advances (AdvanceRowVersions)");
                 foreach (var entity in concurrencyEntities)
-                    AppendLine($"modelBuilder.Entity<{entity.FullTypeName}>().Property<uint>(\"RowVersion\").IsConcurrencyToken();");
+                    AppendLine($"modelBuilder.Entity<{entity.FullTypeName}>().Property(e => e.RowVersion).IsConcurrencyToken();");
                 break;
         }
     }
+
+    /// <summary>The <c>[ConcurrencyAware]</c> entities that root a hierarchy, or stand alone: where the version is declared.</summary>
+    private List<DbContextEntityModel> ConcurrencyRoots()
+        => _model.Entities.Where(e => e is { IsConcurrencyAware: true, BaseEntityFullTypeName: null }).ToList();
 }

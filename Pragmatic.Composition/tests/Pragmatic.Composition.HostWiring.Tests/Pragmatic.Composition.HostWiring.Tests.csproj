@@ -69,6 +69,9 @@
          database wiring is wrong compiles here for the wrong reason. -->
     <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- A provider whose database keeps no row version: the save advances it (ARowVersionAdvancesWhereTheDatabaseKeepsNoneTests). The
+         generator picks PostgreSQL first, so that test drops Npgsql's provider from its compilations. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <!-- The Sql engine, not its bridge: a module that persists its boundary there declares the bridge's marker type itself (as the
          generator's tests do), so the other tests here keep EF Core as the one engine their modules reference. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
