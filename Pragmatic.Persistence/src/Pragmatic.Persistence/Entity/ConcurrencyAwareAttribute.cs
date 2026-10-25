@@ -5,17 +5,12 @@ namespace Pragmatic.Persistence.Entity;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The source generator will generate:
-///         <list type="bullet">
-///             <item>
-///                 <description>RowVersion (uint) property configured as concurrency token</description>
-///             </item>
-///         </list>
+///         The source generator declares <c>public ulong RowVersion { get; internal set; }</c> on the entity, whichever engine
+///         persists it; on EF Core the generated context maps it as the provider's row version.
 ///     </para>
 ///     <para>
-///         The generated EntityConfiguration will call <c>.IsConcurrencyToken()</c> on the RowVersion property.
-///         The generated repository will catch <c>DbUpdateConcurrencyException</c> and return
-///         a <c>ConcurrencyError</c> via the Result pattern.
+///         A stale save is a <c>PersistenceRuleViolationException</c> carrying a <c>ConcurrencyError</c>, raised by the unit
+///         of work on every engine. The generated repository returns that error through the Result pattern.
 ///     </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]

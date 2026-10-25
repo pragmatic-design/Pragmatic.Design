@@ -308,8 +308,8 @@ public class RepositoryTemplateTests
         // Assert
         var source = artifact.Text;
 
-        source.Should().Contain("DbUpdateConcurrencyException");
-        source.Should().Contain("ConcurrencyError");
+        source.Should().Contain("when (violation.Error is global::Pragmatic.Persistence.Repository.ConcurrencyError)");
+        source.Should().NotContain("DbUpdateConcurrencyException", "the conflict is read from the unit of work's error, whichever engine saved");
         source.Should().Contain("Result<int");
     }
 
@@ -343,15 +343,18 @@ public class RepositoryTemplateTests
         // Assert
         var source = artifact.Text;
 
-        source.Should().NotContain("DbUpdateConcurrencyException");
         source.Should().NotContain("ConcurrencyError");
         source.Should().Contain("return _unitOfWork.SaveChangesAsync(ct);",
             "the unit of work is the one place that classifies what the database refused, hands over "
             + "the entity's domain events and records the save — saving through the context skipped all three");
     }
 
+    /// <summary>
+    ///     The error returned is the unit of work's, not one the repository builds: it names the entity that conflicted, which in a
+    ///     save of several is not always this repository's (measured in <c>ARowVersionAdvancesWhereTheDatabaseKeepsNoneTests</c>).
+    /// </summary>
     [Fact]
-    public void Entity_WithConcurrencyAware_IncludesEntityTypeNameInError()
+    public void Entity_WithConcurrencyAware_ReturnsTheUnitOfWorksError()
     {
         // Arrange
         var model = CreateBasicModel() with { IsConcurrencyAware = true };
@@ -363,7 +366,8 @@ public class RepositoryTemplateTests
         // Assert
         var source = artifact.Text;
 
-        source.Should().Contain("EntityTypeName = \"MyApp.Sales.Entities.Order\"");
+        source.Should().Contain("return (global::Pragmatic.Persistence.Repository.ConcurrencyError)violation.Error;");
+        source.Should().NotContain("new global::Pragmatic.Persistence.Repository.ConcurrencyError");
     }
 
     [Fact]

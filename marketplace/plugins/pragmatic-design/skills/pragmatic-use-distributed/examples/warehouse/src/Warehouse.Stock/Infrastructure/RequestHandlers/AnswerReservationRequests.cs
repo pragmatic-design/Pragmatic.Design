@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging;
 using Pragmatic.Messaging.Attributes;
+using Pragmatic.Persistence.Repository;
 using Warehouse.Stock.Contracts;
 
 namespace Warehouse.Stock.Infrastructure.RequestHandlers;
@@ -52,7 +53,10 @@ internal sealed partial class AnswerReservationRequests(
             {
                 return await ReserveAsync(request, ct).ConfigureAwait(false);
             }
-            catch (DbUpdateConcurrencyException) when (attempt < Attempts)
+            // Both forms: the unit of work raises a stale level as a ConcurrencyError, but the hold also enqueues its expiry, and the
+            // job store saves the same DbContext itself, which flushes the level outside the unit of work as EF Core's exception.
+            catch (Exception ex) when (attempt < Attempts
+                && ex is DbUpdateConcurrencyException or PersistenceRuleViolationException { Error: ConcurrencyError })
             {
                 LogLevelMet(request.OrderId, attempt);
             }

@@ -1325,20 +1325,11 @@ internal sealed class RepositoryTemplate : CSharpTemplate
                 AppendLine("var result = await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
                 AppendLine("return result;");
             });
-            // No binding: nothing here reads the exception, and naming it costs every consumer a CS0168
-            // in a file they did not write and cannot edit. A generator's warnings are spent from the
-            // application's budget, which is how a project ends up unable to turn warnings into errors.
-            AppendLine("catch (global::Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)");
-            Block(() =>
-            {
-                AppendLine("return new global::Pragmatic.Persistence.Repository.ConcurrencyError");
-                Block(() =>
-                {
-                    AppendLine($"Message = \"A concurrency conflict occurred while saving {_model.TypeName}. The entity was modified by another process.\",");
-                    AppendLine($"EntityTypeName = \"{_model.FullTypeName}\"");
-                });
-                AppendLine(";");
-            });
+            // The unit of work raises a stale row as a rule violation carrying a ConcurrencyError, on every engine:
+            // read from there, not from a provider's exception. Any other violation is not this method's to answer.
+            AppendLine("catch (global::Pragmatic.Persistence.Repository.PersistenceRuleViolationException violation)");
+            AppendLine("    when (violation.Error is global::Pragmatic.Persistence.Repository.ConcurrencyError)");
+            Block(() => AppendLine("return (global::Pragmatic.Persistence.Repository.ConcurrencyError)violation.Error;"));
         });
     }
 

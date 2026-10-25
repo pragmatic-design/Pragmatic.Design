@@ -179,14 +179,18 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
                 rowCount = await _db.Database.CreateExecutionStrategy()
                     .ExecuteAsync(token => _db.SaveChangesAsync(token), ct).ConfigureAwait(false);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                // Not classified, on purpose. A stale row is two writers meeting, not a rule the
-                // schema enforces, and the repository contract already answers it with
-                // ConcurrencyError — which it can only do while this is still the exception EF threw.
-                // Classifying it would land it on DbConflictError alongside a duplicate key, and
-                // nothing downstream could tell a lost update from a violated unique index.
-                throw;
+                // A ConcurrencyError, as the Sql and documents engines raise it, and not through the
+                // classifier: a stale row is two writers meeting, not a rule the schema enforces, and
+                // classified it would land on DbConflictError beside a duplicate key, where nothing
+                // downstream could tell a lost update from a violated unique index. The generated
+                // repository and the host read this error, whichever engine saved.
+                throw new PersistenceRuleViolationException(new ConcurrencyError
+                {
+                    Message = "The row was modified or deleted by another operation since it was read.",
+                    EntityTypeName = ex.Entries.Count > 0 ? ex.Entries[0].Metadata.ClrType.FullName : null
+                }, ex);
             }
             catch (DbUpdateException ex)
             {

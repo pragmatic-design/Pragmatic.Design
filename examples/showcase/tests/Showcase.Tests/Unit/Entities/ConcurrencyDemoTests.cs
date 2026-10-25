@@ -16,7 +16,7 @@ namespace Showcase.Tests.Unit.Entities;
 ///    (e.g., checking in an already-checked-in reservation).
 /// 2. <b>DB-level</b>: <c>[ConcurrencyAware]</c> generates a <c>RowVersion</c> column
 ///    tracked by EF Core. When two concurrent requests load + update the same entity,
-///    the second <c>SaveChangesAsync</c> throws <c>DbUpdateConcurrencyException</c>.
+///    the second save is refused with a <c>ConcurrencyError</c>.
 ///
 /// These tests cover the domain-level protection. The DB-level protection is tested via
 /// integration tests using a real DB provider (SQLite/SQL Server) that enforces row versions.
