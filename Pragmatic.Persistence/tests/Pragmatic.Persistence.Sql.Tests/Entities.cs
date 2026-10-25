@@ -28,12 +28,25 @@ public partial class Property : IEntity, ITenantEntity
     public string TenantId { get; set; } = "";
 }
 
-/// <summary>A type of room of a property: the inverse of the one-to-many (PropertyId, Property) is the shape's.</summary>
+/// <summary>
+///     A type of room of a property: the inverse of the one-to-many (PropertyId, Property) is the shape's. Written through its property
+///     (<c>[PartOf]</c>); its soft delete cascades to its beds.
+/// </summary>
 [Entity]
 [SoftDelete(Cascade = true)]
+[PartOf<Property>]
+[Relation.OneToMany<Bed>]
 public partial class RoomType : IEntity
 {
     public string Code { get; set; } = "";
+}
+
+/// <summary>A bed of a room type: soft deleted, so a room type's delete hides it and its restore brings it back.</summary>
+[Entity]
+[SoftDelete]
+public partial class Bed : IEntity
+{
+    public string Label { get; set; } = "";
 }
 
 /// <summary>A guest's review of a property: owned (each guest sees their own), the published ones only (a fixed rule on the row).</summary>

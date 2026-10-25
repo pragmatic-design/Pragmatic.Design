@@ -253,13 +253,14 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     /// <summary>
-    ///     An error: the Sql engine's unit of work tracks each row it reads, not a graph, so the children a mutation writes through its entity
-    ///     (merged into it, or reached by a soft delete that cascades) would not be saved. Refused at build rather than written for nothing.
+    ///     An error: the Sql engine's unit of work saves the graph of the one-to-many collections it read, not a to-one navigation, so a child a
+    ///     mutation writes through its entity as one reference (merged into it, or reached by a soft delete that cascades) would not be saved.
+    ///     Refused at build rather than written for nothing.
     /// </summary>
     public static readonly DiagnosticDescriptor MutationWritesChildren = new(
         "PRAG3037",
-        "A mutation of a Pragmatic entity writes children on the Sql engine",
-        "{0} writes the children of {1} ({2}), which the Sql engine's unit of work does not save: it saves each row it tracks, not a graph. Write each child with a mutation of its own.",
+        "A mutation of a Pragmatic entity writes a child reference on the Sql engine",
+        "{0} writes the child reference of {1} ({2}), which the Sql engine's unit of work does not save: it saves the children of the one-to-many collections it read, not a to-one navigation. Write the child with a mutation of its own.",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

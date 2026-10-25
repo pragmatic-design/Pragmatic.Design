@@ -116,7 +116,7 @@ internal static class MutationChildAnalyzer
     }
 
     /// <summary>The element DTO of a collection property, or the DTO itself for a single one.</summary>
-    private static (bool IsCollection, INamedTypeSymbol? Dto) UnwrapChildDto(ITypeSymbol type)
+    internal static (bool IsCollection, INamedTypeSymbol? Dto) UnwrapChildDto(ITypeSymbol type)
     {
         var unwrapped = UnwrapNullable(type);
 
@@ -146,7 +146,7 @@ internal static class MutationChildAnalyzer
     ///     Read from the base rather than from an attribute, because a mutation declares its target
     ///     by what it inherits. <c>[Mutation]</c> itself is not generic.
     /// </remarks>
-    private static INamedTypeSymbol? MutationEntityOf(INamedTypeSymbol type)
+    internal static INamedTypeSymbol? MutationEntityOf(INamedTypeSymbol type)
     {
         var isMutation = type.GetAttributes().Any(a =>
             a.AttributeClass is { Name: "MutationAttribute" } declaration

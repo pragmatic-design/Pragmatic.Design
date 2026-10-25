@@ -110,6 +110,8 @@ internal sealed partial class SqlSourceTemplate
             initializers.Add($"LinkChildColumns = {Strings(collection.LinkChildColumns)}");
         if (collection.ForeignKeyColumns.Count > 0)
             initializers.Add($"ForeignKeyColumns = {Strings(collection.ForeignKeyColumns)}");
+        if (collection.ChildKeySetter is not null)
+            initializers.Add($"SetChildKey = static (c, v) => {collection.ChildKeySetter}");
         var link = initializers.Count == 0 ? "" : " { " + Join(initializers) + " }";
         return $"new {Sql}.Schema.SqlCollection(\"{collection.Property}\", typeof({collection.ChildType}), \"{collection.ForeignKeyColumn}\", static c => {childKey}, static e => (({collection.OwnerType})e).{collection.Property}, static (e, rows) => (({collection.OwnerType})e).{collection.Property} = rows.ConvertAll(static x => ({collection.ChildType})x)){link}";
     }

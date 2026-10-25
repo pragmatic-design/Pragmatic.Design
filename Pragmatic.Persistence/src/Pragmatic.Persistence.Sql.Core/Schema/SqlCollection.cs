@@ -59,6 +59,12 @@ public sealed class SqlCollection
 
     public Func<object, object?> Get { get; }
 
+    /// <summary>
+    ///     Sets a child's foreign key to its parent's key (boxed): what EF Core's relationship fixup does for a child added to the collection,
+    ///     for a unit of work that saves the graph. Null for a many-to-many side and under a composite parent.
+    /// </summary>
+    public Action<object, object?>? SetChildKey { get; init; }
+
     /// <summary>Sets the property to the children (boxed rows of <see cref="Child" />).</summary>
     public Action<object, List<object>> Assign { get; }
 }

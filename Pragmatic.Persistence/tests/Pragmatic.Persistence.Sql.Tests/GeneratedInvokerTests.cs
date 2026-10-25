@@ -120,6 +120,131 @@ public class GeneratedInvokerTests(PragmaticDatabases databases)
     }
 
     /// <summary>
+    ///     A keyed merge of children on the Sql engine: the load reads the collection, the unit of work saves the graph. A child still sent is
+    ///     updated, a new one inserted under its property (the foreign key set as EF Core's fixup sets it), one not sent any more deleted, a
+    ///     soft one marked; the rows read back say so.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_merge_of_children_inserts_updates_and_removes_them(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid riva, standard;
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA").Id;
+                standard = (await session.Query<RoomType>().ToListAsync()).Single(t => t.Code == "STD").Id;
+            }
+
+            var services = new ServiceCollection().BuildServiceProvider();
+            async Task Set(params WriteRoomTypeMutation[] types)
+            {
+                var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+                var set = await new SetRoomTypesMutation.Invoker(new Property.SqlRepository(unitOfWork), unitOfWork, services)
+                    .InvokeAsync(new SetRoomTypesMutation { Id = riva, RoomTypes = [.. types] });
+                Assert.True(set.IsSuccess, set.IsSuccess ? "" : set.Error.ToString());
+            }
+
+            async Task<List<RoomType>> Rows()
+            {
+                using (_toggle.UseMode(FilterMode.Raw))
+                    return await session.Query<RoomType>().ToListAsync();
+            }
+
+            await Set(new WriteRoomTypeMutation { Id = standard, Code = "STD+" }, new WriteRoomTypeMutation { Code = "FAM" });
+            var rows = await Rows();
+            Assert.Equal(["FAM", "STD+"], rows.Where(t => !t.IsDeleted).Select(t => t.Code).Order());
+            var family = rows.Single(t => t.Code == "FAM");
+            Assert.Equal(riva, family.PropertyId);
+            Assert.Equal(standard, rows.Single(t => t.Code == "STD+").Id); // updated in place, not replaced
+
+            await Set(new WriteRoomTypeMutation { Id = family.Id, Code = "FAM" });
+            rows = await Rows();
+            Assert.Equal(["FAM"], rows.Where(t => !t.IsDeleted).Select(t => t.Code));
+            Assert.True(rows.Single(t => t.Code == "STD+").IsDeleted); // a soft child: marked, its row kept
+        }
+    }
+
+    /// <summary>A create with children on the Sql engine: the new root and every child of its collections inserted, each child under the root.</summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_create_with_children_inserts_the_graph(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var invoker = new OpenPropertyMutation.Invoker(new Property.SqlRepository(unitOfWork), unitOfWork, new ServiceCollection().BuildServiceProvider());
+
+            var opened = await invoker.InvokeAsync(new OpenPropertyMutation { Name = "LAGO", RoomTypes = [new() { Code = "DBL" }, new() { Code = "TPL" }] });
+
+            Assert.True(opened.IsSuccess, opened.IsSuccess ? "" : opened.Error.ToString());
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                var lago = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "LAGO");
+                Assert.Equal(["DBL", "TPL"], (await session.Query<RoomType>().ToListAsync()).Where(t => t.PropertyId == lago.Id).Select(t => t.Code).Order());
+            }
+        }
+    }
+
+    /// <summary>
+    ///     A delete whose soft delete cascades, then its restore, on the Sql engine: the load reads the beds, the delete marks them with the room
+    ///     type's instant, the restore brings back those and only those (a bed deleted on its own stays deleted).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_cascading_delete_marks_the_children_and_its_restore_brings_back_only_those(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid standard;
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                standard = (await session.Query<RoomType>().ToListAsync()).Single(t => t.Code == "STD").Id;
+                foreach (var label in new[] { "A", "B", "OLD" })
+                {
+                    var bed = new Bed { Label = label };
+                    bed.SetRoomTypeId(standard);
+                    await session.InsertAsync(bed);
+                    if (label == "OLD")
+                        await session.DeleteAsync(bed); // deleted on its own, before the room type
+                }
+            }
+
+            async Task<List<Bed>> Beds()
+            {
+                using (_toggle.UseMode(FilterMode.Raw))
+                    return await session.Query<Bed>().ToListAsync();
+            }
+
+            var services = new ServiceCollection().BuildServiceProvider();
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var closed = await new CloseRoomTypeMutation.Invoker(new RoomType.SqlRepository(unitOfWork), unitOfWork, services).InvokeAsync(new CloseRoomTypeMutation { Id = standard });
+            Assert.True(closed.IsSuccess, closed.IsSuccess ? "" : closed.Error.ToString());
+            var beds = await Beds();
+            Assert.All(beds, b => Assert.True(b.IsDeleted));
+            DateTimeOffset? hiddenAt; // as stored: a database keeps fewer digits of an instant than memory does
+            using (_toggle.UseMode(FilterMode.Raw))
+                hiddenAt = (await session.Query<RoomType>().ToListAsync()).Single(t => t.Id == standard).DeletedAt;
+            Assert.Equal(["A", "B"], beds.Where(b => b.DeletedAt == hiddenAt).Select(b => b.Label).Order());
+
+            unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var restored = await new RestoreRoomTypeMutation.Invoker(new RoomType.SqlRepository(unitOfWork), unitOfWork, services, filterToggle: _toggle)
+                .InvokeAsync(new RestoreRoomTypeMutation { Id = standard });
+            Assert.True(restored.IsSuccess, restored.IsSuccess ? "" : restored.Error.ToString());
+            beds = await Beds();
+            Assert.Equal(["A", "B"], beds.Where(b => !b.IsDeleted).Select(b => b.Label).Order());
+            Assert.True(beds.Single(b => b.Label == "OLD").IsDeleted);
+        }
+    }
+
+    /// <summary>
     ///     A restore on the Sql engine: the invoker reads the soft-deleted row by key with the entity's soft delete filter lifted, and saves it
     ///     restored; every other filter stays, so a caller cannot restore a row that is not theirs.
     /// </summary>

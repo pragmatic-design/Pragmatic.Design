@@ -238,24 +238,7 @@ internal static partial class MutationTransform
             EntityNamedEngine = entityType is INamedTypeSymbol namedForEngine ? PersistenceEngineMarker.NamedFor(namedForEngine) : null
         };
 
-        return model with { EngineLoadPaths = EngineLoadPaths(model, ReturnsDtoParser.Read(symbol), context.SemanticModel.Compilation, ct) };
-    }
-
-    /// <summary>
-    ///     What <see cref="MutationModel.EngineLoadPaths" /> says, in the order the EF Core load includes them: the <c>[EagerLoad]</c> paths, then
-    ///     what the response DTO maps from while the mutation answers with it, each once.
-    /// </summary>
-    private static EquatableArray<string> EngineLoadPaths(MutationModel model, INamedTypeSymbol? response, Compilation compilation, CancellationToken ct)
-    {
-        var paths = model.Includes.ToList();
-        if (model.EffectiveReturnType == MutationReturnTypeValue.Entity && model.ResponseDtoFullTypeName is not null && response is not null)
-        {
-            foreach (var navigation in Mapping.Transforms.MappingTransform.RequiredNavigationsOf(response, compilation, ct))
-                if (!paths.Contains(navigation))
-                    paths.Add(navigation);
-        }
-
-        return paths.ToEquatableArray();
+        return model with { EngineLoadPaths = EngineLoadPaths(model, symbol, ReturnsDtoParser.Read(symbol), context.SemanticModel.Compilation, ct) };
     }
 
     private static (bool IsMutation, INamedTypeSymbol? EntityType) AnalyzeMutationBase(INamedTypeSymbol symbol)

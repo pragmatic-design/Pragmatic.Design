@@ -163,7 +163,24 @@ internal static partial class SqlInterceptorGenerator
             c.LinkTable,
             c.LinkChildColumn,
             c.IsLink && c.LinkChildColumns.Length > 1 ? c.LinkChildColumns.ToEquatableArray() : EquatableArray<string>.Empty,
-            c.IsComposite && childModel is not null ? c.ForeignKeyColumns(childModel).ToEquatableArray() : EquatableArray<string>.Empty);
+            c.IsComposite && childModel is not null ? c.ForeignKeyColumns(childModel).ToEquatableArray() : EquatableArray<string>.Empty,
+            ChildKeySetterOf(c, childModel));
+    }
+
+    /// <summary>
+    ///     The foreign key a child added to the collection gets, from its parent's boxed key (<c>c</c> the child, <c>v</c> the key): its private
+    ///     setter through the accessor the rows are built with, or its own. Null for a many-to-many side, a composite parent, or a key the
+    ///     child's map does not hold as a column.
+    /// </summary>
+    private static string? ChildKeySetterOf(CollectionModel c, EntityModel? childModel)
+    {
+        if (c.IsLink || c.IsComposite || childModel?.Column(c.ForeignKey) is not { Owner: null } key)
+            return null;
+        var type = key.Type.ToDisplayString(Annotated);
+        var child = c.Child.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return key.PrivateSetter
+            ? $"EntityMaps.{key.SetterName}(({child})c, ({type})v!)"
+            : $"(({child})c).{key.Property} = ({type})v!";
     }
 
     /// <summary>The DTO's collection members: the child DTO's own registration gives its columns and reader; here the key the loader groups on.</summary>
