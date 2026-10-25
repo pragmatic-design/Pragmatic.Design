@@ -15,6 +15,7 @@ namespace Pragmatic.Result.Tests.Unit;
 ///     through <see cref="ErrorJson" /> (#158, #312). For any body, deserializing a result gives a result or a
 ///     <see cref="JsonException" />; anything else escapes the client as a fault of the caller's own.
 /// </summary>
+[Collection(ErrorTypeRegistryCollection.Name)]
 public class ResultConverterPropertyTests
 {
     private static readonly JsonSerializerOptions Options = new()
