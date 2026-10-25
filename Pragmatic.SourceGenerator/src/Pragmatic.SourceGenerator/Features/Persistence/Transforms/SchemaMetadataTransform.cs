@@ -123,7 +123,7 @@ internal static partial class SchemaMetadataTransform
             entityTables.Add(BuildNotificationsTable(provider));
 
         if (provider == EfCoreProvider.SqlServer)
-            entityTables = entityTables.Select(WithIndexableStrings).ToList();
+            entityTables = entityTables.Select(t => WithTSqlFilters(WithIndexableStrings(t))).ToList();
 
         return new SchemaMetadataModel(databaseName, rootNamespace, ProviderName(provider), entityTables.ToImmutableArray(), configKey);
     }

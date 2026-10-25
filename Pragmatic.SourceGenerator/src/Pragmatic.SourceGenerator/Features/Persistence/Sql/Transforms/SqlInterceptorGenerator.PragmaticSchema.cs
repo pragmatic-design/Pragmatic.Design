@@ -119,7 +119,6 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>Why <paramref name="entity" /> cannot be described in the schema yet, or null.</summary>
     private static string? PragmaticSchemaProblem(EntityModel entity)
         => entity.Columns.FirstOrDefault(c => c.Owner is not null) is { } owned ? $"'{owned.Owner}' is an owned type: the schema does not flatten one yet"
-            : entity.Type.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute") || entity.Type.GetMembers().Any(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "LogicKeyAttribute")) ? "[LogicKey]: the schema does not describe its unique index yet"
             : null;
 
     /// <summary>
@@ -208,6 +207,15 @@ internal static partial class SqlInterceptorGenerator
                 var name = $"IX_{entity.Table}_{string.Join("_", columns)}";
                 if (!indexes.Exists(i => i.Name == name))
                     indexes.Add((name, columns, unique, filter));
+            }
+
+            // The domain key's unique index, read by the rule EF Core's branch reads it with (its parts' order, the tenant leading unless a
+            // part is global): two readings of one key would be two indexes.
+            var logicKey = EntityTransform.CollectLogicKeys(entity.Type);
+            if (logicKey.Count > 0)
+            {
+                var names = logicKey.Select(p => entity.Column(p.Name)?.Column ?? p.Name).ToList();
+                Index(tenant && !logicKey.Any(p => p.IsGlobal) ? names.Prepend("TenantId").ToArray() : names.ToArray(), true, softDelete ? live : null);
             }
 
             foreach (var unique in entity.Type.GetAttributes().Where(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.UniqueAttribute"))
