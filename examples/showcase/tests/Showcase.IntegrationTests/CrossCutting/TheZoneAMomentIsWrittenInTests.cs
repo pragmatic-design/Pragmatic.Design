@@ -40,6 +40,8 @@ public class TheZoneAMomentIsWrittenInTests(PostgresFixture fixture) : Integrati
 {
     private const string GuestTyped = "2027-05-04T21:30:00";
     private const string FrontDeskTyped = "2027-05-04T21:45:00";
+    private const string CheckIn = "2027-05-04T14:00:00Z";
+    private const string CheckOut = "2027-05-07T10:00:00Z";
 
     /// <summary>
     ///     The guest is in New York and types 21:30. The hotel reads 03:30 the next morning.
@@ -217,8 +219,10 @@ public class TheZoneAMomentIsWrittenInTests(PostgresFixture fixture) : Integrati
                 guestId = guest.GetProperty("id").GetGuid(),
                 propertyId = property.GetProperty("id").GetGuid(),
                 roomTypeId = roomType.GetProperty("id").GetGuid(),
-                checkIn = DateTimeOffset.UtcNow.AddDays(7).ToString("O"),
-                checkOut = DateTimeOffset.UtcNow.AddDays(10).ToString("O"),
+                // Fixed, as every other date here: a week from today is on EST from November to March, and
+                // the reader's -04:00 then becomes -05:00.
+                checkIn = CheckIn,
+                checkOut = CheckOut,
                 numberOfGuests = 1,
                 expectedArrival
             }
