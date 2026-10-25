@@ -91,6 +91,18 @@ internal static class DocDiagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     An error: a document keeps a relation as its key and has no navigation to load, so <c>[LoadEntity(Include)]</c> has nothing to read
+    ///     (owner's decision of 2026-10-25: refused at build, not at the first request).
+    /// </summary>
+    public static readonly DiagnosticDescriptor LoadIncludeNotSupported = new(
+        "PRAG3111",
+        "A load with Include of a Pragmatic entity on the documents engine",
+        "[{0}<{1}>] on {2} loads with Include, and a document keeps a relation as its key: there is no navigation to load. Load the other entity with a second [LoadEntity] by that key.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     /// <summary>Information: the call site's query as the generator wrote it (shown with -p:PragmaticCensus=true promoted, or in the IDE).</summary>
     public static readonly DiagnosticDescriptor Translated = new(
         "PRAG3199",

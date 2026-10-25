@@ -13,7 +13,7 @@ namespace Pragmatic.SourceGenerator.Features.Actions.Templates;
 ///         <c>GetByIdAsync</c> reads, so a row a filter hides is missing here as it is there.
 ///     </para>
 ///     <para>
-///         Only the plain key form is merged: loads with the same <c>Include</c> paths (different paths are
+///         Only the plain key form is merged: loads with the same <c>Include</c> paths on EF Core (different paths are
 ///         different reads), not a rule, a logic key, an existence check or a list. Different entities stay apart:
 ///         one DbContext runs one query at a time, and a single query across tables was not worth building
 ///         without a measurement.
@@ -27,7 +27,8 @@ internal sealed partial class LoadEntityTemplate
         var groups = new Dictionary<string, List<LoadEntityModel>>(StringComparer.Ordinal);
         foreach (var le in loads)
         {
-            if (le.ExistsOnly || le.IsMany || le.IsBySpecification || le.LogicKeyMember is not null)
+            // On an engine that compiles its reads a load with Include is its compiled read by key: there is no set to include through.
+            if (le.ExistsOnly || le.IsMany || le.IsBySpecification || le.LogicKeyMember is not null || (le.Includes.Count > 0 && CompilesItsReads(le)))
                 continue;
 
             var key = le.EntityTypeFullName + "|" + string.Join(",", le.Includes);

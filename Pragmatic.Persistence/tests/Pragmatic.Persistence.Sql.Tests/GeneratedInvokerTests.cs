@@ -46,6 +46,29 @@ public class GeneratedInvokerTests(PragmaticDatabases databases)
     }
 
     /// <summary>
+    ///     <c>[LoadEntity(Include)]</c>: the entity read by key with its navigation, compiled by the engine, the navigation's rows inside the
+    ///     caller's filters too (a deleted room type is not among them).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task LoadEntity_with_an_include_reads_the_navigation(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid riva;
+            using (_toggle.UseMode(FilterMode.Raw))
+                riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA").Id;
+            var invoker = new ReadRoomTypesAction.Invoker(new Property.SqlReadRepository(session), new ServiceCollection().BuildServiceProvider());
+
+            var types = await invoker.InvokeAsync(new ReadRoomTypesAction { Id = riva });
+
+            Assert.Equal(["STD"], types.Value!);
+        }
+    }
+
+    /// <summary>
     ///     <c>[RequireExists]</c>: the specification the template writes in the invoker (<c>Spec&lt;Review&gt;.Where(__row =&gt; …)</c>), a leaf in
     ///     generated code, answered by the engine inside the caller's filters.
     /// </summary>

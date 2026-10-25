@@ -50,9 +50,11 @@ internal static partial class SqlInterceptorGenerator
 
             var served = AllTypes(compilation.GlobalNamespace).Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql)).ToList();
             shapes.AddRange(PragmaticRegistration.Sql.For(compilation, served)); // each boundary's unit of work and repositories, keyed by the boundary
+            var loads = CompiledLoads(spc, compilation, engines);
             foreach (var entity in served)
             {
-                if (PragmaticReadRepository.For(entity, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList()) is { } repository)
+                if (PragmaticReadRepository.For(entity, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList(),
+                        loads.Where(l => SymbolEqualityComparer.Default.Equals(l.Entity, entity)).ToList()) is { } repository)
                     repositories.Add(repository);
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
                     repositories.Add(hierarchy); // its chains are bound and intercepted, as a repository's
@@ -111,6 +113,27 @@ internal static partial class SqlInterceptorGenerator
                     spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.ChainOverHiddenShape, access.Name.GetLocation(), access.Name.Identifier.ValueText, receiver.ToDisplayString()));
             }
         }
+    }
+
+    /// <summary>
+    ///     The loads with an <c>Include</c> of the entities this engine serves that it compiles a read for: a load by key of an entity declared
+    ///     here. Every other one is reported (PRAG3036), since its invoker would ask for a read nobody compiled.
+    /// </summary>
+    private static List<LoadIncludes.Declaration> CompiledLoads(SourceProductionContext spc, Compilation compilation, PragmaticEngines engines)
+    {
+        var compiled = new List<LoadIncludes.Declaration>();
+        foreach (var load in LoadIncludes.Read(compilation).Where(l => engines.Serves(l.Entity, PragmaticEngine.Sql)))
+        {
+            var why = load.Unsupported ?? (load.Entity.DeclaringSyntaxReferences.Length == 0
+                ? $"{load.Entity.Name} is declared in another assembly, whose repository is compiled without this load; declare the operation in the entity's assembly"
+                : null);
+            if (why is null)
+                compiled.Add(load);
+            else
+                spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.LoadIncludeNotCompiled, load.Location, load.Attribute, load.Entity.Name, load.Operation.Name, why));
+        }
+
+        return compiled;
     }
 
     /// <summary>The same declarations in <paramref name="compilation" />, by their documentation id.</summary>

@@ -1,6 +1,7 @@
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Actions.Models;
+using Pragmatic.SourceGenerator.Features.Actions.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Actions.Templates;
 
@@ -235,6 +236,8 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
     {
         if (le.Includes.Count == 0)
             return $"{le.RepositoryFieldName}.FirstOrDefaultAsync({rule}, ct)";
+        if (CompilesItsReads(le))
+            return NotCompiled(le);
 
         const string ef = "global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions";
         var query = $"{le.RepositoryFieldName}.Query()";
@@ -243,6 +246,21 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
 
         return $"{ef}.FirstOrDefaultAsync(global::System.Linq.Queryable.Where({query}, ({rule}).ToExpression()), ct)";
     }
+
+    /// <summary>
+    ///     Whether the entity's engine compiles its reads (Sql, documents): there is no <c>Query()</c> to include through, and the read is the
+    ///     engine's compiled one or none.
+    /// </summary>
+    private static bool CompilesItsReads(LoadEntityModel le)
+        => le.Engine is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+
+    /// <summary>
+    ///     A load with <c>Include</c> its engine compiles no read for: the engine's generator reports it at build (PRAG3036, PRAG3111), so this
+    ///     only keeps the invoker compiling without EF Core.
+    /// </summary>
+    private static string NotCompiled(LoadEntityModel le)
+        => $"global::System.Threading.Tasks.Task.FromException<{le.EntityTypeFullName}?>(new global::System.NotSupportedException("
+           + $"\"[LoadEntity<{le.EntityTypeShortName}>] with Include is not compiled for the {le.Engine} engine.\"))";
 
     /// <summary>The local a loaded entity — or list of them — is held in until it is handed over.</summary>
     /// <remarks>
@@ -293,6 +311,12 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
             return le.LogicKeyMember is { } member
                 ? $"{le.LogicKeyLookupClass}.GetBy{member}Async({le.RepositoryFieldName}, {key}, ct)"
                 : $"{le.RepositoryFieldName}.GetByIdAsync({key}, ct)";
+
+        if (le.Engine == PersistenceEngineMarker.Sql && le.LogicKeyMember is null)
+            return $"((global::Pragmatic.Persistence.Repository.IIncludingReadRepository<{le.EntityTypeFullName}>){le.RepositoryFieldName})"
+                   + $".GetByIdIncludingAsync({key}, \"{StringHelper.CSharpLiteral(IncludePaths.Key(le.Includes))}\", ct)";
+        if (CompilesItsReads(le))
+            return NotCompiled(le);
 
         const string ef = "global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions";
         var query = $"{le.RepositoryFieldName}.Query()";

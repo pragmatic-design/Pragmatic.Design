@@ -73,6 +73,16 @@ internal sealed record LoadEntityModel
     /// <summary>The navigation paths loaded with the row (<c>Include</c>), each checked against the entity.</summary>
     public EquatableArray<string> Includes { get; init; } = EquatableArray<string>.Empty;
 
+    /// <summary>The engine the entity's boundary names with <c>[PersistenceEngine]</c>, as the transform read it; null when it names none.</summary>
+    public string? EntityNamedEngine { get; init; }
+
+    /// <summary>
+    ///     The engine that persists the entity in this compilation (<c>PersistenceEngineMarker.EngineOf</c>): resolved in the pipeline, where the
+    ///     referenced engines are known. On the Sql engine a load with <see cref="Includes" /> reads through the repository's compiled read
+    ///     (<c>IIncludingReadRepository</c>) instead of EF Core's <c>Include</c>.
+    /// </summary>
+    public string? Engine { get; init; }
+
     /// <summary>
     ///     The loaded entity's <c>[Invariant]</c> rules this operation can answer: the ones whose body
     ///     reads nothing outside <see cref="Includes" />.
