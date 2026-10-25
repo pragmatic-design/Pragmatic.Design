@@ -27,4 +27,22 @@ internal static partial class SchemaMetadataTransform
         var columns = table.Columns.Select(c => c.SqlType == UnboundedString && keyed.Contains(c.Name) ? c with { SqlType = IndexableString } : c);
         return table with { Columns = columns.ToImmutableArray() };
     }
+
+    /// <summary>The live rows' filter as the other providers read it, and as T-SQL does: T-SQL has no boolean literal, a bit is 0.</summary>
+    private const string LiveRows = "\"IsDeleted\" = false";
+
+    private const string LiveRowsInTSql = "\"IsDeleted\" = 0";
+
+    /// <summary>
+    ///     <paramref name="table" /> with every index filtered on the live rows written in T-SQL: with <c>false</c> the index fails to create on
+    ///     SQL Server, and the migration with it, as the soft-delete column's <c>false</c> default did.
+    /// </summary>
+    private static TableSchemaModel WithTSqlFilters(TableSchemaModel table)
+    {
+        if (!table.Indexes.Any(i => i.Filter == LiveRows))
+            return table;
+
+        var indexes = table.Indexes.Select(i => i.Filter == LiveRows ? i with { Filter = LiveRowsInTSql } : i);
+        return table with { Indexes = indexes.ToImmutableArray() };
+    }
 }

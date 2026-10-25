@@ -87,6 +87,52 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         schema.Tables.SelectMany(t => t.Columns).Should().Contain(c => c.Name == "IsDeleted" && c.DefaultValue == "0", "the control: a soft-deleted entity is there");
     }
 
+    /// <summary>A soft-deleted entity with a domain key: its unique index holds the live rows only, a filter on the soft-delete column.</summary>
+    private const string KeyedEntity = """
+        global using System;
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.Entities;
+
+        [Entity]
+        [SoftDelete]
+        public partial class Coupon : IEntity
+        {
+            [LogicKey] public string Code { get; private set; } = "";
+        }
+        """;
+
+    /// <summary>
+    ///     The domain key's unique index on the Sql engine is EF Core's: the same columns, the same name, the live rows only. Not in the bridge
+    ///     suite's entities, whose databases include MySQL and Oracle, which have no partial index to migrate a filtered one to.
+    /// </summary>
+    [Theory]
+    [InlineData("PostgreSql")]
+    [InlineData("SqlServer")]
+    [InlineData("Sqlite")]
+    public void ALogicKey_IsTheSameUniqueIndexOnBothBranches(string provider)
+    {
+        var efCore = Describe(EfCoreSchema(provider, KeyedEntity)).ToList();
+        var (sql, diagnostics) = SqlSchema(provider, KeyedEntity);
+        diagnostics.Should().NotContain(d => d.Id == "PRAG3027", "a [LogicKey] is described, not refused");
+        var engine = Describe(sql).ToList();
+
+        efCore.Should().Contain(l => l.Contains("index IX_Coupons_Code (Code) UNIQUE", StringComparison.Ordinal), "the control: the key's index is there");
+        efCore.Except(engine).Concat(engine.Except(efCore)).Should().BeEmpty();
+    }
+
+    /// <summary>
+    ///     EF Core's branch on SQL Server writes the live rows' filter in T-SQL: <c>"IsDeleted" = 0</c>. With <c>false</c>, which T-SQL does not
+    ///     have, the index fails to create and the migration with it, as the soft-delete column's default did (<see cref="EfCoresBranch_OnSqlServer_WritesWhatSqlServerMigrates" />).
+    /// </summary>
+    [Fact]
+    public void EfCoresBranch_OnSqlServer_FiltersTheLiveRowsInTSql()
+    {
+        var index = EfCoreSchema("SqlServer", KeyedEntity).Tables.Single(t => t.Name == "Coupons").Indexes.Single(i => i.IsUnique);
+
+        index.Filter.Should().Be("\"IsDeleted\" = 0");
+    }
+
     /// <summary>The control: the schemas are not empty, so an equality of nothing to nothing cannot pass.</summary>
     [Fact]
     public void BothSchemas_DescribeTheEntitiesTables()

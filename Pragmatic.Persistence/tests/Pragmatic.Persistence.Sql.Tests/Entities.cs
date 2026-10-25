@@ -92,6 +92,19 @@ public partial class Category : IEntity
     public string Name { get; set; } = "";
 }
 
+/// <summary>
+///     A gift voucher: its code is its domain key (<c>[LogicKey]</c>), unique within the tenant, so its unique index leads with TenantId. Not
+///     soft deleted: a filtered index has nowhere to go on MySQL and Oracle, which this suite migrates too.
+/// </summary>
+[Entity]
+public partial class Voucher : IEntity, ITenantEntity
+{
+    [LogicKey]
+    public string Code { get; set; } = "";
+
+    public string TenantId { get; set; } = "";
+}
+
 /// <summary>A data scope rule computed at read time: the properties by the sea belong to the scope "seaside" (a caller holding it sees them).</summary>
 public sealed class SeasidePropertiesRule : Pragmatic.Persistence.Scopes.DataScopeRule<Property>
 {
