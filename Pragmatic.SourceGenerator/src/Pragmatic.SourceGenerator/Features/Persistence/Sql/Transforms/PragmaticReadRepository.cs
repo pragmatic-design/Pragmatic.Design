@@ -24,8 +24,11 @@ internal static class PragmaticReadRepository
         => compilation.GetTypeByMetadataName(ReadRepository) is not null && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.CompiledSpecification`1") is not null
            && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Sql.SqlUnitOfWork") is not null;
 
-    /// <summary>The repository nested in <paramref name="entity" />'s partial class (hint name, text); null for an entity that is not an <c>IEntity</c>.</summary>
-    public static (string Hint, string Source)? For(INamedTypeSymbol entity, IReadOnlyList<PragmaticQuery> queries)
+    /// <summary>
+    ///     The repository nested in <paramref name="entity" />'s partial class (hint name, text); null for an entity that is not an <c>IEntity</c>.
+    ///     <paramref name="loads" /> are the compiled loads with navigations of the entity (<see cref="LoadIncludes" />): one read per key.
+    /// </summary>
+    public static (string Hint, string Source)? For(INamedTypeSymbol entity, IReadOnlyList<PragmaticQuery> queries, IReadOnlyList<LoadIncludes.Declaration> loads)
     {
         if (!entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
             return null;
@@ -35,7 +38,9 @@ internal static class PragmaticReadRepository
             entity.Name,
             "global::" + entity.ToDisplayString(),
             queries.Where(q => !q.Paged).Select(RunCaseOf).ToEquatableArray(),
-            queries.Where(q => q.Paged).Select(RunCaseOf).ToEquatableArray());
+            queries.Where(q => q.Paged).Select(RunCaseOf).ToEquatableArray(),
+            loads.GroupBy(l => l.Key).OrderBy(g => g.Key, System.StringComparer.Ordinal)
+                .Select(g => new IncludeReadModel(g.Key, g.First().Includes.ToEquatableArray())).ToEquatableArray());
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
 

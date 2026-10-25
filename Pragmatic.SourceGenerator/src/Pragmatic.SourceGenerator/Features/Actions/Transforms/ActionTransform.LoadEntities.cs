@@ -82,6 +82,7 @@ internal static partial class ActionTransform
             var common = new LoadEntityModel
             {
                 Includes = includes,
+                EntityNamedEngine = entityType is INamedTypeSymbol namedEntity ? PersistenceEngineMarker.NamedFor(namedEntity) : null,
                 CheckableInvariants = RulesTheOperationCanAnswer(entityType, includes, symbol, compilation),
                 EntityTypeFullName = entityTypeFullName,
                 EntityTypeShortName = entityTypeShortName,
@@ -260,7 +261,6 @@ internal static partial class ActionTransform
         ITypeSymbol entityType, string entityTypeShortName, string attributeName, string? include,
         ImmutableArray<LoadEntityDiagnosticInfo>.Builder diagnostics)
     {
-        var includes = ImmutableArray.CreateBuilder<string>();
         foreach (var path in (include ?? "").Split(',').Select(p => p.Trim()).Where(p => p.Length > 0))
         {
             if (IncludePaths.FirstSegmentThatIsNotANavigation(entityType, path) is { } segment)
@@ -273,13 +273,11 @@ internal static partial class ActionTransform
                     IncludePath = path,
                     IncludeSegment = segment
                 });
-                continue;
             }
-
-            includes.Add(path);
         }
 
-        return includes.ToImmutable();
+        // The paths the load reads, by the rule an engine compiles its read for them by (IncludePaths.Declared): one list, two readers.
+        return IncludePaths.Declared(entityType, include);
     }
 
     /// <summary>

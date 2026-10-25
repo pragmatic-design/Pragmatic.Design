@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGenerator.Core;
@@ -48,6 +49,18 @@ internal static class IncludePaths
 
         return (valid.ToImmutable(), invalid.ToImmutable());
     }
+
+    /// <summary>
+    ///     The paths of a <c>[LoadEntity(Include = …)]</c> that name navigations, in the order written: what the load reads, and what an
+    ///     engine compiles a read for (<see cref="Key" />). A path that names none is reported where the attribute is read.
+    /// </summary>
+    public static ImmutableArray<string> Declared(ITypeSymbol entity, string? include)
+        => (include ?? "").Split(',').Select(p => p.Trim())
+            .Where(p => p.Length > 0 && FirstSegmentThatIsNotANavigation(entity, p) is null)
+            .ToImmutableArray();
+
+    /// <summary>The key a set of include paths is read by: an engine compiles one read per key, and the load names it.</summary>
+    public static string Key(IEnumerable<string> paths) => string.Join(",", paths);
 
     /// <summary>The first segment of <paramref name="path" /> that is not a navigation, or null when all are.</summary>
     public static string? FirstSegmentThatIsNotANavigation(ITypeSymbol entity, string path)

@@ -671,6 +671,7 @@ error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` 
 | `PRAG3033` | Warning | A declared query of a Pragmatic entity is not compiled for the Sql engine; `IReadRepository.RunAsync` refuses it there. EF Core runs it as before. |
 | `PRAG3034` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration (the message names it). EF Core runs it as before. |
 | `PRAG3035` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine; registered and Computed or Hybrid, it is refused at read. EF Core runs it as before. |
+| `PRAG3036` | Error | A `[LoadEntity(Include = …)]` the Sql engine does not compile: it loads by the logic key (`By`) or by a specification, or its entity is declared in another assembly. The engine compiles a load with `Include` by key, in the entity's own assembly; otherwise read the navigation with a second load. |
 | `PRAG3099` | Hidden | A call site translated to SQL, with its statement: what a census build (`-p:PragmaticCensus=true`) prints for every call site. |
 
 ### The documents engine: `PRAG3101-3199`
@@ -690,6 +691,7 @@ translated subset does not cover is a compile-time error with its remedy, never 
 | `PRAG3108` | Warning | A declared query is not compiled for the documents engine (its projection does not map, for one); the message says why. `IReadRepository.RunAsync` refuses it on the documents engine; EF Core runs it as before. |
 | `PRAG3109` | Warning | A grid adapter is compiled for the documents engine without a part of its declaration, which the message names. EF Core runs it as before. |
 | `PRAG3110` | Warning | A data scope rule of a Pragmatic entity is not compiled for the documents engine; the message says why. Registered and Computed or Hybrid, it is refused at read; EF Core runs it as before. |
+| `PRAG3111` | Error | A `[LoadEntity(Include = …)]` of an entity on the documents engine: a document keeps a relation as its key, so there is no navigation to load. Load the other entity with a second `[LoadEntity]` by that key. |
 | `PRAG3199` | Hidden | A call site translated to a document query, with the query: what a census build prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`

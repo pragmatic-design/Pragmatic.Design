@@ -1,3 +1,4 @@
+using System.Linq;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
@@ -14,6 +15,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
     private const string Token = "global::System.Threading.CancellationToken ct = default";
     private const string Spec = "global::Pragmatic.Specification.ISpecification";
     private const string Matching = "Matching(global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate(spec))";
+    private const string Including = "global::Pragmatic.Persistence.Repository.IIncludingReadRepository";
 
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
@@ -30,11 +32,12 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine($"partial class {model.EntityName}");
         AppendLine("{");
         AppendLine($"    /// <summary>Pragmatic's read repository for {model.EntityName} on the Sql engine: every read a compiled plan, the session's filters applied.</summary>");
-        AppendLine($"    public sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>");
+        AppendLine($"    public sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Including}<{type}>");
         AppendLine("    {");
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine($"            => await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
         AppendLine();
+        RenderGetByIdIncluding();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine($"            => await session.Query<{type}>().{Matching}.ToListAsync(ct);");
         AppendLine();
@@ -56,6 +59,48 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine("    }");
         RenderRepository();
         AppendLine("}");
+    }
+
+    /// <summary>
+    ///     <c>GetByIdIncludingAsync</c>: a case per set of include paths the compilation's loads declare, each a chain with its <c>Include</c>s
+    ///     the generator binds and intercepts; a key no load declared refused.
+    /// </summary>
+    private void RenderGetByIdIncluding()
+    {
+        var type = model.EntityType;
+        AppendLine($"        public async {Task}<{type}?> GetByIdIncludingAsync(global::System.Guid id, string includes, {Token})");
+        AppendLine("        {");
+        if (model.IncludeReads.Count > 0)
+        {
+            AppendLine("            switch (includes)");
+            AppendLine("            {");
+            foreach (var read in model.IncludeReads)
+            {
+                AppendLine($"                case {SqlInterceptorGenerator.Literal(read.Key)}:");
+                AppendLine($"                    return await session.Query<{type}>(){string.Concat(read.Paths.Select(p => $".Include({Lambda(p)})"))}.FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
+            }
+
+            AppendLine("            }");
+            AppendLine();
+        }
+        else
+        {
+            AppendLine($"            await {Task}.CompletedTask; // no load of this entity declares an Include: every call is refused below");
+        }
+
+        AppendLine($"            throw new global::System.NotSupportedException($\"No [LoadEntity] of {model.EntityName} the Sql engine compiled includes '{{includes}}'.\");");
+        AppendLine("        }");
+        AppendLine();
+    }
+
+    /// <summary>A path's lambda: its first navigation, then each next one below it with <c>Then</c> (<c>e => e.RoomTypes.Then(n1 => n1.Rates)</c>).</summary>
+    private static string Lambda(string path)
+    {
+        var segments = path.Split('.');
+        var body = segments[segments.Length - 1];
+        for (var i = segments.Length - 1; i > 0; i--)
+            body = $"{segments[i - 1]}.Then(n{i} => n{i}.{body})";
+        return $"e => e.{body}";
     }
 
     /// <summary>One <c>RunAsync</c>: a case per declared query of the kind, a query the engine does not know refused.</summary>
@@ -125,12 +170,16 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
+        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>");
         AppendLine("    {");
         AppendLine("        private readonly SqlReadRepository _read = new(unitOfWork.Session);");
         AppendLine();
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine("            => await _read.GetByIdAsync(id, ct) is { } row ? unitOfWork.Attach(row) : null;");
+        AppendLine();
+        // The unit of work tracks the root: the included children are read, and a change to them is not saved by this read.
+        AppendLine($"        public async {Task}<{type}?> GetByIdIncludingAsync(global::System.Guid id, string includes, {Token})");
+        AppendLine("            => await _read.GetByIdIncludingAsync(id, includes, ct) is { } row ? unitOfWork.Attach(row) : null;");
         AppendLine();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine("            => unitOfWork.AttachAll(await _read.FindAsync(spec, ct));");

@@ -42,8 +42,14 @@ internal static class PersistenceEngineMarker
         return null;
     }
 
-    /// <summary>The name of the EF Core engine, as <see cref="EngineOf" /> answers it.</summary>
+    /// <summary>The name of the EF Core engine, as <see cref="EngineOf(string, DetectedFeatures)" /> answers it.</summary>
     public const string EfCore = "EfCore";
+
+    /// <summary>The name of the Sql engine, as <see cref="EngineOf(string, DetectedFeatures)" /> answers it.</summary>
+    public const string Sql = "Sql";
+
+    /// <summary>The name of the documents engine, as <see cref="EngineOf(string, DetectedFeatures)" /> answers it.</summary>
+    public const string Documents = "Documents";
 
     /// <summary>
     ///     The engine that persists <paramref name="entity" /> in this compilation: the one its boundary names, else
@@ -55,8 +61,12 @@ internal static class PersistenceEngineMarker
     ///     what the boundary named, since a module and its host may reference different engines.
     /// </remarks>
     public static string? EngineOf(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
+        => EngineOf(entity.NamedPersistenceEngine, features);
+
+    /// <summary>The same rule from the engine the entity's boundary names (<see cref="NamedFor" />): what a model that is not an entity's carries.</summary>
+    public static string? EngineOf(string? named, DetectedFeatures features)
     {
-        if (entity.NamedPersistenceEngine is { } named)
+        if (named is not null)
             return named;
 
         var referenced = Referenced(features);

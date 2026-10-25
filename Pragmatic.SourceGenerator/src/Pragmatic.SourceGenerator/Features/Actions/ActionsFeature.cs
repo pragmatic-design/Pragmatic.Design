@@ -76,6 +76,8 @@ internal static partial class ActionsFeature
             {
                 LoadFromQueries = LoadFromQueries.Resolve(pair.Left.LoadFromQueries, pair.Right)
             })
+            .Combine(features)
+            .Select(static (pair, _) => pair.Left with { LoadEntities = ResolveLoadEngines(pair.Left.LoadEntities, pair.Right) })
             .WithTrackingName(TrackingNames.ActionsActions);
 
         // Report diagnostics for invalid actions
@@ -147,6 +149,8 @@ internal static partial class ActionsFeature
             {
                 LoadFromQueries = LoadFromQueries.Resolve(pair.Left.LoadFromQueries, pair.Right)
             })
+            .Combine(features)
+            .Select(static (pair, _) => pair.Left with { LoadEntities = ResolveLoadEngines(pair.Left.LoadEntities, pair.Right) })
             .WithTrackingName(TrackingNames.ActionsMutations);
 
         context.RegisterSourceOutputSafe(mutationProvider, static (ctx, mutation) => ReportLoadReadPermissions(

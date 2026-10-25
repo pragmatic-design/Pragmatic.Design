@@ -244,6 +244,14 @@ internal static class Diagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor LoadIncludeNotCompiled = new(
+        "PRAG3036",
+        "A load with Include of a Pragmatic entity is not compiled for the Sql engine",
+        "[{0}<{1}>] on {2} loads with Include, which the Sql engine does not compile here: {3}. A load with Include is compiled for a load by key of an entity of the same assembly; read the navigation with a second load otherwise.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor InGeneratedSource = new(
         "PRAG3032",
         "A chain the Sql engine generated did not translate",

@@ -53,6 +53,9 @@ internal static partial class DocumentGenerator
         SyntaxTree AddText((string Hint, string Source) source) => Add(Artifact.FromString(source.Hint, source.Source));
 
         var diagnostics = new List<Diagnostic>();
+        // A document keeps a relation as its key: a load with Include has no navigation to read (owner's decision of 2026-10-25).
+        foreach (var load in LoadIncludes.Read(compilation).Where(l => engines.Serves(l.Entity, PragmaticEngine.Documents)))
+            diagnostics.Add(Diagnostic.Create(DocDiagnostics.LoadIncludeNotSupported, load.Location, load.Attribute, load.Entity.Name, load.Operation.Name));
         if (DocReadRepository.Applies(compilation))
         {
             // The documents as the shaped entities store them: what the declared queries and the grids order by and project from.
