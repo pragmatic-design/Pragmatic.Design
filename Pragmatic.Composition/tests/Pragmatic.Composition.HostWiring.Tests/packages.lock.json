@@ -453,6 +453,31 @@
           "Pragmatic.Specification": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.documents": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Core": "[1.0.0, )",
+          "Pragmatic.Persistence.Engines": "[1.0.0, )",
+          "Pragmatic.Persistence.Expressions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.documents.core": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Mongo": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.documents.cosmos": {
+        "type": "Project"
+      },
+      "pragmatic.persistence.documents.mongo": {
+        "type": "Project"
+      },
       "pragmatic.persistence.efcore": {
         "type": "Project",
         "dependencies": {
@@ -465,6 +490,14 @@
           "Pragmatic.Mapping.EFCore": "[0.1.0-preview, )",
           "Pragmatic.Persistence": "[1.0.0, )",
           "Pragmatic.Result.EFCore": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
         }
       },
       "pragmatic.persistence.expressions": {

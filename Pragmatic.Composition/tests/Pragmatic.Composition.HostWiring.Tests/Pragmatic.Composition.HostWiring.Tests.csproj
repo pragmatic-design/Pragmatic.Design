@@ -72,6 +72,9 @@
     <!-- The Sql engine, not its bridge: a module that persists its boundary there declares the bridge's marker type itself (as the
          generator's tests do), so the other tests here keep EF Core as the one engine their modules reference. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
+    <!-- The documents engine's bridge: a module persisted there writes its schema only with the bridge's unit of work, so the stand-in
+         the Sql test uses is not enough. Kept out of every compilation but the one that asks for it (HostWiringFixture.EngineBridge). -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
   </ItemGroup>
 
 </Project>

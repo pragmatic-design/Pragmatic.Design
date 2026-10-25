@@ -157,6 +157,12 @@ internal sealed record DiscoveredModuleInfo
     public string? DbContextRegistrationMethod { get; init; }
 
     /// <summary>
+    ///     The boundary's documents schema, <c>{Boundary}DocSchema</c> in the boundary's namespace and assembly, fully qualified: present when
+    ///     the documents engine persists the boundary's entities, and the host applies it at start. Null otherwise.
+    /// </summary>
+    public string? DocumentSchemaTypeName { get; init; }
+
+    /// <summary>
     ///     Assembly names of packages imported via [UsePackage&lt;T&gt;] on this module.
     ///     The host SG fuses package metadata (actions, services) into the module's registration.
     /// </summary>

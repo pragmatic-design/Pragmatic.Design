@@ -70,6 +70,7 @@ internal static partial class MetadataReader
     private static DiscoveredModuleInfo? ParseDomainModuleAttribute(string assemblyName, AttributeData attribute)
     {
         string? boundaryTypeName = null;
+        string? documentSchemaTypeName = null;
         var readAccessTypes = ImmutableArray<string>.Empty;
 
         foreach (var namedArg in attribute.NamedArguments)
@@ -77,7 +78,10 @@ internal static partial class MetadataReader
             {
                 case "BoundaryType":
                     if (namedArg.Value.Value is INamedTypeSymbol boundaryType)
+                    {
                         boundaryTypeName = boundaryType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        documentSchemaTypeName = DocumentSchemaOf(boundaryType);
+                    }
                     break;
 
                 case "ReadAccessTypes":
@@ -98,7 +102,19 @@ internal static partial class MetadataReader
         if (string.IsNullOrEmpty(boundaryTypeName))
             return null;
 
-        return CreateDomainModule(assemblyName, boundaryTypeName, readAccessTypes);
+        return CreateDomainModule(assemblyName, boundaryTypeName, readAccessTypes) with { DocumentSchemaTypeName = documentSchemaTypeName };
+    }
+
+    /// <summary>
+    ///     The boundary's documents schema, fully qualified, when its assembly declares one: the persistence generator writes
+    ///     <c>{Boundary}DocSchema</c> into the boundary's namespace for the documents engine's boundaries (<c>PragmaticDocSchema</c>).
+    /// </summary>
+    private static string? DocumentSchemaOf(INamedTypeSymbol boundary)
+    {
+        var ns = boundary.ContainingNamespace.IsGlobalNamespace ? "" : boundary.ContainingNamespace.ToDisplayString() + ".";
+        return boundary.ContainingAssembly.GetTypeByMetadataName(ns + boundary.Name + "DocSchema") is { } schema
+            ? schema.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : null;
     }
 
     /// <summary>
