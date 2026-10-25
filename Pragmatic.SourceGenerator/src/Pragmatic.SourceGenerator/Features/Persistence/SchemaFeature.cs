@@ -19,18 +19,23 @@ internal static class SchemaFeature
     /// <param name="context">The generator's context.</param>
     /// <param name="efCoreSchemas">The schema of each database's EF Core entities.</param>
     /// <param name="engineSchemas">The tables each other engine contributes, per database.</param>
-    public static void Register(IncrementalGeneratorInitializationContext context,
+    /// <returns>
+    ///     The databases that have a schema, by name: the host migrates those (<see cref="PersistedStoresModel.SchemaDatabases" />), and
+    ///     cannot see this output to find out.
+    /// </returns>
+    public static IncrementalValueProvider<EquatableArray<string>> Register(IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<EquatableArray<SchemaMetadataModel>> efCoreSchemas,
         IncrementalValueProvider<EquatableArray<EngineSchemaModel>> engineSchemas)
-        => context.RegisterSourceOutputSafe(efCoreSchemas.Combine(engineSchemas), static (ctx, pair) =>
+    {
+        var schemas = efCoreSchemas.Combine(engineSchemas)
+            .Select(static (pair, _) => Merge(pair.Left, pair.Right).Where(s => s.Tables.Length > 0).ToEquatableArray());
+        context.RegisterSourceOutputSafe(schemas, static (ctx, all) =>
         {
-            foreach (var schema in Merge(pair.Left, pair.Right))
-            {
-                var artifact = new SchemaMetadataTemplate(schema).RenderOutput();
-                if (!artifact.IsEmpty)
-                    ctx.AddSource(artifact);
-            }
+            foreach (var schema in all)
+                ctx.AddSource(new SchemaMetadataTemplate(schema).RenderOutput());
         });
+        return schemas.Select(static (all, _) => all.Select(s => s.DatabaseName).ToEquatableArray());
+    }
 
     /// <summary>
     ///     Each database once: its EF Core schema with the engines' tables added (a table EF Core already describes keeps EF Core's form), or,

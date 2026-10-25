@@ -18,9 +18,9 @@ internal static partial class HostModeGenerator
         SourceProductionContext context, HostAggregationModel model, string rootNamespace)
     {
         // A database with no entity behind it has no schema to migrate to: the persistence generator
-        // writes none, and its migration context is null for the same reason.
+        // writes none. One with a schema is migrated whichever engine persists its boundaries.
         var dbGroups = model.HostIncludes
-            .Where(i => i.MigrationDbContextFqn is not null)
+            .Where(i => i.HasSchema)
             .GroupBy(i => i.DatabaseTypeName!)
             .ToList();
 

@@ -547,9 +547,11 @@ internal static partial class HostModeGenerator
     ///     root namespace derived from the module's boundary namespace (strip last segment + ".Entities").
     /// </summary>
     /// <remarks>
-    ///     Only for a database with an entity behind it: the persistence generator writes no migration
-    ///     context and no schema for one without, and a module with no entities yet is the first state of
-    ///     every application. A null FQN is what every consumer skips a database on.
+    ///     Only for a database with an EF Core entity behind it: the persistence generator writes no
+    ///     migration context for one without, and a module with no entities yet is the first state of every
+    ///     application. Whether the database has a schema is set here too (<see cref="HostIncludeModel.HasSchema" />):
+    ///     a database another engine persists has one and no migration context, and the runner migrates it all
+    ///     the same; the EF Core fallback skips a database on the null FQN.
     /// </remarks>
     private static HostIncludeModel EnrichWithMigrationDbContext(
         HostIncludeModel include,
@@ -558,6 +560,8 @@ internal static partial class HostModeGenerator
         if (!include.HasDatabase || include.DatabaseTypeName is null)
             return include;
 
+        // A schema is every engine's; the migration context below only EF Core's.
+        include = include with { HasSchema = persistedStores.HasSchema(include.DatabaseTypeName) };
         if (!persistedStores.HasDatabase(include.DatabaseTypeName))
             return include;
 
