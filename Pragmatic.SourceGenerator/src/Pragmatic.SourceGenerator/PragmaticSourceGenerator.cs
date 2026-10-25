@@ -136,8 +136,9 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // auto-derivation posture's inputs come from Actions. The invoker needs both: it is the door
         // every caller uses, and a permission written only on the route leaves the in-process one open.
         // The user entities too: [FromCurrentUser] binds a member of one, and the invoker fills it.
+        // The entities too: a query of an entity the Sql or documents engine persists reads through its repository, not EF Core's executor.
         Features.Persistence.QueryFeature.RegisterInvokers(
-            context, queryModels, permissionCatalog, features, permissionDerivation, currentUsers);
+            context, queryModels, permissionCatalog, features, permissionDerivation, currentUsers, entityModels);
 
         // The catalog of every name the posture produced — actions, mutations and queries — so a role
         // can grant them. Here and not inside Actions, because the queries are derived by Endpoints,

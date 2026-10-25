@@ -327,7 +327,8 @@ internal static class QueryFeature
         IncrementalValueProvider<EquatableArray<Core.PermissionConstEntry>> permissionCatalog,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<Actions.Models.PermissionDerivationInputs> derivation,
-        IncrementalValueProvider<EquatableArray<Identity.Models.UserEntityModel>> currentUsers)
+        IncrementalValueProvider<EquatableArray<Identity.Models.UserEntityModel>> currentUsers,
+        IncrementalValueProvider<ImmutableArray<EntityMetadataModel>> entities)
     {
         var resolved = queryModels
             .Combine(permissionCatalog)
@@ -344,25 +345,31 @@ internal static class QueryFeature
             .Combine(currentUsers)
             .Select(static (pair, _) =>
                 pair.Left.Select(model => CurrentUserBindingTransform.Resolve(model, pair.Right)).ToImmutableArray())
-            .Combine(features);
+            .Combine(features)
+            .Combine(entities);
 
-        context.RegisterSourceOutputSafe(resolved, (ctx, pair) =>
+        context.RegisterSourceOutputSafe(resolved, (ctx, input) =>
         {
+            var ((models, detected), entityModels) = input;
+
             // Before the gate: a binding that cannot be generated is an error whether or not an invoker
             // is written, and one reported only beside its output would go silent with it.
-            foreach (var model in pair.Left)
+            foreach (var model in models)
                 ReportCurrentUserBindings(ctx, model);
 
-            // The same gate as the rest of this feature, and it has to be: the invoker's read hands the
-            // query to IQueryExecutor, which takes an IPagedQuery/IQuery — the interface the query gets
-            // from the Apply generated beside it. Gating this on EF Core alone was more permissive than
-            // that, and a module with a [Query] and no Pragmatic persistence got an invoker for a query
-            // that implements neither interface: `Pragmatic.Actions.Samples` stopped compiling.
-            if (!pair.Right.HasPersistenceEFCore)
-                return;
-
-            foreach (var model in pair.Left)
-                GenerateQueryInvoker(ctx, model);
+            // An invoker only where the query implements IQuery/IPagedQuery, which is what its read takes: the Apply this feature
+            // generates with EF Core, or the shape the Sql or documents engine generates for a query of its entity. A module with a
+            // [Query] and no Pragmatic persistence gets neither, and an invoker would not compile (`Pragmatic.Actions.Samples`).
+            foreach (var model in models)
+            {
+                var engine = entityModels.FirstOrDefault(e => e.FullTypeName == model.EntityTypeFullName) is { } entity
+                    ? Core.PersistenceEngineMarker.EngineOf(entity, detected)
+                    : null;
+                if (engine is "Sql" or "Documents" && Core.PersistenceEngineMarker.Referenced(detected).Contains(engine))
+                    GenerateQueryInvoker(ctx, model with { ReadsThroughRepository = true });
+                else if (detected.HasPersistenceEFCore)
+                    GenerateQueryInvoker(ctx, model);
+            }
         });
     }
 

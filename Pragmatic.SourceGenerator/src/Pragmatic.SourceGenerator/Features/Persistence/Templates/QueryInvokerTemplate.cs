@@ -135,6 +135,14 @@ internal sealed partial class QueryInvokerTemplate : CSharpTemplate
                      error => $"return {failure}({error});"))
             AppendLine(statement);
 
+        if (_model.ReadsThroughRepository)
+        {
+            RenderRepositoryRead(entity, answer);
+            DecreaseIndent();
+            AppendLine("}, cancellationToken);");
+            return;
+        }
+
         AppendLine("var executor = global::Microsoft.Extensions.DependencyInjection"
                    + ".ServiceProviderServiceExtensions.GetRequiredService<"
                    + "global::Pragmatic.Persistence.Query.Executors.IQueryExecutor>(_services);");
@@ -186,6 +194,37 @@ internal sealed partial class QueryInvokerTemplate : CSharpTemplate
 
         DecreaseIndent();
         AppendLine("}, cancellationToken);");
+    }
+
+    /// <summary>
+    ///     The read on the Sql or documents engine: the entity's repository runs the query, compiled by the engine with its filters and
+    ///     sorts (<c>RunAsync</c>), inside the session's filters. One row is the first of the list, or the same <c>NotFoundError</c> EF Core's
+    ///     executor answers, named after the entity the caller asked about.
+    /// </summary>
+    /// <remarks>
+    ///     The repository unkeyed: on these engines an entity has one boundary, and its registration is not keyed by it.
+    /// </remarks>
+    private void RenderRepositoryRead(string entity, string answer)
+    {
+        AppendLine("var repository = global::Microsoft.Extensions.DependencyInjection"
+                   + ".ServiceProviderServiceExtensions.GetRequiredService<"
+                   + $"global::Pragmatic.Persistence.Repository.IReadRepository<{entity}>>(_services);");
+        AppendLine("var answer = await repository.RunAsync(q, cancellationToken).ConfigureAwait(false);");
+        AppendLine();
+
+        var result = $"global::Pragmatic.Result.Result<{answer}, global::Pragmatic.Result.IError>";
+        if (_model.IsSingle)
+        {
+            AppendLine("return answer.Count > 0");
+            IncreaseIndent();
+            AppendLine($"? {result}.Success(answer[0])");
+            AppendLine($": {result}.Failure(global::Pragmatic.Result.Http.NotFoundError.For(\"{StringHelper.CSharpLiteral(_model.EntityTypeName)}\"));");
+            DecreaseIndent();
+        }
+        else
+        {
+            AppendLine($"return {result}.Success(answer);");
+        }
     }
 
     /// <summary>What the query answers: one row, a page, or a list.</summary>

@@ -89,6 +89,34 @@ public class GeneratedInvokerTests(PragmaticDatabases databases)
     }
 
     /// <summary>
+    ///     A declared query's invoker on the Sql engine: the read goes through the entity's repository, which runs the query compiled
+    ///     (<c>RunAsync</c>), inside the caller's filters; the page comes back whole.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_declared_querys_invoker_reads_through_the_repository(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            var services = new ServiceCollection()
+                .AddScoped<IReadRepository<Review>>(_ => new Review.SqlReadRepository(session))
+                .BuildServiceProvider();
+
+            var page = await new SearchReviewsQuery.Invoker(services).RunAsync(new SearchReviewsQuery());
+
+            Assert.Equal(["anna@RIVA", "anna@MARE"], page.Value!.Items.Select(r => r.Text));
+            Assert.Equal(2, page.Value.TotalCount);
+
+            var one = await new ReviewByTextQuery.Invoker(services).RunAsync(new ReviewByTextQuery { Text = "anna@MARE" });
+            Assert.Equal("anna@MARE", one.Value!.Text);
+            var none = await new ReviewByTextQuery.Invoker(services).RunAsync(new ReviewByTextQuery { Text = "bruno@RIVA" }); // not hers
+            Assert.IsType<NotFoundError>(none.Error);
+        }
+    }
+
+    /// <summary>
     ///     The mutation invokers' writes on the Sql engine's repository and unit of work: a create adds and saves; an update loads by key (a
     ///     404 when nothing answers), applies and saves; a save that breaks a rule goes on as the violation, the entity detached, the unit of
     ///     work still usable.

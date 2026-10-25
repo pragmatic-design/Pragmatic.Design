@@ -74,7 +74,9 @@ internal sealed partial class PragmaticQuery
     {
         foreach (var named in attribute.NamedArguments)
         {
-            if (named.Key is "Single" or "MapInMemory" && named.Value.Value is true)
+            // Single = true compiles as the unpaged list of its filters and sorts: the invoker answers its first row, or the NotFoundError
+            // EF Core's executor answers (QueryInvokerTemplate). Every matching row is read, where EF Core reads one.
+            if (named.Key == "MapInMemory" && named.Value.Value is true)
                 Unsupported ??= $"{named.Key} = true is not compiled yet";
             if (named.Key == "Paged" && named.Value.Value is true)
                 Paged = true;
