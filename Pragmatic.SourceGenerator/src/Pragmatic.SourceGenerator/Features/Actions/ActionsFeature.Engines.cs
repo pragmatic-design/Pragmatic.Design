@@ -34,28 +34,29 @@ internal static partial class ActionsFeature
             .ToEquatableArray());
 
     /// <summary>
-    ///     What a mutation asks that its engine does not do: on the Sql engine, children written through the entity (merged into it, or
-    ///     hidden and brought back by a soft delete that cascades), which its unit of work would not save (PRAG3037); on the documents engine,
-    ///     any navigation loaded or child written (PRAG3112).
+    ///     What a mutation asks that its engine does not do: on the Sql engine, a child written through the entity as one reference (merged into
+    ///     it, or hidden and brought back by a soft delete that cascades), which its unit of work does not track: it saves the graph of the
+    ///     one-to-many collections it read (PRAG3037); on the documents engine, any navigation loaded or child written (PRAG3112).
     /// </summary>
     private static void ReportEngineRefusals(SourceProductionContext ctx, MutationModel mutation)
     {
-        var children = mutation.Children.Where(c => c.IsWritable).Select(c => c.TargetPropertyName).ToList();
-        // A cascading delete or restore writes the children it hides or brings back: the same graph, reached by another path. The engine
-        // load does not read them either, so without this it would mark the entity alone, silently.
+        var written = mutation.Children.Where(c => c.IsWritable).Select(c => (Name: c.TargetPropertyName, c.IsCollection)).ToList();
+        // A cascading delete or restore writes the children it hides or brings back: the same graph, reached by another path.
         if ((mutation.IsDelete || mutation.IsRestore) && mutation.SoftDelete is { HasCascadeTargets: true } softDelete)
         {
             foreach (var target in softDelete.CascadeTargets)
             {
-                if (!children.Contains(target.PropertyName))
-                    children.Add(target.PropertyName);
+                if (!written.Any(w => w.Name == target.PropertyName))
+                    written.Add((target.PropertyName, target.IsCollection));
             }
         }
 
-        if (mutation.Engine == PersistenceEngineMarker.Sql && children.Count > 0)
+        var children = written.Select(w => w.Name).ToList();
+        var references = written.Where(w => !w.IsCollection).Select(w => w.Name).ToList();
+        if (mutation.Engine == PersistenceEngineMarker.Sql && references.Count > 0)
         {
             ctx.ReportDiagnostic(Diagnostic.Create(SqlDiagnostics.MutationWritesChildren, mutation.LocationInfo?.ToLocation(),
-                mutation.TypeName, mutation.EntityTypeName, string.Join(", ", children)));
+                mutation.TypeName, mutation.EntityTypeName, string.Join(", ", references)));
         }
         else if (mutation.Engine == PersistenceEngineMarker.Documents && (children.Count > 0 || mutation.EngineLoadPaths.Count > 0))
         {

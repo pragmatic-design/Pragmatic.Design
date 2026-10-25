@@ -117,13 +117,14 @@ internal static class SoftDeleteEnricher
             var elementTypes = CollectionTypeHelper.GetElementTypes(propType);
             if (elementTypes.Count > 0)
             {
-                if (elementTypes.Any(e => e is INamedTypeSymbol named && ImplementsISoftDelete(named)) &&
+                if (elementTypes.FirstOrDefault(e => e is INamedTypeSymbol named && ImplementsISoftDelete(named)) is INamedTypeSymbol element &&
                     seen.Add(prop.Name))
                 {
                     builder.Add(new SoftDeleteCascadeTargetModel
                     {
                         PropertyName = prop.Name,
-                        IsCollection = true
+                        IsCollection = true,
+                        FilterFullTypeName = SoftDeleteFilterOf(element)
                     });
                 }
             }
@@ -134,7 +135,8 @@ internal static class SoftDeleteEnricher
                     builder.Add(new SoftDeleteCascadeTargetModel
                     {
                         PropertyName = prop.Name,
-                        IsCollection = false
+                        IsCollection = false,
+                        FilterFullTypeName = SoftDeleteFilterOf(refType)
                     });
                 }
             }
@@ -182,7 +184,8 @@ internal static class SoftDeleteEnricher
                 builder.Add(new SoftDeleteCascadeTargetModel
                 {
                     PropertyName = propertyName,
-                    IsCollection = relationType is "OneToMany" or "ManyToMany"
+                    IsCollection = relationType is "OneToMany" or "ManyToMany",
+                    FilterFullTypeName = SoftDeleteFilterOf(targetType)
                 });
             }
         }
@@ -191,6 +194,10 @@ internal static class SoftDeleteEnricher
     }
 
     /// <summary>Delegates to the shared reader rather than keeping a copy of the same shape.</summary>
+    /// <summary>The target's generated <c>SoftDeleteFilter</c>, fully qualified; null when nothing generates one (<see cref="HasGeneratedSoftDeleteFilter" />).</summary>
+    private static string? SoftDeleteFilterOf(INamedTypeSymbol target)
+        => HasGeneratedSoftDeleteFilter(target) ? target.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ".SoftDeleteFilter" : null;
+
     private static (string? RelationType, INamedTypeSymbol? TargetType) ParseRelationAttribute(
         INamedTypeSymbol attrClass)
         => RelationAttributeReader.Read(attrClass);

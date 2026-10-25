@@ -178,15 +178,79 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         }
         """;
 
+    /// <summary>A merge into a collection: the load reads the collection it merges into, compiled; the unit of work saves the graph.</summary>
     [Fact]
-    public void OnTheSqlEngine_AMutationThatWritesChildren_IsPrag3037()
+    public void OnTheSqlEngine_AMutationThatMergesACollection_LoadsItCompiled()
     {
         var result = Run(ChildWrites + SqlBridge);
 
-        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").ToList();
-        refused.Count.Should().Be(1);
-        refused[0].GetMessage().Should().Contain("SetBedsMutation writes the children of Room (Beds)");
-        refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").Should().BeEmpty("a collection is part of the graph the unit of work saves");
+        var sources = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result);
+        sources["Probe.Writes.Room.SqlReadRepository.g.cs"].Should().Contain("case \"Beds\":");
+        sources.Values.Should().Contain(s => s.Contains("class SetBedsMutation", StringComparison.Ordinal)
+                                             && s.Contains(".GetByIdIncludingAsync(mutation.Id, \"Beds\", ct)", StringComparison.Ordinal));
+    }
+
+    private const string DeepWrites = """
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.Deep
+        {
+            [Entity] public partial class Room : IEntity
+            {
+                public System.Collections.Generic.List<Bed> Beds { get; set; } = [];
+            }
+
+            [Entity]
+            [Relation.ManyToOne<Room>]
+            [PartOf<Room>]
+            public partial class Bed : IEntity
+            {
+                public System.Collections.Generic.List<Pillow> Pillows { get; set; } = [];
+            }
+
+            [Entity]
+            [Relation.ManyToOne<Bed>]
+            [PartOf<Bed>]
+            public partial class Pillow : IEntity { public string Fill { get; set; } = ""; }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class WritePillowMutation : Pragmatic.Actions.Mutation.Mutation<Pillow>
+            {
+                public System.Guid Id { get; init; }
+
+                public string Fill { get; init; } = "";
+            }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class WriteBedMutation : Pragmatic.Actions.Mutation.Mutation<Bed>
+            {
+                public System.Guid Id { get; init; }
+
+                public System.Collections.Generic.List<WritePillowMutation> Pillows { get; init; } = [];
+            }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class SetBedsMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+
+                public required System.Collections.Generic.List<WriteBedMutation> Beds { get; init; }
+            }
+        }
+        """;
+
+    /// <summary>
+    ///     A child mutation that merges children of its own: the load reads them too, the path the child's <c>WrittenNavigations</c> lists at run
+    ///     time, known at build.
+    /// </summary>
+    [Fact]
+    public void OnTheSqlEngine_AChildMutationsOwnMerge_IsLoadedToo()
+    {
+        var result = Run(DeepWrites + SqlBridge);
+
+        GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Values.Should().Contain(s => s.Contains("class SetBedsMutation", StringComparison.Ordinal)
+            && s.Contains(".GetByIdIncludingAsync(mutation.Id, \"Beds,Beds.Pillows\", ct)", StringComparison.Ordinal));
     }
 
     private const string CascadingDelete = """
@@ -212,15 +276,49 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         }
         """;
 
-    /// <summary>A delete whose soft delete cascades writes the children it hides: the same graph the unit of work would not save.</summary>
+    /// <summary>A delete whose soft delete cascades into a collection: the load reads the children it hides, compiled.</summary>
     [Fact]
-    public void OnTheSqlEngine_ADeleteThatCascades_IsPrag3037()
+    public void OnTheSqlEngine_ADeleteThatCascadesIntoACollection_LoadsItCompiled()
     {
         var result = Run(CascadingDelete + SqlBridge);
 
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").Should().BeEmpty("a collection is part of the graph the unit of work saves");
+        GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Values.Should().Contain(s => s.Contains("class CloseRoomMutation", StringComparison.Ordinal)
+            && s.Contains(".GetByIdIncludingAsync(mutation.Id, \"Beds\", ct)", StringComparison.Ordinal));
+    }
+
+    private const string CascadingReference = """
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.References
+        {
+            [Entity]
+            [SoftDelete(Cascade = true)]
+            [Relation.OneToOne<Plaque>.WithNavigation("Plaque")]
+            public partial class Room : IEntity { public string Code { get; set; } = ""; }
+
+            [Entity]
+            [SoftDelete]
+            public partial class Plaque : IEntity { public string Text { get; set; } = ""; }
+
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Delete)]
+            public partial class CloseRoomMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+            }
+        }
+        """;
+
+    /// <summary>A cascade into a to-one navigation: outside the graph the unit of work saves, so refused.</summary>
+    [Fact]
+    public void OnTheSqlEngine_ADeleteThatCascadesIntoAReference_IsPrag3037()
+    {
+        var result = Run(CascadingReference + SqlBridge);
+
         var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3037").ToList();
         refused.Count.Should().Be(1);
-        refused[0].GetMessage().Should().Contain("CloseRoomMutation writes the children of Room (Beds)");
+        refused[0].GetMessage().Should().Contain("CloseRoomMutation writes the child reference of Room (Plaque)");
+        refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
     }
 
     private static SourceGenRunResult Run(string source)

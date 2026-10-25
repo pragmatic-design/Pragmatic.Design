@@ -541,6 +541,12 @@ internal sealed record SoftDeleteCascadeTargetModel
 
     /// <summary>Whether this is a collection navigation (OneToMany) vs single reference.</summary>
     public bool IsCollection { get; init; }
+
+    /// <summary>
+    ///     The target's generated <c>SoftDeleteFilter</c>, fully qualified, when it has one: what a restore on an engine lifts for the children
+    ///     it brings back, whose rows the read of the navigation filters as its own.
+    /// </summary>
+    public string? FilterFullTypeName { get; init; }
 }
 
 internal sealed record MutationPropertyMapModel

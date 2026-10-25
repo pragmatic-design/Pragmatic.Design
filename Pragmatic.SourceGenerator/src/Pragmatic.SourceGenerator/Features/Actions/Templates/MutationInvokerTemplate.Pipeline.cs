@@ -170,7 +170,18 @@ internal sealed partial class MutationInvokerTemplate
         // "SoftDelete", which on EF Core the IgnoreQueryFilters below names. Here only the toggle can carry it; with the type alone the
         // restore found nothing.
         if (_model.IsRestore && _model.EntityDeclaresSoftDelete)
+        {
             AppendLine("using var __liftSoftDelete = _filterToggle?.DisableQueryFilter(\"SoftDelete\");");
+
+            // The children a cascading restore brings back are read with the navigation, filtered as their own rows: their soft delete is
+            // lifted too, and nothing else of theirs. EF Core's read filters an included navigation by the named filter alone.
+            var cascade = 0;
+            foreach (var target in _model.SoftDelete?.CascadeTargets ?? [])
+            {
+                if (target.FilterFullTypeName is { } filter)
+                    AppendLine($"using var __liftCascade{cascade++} = _filterToggle?.Disable(typeof({filter}));");
+            }
+        }
 
         var id = $"mutation.{_model.IdPropertyName}";
         if (_model.EngineLoadPaths.Count == 0)

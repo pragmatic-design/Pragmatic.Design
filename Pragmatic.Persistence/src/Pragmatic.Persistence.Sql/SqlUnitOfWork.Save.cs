@@ -20,6 +20,7 @@ public sealed partial class SqlUnitOfWork
     {
         var now = _timeProvider.GetUtcNow();
         var userId = _currentUser?.IdOrNull();
+        DetectGraph(); // first: a child added to a collection is a new row, and gets its generated values as any other
         await SaveSteps.FillGeneratedValuesAsync(_entries, _generatedValues, now, userId, ct).ConfigureAwait(false);
         var dialect = Session.Dialect;
         foreach (var entry in _entries)
@@ -97,6 +98,9 @@ public sealed partial class SqlUnitOfWork
             else
                 entry.Saved(dialect);
         }
+
+        foreach (var entry in _entries)
+            Remember(entry); // the collections as saved: what the next save compares with
 
         await SaveSteps.PublishEventsAsync(this, raisers, _dispatcher, ct).ConfigureAwait(false);
         return rows;

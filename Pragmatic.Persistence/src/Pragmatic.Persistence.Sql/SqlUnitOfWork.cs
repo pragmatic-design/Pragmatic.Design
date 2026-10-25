@@ -63,15 +63,10 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
 
     /// <summary>
     ///     A row read through the unit of work: tracked as unchanged with its snapshot, or, when an entity with its key is tracked already, that
-    ///     one (the identity map: the values in memory win over the ones read, as on EF Core).
+    ///     one (the identity map: the values in memory win over the ones read, as on EF Core). The children its collections were read with are
+    ///     tracked with it (<c>SqlUnitOfWork.Graph.cs</c>).
     /// </summary>
-    public T Attach<T>(T entity) where T : class, IEntity
-    {
-        if (_byKey.TryGetValue((entity.GetType(), entity.PersistenceId), out var tracked))
-            return (T)tracked.Entity;
-        Track(new SqlEntry(entity, SqlEntryState.Unchanged, Session.Dialect));
-        return entity;
-    }
+    public T Attach<T>(T entity) where T : class, IEntity => (T)AttachRow(entity).Entity;
 
     /// <summary>The rows of a read, each attached as one row is.</summary>
     public List<T> AttachAll<T>(List<T> entities) where T : class, IEntity

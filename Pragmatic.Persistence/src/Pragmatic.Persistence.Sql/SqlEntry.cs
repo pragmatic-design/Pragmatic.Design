@@ -43,6 +43,12 @@ public sealed class SqlEntry : ISaveEntry
     /// <summary>The check that the caller may write the row, for an entity staged without being read through the unit of work; null otherwise.</summary>
     internal Func<CancellationToken, Task<bool>>? Visible { get; set; }
 
+    /// <summary>
+    ///     The children each one-to-many collection held when the entity was read or last saved: what tells a child removed from it, as a
+    ///     row's snapshot tells a changed column. Null until the unit of work remembers the entity's graph.
+    /// </summary>
+    internal Dictionary<SqlCollection, List<SqlEntry>>? Members { get; set; }
+
     bool ISaveEntry.IsAdded => State == SqlEntryState.Added;
 
     bool ISaveEntry.IsModified => State == SqlEntryState.Modified;

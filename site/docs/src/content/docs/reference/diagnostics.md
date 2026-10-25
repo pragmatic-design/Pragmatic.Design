@@ -672,7 +672,7 @@ error with its remedy, never a query that runs in memory. `PRAG3017`-`PRAG3020` 
 | `PRAG3034` | Warning | A grid adapter of a Pragmatic entity is compiled for the Sql engine without part of its declaration (the message names it). EF Core runs it as before. |
 | `PRAG3035` | Warning | A data scope rule of a Pragmatic entity is not compiled for the Sql engine; registered and Computed or Hybrid, it is refused at read. EF Core runs it as before. |
 | `PRAG3036` | Error | A `[LoadEntity(Include = …)]` the Sql engine does not compile: it loads by the logic key (`By`) or by a specification, or its entity is declared in another assembly. The engine compiles a load with `Include` by key, in the entity's own assembly; otherwise read the navigation with a second load. |
-| `PRAG3037` | Error | A mutation of an entity on the Sql engine writes its children: a collection merged into the entity, or the children a cascading soft delete hides or a restore brings back. The engine's unit of work saves each row it tracks, not a graph, so the children would not be saved. Write each child with a mutation of its own. |
+| `PRAG3037` | Error | A mutation of an entity on the Sql engine writes a child reference: a to-one child merged into the entity, or one a cascading soft delete hides or a restore brings back. The engine's unit of work saves the children of the one-to-many collections it read, not a to-one navigation, so the child would not be saved. Write the child with a mutation of its own. |
 | `PRAG3099` | Hidden | A call site translated to SQL, with its statement: what a census build (`-p:PragmaticCensus=true`) prints for every call site. |
 
 ### The documents engine: `PRAG3101-3199`
