@@ -542,9 +542,8 @@ internal static partial class HostModeGenerator
     }
 
     /// <summary>
-    ///     Enriches a HostIncludeModel with the MigrationDbContext FQN derived by convention.
-    ///     Convention: the Persistence SG generates {DatabaseSimpleName}MigrationDbContext in the
-    ///     root namespace derived from the module's boundary namespace (strip last segment + ".Entities").
+    ///     Enriches a HostIncludeModel with the database's schema and MigrationDbContext, named as the persistence generator wrote
+    ///     them (<see cref="Persistence.Models.PersistedStoresModel" />).
     /// </summary>
     /// <remarks>
     ///     Only for a database with an EF Core entity behind it: the persistence generator writes no
@@ -560,8 +559,9 @@ internal static partial class HostModeGenerator
         if (!include.HasDatabase || include.DatabaseTypeName is null)
             return include;
 
-        // A schema is every engine's; the migration context below only EF Core's.
-        include = include with { HasSchema = persistedStores.HasSchema(include.DatabaseTypeName) };
+        // A schema is every engine's; the migration context below only EF Core's. Both are named as the persistence generator wrote them:
+        // their namespace follows the database's entities, which a derivation from the module's type matched only for {Module}.Entities.
+        include = include with { SchemaTypeName = persistedStores.SchemaOf(include.DatabaseTypeName)?.SchemaTypeName };
         if (!persistedStores.HasDatabase(include.DatabaseTypeName))
             return include;
 
@@ -570,31 +570,6 @@ internal static partial class HostModeGenerator
         var lastDot = dbFqn.LastIndexOf('.');
         var dbSimpleName = lastDot >= 0 ? dbFqn.Substring(lastDot + 1) : dbFqn;
 
-        // Module simple name from the include (e.g., "CatalogModule" → "Catalog")
-        var moduleTypeName = include.ModuleTypeName.Replace("global::", string.Empty);
-        var moduleLastDot = moduleTypeName.LastIndexOf('.');
-        var moduleNs = moduleLastDot > 0 ? moduleTypeName.Substring(0, moduleLastDot) : string.Empty;
-
-        // Derive root namespace the same way DbContextFeature does:
-        // "Showcase.Catalog" → strip last segment → "Showcase"
-        var rootNs = DeriveRootNamespace(moduleNs);
-
-        var migrationFqn = string.IsNullOrEmpty(rootNs)
-            ? $"global::{dbSimpleName}MigrationDbContext"
-            : $"global::{rootNs}.{dbSimpleName}MigrationDbContext";
-
-        return include with { MigrationDbContextFqn = migrationFqn };
-    }
-
-    /// <summary>
-    ///     Same logic as DbContextFeature.DeriveRootNamespace — strips ".Entities" and last segment.
-    /// </summary>
-    private static string DeriveRootNamespace(string ns)
-    {
-        if (ns.EndsWith(".Entities", StringComparison.Ordinal))
-            ns = ns.Substring(0, ns.Length - ".Entities".Length);
-
-        var parts = ns.Split('.');
-        return parts.Length >= 2 ? string.Join(".", parts.Take(parts.Length - 1)) : ns;
+        return include with { MigrationDbContextFqn = persistedStores.MigrationDbContextOf(dbSimpleName) };
     }
 }

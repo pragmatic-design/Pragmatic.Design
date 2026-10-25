@@ -64,19 +64,32 @@ internal sealed record PersistedStoresModel
            && Databases.AsImmutableArray().Contains(StripGlobal(databaseTypeName));
 
     /// <summary>
-    ///     Databases with a <c>{Db}Schema</c>, by class name: the ones the host migrates with Pragmatic.Migrations. A superset of
-    ///     <see cref="Databases" /> wherever another engine than EF Core persists a boundary, since its database has a schema and no EF Core
-    ///     migration context.
+    ///     Databases with a <c>{Db}Schema</c>, by class name, with the namespace it was written in: the ones the host migrates with
+    ///     Pragmatic.Migrations. A superset of <see cref="Databases" /> wherever another engine than EF Core persists a boundary, since its
+    ///     database has a schema and no EF Core migration context.
     /// </summary>
-    public EquatableArray<string> SchemaDatabases { get; init; } = EquatableArray<string>.Empty;
+    public EquatableArray<SchemaDatabaseModel> SchemaDatabases { get; init; } = EquatableArray<SchemaDatabaseModel>.Empty;
 
-    public bool HasSchema(string? databaseTypeName)
+    /// <summary>
+    ///     The namespace the EF Core migration contexts (<c>{Db}MigrationDbContext</c>) are declared in: the host names them by it, with or
+    ///     without a schema beside them (none without Pragmatic.Migrations).
+    /// </summary>
+    public string MigrationContextNamespace { get; init; } = "";
+
+    /// <summary>The EF Core migration context of <paramref name="databaseSimpleName" />, fully qualified.</summary>
+    public string MigrationDbContextOf(string databaseSimpleName)
+        => string.IsNullOrEmpty(MigrationContextNamespace)
+            ? $"global::{databaseSimpleName}MigrationDbContext"
+            : $"global::{MigrationContextNamespace}.{databaseSimpleName}MigrationDbContext";
+
+    /// <summary>The schema written for <paramref name="databaseTypeName" />, or null when none was.</summary>
+    public SchemaDatabaseModel? SchemaOf(string? databaseTypeName)
     {
         if (databaseTypeName is null)
-            return false;
+            return null;
         var name = StripGlobal(databaseTypeName);
         var simple = name.Substring(name.LastIndexOf('.') + 1);
-        return SchemaDatabases.AsImmutableArray().Contains(simple);
+        return SchemaDatabases.AsImmutableArray().FirstOrDefault(s => s.DatabaseName == simple);
     }
 
     public static PersistedStoresModel From(

@@ -57,7 +57,7 @@ internal static partial class HostModeGenerator
 
             var dbSimpleName = SimpleName(group.Key);
             var resultVar = CamelCase(dbSimpleName) + "Result";
-            var schemaClass = SchemaClassName(rep.ModuleTypeName, dbSimpleName);
+            var schemaClass = rep.SchemaTypeName!;
 
             sb.AppendLine($"        var {resultVar} = await migrationRunner.MigrateAsync(");
             sb.AppendLine("            new global::Pragmatic.Migrations.Runner.MigrationContext(");
@@ -87,15 +87,4 @@ internal static partial class HostModeGenerator
 
     private static string CamelCase(string value)
         => string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value.Substring(1);
-
-    // Mirrors PragmaticEntryTemplate: schema metadata lives in the module's root namespace
-    // (e.g. Showcase), two levels above the module type (e.g. Showcase.Booking.BookingModule).
-    private static string SchemaClassName(string? moduleTypeName, string dbSimpleName)
-    {
-        var moduleNs = moduleTypeName?.Replace("global::", "") ?? "";
-        var schemaNs = moduleNs.Contains('.') ? moduleNs.Substring(0, moduleNs.LastIndexOf('.')) : moduleNs;
-        if (schemaNs.Contains('.'))
-            schemaNs = schemaNs.Substring(0, schemaNs.LastIndexOf('.'));
-        return $"global::{schemaNs}.{dbSimpleName}Schema";
-    }
 }
