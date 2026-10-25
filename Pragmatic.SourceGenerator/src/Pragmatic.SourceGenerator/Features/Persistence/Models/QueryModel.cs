@@ -450,6 +450,13 @@ internal sealed record QueryModel
     /// <summary>Whether the query answers one row.</summary>
     public bool IsSingle { get; init; }
 
+    /// <summary>
+    ///     Whether the invoker reads through the entity's <c>IReadRepository&lt;T&gt;.RunAsync</c> instead of EF Core's executor: the entity is
+    ///     persisted by the Sql or documents engine, whose repository runs the query compiled. Set where the invoker is generated, which
+    ///     knows the entity's engine.
+    /// </summary>
+    public bool ReadsThroughRepository { get; init; }
+
     /// <summary>Whether the result type is mapped after the rows arrive rather than projected.</summary>
     /// <remarks>
     ///     ⚠️ Declared on the attribute, never inferred from the result type. A DTO without

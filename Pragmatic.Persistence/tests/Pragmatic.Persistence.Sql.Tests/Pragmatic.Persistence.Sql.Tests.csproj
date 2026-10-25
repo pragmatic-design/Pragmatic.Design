@@ -32,8 +32,6 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
-    <!-- Pragmatic's operations over these entities, generated as an application's are: the invokers' reads and writes on the Sql engine. -->
-    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->

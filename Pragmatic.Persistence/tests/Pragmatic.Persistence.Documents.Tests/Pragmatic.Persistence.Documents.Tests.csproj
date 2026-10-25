@@ -31,8 +31,6 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
-    <!-- Pragmatic's operations over these entities, generated as an application's are: the invokers' reads on the documents engine. -->
-    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

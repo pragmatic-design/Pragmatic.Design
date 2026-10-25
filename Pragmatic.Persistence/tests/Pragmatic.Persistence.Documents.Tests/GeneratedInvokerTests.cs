@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Documents;
+using Pragmatic.Persistence.Query;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Result.Http;
 using Xunit;
@@ -32,5 +33,27 @@ public class GeneratedInvokerTests(DocumentServers servers)
         Assert.True((await invoker.InvokeAsync(new CheckReviewAction { Id = all.Single(r => r.Text == "anna@RIVA").Id })).IsSuccess);
         Assert.IsType<NotFoundError>((await invoker.InvokeAsync(new CheckReviewAction { Id = all.Single(r => r.Text == "bruno@RIVA").Id })).Error); // not hers
         Assert.IsType<NotFoundError>((await invoker.InvokeAsync(new CheckReviewAction { Id = Guid.NewGuid() })).Error);
+    }
+
+    /// <summary>
+    ///     A declared query's invoker on the documents engine, a paged one and a projected list: the read goes through the entity's repository,
+    ///     which runs the query compiled (<c>RunAsync</c>), inside the caller's filters.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_declared_querys_invoker_reads_through_the_repository(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await DeclaredQueryTests.ReviewsAsync(servers, store, _toggle);
+        var services = new ServiceCollection()
+            .AddScoped<Pragmatic.Persistence.Repository.IReadRepository<Review>>(_ => new Review.DocReadRepository(session))
+            .BuildServiceProvider();
+
+        var page = await new SearchReviewsQuery.Invoker(services).RunAsync(new SearchReviewsQuery());
+        Assert.Equal(["anna@RIVA", "anna@MARE"], page.Value!.Items.Select(r => r.Text)); // anna's published ones
+        Assert.Equal(2, page.Value.TotalCount);
+
+        var lines = await new ReviewLinesQuery.Invoker(services).RunAsync(new ReviewLinesQuery { TextSort = SortDirection.Ascending });
+        Assert.Equal(["anna@MARE", "anna@RIVA"], lines.Value!.Select(l => l.Text));
     }
 }
