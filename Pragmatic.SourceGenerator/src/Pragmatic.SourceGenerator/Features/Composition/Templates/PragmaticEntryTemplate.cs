@@ -331,7 +331,8 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
     /// </summary>
     private void RenderDatabaseInitialization()
     {
-        if (!_model.HasDatabaseRegistrations)
+        var documents = DocumentSchemaModules();
+        if (!_model.HasDatabaseRegistrations && documents.Count == 0)
         {
             Comment("No databases configured — skip initialization");
             return;
@@ -343,7 +344,7 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
             .GroupBy(i => i.DatabaseTypeName ?? string.Empty)
             .ToList();
 
-        if (databaseGroups.Count == 0)
+        if (databaseGroups.Count == 0 && documents.Count == 0)
         {
             Comment("No databases configured — skip initialization");
             return;
@@ -356,14 +357,73 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
         RenderDeclaredConnectionStringChecks(databaseGroups);
 
         var migratable = MigratableGroups(databaseGroups);
-        if (migratable.Count == 0)
+        if (migratable.Count == 0 && documents.Count == 0)
         {
             Comment("No database has an entity behind it yet — nothing to migrate");
             return;
         }
 
         // Wrap the entire DB init with maintenance mode if available
-        RenderMaintenanceModeWrapper(() => RenderDatabaseInitBlock(migratable));
+        RenderMaintenanceModeWrapper(() =>
+        {
+            if (migratable.Count > 0)
+                RenderDatabaseInitBlock(migratable);
+            RenderDocumentSchemas(documents);
+        });
+    }
+
+    /// <summary>
+    ///     The documents engine's boundaries of the modules this host includes, with the schema their assembly declares
+    ///     (<see cref="DiscoveredModuleInfo.DocumentSchemaTypeName" />); none without Pragmatic.Migrations, whose runner is what decides
+    ///     that a host migrates at start.
+    /// </summary>
+    private List<DiscoveredModuleInfo> DocumentSchemaModules()
+    {
+        if (!_model.DetectedFeatures.HasMigrations)
+            return [];
+        var included = _model.IncludedAssemblyNames.IsDefaultOrEmpty
+            ? null
+            : new HashSet<string>(_model.IncludedAssemblyNames.AsImmutableArray(), StringComparer.Ordinal);
+        return _model.DomainModules
+            .Where(m => m.DocumentSchemaTypeName is not null && m.BoundaryTypeName is not null && (included is null || included.Contains(m.AssemblyName)))
+            .OrderBy(m => m.BoundaryTypeName, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    ///     Applies each documents boundary's schema with the migrations, through the boundary's session. What the backend cannot apply
+    ///     stops the start, as a failed migration does (owner's decision): a collection without the index or the unique key its queries
+    ///     rely on is a schema the code no longer matches. A boundary whose session nothing registered stops it too, by name.
+    /// </summary>
+    private void RenderDocumentSchemas(List<DiscoveredModuleInfo> documents)
+    {
+        if (documents.Count == 0)
+            return;
+
+        Comment("Documents schemas — applied with the migrations, through each boundary's session");
+        AppendLine($"if ({_appServicesExpr}.GetService<global::Pragmatic.Migrations.Runner.IMigrationRunner>() is not null)");
+        Block(() =>
+        {
+            AppendLine($"using var documentsScope = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope({_appServicesExpr});");
+            foreach (var module in documents)
+            {
+                var boundary = module.BoundaryTypeName!;
+                var boundaryName = GetSimpleName(boundary);
+                var variable = ToCamelCase(module.Name);
+                AppendLine($"progressStream?.Report(new global::Pragmatic.Maintenance.MigrationProgressEvent(\"migration\", \"Applying the {boundaryName} documents schema...\", DatabaseName: \"{boundaryName}\"));");
+                AppendLine($"var {variable}DocSession = global::Microsoft.Extensions.DependencyInjection.ServiceProviderKeyedServiceExtensions.GetKeyedService<global::Pragmatic.Persistence.Documents.DocSession>(documentsScope.ServiceProvider, typeof({boundary}))");
+                AppendLine($"    ?? throw new global::System.InvalidOperationException(\"[{boundaryName}] The documents schema is applied through the boundary's session, and nothing registered one: call services.Add{boundaryName}Persistence(...) — host startup aborted.\");");
+                AppendLine($"var {variable}DocSchema = await {module.DocumentSchemaTypeName}.EnsureAsync({variable}DocSession);");
+                AppendLine($"if ({variable}DocSchema.NotApplied.Count > 0)");
+                Block(() =>
+                {
+                    AppendLine($"progressStream?.Report(new global::Pragmatic.Maintenance.MigrationProgressEvent(\"error\", \"{boundaryName} documents schema not applied\", IsError: true, DatabaseName: \"{boundaryName}\"));");
+                    AppendLine($"throw new global::System.InvalidOperationException(\"[{boundaryName}] The documents schema could not be applied — host startup aborted: \"");
+                    AppendLine($"    + string.Join(\"; \", global::System.Linq.Enumerable.Select({variable}DocSchema.NotApplied, c => c.Collection + \" \" + c.Element + \": \" + c.Reason)));");
+                });
+                AppendLine();
+            }
+        });
     }
 
     /// <summary>

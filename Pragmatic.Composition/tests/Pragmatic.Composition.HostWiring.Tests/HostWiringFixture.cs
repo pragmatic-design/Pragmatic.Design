@@ -466,7 +466,7 @@ public sealed class HostWiringFixture
             foreach (var file in Directory.EnumerateFiles(directory, "*.dll"))
             {
                 var name = Path.GetFileName(file);
-                if (byFileName.ContainsKey(name) || IsToolingAssembly(name))
+                if (byFileName.ContainsKey(name) || IsToolingAssembly(name) || IsEngineBridge(name))
                     continue;
 
                 try
@@ -496,4 +496,15 @@ public sealed class HostWiringFixture
            || fileName.StartsWith("testhost", StringComparison.OrdinalIgnoreCase)
            || fileName.StartsWith("Verify", StringComparison.OrdinalIgnoreCase)
            || fileName.StartsWith("Pragmatic.SourceGenerator", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    ///     An engine's bridge, which makes that engine one of the engines a compilation references: out of the set, or every module here
+    ///     would reference two and name neither (PRAG0743). A test that needs one asks for it (<see cref="EngineBridge" />).
+    /// </summary>
+    private static bool IsEngineBridge(string fileName)
+        => fileName.Equals("Pragmatic.Persistence.Documents.dll", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The bridge of an engine, from this suite's output, for the compilations of the test that persists a boundary there.</summary>
+    internal static MetadataReference EngineBridge(string assemblyName)
+        => MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, assemblyName + ".dll"));
 }

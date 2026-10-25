@@ -18,18 +18,23 @@ namespace Pragmatic.Composition.HostWiring.Tests;
 /// </remarks>
 internal static class ModuleAndHost
 {
-    private static readonly CSharpParseOptions ParseOptions = new(LanguageVersion.Latest);
+    // The engines' interceptors live in these namespaces: a module persisted by an engine compiles its chains there, as the
+    // InterceptorsNamespaces the engines' build targets add would let it.
+    private static readonly CSharpParseOptions ParseOptions = new CSharpParseOptions(LanguageVersion.Latest)
+        .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated")]);
 
     /// <summary>
-    ///     The host's compilation errors and its generated files keyed by hint name.
+    ///     The host's compilation errors and its generated files keyed by hint name; <c>extraReferences</c> are what the module and the
+    ///     host get beyond the suite's set (an engine's bridge).
     /// </summary>
     public static (ImmutableArray<string> Errors, IReadOnlyDictionary<string, string> Generated) Generate(
         string moduleAssemblyName,
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
-        string hostSource)
+        string hostSource,
+        IEnumerable<MetadataReference>? extraReferences = null)
     {
-        var (errors, _, generated) = Compile(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource);
+        var (errors, _, generated, _, _) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, extraReferences);
         return (errors, generated);
     }
 
@@ -88,9 +93,10 @@ internal static class ModuleAndHost
         string moduleAssemblyName,
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
-        string hostSource)
+        string hostSource,
+        IEnumerable<MetadataReference>? extraReferences = null)
     {
-        var references = HostWiringFixture.BuildReferenceSet();
+        MetadataReference[] references = [.. HostWiringFixture.BuildReferenceSet(), .. extraReferences ?? []];
 
         var library = RunGenerator(CSharpCompilation.Create(
             moduleAssemblyName,
