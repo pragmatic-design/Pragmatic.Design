@@ -20,13 +20,13 @@ namespace Pragmatic.SourceGenerator.Features.Persistence;
 internal static class EntityShapeArtifacts
 {
     /// <summary>The entity's members: relations, factory, specifications, traits, owner, scopes.</summary>
-    public static IEnumerable<Artifact> Members(EntityMetadataModel entity, bool isEfCore)
+    public static IEnumerable<Artifact> Members(EntityMetadataModel entity)
     {
         if (entity.HasGeneratedRelationProperties)
             yield return new EntityRelationsTemplate(entity).RenderOutput();
         yield return new EntityCreateTemplate(entity).RenderOutput();
         yield return new SpecificationTemplate(entity).RenderOutput();
-        yield return new EntityTraitsTemplate(entity, declaresRowVersion: !isEfCore).RenderOutput();
+        yield return new EntityTraitsTemplate(entity).RenderOutput();
         if (entity.IsOwnedEntity)
             yield return new OwnershipPropertyTemplate(entity).RenderOutput();
         if (entity.IsScopedEntity)
@@ -110,8 +110,7 @@ internal static class EntityShapeArtifacts
             if (!entity.IsValid || entity.IsFromReference || !PersistenceEngineMarker.HasEngine(entity, features))
                 continue;
 
-            var isEfCore = PersistenceEngineMarker.IsEfCore(entity, features);
-            foreach (var artifact in Members(entity, isEfCore))
+            foreach (var artifact in Members(entity))
                 Add(artifact);
             foreach (var artifact in Filters(entity))
                 Add(artifact);

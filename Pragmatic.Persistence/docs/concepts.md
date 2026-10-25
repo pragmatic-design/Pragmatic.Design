@@ -281,7 +281,7 @@ Traits are attributes that add cross-cutting fields and behavior to entities. Ea
 | `[Auditable]` | `IAuditable` | `CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy` | `AuditingInterceptor` sets values on save |
 | `[SoftDelete]` | `ISoftDelete` | `IsDeleted`, `DeletedAt`, `DeletedBy` | `Remove()` sets fields instead of DELETE. Query filter hides deleted rows. |
 | `[SoftDelete(Cascade = true)]` | `ISoftDelete` | Same as above | Soft-deleting parent cascades to children |
-| `[ConcurrencyAware]` | n/a | **none** | The token is an EF Core *shadow property*, declared in the generated DbContext and shaped by the provider (`byte[]` rowversion on SQL Server, `uint` mapped to `xmin` on PostgreSQL). The generated repository's `SaveChangesAsync` then returns `Result<int, ConcurrencyError>` instead of `Task<int>`. |
+| `[ConcurrencyAware]` | n/a | `RowVersion` (`ulong`) | The same member on every engine. EF Core maps it by provider (rowversion on SQL Server, `xmin` on PostgreSQL, elsewhere a column the generated `SaveChanges` advances). The generated repository's `SaveChangesAsync` then returns `Result<int, ConcurrencyError>` instead of `Task<int>`. |
 
 Traits compose freely. An entity can have all of them:
 

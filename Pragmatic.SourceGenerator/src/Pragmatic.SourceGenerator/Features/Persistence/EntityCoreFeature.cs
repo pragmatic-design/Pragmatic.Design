@@ -187,7 +187,7 @@ internal static class EntityCoreFeature
             ReportUnstorableProtectedValues(context, entity, features);
 
         // Relations, Create, Specs, Traits, Ownership, Scoping: the list the Sql engine binds against too.
-        foreach (var artifact in EntityShapeArtifacts.Members(entity, isEfCore))
+        foreach (var artifact in EntityShapeArtifacts.Members(entity))
         {
             if (!artifact.IsEmpty)
                 context.AddSource(artifact);

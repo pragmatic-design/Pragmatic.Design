@@ -57,15 +57,17 @@ internal static class ModuleAndHost
     /// </summary>
     /// <remarks>
     ///     The host's errors come back beside the images: an image is emitted only when there are none,
-    ///     and the caller asserts on them first so a red test names the compiler's reason.
+    ///     and the caller asserts on them first so a red test names the compiler's reason. <c>withoutReference</c> drops assemblies of
+    ///     the suite's set by file name: the generator picks the EF Core provider from what is referenced, PostgreSQL's first.
     /// </remarks>
     public static (ImmutableArray<string> Errors, byte[] Module, byte[]? Host) Emit(
         string moduleAssemblyName,
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
-        string hostSource)
+        string hostSource,
+        Func<string, bool>? withoutReference = null)
     {
-        var (errors, _, _, module, host) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource);
+        var (errors, _, _, module, host) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, null, withoutReference);
 
         if (!errors.IsEmpty)
             return (errors, module, null);
@@ -94,9 +96,14 @@ internal static class ModuleAndHost
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
         string hostSource,
-        IEnumerable<MetadataReference>? extraReferences = null)
+        IEnumerable<MetadataReference>? extraReferences = null,
+        Func<string, bool>? withoutReference = null)
     {
-        MetadataReference[] references = [.. HostWiringFixture.BuildReferenceSet(), .. extraReferences ?? []];
+        MetadataReference[] references =
+        [
+            .. HostWiringFixture.BuildReferenceSet().Where(r => withoutReference is null || !withoutReference(Path.GetFileName(r.Display ?? ""))),
+            .. extraReferences ?? []
+        ];
 
         var library = RunGenerator(CSharpCompilation.Create(
             moduleAssemblyName,

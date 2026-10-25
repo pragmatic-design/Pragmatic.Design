@@ -209,21 +209,28 @@ Optimistic concurrency: each entity has a `RowVersion` that the database increme
 public partial class Invoice { /* ... */ }
 ```
 
-**Nothing is added to your entity.** No property, no interface: the token is an EF Core *shadow
-property*, declared in the generated DbContext and never visible in your model:
+**One member is added to your entity**, the same whichever engine persists it:
+
+```csharp
+// ═══ In {Entity}.Traits.g.cs ═══
+public ulong RowVersion { get; internal set; }
+```
+
+You read it (to send it to a client, to compare it); the engine writes it back after every save. On EF
+Core the generated DbContext maps it as the provider's row version:
 
 ```csharp
 // ═══ In DbContext.{Boundary}.g.cs, and it depends on the provider ═══
 
 // SQL Server: native rowversion, maintained by the database
-modelBuilder.Entity<Invoice>().Property<byte[]>("RowVersion").IsRowVersion();
+modelBuilder.Entity<Invoice>().Property(e => e.RowVersion).IsRowVersion().HasConversion<byte[]>();
 
-// PostgreSQL: Npgsql maps this to the xmin system column, so no migration, no column of your own
-modelBuilder.Entity<Invoice>().Property<uint>("RowVersion")
-    .IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();
+// PostgreSQL: the xmin system column, so no migration, no column of your own
+modelBuilder.Entity<Invoice>().Property(e => e.RowVersion).HasColumnName("xmin").HasColumnType("xid")
+    .HasConversion<uint>().IsConcurrencyToken().ValueGeneratedOnAddOrUpdate();
 
-// anything else: a portable uint token
-modelBuilder.Entity<Invoice>().Property<uint>("RowVersion").IsConcurrencyToken();
+// anything else: a column of its own, which the generated SaveChanges advances on every update
+modelBuilder.Entity<Invoice>().Property(e => e.RowVersion).IsConcurrencyToken();
 ```
 
 ### How it works at runtime

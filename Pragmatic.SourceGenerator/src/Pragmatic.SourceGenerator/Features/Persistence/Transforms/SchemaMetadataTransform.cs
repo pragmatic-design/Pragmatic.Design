@@ -952,6 +952,17 @@ internal static partial class SchemaMetadataTransform
             TryAdd("ValidTo", "System.DateTimeOffset?", true, null);
         }
 
+        // [ConcurrencyAware]: the column BoundaryDbContextTemplate maps the shape's RowVersion to. PostgreSQL's is xmin, a system
+        // column, so nothing to create; SQL Server's is written timestamp, the name its catalog reads back; anywhere else a plain
+        // column the save advances, starting at 0 for an insert that does not name it (the bulk insert). On the root only.
+        if (entity is { IsConcurrencyAware: true, BaseEntityFullTypeName: null } && provider != EfCoreProvider.PostgreSql && !has.Contains("RowVersion"))
+        {
+            columns.Add(provider == EfCoreProvider.SqlServer
+                ? new ColumnSchemaModel("RowVersion", "timestamp", false, false)
+                : new ColumnSchemaModel("RowVersion", SqlTypeMapper.MapToSqlType("System.Int64", provider), false, false, "0"));
+            has.Add("RowVersion");
+        }
+
         return;
 
         void TryAdd(string name, string clrType, bool nullable, string? defaultValue)

@@ -42,8 +42,8 @@ internal sealed class OrderEntityConfig : IEntityTypeConfiguration<Order>
 
 Three things that are **not** in there:
 
-- **The concurrency token.** `[ConcurrencyAware]` produces a *shadow* property, declared in the
-  generated DbContext and shaped by the provider; there is no `e.RowVersion` to configure.
+- **The concurrency token.** `[ConcurrencyAware]` adds `RowVersion` to the entity, and the generated
+  DbContext maps it, shaped by the provider (rowversion, xmin, or a column the save advances).
 - **The audit fields.** `[Auditable]` adds the four properties to the entity; nothing configures them
   here, so they take EF's conventions.
 - **The filtered unique index.** On a `[SoftDelete]` entity the logic-key index has to exclude deleted

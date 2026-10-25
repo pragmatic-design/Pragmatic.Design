@@ -17,8 +17,9 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 /// <remarks>
 ///     <para>
 ///         Each departure is a place where the two branches describe the same entity differently. The SQL Server ones that were defects of
-///         EF Core's branch (an unbounded indexed string, a <c>false</c> default: neither migrates) are fixed there; what is left is
-///         <c>[ConcurrencyAware]</c>'s column, a column of its own on the Sql engine and a shadow property EF Core's schema does not list.
+///         EF Core's branch (an unbounded indexed string, a <c>false</c> default: neither migrates) are fixed there, and
+///         <c>[ConcurrencyAware]</c>'s column is the same on both since EF Core maps the shape's <c>RowVersion</c> instead of a shadow
+///         property: none is left.
 ///     </para>
 ///     <para>
 ///         EF Core's branch emits the schema in a host (an executable) that references Pragmatic.Migrations, with EF Core referenced and a
@@ -38,16 +39,8 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     private static readonly Dictionary<string, string[]> Departures = new()
     {
         ["PostgreSql"] = [],
-        ["SqlServer"] =
-        [
-            // [ConcurrencyAware]: a column of the database's own on the Sql engine; EF Core keeps a shadow property, which its schema does
-            // not list. timestamp is rowversion's name in SQL Server's catalog: what the introspector reads back.
-            "+ column Amenities.RowVersion timestamp NOT NULL",
-        ],
-        ["Sqlite"] =
-        [
-            "+ column Amenities.RowVersion INTEGER NOT NULL", // [ConcurrencyAware], as above: a bigint the writes advance
-        ],
+        ["SqlServer"] = [],
+        ["Sqlite"] = [],
     };
 
     [Theory]

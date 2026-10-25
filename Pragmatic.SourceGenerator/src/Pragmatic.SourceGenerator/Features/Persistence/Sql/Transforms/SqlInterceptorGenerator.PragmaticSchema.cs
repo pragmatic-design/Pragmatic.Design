@@ -249,8 +249,11 @@ internal static partial class SqlInterceptorGenerator
                 {
                     // PostgreSQL's row version is xmin, no column (the owner's decision of 2026-10-22, not Pragmatic's shadow property). SQL Server's
                     // is written timestamp, the name its catalog reads back (rowversion is the DDL's synonym, which the introspector would diff forever).
-                    if (dialect != SqlDialect.PostgreSql)
-                        columns.Add(new ColumnSchemaModel(column.Column, dialect switch { SqlDialect.SqlServer => "timestamp", SqlDialect.MySql => "bigint", SqlDialect.Oracle => "NUMBER(19)", _ => "INTEGER" }, false, false, null));
+                    // Anywhere else the writes advance a plain column, which starts at 0 for an insert that does not name it (EF Core's bulk insert).
+                    if (dialect == SqlDialect.SqlServer)
+                        columns.Add(new ColumnSchemaModel(column.Column, "timestamp", false, false, null));
+                    else if (dialect != SqlDialect.PostgreSql)
+                        columns.Add(new ColumnSchemaModel(column.Column, dialect switch { SqlDialect.MySql => "bigint", SqlDialect.Oracle => "NUMBER(19)", _ => "INTEGER" }, false, false, "0"));
                     continue;
                 }
 

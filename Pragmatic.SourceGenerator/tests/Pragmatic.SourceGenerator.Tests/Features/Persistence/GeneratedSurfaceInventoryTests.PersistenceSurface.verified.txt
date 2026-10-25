@@ -70,6 +70,8 @@ public partial class InventoryDbContext : DbContext
     public DbSet<ContradictoryPart> ContradictoryParts { get; set; }
     public DbSet<TraitedBase> TraitedBases { get; set; }
     public DbSet<TraitedDerived> TraitedDeriveds { get; set; }
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new PlainEntityConfig());
@@ -141,8 +143,8 @@ public partial class InventoryDbContext : DbContext
         TraitedBaseInheritanceConfiguration.Configure(modelBuilder);
         modelBuilder.Ignore<Inventory.Faraway>();
         modelBuilder.Entity<Inventory.TenantScoped>().HasQueryFilter("Tenant", e => _tenantContext != null && _tenantContext.TenantId != null && e.TenantId == _tenantContext.TenantId);
-        modelBuilder.Entity<Inventory.ConcurrencyAware>().Property<uint>("RowVersion").IsConcurrencyToken();
-        modelBuilder.Entity<Inventory.EveryTrait>().Property<uint>("RowVersion").IsConcurrencyToken();
+        modelBuilder.Entity<Inventory.ConcurrencyAware>().Property(e => e.RowVersion).IsConcurrencyToken();
+        modelBuilder.Entity<Inventory.EveryTrait>().Property(e => e.RowVersion).IsConcurrencyToken();
         modelBuilder.Entity<Inventory.SoftDeletedWithLogicKey>().HasIndex(e => e.Code).IsUnique().HasFilter("\"IsDeleted\" = 0");
         modelBuilder.Entity<Inventory.TemporalRow>().HasIndex(e => e.PlainId).IsUnique().HasFilter("\"ValidTo\" IS NULL");
         OnModelCreatingPartial(modelBuilder);
@@ -215,6 +217,8 @@ public partial class MigrationDbContext : DbContext
     public DbSet<ContradictoryPart> ContradictoryParts { get; set; }
     public DbSet<TraitedBase> TraitedBases { get; set; }
     public DbSet<TraitedDerived> TraitedDeriveds { get; set; }
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new PlainEntityConfig());
@@ -286,8 +290,8 @@ public partial class MigrationDbContext : DbContext
         InheritanceBaseInheritanceConfiguration.Configure(modelBuilder);
         TraitedBaseInheritanceConfiguration.Configure(modelBuilder);
         modelBuilder.Entity<Inventory.TenantScoped>().HasQueryFilter("Tenant", e => _tenantContext != null && _tenantContext.TenantId != null && e.TenantId == _tenantContext.TenantId);
-        modelBuilder.Entity<Inventory.ConcurrencyAware>().Property<uint>("RowVersion").IsConcurrencyToken();
-        modelBuilder.Entity<Inventory.EveryTrait>().Property<uint>("RowVersion").IsConcurrencyToken();
+        modelBuilder.Entity<Inventory.ConcurrencyAware>().Property(e => e.RowVersion).IsConcurrencyToken();
+        modelBuilder.Entity<Inventory.EveryTrait>().Property(e => e.RowVersion).IsConcurrencyToken();
         modelBuilder.Entity<Inventory.SoftDeletedWithLogicKey>().HasIndex(e => e.Code).IsUnique().HasFilter("\"IsDeleted\" = 0");
         modelBuilder.Entity<Inventory.TemporalRow>().HasIndex(e => e.PlainId).IsUnique().HasFilter("\"ValidTo\" IS NULL");
         OnModelCreatingPartial(modelBuilder);
@@ -1641,6 +1645,7 @@ public static partial class ConcurrencyAwareSpecifications
 public partial class ConcurrencyAware
     public Guid PersistenceId { get; set; }
     public Guid Id { get; }
+    public ulong RowVersion { get; internal set; }
 
 ## Inventory.ContradictoryPart.Create.g.cs
 public partial class ContradictoryPart : ICreatable<ContradictoryPart>
@@ -1877,6 +1882,7 @@ public partial class EveryTrait : IAuditable, ISoftDelete, IAuditedEntity
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public string? DeletedBy { get; set; }
+    public ulong RowVersion { get; internal set; }
 
 ## Inventory.Faraway.Create.g.cs
 public partial class Faraway : ICreatable<Faraway>

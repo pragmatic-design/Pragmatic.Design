@@ -188,9 +188,10 @@ error.
 
 ### Checklist
 
-1. **Is `[ConcurrencyAware]` on the entity?** It declares a `RowVersion` **shadow property** (nothing
-   is added to your entity), configured as a concurrency token in the generated DbContext, and
-   provider-specific: a native `rowversion` on SQL Server, the `xmin` system column on PostgreSQL.
+1. **Is `[ConcurrencyAware]` on the entity?** It adds a `ulong RowVersion` to your entity, configured
+   as a concurrency token in the generated DbContext, and provider-specific: a native `rowversion` on
+   SQL Server, the `xmin` system column on PostgreSQL, a column the generated `SaveChanges` advances
+   anywhere else.
 
 2. **Are you loading stale data?** If you load an entity, hold it for a long time (e.g., across an HTTP request-response cycle), and then save, another request may have modified it. Reload the entity before saving, or implement retry logic.
 
