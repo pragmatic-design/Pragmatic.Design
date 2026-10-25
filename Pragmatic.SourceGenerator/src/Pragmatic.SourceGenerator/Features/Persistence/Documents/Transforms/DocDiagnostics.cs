@@ -103,6 +103,15 @@ internal static class DocDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    /// <summary>An error, as <see cref="LoadIncludeNotSupported" />: a mutation's load of navigations, or its write of children, has no navigation to work on.</summary>
+    public static readonly DiagnosticDescriptor MutationNavigationsNotSupported = new(
+        "PRAG3112",
+        "A mutation of a Pragmatic entity on the documents engine loads or writes navigations",
+        "{0} {1} of {2}, and a document keeps a relation as its key: there is no navigation to load or write. Read the other entity by that key, and write it with a mutation of its own.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     /// <summary>Information: the call site's query as the generator wrote it (shown with -p:PragmaticCensus=true promoted, or in the IDE).</summary>
     public static readonly DiagnosticDescriptor Translated = new(
         "PRAG3199",

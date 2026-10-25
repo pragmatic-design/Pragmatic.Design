@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Text;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Templates;
 using Pragmatic.SourceGen;
+using EngineReadModel = Pragmatic.SourceGenerator.Features.Persistence.Models.EngineReadModel;
 using EngineSchemaModel = Pragmatic.SourceGenerator.Features.Persistence.Models.EngineSchemaModel;
 using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 
@@ -74,7 +75,8 @@ internal static partial class SqlInterceptorGenerator
     ///     database, which <c>SchemaFeature</c> writes in the database's schema.
     /// </summary>
     internal static IncrementalValueProvider<EquatableArray<EngineSchemaModel>> Register(IncrementalGeneratorInitializationContext context,
-        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources, IncrementalValueProvider<Core.DetectedFeatures> features)
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> shapeSources, IncrementalValueProvider<EquatableArray<EngineReadModel>> engineReads,
+        IncrementalValueProvider<Core.DetectedFeatures> features)
     {
         var entities = context.SyntaxProvider.ForAttributeWithMetadataName(
             "Pragmatic.Persistence.Sql.Attributes.EntityAttribute",
@@ -116,8 +118,8 @@ internal static partial class SqlInterceptorGenerator
         // The schema snapshots (*.schema.json among the AdditionalFiles, as the repository's migrations write them): the indexes the analysis reads instead of [Indexed].
         var schemas = context.AdditionalTextsProvider.Where(static text => text.Path.EndsWith(".schema.json", StringComparison.OrdinalIgnoreCase)).Select(static (text, ct) => (text.Path, text.GetText(ct)?.ToString())).Collect();
 
-        var combined = calls.Where(static c => c is not null).Collect().Combine(entities.Collect()).Combine(queries.Collect()).Combine(dtos.Collect()).Combine(functions.Collect()).Combine(context.CompilationProvider).Combine(census).Combine(committed).Combine(schemas).Combine(shapeSources);
-        context.RegisterSourceOutput(combined, static (spc, all) => { var (source, shape) = all; Emit(spc, source.Left.Left.Left.Left.Left.Left.Left.Left!, source.Left.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Right, source.Left.Left.Left.Right, source.Left.Left.Right, source.Left.Right.FirstOrDefault(), source.Right, shape); });
+        var combined = calls.Where(static c => c is not null).Collect().Combine(entities.Collect()).Combine(queries.Collect()).Combine(dtos.Collect()).Combine(functions.Collect()).Combine(context.CompilationProvider).Combine(census).Combine(committed).Combine(schemas).Combine(shapeSources.Combine(engineReads));
+        context.RegisterSourceOutput(combined, static (spc, all) => { var (source, (shape, reads)) = all; Emit(spc, source.Left.Left.Left.Left.Left.Left.Left.Left!, source.Left.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Right, source.Left.Left.Left.Right, source.Left.Left.Right, source.Left.Right.FirstOrDefault(), source.Right, shape, reads); });
 
         return entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
             .Select(static (all, ct) => PragmaticSchemas(all.Left.Left.Right, all.Left.Left.Left, all.Left.Right, all.Right, ct));
@@ -168,12 +170,13 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>True for the overloads that take the lambda's values as an argument (<c>Where&lt;TArg&gt;</c>, <c>CountAsync&lt;TArg&gt;</c>…).</summary>
     internal static bool TakesArg(IMethodSymbol method) => method.OriginalDefinition.TypeParameters.Any(t => t.Name == "TArg");
 
-    private static void Emit(SourceProductionContext spc, ImmutableArray<CallSite?> calls, ImmutableArray<INamedTypeSymbol> entityTypes, ImmutableArray<IMethodSymbol> queries, ImmutableArray<INamedTypeSymbol> dtos, ImmutableArray<IMethodSymbol> functionMethods, Compilation compilation, bool census, string? committedCensus, ImmutableArray<(string Path, string? Text)> snapshots, EquatableArray<ShapeSourceModel> shapeSources)
+    private static void Emit(SourceProductionContext spc, ImmutableArray<CallSite?> calls, ImmutableArray<INamedTypeSymbol> entityTypes, ImmutableArray<IMethodSymbol> queries, ImmutableArray<INamedTypeSymbol> dtos, ImmutableArray<IMethodSymbol> functionMethods, Compilation compilation, bool census, string? committedCensus, ImmutableArray<(string Path, string? Text)> snapshots, EquatableArray<ShapeSourceModel> shapeSources,
+        EquatableArray<EngineReadModel> engineReads)
     {
         if (!UsesSql(compilation))
             return;
         var input = new HashSet<SyntaxTree>(compilation.SyntaxTrees); // the trees a diagnostic may be reported in: not the ones added below
-        WithPragmaticShape(spc, shapeSources, ref compilation, ref calls, ref entityTypes, ref queries, ref dtos, ref functionMethods); // Pragmatic's entities without EF Core: their shape, the chains bound on it
+        WithPragmaticShape(spc, shapeSources, engineReads, ref compilation, ref calls, ref entityTypes, ref queries, ref dtos, ref functionMethods); // Pragmatic's entities without EF Core: their shape, the chains bound on it
         var diagnostics = new List<Diagnostic>();
         var censusEntries = new List<CensusEntry>(); // every translated terminal and [Query], for the census file
         var functions = ReadFunctions(functionMethods, compilation, diagnostics); // the application's [SqlFunction]s: implemented and registered below

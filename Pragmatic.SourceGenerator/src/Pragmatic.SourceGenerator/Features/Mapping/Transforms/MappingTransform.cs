@@ -93,11 +93,7 @@ internal static partial class MappingTransform
         var projectionAttr = targetSymbol.GetAttributes()
             .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Mapping.Attributes.GenerateProjectionAttribute");
         var hasProjection = projectionAttr is not null;
-        var projectionMaxDepth = 5;
-        if (projectionAttr is not null)
-            foreach (var na in projectionAttr.NamedArguments)
-                if (na is { Key: "MaxDepth", Value.Value: int md and > 0 })
-                    projectionMaxDepth = md;
+        var projectionMaxDepth = ProjectionMaxDepthOf(targetSymbol);
 
         // Extract property mappings
         var properties = ExtractPropertyMappings(

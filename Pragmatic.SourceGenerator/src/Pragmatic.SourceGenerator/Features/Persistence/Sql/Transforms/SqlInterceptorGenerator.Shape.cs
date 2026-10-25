@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.SourceGen;
+using EngineReadModel = Pragmatic.SourceGenerator.Features.Persistence.Models.EngineReadModel;
 using ShapeSourceModel = Pragmatic.SourceGenerator.Features.Persistence.Models.ShapeSourceModel;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
@@ -19,7 +20,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private static bool WithPragmaticShape(SourceProductionContext spc, EquatableArray<ShapeSourceModel> shapeSources, ref Compilation compilation, ref ImmutableArray<CallSite?> calls,
+    private static bool WithPragmaticShape(SourceProductionContext spc, EquatableArray<ShapeSourceModel> shapeSources, EquatableArray<EngineReadModel> engineReads, ref Compilation compilation, ref ImmutableArray<CallSite?> calls,
         ref ImmutableArray<INamedTypeSymbol> entityTypes, ref ImmutableArray<IMethodSymbol> queries, ref ImmutableArray<INamedTypeSymbol> dtos, ref ImmutableArray<IMethodSymbol> functionMethods)
     {
         // The entities' shape is what Persistence emits for every engine a compilation references (EntityShapeArtifacts). With none
@@ -53,8 +54,11 @@ internal static partial class SqlInterceptorGenerator
             var loads = CompiledLoads(spc, compilation, engines);
             foreach (var entity in served)
             {
-                if (PragmaticReadRepository.For(entity, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList(),
-                        loads.Where(l => SymbolEqualityComparer.Default.Equals(l.Entity, entity)).ToList()) is { } repository)
+                // The sets of paths the invokers read the entity with: its [LoadEntity]s here, and the mutations' loads (EngineReadModel).
+                var entityName = entity.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var includeSets = loads.Where(l => SymbolEqualityComparer.Default.Equals(l.Entity, entity)).Select(l => (IReadOnlyList<string>)l.Includes)
+                    .Concat(engineReads.Where(r => r.EntityFullTypeName == entityName).Select(r => (IReadOnlyList<string>)r.Paths.AsImmutableArray()));
+                if (PragmaticReadRepository.For(entity, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList(), includeSets) is { } repository)
                     repositories.Add(repository);
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
                     repositories.Add(hierarchy); // its chains are bound and intercepted, as a repository's

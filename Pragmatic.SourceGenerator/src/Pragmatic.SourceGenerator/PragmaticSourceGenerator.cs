@@ -91,7 +91,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 
         // Only traits contribute actions now: [Resource] scaffolds mutations for the writes and
         // Single queries for the reads, so its operations reach the pipelines a hand-written one does.
-        var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation, invokerSources) = ActionsFeature.Register(
+        var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation, invokerSources, engineReads) = ActionsFeature.Register(
             context, features, traitActions: traitOutput.Actions, permissionCatalog: permissionCatalog,
             programmaticMutations: resourceMutations, queries: queryModels, currentUsers: currentUsers);
         var patchManifestTypes = PatchFeature.Register(context, features);
@@ -230,7 +230,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             .Select(static (pair, _) => pair.Left.IsDefaultOrEmpty
                 ? pair.Left
                 : new EquatableArray<Features.Persistence.Models.ShapeSourceModel>(pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())));
-        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, bindingSources, features);
+        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, bindingSources, engineReads, features);
 
         // Each database's schema once, with the tables of every engine that persists a boundary on it; the host migrates each
         // database that has one, so the names travel with the persisted stores.

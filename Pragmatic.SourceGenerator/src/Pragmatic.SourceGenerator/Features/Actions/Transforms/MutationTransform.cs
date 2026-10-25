@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Compositions.Enrichers;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Actions.Models;
@@ -116,7 +117,7 @@ internal static partial class MutationTransform
         var (requireAllPerms, requireAnyPerms, unresolvedAll, unresolvedAny) = ActionTransform.ParseRequirePermissions(symbol, context.SemanticModel.Compilation);
         var (hasNoValidation, runSync, runAsync, validateIsDeclared) = ActionTransform.ParseDeclaredValidation(symbol);
 
-        return new MutationModel
+        var model = new MutationModel
         {
             HasNoValidation = hasNoValidation,
             RunSync = runSync,
@@ -233,8 +234,28 @@ internal static partial class MutationTransform
             ExplicitPermission = ActionTransform.ParseExplicitPermission(symbol, context.SemanticModel.Compilation),
             AllowAnonymous = ActionTransform.ParseAllowAnonymous(symbol),
             LocationInfo = location,
-            InvalidReason = MutationInvalidReason.None
+            InvalidReason = MutationInvalidReason.None,
+            EntityNamedEngine = entityType is INamedTypeSymbol namedForEngine ? PersistenceEngineMarker.NamedFor(namedForEngine) : null
         };
+
+        return model with { EngineLoadPaths = EngineLoadPaths(model, ReturnsDtoParser.Read(symbol), context.SemanticModel.Compilation, ct) };
+    }
+
+    /// <summary>
+    ///     What <see cref="MutationModel.EngineLoadPaths" /> says, in the order the EF Core load includes them: the <c>[EagerLoad]</c> paths, then
+    ///     what the response DTO maps from while the mutation answers with it, each once.
+    /// </summary>
+    private static EquatableArray<string> EngineLoadPaths(MutationModel model, INamedTypeSymbol? response, Compilation compilation, CancellationToken ct)
+    {
+        var paths = model.Includes.ToList();
+        if (model.EffectiveReturnType == MutationReturnTypeValue.Entity && model.ResponseDtoFullTypeName is not null && response is not null)
+        {
+            foreach (var navigation in Mapping.Transforms.MappingTransform.RequiredNavigationsOf(response, compilation, ct))
+                if (!paths.Contains(navigation))
+                    paths.Add(navigation);
+        }
+
+        return paths.ToEquatableArray();
     }
 
     private static (bool IsMutation, INamedTypeSymbol? EntityType) AnalyzeMutationBase(INamedTypeSymbol symbol)
