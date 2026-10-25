@@ -13,6 +13,7 @@ namespace Pragmatic.Result.Tests.Unit;
 ///     throwing <c>Value</c>/<c>Error</c> members via reflection and throws
 ///     <see cref="InvalidOperationException" />.
 /// </summary>
+[Collection(ErrorTypeRegistryCollection.Name)]
 public class MultiErrorSerializationTests
 {
     // The converters the generator emits for the contracts declared in JsonResultContracts.cs, plus the

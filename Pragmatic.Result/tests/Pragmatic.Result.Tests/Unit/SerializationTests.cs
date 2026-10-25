@@ -8,6 +8,7 @@ namespace Pragmatic.Result.Tests.Unit;
 /// <summary>
 ///     Tests for JSON serialization converters: ResultJsonConverter, VoidResultJsonConverter, MaybeJsonConverter.
 /// </summary>
+[Collection(ErrorTypeRegistryCollection.Name)]
 public class SerializationTests
 {
     // The typed converters, named. Every shape these tests use has a fixed-arity converter, so there
