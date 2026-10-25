@@ -24,7 +24,8 @@ internal static partial class ActionsFeature
     public static (IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Registrations,
         IncrementalValueProvider<EquatableArray<DerivedPermissionEntry>> DerivedPermissions,
         IncrementalValueProvider<EquatableArray<Composition.Models.DiscoveredModuleInfo>> LocalDomainModules,
-        IncrementalValueProvider<PermissionDerivationInputs> Derivation) Register(
+        IncrementalValueProvider<PermissionDerivationInputs> Derivation,
+        IncrementalValueProvider<EquatableArray<Persistence.Models.ShapeSourceModel>> InvokerSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<ActionModel>>? traitActions = null,
@@ -195,6 +196,10 @@ internal static partial class ActionsFeature
 
         var allMutations = validMutations.Collect()
             .WithTrackingName(TrackingNames.ActionsAllMutations);
+
+        // The invokers as the engines bind them, from the models they are emitted from (ActionsFeature.Binding).
+        var invokerSources = InvokerSources(allActions, allMutations,
+            programmaticMutations ?? context.CompilationProvider.Select(static (_, _) => ImmutableArray<MutationModel>.Empty), features);
 
         // Mutations another feature builds as models rather than reading from syntax — [Resource] CRUD.
         // The same shape as traitActions above, and for the same reason: they must reach every stage a
@@ -422,7 +427,7 @@ internal static partial class ActionsFeature
         var localDomainModules = validBoundaries.Collect().Combine(assemblyName.Combine(compilationInfo))
             .Select(static (input, _) => LocalDomainModulesOf(input.Left, input.Right.Left, input.Right.Right));
 
-        return (registrations, derivedPermissions, localDomainModules, derivationInputs);
+        return (registrations, derivedPermissions, localDomainModules, derivationInputs, invokerSources);
     }
 
     /// <summary>

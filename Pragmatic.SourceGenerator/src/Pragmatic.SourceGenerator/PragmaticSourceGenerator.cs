@@ -91,7 +91,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 
         // Only traits contribute actions now: [Resource] scaffolds mutations for the writes and
         // Single queries for the reads, so its operations reach the pipelines a hand-written one does.
-        var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation) = ActionsFeature.Register(
+        var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation, invokerSources) = ActionsFeature.Register(
             context, features, traitActions: traitOutput.Actions, permissionCatalog: permissionCatalog,
             programmaticMutations: resourceMutations, queries: queryModels, currentUsers: currentUsers);
         var patchManifestTypes = PatchFeature.Register(context, features);
@@ -223,7 +223,13 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // The Sql engine's translation of query chains, guarded by its own symbol lookup (the engine's runtime referenced). Its inputs
         // are the call sites and the engine's own attributes, and the entities' shape as Persistence emits it: the chains over a
         // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
-        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, shapeSources, features);
+        // With the invokers', which write specification leaves (Spec<T>.Where) the engine compiles where it sees them: the invokers are this
+        // generator's output too. Only beside a shape: without one no engine's bridge is referenced, and the empty shape is what says so.
+        var bindingSources = shapeSources.Combine(invokerSources)
+            .Select(static (pair, _) => pair.Left.IsDefaultOrEmpty
+                ? pair.Left
+                : new EquatableArray<Features.Persistence.Models.ShapeSourceModel>(pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())));
+        var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, bindingSources, features);
 
         // Each database's schema once, with the tables of every engine that persists a boundary on it; the host migrates each
         // database that has one, so the names travel with the persisted stores.
@@ -258,7 +264,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 
         // The documents engine's: the [Document] types' readers and writers and the chains on DocQuery<T>, guarded the same way (the
         // engine's runtime referenced), with the same shape for Pragmatic's entities.
-        Features.Persistence.Documents.DocumentsFeature.Register(context, shapeSources);
+        Features.Persistence.Documents.DocumentsFeature.Register(context, bindingSources);
     }
 
     private static IncrementalValueProvider<EquatableArray<Features.Composition.Models.MetadataEntry>> Combine(
