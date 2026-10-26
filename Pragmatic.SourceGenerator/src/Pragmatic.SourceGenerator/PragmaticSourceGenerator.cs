@@ -169,7 +169,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var temporalRegistrations = TemporalFeature.Register(context, features, endpoints: endpointModels);
         // Endpoints are passed in for PRAG2904: whether special-category data is over-exposed cannot be
         // decided from the entity alone, only from what reaches it.
-        var privacyRegistrations =
+        var (privacyRegistrations, privacySources) =
             Features.Privacy.PrivacyFeature.Register(context, features, endpoints: endpointModels
                 // The signed-in user's entity, for the operations that load it: Identity's to say which.
                 .Combine(currentUsers)
@@ -226,12 +226,14 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // Pragmatic entity read members this generator writes, which the compilation it is handed does not have.
         // With the invokers', which write specification leaves (Spec<T>.Where) the engine compiles where it sees them: the invokers are this
         // generator's output too. Only beside a shape: without one no engine's bridge is referenced, and the empty shape is what says so.
-        // The trait children the engines persist too: TraitFeature writes them, as entities the engines read off their declarations.
-        var bindingSources = shapeSources.Combine(invokerSources).Combine(traitOutput.EngineSources)
-            .Select(static (pair, _) => pair.Left.Left.IsDefaultOrEmpty
-                ? pair.Left.Left
-                : new EquatableArray<Features.Persistence.Models.ShapeSourceModel>(pair.Left.Left.AsImmutableArray()
-                    .AddRange(pair.Left.Right.AsImmutableArray()).AddRange(pair.Right.AsImmutableArray())));
+        // The trait children the engines persist too: TraitFeature writes them, as entities the engines read off their declarations. And the
+        // privacy adapters of the entities they persist, which read through Spec<T>.Where as the invokers do.
+        var bindingSources = shapeSources.Combine(invokerSources).Combine(traitOutput.EngineSources).Combine(privacySources)
+            .Select(static (pair, _) => pair.Left.Left.Left.IsDefaultOrEmpty
+                ? pair.Left.Left.Left
+                : new EquatableArray<Features.Persistence.Models.ShapeSourceModel>(pair.Left.Left.Left.AsImmutableArray()
+                    .AddRange(pair.Left.Left.Right.AsImmutableArray()).AddRange(pair.Left.Right.AsImmutableArray())
+                    .AddRange(pair.Right.AsImmutableArray())));
         var sqlSchemas = Features.Persistence.Sql.SqlFeature.Register(context, bindingSources, engineReads, features);
 
         // Each database's schema once, with the tables of every engine that persists a boundary on it; the host migrates each

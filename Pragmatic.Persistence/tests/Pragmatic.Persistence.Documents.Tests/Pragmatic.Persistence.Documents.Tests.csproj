@@ -40,6 +40,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Attachments\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Storage\src\Pragmatic.Storage.InMemory\Pragmatic.Storage.InMemory.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <!-- [DataSubject], [PersonalData]: the privacy adapters (access and erasure) generated for the entities the engine persists. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

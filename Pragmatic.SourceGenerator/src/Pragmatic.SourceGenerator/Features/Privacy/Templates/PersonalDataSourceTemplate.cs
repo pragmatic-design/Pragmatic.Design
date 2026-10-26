@@ -13,7 +13,7 @@ namespace Pragmatic.SourceGenerator.Features.Privacy.Templates;
 ///     <para>
 ///         This is the half the extractor cannot be. <c>Extract</c> starts from an entity already in
 ///         hand; an access request starts from a subject reference. The bridge is a query, which is why
-///         this type exists at all and why it is emitted only where EF Core is present.
+///         this type exists at all and why it is emitted only where a persistence is present (EF Core's, or an engine's).
 ///     </para>
 ///     <para>
 ///         The extractor stays a static class and is called from here rather than being turned into the
@@ -27,8 +27,8 @@ internal sealed class PersonalDataSourceTemplate : PrivacyAdapterTemplate
     private readonly string _extractorName;
 
     public PersonalDataSourceTemplate(
-        PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match)
-        : base(model, route, match)
+        PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match, bool engine = false)
+        : base(model, route, match, engine)
     {
         _typeName = NamingHelper.AppendSuffix(model.TypeName, "PersonalDataSource");
         _extractorName = NamingHelper.AppendSuffix(model.TypeName, "PersonalDataExtractor");
@@ -43,7 +43,8 @@ internal sealed class PersonalDataSourceTemplate : PrivacyAdapterTemplate
     {
         AddUsing("System.Collections.Generic");
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!Engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
 
         if (!string.IsNullOrEmpty(Model.Namespace))
         {
@@ -63,7 +64,7 @@ internal sealed class PersonalDataSourceTemplate : PrivacyAdapterTemplate
 
     private void RenderBody()
     {
-        RenderDependencies(_typeName);
+        RenderDependencies(_typeName, writes: false);
 
         XmlSummary(
             "Names this source in the subject's export. The full type name, because two sources " +
@@ -82,18 +83,28 @@ internal sealed class PersonalDataSourceTemplate : PrivacyAdapterTemplate
     {
         RenderIdentityLookup("[]");
 
-        Comment("AsNoTracking: an access request only reads, and a tracked copy would be one more place " +
-                "the subject's data lives for as long as the scope does.");
-        // Past the soft-delete filter and no other, as the erasure step: a soft-deleted row is
-        // still data held about the subject, and an access request answers for what is held.
-        AppendLine($"var rows = await _db.Set<global::{Model.FullTypeName}>()");
-        IncreaseIndent();
-        AppendLine(".AsNoTracking()");
-        AppendLine(".IgnoreQueryFilters(new[] { \"SoftDelete\" })");
-        AppendLine($".Where({RowsForSubject()})");
-        AppendLine(".ToListAsync(ct)");
-        AppendLine(".ConfigureAwait(false);");
-        DecreaseIndent();
+        if (Engine)
+        {
+            // The read repository: on an engine the one the boundary registers is the tracking one, so the rows are tracked by the scope's
+            // unit of work, which never saves them.
+            RenderEngineRows("[]");
+        }
+        else
+        {
+            Comment("AsNoTracking: an access request only reads, and a tracked copy would be one more place " +
+                    "the subject's data lives for as long as the scope does.");
+            // Past the soft-delete filter and no other, as the erasure step: a soft-deleted row is
+            // still data held about the subject, and an access request answers for what is held.
+            AppendLine($"var rows = await _db.Set<global::{Model.FullTypeName}>()");
+            IncreaseIndent();
+            AppendLine(".AsNoTracking()");
+            AppendLine(".IgnoreQueryFilters(new[] { \"SoftDelete\" })");
+            AppendLine($".Where({RowsForSubject()})");
+            AppendLine(".ToListAsync(ct)");
+            AppendLine(".ConfigureAwait(false);");
+            DecreaseIndent();
+        }
+
         AppendLine();
 
         AppendLine("var records = new List<IReadOnlyDictionary<string, object?>>(rows.Count);");

@@ -25,6 +25,8 @@ internal static class PrivacyEntityTransform
         var subjectPath = PrivacyAttributeReader.ReadSubjectPath(type);
         var owned = new List<string>();
         var properties = ReadProperties(type, owned);
+        var pathTarget = ResolvePathTargetSymbol(type, subjectPath);
+        var pathKey = pathTarget is null ? null : TraitPropertyResolver.DeclaredForeignKeyTo(type, pathTarget, subjectPath);
 
         return new PrivacyEntityModel
         {
@@ -35,7 +37,12 @@ internal static class PrivacyEntityTransform
                 : string.Empty,
             SubjectIdentifier = PrivacyAttributeReader.ReadSubjectIdentifier(type),
             SubjectPath = subjectPath,
-            SubjectPathTargetFullTypeName = ResolvePathTarget(type, subjectPath),
+            SubjectPathTargetFullTypeName = pathTarget is null ? null : NameOf(pathTarget),
+            SubjectPathForeignKey = pathKey?.Name,
+            SubjectPathForeignKeyType = pathKey is { } key
+                ? key.TypeFullName.StartsWith("global::", StringComparison.Ordinal) ? key.TypeFullName : "global::" + key.TypeFullName
+                : null,
+            IsSoftDelete = type.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.SoftDeleteAttribute"),
             Properties = properties,
             FoldedTypeFullNames = owned.ToEquatableArray(),
             IsPersistenceEntity = IsPersistenceEntity(type),
@@ -72,7 +79,7 @@ internal static class PrivacyEntityTransform
     ///     PRAG2906 — reported, not silently treated as "no path", because a path that cannot be
     ///     followed and no path at all have different causes and different fixes.
     /// </returns>
-    private static string? ResolvePathTarget(INamedTypeSymbol type, string? pathProperty)
+    private static INamedTypeSymbol? ResolvePathTargetSymbol(INamedTypeSymbol type, string? pathProperty)
     {
         if (pathProperty is null)
             return null;
@@ -82,17 +89,15 @@ internal static class PrivacyEntityTransform
         // A navigation resolves to its own type; a foreign key resolves to nothing here, which is why
         // the attribute is documented as naming the navigation.
         if (property?.Type is INamedTypeSymbol { TypeKind: TypeKind.Class } target)
-            return NameOf(target);
+            return target;
 
         // A navigation declared with [Relation] is generated, so it is not a member during this pass —
         // and it is the form the framework recommends. Ask what the generators will add.
-        var generated = property is null
+        return property is null
             ? TraitPropertyResolver.GetGeneratedProperties(type)
                 .FirstOrDefault(p => p.Name == pathProperty && !p.IsCollection)
-                .TypeSymbol
+                .TypeSymbol as INamedTypeSymbol
             : null;
-
-        return generated is null ? null : NameOf(generated);
     }
 
     /// <summary>

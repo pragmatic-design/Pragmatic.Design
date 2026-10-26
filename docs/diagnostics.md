@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **473** |
-| Distinct IDs | **473** |
+| Declared descriptors | **474** |
+| Distinct IDs | **474** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -652,7 +652,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2801`.
 
-### Privacy: 13 in use · range `PRAG2900`–`PRAG2999`
+### Privacy: 14 in use · range `PRAG2900`–`PRAG2999`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -669,10 +669,11 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG2911` | `CompositionWithoutDeclaredData` | Warning | Composing operation declares no personal data |
 | `PRAG2912` | `NoAnonymousValue` | Error | Anonymize needs a type with an anonymous value |
 | `PRAG2913` | `RedundantProcessesData` | Info | [ProcessesData] restates what the generator infers |
+| `PRAG2914` | `UnkeyedSubjectPath` | Error | A path to the subject the Sql or documents engine cannot follow by key |
 
 *Free inside the used span:* `PRAG2905`.
 
-*First free after the last used:* `PRAG2914`.
+*First free after the last used:* `PRAG2915`.
 
 ### Persistence.Sql: 34 in use · range `PRAG3000`–`PRAG3099`
 

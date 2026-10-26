@@ -24,6 +24,15 @@ internal sealed class SubjectRoute
     /// </summary>
     public required IReadOnlyList<string> Navigations { get; init; }
 
+    /// <summary>The same path by key, one hop per navigation, from the entity to the subject.</summary>
+    public required IReadOnlyList<SubjectHop> Hops { get; init; }
+
+    /// <summary>The <c>[SoftDelete]</c> entities on the route, the entity and the subject included, fully qualified.</summary>
+    public required IReadOnlyList<string> SoftDeletedTypes { get; init; }
+
+    /// <summary>Every hop has a declared key: the route an engine's adapter can follow.</summary>
+    public bool IsKeyed => Hops.All(h => h.ForeignKey is not null);
+
     /// <summary>The property on the subject that holds the identity.</summary>
     public required string IdentifierProperty { get; init; }
 

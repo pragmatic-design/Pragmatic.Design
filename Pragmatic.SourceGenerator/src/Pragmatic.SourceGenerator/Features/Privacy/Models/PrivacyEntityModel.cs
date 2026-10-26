@@ -34,6 +34,18 @@ internal sealed record PrivacyEntityModel
     /// </summary>
     public string? SubjectPathTargetFullTypeName { get; init; }
 
+    /// <summary>
+    ///     The foreign key the path's navigation is declared with, fully qualified type and name; null when the relation declares none the
+    ///     generator can read. An engine's adapter follows the path by key, hop by hop: a document keeps a relation as its key.
+    /// </summary>
+    public string? SubjectPathForeignKey { get; init; }
+
+    /// <inheritdoc cref="SubjectPathForeignKey" />
+    public string? SubjectPathForeignKeyType { get; init; }
+
+    /// <summary>The entity is <c>[SoftDelete]</c>: an engine's adapter lifts its <c>SoftDeleteFilter</c>, as EF Core lifts the named filter.</summary>
+    public bool IsSoftDelete { get; init; }
+
     /// <summary>Every property, classified or not.</summary>
     public EquatableArray<ClassifiedPropertyModel> Properties { get; init; }
         = EquatableArray<ClassifiedPropertyModel>.Empty;

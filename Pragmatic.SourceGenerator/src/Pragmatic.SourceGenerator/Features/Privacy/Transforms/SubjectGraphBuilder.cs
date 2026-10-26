@@ -66,6 +66,8 @@ internal static class SubjectGraphBuilder
             byName[e.FullTypeName] = e;
 
         var navigations = new List<string>();
+        var hops = new List<SubjectHop>();
+        var softDeleted = new List<string>();
         var visited = new HashSet<string>(StringComparer.Ordinal) { entity.FullTypeName };
         var current = entity;
 
@@ -78,8 +80,20 @@ internal static class SubjectGraphBuilder
                 return null;
 
             navigations.Add(hop);
+            hops.Add(new SubjectHop
+            {
+                FromFullTypeName = current.FullTypeName,
+                ForeignKey = current.SubjectPathForeignKey,
+                ForeignKeyType = current.SubjectPathForeignKeyType,
+                ToFullTypeName = next,
+            });
+            if (current.IsSoftDelete)
+                softDeleted.Add(current.FullTypeName);
             current = target;
         }
+
+        if (current.IsSoftDelete)
+            softDeleted.Add(current.FullTypeName);
 
         var identifier = current.SubjectIdentifier!;
         var declared = current.Properties.FirstOrDefault(p => p.Name == identifier);
@@ -92,6 +106,8 @@ internal static class SubjectGraphBuilder
         return new SubjectRoute
         {
             Navigations = navigations,
+            Hops = hops,
+            SoftDeletedTypes = softDeleted,
             IdentifierProperty = identifier,
             IdentifierTypeDisplay = declared.TypeDisplay,
             SubjectFullTypeName = current.FullTypeName

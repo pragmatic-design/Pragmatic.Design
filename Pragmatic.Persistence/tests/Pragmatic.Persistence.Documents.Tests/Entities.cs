@@ -131,3 +131,41 @@ public partial class Amenity : IEntity, Pragmatic.Events.IHasDomainEvents, Pragm
 }
 
 public sealed record AmenityChanged(string Name, Pragmatic.Events.EntityLifecycle Lifecycle, DateTimeOffset OccurredAt) : Pragmatic.Events.IDomainEvent;
+
+/// <summary>
+///     A guest, a data subject known by their email, as on the Sql engine (<c>Guest</c> there): the privacy adapters find a subject's documents
+///     from here, by key, and erase the email to the subject's pseudonym and the name to nothing.
+/// </summary>
+[Entity]
+[Pragmatic.Privacy.DataSubject(nameof(Email))]
+public partial class Guest : IEntity
+{
+    [Pragmatic.Privacy.PersonalData(Pragmatic.Privacy.DataCategory.Contact, Erasure = Pragmatic.Privacy.ErasureStrategy.Pseudonymize)]
+    public string Email { get; set; } = "";
+
+    [Pragmatic.Privacy.PersonalData(Pragmatic.Privacy.DataCategory.Identity, Erasure = Pragmatic.Privacy.ErasureStrategy.Anonymize)]
+    public string? FullName { get; set; }
+}
+
+/// <summary>A guest's booking, one hop from the subject, the relation kept as its key: its phone is anonymized, the booking kept.</summary>
+[Entity]
+[Pragmatic.Privacy.LinksToSubject("Guest")]
+[Relation.ManyToOne<Guest>]
+public partial class Booking : IEntity
+{
+    [Pragmatic.Privacy.PersonalData(Pragmatic.Privacy.DataCategory.Contact, Erasure = Pragmatic.Privacy.ErasureStrategy.Anonymize)]
+    public string? Phone { get; set; }
+
+    public int Nights { get; set; }
+}
+
+/// <summary>A request made on a booking, two hops from the subject and soft deleted: the whole document is the guest's, so it is deleted.</summary>
+[Entity]
+[SoftDelete]
+[Pragmatic.Privacy.LinksToSubject("Booking")]
+[Relation.ManyToOne<Booking>]
+public partial class BookingRequest : IEntity
+{
+    [Pragmatic.Privacy.PersonalData(Pragmatic.Privacy.DataCategory.Identity, Erasure = Pragmatic.Privacy.ErasureStrategy.Delete)]
+    public string Text { get; set; } = "";
+}

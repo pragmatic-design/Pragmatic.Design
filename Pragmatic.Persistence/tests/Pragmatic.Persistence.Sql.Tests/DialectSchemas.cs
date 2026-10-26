@@ -35,7 +35,7 @@ internal static class DialectSchemas
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Comments.HasCommentsAttribute), typeof(global::Pragmatic.Notes.HasNotesAttribute), typeof(global::Pragmatic.Tags.HasTagsAttribute),
-                typeof(global::Pragmatic.Attachments.HasAttachmentsAttribute)]),
+                typeof(global::Pragmatic.Attachments.HasAttachmentsAttribute), typeof(global::Pragmatic.Privacy.DataSubjectAttribute)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new generator::Pragmatic.SourceGenerator.PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out _);
