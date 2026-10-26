@@ -246,6 +246,7 @@ internal static partial class SqlInterceptorGenerator
 
         var compiledPredicates = new List<CompiledPredicateModel>();
         EmitSpecifications(interceptors, compiledPredicates, compilation, Lookup, diagnostics); // Pragmatic's specifications, compiled where they are written
+        EmitBulk(interceptors, plans, compilation, Lookup, diagnostics); // and the bulk writes of IBulkRepository, where they are called
 
         var declared = new List<DeclaredSectionModel>();
         var usings = new HashSet<string>(StringComparer.Ordinal);

@@ -171,10 +171,15 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
         AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>,");
-        AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>, global::Pragmatic.Persistence.Repository.INavigationLinker<{type}>");
+        AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>, global::Pragmatic.Persistence.Repository.INavigationLinker<{type}>,");
+        AppendLine($"        global::Pragmatic.Persistence.Repository.IBulkRepository<{type}>, global::Pragmatic.Persistence.Sql.ISqlRepository");
         AppendLine("    {");
         AppendLine("        private readonly SqlReadRepository _read = new(unitOfWork.Session);");
         AppendLine();
+        AppendLine("        /// <summary>The unit of work this repository reads and writes through.</summary>");
+        AppendLine("        public global::Pragmatic.Persistence.Sql.SqlUnitOfWork UnitOfWork => unitOfWork;");
+        AppendLine();
+        RenderBulk(type);
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine("            => await _read.GetByIdAsync(id, ct) is { } row ? unitOfWork.Attach(row) : null;");
         AppendLine();
@@ -229,6 +234,28 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine("            return async ct => await _read.GetByIdAsync(key, ct) is not null;");
         AppendLine("        }");
         AppendLine("    }");
+    }
+
+    /// <summary>
+    ///     <c>IBulkRepository</c>: the update and the delete are compiled where they are called (the generator intercepts the call, its plan run by
+    ///     <c>SqlBulk</c>), so these bodies run only for a call the generator did not see, and say so; the insert and the upsert are the unit of
+    ///     work's, the save's phases applied to the rows alone.
+    /// </summary>
+    private void RenderBulk(string type)
+    {
+        const string NotCompiled = "throw new global::System.NotSupportedException(\"{0} on the Sql engine is compiled where it is called: this call was not seen by the generator (written in another assembly, or reached by reflection). Call it on IBulkRepository<{1}> in an assembly the Pragmatic generator runs on.\");";
+        AppendLine($"        public {Task}<int> BulkUpdateAsync({Spec}<{type}> filter, global::System.Action<global::Pragmatic.Persistence.Repository.IBulkSetters<{type}>> set, {Token})");
+        AppendLine("            => " + string.Format(System.Globalization.CultureInfo.InvariantCulture, NotCompiled, "BulkUpdateAsync", model.EntityName));
+        AppendLine();
+        AppendLine($"        public {Task}<int> BulkDeleteAsync({Spec}<{type}> filter, {Token})");
+        AppendLine("            => " + string.Format(System.Globalization.CultureInfo.InvariantCulture, NotCompiled, "BulkDeleteAsync", model.EntityName));
+        AppendLine();
+        AppendLine($"        public {Task}<int> BulkInsertAsync(global::System.Collections.Generic.IReadOnlyList<{type}> entities, global::System.Threading.CancellationToken ct)");
+        AppendLine("            => unitOfWork.InsertManyAsync(entities, ct);");
+        AppendLine();
+        AppendLine($"        public {Task}<int> BulkUpsertAsync(global::System.Collections.Generic.IReadOnlyList<{type}> entities, global::System.Threading.CancellationToken ct)");
+        AppendLine("            => unitOfWork.UpsertManyAsync(entities, ct);");
+        AppendLine();
     }
 
     /// <summary>

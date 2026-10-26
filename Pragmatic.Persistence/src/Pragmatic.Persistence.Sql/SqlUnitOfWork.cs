@@ -173,6 +173,9 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     private static IEntity Keyed(object entity)
         => entity as IEntity ?? throw new ArgumentException($"{entity.GetType().Name} is not a Pragmatic entity (IEntity): the unit of work tracks rows by PersistenceId.", nameof(entity));
 
+    /// <summary>The instant and the caller a deletion is marked with, as the save marks a soft-deleted row: what a bulk delete stamps.</summary>
+    public (DateTimeOffset At, string? By) DeletionStamp() => (_timeProvider.GetUtcNow(), _currentUser?.IdOrNull());
+
     /// <inheritdoc />
     public TransactionState State => _state;
 

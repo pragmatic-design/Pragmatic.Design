@@ -57,6 +57,9 @@ internal sealed partial class PlanBuilder
             _binds.Add($"var {argVariable} = ({arg.Type.ToDisplayString(SqlInterceptorGenerator.Annotated)})q.Slot({_slot})!;");
         var values = new LambdaTranslator(model, _entities, _entity, set, null, arg, argVariable, inline: !_valuesInSlots);
         var sets = new List<string>();
+        // Recorded (a bulk update's): the k-th value call, in source order, is the k-th value the delegate records when it runs.
+        var valueCalls = calls.Count(c => c.ArgumentList.Arguments.Count == 2 && c.ArgumentList.Arguments[1].Expression is not LambdaExpressionSyntax);
+        var seenValues = 0;
         foreach (var call in calls)
         {
             var arguments = call.ArgumentList.Arguments;
@@ -98,6 +101,16 @@ internal sealed partial class PlanBuilder
                 Merge(_joins, valueTranslator.Joins); // a value from a navigation: the joined row (UPDATE … FROM)
                 _innerAliases.UnionWith(valueTranslator.InnerAliases);
                 text = translated;
+            }
+            else if (_recordedValues)
+            {
+                // The value is the delegate's, whatever it captures: a slot filled from what it records (SqlBulkValues).
+                var index = _kinds.Count;
+                ValueSlots.Add($"__values[{valueCalls - 1 - seenValues++}]");
+                _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, q.Slot({ValueSlots.Count - 1}));");
+                var valueType = model.GetTypeInfo(arguments[1].Expression);
+                _kinds.Add(LambdaTranslator.KindOf(valueType.ConvertedType ?? valueType.Type)); // the column's type: a null literal has none of its own
+                text = "@p" + index;
             }
             else
             {
