@@ -696,6 +696,12 @@
           "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
+      "pragmatic.tags": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
       "pragmatic.testing": {
         "type": "Project",
         "dependencies": {

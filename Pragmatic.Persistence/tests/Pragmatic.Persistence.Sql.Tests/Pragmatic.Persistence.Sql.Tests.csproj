@@ -33,9 +33,10 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
-    <!-- [HasComments] and [HasNotes]: the children TraitFeature generates for an engine's parent. -->
+    <!-- [HasComments], [HasNotes] and [HasTags]: the children TraitFeature generates for an engine's parent. -->
     <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Tags\src\Pragmatic.Tags\Pragmatic.Tags.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->

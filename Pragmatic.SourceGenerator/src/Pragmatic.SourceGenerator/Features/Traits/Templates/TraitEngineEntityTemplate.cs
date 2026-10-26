@@ -22,7 +22,7 @@ internal sealed class TraitEngineEntityTemplate : CSharpTemplate
     public TraitEngineEntityTemplate(TraitEngineEntityModel model) => _model = model;
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Traits";
-    protected override string? TriggerInfo => $"{_model.Trigger} on {_model.ParentTypeName}";
+    protected override string? TriggerInfo => _model.Parent is { } parent ? $"{_model.Trigger} on {parent.TypeName}" : _model.Trigger;
 
     public override Artifact RenderOutput()
         => new(VirtualFolderHints.ForType(_model.TypeName, "Entity", _model.Namespace), ToSourceText());
@@ -32,20 +32,28 @@ internal sealed class TraitEngineEntityTemplate : CSharpTemplate
         AppendNamespace(_model.Namespace);
         AppendLine();
 
-        XmlSummary($"SG-generated child of <see cref=\"{_model.ParentTypeName}\"/> for {_model.Trigger}, persisted by the entity's engine.");
+        XmlSummary(_model.Parent is { } owner
+            ? $"SG-generated child of <see cref=\"{owner.TypeName}\"/> for {_model.Trigger}, persisted by the entity's engine."
+            : $"SG-generated entity for {_model.Trigger}, persisted by the entity's engine.");
         AppendLine("[global::Pragmatic.Persistence.Entity.Entity]");
         if (_model.IsSoftDelete)
             AppendLine("[global::Pragmatic.Persistence.Entity.SoftDelete]");
+        if (_model.ConcurrencyAware)
+            AppendLine("[global::Pragmatic.Persistence.Entity.ConcurrencyAware]");
+        if (_model.Unique.Count > 0)
+            AppendLine($"[global::Pragmatic.Persistence.Entity.Unique({string.Join(", ", _model.Unique.Select(u => $"nameof({u})"))})]");
         // Whose child it is: the engines apply the parent's visibility.
-        AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
+        if (_model.Parent is { } parent)
+            AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{parent.FullTypeName}>]");
         foreach (var rule in _model.Rules)
             AppendLine($"[global::Pragmatic.Persistence.Entity.VisibleWhen<global::{_model.Namespace}.{_model.TypeName}.{rule}>]");
         var interfaces = _model.IsSoftDelete
             ? new List<string> { "global::Pragmatic.Persistence.Entity.IEntity", "global::Pragmatic.Persistence.Entity.ISoftDelete" }
             : new List<string> { "global::Pragmatic.Persistence.Entity.IEntity" };
+        // Not sealed, as no Pragmatic entity is: the engines' setters of a non-public member constrain on the entity's type.
         Class(_model.TypeName, RenderBody,
             accessModifier: AccessModifier.Public,
-            modifiers: new ClassModifiers { Partial = true, Sealed = true },
+            modifiers: new ClassModifiers { Partial = true },
             interfaces: interfaces);
     }
 
@@ -67,13 +75,29 @@ internal sealed class TraitEngineEntityTemplate : CSharpTemplate
                 : $"public {column.Type} {column.Name} {{ get; set; }}");
         }
 
+        if (_model.ConcurrencyAware)
+        {
+            AppendLine();
+            XmlSummary("The row version, as on every [ConcurrencyAware] Pragmatic entity: a stale write is refused.");
+            AppendLine("public ulong RowVersion { get; internal set; }");
+        }
+
+        foreach (var reference in _model.References)
+        {
+            AppendLine();
+            XmlSummary($"Navigation to the <see cref=\"{reference.Navigation}\"/> its {reference.Navigation}Id names.");
+            AppendLine($"public global::{reference.TargetFullTypeName}? {reference.Navigation} {{ get; set; }}");
+        }
+
+        if (_model.Parent is not { } parent)
+            return;
         AppendLine();
-        XmlSummary($"FK to the parent <see cref=\"{_model.ParentTypeName}\"/>.");
+        XmlSummary($"FK to the parent <see cref=\"{parent.TypeName}\"/>.");
         // A keyword type (int, long) is written as it is; global:: only qualifies a name.
-        var keyType = _model.ParentKeyType.Contains('.') ? "global::" + _model.ParentKeyType : _model.ParentKeyType;
-        AppendLine($"public {keyType} {_model.ParentForeignKey} {{ get; set; }}");
+        var keyType = parent.KeyType.Contains('.') ? "global::" + parent.KeyType : parent.KeyType;
+        AppendLine($"public {keyType} {parent.ForeignKey} {{ get; set; }}");
         AppendLine();
         XmlSummary("Navigation to the parent entity.");
-        AppendLine($"public global::{_model.ParentFullTypeName}? {_model.ParentTypeName} {{ get; set; }}");
+        AppendLine($"public global::{parent.FullTypeName}? {parent.TypeName} {{ get; set; }}");
     }
 }

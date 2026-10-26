@@ -38,6 +38,36 @@ internal static class TraitColumns
         new("Metadata", "string?", null, 4000, false),
     ];
 
+    /// <summary><c>TagBase</c>'s: the shared tag of a boundary.</summary>
+    public static EquatableArray<TraitColumnModel> Tag() =>
+    [
+        new("Value", "string", "\"\"", 256, true),
+        new("DisplayValue", "string", "\"\"", 256, true),
+        new("Scope", "string?", null, 128, false),
+        new("UsageCount", "int", null, null, false),
+        new("CreatedAt", Instant, null, null, false),
+        new("CreatedBy", "string?", null, 256, false),
+    ];
+
+    /// <summary><c>EntityTagBase&lt;TId&gt;</c>'s: the link of an entity to a tag.</summary>
+    public static EquatableArray<TraitColumnModel> TagLink() =>
+    [
+        new("TagId", Guid, null, null, false),
+        new("AddedAt", Instant, null, null, false),
+        new("AddedBy", "string?", null, 256, false),
+    ];
+
+    /// <summary>
+    ///     The tag's value, display value and scope, copied on the link an engine persists: a tag never changes once minted, and a document keeps a
+    ///     relation as its key, so the tags of an entity are read off its links without a join. Not on <c>EntityTagBase&lt;TId&gt;</c>, nor with EF Core.
+    /// </summary>
+    public static EquatableArray<TraitColumnModel> TagLinkCopies() =>
+    [
+        new("Value", "string", "\"\"", 256, true),
+        new("DisplayValue", "string", "\"\"", 256, true),
+        new("Scope", "string?", null, 128, false),
+    ];
+
     /// <summary><c>NoteBase&lt;TId&gt;</c>'s, with its content bounded at <paramref name="maxLength" />.</summary>
     public static EquatableArray<TraitColumnModel> Note(int maxLength) =>
     [

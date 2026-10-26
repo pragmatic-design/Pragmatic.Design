@@ -33,9 +33,10 @@ internal static class TraitEngineChildren
     public static IEnumerable<Artifact> ForComment(CommentTraitModel model, bool withActions)
     {
         var rules = CommentRules(model);
-        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.CommentTypeName, model.ParentTypeName,
-            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Comment(model.MaxLength), "[HasComments]",
-            rules.Select(r => r.RuleName).ToEquatableArray())).RenderOutput();
+        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.CommentTypeName,
+            new TraitEngineParentModel(model.ParentTypeName, model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType), IsSoftDelete: true,
+            ConcurrencyAware: false, TraitColumns.Comment(model.MaxLength), EquatableArray<string>.Empty, EquatableArray<TraitEngineReferenceModel>.Empty,
+            "[HasComments]", rules.Select(r => r.RuleName).ToEquatableArray())).RenderOutput();
         foreach (var rule in rules)
             yield return new TraitEngineRuleTemplate(rule).RenderOutput();
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.CommentTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
@@ -97,9 +98,10 @@ internal static class TraitEngineChildren
     /// </summary>
     public static IEnumerable<Artifact> ForNote(NoteTraitModel model, bool withActions)
     {
-        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.NoteTypeName, model.ParentTypeName,
-            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Note(model.MaxLength), "[HasNotes]",
-            EquatableArray<string>.Empty)).RenderOutput();
+        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.NoteTypeName,
+            new TraitEngineParentModel(model.ParentTypeName, model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType), IsSoftDelete: true,
+            ConcurrencyAware: false, TraitColumns.Note(model.MaxLength), EquatableArray<string>.Empty, EquatableArray<TraitEngineReferenceModel>.Empty,
+            "[HasNotes]", EquatableArray<string>.Empty)).RenderOutput();
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.NoteTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
             yield return filter;
         yield return new ParentNoteNavigationTemplate(model).RenderOutput();
@@ -117,8 +119,48 @@ internal static class TraitEngineChildren
         yield return new NotePermissionsTemplate(model).RenderOutput();
     }
 
+    /// <summary>
+    ///     An entity's links to the boundary's tags: the link (its key the shape's, one link per tag by its unique index, the tag's value copied so
+    ///     the list reads it without a join), its filters, the parent's <c>Tags</c>, the DTO and the list query; with Actions referenced
+    ///     (<paramref name="withActions" />), the actions on the tag's and the link's repositories and their permissions. On the Sql engine with a
+    ///     per-entity limit (<paramref name="serializable" />) the add runs in a serializable transaction, as with EF Core.
+    /// </summary>
+    public static IEnumerable<Artifact> ForTag(TagTraitModel model, bool withActions, bool serializable)
+    {
+        var columns = TraitColumns.TagLink().AsImmutableArray().AddRange(TraitColumns.TagLinkCopies().AsImmutableArray());
+        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.JunctionTypeName,
+            new TraitEngineParentModel(model.ParentTypeName, model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType), IsSoftDelete: false,
+            ConcurrencyAware: false, columns, [model.ParentFkPropertyName, "TagId"], [new TraitEngineReferenceModel("Tag", model.TagFullTypeName)],
+            "[HasTags]", EquatableArray<string>.Empty)).RenderOutput();
+        foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.JunctionTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped, softDelete: false)))
+            yield return filter;
+        yield return new ParentTagNavigationTemplate(model).RenderOutput();
+        yield return new TagDtoTemplate(model).RenderOutput();
+        yield return new TagListQueryTemplate(model, declaresItsSort: true).RenderOutput();
+        if (!withActions)
+            yield break;
+
+        yield return new TagActionsTemplate(model, TagActionKind.Add, engine: true, serializable).RenderOutput();
+        yield return new TagActionsTemplate(model, TagActionKind.Remove, engine: true).RenderOutput();
+        yield return new TagPermissionsTemplate(model).RenderOutput();
+    }
+
+    /// <summary>
+    ///     The boundary's shared tag an engine persists: <c>[ConcurrencyAware]</c> (its usage count is raised on the tracked row, a stale save
+    ///     refused), unique on its value and scope as with EF Core.
+    /// </summary>
+    public static Artifact ForSharedTag(TagTraitModel model)
+        => new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.TagTypeName, Parent: null, IsSoftDelete: false,
+            ConcurrencyAware: true, TraitColumns.Tag(), ["Value", "Scope"], EquatableArray<TraitEngineReferenceModel>.Empty, "[HasTags]",
+            EquatableArray<string>.Empty)).RenderOutput();
+
+    /// <summary>True when the add of a tag runs in a serializable transaction: the Sql engine, alone, and a per-entity limit (as with EF Core).</summary>
+    public static bool SerializableTags(TagTraitModel model, DetectedFeatures features)
+        => model.MaxPerEntity > 0 && features.HasPersistenceSql && !features.HasPersistenceDocuments;
+
     /// <summary>The files above, as the engines bind them; empty when the children are EF Core's.</summary>
-    public static EquatableArray<ShapeSourceModel> Sources(ImmutableArray<CommentTraitModel> comments, ImmutableArray<NoteTraitModel> notes, DetectedFeatures features)
+    public static EquatableArray<ShapeSourceModel> Sources(ImmutableArray<CommentTraitModel> comments, ImmutableArray<NoteTraitModel> notes, ImmutableArray<TagTraitModel> tags,
+        DetectedFeatures features)
     {
         if (!Apply(features))
             return EquatableArray<ShapeSourceModel>.Empty;
@@ -127,6 +169,10 @@ internal static class TraitEngineChildren
             Add(ForComment(comment, features.HasActions));
         foreach (var note in notes)
             Add(ForNote(note, features.HasActions));
+        foreach (var tag in tags)
+            Add(ForTag(tag, features.HasActions, SerializableTags(tag, features)));
+        foreach (var tag in tags.GroupBy(t => t.TagFullTypeName).Select(g => g.First()))
+            Add([ForSharedTag(tag)]);
         return sources.ToEquatableArray();
 
         void Add(IEnumerable<Artifact> artifacts)
@@ -140,7 +186,8 @@ internal static class TraitEngineChildren
     }
 
     /// <summary>What the filter templates read of an entity: its name, its soft delete, its parent (the parent's visibility).</summary>
-    private static EntityMetadataModel Shape(string ns, string typeName, string? boundaryName, string parentTypeName, bool parentIsOwned, bool parentIsScoped) => new()
+    private static EntityMetadataModel Shape(string ns, string typeName, string? boundaryName, string parentTypeName, bool parentIsOwned, bool parentIsScoped,
+        bool softDelete = true) => new()
     {
         TypeName = typeName,
         FullTypeName = string.IsNullOrEmpty(ns) ? typeName : $"{ns}.{typeName}",
@@ -150,7 +197,7 @@ internal static class TraitEngineChildren
         IsValid = true,
         IsFromReference = false,
         BoundaryName = boundaryName,
-        IsSoftDelete = true,
+        IsSoftDelete = softDelete,
         TraitParent = new TraitParentModel(parentTypeName, parentIsOwned, parentIsScoped),
     };
 }
