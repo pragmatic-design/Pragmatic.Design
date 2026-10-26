@@ -246,13 +246,23 @@ internal sealed partial class MutationInvokerTemplate
         {
             AppendLine("var __paths = new global::System.Collections.Generic.List<string>();");
 
-            foreach (var child in writableChildren)
-                AppendLine($"__paths.Add(\"{child.TargetPropertyName}\");");
-
-            foreach (var (navigation, childDto) in deepWrites)
+            // On the Sql engine, the paths its compiled read of the set is for: the ones the invoker's own load reads (EngineLoadPaths), which
+            // hold the written ones. A set the engine compiled no read for would be refused at run time.
+            if (_model.Engine == PersistenceEngineMarker.Sql && _model.EngineLoadPaths.Count > 0)
             {
-                AppendLine($"foreach (var __deep in {childDto}.WrittenNavigations)");
-                Block(() => AppendLine($"__paths.Add(\"{navigation}.\" + __deep);"));
+                foreach (var path in _model.EngineLoadPaths)
+                    AppendLine($"__paths.Add(\"{StringHelper.CSharpLiteral(path)}\");");
+            }
+            else
+            {
+                foreach (var child in writableChildren)
+                    AppendLine($"__paths.Add(\"{child.TargetPropertyName}\");");
+
+                foreach (var (navigation, childDto) in deepWrites)
+                {
+                    AppendLine($"foreach (var __deep in {childDto}.WrittenNavigations)");
+                    Block(() => AppendLine($"__paths.Add(\"{navigation}.\" + __deep);"));
+                }
             }
 
             AppendLine();

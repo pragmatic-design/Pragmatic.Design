@@ -168,6 +168,43 @@ public class GeneratedInvokerTests(PragmaticDatabases databases)
         }
     }
 
+    /// <summary>
+    ///     The same merge with the property handed over, read without its room types (<c>InvokeAsync(mutation, entity)</c>): the invoker loads
+    ///     the written collection into it through the repository (<c>INavigationLoader</c>) before the merge, so the child still sent is
+    ///     updated in place and the one not sent any more is removed, as when the invoker reads the property itself.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_merge_into_a_handed_over_entity_loads_its_children_first(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await Seeded(dialect);
+        using (session)
+        {
+            Guid riva, standard;
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA").Id;
+                standard = (await session.Query<RoomType>().ToListAsync()).Single(t => t.Code == "STD").Id;
+            }
+
+            var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+            var repository = new Property.SqlRepository(unitOfWork);
+            var property = (await repository.GetByIdAsync(riva))!;
+            Assert.Empty(property.RoomTypes); // read without its graph
+
+            var set = await new SetRoomTypesMutation.Invoker(repository, unitOfWork, new ServiceCollection().BuildServiceProvider())
+                .InvokeAsync(new SetRoomTypesMutation { Id = riva, RoomTypes = [new WriteRoomTypeMutation { Code = "FAM" }] }, property);
+            Assert.True(set.IsSuccess, set.IsSuccess ? "" : set.Error.ToString());
+
+            List<RoomType> rows;
+            using (_toggle.UseMode(FilterMode.Raw))
+                rows = await session.Query<RoomType>().ToListAsync();
+            Assert.Equal(["FAM"], rows.Where(t => !t.IsDeleted).Select(t => t.Code));
+            Assert.True(rows.Single(t => t.Id == standard).IsDeleted); // read by the loader, not sent: removed
+        }
+    }
+
     /// <summary>A create with children on the Sql engine: the new root and every child of its collections inserted, each child under the root.</summary>
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
