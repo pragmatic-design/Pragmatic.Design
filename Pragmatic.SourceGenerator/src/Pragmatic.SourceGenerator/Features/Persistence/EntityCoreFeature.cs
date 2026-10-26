@@ -17,7 +17,11 @@ namespace Pragmatic.SourceGenerator.Features.Persistence;
 /// </summary>
 internal static class EntityCoreFeature
 {
-    public static void Register(
+    /// <returns>
+    ///     The cascade handlers of targets an engine persists, for the engines' binding: they read through <c>Spec&lt;T&gt;.Where</c>, which an
+    ///     engine compiles where it sees it, and no generator sees another's output.
+    /// </returns>
+    public static IncrementalValueProvider<EquatableArray<ShapeSourceModel>> Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValuesProvider<(EntityMetadataModel Entity, DetectedFeatures Features)> perEntityWithFeatures,
         IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> entitiesWithFeatures)
@@ -56,19 +60,24 @@ internal static class EntityCoreFeature
 
         context.RegisterSourceOutputSafe(cascadeProvider.Combine(features), static (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore)
+            if (!pair.Right.HasPersistenceEFCore && !CascadesOnEngines(pair.Right))
                 return;
-            GenerateCascadeHandler(ctx, pair.Left);
+            GenerateCascadeHandler(ctx, pair.Left, CascadesOnEngines(pair.Right));
         });
 
         // Collect all cascade handlers into one DI registration so the domain-event dispatcher can
         // resolve and invoke them. Generated in the same assembly as the (internal) handlers.
         context.RegisterSourceOutputSafe(cascadeProvider.Collect().Combine(features), static (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore || pair.Left.IsDefaultOrEmpty)
+            if ((!pair.Right.HasPersistenceEFCore && !CascadesOnEngines(pair.Right)) || pair.Left.IsDefaultOrEmpty)
                 return;
             GenerateCascadeRegistration(ctx, pair.Left);
         });
+
+        var cascadeSources = cascadeProvider.Collect().Combine(features).Select(static (pair, _) => CascadesOnEngines(pair.Right)
+            ? pair.Left.Where(c => c.HasForeignKey).Select(c => new CascadeHandlerTemplate(c, engine: true).RenderOutput()).Where(a => !a.IsEmpty)
+                .Select(a => new ShapeSourceModel(a.HintName, a.Text)).ToEquatableArray()
+            : EquatableArray<ShapeSourceModel>.Empty);
 
         // [CascadeSource] property attribute → explicit cross-project cascade source declaration
         var cascadeSourceProvider = context.SyntaxProvider
@@ -146,7 +155,16 @@ internal static class EntityCoreFeature
 
             GenerateValueRegistration(ctx, pairs.Select(static p => p.Left).ToImmutableArray());
         });
+
+        return cascadeSources;
     }
+
+    /// <summary>
+    ///     True when the cascade handlers are the engines': an engine's bridge referenced, EF Core's not. ASSUMPTION: as for the trait children,
+    ///     a compilation that references EF Core keeps EF Core's handlers; a module that mixes engines is the porting's item 15.
+    /// </summary>
+    private static bool CascadesOnEngines(DetectedFeatures features)
+        => !features.HasPersistenceEFCore && (features.HasPersistenceSql || features.HasPersistenceDocuments);
 
     private static void GenerateValueRegistration(
         SourceProductionContext context,
@@ -243,7 +261,8 @@ internal static class EntityCoreFeature
 
     private static void GenerateCascadeHandler(
         SourceProductionContext context,
-        CascadeModel model)
+        CascadeModel model,
+        bool engine)
     {
         // Fail closed. The handler filters on a foreign key by convention; without it the generated
         // file names a member the entity does not have, which surfaces as CS1061 in code the author
@@ -260,7 +279,7 @@ internal static class EntityCoreFeature
             return;
         }
 
-        var template = new CascadeHandlerTemplate(model);
+        var template = new CascadeHandlerTemplate(model, engine);
         var artifact = template.RenderOutput();
         if (!artifact.IsEmpty)
             context.AddSource(artifact);

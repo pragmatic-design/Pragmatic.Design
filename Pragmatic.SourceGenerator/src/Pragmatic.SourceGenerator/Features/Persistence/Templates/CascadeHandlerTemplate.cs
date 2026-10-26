@@ -11,8 +11,19 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 internal sealed class CascadeHandlerTemplate : CSharpTemplate
 {
     private readonly CascadeModel _model;
+    private readonly bool _engine;
 
-    public CascadeHandlerTemplate(CascadeModel model) => _model = model;
+    /// <param name="model">The cascade.</param>
+    /// <param name="engine">
+    ///     True for a target the Sql or documents engine persists: the handler reads the rows through the target's repository, changes them and
+    ///     saves the boundary's unit of work, instead of EF Core's <c>ExecuteUpdate</c>. One body for both engines, as an update by filter is not
+    ///     one every store has.
+    /// </param>
+    public CascadeHandlerTemplate(CascadeModel model, bool engine = false)
+    {
+        _model = model;
+        _engine = engine;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";
     protected override string? SourceInfo => $"Cascade {_model.SourceTypeName}.{_model.SourceProperty} → {_model.TargetTypeName}.{_model.TargetProperty}";
@@ -27,7 +38,8 @@ internal sealed class CascadeHandlerTemplate : CSharpTemplate
 
     public override void RenderFile()
     {
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!_engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Events");
         AddUsing("System.Linq");   // .Where below: declared, not left to the consumer's implicit usings (#202)
 
@@ -48,6 +60,12 @@ internal sealed class CascadeHandlerTemplate : CSharpTemplate
 
     private void RenderBody()
     {
+        if (_engine)
+        {
+            RenderEngineBody();
+            return;
+        }
+
         Field("_dbContext", "global::Microsoft.EntityFrameworkCore.DbContext", AccessModifier.Private, isReadOnly: true);
         AppendLine();
 
@@ -92,6 +110,53 @@ internal sealed class CascadeHandlerTemplate : CSharpTemplate
             // throws "Expression '@p' ... does not have a type mapping"). See CascadeModel.TargetPropertyTypeName.
             AppendLine($"    .ExecuteUpdateAsync(s => s.SetProperty(e => e.{_model.TargetProperty}, ({_model.TargetPropertyTypeName})@event.NewValue!), ct)");
             AppendLine("    .ConfigureAwait(false);");
+        });
+    }
+
+    /// <summary>
+    ///     The rows the cascade reaches, read through the target's repository (the engine's filters on, as EF Core's <c>ExecuteUpdate</c> keeps
+    ///     the query filters), changed on the tracked rows and saved by the boundary's unit of work, keyed as an engine registers it.
+    /// </summary>
+    private void RenderEngineBody()
+    {
+        const string unitOfWork = "global::Pragmatic.Persistence.Repository.IUnitOfWork";
+        var repository = $"global::Pragmatic.Persistence.Repository.IRepository<{_model.TargetFullTypeName}>";
+        var handlerName = $"{_model.TargetTypeName}{_model.TargetProperty}CascadeHandler";
+        var unitOfWorkParam = string.IsNullOrEmpty(_model.TargetBoundaryTypeFullName)
+            ? $"{unitOfWork} unitOfWork"
+            : $"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof({Qualify(_model.TargetBoundaryTypeFullName!)}))] {unitOfWork} unitOfWork";
+
+        Field("_targets", repository, AccessModifier.Private, isReadOnly: true);
+        Field("_unitOfWork", unitOfWork, AccessModifier.Private, isReadOnly: true);
+        AppendLine();
+        AppendLine($"public {handlerName}({repository} targets, {unitOfWorkParam})");
+        Block(() =>
+        {
+            AppendLine("_targets = targets;");
+            AppendLine("_unitOfWork = unitOfWork;");
+        });
+        AppendLine();
+
+        AppendLine(
+            $"public async global::System.Threading.Tasks.Task HandleAsync(global::Pragmatic.Events.EntityPropertyChanged<{_model.SourceQualifiedTypeName}> @event, global::System.Threading.CancellationToken ct)");
+        Block(() =>
+        {
+            AppendLine($"if (@event.PropertyName != \"{_model.SourceProperty}\") return;");
+            AppendLine();
+            AppendLine($"var entityId = ({_model.ForeignKeyTypeName})@event.EntityId;");
+            AppendLine($"var value = ({_model.TargetPropertyTypeName})@event.NewValue!;");
+            var condition = _model.Condition is null ? "" : $" && (e.{_model.Condition})";
+            AppendLine($"var targets = await _targets.FindAsync(global::Pragmatic.Specification.Spec<{_model.TargetFullTypeName}>");
+            AppendLine($"    .Where(e => e.{_model.ForeignKeyProperty} == entityId{condition}), ct).ConfigureAwait(false);");
+            AppendLine("if (targets.Count == 0) return;");
+            AppendLine();
+            AppendLine("foreach (var target in targets)");
+            IncreaseIndent();
+            AppendLine(_model.TargetSetterIsPrivate
+                ? $"target.Set{_model.TargetProperty}(value);"
+                : $"target.{_model.TargetProperty} = value;");
+            DecreaseIndent();
+            AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
         });
     }
 

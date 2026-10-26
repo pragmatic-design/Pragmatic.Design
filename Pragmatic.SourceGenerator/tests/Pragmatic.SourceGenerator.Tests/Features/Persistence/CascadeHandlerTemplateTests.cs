@@ -106,9 +106,28 @@ public class CascadeHandlerTemplateTests
         artifact.Text.Should().BeEmpty();
     }
 
-    private static string Render(CascadeModel model)
+    // The engines register a boundary's unit of work keyed by the boundary and nothing unkeyed: an unkeyed handler would not resolve in a host,
+    // and no engine suite has a boundary to show it. The effect (the rows changed) is shown by CascadeHandlerTests in the engine suites.
+    [Fact]
+    public void RenderOutput_OnAnEngine_KeysTheUnitOfWorkByTheBoundaryAndNamesNoDbContext()
     {
-        var template = new CascadeHandlerTemplate(model);
+        var source = Render(BuildModel() with { TargetBoundaryTypeFullName = "Sales.SalesBoundary" }, engine: true);
+
+        source.Should().Contain("[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof(global::Sales.SalesBoundary))] global::Pragmatic.Persistence.Repository.IUnitOfWork unitOfWork");
+        source.Should().Contain("global::Pragmatic.Persistence.Repository.IRepository<global::Sales.LineItem> targets");
+        source.Should().NotContain("DbContext");
+    }
+
+    [Fact]
+    public void RenderOutput_OnAnEngine_AssignsAPrivateSetterThroughTheGeneratedSetter()
+    {
+        Render(BuildModel() with { TargetSetterIsPrivate = true }, engine: true).Should().Contain("target.SetUnitPrice(value);");
+        Render(BuildModel(), engine: true).Should().Contain("target.UnitPrice = value;");
+    }
+
+    private static string Render(CascadeModel model, bool engine = false)
+    {
+        var template = new CascadeHandlerTemplate(model, engine);
         var artifact = template.RenderOutput();
         return artifact.Text;
     }

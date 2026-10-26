@@ -24,9 +24,15 @@ public partial class Property : IEntity, ITenantEntity
     public string Name { get; set; } = "";
 
     public string TenantId { get; set; } = "";
+
+    /// <summary>Set through <c>SetRegion</c>, which raises the change a reservation's copy follows.</summary>
+    public string? Region { get; private set; }
 }
 
-/// <summary>A stay at a property: soft deleted, owned; the relation kept as its key (PropertyId).</summary>
+/// <summary>
+///     A stay at a property: soft deleted, owned; the relation kept as its key (PropertyId). Its property's region is copied on it, and follows
+///     it when it changes (<c>[CascadeOn]</c>).
+/// </summary>
 [Entity]
 [SoftDelete]
 [HasOwner]
@@ -36,6 +42,9 @@ public partial class Reservation : IEntity
     public DateTimeOffset CheckIn { get; set; }
 
     public int Nights { get; set; }
+
+    [CascadeOn<Property>(nameof(Property.Region))]
+    public string? PropertyRegion { get; private set; }
 }
 
 /// <summary>
