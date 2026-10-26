@@ -30,8 +30,8 @@ public class TraitParentVisibilityTests(DocumentServers servers)
         List<Property> properties;
         using (_toggle.UseMode(FilterMode.Raw))
             (reviews, properties) = (await raw.Query<Review>().ToListAsync(), await raw.Query<Property>().ToListAsync());
-        var comments = reviews.Select(r => { var c = new ReviewComment { Text = "on " + r.Text }; c.SetReviewId(r.Id); return c; }).ToList();
-        var notes = properties.Select(p => { var n = new PropertyNote { Text = "on " + p.Name }; n.SetPropertyId(p.Id); return n; }).ToList();
+        var comments = reviews.Select(r => new ReviewComment { Content = "on " + r.Text, ReviewId = r.Id }).ToList();
+        var notes = properties.Select(p => new PropertyNote { Content = "on " + p.Name, AuthorId = "anna", AuthorName = "Anna", PropertyId = p.Id }).ToList();
         await seeded.InsertManyAsync(comments);
         await seeded.InsertManyAsync(notes);
         return raw;
@@ -45,10 +45,42 @@ public class TraitParentVisibilityTests(DocumentServers servers)
     {
         using var tenant = TenantScope.BeginScope("acme");
         var session = await Seeded(store);
-        Assert.Equal(["on anna draft", "on anna@ALPE", "on anna@RIVA"], await Texts(session.Query<ReviewComment>().ToListAsync().AsTask(), c => c.Text));
-        Assert.Equal(["on ALPE", "on RIVA"], await Texts(session.Query<PropertyNote>().ToListAsync().AsTask(), n => n.Text));
-        Assert.Equal(2, await session.Query<PropertyNote>().CountAsync());
+        // anna's reviews of acme: anna@ALPE is hers and the tenant other's, and so is its comment (EF's "ParentTenant").
+        Assert.Equal(["on anna draft", "on anna@RIVA"], await Texts(session.Query<ReviewComment>().ToListAsync().AsTask(), c => c.Content));
+        // The properties sharing desk-north and of acme: RIVA (ALPE shares the scope and is the tenant other's).
+        Assert.Equal(["on RIVA"], await Texts(session.Query<PropertyNote>().ToListAsync().AsTask(), n => n.Content));
+        Assert.Equal(1, await session.Query<PropertyNote>().CountAsync());
         using (_toggle.UseMode(FilterMode.Admin))
-            Assert.Equal(4, await session.Query<ReviewComment>().CountAsync()); // lifted with the parent's permission filters
+            Assert.Equal(3, await session.Query<ReviewComment>().CountAsync()); // lifted with the parent's permission filters, not across the tenant
+    }
+
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_deleted_child_is_out_of_the_reads(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var session = await Seeded(store);
+        Property riva;
+        using (_toggle.UseMode(FilterMode.Raw))
+            riva = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "RIVA");
+        await session.InsertManyAsync([new PropertyNote { Content = "gone", AuthorId = "anna", AuthorName = "Anna", PropertyId = riva.Id, IsDeleted = true }]);
+
+        Assert.Equal(["on RIVA"], await Texts(session.Query<PropertyNote>().ToListAsync().AsTask(), n => n.Content));
+        // Both halves of the soft delete lifted, as on EF: the filter's type and the name "SoftDelete".
+        using (_toggle.Disable(typeof(PropertyNote.SoftDeleteFilter)))
+        using (_toggle.DisableQueryFilter("SoftDelete"))
+            Assert.Equal(["gone", "on RIVA"], await Texts(session.Query<PropertyNote>().ToListAsync().AsTask(), n => n.Content));
+    }
+
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_childs_tenant_is_its_parents_until_lifted_by_name(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var session = await Seeded(store);
+        // Lifted by name, as EF's IgnoreQueryFilters(["ParentTenant"]) with the entity's filters disabled: every note.
+        using (_toggle.DisableQueryFilter("ParentTenant"))
+        using (_toggle.Disable(typeof(PropertyNote)))
+            Assert.Equal(3, await session.Query<PropertyNote>().CountAsync());
     }
 }

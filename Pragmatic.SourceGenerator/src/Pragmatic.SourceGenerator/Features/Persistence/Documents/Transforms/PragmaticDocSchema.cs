@@ -24,12 +24,14 @@ internal static class PragmaticDocSchema
         var schemas = new List<DocSchemaModel>();
         if (compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.Schema.DocSchema") is null)
             return schemas;
+        // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
+        // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is described with the boundary's other entities all the same.
         foreach (var group in entities.Where(e => models.ContainsKey(e.ToDisplayString()))
-                     .GroupBy(e => PragmaticPermissions.BoundaryOf(e), SymbolEqualityComparer.Default)
-                     .OrderBy(g => g.Key?.ToDisplayString() ?? "", StringComparer.Ordinal))
+                     .GroupBy(e => PragmaticPermissions.BoundaryOf(e)?.ToDisplayString() ?? "", StringComparer.Ordinal)
+                     .OrderBy(g => g.Key, StringComparer.Ordinal))
         {
-            var boundary = group.Key as INamedTypeSymbol;
-            if (boundary is not null && !SymbolEqualityComparer.Default.Equals(boundary.ContainingAssembly, compilation.Assembly))
+            var boundary = PragmaticPermissions.BoundaryOf(group.First()) as INamedTypeSymbol;
+            if (boundary is not null && boundary.ContainingAssembly?.Name != compilation.Assembly.Name)
                 continue; // a boundary of a referenced assembly describes its schema there
             var name = boundary is null ? "DefaultDocSchema" : boundary.Name + "DocSchema";
             var first = group.OrderBy(e => e.Name, StringComparer.Ordinal).First();

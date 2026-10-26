@@ -580,6 +580,13 @@
           "Pragmatic.Result": "[1.0.0, )"
         }
       },
+      "pragmatic.comments": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
@@ -613,6 +620,12 @@
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )",
           "Pragmatic.Resilience": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notes": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {

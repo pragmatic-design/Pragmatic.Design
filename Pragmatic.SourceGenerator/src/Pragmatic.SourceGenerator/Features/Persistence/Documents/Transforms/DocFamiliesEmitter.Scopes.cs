@@ -65,10 +65,33 @@ internal static partial class DocFamiliesEmitter
         if (owner is null && scopes is null)
             return null;
         var slot = $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.Permission, typeof({type}.ParentVisibilityFilter), null, {DocTypeEmitter.Literal(PragmaticPermissions.ViewAll(parent))})";
-        var mongo = $"w.StartDocument({DocTypeEmitter.Literal(foreignKey.Name)}); {Runtime}.Conversion.DocValues.WriteArray(w, \"$in\", {Runtime}.Filters.DocFamilies.VisibleParents<{type}>(), {Runtime}.Conversion.DocValues.Write); w.EndDocument();";
-        var cosmos = $"ARRAY_CONTAINS(@__parents, {DocCosmosText.Path(foreignKey.Name, "c")})";
-        var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"@__parents\"); w.WriteStartArray(\"value\"); foreach (var id in {Runtime}.Filters.DocFamilies.VisibleParents<{type}>()) w.WriteStringValue(id.ToString(\"D\")); w.WriteEndArray(); w.WriteEndObject();";
         var read = $"static (s, f, ct) => {Runtime}.Filters.DocFamilies.ParentKeysAsync<{parent.ToDisplayString(DocModel.Qualified)}>(s, f, {(owner is null ? "null" : DocTypeEmitter.Literal(owner))}, {(scopes is null ? "null" : DocTypeEmitter.Literal(scopes))}, ct)";
+        return AmongParents(slot, "Permission", "@__parents", foreignKey.Name, type, read);
+    }
+
+    /// <summary>
+    ///     A trait's child of a tenant's parent (<c>ITenantEntity</c>): its foreign key among the keys of the parents of the caller's tenant, read before
+    ///     each execution, as EF Core's named <c>"ParentTenant"</c> filter (the child has no tenant field: its tenancy is its parent's). No bypass:
+    ///     no permission crosses a tenant. Null for any other entity.
+    /// </summary>
+    private static string? ParentTenant(DocModel model, Compilation compilation, string type)
+    {
+        if (PragmaticFilters.TraitParent(model.Type) is not { } parent || compilation.GetTypeByMetadataName(parent.ToDisplayString()) is not { } shaped
+            || !shaped.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity")
+            || DocModel.Read(shaped, []) is not { } parentModel || parentModel.Field("TenantId") is not { } tenant || model.Field(parent.Name + "Id") is not { } foreignKey)
+            return null;
+        var slot = $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.Tenant, null, \"ParentTenant\")";
+        var read = $"static (s, f, ct) => {Runtime}.Filters.DocFamilies.TenantParentKeysAsync<{parent.ToDisplayString(DocModel.Qualified)}>(s, f, {DocTypeEmitter.Literal(tenant.Name)}, ct)";
+        return AmongParents(slot, "Tenant", "@__tenantParents", foreignKey.Name, type, read);
+    }
+
+    /// <summary>The family matching the child's foreign key against the parents <paramref name="read" /> admits, prepared per execution under its family.</summary>
+    private static string AmongParents(string slot, string family, string parameterName, string foreignKey, string type, string read)
+    {
+        var parents = $"{Runtime}.Filters.DocFamilies.VisibleParents<{type}>({Runtime}.Filters.DocFilterFamily.{family})";
+        var mongo = $"w.StartDocument({DocTypeEmitter.Literal(foreignKey)}); {Runtime}.Conversion.DocValues.WriteArray(w, \"$in\", {parents}, {Runtime}.Conversion.DocValues.Write); w.EndDocument();";
+        var cosmos = $"ARRAY_CONTAINS({parameterName}, {DocCosmosText.Path(foreignKey, "c")})";
+        var parameter = $"w.WriteStartObject(); w.WriteString(\"name\", \"{parameterName}\"); w.WriteStartArray(\"value\"); foreach (var id in {parents}) w.WriteStringValue(id.ToString(\"D\")); w.WriteEndArray(); w.WriteEndObject();";
         return $"new {Runtime}.Filters.DocFamily({slot}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, static (w, f) => {{ {parameter} }}, false, {read})";
     }
 

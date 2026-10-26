@@ -1,6 +1,7 @@
 ﻿using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Traits.Models;
+using Pragmatic.SourceGenerator.Features.Traits.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 
@@ -71,15 +72,9 @@ internal sealed class CommentEntityConfigTemplate : CSharpTemplate
             AppendLine();
         }
 
-        // String property max lengths
-        AppendLine($"builder.Property(e => e.Content).HasMaxLength({_model.MaxLength});");
-        AppendLine("builder.Property(e => e.AuthorId).HasMaxLength(256);");
-        AppendLine("builder.Property(e => e.AuthorName).HasMaxLength(256);");
-        AppendLine("builder.Property(e => e.UpdatedBy).HasMaxLength(256);");
-        AppendLine("builder.Property(e => e.DeletedBy).HasMaxLength(256);");
-        // CommentBase documents Metadata as capped at 4000 and says the generated configuration is
-        // what enforces it. It never did, so the column came out unbounded (text / nvarchar(max)).
-        AppendLine("builder.Property(e => e.Metadata).HasMaxLength(4000);");
+        // String property max lengths: the same list the child an engine persists is declared from.
+        foreach (var column in TraitColumns.Comment(_model.MaxLength).Where(c => c.MaxLength is not null))
+            AppendLine($"builder.Property(e => e.{column.Name}).HasMaxLength({column.MaxLength}){(column.Required ? ".IsRequired()" : "")};");
         AppendLine();
 
         // Enum conversions (stored as string for readability)

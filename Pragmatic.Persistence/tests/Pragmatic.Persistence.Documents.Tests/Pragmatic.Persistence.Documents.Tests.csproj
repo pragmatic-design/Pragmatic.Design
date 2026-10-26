@@ -9,7 +9,8 @@
     <!-- Not the folder's namespace, on purpose, as the Sql bridge suite: under Pragmatic.Persistence.Documents a simple name resolves to the
          documents engine's own types (its attributes) before the usings bring in Pragmatic's. -->
     <RootNamespace>PragmaticDocuments.Tests</RootNamespace>
-    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
+    <!-- PRAG2601: the traits here have no [Resource], so no endpoints; this suite reads and writes their children, it serves no route. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;PRAG2601</NoWarn>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
@@ -31,6 +32,9 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- [HasComments] and [HasNotes]: the children TraitFeature generates for an engine's parent. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

@@ -35,4 +35,10 @@ internal sealed record TraitOutput
     ///     <c>[HasAttachments(PurgeDeletedAfterDays = N)]</c> retention job).
     /// </summary>
     public IncrementalValueProvider<ImmutableArray<Jobs.Models.JobModel>>? Jobs { get; init; }
+
+    /// <summary>
+    ///     The files of the children the Sql or documents engine persists (<see cref="TraitEngineChildren" />), for the engines' binding: they are
+    ///     this generator's output, which no generator sees.
+    /// </summary>
+    public required IncrementalValueProvider<Pragmatic.SourceGen.EquatableArray<ShapeSourceModel>> EngineSources { get; init; }
 }

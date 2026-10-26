@@ -37,11 +37,13 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         if (compilation.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions") is null
             || compilation.GetTypeByMetadataName(engine.UnitOfWork.Substring("global::".Length)) is null)
             return sources;
-        foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e))).Where(p => p.Boundary is INamedTypeSymbol)
-                     .GroupBy(p => p.Boundary!, SymbolEqualityComparer.Default).OrderBy(g => g.Key!.ToDisplayString(), System.StringComparer.Ordinal))
+        // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
+        // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
+        foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e) as INamedTypeSymbol)).Where(p => p.Boundary is not null)
+                     .GroupBy(p => p.Boundary!.ToDisplayString(), System.StringComparer.Ordinal).OrderBy(g => g.Key, System.StringComparer.Ordinal))
         {
-            var boundary = (INamedTypeSymbol)group.Key!;
-            if (!SymbolEqualityComparer.Default.Equals(boundary.ContainingAssembly, compilation.Assembly))
+            var boundary = group.First().Boundary!;
+            if (boundary.ContainingAssembly?.Name != compilation.Assembly.Name)
                 continue; // a boundary of a referenced assembly registers there
             var model = new BoundaryPersistenceModel(
                 VirtualFolderHints.ForType(boundary.Name, engine.Artifact, boundary.ContainingNamespace.ToDisplayString()),
