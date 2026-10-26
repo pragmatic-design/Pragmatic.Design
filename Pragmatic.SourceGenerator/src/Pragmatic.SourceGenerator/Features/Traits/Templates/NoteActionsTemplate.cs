@@ -10,11 +10,19 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
     private readonly NoteTraitModel _model;
     private readonly string _actionTypeName;
     private readonly NoteActionKind _kind;
+    private readonly bool _engine;
 
-    public NoteActionsTemplate(NoteTraitModel model, NoteActionKind kind)
+    /// <param name="model">The note trait.</param>
+    /// <param name="kind">The action.</param>
+    /// <param name="engine">
+    ///     True for a note the Sql or documents engine persists: the action reads and writes through the child's repository, where the engine
+    ///     applies the note's soft delete and its parent's visibility and tenancy, instead of EF Core's <c>DbContext</c>.
+    /// </param>
+    public NoteActionsTemplate(NoteTraitModel model, NoteActionKind kind, bool engine = false)
     {
         _model = model;
         _kind = kind;
+        _engine = engine;
         _actionTypeName = kind switch
         {
             NoteActionKind.Add => $"Add{model.ParentTypeName}NoteAction",
@@ -34,7 +42,8 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
     public override void RenderFile()
     {
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!_engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Actions.Abstractions");
         AddUsing("Pragmatic.Actions.Attributes");
         // [BelongsTo<T>] lives in Persistence, not beside [DomainAction].
@@ -68,7 +77,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
 
     private void RenderBody()
     {
-        AppendLine("private DbContext _db = null!;");
+        AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.NoteTypeName}> _notes = null!;" : "private DbContext _db = null!;");
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // Carries the application container in, so the optional IPermissionChecker can be resolved
@@ -113,7 +122,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
             AppendLine("CreatedAt = _clock.UtcNow,");
             DecreaseIndent();
             AppendLine("};");
-            AppendLine($"_db.Set<{_model.NoteTypeName}>().Add(note);");
+            AppendLine(_engine ? "_notes.Add(note);" : $"_db.Set<{_model.NoteTypeName}>().Add(note);");
             // Commit is owned by the DomainActionInvoker (single SaveChangesAsync after Execute). Do NOT save here.
             AppendLine("return note.Id;");
         });
@@ -127,6 +136,27 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
         AppendLine("public required Guid NoteId { get; init; }");
         AppendLine();
         AppendLine($"public override async Task<Result<{dtoName}, IError>> Execute(CancellationToken ct = default)");
+        if (_engine)
+        {
+            Block(() =>
+            {
+                // A read by key through the engine's filters: the soft delete and the parent's visibility and tenancy hold there.
+                AppendLine("var note = await _notes.GetByIdAsync(NoteId, ct).ConfigureAwait(false);");
+                AppendLine($"if (note is null || note.{_model.ParentFkPropertyName} != {_model.ParentFkPropertyName})");
+                IncreaseIndent();
+                AppendLine($"return Result<{dtoName}, IError>.Failure(NotFoundError.For(\"{_model.NoteTypeName}\", NoteId.ToString()));");
+                DecreaseIndent();
+                AppendLine($"return new {dtoName}");
+                AppendLine("{");
+                IncreaseIndent();
+                foreach (var property in Transforms.TraitDtoShape.Note(_model))
+                    AppendLine($"{property.Name} = note.{property.Source},");
+                DecreaseIndent();
+                AppendLine("};");
+            });
+            return;
+        }
+
         Block(() =>
         {
             AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
@@ -156,11 +186,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
             DecreaseIndent();
             AppendLine();
 
-            // Object-level auth: scope the lookup to the parent in the route, not just the child id.
-            AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
-            AppendLine($"    .Where(e => e.Id == NoteId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
-            AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
-            AppendLine("if (note is null)");
+            RenderFindNote();
             IncreaseIndent();
             AppendLine($"return VoidResult<IError>.Failure(NotFoundError.For(\"{_model.NoteTypeName}\", NoteId.ToString()));");
             DecreaseIndent();
@@ -199,11 +225,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
         AppendLine("public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)");
         Block(() =>
         {
-            // Object-level auth: scope the lookup to the parent in the route, not just the child id.
-            AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
-            AppendLine($"    .Where(e => e.Id == NoteId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
-            AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
-            AppendLine("if (note is null)");
+            RenderFindNote();
             IncreaseIndent();
             AppendLine($"return VoidResult<IError>.Failure(NotFoundError.For(\"{_model.NoteTypeName}\", NoteId.ToString()));");
             DecreaseIndent();
@@ -221,6 +243,25 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
             // Commit is owned by the DomainActionInvoker (single SaveChangesAsync after Execute). Do NOT save here.
             AppendLine("return Success;");
         });
+    }
+
+    /// <summary>
+    ///     The note by key and parent, up to the <c>if</c> that refuses a missing one. Object-level auth: the lookup is scoped to the parent in the
+    ///     route, not just the child id. On an engine the read goes through the child's repository (tracked by the unit of work the invoker saves).
+    /// </summary>
+    private void RenderFindNote()
+    {
+        if (_engine)
+        {
+            AppendLine("var note = await _notes.GetByIdAsync(NoteId, ct).ConfigureAwait(false);");
+            AppendLine($"if (note is null || note.{_model.ParentFkPropertyName} != {_model.ParentFkPropertyName})");
+            return;
+        }
+
+        AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
+        AppendLine($"    .Where(e => e.Id == NoteId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
+        AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
+        AppendLine("if (note is null)");
     }
 
     /// <summary>

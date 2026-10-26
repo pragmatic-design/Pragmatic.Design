@@ -35,13 +35,21 @@ internal static class TraitActionModelBuilder
     ///     repository (<c>CommentActionsTemplate.Engine.cs</c> reads and writes through it), which each engine's boundary registers.
     /// </summary>
     public static ImmutableArray<ActionModel> BuildEngineCommentActions(CommentTraitModel model)
-        => BuildCommentActions(model).Select(action => action with
+        => OnRepository(BuildCommentActions(model), "_comments", model.CommentFullTypeName);
+
+    /// <summary>The note actions of a note the Sql or documents engine persists, as <see cref="BuildEngineCommentActions" /> for comments.</summary>
+    public static ImmutableArray<ActionModel> BuildEngineNoteActions(NoteTraitModel model)
+        => OnRepository(BuildNoteActions(model), "_notes", model.NoteFullTypeName);
+
+    /// <summary>The actions with their <c>DbContext</c> replaced by the child's repository, under <paramref name="field" />.</summary>
+    private static ImmutableArray<ActionModel> OnRepository(ImmutableArray<ActionModel> actions, string field, string childFullTypeName)
+        => actions.Select(action => action with
         {
             Dependencies = action.Dependencies.Select(d => d.FieldName == "_db"
                 ? new DependencyModel
                 {
-                    FieldName = "_comments",
-                    TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.CommentFullTypeName}>",
+                    FieldName = field,
+                    TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{childFullTypeName}>",
                     IsReadOnly = true,
                 }
                 : d).ToImmutableArray(),
