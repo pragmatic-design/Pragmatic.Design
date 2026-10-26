@@ -15,6 +15,7 @@ namespace Pragmatic.SourceGenerator.Features.Traits.Models;
 /// <param name="IsSoftDelete">The child is <c>[SoftDelete]</c>: the base class declares the flag and its stamps.</param>
 /// <param name="Columns">The base class's stored members (<see cref="Transforms.TraitColumns" />).</param>
 /// <param name="Trigger">The trait attribute, for the file's header (<c>[HasComments]</c>).</param>
+/// <param name="Rules">The rules nested in the child it declares with <c>[VisibleWhen]</c> (<see cref="TraitEngineRuleModel" />).</param>
 internal sealed record TraitEngineEntityModel(
     string Namespace,
     string TypeName,
@@ -24,4 +25,5 @@ internal sealed record TraitEngineEntityModel(
     string ParentKeyType,
     bool IsSoftDelete,
     EquatableArray<TraitColumnModel> Columns,
-    string Trigger);
+    string Trigger,
+    EquatableArray<string> Rules);

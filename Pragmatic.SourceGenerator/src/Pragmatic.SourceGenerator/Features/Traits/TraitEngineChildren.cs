@@ -26,21 +26,47 @@ internal static class TraitEngineChildren
     public static bool Apply(DetectedFeatures features)
         => !features.HasPersistenceEFCore && (features.HasPersistenceSql || features.HasPersistenceDocuments);
 
-    /// <summary>A comment's child, its filters and the parent's <c>Comments</c>.</summary>
+    /// <summary>A comment's child, its filters and rules, and the parent's <c>Comments</c>.</summary>
     public static IEnumerable<Artifact> ForComment(CommentTraitModel model)
     {
+        var rules = CommentRules(model);
         yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.CommentTypeName, model.ParentTypeName,
-            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Comment(model.MaxLength), "[HasComments]")).RenderOutput();
+            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Comment(model.MaxLength), "[HasComments]",
+            rules.Select(r => r.RuleName).ToEquatableArray())).RenderOutput();
+        foreach (var rule in rules)
+            yield return new TraitEngineRuleTemplate(rule).RenderOutput();
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.CommentTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
             yield return filter;
         yield return new ParentTraitNavigationTemplate(model).RenderOutput();
+    }
+
+    private const string ModerationRule = "ModerationRule";
+
+    /// <summary>
+    ///     The comment's rules: with moderation, only a visible comment is read (EF Core's named "Moderation" filter); with internal notes, an
+    ///     internal comment is read by who holds view-internal (EF Core's <c>InternalVisibilityFilter</c>, the same name and bypass).
+    /// </summary>
+    private static List<TraitEngineRuleModel> CommentRules(CommentTraitModel model)
+    {
+        var rules = new List<TraitEngineRuleModel>();
+        if (model.RequireApproval)
+            rules.Add(new TraitEngineRuleModel(model.ParentNamespace, model.CommentTypeName, ModerationRule,
+                "e.Status == global::Pragmatic.Comments.CommentStatus.Visible", null,
+                $"Only a visible {model.CommentTypeName} is read: a pending one waits for a moderator, a rejected or hidden one stays out."));
+        if (model.SupportInternalNotes)
+            rules.Add(new TraitEngineRuleModel(model.ParentNamespace, model.CommentTypeName, "InternalVisibilityFilter",
+                "e.Visibility != global::Pragmatic.Comments.CommentVisibility.Internal",
+                TraitPermissions.Slug(model.BoundaryName, model.ParentTypeName, TraitPermissions.CommentsGroup, TraitPermissions.ViewInternal),
+                $"Hides {model.CommentTypeName} rows marked Internal, except from who holds the view-internal permission."));
+        return rules;
     }
 
     /// <summary>A note's child, its filters and the parent's <c>Notes</c>.</summary>
     public static IEnumerable<Artifact> ForNote(NoteTraitModel model)
     {
         yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.NoteTypeName, model.ParentTypeName,
-            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Note(model.MaxLength), "[HasNotes]")).RenderOutput();
+            model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Note(model.MaxLength), "[HasNotes]",
+            EquatableArray<string>.Empty)).RenderOutput();
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.NoteTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
             yield return filter;
         yield return new ParentNoteNavigationTemplate(model).RenderOutput();

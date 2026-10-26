@@ -38,6 +38,8 @@ internal sealed class TraitEngineEntityTemplate : CSharpTemplate
             AppendLine("[global::Pragmatic.Persistence.Entity.SoftDelete]");
         // Whose child it is: the engines apply the parent's visibility.
         AppendLine($"[global::Pragmatic.Persistence.Entity.TraitOf<global::{_model.ParentFullTypeName}>]");
+        foreach (var rule in _model.Rules)
+            AppendLine($"[global::Pragmatic.Persistence.Entity.VisibleWhen<global::{_model.Namespace}.{_model.TypeName}.{rule}>]");
         var interfaces = _model.IsSoftDelete
             ? new List<string> { "global::Pragmatic.Persistence.Entity.IEntity", "global::Pragmatic.Persistence.Entity.ISoftDelete" }
             : new List<string> { "global::Pragmatic.Persistence.Entity.IEntity" };
