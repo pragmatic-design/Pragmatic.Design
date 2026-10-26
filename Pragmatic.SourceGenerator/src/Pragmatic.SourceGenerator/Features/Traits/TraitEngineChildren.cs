@@ -26,8 +26,11 @@ internal static class TraitEngineChildren
     public static bool Apply(DetectedFeatures features)
         => !features.HasPersistenceEFCore && (features.HasPersistenceSql || features.HasPersistenceDocuments);
 
-    /// <summary>A comment's child, its filters and rules, and the parent's <c>Comments</c>.</summary>
-    public static IEnumerable<Artifact> ForComment(CommentTraitModel model)
+    /// <summary>
+    ///     A comment's child, its filters and rules, the parent's <c>Comments</c>, the DTO and the list query; with Actions referenced
+    ///     (<paramref name="withActions" />), the actions on the child's repository, their permissions and the moderation queue's query.
+    /// </summary>
+    public static IEnumerable<Artifact> ForComment(CommentTraitModel model, bool withActions)
     {
         var rules = CommentRules(model);
         yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.CommentTypeName, model.ParentTypeName,
@@ -38,9 +41,36 @@ internal static class TraitEngineChildren
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.CommentTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
             yield return filter;
         yield return new ParentTraitNavigationTemplate(model).RenderOutput();
+        // The read DTO and the list query, which the engine compiles as a declared query of the child.
+        yield return new CommentDtoTemplate(model).RenderOutput();
+        yield return new CommentListQueryTemplate(model, declaresItsSort: true).RenderOutput();
+        if (!withActions)
+            yield break;
+
+        foreach (var kind in CommentActionKinds(model))
+            yield return new CommentActionsTemplate(model, kind, engine: true).RenderOutput();
+        yield return new CommentPermissionsTemplate(model).RenderOutput();
+        if (model.RequireApproval)
+            yield return new CommentPendingQueryTemplate(model).RenderOutput();
     }
 
-    private const string ModerationRule = "ModerationRule";
+    /// <summary>The comment actions the trait declares, as TraitFeature generates them with EF Core (<c>TraitActionModelBuilder.BuildCommentActions</c>).</summary>
+    private static IEnumerable<CommentActionKind> CommentActionKinds(CommentTraitModel model)
+    {
+        yield return CommentActionKind.Add;
+        yield return CommentActionKind.GetById;
+        if (model.AllowEditing)
+            yield return CommentActionKind.Update;
+        yield return CommentActionKind.Delete;
+        if (model.RequireApproval)
+        {
+            yield return CommentActionKind.Moderate;
+            yield return CommentActionKind.ListPending;
+        }
+    }
+
+    /// <summary>The rule nested in a moderated comment an engine persists; the moderator's actions lift it by its name.</summary>
+    internal const string ModerationRule = "ModerationRule";
 
     /// <summary>
     ///     The comment's rules: with moderation, only a visible comment is read (EF Core's named "Moderation" filter); with internal notes, an
@@ -79,7 +109,7 @@ internal static class TraitEngineChildren
             return EquatableArray<ShapeSourceModel>.Empty;
         var sources = new List<ShapeSourceModel>();
         foreach (var comment in comments)
-            Add(ForComment(comment));
+            Add(ForComment(comment, features.HasActions));
         foreach (var note in notes)
             Add(ForNote(note));
         return sources.ToEquatableArray();

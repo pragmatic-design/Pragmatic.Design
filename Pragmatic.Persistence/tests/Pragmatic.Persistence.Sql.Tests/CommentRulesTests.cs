@@ -1,5 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Comments;
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Sql;
 using Xunit;
@@ -54,6 +56,28 @@ public class CommentRulesTests(PragmaticDatabases databases)
         using (var admin = await Seeded(dialect))
         using (_toggle.UseMode(FilterMode.Admin))
             Assert.Equal(["internal", "visible"], await Contents(admin));
+    }
+
+    /// <summary>The list query [HasComments] generates, its invoker reading through the child's repository: the review's comments, inside the rules.</summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task The_list_query_reads_a_parents_comments_inside_the_rules(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        using var session = await Seeded(dialect, [new ReviewComment.InternalVisibilityFilter().BypassPermission]);
+        Review review;
+        using (_toggle.UseMode(FilterMode.Raw))
+            review = (await session.Query<Review>().Where(r => r.Text == "anna@RIVA").ToListAsync()).Single();
+        var services = new ServiceCollection().AddScoped<IReadRepository<ReviewComment>>(_ => new ReviewComment.SqlReadRepository(session)).BuildServiceProvider();
+
+        var page = await new ListReviewCommentsQuery.Invoker(services).RunAsync(new ListReviewCommentsQuery { ReviewId = review.Id });
+
+        Assert.Equal(["internal", "visible"], page.Value!.Items.Select(c => c.Content).Order(StringComparer.Ordinal));
+        Assert.Equal(2, page.Value.TotalCount);
+        // The DTO's Id is the comment's key (its shape's alias of PersistenceId), and its parent's key the review's.
+        var stored = (await session.Query<ReviewComment>().ToListAsync()).ToDictionary(c => c.Content, c => c.PersistenceId);
+        Assert.All(page.Value.Items, c => Assert.Equal(stored[c.Content], c.Id));
+        Assert.All(page.Value.Items, c => Assert.Equal(review.Id, c.ReviewId));
     }
 
     [Theory]

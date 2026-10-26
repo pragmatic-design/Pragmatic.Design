@@ -14,10 +14,17 @@ internal sealed class CommentListQueryTemplate : CSharpTemplate
     private readonly CommentTraitModel _model;
     private readonly string _queryTypeName;
     private readonly string _dtoTypeName;
+    private readonly bool _declaresItsSort;
 
-    public CommentListQueryTemplate(CommentTraitModel model)
+    /// <param name="model">The comment trait.</param>
+    /// <param name="declaresItsSort">
+    ///     True for an engine's child: the engine reads a query off its declarations, so the sort says so with <c>[Sort]</c>; with EF Core the
+    ///     query's model is handed to QueryFeature and the class carries none.
+    /// </param>
+    public CommentListQueryTemplate(CommentTraitModel model, bool declaresItsSort = false)
     {
         _model = model;
+        _declaresItsSort = declaresItsSort;
         _queryTypeName = $"List{model.ParentTypeName}CommentsQuery";
         _dtoTypeName = $"{model.CommentTypeName}Dto";
     }
@@ -49,6 +56,8 @@ internal sealed class CommentListQueryTemplate : CSharpTemplate
             AppendLine("public int PageSize { get => _pageSize; init => _pageSize = value is < 1 or > 200 ? 20 : value; }");
             // Paging without an order is not reproducible: PostgreSQL may return a row on page 2
             // that already appeared on page 1. Newest-first by default, still overridable.
+            if (_declaresItsSort)
+                AppendLine("[Sort(MapTo = \"CreatedAt\", DefaultDirection = SortDirection.Descending)]");
             AppendLine("public SortDirection? CreatedAtSort { get; init; }");
         },
         accessModifier: AccessModifier.Public,

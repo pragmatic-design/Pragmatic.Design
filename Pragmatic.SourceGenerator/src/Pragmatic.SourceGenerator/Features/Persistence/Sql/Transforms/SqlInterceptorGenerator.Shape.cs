@@ -44,16 +44,19 @@ internal static partial class SqlInterceptorGenerator
         var repositories = new List<(string Hint, string Source)>();
         if (PragmaticReadRepository.Applies(compilation))
         {
+            // A trait's child and its list query exist only with the shape: both are read from that one compilation, so the query is the child's.
+            var shaped = compilation.AddSyntaxTrees(shapeTrees);
             var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Sql);
+            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Sql).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
             foreach (var query in declared)
             {
                 shapes.Add(query.Shape());
                 if (query.Unsupported is { } why)
-                    spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.QueryNotCompiled, query.Type.Locations.FirstOrDefault() ?? Location.None, query.Type.Name, why));
+                    spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.QueryNotCompiled, ReportableLocation(query.Type, compilation), query.Type.Name, why));
             }
 
             var served = AllTypes(compilation.GlobalNamespace).Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql)).ToList();
-            served.AddRange(ShapeDeclaredEntities(compilation, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Sql))); // a trait's child (TraitEngineChildren)
+            served.AddRange(ShapeDeclaredEntities(compilation, shaped, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Sql))); // a trait's child (TraitEngineChildren)
             shapes.AddRange(PragmaticRegistration.Sql.For(compilation, served)); // each boundary's unit of work and repositories, keyed by the boundary
             var loads = CompiledLoads(spc, compilation, engines);
             foreach (var entity in served)
@@ -145,9 +148,8 @@ internal static partial class SqlInterceptorGenerator
     ///     (<c>TraitEngineChildren</c>), which exists in no compilation but the one with the shape. Its symbols are of that compilation, so whatever
     ///     groups them with the application's entities compares names (<see cref="PragmaticRegistration" />).
     /// </summary>
-    internal static List<INamedTypeSymbol> ShapeDeclaredEntities(Compilation compilation, List<SyntaxTree> shapeTrees)
+    internal static List<INamedTypeSymbol> ShapeDeclaredEntities(Compilation compilation, Compilation shaped, List<SyntaxTree> shapeTrees)
     {
-        var shaped = compilation.AddSyntaxTrees(shapeTrees);
         var entities = new List<INamedTypeSymbol>();
         foreach (var tree in shapeTrees)
         {
@@ -162,6 +164,14 @@ internal static partial class SqlInterceptorGenerator
 
         return entities;
     }
+
+    /// <summary>
+    ///     Where a diagnostic on <paramref name="type" /> may be reported: its declaration in <paramref name="compilation" />, or none for a type a
+    ///     shape file declares (a trait's list query), which is not in the compilation the generator is handed: Roslyn refuses that location and
+    ///     drops the generator's whole output with it.
+    /// </summary>
+    internal static Location ReportableLocation(INamedTypeSymbol type, Compilation compilation)
+        => type.Locations.FirstOrDefault(l => l.SourceTree is not null && compilation.ContainsSyntaxTree(l.SourceTree)) ?? Location.None;
 
     /// <summary>The same declarations in <paramref name="compilation" />, by their documentation id.</summary>
     private static ImmutableArray<T> Rebound<T>(ImmutableArray<T> symbols, Compilation compilation) where T : class, ISymbol

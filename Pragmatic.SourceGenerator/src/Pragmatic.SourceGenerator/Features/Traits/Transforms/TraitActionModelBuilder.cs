@@ -30,6 +30,23 @@ internal static class TraitActionModelBuilder
         return builder.ToImmutable();
     }
 
+    /// <summary>
+    ///     The comment actions of a comment the Sql or documents engine persists: the same actions, their <c>DbContext</c> replaced by the child's
+    ///     repository (<c>CommentActionsTemplate.Engine.cs</c> reads and writes through it), which each engine's boundary registers.
+    /// </summary>
+    public static ImmutableArray<ActionModel> BuildEngineCommentActions(CommentTraitModel model)
+        => BuildCommentActions(model).Select(action => action with
+        {
+            Dependencies = action.Dependencies.Select(d => d.FieldName == "_db"
+                ? new DependencyModel
+                {
+                    FieldName = "_comments",
+                    TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.CommentFullTypeName}>",
+                    IsReadOnly = true,
+                }
+                : d).ToImmutableArray(),
+        }).ToImmutableArray();
+
     private static ActionModel BuildListPendingCommentsAction(CommentTraitModel model)
     {
         var typeName = $"ListPending{model.ParentTypeName}CommentsAction";

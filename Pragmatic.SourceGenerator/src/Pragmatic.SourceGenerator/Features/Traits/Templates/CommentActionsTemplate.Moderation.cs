@@ -43,6 +43,12 @@ internal sealed partial class CommentActionsTemplate
         AppendLine();
 
         AppendLine($"public override async Task<Result<{listType}, IError>> Execute(CancellationToken ct = default)");
+        if (_engine)
+        {
+            Block(RenderEngineListPendingBody);
+            return;
+        }
+
         Block(() =>
         {
             var visibility = "";
