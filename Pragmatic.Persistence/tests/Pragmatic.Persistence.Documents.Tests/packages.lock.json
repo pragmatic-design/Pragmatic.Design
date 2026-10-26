@@ -292,6 +292,13 @@
           "Pragmatic.Validation": "[1.0.0, )"
         }
       },
+      "pragmatic.attachments": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Storage": "[1.0.0, )"
+        }
+      },
       "pragmatic.authorization": {
         "type": "Project",
         "dependencies": {
@@ -333,6 +340,19 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.jobs": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Resilience": "[1.0.0, )",
+          "Pragmatic.Temporal": "[1.0.0, )"
         }
       },
       "pragmatic.mapping": {
@@ -393,6 +413,19 @@
       "pragmatic.persistence.expressions": {
         "type": "Project"
       },
+      "pragmatic.resilience": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Configuration.Binder": "[10.0.10, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
       "pragmatic.result": {
         "type": "Project",
         "dependencies": {
@@ -407,10 +440,34 @@
           "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
+      "pragmatic.storage": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
+      "pragmatic.storage.inmemory": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Pragmatic.Storage": "[1.0.0, )"
+        }
+      },
       "pragmatic.tags": {
         "type": "Project",
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.temporal": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
       "pragmatic.testing": {

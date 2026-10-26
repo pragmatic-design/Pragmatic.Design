@@ -30,6 +30,10 @@ public class TraitColumnsTests
         => AssertMirrors(typeof(Pragmatic.Tags.TagBase), TraitColumns.Tag());
 
     [Fact]
+    public void The_attachments_columns_are_AttachmentBases_members()
+        => AssertMirrors(typeof(Pragmatic.Attachments.AttachmentBase<Guid>), TraitColumns.Attachment());
+
+    [Fact]
     public void The_tag_links_columns_are_EntityTagBases_members()
         => AssertMirrors(typeof(Pragmatic.Tags.EntityTagBase<Guid>), TraitColumns.TagLink());
 
@@ -48,7 +52,7 @@ public class TraitColumnsTests
     {
         if (Nullable.GetUnderlyingType(type) is { } underlying)
             return TypeName(underlying, false) + "?";
-        var name = type == typeof(string) ? "string" : type == typeof(bool) ? "bool" : type == typeof(int) ? "int" : "global::" + type.FullName;
+        var name = type == typeof(string) ? "string" : type == typeof(bool) ? "bool" : type == typeof(int) ? "int" : type == typeof(long) ? "long" : "global::" + type.FullName;
         return nullable && !type.IsValueType ? name + "?" : name;
     }
 }

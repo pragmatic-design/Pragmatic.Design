@@ -11,7 +11,7 @@ using Pragmatic.SourceGenerator.Features.Traits.Transforms;
 namespace Pragmatic.SourceGenerator.Features.Traits;
 
 /// <summary>
-///     The children of <c>[HasComments]</c> and <c>[HasNotes]</c> where the Sql or documents engine persists the parent: the child as a Pragmatic
+///     The children of <c>[HasComments]</c>, <c>[HasNotes]</c>, <c>[HasTags]</c> and <c>[HasAttachments]</c> where the Sql or documents engine persists the parent: the child as a Pragmatic
 ///     <c>[Entity]</c> (<see cref="TraitEngineEntityTemplate" />), the filter classes its plans name (<see cref="EntityShapeArtifacts.Filters" />,
 ///     as for a declared entity), and the parent's collection. The same files go to the engines' binding (<see cref="Sources" />): no generator
 ///     sees another's output, and the engines read the child off its declarations.
@@ -158,9 +158,49 @@ internal static class TraitEngineChildren
     public static bool SerializableTags(TagTraitModel model, DetectedFeatures features)
         => model.MaxPerEntity > 0 && features.HasPersistenceSql && !features.HasPersistenceDocuments;
 
+    /// <summary>
+    ///     An attachment's child (with <c>HasThumbnail</c> stored, which the DTO reads by name), its filters, the parent's <c>Attachments</c>, the
+    ///     DTO and the list query; with Actions referenced, the actions on the child's repository (the downloads with Endpoints, which their
+    ///     response type is from; the thumbnail's with Imaging too) and their permissions; with Jobs, the purge job when the trait asks for one.
+    /// </summary>
+    public static IEnumerable<Artifact> ForAttachment(AttachmentTraitModel model, DetectedFeatures features)
+    {
+        var columns = TraitColumns.Attachment().AsImmutableArray().AddRange(TraitColumns.AttachmentCopies().AsImmutableArray());
+        yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.AttachmentTypeName,
+            new TraitEngineParentModel(model.ParentTypeName, model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType), IsSoftDelete: true,
+            ConcurrencyAware: false, columns, EquatableArray<string>.Empty, EquatableArray<TraitEngineReferenceModel>.Empty,
+            "[HasAttachments]", EquatableArray<string>.Empty)).RenderOutput();
+        foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.AttachmentTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
+            yield return filter;
+        yield return new ParentAttachmentNavigationTemplate(model).RenderOutput();
+        yield return new AttachmentDtoTemplate(model).RenderOutput();
+        yield return new AttachmentListQueryTemplate(model, declaresItsSort: true).RenderOutput();
+        if (features.HasActions)
+        {
+            var serializable = SerializableAttachments(model, features);
+            yield return new AttachmentActionsTemplate(model, AttachmentActionKind.Upload, features.HasImaging, engine: true, serializable).RenderOutput();
+            yield return new AttachmentActionsTemplate(model, AttachmentActionKind.GetById, engine: true).RenderOutput();
+            if (features.HasEndpoints)
+            {
+                yield return new AttachmentActionsTemplate(model, AttachmentActionKind.Download, engine: true).RenderOutput();
+                if (model.ThumbnailRequested && features.HasImaging)
+                    yield return new AttachmentActionsTemplate(model, AttachmentActionKind.DownloadThumbnail, true, engine: true).RenderOutput();
+            }
+            yield return new AttachmentActionsTemplate(model, AttachmentActionKind.Delete, engine: true).RenderOutput();
+            yield return new AttachmentPermissionsTemplate(model).RenderOutput();
+        }
+
+        if (features.HasJobs)
+            yield return new AttachmentPurgeJobTemplate(model, engine: true).RenderOutput();
+    }
+
+    /// <summary>True when the upload counts and inserts in a serializable transaction: the Sql engine, alone, and a per-entity limit (as with EF Core).</summary>
+    private static bool SerializableAttachments(AttachmentTraitModel model, DetectedFeatures features)
+        => model.MaxPerEntity > 0 && features.HasPersistenceSql && !features.HasPersistenceDocuments;
+
     /// <summary>The files above, as the engines bind them; empty when the children are EF Core's.</summary>
     public static EquatableArray<ShapeSourceModel> Sources(ImmutableArray<CommentTraitModel> comments, ImmutableArray<NoteTraitModel> notes, ImmutableArray<TagTraitModel> tags,
-        DetectedFeatures features)
+        ImmutableArray<AttachmentTraitModel> attachments, DetectedFeatures features)
     {
         if (!Apply(features))
             return EquatableArray<ShapeSourceModel>.Empty;
@@ -173,6 +213,8 @@ internal static class TraitEngineChildren
             Add(ForTag(tag, features.HasActions, SerializableTags(tag, features)));
         foreach (var tag in tags.GroupBy(t => t.TagFullTypeName).Select(g => g.First()))
             Add([ForSharedTag(tag)]);
+        foreach (var attachment in attachments)
+            Add(ForAttachment(attachment, features));
         return sources.ToEquatableArray();
 
         void Add(IEnumerable<Artifact> artifacts)

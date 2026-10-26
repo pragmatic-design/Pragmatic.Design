@@ -4,12 +4,14 @@ using Pragmatic.SourceGenerator.Features.Traits.Models;
 
 namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 
-internal sealed class AttachmentActionsTemplate : CSharpTemplate
+internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
 {
     private readonly AttachmentTraitModel _model;
     private readonly string _actionTypeName;
     private readonly AttachmentActionKind _kind;
     private readonly bool _imagingAvailable;
+    private readonly bool _engine;
+    private readonly bool _serializable;
 
     /// <param name="model">The trait as the attribute declared it.</param>
     /// <param name="kind">Which of the four actions to render.</param>
@@ -20,12 +22,21 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
     ///     into a package the consumer does not have — the emission is decided here, at compile time,
     ///     instead of by a nullable service asked for at run time.
     /// </param>
+    /// <param name="engine">
+    ///     True for an attachment the Sql or documents engine persists: the action reads and writes through the child's repository and the
+    ///     boundary's unit of work (<c>AttachmentActionsTemplate.Engine.cs</c>) instead of EF Core's <c>DbContext</c>.
+    /// </param>
+    /// <param name="serializable">
+    ///     On the Sql engine with a per-entity limit: the upload counts and inserts in a serializable transaction of the session, as with EF Core.
+    /// </param>
     public AttachmentActionsTemplate(
-        AttachmentTraitModel model, AttachmentActionKind kind, bool imagingAvailable = false)
+        AttachmentTraitModel model, AttachmentActionKind kind, bool imagingAvailable = false, bool engine = false, bool serializable = false)
     {
         _model = model;
         _kind = kind;
         _imagingAvailable = imagingAvailable;
+        _engine = engine;
+        _serializable = serializable;
         _actionTypeName = kind switch
         {
             AttachmentActionKind.Upload => $"Upload{model.ParentTypeName}AttachmentAction",
@@ -46,7 +57,8 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
     public override void RenderFile()
     {
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!_engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Actions.Abstractions");
         AddUsing("Pragmatic.Actions.Attributes");
         // [BelongsTo<T>] lives in Persistence, not beside [DomainAction].
@@ -86,7 +98,10 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
 
     private void RenderBody()
     {
-        AppendLine("private DbContext _db = null!;");
+        if (_engine)
+            RenderEngineFields();
+        else
+            AppendLine("private DbContext _db = null!;");
         if (_kind is AttachmentActionKind.Upload or AttachmentActionKind.Delete)
         {
             AppendLine("private ICurrentUser _currentUser = null!;");
@@ -276,8 +291,13 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
             // serializable transaction below is.
             if (_model.MaxPerEntity > 0)
             {
-                AppendLine($"var currentCount = await _db.Set<{_model.AttachmentTypeName}>()");
-                AppendLine($"    .CountAsync(a => a.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName}, ct).ConfigureAwait(false);");
+                if (_engine)
+                    AppendLine($"var currentCount = await {EngineCount("ct")};");
+                else
+                {
+                    AppendLine($"var currentCount = await _db.Set<{_model.AttachmentTypeName}>()");
+                    AppendLine($"    .CountAsync(a => a.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName}, ct).ConfigureAwait(false);");
+                }
                 AppendLine($"if (currentCount >= {_model.MaxPerEntity})");
                 IncreaseIndent();
                 AppendLine($"return Result<Guid, IError>.Failure(new ForbiddenError {{ Resource = \"Attachment limit ({_model.MaxPerEntity})\" }});");
@@ -377,10 +397,13 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
             AppendLine("UploadedAt = _clock.UtcNow,");
             if (Thumbnails)
                 AppendLine("ThumbnailUri = thumbnailUri?.ToString(),");
+            // The DTO reads it by name off the row an engine persists, where EF Core computes it from ThumbnailUri.
+            if (_engine && Thumbnails)
+                AppendLine("HasThumbnail = thumbnailUri is not null,");
             DecreaseIndent();
             AppendLine("};");
             if (_model.MaxPerEntity <= 0)
-                AppendLine($"_db.Set<{_model.AttachmentTypeName}>().Add(attachment);");
+                AppendLine(_engine ? "_attachments.Add(attachment);" : $"_db.Set<{_model.AttachmentTypeName}>().Add(attachment);");
             AppendLine();
 
             // The blob is already written, but the row that points at it is not committed yet. If that
@@ -390,10 +413,12 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
             AppendLine("try");
             Block(() =>
             {
-                if (_model.MaxPerEntity > 0)
+                if (_model.MaxPerEntity > 0 && _engine)
+                    RenderEngineLimitedInsert();
+                else if (_model.MaxPerEntity > 0)
                     RenderLimitedInsert();
                 else
-                    AppendLine("await _db.SaveChangesAsync(ct).ConfigureAwait(false);");
+                    AppendLine(_engine ? "await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);" : "await _db.SaveChangesAsync(ct).ConfigureAwait(false);");
             });
             if (_model.MaxPerEntity > 0)
             {
@@ -429,12 +454,19 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
         XmlSummary("Whether the row reached the database: an exception from its commit does not say it did not.");
         AppendLine("private async Task<bool> AttachmentCommittedAsync(Guid id, CancellationToken ct)");
         IncreaseIndent();
-        AppendLine($"=> await _db.Set<{_model.AttachmentTypeName}>().AsNoTracking().IgnoreQueryFilters()");
-        AppendLine("    .AnyAsync(a => a.Id == id, ct).ConfigureAwait(false);");
+        if (_engine)
+            RenderEngineCommitted();
+        else
+        {
+            AppendLine($"=> await _db.Set<{_model.AttachmentTypeName}>().AsNoTracking().IgnoreQueryFilters()");
+            AppendLine("    .AnyAsync(a => a.Id == id, ct).ConfigureAwait(false);");
+        }
         DecreaseIndent();
         AppendLine();
 
-        if (_model.MaxPerEntity > 0)
+        if (_model.MaxPerEntity > 0 && _engine)
+            RenderEngineLimitHelpers();
+        else if (_model.MaxPerEntity > 0)
         {
             XmlSummary("True when the exception is the database refusing one of two colliding transactions.");
             AppendLine("private static bool IsSerializationConflict(global::System.Exception? ex)");
@@ -474,6 +506,12 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
         AppendLine("public required Guid AttachmentId { get; init; }");
         AppendLine();
         AppendLine($"public override async Task<Result<{dtoName}, IError>> Execute(CancellationToken ct = default)");
+        if (_engine)
+        {
+            Block(RenderEngineGetByIdBody);
+            return;
+        }
+
         Block(() =>
         {
             AppendLine($"var attachment = await _db.Set<{_model.AttachmentTypeName}>()");
@@ -509,10 +547,15 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
             // Same scoping as the download it sits beside: the row must belong to the parent in the
             // route and not be soft-deleted, or anyone allowed to read one parent's attachments could
             // read every other parent's.
-            AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
-            AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
-            AppendLine("    .Select(e => new { e.ThumbnailUri, e.FileName, e.UploadedAt, e.Id })");
-            AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
+            if (_engine)
+                RenderEngineFind("file", "Result<FileResponse, IError>");
+            else
+            {
+                AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
+                AppendLine("    .Select(e => new { e.ThumbnailUri, e.FileName, e.UploadedAt, e.Id })");
+                AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
+            }
             AppendLine("if (file?.ThumbnailUri is null)");
             IncreaseIndent();
             AppendLine($"return Result<FileResponse, IError>.Failure(NotFoundError.For(\"{_model.AttachmentTypeName}\", AttachmentId.ToString()));");
@@ -550,14 +593,19 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
         AppendLine("public override async Task<Result<FileResponse, IError>> Execute(CancellationToken ct = default)");
         Block(() =>
         {
-            AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
-            AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
-            AppendLine("    .Select(e => new { e.StorageUri, e.FileName, e.ContentType, e.UploadedAt, e.Id })");
-            AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
-            AppendLine("if (file is null)");
-            IncreaseIndent();
-            AppendLine($"return Result<FileResponse, IError>.Failure(NotFoundError.For(\"{_model.AttachmentTypeName}\", AttachmentId.ToString()));");
-            DecreaseIndent();
+            if (_engine)
+                RenderEngineFind("file", "Result<FileResponse, IError>");
+            else
+            {
+                AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
+                AppendLine("    .Select(e => new { e.StorageUri, e.FileName, e.ContentType, e.UploadedAt, e.Id })");
+                AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
+                AppendLine("if (file is null)");
+                IncreaseIndent();
+                AppendLine($"return Result<FileResponse, IError>.Failure(NotFoundError.For(\"{_model.AttachmentTypeName}\", AttachmentId.ToString()));");
+                DecreaseIndent();
+            }
             AppendLine();
             AppendLine("var content = await _storage.GetAsync(new Uri(file.StorageUri, UriKind.RelativeOrAbsolute), ct).ConfigureAwait(false);");
             AppendLine();
@@ -595,13 +643,18 @@ internal sealed class AttachmentActionsTemplate : CSharpTemplate
         Block(() =>
         {
             // Object-level auth: scope the lookup to the parent in the route, not just the child id.
-            AppendLine($"var attachment = await _db.Set<{_model.AttachmentTypeName}>()");
-            AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
-            AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
-            AppendLine("if (attachment is null)");
-            IncreaseIndent();
-            AppendLine($"return VoidResult<IError>.Failure(NotFoundError.For(\"{_model.AttachmentTypeName}\", AttachmentId.ToString()));");
-            DecreaseIndent();
+            if (_engine)
+                RenderEngineFind("attachment", "VoidResult<IError>");
+            else
+            {
+                AppendLine($"var attachment = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
+                AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
+                AppendLine("if (attachment is null)");
+                IncreaseIndent();
+                AppendLine($"return VoidResult<IError>.Failure(NotFoundError.For(\"{_model.AttachmentTypeName}\", AttachmentId.ToString()));");
+                DecreaseIndent();
+            }
             AppendLine();
             AppendLine("attachment.IsDeleted = true;");
             AppendLine("attachment.DeletedAt = _clock.UtcNow;");

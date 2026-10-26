@@ -68,6 +68,31 @@ internal static class TraitColumns
         new("Scope", "string?", null, 128, false),
     ];
 
+    /// <summary><c>AttachmentBase&lt;TId&gt;</c>'s.</summary>
+    public static EquatableArray<TraitColumnModel> Attachment() =>
+    [
+        new("FileName", "string", "\"\"", 512, true),
+        new("FileSize", "long", null, null, false),
+        new("ContentType", "string", "\"\"", 256, true),
+        new("StorageUri", "string", "\"\"", 2048, true),
+        new("ThumbnailUri", "string?", null, 2048, false),
+        new("Description", "string?", null, 1000, false),
+        new("UploadedBy", "string", "\"\"", 256, true),
+        new("UploadedAt", Instant, null, null, false),
+        new("IsDeleted", "bool", null, null, false),
+        new("DeletedAt", Instant + "?", null, null, false),
+        new("DeletedBy", "string?", null, 256, false),
+    ];
+
+    /// <summary>
+    ///     Whether the attachment has a thumbnail, stored on the attachment an engine persists when it is uploaded: the DTO reads it by name, as the
+    ///     engines project a declared query, where EF Core computes it from <c>ThumbnailUri</c>. Not on <c>AttachmentBase&lt;TId&gt;</c>.
+    /// </summary>
+    public static EquatableArray<TraitColumnModel> AttachmentCopies() =>
+    [
+        new("HasThumbnail", "bool", null, null, false),
+    ];
+
     /// <summary><c>NoteBase&lt;TId&gt;</c>'s, with its content bounded at <paramref name="maxLength" />.</summary>
     public static EquatableArray<TraitColumnModel> Note(int maxLength) =>
     [
