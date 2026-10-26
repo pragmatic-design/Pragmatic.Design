@@ -171,16 +171,16 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
         AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>,");
-        AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>");
+        AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>, global::Pragmatic.Persistence.Repository.INavigationLinker<{type}>");
         AppendLine("    {");
         AppendLine("        private readonly SqlReadRepository _read = new(unitOfWork.Session);");
         AppendLine();
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine("            => await _read.GetByIdAsync(id, ct) is { } row ? unitOfWork.Attach(row) : null;");
         AppendLine();
-        // The unit of work tracks the root: the included children are read, and a change to them is not saved by this read.
+        // Tracked with its graph, the collections the paths name loaded: a link of keys may change them.
         AppendLine($"        public async {Task}<{type}?> GetByIdIncludingAsync(global::System.Guid id, string includes, {Token})");
-        AppendLine("            => await _read.GetByIdIncludingAsync(id, includes, ct) is { } row ? unitOfWork.Attach(row) : null;");
+        AppendLine("            => await _read.GetByIdIncludingAsync(id, includes, ct) is { } row ? unitOfWork.Attach(row, includes) : null;");
         AppendLine();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine("            => unitOfWork.AttachAll(await _read.FindAsync(spec, ct));");
@@ -192,11 +192,13 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine("        {");
         AppendLine("            if (paths.Count == 0)");
         AppendLine("                return 0;");
-        AppendLine("            if (await _read.GetByIdIncludingAsync(entity.PersistenceId, string.Join(\",\", paths), ct) is { } read)");
-        AppendLine("                unitOfWork.LoadGraph(entity, read);");
+        AppendLine("            var includes = string.Join(\",\", paths);");
+        AppendLine("            if (await _read.GetByIdIncludingAsync(entity.PersistenceId, includes, ct) is { } read)");
+        AppendLine("                unitOfWork.LoadGraph(entity, read, includes);");
         AppendLine("            return 1;");
         AppendLine("        }");
         AppendLine();
+        RenderLinkAsync(type);
         AppendLine($"        public {Task}<int> CountAsync({Spec}<{type}> spec, {Token}) => _read.CountAsync(spec, ct);");
         AppendLine();
         AppendLine($"        public {Task}<bool> ExistsAsync({Spec}<{type}> spec, {Token}) => _read.ExistsAsync(spec, ct);");
@@ -227,5 +229,34 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine("            return async ct => await _read.GetByIdAsync(key, ct) is not null;");
         AppendLine("        }");
         AppendLine("    }");
+    }
+
+    /// <summary>
+    ///     <c>INavigationLinker.LinkAsync</c>: a case per collection the entity declares, handing <c>SqlNavigationLinks</c> the collection, a stub
+    ///     of the related entity by key (a many-to-many side's) and a compiled read of the chosen rows by key (a one-to-many's), typed here where
+    ///     the related entity is known: the method's type argument is not, and nothing creates or reads it by reflection.
+    /// </summary>
+    private void RenderLinkAsync(string type)
+    {
+        AppendLine("        /// <summary>Makes the given keys the rows a collection points at: 1 when the chosen rows were read, 0 otherwise.</summary>");
+        AppendLine($"        public {Task}<int> LinkAsync<TRelated>({type} entity, string navigation, global::System.Collections.Generic.IReadOnlyList<object> ids, string key,");
+        AppendLine("            string strategy, global::System.Func<TRelated> stubFactory, global::System.Threading.CancellationToken ct) where TRelated : class");
+        AppendLine("        {");
+        AppendLine("            switch (navigation)");
+        AppendLine("            {");
+        foreach (var collection in model.Collections)
+        {
+            var related = collection.ElementType;
+            AppendLine($"                case \"{collection.Name}\":");
+            AppendLine($"                    return global::Pragmatic.Persistence.Sql.SqlNavigationLinks.LinkAsync<{related}>(unitOfWork, entity, navigation, entity.{collection.Name}, ids, key, strategy,");
+            AppendLine($"                        id => {{ var stub = ({related})(object)stubFactory(); stub.PersistenceId = id; return stub; }},");
+            AppendLine($"                        async (keys, token) => await unitOfWork.Session.Query<{related}>().Where((r, chosen) => chosen.Contains(r.PersistenceId), keys).ToListAsync(token), ct);");
+        }
+
+        AppendLine("                default:");
+        AppendLine($"                    throw new global::System.ArgumentException($\"'{{navigation}}' is not a collection {model.EntityName} declares.\", nameof(navigation));");
+        AppendLine("            }");
+        AppendLine("        }");
+        AppendLine();
     }
 }

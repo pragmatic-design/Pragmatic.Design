@@ -30,8 +30,10 @@ public sealed partial class SqlUnitOfWork
         }
 
         var written = _entries.Where(e => e.State != SqlEntryState.Unchanged).ToList();
-        if (written.Count == 0)
+        var links = DetectLinks();
+        if (written.Count == 0 && links.Count == 0)
             return 0;
+        var added = written.Where(e => e.State == SqlEntryState.Added).ToList();
         SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
 
         // The rows staged without a read are checked in the save's transaction: the caller may write only a row it may see.
@@ -62,6 +64,15 @@ public sealed partial class SqlUnitOfWork
                         batch.DeleteRow(entry.Entity);
                         break;
                 }
+            }
+
+            // The links after the rows: a new parent is inserted before its join rows, and the rows a side names exist already.
+            foreach (var (add, parent, link, row) in links)
+            {
+                if (add)
+                    batch.LinkRows(parent, link, row);
+                else
+                    batch.UnlinkRows(parent, link, row);
             }
 
             foreach (var phase in _phases)
@@ -101,6 +112,7 @@ public sealed partial class SqlUnitOfWork
 
         foreach (var entry in _entries)
             Remember(entry); // the collections as saved: what the next save compares with
+        RememberSavedLinks(added);
 
         await SaveSteps.PublishEventsAsync(this, raisers, _dispatcher, ct).ConfigureAwait(false);
         return rows;

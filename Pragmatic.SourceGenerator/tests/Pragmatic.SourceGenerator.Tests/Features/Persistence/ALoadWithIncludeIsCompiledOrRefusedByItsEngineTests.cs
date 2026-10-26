@@ -321,8 +321,58 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
     }
 
+    private const string LinkedBeds = Entities + """
+
+        namespace Probe.Loads
+        {
+            [Pragmatic.Actions.Mutation.Mutation(Mode = Pragmatic.Actions.Mutation.MutationMode.Update)]
+            public partial class ChooseBedsMutation : Pragmatic.Actions.Mutation.Mutation<Room>
+            {
+                public required System.Guid Id { get; init; }
+
+                [Pragmatic.Mapping.Attributes.LinkIds(nameof(Room.Beds))]
+                public required System.Collections.Generic.List<System.Guid> BedIds { get; init; }
+            }
+        }
+        """;
+
+    /// <summary>
+    ///     <c>[LinkIds]</c> on the Sql engine: the collection is read with the entity (compiled), and the repository links through
+    ///     <c>INavigationLinker</c>, a case per collection. Not PRAG0335: the invoker writes the links. The links written are shown by
+    ///     <c>LinkIdsTests</c> in the Sql suite.
+    /// </summary>
+    [Fact]
+    public void OnTheSqlEngine_AMutationThatLinksByKey_LoadsTheCollectionAndLinksThroughTheRepository()
+    {
+        var result = RunWithMapping(LinkedBeds + SqlBridge);
+
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG0335").Should().BeEmpty("the invoker links through the repository");
+        var sources = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result);
+        var repository = sources["Probe.Loads.Room.SqlReadRepository.g.cs"];
+        repository.Should().Contain("global::Pragmatic.Persistence.Repository.INavigationLinker<global::Probe.Loads.Room>");
+        repository.Should().Contain("global::Pragmatic.Persistence.Sql.SqlNavigationLinks.LinkAsync<global::Probe.Loads.Bed>(unitOfWork, entity, navigation, entity.Beds,");
+        sources.Values.Should().Contain(s => s.Contains("class ChooseBedsMutation", StringComparison.Ordinal)
+                                             && s.Contains(".GetByIdIncludingAsync(mutation.Id, \"Beds\", ct)", StringComparison.Ordinal));
+    }
+
+    /// <summary><c>[LinkIds]</c> on the documents engine: a document keeps a relation as its key, so the mutation is refused (PRAG3112), and not PRAG0335.</summary>
+    [Fact]
+    public void OnTheDocumentsEngine_AMutationThatLinksByKey_IsPrag3112()
+    {
+        var result = RunWithMapping(LinkedBeds + DocumentsBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3112").ToList();
+        refused.Count.Should().Be(1);
+        refused[0].GetMessage().Should().Contain("ChooseBedsMutation links rows by key ([LinkIds]) through Beds of Room");
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG0335").Should().BeEmpty("the documents engine's own diagnostic says it");
+    }
+
     private static SourceGenRunResult Run(string source)
         => GeneratorTestHelper.RunGeneratorWithInterceptors<PragmaticSourceGenerator>(source, "Pragmatic.Persistence.Documents.Generated", References);
+
+    private static SourceGenRunResult RunWithMapping(string source)
+        => GeneratorTestHelper.RunGeneratorWithInterceptors<PragmaticSourceGenerator>(source, "Pragmatic.Persistence.Documents.Generated",
+            [.. References, GeneratorTestHelper.FromType<global::Pragmatic.Mapping.Attributes.LinkIdsAttribute>()]);
 
     private static readonly MetadataReference[] References =
     [

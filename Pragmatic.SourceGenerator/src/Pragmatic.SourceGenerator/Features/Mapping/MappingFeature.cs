@@ -71,7 +71,11 @@ internal static class MappingFeature
             {
                 if (!pair.Right.HasMapping)
                     return;
-                GenerateSource(ctx, pair.Left with { HasEfCore = pair.Right.HasEfCore });
+                GenerateSource(ctx, pair.Left with
+                {
+                    HasEfCore = pair.Right.HasEfCore,
+                    HasEngine = pair.Right.HasPersistenceSql || pair.Right.HasPersistenceDocuments,
+                });
             });
 
         // Combine and deduplicate (a type might have both [MapFrom] and [MapTo])
@@ -268,8 +272,8 @@ internal static class MappingFeature
                     At(prop, model),
                     model.TypeName, prop.PropertyName, model.TargetTypeName ?? "unknown"));
 
-        // PRAG0335: [LinkIds] where no tracked write exists to carry it out.
-        if (!model.HasEfCore)
+        // PRAG0335: [LinkIds] where no tracked write exists to carry it out. A mutation's on an engine has one: its invoker's.
+        if (!model.HasEfCore && !(model.IsMutationBody && model.HasEngine))
             foreach (var prop in model.EffectiveWriteProperties)
                 if (prop.LinkNavigation is { Length: > 0 } navigation)
                     context.ReportDiagnostic(Diagnostic.Create(

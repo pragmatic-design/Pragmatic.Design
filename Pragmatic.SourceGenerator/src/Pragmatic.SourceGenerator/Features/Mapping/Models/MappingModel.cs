@@ -343,4 +343,10 @@ internal sealed record MappingModel
     ///     it, sending the same two rows back writes four.
     /// </remarks>
     public bool HasEfCore { get; init; }
+
+    /// <summary>
+    ///     Whether the compilation references the Sql or documents engine. A mutation's <c>[LinkIds]</c> is then the invoker's to write
+    ///     (<c>INavigationLinker</c> on the Sql engine's repository), or the documents engine's to refuse (PRAG3112): not PRAG0335's.
+    /// </summary>
+    public bool HasEngine { get; init; }
 }

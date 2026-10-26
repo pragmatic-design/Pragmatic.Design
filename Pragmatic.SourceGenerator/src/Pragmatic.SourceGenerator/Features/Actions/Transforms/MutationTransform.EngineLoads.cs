@@ -16,7 +16,8 @@ internal static partial class MutationTransform
     /// <summary>
     ///     What <see cref="MutationModel.EngineLoadPaths" /> says, in the order the EF Core load includes them, each once: the <c>[EagerLoad]</c>
     ///     paths; the targets of a soft delete that cascades; the collections the mutation writes and, through its child mutations, the ones
-    ///     they write in turn; then what the response DTO maps from while the mutation answers with it.
+    ///     they write in turn; the ones its <c>[LinkIds]</c> lists choose the rows of; then what the response DTO maps from while the mutation
+    ///     answers with it.
     /// </summary>
     private static EquatableArray<string> EngineLoadPaths(MutationModel model, INamedTypeSymbol mutation, INamedTypeSymbol? response, Compilation compilation, CancellationToken ct)
     {
@@ -35,6 +36,14 @@ internal static partial class MutationTransform
 
         foreach (var path in WrittenCollections(mutation, model.Children, compilation, 0))
             Add(path);
+
+        // The collections a [LinkIds] list chooses the rows of: a link of keys decides what to remove by what is there, so the collection is read
+        // with the entity, as EF Core's linker loads it first.
+        foreach (var link in model.Links)
+        {
+            if (link.Strategy != "Ignore")
+                Add(link.Navigation);
+        }
 
         if (model.EffectiveReturnType == MutationReturnTypeValue.Entity && model.ResponseDtoFullTypeName is not null && response is not null)
         {

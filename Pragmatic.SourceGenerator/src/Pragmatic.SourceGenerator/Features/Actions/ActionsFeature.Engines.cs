@@ -62,7 +62,9 @@ internal static partial class ActionsFeature
         {
             var what = children.Count > 0
                 ? $"writes the children {string.Join(", ", children)}"
-                : $"loads the navigations {string.Join(", ", mutation.EngineLoadPaths)}";
+                : !mutation.Links.IsDefaultOrEmpty
+                    ? $"links rows by key ([LinkIds]) through {string.Join(", ", mutation.Links.Select(l => l.Navigation))}"
+                    : $"loads the navigations {string.Join(", ", mutation.EngineLoadPaths)}";
             ctx.ReportDiagnostic(Diagnostic.Create(DocDiagnostics.MutationNavigationsNotSupported, mutation.LocationInfo?.ToLocation(),
                 mutation.TypeName, what, mutation.EntityTypeName));
         }
