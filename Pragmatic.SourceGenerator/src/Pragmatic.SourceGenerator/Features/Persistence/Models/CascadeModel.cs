@@ -56,6 +56,12 @@ internal sealed record CascadeModel
     public string? Condition { get; init; }
 
     /// <summary>
+    ///     The target property's setter is private: an engine's handler, which changes the tracked rows instead of running EF Core's
+    ///     <c>ExecuteUpdate</c>, assigns it through the generated <c>Set{Property}</c> (internal, in the target's assembly, as the handler is).
+    /// </summary>
+    public bool TargetSetterIsPrivate { get; init; }
+
+    /// <summary>
     ///     Whether the target entity really declares the foreign key the handler filters on.
     /// </summary>
     /// <remarks>

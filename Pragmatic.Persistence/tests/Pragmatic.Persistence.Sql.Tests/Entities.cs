@@ -7,7 +7,10 @@ using Pragmatic.Tags;
 
 namespace PragmaticEntities.Tests;
 
-/// <summary>A stay at a property: the key, the stamps, the owner and the navigation are the shape's (Pragmatic's members).</summary>
+/// <summary>
+///     A stay at a property: the key, the stamps, the owner and the navigation are the shape's (Pragmatic's members). Its property's region
+///     is copied on it, and follows it when it changes (<c>[CascadeOn]</c>).
+/// </summary>
 [Entity]
 [SoftDelete]
 [HasOwner]
@@ -15,6 +18,9 @@ namespace PragmaticEntities.Tests;
 public partial class Reservation : IEntity
 {
     public DateTimeOffset CheckIn { get; set; }
+
+    [CascadeOn<Property>(nameof(Property.Region))]
+    public string? PropertyRegion { get; private set; }
 }
 
 /// <summary>
@@ -38,6 +44,9 @@ public partial class Property : IEntity, ITenantEntity
     public string Name { get; set; } = "";
 
     public string TenantId { get; set; } = "";
+
+    /// <summary>Set through <c>SetRegion</c>, which raises the change a reservation's copy follows. Nullable: Oracle stores an empty string as null.</summary>
+    public string? Region { get; private set; }
 }
 
 /// <summary>

@@ -90,6 +90,7 @@ internal static class CascadeTransform
             ForeignKeyTypeName = fkTypeName,
             TargetBoundaryTypeFullName = targetBoundary,
             Condition = condition,
+            TargetSetterIsPrivate = targetProperty.SetMethod is { DeclaredAccessibility: Accessibility.Private },
             HasForeignKey = declaredKey is not null,
             Location = LocationInfo.From(targetProperty.Locations.FirstOrDefault())
         };

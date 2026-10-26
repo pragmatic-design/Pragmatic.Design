@@ -142,7 +142,7 @@ internal static class PersistenceFeature
         // ================================================================
 
         // Per-entity: Relations, Create, Specs, Traits, Diagnostics, Setters
-        EntityCoreFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures);
+        var cascadeSources = EntityCoreFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures);
 
         // Per-entity: Repositories, Query filters; Aggregate: FilterMapRegistry, Metadata
         var localRegistrations =
@@ -172,8 +172,14 @@ internal static class PersistenceFeature
         // The {Boundary}Permissions classes are PermissionsClassFeature's: they hold the declared permissions
         // too, which are Identity's to read, so they are registered after it.
 
+        // With the cascade handlers the engines persist: they read through Spec<T>.Where, compiled where the engine sees it. Empty stays empty:
+        // the empty shape is what says no engine's bridge is referenced.
         var shapeSources = shapeEntitiesWithFeatures
-            .Select(static (pair, _) => EntityShapeArtifacts.ForBinding(pair.Left, pair.Right));
+            .Select(static (pair, _) => EntityShapeArtifacts.ForBinding(pair.Left, pair.Right))
+            .Combine(cascadeSources)
+            .Select(static (pair, _) => pair.Left.IsDefaultOrEmpty || pair.Right.IsDefaultOrEmpty
+                ? pair.Left
+                : new EquatableArray<ShapeSourceModel>(pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())));
 
         return (allEntitiesProvider, localRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources, efCoreSchemas);
     }
