@@ -16,7 +16,7 @@ namespace Pragmatic.Persistence.Sql;
 /// </remarks>
 public sealed partial class SqlUnitOfWork
 {
-    /// <summary>A row read with its graph: tracked as <see cref="Attach{T}" /> tracks a row, its children too, then the collections remembered.</summary>
+    /// <summary>A row read with its graph: tracked as <see cref="Attach{T}(T)" /> tracks a row, its children too, then the collections remembered.</summary>
     private SqlEntry AttachRow(object entity)
     {
         var keyed = Keyed(entity);

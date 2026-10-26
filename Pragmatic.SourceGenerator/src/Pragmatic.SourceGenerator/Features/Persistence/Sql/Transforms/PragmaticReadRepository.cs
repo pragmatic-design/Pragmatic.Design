@@ -30,7 +30,7 @@ internal static class PragmaticReadRepository
     ///     <paramref name="includeSets" /> are the sets of paths the invokers read the entity with (a <c>[LoadEntity]</c>'s, <see cref="LoadIncludes" />;
     ///     a mutation's load): one read per key.
     /// </summary>
-    public static (string Hint, string Source)? For(INamedTypeSymbol entity, IReadOnlyList<PragmaticQuery> queries, IEnumerable<IReadOnlyList<string>> includeSets)
+    public static (string Hint, string Source)? For(INamedTypeSymbol entity, INamedTypeSymbol shapedEntity, IReadOnlyList<PragmaticQuery> queries, IEnumerable<IReadOnlyList<string>> includeSets)
     {
         if (!entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
             return null;
@@ -42,7 +42,15 @@ internal static class PragmaticReadRepository
             queries.Where(q => !q.Paged).Select(RunCaseOf).ToEquatableArray(),
             queries.Where(q => q.Paged).Select(RunCaseOf).ToEquatableArray(),
             includeSets.GroupBy(s => IncludePaths.Key(s)).OrderBy(g => g.Key, System.StringComparer.Ordinal)
-                .Select(g => new IncludeReadModel(g.Key, g.First().ToEquatableArray())).ToEquatableArray());
+                .Select(g => new IncludeReadModel(g.Key, g.First().ToEquatableArray())).ToEquatableArray(),
+            // The collections of entities the shape declares (a [Relation]'s navigation is generated: a member of the shaped symbol only), each
+            // a case of INavigationLinker.LinkAsync.
+            shapedEntity.GetMembers().OfType<IPropertySymbol>()
+                .Where(p => !p.IsStatic && p.GetMethod is not null && p.Type is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } collection
+                            && collection.AllInterfaces.Concat([collection]).Any(i => i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T)
+                            && collection.TypeArguments[0].AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
+                .Select(p => new LinkNavigationModel(p.Name, ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+                .ToEquatableArray());
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
 

@@ -13,4 +13,5 @@ internal sealed record ReadRepositoryModel(
     string EntityType,
     EquatableArray<RunCaseModel> Queries,
     EquatableArray<RunCaseModel> PagedQueries,
-    EquatableArray<IncludeReadModel> IncludeReads);
+    EquatableArray<IncludeReadModel> IncludeReads,
+    EquatableArray<LinkNavigationModel> Collections);

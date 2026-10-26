@@ -49,6 +49,12 @@ public sealed class SqlEntry : ISaveEntry
     /// </summary>
     internal Dictionary<SqlCollection, List<SqlEntry>>? Members { get; set; }
 
+    /// <summary>The collections a read of the row loaded, by property: a link of keys changes only a collection whose contents are known.</summary>
+    internal HashSet<string>? Loaded { get; set; }
+
+    /// <summary>The rows each loaded many-to-many side was linked to, by key: what the next save compares the side's links with.</summary>
+    internal Dictionary<SqlCollection, Dictionary<object, object>>? Links { get; set; }
+
     bool ISaveEntry.IsAdded => State == SqlEntryState.Added;
 
     bool ISaveEntry.IsModified => State == SqlEntryState.Modified;
