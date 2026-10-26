@@ -1,6 +1,7 @@
 ﻿using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Traits.Models;
+using Pragmatic.SourceGenerator.Features.Traits.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 
@@ -52,11 +53,9 @@ internal sealed class NoteEntityConfigTemplate : CSharpTemplate
         AppendLine($"    .HasForeignKey(e => e.{_model.ParentFkPropertyName})");
         AppendLine("    .OnDelete(global::Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade);");
         AppendLine();
-        AppendLine($"builder.Property(e => e.Content).HasMaxLength({_model.MaxLength}).IsRequired();");
-        AppendLine("builder.Property(e => e.AuthorId).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.AuthorName).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.UpdatedBy).HasMaxLength(256);");
-        AppendLine("builder.Property(e => e.DeletedBy).HasMaxLength(256);");
+        // The same list the child an engine persists is declared from.
+        foreach (var column in TraitColumns.Note(_model.MaxLength).Where(c => c.MaxLength is not null))
+            AppendLine($"builder.Property(e => e.{column.Name}).HasMaxLength({column.MaxLength}){(column.Required ? ".IsRequired()" : "")};");
         AppendLine();
         // Named, and not the anonymous overload: EF refuses a type carrying both, and the DbContext
         // adds the named "ParentTenant" filter to every trait child of a tenant-scoped parent.

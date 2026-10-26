@@ -308,6 +308,13 @@
           "Pragmatic.Result": "[1.0.0, )"
         }
       },
+      "pragmatic.comments": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
@@ -332,6 +339,12 @@
         "type": "Project",
         "dependencies": {
           "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notes": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {

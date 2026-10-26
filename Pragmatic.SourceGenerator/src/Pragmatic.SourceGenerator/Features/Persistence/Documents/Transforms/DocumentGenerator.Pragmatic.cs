@@ -31,16 +31,17 @@ internal static partial class DocumentGenerator
         // The entities' shape is what Persistence emits for every engine a compilation references; with none, nobody declares it.
         if (shapeSources.IsDefaultOrEmpty)
             return null;
+        var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
+        var written = compilation.SyntaxTrees.ToList();
+        var shapeTrees = shapeSources.Select(s => CSharpSyntaxTree.ParseText(s.Text, options, s.HintName, cancellationToken: spc.CancellationToken)).ToList();
         // The engine choice itself is reported by Pragmatic's generator (PRAG0743, PRAG0744), which sees the module's metadata too.
         var engines = PragmaticEngines.Of(compilation);
         var entities = PragmaticNames.AllTypes(compilation.GlobalNamespace)
             .Where(t => t.DeclaringSyntaxReferences.Length > 0 && DocModel.IsPragmatic(t) && engines.Serves(t, PragmaticEngine.Documents)).ToList();
+        entities.AddRange(SqlInterceptorGenerator.ShapeDeclaredEntities(compilation, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Documents))); // a trait's child (TraitEngineChildren)
         if (entities.Count == 0)
             return null;
 
-        var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
-        var written = compilation.SyntaxTrees.ToList();
-        var shapeTrees = shapeSources.Select(s => CSharpSyntaxTree.ParseText(s.Text, options, s.HintName, cancellationToken: spc.CancellationToken)).ToList();
         var trees = new List<SyntaxTree>(shapeTrees);
         SyntaxTree Add(Artifact artifact)
         {

@@ -10,7 +10,8 @@
     <!-- Not the folder's namespace, on purpose: under Pragmatic.Persistence.Sql, [Entity] would bind to the Sql engine's own attribute
          before Pragmatic's. -->
     <RootNamespace>PragmaticEntities.Tests</RootNamespace>
-    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
+    <!-- PRAG2601: the traits here have no [Resource], so no endpoints; this suite reads and writes their children, it serves no route. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;PRAG2601</NoWarn>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Not a generator test of Pragmatic's: the shared Roslyn testing helpers are not used here. -->
@@ -32,6 +33,9 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- [HasComments] and [HasNotes]: the children TraitFeature generates for an engine's parent. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->

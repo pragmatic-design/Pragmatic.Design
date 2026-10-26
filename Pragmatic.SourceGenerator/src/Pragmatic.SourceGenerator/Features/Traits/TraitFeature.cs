@@ -38,6 +38,14 @@ internal static class TraitFeature
         context.RegisterSourceOutputSafe(commentsWithFeatures, static (ctx, pair) =>
         {
             var (model, detectedFeatures) = pair;
+            if (TraitEngineChildren.Apply(detectedFeatures))
+            {
+                // The child an engine persists; its actions are EF Core's only until each trait's engine bodies exist.
+                foreach (var artifact in TraitEngineChildren.ForComment(model))
+                    if (!artifact.IsEmpty) ctx.AddSource(artifact);
+                return;
+            }
+
             if (!detectedFeatures.HasPersistenceEFCore) return;
 
             GenerateCommentEntity(ctx, model);
@@ -125,7 +133,8 @@ internal static class TraitFeature
             var (models, detectedFeatures) = pair;
             // Without Actions the action CLASSES are not generated, so injecting their models would make
             // ActionsFeature/EndpointsFeature emit invokers and handlers for types that do not exist.
-            if (!detectedFeatures.HasActions)
+            // Nor on an engine's child, whose actions are not generated yet.
+            if (!detectedFeatures.HasActions || TraitEngineChildren.Apply(detectedFeatures))
                 return ImmutableArray<ActionModel>.Empty;
 
             var builder = ImmutableArray.CreateBuilder<ActionModel>();
@@ -137,9 +146,13 @@ internal static class TraitFeature
             return builder.ToImmutable();
         });
 
-        // Build QueryModels for QueryFeature injection (ListComments)
-        var traitQueryModels = allComments.Select(static (models, _) =>
+        // Build QueryModels for QueryFeature injection (ListComments); the query class is generated with the actions.
+        var traitQueryModels = allComments.Combine(features).Select(static (pair, _) =>
         {
+            var (models, detectedFeatures) = pair;
+            if (TraitEngineChildren.Apply(detectedFeatures))
+                return ImmutableArray<Persistence.Models.QueryModel>.Empty;
+
             var builder = ImmutableArray.CreateBuilder<Persistence.Models.QueryModel>();
             foreach (var m in models)
             {
@@ -155,7 +168,8 @@ internal static class TraitFeature
             var (models, detectedFeatures) = pair;
             // Without Actions the action CLASSES are not generated, so injecting their models would make
             // ActionsFeature/EndpointsFeature emit invokers and handlers for types that do not exist.
-            if (!detectedFeatures.HasActions)
+            // Nor on an engine's child, whose actions are not generated yet.
+            if (!detectedFeatures.HasActions || TraitEngineChildren.Apply(detectedFeatures))
                 return ImmutableArray<Endpoints.Models.EndpointModel>.Empty;
 
             var builder = ImmutableArray.CreateBuilder<Endpoints.Models.EndpointModel>();
@@ -352,6 +366,14 @@ internal static class TraitFeature
         context.RegisterSourceOutputSafe(notesWithFeatures, static (ctx, pair) =>
         {
             var (model, detectedFeatures) = pair;
+            if (TraitEngineChildren.Apply(detectedFeatures))
+            {
+                // The child an engine persists; its actions are EF Core's only until each trait's engine bodies exist.
+                foreach (var artifact in TraitEngineChildren.ForNote(model))
+                    if (!artifact.IsEmpty) ctx.AddSource(artifact);
+                return;
+            }
+
             if (!detectedFeatures.HasPersistenceEFCore) return;
 
             GenerateNoteEntity(ctx, model);
@@ -417,7 +439,8 @@ internal static class TraitFeature
             var (models, detectedFeatures) = pair;
             // Without Actions the action CLASSES are not generated, so injecting their models would make
             // ActionsFeature/EndpointsFeature emit invokers and handlers for types that do not exist.
-            if (!detectedFeatures.HasActions)
+            // Nor on an engine's child, whose actions are not generated yet.
+            if (!detectedFeatures.HasActions || TraitEngineChildren.Apply(detectedFeatures))
                 return ImmutableArray<ActionModel>.Empty;
 
             var builder = ImmutableArray.CreateBuilder<ActionModel>();
@@ -426,8 +449,13 @@ internal static class TraitFeature
             return builder.ToImmutable();
         });
 
-        var noteQueryModels = allNotes.Select(static (models, _) =>
+        // The query class is generated with the actions.
+        var noteQueryModels = allNotes.Combine(features).Select(static (pair, _) =>
         {
+            var (models, detectedFeatures) = pair;
+            if (TraitEngineChildren.Apply(detectedFeatures))
+                return ImmutableArray<Persistence.Models.QueryModel>.Empty;
+
             var builder = ImmutableArray.CreateBuilder<Persistence.Models.QueryModel>();
             foreach (var m in models)
                 builder.Add(BuildListNotesQueryModel(m));
@@ -439,7 +467,8 @@ internal static class TraitFeature
             var (models, detectedFeatures) = pair;
             // Without Actions the action CLASSES are not generated, so injecting their models would make
             // ActionsFeature/EndpointsFeature emit invokers and handlers for types that do not exist.
-            if (!detectedFeatures.HasActions)
+            // Nor on an engine's child, whose actions are not generated yet.
+            if (!detectedFeatures.HasActions || TraitEngineChildren.Apply(detectedFeatures))
                 return ImmutableArray<Endpoints.Models.EndpointModel>.Empty;
 
             var builder = ImmutableArray.CreateBuilder<Endpoints.Models.EndpointModel>();
@@ -624,10 +653,13 @@ internal static class TraitFeature
 
         // Descriptions of the DTOs generated above, for the manifest. Without them the manifest names those
         // types on its endpoints but cannot say what is in them, and a generated client falls back to object.
-        var manifestTypes = allComments.Select(static (models, _) => TraitManifestTypeBuilder.BuildCommentDtos(models))
+        // Not an engine's child's: its DTOs come with its actions, not generated yet.
+        var manifestTypes = allComments.Combine(features).Select(static (pair, _) => TraitEngineChildren.Apply(pair.Right)
+                ? ImmutableArray<Manifest.Models.ManifestTypeModel>.Empty : TraitManifestTypeBuilder.BuildCommentDtos(pair.Left))
             .Combine(allTags.Select(static (models, _) => TraitManifestTypeBuilder.BuildTagDtos(models)))
             .Select(static (pair, _) => pair.Left.AddRange(pair.Right))
-            .Combine(allNotes.Select(static (models, _) => TraitManifestTypeBuilder.BuildNoteDtos(models)))
+            .Combine(allNotes.Combine(features).Select(static (pair, _) => TraitEngineChildren.Apply(pair.Right)
+                ? ImmutableArray<Manifest.Models.ManifestTypeModel>.Empty : TraitManifestTypeBuilder.BuildNoteDtos(pair.Left)))
             .Select(static (pair, _) => pair.Left.AddRange(pair.Right))
             .Combine(allAttachments.Select(static (models, _) => TraitManifestTypeBuilder.BuildAttachmentDtos(models)))
             .Select(static (pair, _) => pair.Left.AddRange(pair.Right));
@@ -640,6 +672,8 @@ internal static class TraitFeature
             Endpoints = combinedEndpoints,
             ManifestTypes = manifestTypes,
             Jobs = attachmentJobModels,
+            EngineSources = allComments.Combine(allNotes).Combine(features)
+                .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left, pair.Left.Right, pair.Right)),
         };
     }
 

@@ -32,6 +32,9 @@ internal static partial class SqlInterceptorGenerator
             return false;
         }
 
+        var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
+        var written = compilation.SyntaxTrees.ToList();
+        var shapeTrees = shapeSources.Select(shape => CSharpSyntaxTree.ParseText(shape.Text, options, shape.HintName, cancellationToken: spc.CancellationToken)).ToList();
         // The engine choice itself is reported by Pragmatic's generator (PRAG0743, PRAG0744), which sees the module's metadata too.
         var engines = PragmaticEngines.Of(compilation);
         // What this feature emits for Pragmatic's entities on the Sql engine; the shape itself is bound against, not emitted again.
@@ -50,6 +53,7 @@ internal static partial class SqlInterceptorGenerator
             }
 
             var served = AllTypes(compilation.GlobalNamespace).Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql)).ToList();
+            served.AddRange(ShapeDeclaredEntities(compilation, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Sql))); // a trait's child (TraitEngineChildren)
             shapes.AddRange(PragmaticRegistration.Sql.For(compilation, served)); // each boundary's unit of work and repositories, keyed by the boundary
             var loads = CompiledLoads(spc, compilation, engines);
             foreach (var entity in served)
@@ -73,11 +77,7 @@ internal static partial class SqlInterceptorGenerator
             }
         }
 
-        var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions;
-        var written = compilation.SyntaxTrees.ToList();
-        var trees = new List<SyntaxTree>();
-        foreach (var shape in shapeSources)
-            trees.Add(CSharpSyntaxTree.ParseText(shape.Text, options, shape.HintName, cancellationToken: spc.CancellationToken));
+        var trees = new List<SyntaxTree>(shapeTrees);
         foreach (var (hint, text) in shapes.Concat(repositories))
         {
             spc.AddSource(hint, text);
@@ -138,6 +138,29 @@ internal static partial class SqlInterceptorGenerator
         }
 
         return compiled;
+    }
+
+    /// <summary>
+    ///     The Pragmatic entities a shape file declares by itself, not a part of a type the application declares: a trait's child the engine persists
+    ///     (<c>TraitEngineChildren</c>), which exists in no compilation but the one with the shape. Its symbols are of that compilation, so whatever
+    ///     groups them with the application's entities compares names (<see cref="PragmaticRegistration" />).
+    /// </summary>
+    internal static List<INamedTypeSymbol> ShapeDeclaredEntities(Compilation compilation, List<SyntaxTree> shapeTrees)
+    {
+        var shaped = compilation.AddSyntaxTrees(shapeTrees);
+        var entities = new List<INamedTypeSymbol>();
+        foreach (var tree in shapeTrees)
+        {
+            var model = shaped.GetSemanticModel(tree);
+            foreach (var declaration in tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
+            {
+                if (model.GetDeclaredSymbol(declaration) is { } type && PragmaticShape.IsPragmaticEntity(type)
+                    && compilation.GetTypeByMetadataName(type.ToDisplayString()) is null && !entities.Contains(type, SymbolEqualityComparer.Default))
+                    entities.Add(type);
+            }
+        }
+
+        return entities;
     }
 
     /// <summary>The same declarations in <paramref name="compilation" />, by their documentation id.</summary>

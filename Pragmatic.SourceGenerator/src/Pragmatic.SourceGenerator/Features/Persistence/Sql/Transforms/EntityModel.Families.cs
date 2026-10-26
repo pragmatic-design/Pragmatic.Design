@@ -25,6 +25,8 @@ internal sealed partial class EntityModel
             var parts = new List<string>();
             if (Type.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && Column("TenantId") is { } tenant)
                 parts.Add(Mark("Tenant", "TenantFilter", "Tenant", null, $"t.\"{tenant.Column}\" = {{ft}}"));
+            if (ParentTenant is { } parentTenant)
+                parts.Add(Mark("Tenant", null, "ParentTenant", null, parentTenant)); // a trait's child: its parent's tenancy, as EF's named "ParentTenant"
             var owner = PragmaticShape.Has(Type, "HasOwnerAttribute") ? Column("OwnerId") : null;
             var scopes = PragmaticShape.Has(Type, "HasAccessScopesAttribute") ? Column("AccessScopes") : null;
             var bypass = PragmaticPermissions.ViewAll(Type);
@@ -113,6 +115,12 @@ internal sealed partial class EntityModel
     /// </summary>
     public (string Predicate, string Bypass)? ParentVisibility { get; private set; }
 
+    /// <summary>
+    ///     A trait's child of a tenant's parent (<c>ITenantEntity</c>): the child has no tenant column, its tenancy is its parent's, as an EXISTS on
+    ///     the parent's table by the child's foreign key. No bypass: no permission crosses a tenant. Null for any other entity.
+    /// </summary>
+    public string? ParentTenant { get; private set; }
+
     internal void ReadParentVisibility(IReadOnlyList<Microsoft.CodeAnalysis.INamedTypeSymbol>? entities, Microsoft.CodeAnalysis.Compilation compilation)
     {
         if (!IsPragmatic || PragmaticFilters.TraitParent(Type) is not { } parent)
@@ -120,6 +128,9 @@ internal sealed partial class EntityModel
         var navigation = Navigations.FirstOrDefault(n => Microsoft.CodeAnalysis.SymbolEqualityComparer.Default.Equals(n.Target, parent));
         if (navigation is null || Column(navigation.ForeignKey) is not { } foreignKey || Read(parent, [], entities, compilation) is not { Keys.Count: 1 } target)
             return;
+        // "tn", not "tpt": a plan re-aliases the row by replacing t." and an alias ending in t would be rewritten with it.
+        if (parent.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && target.Column("TenantId") is { } parentTenant)
+            ParentTenant = $"EXISTS (SELECT 1 FROM \"{target.Table}\" tn WHERE tn.\"{target.Keys[0].Column}\" = t.\"{foreignKey.Column}\" AND tn.\"{parentTenant.Column}\" = {{ft}})";
         var owner = PragmaticShape.Has(parent, "HasOwnerAttribute") ? target.Column("OwnerId") : null;
         var scopes = PragmaticShape.Has(parent, "HasAccessScopesAttribute") ? target.Column("AccessScopes") : null;
         var condition = (owner, scopes) switch

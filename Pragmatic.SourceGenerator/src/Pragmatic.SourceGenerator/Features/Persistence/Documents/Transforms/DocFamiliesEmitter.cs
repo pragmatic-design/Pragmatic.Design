@@ -42,6 +42,9 @@ internal static partial class DocFamiliesEmitter
                          + $"{DocTypeEmitter.Literal(Path("TenantId") + " = @__tenant")}, static (w, f) => {Text("@__tenant", "f?.TenantId")}, {partitions})");
         }
 
+        if (ParentTenant(model, compilation, type) is { } parentTenant)
+            families.Add(parentTenant); // a trait's child: its parent's tenancy
+
         var owner = PragmaticShape.Has(entity, "HasOwnerAttribute") && model.Field("OwnerId") is not null;
         var scoped = PragmaticShape.Has(entity, "HasAccessScopesAttribute") && model.Field("AccessScopes") is not null;
         var bypass = PragmaticPermissions.ViewAll(entity);
