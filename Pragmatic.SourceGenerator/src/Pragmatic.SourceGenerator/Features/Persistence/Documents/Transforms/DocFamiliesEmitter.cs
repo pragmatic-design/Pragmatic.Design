@@ -95,7 +95,11 @@ internal static partial class DocFamiliesEmitter
             if (Rule(model, rule, compilation, diagnostics, $"@__r{index++}_") is not { } condition)
                 continue;
             var (mongo, cosmos, parameters) = condition;
-            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Rule", null, "Visibility:" + rule.ToDisplayString())}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, {(parameters is null ? "null" : $"static (w, f) => {{ {parameters} }}")})");
+            // A rule that is a permission-based filter is the permission family's, its filter the rule's type (PragmaticFilters.PermissionBypass).
+            var slot = PragmaticFilters.PermissionBypass(rule) is { } bypassOfRule
+                ? $"new {Runtime}.Filters.DocFilterSlot(typeof({type}), {Runtime}.Filters.DocFilterFamily.Permission, typeof({rule.ToDisplayString(DocModel.Qualified)}), null, {DocTypeEmitter.Literal(bypassOfRule)})"
+                : Slot("Rule", null, "Visibility:" + rule.ToDisplayString());
+            families.Add($"new {Runtime}.Filters.DocFamily({slot}, static (w, f) => {{ {mongo} }}, {DocTypeEmitter.Literal(cosmos)}, {(parameters is null ? "null" : $"static (w, f) => {{ {parameters} }}")})");
         }
 
         return families;

@@ -45,9 +45,14 @@ internal sealed partial class EntityModel
         }
     }
 
-    /// <summary>A rule's predicate on a Pragmatic entity, marked as its own slot: lifted only by its name (<c>Visibility:{rule}</c>), as on EF.</summary>
+    /// <summary>
+    ///     A rule's predicate on a Pragmatic entity, marked as its own slot: lifted only by its name (<c>Visibility:{rule}</c>), as on EF. A rule that
+    ///     is a permission-based filter (<see cref="PragmaticFilters.PermissionBypass" />) is the permission family's, its filter the rule's type.
+    /// </summary>
     public string MarkRule(Microsoft.CodeAnalysis.INamedTypeSymbol rule, string predicate)
-        => Mark("Rule", null, "Visibility:" + rule.ToDisplayString(), null, predicate);
+        => PragmaticFilters.PermissionBypass(rule) is { } bypass
+            ? MarkAs("Permission", rule.ToDisplayString(), null, bypass, predicate)
+            : Mark("Rule", null, "Visibility:" + rule.ToDisplayString(), null, predicate);
 
     /// <summary>
     ///     The predicate between its slot's marks. The key carries what the plan declares for the slot: family, entity, filter class, the name a
