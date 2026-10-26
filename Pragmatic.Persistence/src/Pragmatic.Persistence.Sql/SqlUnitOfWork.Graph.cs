@@ -35,6 +35,38 @@ public sealed partial class SqlUnitOfWork
     }
 
     /// <summary>
+    ///     The graph of <paramref name="read" />, a read of <paramref name="entity" />'s row with its collections, merged into
+    ///     <paramref name="entity" /> as EF Core's fixup merges a load into the tracked instance (<c>INavigationLoader</c>): each collection holds
+    ///     what it held and the children read, and the save compares it with the children read, what the store holds. A child the caller added
+    ///     is still added; a child the read brought and the caller removes later is deleted. <paramref name="entity" /> is tracked first if it is
+    ///     not.
+    /// </summary>
+    /// <remarks>The children read are tracked with their own graphs. A child <paramref name="entity" /> already held keeps its instance.</remarks>
+    public void LoadGraph<T>(T entity, T read) where T : class, IEntity
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(read);
+        var entry = EntryOf(entity) ?? AttachRow(entity);
+        if (!ReferenceEquals(entry.Entity, entity))
+            throw new InvalidOperationException($"Another instance of {entity.GetType().Name} with key {entity.PersistenceId} is tracked: load the graph into that one.");
+        foreach (var collection in GraphCollections(entity))
+        {
+            var merged = Children(collection, entity).ToList();
+            var stored = new List<SqlEntry>();
+            foreach (var child in Children(collection, read))
+            {
+                var tracked = AttachRow(child); // the instance already tracked for that key, when there is one
+                stored.Add(tracked);
+                if (!merged.Contains(tracked.Entity))
+                    merged.Add(tracked.Entity);
+            }
+
+            collection.Assign(entity, merged);
+            (entry.Members ??= [])[collection] = stored;
+        }
+    }
+
+    /// <summary>
     ///     Before the save sees what changed: every tracked entity's collections against the children they held, the children added tracked as
     ///     added (theirs in turn, as the loop reaches them), the ones removed deleted.
     /// </summary>

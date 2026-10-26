@@ -170,7 +170,8 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>");
+        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>,");
+        AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>");
         AppendLine("    {");
         AppendLine("        private readonly SqlReadRepository _read = new(unitOfWork.Session);");
         AppendLine();
@@ -183,6 +184,18 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine("            => unitOfWork.AttachAll(await _read.FindAsync(spec, ct));");
+        AppendLine();
+        // A handed-over entity's graph: the read of its row with these paths (a compiled read of the set, as GetByIdIncludingAsync's), merged
+        // into it. Not EF Core's planner of the missing paths: the paths are the ones the mutation's invoker compiled its read for.
+        AppendLine("        /// <summary>Reads the entity's row with <paramref name=\"paths\" /> and merges the graph into it: 0 with no paths, 1 otherwise.</summary>");
+        AppendLine($"        public async {Task}<int> EnsureLoadedAsync({type} entity, global::System.Collections.Generic.IReadOnlyList<string> paths, global::System.Threading.CancellationToken ct)");
+        AppendLine("        {");
+        AppendLine("            if (paths.Count == 0)");
+        AppendLine("                return 0;");
+        AppendLine("            if (await _read.GetByIdIncludingAsync(entity.PersistenceId, string.Join(\",\", paths), ct) is { } read)");
+        AppendLine("                unitOfWork.LoadGraph(entity, read);");
+        AppendLine("            return 1;");
+        AppendLine("        }");
         AppendLine();
         AppendLine($"        public {Task}<int> CountAsync({Spec}<{type}> spec, {Token}) => _read.CountAsync(spec, ct);");
         AppendLine();
