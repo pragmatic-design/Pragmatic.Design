@@ -81,7 +81,9 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             $"global::Pragmatic.Persistence.Repository.INavigationLoader<{entityType}>",
             // And the same for choosing which rows a navigation points at, from their keys alone:
             // attaching one means writing to the change tracker, which needs the context too.
-            $"global::Pragmatic.Persistence.Repository.INavigationLinker<{entityType}>"
+            $"global::Pragmatic.Persistence.Repository.INavigationLinker<{entityType}>",
+            // The set-based writes, declared where there is no EF Core.
+            $"global::Pragmatic.Persistence.Repository.IBulkRepository<{entityType}>"
         };
 
         XmlSummary(
@@ -969,28 +971,30 @@ internal sealed class RepositoryTemplate : CSharpTemplate
     {
         XmlSummary($"Updates {_model.TypeName} entities matching the specification without loading them into memory. Translates to SQL UPDATE ... SET ... WHERE.");
         XmlParam("filter", "The specification to filter which entities to update.");
-        XmlParam("updateAction", "An action describing which properties to update and their new values.");
+        XmlParam("set", "The properties to update and their new values, as a chain of SetProperty calls.");
         XmlParam("ct", "Cancellation token.");
         XmlReturns("The number of entities updated.");
 
+        // The neutral setters (IBulkRepository) over EF Core's builder.
         var asyncModifier = _model.IsAudited ? "async " : string.Empty;
+        var execute = $"ExecuteUpdateAsync(__s => set(new global::Pragmatic.Persistence.EFCore.Bulk.EfBulkSetters<{entityType}>(__s)), ct)";
         AppendLine($"public {asyncModifier}global::System.Threading.Tasks.Task<int> BulkUpdateAsync(");
         IncreaseIndent();
         AppendLine($"global::Pragmatic.Specification.ISpecification<{entityType}> filter,");
-        AppendLine($"global::System.Action<global::Microsoft.EntityFrameworkCore.Query.UpdateSettersBuilder<{entityType}>> updateAction,");
+        AppendLine($"global::System.Action<global::Pragmatic.Persistence.Repository.IBulkSetters<{entityType}>> set,");
         AppendLine("global::System.Threading.CancellationToken ct = default)");
         DecreaseIndent();
         Block(() =>
         {
             if (_model.IsAudited)
             {
-                AppendLine("var __affected = await ApplyRootFilters(Set).Where(filter.ToExpression()).ExecuteUpdateAsync(updateAction, ct).ConfigureAwait(false);");
+                AppendLine($"var __affected = await ApplyRootFilters(Set).Where(filter.ToExpression()).{execute}.ConfigureAwait(false);");
                 RenderBulkAuditRow("Data.EntityBulkUpdated");
                 AppendLine("return __affected;");
             }
             else
             {
-                AppendLine("return ApplyRootFilters(Set).Where(filter.ToExpression()).ExecuteUpdateAsync(updateAction, ct);");
+                AppendLine($"return ApplyRootFilters(Set).Where(filter.ToExpression()).{execute};");
             }
         });
     }

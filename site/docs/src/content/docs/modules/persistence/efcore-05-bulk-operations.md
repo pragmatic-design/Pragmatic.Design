@@ -20,7 +20,7 @@ Typical methods on the generated repository:
 ```csharp
 public Task<int> BulkUpdateAsync(
     ISpecification<TEntity> filter,
-    Action<UpdateSettersBuilder<TEntity>> updateAction,
+    Action<IBulkSetters<TEntity>> set,
     CancellationToken ct = default);
 
 public Task<int> BulkDeleteAsync(
@@ -43,10 +43,14 @@ public Task<int> UpsertAsync(
     CancellationToken ct = default);
 ```
 
-These methods are generated onto the concrete repository (on **every** entity, not only some), so
-inject that type when you need them. There is no separate `IBulkOperations<TEntity>` service to
-resolve. The filter parameter is `ISpecification<TEntity>`; `Spec<T>.Where(...)` returns a
-`Specification<T>`, which implements it.
+These methods are generated onto the concrete repository (on **every** entity, not only some). The
+update, the delete and the overloads of insert and upsert without options are also
+`IBulkRepository<TEntity>` (`Pragmatic.Persistence.Repository`), which the repository implements and
+which does not name EF Core. The setters are
+`IBulkSetters<TEntity>`, written as a chain of `SetProperty` calls as with EF Core: a constant or
+captured value, or a value computed on the row. The options of insert and upsert, and `UpsertAsync`,
+are EF Core's: inject the concrete repository for them. The filter parameter is
+`ISpecification<TEntity>`; `Spec<T>.Where(...)` returns a `Specification<T>`, which implements it.
 
 ## Usage examples
 

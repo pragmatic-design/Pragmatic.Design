@@ -547,7 +547,7 @@ public partial class Order
         public Task<int> BulkUpsertAsync(IReadOnlyList<Order> entities,
                                          UpsertOptions? options = null, CancellationToken ct = default);
         public Task<int> BulkUpdateAsync(ISpecification<Order> filter,
-                                         Action<UpdateSettersBuilder<Order>> update, CancellationToken ct = default);
+                                         Action<IBulkSetters<Order>> set, CancellationToken ct = default);
         public Task<int> BulkDeleteAsync(ISpecification<Order> filter, CancellationToken ct = default);
         public Task<int> UpsertAsync(Order entity, UpsertMatch matchOn = UpsertMatch.PrimaryKey,
                                      CancellationToken ct = default);
