@@ -53,10 +53,22 @@ internal static class TraitActionModelBuilder
                 {
                     new DependencyModel { FieldName = "_tags", TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.TagFullTypeName}>", IsReadOnly = true },
                     new DependencyModel { FieldName = "_links", TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.JunctionFullTypeName}>", IsReadOnly = true },
-                    new DependencyModel { FieldName = "_unitOfWork", TypeName = "global::Pragmatic.Persistence.Repository.IUnitOfWork", IsReadOnly = true },
+                    EngineUnitOfWork(model.BoundaryFullTypeName),
                 }
                 : [d]).ToImmutableArray(),
         }).ToImmutableArray();
+
+    /// <summary>
+    ///     The boundary's unit of work, keyed by the boundary's type: an engine registers it keyed and nothing unkeyed, as a hand-written action's
+    ///     <c>IUnitOfWork</c> field is resolved (<c>BoundaryKeyedServices</c>). Unkeyed only for a parent without a boundary.
+    /// </summary>
+    private static DependencyModel EngineUnitOfWork(string? boundaryFullTypeName) => new()
+    {
+        FieldName = "_unitOfWork",
+        TypeName = "global::Pragmatic.Persistence.Repository.IUnitOfWork",
+        IsReadOnly = true,
+        KeyedServiceType = boundaryFullTypeName is not null ? $"global::{boundaryFullTypeName}" : null,
+    };
 
     /// <summary>The actions with their <c>DbContext</c> replaced by the child's repository, under <paramref name="field" />.</summary>
     private static ImmutableArray<ActionModel> OnRepository(ImmutableArray<ActionModel> actions, string field, string childFullTypeName)
