@@ -91,8 +91,11 @@ internal static class TraitEngineChildren
         return rules;
     }
 
-    /// <summary>A note's child, its filters and the parent's <c>Notes</c>.</summary>
-    public static IEnumerable<Artifact> ForNote(NoteTraitModel model)
+    /// <summary>
+    ///     A note's child, its filters, the parent's <c>Notes</c>, the DTO and the list query; with Actions referenced
+    ///     (<paramref name="withActions" />), the actions on the child's repository and their permissions.
+    /// </summary>
+    public static IEnumerable<Artifact> ForNote(NoteTraitModel model, bool withActions)
     {
         yield return new TraitEngineEntityTemplate(new TraitEngineEntityModel(model.ParentNamespace, model.NoteTypeName, model.ParentTypeName,
             model.ParentFullTypeName, model.ParentFkPropertyName, model.IdType, IsSoftDelete: true, TraitColumns.Note(model.MaxLength), "[HasNotes]",
@@ -100,6 +103,18 @@ internal static class TraitEngineChildren
         foreach (var filter in EntityShapeArtifacts.Filters(Shape(model.ParentNamespace, model.NoteTypeName, model.BoundaryName, model.ParentTypeName, model.ParentIsOwned, model.ParentIsScoped)))
             yield return filter;
         yield return new ParentNoteNavigationTemplate(model).RenderOutput();
+        // The read DTO and the list query, which the engine compiles as a declared query of the child.
+        yield return new NoteDtoTemplate(model).RenderOutput();
+        yield return new NoteListQueryTemplate(model, declaresItsSort: true).RenderOutput();
+        if (!withActions)
+            yield break;
+
+        yield return new NoteActionsTemplate(model, NoteActionKind.Add, engine: true).RenderOutput();
+        yield return new NoteActionsTemplate(model, NoteActionKind.GetById, engine: true).RenderOutput();
+        if (model.AllowEditing)
+            yield return new NoteActionsTemplate(model, NoteActionKind.Update, engine: true).RenderOutput();
+        yield return new NoteActionsTemplate(model, NoteActionKind.Delete, engine: true).RenderOutput();
+        yield return new NotePermissionsTemplate(model).RenderOutput();
     }
 
     /// <summary>The files above, as the engines bind them; empty when the children are EF Core's.</summary>
@@ -111,7 +126,7 @@ internal static class TraitEngineChildren
         foreach (var comment in comments)
             Add(ForComment(comment, features.HasActions));
         foreach (var note in notes)
-            Add(ForNote(note));
+            Add(ForNote(note, features.HasActions));
         return sources.ToEquatableArray();
 
         void Add(IEnumerable<Artifact> artifacts)
