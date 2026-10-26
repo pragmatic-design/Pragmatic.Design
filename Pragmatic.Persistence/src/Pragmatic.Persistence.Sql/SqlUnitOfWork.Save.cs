@@ -119,6 +119,60 @@ public sealed partial class SqlUnitOfWork
     }
 
     /// <summary>
+    ///     Inserts <paramref name="rows" /> in one batch, outside the change tracker (as EF Core's bulk insert): their generated values filled and
+    ///     the save's phases applied to them alone (stamps, owner, scopes, tenant), the other changes of the unit of work left for its save. Not
+    ///     tracked afterwards, no domain events.
+    /// </summary>
+    public async Task<int> InsertManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) where T : class, IEntity
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var entries = await PreparedAsync(rows, ct).ConfigureAwait(false);
+        if (entries.Count == 0)
+            return 0;
+        var batch = Session.WriteBatch();
+        foreach (var entry in entries)
+            batch.InsertAsIs(entry.Entity);
+        await batch.ExecuteAsync(ct).ConfigureAwait(false);
+        return entries.Count;
+    }
+
+    /// <summary>
+    ///     Inserts <paramref name="rows" />, or updates the ones whose key is there, each prepared as <see cref="InsertManyAsync{T}" /> prepares a
+    ///     row, in one transaction of the session. Not tracked afterwards, no domain events.
+    /// </summary>
+    public async Task<int> UpsertManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) where T : class, IEntity
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var entries = await PreparedAsync(rows, ct).ConfigureAwait(false);
+        if (entries.Count == 0)
+            return 0;
+        var own = Session.Transaction is null ? Session.BeginTransaction() : null;
+        try
+        {
+            foreach (var entry in entries)
+                await Session.UpsertAsync((T)entry.Entity, ct).ConfigureAwait(false);
+            own?.Commit();
+        }
+        finally
+        {
+            own?.Dispose();
+        }
+
+        return entries.Count;
+    }
+
+    /// <summary>The rows as new entries, their generated values filled and the save's phases applied, without tracking them.</summary>
+    private async Task<List<SqlEntry>> PreparedAsync<T>(IReadOnlyList<T> rows, CancellationToken ct) where T : class
+    {
+        var now = _timeProvider.GetUtcNow();
+        var userId = _currentUser?.IdOrNull();
+        var entries = rows.Select(row => new SqlEntry(row, SqlEntryState.Added, Session.Dialect)).ToList();
+        await SaveSteps.FillGeneratedValuesAsync(entries, _generatedValues, now, userId, ct).ConfigureAwait(false);
+        SavePhases.Apply(entries, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
+        return entries;
+    }
+
+    /// <summary>
     ///     The writes in an order the foreign keys accept: the inserts and updates of a referenced type before its referrers', the deletes after
     ///     them (each in the order tracked). A cycle between types keeps the tracked order.
     /// </summary>
