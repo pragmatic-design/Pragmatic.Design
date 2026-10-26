@@ -899,7 +899,7 @@ public partial class AggregatePart
 
 ## Inventory.AggregatePart.Repository.g.cs
 public partial class AggregatePart
-    public partial class AggregatePart.Repository : IRepository<AggregatePart>, INavigationLoader<AggregatePart>, INavigationLinker<AggregatePart>
+    public partial class AggregatePart.Repository : IRepository<AggregatePart>, INavigationLoader<AggregatePart>, INavigationLinker<AggregatePart>, IBulkRepository<AggregatePart>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AggregatePart> Set { get; }
         internal DbContext Context { get; }
@@ -920,7 +920,7 @@ public partial class AggregatePart
         public async Task<int> EnsureLoadedAsync(AggregatePart entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(AggregatePart entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<AggregatePart> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<AggregatePart> filter, Action<UpdateSettersBuilder<AggregatePart>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<AggregatePart> filter, Action<IBulkSetters<AggregatePart>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<AggregatePart> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AggregatePart> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AggregatePart> entities, CancellationToken ct)
@@ -963,7 +963,7 @@ public static class AttachmentExtensions
 
 ## Inventory.Attachment.Repository.g.cs
 public partial class Attachment
-    public partial class Attachment.Repository : IRepository<Attachment>, INavigationLoader<Attachment>, INavigationLinker<Attachment>
+    public partial class Attachment.Repository : IRepository<Attachment>, INavigationLoader<Attachment>, INavigationLinker<Attachment>, IBulkRepository<Attachment>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Attachment> Set { get; }
         internal DbContext Context { get; }
@@ -984,7 +984,7 @@ public partial class Attachment
         public async Task<int> EnsureLoadedAsync(Attachment entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Attachment entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Attachment> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Attachment> filter, Action<UpdateSettersBuilder<Attachment>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Attachment> filter, Action<IBulkSetters<Attachment>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Attachment> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Attachment> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Attachment> entities, CancellationToken ct)
@@ -1023,7 +1023,7 @@ public partial class Auditable : ICreatable<Auditable>
 
 ## Inventory.Auditable.Repository.g.cs
 public partial class Auditable
-    public partial class Auditable.Repository : IRepository<Auditable>, INavigationLoader<Auditable>, INavigationLinker<Auditable>
+    public partial class Auditable.Repository : IRepository<Auditable>, INavigationLoader<Auditable>, INavigationLinker<Auditable>, IBulkRepository<Auditable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Auditable> Set { get; }
         internal DbContext Context { get; }
@@ -1044,7 +1044,7 @@ public partial class Auditable
         public async Task<int> EnsureLoadedAsync(Auditable entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Auditable entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Auditable> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Auditable> filter, Action<UpdateSettersBuilder<Auditable>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Auditable> filter, Action<IBulkSetters<Auditable>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Auditable> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Auditable> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Auditable> entities, CancellationToken ct)
@@ -1082,7 +1082,7 @@ public partial class AuditableSoftDeleted : ICreatable<AuditableSoftDeleted>
 
 ## Inventory.AuditableSoftDeleted.Repository.g.cs
 public partial class AuditableSoftDeleted
-    public partial class AuditableSoftDeleted.Repository : IRepository<AuditableSoftDeleted>, INavigationLoader<AuditableSoftDeleted>, INavigationLinker<AuditableSoftDeleted>
+    public partial class AuditableSoftDeleted.Repository : IRepository<AuditableSoftDeleted>, INavigationLoader<AuditableSoftDeleted>, INavigationLinker<AuditableSoftDeleted>, IBulkRepository<AuditableSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AuditableSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -1103,7 +1103,7 @@ public partial class AuditableSoftDeleted
         public async Task<int> EnsureLoadedAsync(AuditableSoftDeleted entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(AuditableSoftDeleted entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<AuditableSoftDeleted> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<AuditableSoftDeleted> filter, Action<UpdateSettersBuilder<AuditableSoftDeleted>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<AuditableSoftDeleted> filter, Action<IBulkSetters<AuditableSoftDeleted>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<AuditableSoftDeleted> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AuditableSoftDeleted> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AuditableSoftDeleted> entities, CancellationToken ct)
@@ -1151,7 +1151,7 @@ public partial class Audited : ICreatable<Audited>
 
 ## Inventory.Audited.Repository.g.cs
 public partial class Audited
-    public partial class Audited.Repository : IRepository<Audited>, INavigationLoader<Audited>, INavigationLinker<Audited>
+    public partial class Audited.Repository : IRepository<Audited>, INavigationLoader<Audited>, INavigationLinker<Audited>, IBulkRepository<Audited>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Audited> Set { get; }
         internal DbContext Context { get; }
@@ -1172,7 +1172,7 @@ public partial class Audited
         public async Task<int> EnsureLoadedAsync(Audited entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Audited entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Audited> Query(QueryStrategy strategy)
-        public async Task<int> BulkUpdateAsync(ISpecification<Audited> filter, Action<UpdateSettersBuilder<Audited>> updateAction, CancellationToken ct = default)
+        public async Task<int> BulkUpdateAsync(ISpecification<Audited> filter, Action<IBulkSetters<Audited>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Audited> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Audited> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Audited> entities, CancellationToken ct)
@@ -1206,7 +1206,7 @@ public partial class AuditedSoftDeleted : ICreatable<AuditedSoftDeleted>
 
 ## Inventory.AuditedSoftDeleted.Repository.g.cs
 public partial class AuditedSoftDeleted
-    public partial class AuditedSoftDeleted.Repository : IRepository<AuditedSoftDeleted>, INavigationLoader<AuditedSoftDeleted>, INavigationLinker<AuditedSoftDeleted>
+    public partial class AuditedSoftDeleted.Repository : IRepository<AuditedSoftDeleted>, INavigationLoader<AuditedSoftDeleted>, INavigationLinker<AuditedSoftDeleted>, IBulkRepository<AuditedSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AuditedSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -1227,7 +1227,7 @@ public partial class AuditedSoftDeleted
         public async Task<int> EnsureLoadedAsync(AuditedSoftDeleted entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(AuditedSoftDeleted entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<AuditedSoftDeleted> Query(QueryStrategy strategy)
-        public async Task<int> BulkUpdateAsync(ISpecification<AuditedSoftDeleted> filter, Action<UpdateSettersBuilder<AuditedSoftDeleted>> updateAction, CancellationToken ct = default)
+        public async Task<int> BulkUpdateAsync(ISpecification<AuditedSoftDeleted> filter, Action<IBulkSetters<AuditedSoftDeleted>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<AuditedSoftDeleted> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AuditedSoftDeleted> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<AuditedSoftDeleted> entities, CancellationToken ct)
@@ -1272,7 +1272,7 @@ public partial class Bridged : ICreatable<Bridged>
 
 ## Inventory.Bridged.Repository.g.cs
 public partial class Bridged
-    public partial class Bridged.Repository : IRepository<Bridged>, INavigationLoader<Bridged>, INavigationLinker<Bridged>
+    public partial class Bridged.Repository : IRepository<Bridged>, INavigationLoader<Bridged>, INavigationLinker<Bridged>, IBulkRepository<Bridged>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Bridged> Set { get; }
         internal DbContext Context { get; }
@@ -1293,7 +1293,7 @@ public partial class Bridged
         public async Task<int> EnsureLoadedAsync(Bridged entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Bridged entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Bridged> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Bridged> filter, Action<UpdateSettersBuilder<Bridged>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Bridged> filter, Action<IBulkSetters<Bridged>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Bridged> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Bridged> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Bridged> entities, CancellationToken ct)
@@ -1340,7 +1340,7 @@ public partial class CascadeChild
 
 ## Inventory.CascadeChild.Repository.g.cs
 public partial class CascadeChild
-    public partial class CascadeChild.Repository : IRepository<CascadeChild>, INavigationLoader<CascadeChild>, INavigationLinker<CascadeChild>
+    public partial class CascadeChild.Repository : IRepository<CascadeChild>, INavigationLoader<CascadeChild>, INavigationLinker<CascadeChild>, IBulkRepository<CascadeChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeChild> Set { get; }
         internal DbContext Context { get; }
@@ -1361,7 +1361,7 @@ public partial class CascadeChild
         public async Task<int> EnsureLoadedAsync(CascadeChild entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(CascadeChild entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<CascadeChild> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<CascadeChild> filter, Action<UpdateSettersBuilder<CascadeChild>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<CascadeChild> filter, Action<IBulkSetters<CascadeChild>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<CascadeChild> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeChild> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeChild> entities, CancellationToken ct)
@@ -1409,7 +1409,7 @@ public partial class CascadeParent
 
 ## Inventory.CascadeParent.Repository.g.cs
 public partial class CascadeParent
-    public partial class CascadeParent.Repository : IRepository<CascadeParent>, INavigationLoader<CascadeParent>, INavigationLinker<CascadeParent>
+    public partial class CascadeParent.Repository : IRepository<CascadeParent>, INavigationLoader<CascadeParent>, INavigationLinker<CascadeParent>, IBulkRepository<CascadeParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeParent> Set { get; }
         internal DbContext Context { get; }
@@ -1430,7 +1430,7 @@ public partial class CascadeParent
         public async Task<int> EnsureLoadedAsync(CascadeParent entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(CascadeParent entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<CascadeParent> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<CascadeParent> filter, Action<UpdateSettersBuilder<CascadeParent>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<CascadeParent> filter, Action<IBulkSetters<CascadeParent>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<CascadeParent> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeParent> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeParent> entities, CancellationToken ct)
@@ -1474,7 +1474,7 @@ public partial class CascadeSourceEntity : ICreatable<CascadeSourceEntity>
 
 ## Inventory.CascadeSourceEntity.Repository.g.cs
 public partial class CascadeSourceEntity
-    public partial class CascadeSourceEntity.Repository : IRepository<CascadeSourceEntity>, INavigationLoader<CascadeSourceEntity>, INavigationLinker<CascadeSourceEntity>
+    public partial class CascadeSourceEntity.Repository : IRepository<CascadeSourceEntity>, INavigationLoader<CascadeSourceEntity>, INavigationLinker<CascadeSourceEntity>, IBulkRepository<CascadeSourceEntity>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeSourceEntity> Set { get; }
         internal DbContext Context { get; }
@@ -1495,7 +1495,7 @@ public partial class CascadeSourceEntity
         public async Task<int> EnsureLoadedAsync(CascadeSourceEntity entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(CascadeSourceEntity entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<CascadeSourceEntity> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<CascadeSourceEntity> filter, Action<UpdateSettersBuilder<CascadeSourceEntity>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<CascadeSourceEntity> filter, Action<IBulkSetters<CascadeSourceEntity>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<CascadeSourceEntity> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeSourceEntity> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeSourceEntity> entities, CancellationToken ct)
@@ -1537,7 +1537,7 @@ public partial class CascadeTargetEntity
 
 ## Inventory.CascadeTargetEntity.Repository.g.cs
 public partial class CascadeTargetEntity
-    public partial class CascadeTargetEntity.Repository : IRepository<CascadeTargetEntity>, INavigationLoader<CascadeTargetEntity>, INavigationLinker<CascadeTargetEntity>
+    public partial class CascadeTargetEntity.Repository : IRepository<CascadeTargetEntity>, INavigationLoader<CascadeTargetEntity>, INavigationLinker<CascadeTargetEntity>, IBulkRepository<CascadeTargetEntity>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeTargetEntity> Set { get; }
         internal DbContext Context { get; }
@@ -1558,7 +1558,7 @@ public partial class CascadeTargetEntity
         public async Task<int> EnsureLoadedAsync(CascadeTargetEntity entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(CascadeTargetEntity entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<CascadeTargetEntity> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<CascadeTargetEntity> filter, Action<UpdateSettersBuilder<CascadeTargetEntity>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<CascadeTargetEntity> filter, Action<IBulkSetters<CascadeTargetEntity>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<CascadeTargetEntity> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeTargetEntity> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<CascadeTargetEntity> entities, CancellationToken ct)
@@ -1597,7 +1597,7 @@ public partial class ConcurrencyAware : ICreatable<ConcurrencyAware>
 
 ## Inventory.ConcurrencyAware.Repository.g.cs
 public partial class ConcurrencyAware
-    public partial class ConcurrencyAware.Repository : IRepository<ConcurrencyAware>, INavigationLoader<ConcurrencyAware>, INavigationLinker<ConcurrencyAware>
+    public partial class ConcurrencyAware.Repository : IRepository<ConcurrencyAware>, INavigationLoader<ConcurrencyAware>, INavigationLinker<ConcurrencyAware>, IBulkRepository<ConcurrencyAware>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ConcurrencyAware> Set { get; }
         internal DbContext Context { get; }
@@ -1618,7 +1618,7 @@ public partial class ConcurrencyAware
         public async Task<int> EnsureLoadedAsync(ConcurrencyAware entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ConcurrencyAware entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ConcurrencyAware> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ConcurrencyAware> filter, Action<UpdateSettersBuilder<ConcurrencyAware>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ConcurrencyAware> filter, Action<IBulkSetters<ConcurrencyAware>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ConcurrencyAware> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ConcurrencyAware> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ConcurrencyAware> entities, CancellationToken ct)
@@ -1659,7 +1659,7 @@ public partial class ContradictoryPart
 
 ## Inventory.ContradictoryPart.Repository.g.cs
 public partial class ContradictoryPart
-    public partial class ContradictoryPart.Repository : IRepository<ContradictoryPart>, INavigationLoader<ContradictoryPart>, INavigationLinker<ContradictoryPart>
+    public partial class ContradictoryPart.Repository : IRepository<ContradictoryPart>, INavigationLoader<ContradictoryPart>, INavigationLinker<ContradictoryPart>, IBulkRepository<ContradictoryPart>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ContradictoryPart> Set { get; }
         internal DbContext Context { get; }
@@ -1680,7 +1680,7 @@ public partial class ContradictoryPart
         public async Task<int> EnsureLoadedAsync(ContradictoryPart entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ContradictoryPart entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ContradictoryPart> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ContradictoryPart> filter, Action<UpdateSettersBuilder<ContradictoryPart>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ContradictoryPart> filter, Action<IBulkSetters<ContradictoryPart>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ContradictoryPart> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ContradictoryPart> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ContradictoryPart> entities, CancellationToken ct)
@@ -1754,7 +1754,7 @@ public partial class DependentSide
 
 ## Inventory.DependentSide.Repository.g.cs
 public partial class DependentSide
-    public partial class DependentSide.Repository : IRepository<DependentSide>, INavigationLoader<DependentSide>, INavigationLinker<DependentSide>
+    public partial class DependentSide.Repository : IRepository<DependentSide>, INavigationLoader<DependentSide>, INavigationLinker<DependentSide>, IBulkRepository<DependentSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<DependentSide> Set { get; }
         internal DbContext Context { get; }
@@ -1775,7 +1775,7 @@ public partial class DependentSide
         public async Task<int> EnsureLoadedAsync(DependentSide entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(DependentSide entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<DependentSide> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<DependentSide> filter, Action<UpdateSettersBuilder<DependentSide>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<DependentSide> filter, Action<IBulkSetters<DependentSide>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<DependentSide> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<DependentSide> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<DependentSide> entities, CancellationToken ct)
@@ -1820,7 +1820,7 @@ public partial class EveryTrait : ICreatable<EveryTrait>
 
 ## Inventory.EveryTrait.Repository.g.cs
 public partial class EveryTrait
-    public partial class EveryTrait.Repository : IRepository<EveryTrait>, INavigationLoader<EveryTrait>, INavigationLinker<EveryTrait>
+    public partial class EveryTrait.Repository : IRepository<EveryTrait>, INavigationLoader<EveryTrait>, INavigationLinker<EveryTrait>, IBulkRepository<EveryTrait>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<EveryTrait> Set { get; }
         internal DbContext Context { get; }
@@ -1841,7 +1841,7 @@ public partial class EveryTrait
         public async Task<int> EnsureLoadedAsync(EveryTrait entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(EveryTrait entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<EveryTrait> Query(QueryStrategy strategy)
-        public async Task<int> BulkUpdateAsync(ISpecification<EveryTrait> filter, Action<UpdateSettersBuilder<EveryTrait>> updateAction, CancellationToken ct = default)
+        public async Task<int> BulkUpdateAsync(ISpecification<EveryTrait> filter, Action<IBulkSetters<EveryTrait>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<EveryTrait> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<EveryTrait> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<EveryTrait> entities, CancellationToken ct)
@@ -1890,7 +1890,7 @@ public partial class Faraway : ICreatable<Faraway>
 
 ## Inventory.Faraway.Repository.g.cs
 public partial class Faraway
-    public partial class Faraway.Repository : IRepository<Faraway>, INavigationLoader<Faraway>, INavigationLinker<Faraway>
+    public partial class Faraway.Repository : IRepository<Faraway>, INavigationLoader<Faraway>, INavigationLinker<Faraway>, IBulkRepository<Faraway>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Faraway> Set { get; }
         internal DbContext Context { get; }
@@ -1911,7 +1911,7 @@ public partial class Faraway
         public async Task<int> EnsureLoadedAsync(Faraway entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Faraway entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Faraway> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Faraway> filter, Action<UpdateSettersBuilder<Faraway>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Faraway> filter, Action<IBulkSetters<Faraway>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Faraway> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Faraway> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Faraway> entities, CancellationToken ct)
@@ -1970,7 +1970,7 @@ public static class InheritanceBaseInheritanceConfiguration
 
 ## Inventory.InheritanceBase.Repository.g.cs
 public partial class InheritanceBase
-    public partial class InheritanceBase.Repository : IRepository<InheritanceBase>, INavigationLoader<InheritanceBase>, INavigationLinker<InheritanceBase>
+    public partial class InheritanceBase.Repository : IRepository<InheritanceBase>, INavigationLoader<InheritanceBase>, INavigationLinker<InheritanceBase>, IBulkRepository<InheritanceBase>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<InheritanceBase> Set { get; }
         internal DbContext Context { get; }
@@ -1991,7 +1991,7 @@ public partial class InheritanceBase
         public async Task<int> EnsureLoadedAsync(InheritanceBase entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(InheritanceBase entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<InheritanceBase> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<InheritanceBase> filter, Action<UpdateSettersBuilder<InheritanceBase>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<InheritanceBase> filter, Action<IBulkSetters<InheritanceBase>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<InheritanceBase> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<InheritanceBase> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<InheritanceBase> entities, CancellationToken ct)
@@ -2025,7 +2025,7 @@ public partial class InheritanceDerived : ICreatable<InheritanceDerived>
 
 ## Inventory.InheritanceDerived.Repository.g.cs
 public partial class InheritanceDerived
-    public new partial class InheritanceDerived.Repository : IRepository<InheritanceDerived>, INavigationLoader<InheritanceDerived>, INavigationLinker<InheritanceDerived>
+    public new partial class InheritanceDerived.Repository : IRepository<InheritanceDerived>, INavigationLoader<InheritanceDerived>, INavigationLinker<InheritanceDerived>, IBulkRepository<InheritanceDerived>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<InheritanceDerived> Set { get; }
         internal DbContext Context { get; }
@@ -2046,7 +2046,7 @@ public partial class InheritanceDerived
         public async Task<int> EnsureLoadedAsync(InheritanceDerived entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(InheritanceDerived entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<InheritanceDerived> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<InheritanceDerived> filter, Action<UpdateSettersBuilder<InheritanceDerived>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<InheritanceDerived> filter, Action<IBulkSetters<InheritanceDerived>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<InheritanceDerived> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<InheritanceDerived> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<InheritanceDerived> entities, CancellationToken ct)
@@ -2127,7 +2127,7 @@ public sealed class LookupTableLookupCacheLoader : ILookupCacheLoader
 
 ## Inventory.LookupTable.Repository.g.cs
 public partial class LookupTable
-    public partial class LookupTable.Repository : IRepository<LookupTable>, INavigationLoader<LookupTable>, INavigationLinker<LookupTable>
+    public partial class LookupTable.Repository : IRepository<LookupTable>, INavigationLoader<LookupTable>, INavigationLinker<LookupTable>, IBulkRepository<LookupTable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<LookupTable> Set { get; }
         internal DbContext Context { get; }
@@ -2148,7 +2148,7 @@ public partial class LookupTable
         public async Task<int> EnsureLoadedAsync(LookupTable entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(LookupTable entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<LookupTable> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<LookupTable> filter, Action<UpdateSettersBuilder<LookupTable>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<LookupTable> filter, Action<IBulkSetters<LookupTable>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<LookupTable> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<LookupTable> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<LookupTable> entities, CancellationToken ct)
@@ -2182,7 +2182,7 @@ public partial class ManualAuditableProps : ICreatable<ManualAuditableProps>
 
 ## Inventory.ManualAuditableProps.Repository.g.cs
 public partial class ManualAuditableProps
-    public partial class ManualAuditableProps.Repository : IRepository<ManualAuditableProps>, INavigationLoader<ManualAuditableProps>, INavigationLinker<ManualAuditableProps>
+    public partial class ManualAuditableProps.Repository : IRepository<ManualAuditableProps>, INavigationLoader<ManualAuditableProps>, INavigationLinker<ManualAuditableProps>, IBulkRepository<ManualAuditableProps>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualAuditableProps> Set { get; }
         internal DbContext Context { get; }
@@ -2203,7 +2203,7 @@ public partial class ManualAuditableProps
         public async Task<int> EnsureLoadedAsync(ManualAuditableProps entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ManualAuditableProps entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ManualAuditableProps> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ManualAuditableProps> filter, Action<UpdateSettersBuilder<ManualAuditableProps>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ManualAuditableProps> filter, Action<IBulkSetters<ManualAuditableProps>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ManualAuditableProps> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualAuditableProps> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualAuditableProps> entities, CancellationToken ct)
@@ -2244,7 +2244,7 @@ public partial class ManualNavChild
 
 ## Inventory.ManualNavChild.Repository.g.cs
 public partial class ManualNavChild
-    public partial class ManualNavChild.Repository : IRepository<ManualNavChild>, INavigationLoader<ManualNavChild>, INavigationLinker<ManualNavChild>
+    public partial class ManualNavChild.Repository : IRepository<ManualNavChild>, INavigationLoader<ManualNavChild>, INavigationLinker<ManualNavChild>, IBulkRepository<ManualNavChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualNavChild> Set { get; }
         internal DbContext Context { get; }
@@ -2265,7 +2265,7 @@ public partial class ManualNavChild
         public async Task<int> EnsureLoadedAsync(ManualNavChild entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ManualNavChild entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ManualNavChild> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ManualNavChild> filter, Action<UpdateSettersBuilder<ManualNavChild>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ManualNavChild> filter, Action<IBulkSetters<ManualNavChild>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ManualNavChild> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualNavChild> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualNavChild> entities, CancellationToken ct)
@@ -2317,7 +2317,7 @@ public partial class ManualNavParent
 
 ## Inventory.ManualNavParent.Repository.g.cs
 public partial class ManualNavParent
-    public partial class ManualNavParent.Repository : IRepository<ManualNavParent>, INavigationLoader<ManualNavParent>, INavigationLinker<ManualNavParent>
+    public partial class ManualNavParent.Repository : IRepository<ManualNavParent>, INavigationLoader<ManualNavParent>, INavigationLinker<ManualNavParent>, IBulkRepository<ManualNavParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualNavParent> Set { get; }
         internal DbContext Context { get; }
@@ -2338,7 +2338,7 @@ public partial class ManualNavParent
         public async Task<int> EnsureLoadedAsync(ManualNavParent entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ManualNavParent entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ManualNavParent> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ManualNavParent> filter, Action<UpdateSettersBuilder<ManualNavParent>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ManualNavParent> filter, Action<IBulkSetters<ManualNavParent>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ManualNavParent> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualNavParent> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualNavParent> entities, CancellationToken ct)
@@ -2397,7 +2397,7 @@ public partial class ManualOwnerId
 
 ## Inventory.ManualOwnerId.Repository.g.cs
 public partial class ManualOwnerId
-    public partial class ManualOwnerId.Repository : IRepository<ManualOwnerId>, INavigationLoader<ManualOwnerId>, INavigationLinker<ManualOwnerId>
+    public partial class ManualOwnerId.Repository : IRepository<ManualOwnerId>, INavigationLoader<ManualOwnerId>, INavigationLinker<ManualOwnerId>, IBulkRepository<ManualOwnerId>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualOwnerId> Set { get; }
         internal DbContext Context { get; }
@@ -2418,7 +2418,7 @@ public partial class ManualOwnerId
         public async Task<int> EnsureLoadedAsync(ManualOwnerId entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ManualOwnerId entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ManualOwnerId> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ManualOwnerId> filter, Action<UpdateSettersBuilder<ManualOwnerId>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ManualOwnerId> filter, Action<IBulkSetters<ManualOwnerId>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ManualOwnerId> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualOwnerId> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualOwnerId> entities, CancellationToken ct)
@@ -2453,7 +2453,7 @@ public partial class ManualPersistenceId : ICreatable<ManualPersistenceId>
 
 ## Inventory.ManualPersistenceId.Repository.g.cs
 public partial class ManualPersistenceId
-    public partial class ManualPersistenceId.Repository : IRepository<ManualPersistenceId>, INavigationLoader<ManualPersistenceId>, INavigationLinker<ManualPersistenceId>
+    public partial class ManualPersistenceId.Repository : IRepository<ManualPersistenceId>, INavigationLoader<ManualPersistenceId>, INavigationLinker<ManualPersistenceId>, IBulkRepository<ManualPersistenceId>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualPersistenceId> Set { get; }
         internal DbContext Context { get; }
@@ -2474,7 +2474,7 @@ public partial class ManualPersistenceId
         public async Task<int> EnsureLoadedAsync(ManualPersistenceId entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ManualPersistenceId entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ManualPersistenceId> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ManualPersistenceId> filter, Action<UpdateSettersBuilder<ManualPersistenceId>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ManualPersistenceId> filter, Action<IBulkSetters<ManualPersistenceId>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ManualPersistenceId> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualPersistenceId> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ManualPersistenceId> entities, CancellationToken ct)
@@ -2508,7 +2508,7 @@ public partial class NamedStateProperty : ICreatable<NamedStateProperty>
 
 ## Inventory.NamedStateProperty.Repository.g.cs
 public partial class NamedStateProperty
-    public partial class NamedStateProperty.Repository : IRepository<NamedStateProperty>, INavigationLoader<NamedStateProperty>, INavigationLinker<NamedStateProperty>
+    public partial class NamedStateProperty.Repository : IRepository<NamedStateProperty>, INavigationLoader<NamedStateProperty>, INavigationLinker<NamedStateProperty>, IBulkRepository<NamedStateProperty>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<NamedStateProperty> Set { get; }
         internal DbContext Context { get; }
@@ -2529,7 +2529,7 @@ public partial class NamedStateProperty
         public async Task<int> EnsureLoadedAsync(NamedStateProperty entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(NamedStateProperty entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<NamedStateProperty> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<NamedStateProperty> filter, Action<UpdateSettersBuilder<NamedStateProperty>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<NamedStateProperty> filter, Action<IBulkSetters<NamedStateProperty>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<NamedStateProperty> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<NamedStateProperty> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<NamedStateProperty> entities, CancellationToken ct)
@@ -2575,7 +2575,7 @@ public partial class OptionalReference
 
 ## Inventory.OptionalReference.Repository.g.cs
 public partial class OptionalReference
-    public partial class OptionalReference.Repository : IRepository<OptionalReference>, INavigationLoader<OptionalReference>, INavigationLinker<OptionalReference>
+    public partial class OptionalReference.Repository : IRepository<OptionalReference>, INavigationLoader<OptionalReference>, INavigationLinker<OptionalReference>, IBulkRepository<OptionalReference>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<OptionalReference> Set { get; }
         internal DbContext Context { get; }
@@ -2596,7 +2596,7 @@ public partial class OptionalReference
         public async Task<int> EnsureLoadedAsync(OptionalReference entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(OptionalReference entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<OptionalReference> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<OptionalReference> filter, Action<UpdateSettersBuilder<OptionalReference>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<OptionalReference> filter, Action<IBulkSetters<OptionalReference>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<OptionalReference> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<OptionalReference> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<OptionalReference> entities, CancellationToken ct)
@@ -2643,7 +2643,7 @@ public partial class Owned
 
 ## Inventory.Owned.Repository.g.cs
 public partial class Owned
-    public partial class Owned.Repository : IRepository<Owned>, INavigationLoader<Owned>, INavigationLinker<Owned>
+    public partial class Owned.Repository : IRepository<Owned>, INavigationLoader<Owned>, INavigationLinker<Owned>, IBulkRepository<Owned>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Owned> Set { get; }
         internal DbContext Context { get; }
@@ -2664,7 +2664,7 @@ public partial class Owned
         public async Task<int> EnsureLoadedAsync(Owned entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Owned entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Owned> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Owned> filter, Action<UpdateSettersBuilder<Owned>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Owned> filter, Action<IBulkSetters<Owned>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Owned> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Owned> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Owned> entities, CancellationToken ct)
@@ -2711,7 +2711,7 @@ public partial class OwnedAndScoped : IOwnershipAssignable
 
 ## Inventory.OwnedAndScoped.Repository.g.cs
 public partial class OwnedAndScoped
-    public partial class OwnedAndScoped.Repository : IRepository<OwnedAndScoped>, INavigationLoader<OwnedAndScoped>, INavigationLinker<OwnedAndScoped>
+    public partial class OwnedAndScoped.Repository : IRepository<OwnedAndScoped>, INavigationLoader<OwnedAndScoped>, INavigationLinker<OwnedAndScoped>, IBulkRepository<OwnedAndScoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<OwnedAndScoped> Set { get; }
         internal DbContext Context { get; }
@@ -2732,7 +2732,7 @@ public partial class OwnedAndScoped
         public async Task<int> EnsureLoadedAsync(OwnedAndScoped entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(OwnedAndScoped entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<OwnedAndScoped> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<OwnedAndScoped> filter, Action<UpdateSettersBuilder<OwnedAndScoped>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<OwnedAndScoped> filter, Action<IBulkSetters<OwnedAndScoped>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<OwnedAndScoped> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<OwnedAndScoped> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<OwnedAndScoped> entities, CancellationToken ct)
@@ -2777,7 +2777,7 @@ public partial class Person
 
 ## Inventory.Person.Repository.g.cs
 public partial class Person
-    public partial class Person.Repository : IRepository<Person>, INavigationLoader<Person>, INavigationLinker<Person>
+    public partial class Person.Repository : IRepository<Person>, INavigationLoader<Person>, INavigationLinker<Person>, IBulkRepository<Person>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Person> Set { get; }
         internal DbContext Context { get; }
@@ -2798,7 +2798,7 @@ public partial class Person
         public async Task<int> EnsureLoadedAsync(Person entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Person entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Person> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Person> filter, Action<UpdateSettersBuilder<Person>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Person> filter, Action<IBulkSetters<Person>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Person> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Person> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Person> entities, CancellationToken ct)
@@ -2843,7 +2843,7 @@ public static class PlainDtoQueryExtensions
 
 ## Inventory.Plain.Repository.g.cs
 public partial class Plain
-    public partial class Plain.Repository : IRepository<Plain>, INavigationLoader<Plain>, INavigationLinker<Plain>
+    public partial class Plain.Repository : IRepository<Plain>, INavigationLoader<Plain>, INavigationLinker<Plain>, IBulkRepository<Plain>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Plain> Set { get; }
         internal DbContext Context { get; }
@@ -2864,7 +2864,7 @@ public partial class Plain
         public async Task<int> EnsureLoadedAsync(Plain entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Plain entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Plain> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Plain> filter, Action<UpdateSettersBuilder<Plain>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Plain> filter, Action<IBulkSetters<Plain>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Plain> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Plain> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Plain> entities, CancellationToken ct)
@@ -2967,7 +2967,7 @@ public partial class PrincipalSide
 
 ## Inventory.PrincipalSide.Repository.g.cs
 public partial class PrincipalSide
-    public partial class PrincipalSide.Repository : IRepository<PrincipalSide>, INavigationLoader<PrincipalSide>, INavigationLinker<PrincipalSide>
+    public partial class PrincipalSide.Repository : IRepository<PrincipalSide>, INavigationLoader<PrincipalSide>, INavigationLinker<PrincipalSide>, IBulkRepository<PrincipalSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<PrincipalSide> Set { get; }
         internal DbContext Context { get; }
@@ -2988,7 +2988,7 @@ public partial class PrincipalSide
         public async Task<int> EnsureLoadedAsync(PrincipalSide entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(PrincipalSide entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<PrincipalSide> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<PrincipalSide> filter, Action<UpdateSettersBuilder<PrincipalSide>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<PrincipalSide> filter, Action<IBulkSetters<PrincipalSide>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<PrincipalSide> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<PrincipalSide> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<PrincipalSide> entities, CancellationToken ct)
@@ -3065,7 +3065,7 @@ public partial class ReachesAcrossBoundary
 
 ## Inventory.ReachesAcrossBoundary.Repository.g.cs
 public partial class ReachesAcrossBoundary
-    public partial class ReachesAcrossBoundary.Repository : IRepository<ReachesAcrossBoundary>, INavigationLoader<ReachesAcrossBoundary>, INavigationLinker<ReachesAcrossBoundary>
+    public partial class ReachesAcrossBoundary.Repository : IRepository<ReachesAcrossBoundary>, INavigationLoader<ReachesAcrossBoundary>, INavigationLinker<ReachesAcrossBoundary>, IBulkRepository<ReachesAcrossBoundary>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ReachesAcrossBoundary> Set { get; }
         internal DbContext Context { get; }
@@ -3086,7 +3086,7 @@ public partial class ReachesAcrossBoundary
         public async Task<int> EnsureLoadedAsync(ReachesAcrossBoundary entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(ReachesAcrossBoundary entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<ReachesAcrossBoundary> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<ReachesAcrossBoundary> filter, Action<UpdateSettersBuilder<ReachesAcrossBoundary>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<ReachesAcrossBoundary> filter, Action<IBulkSetters<ReachesAcrossBoundary>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<ReachesAcrossBoundary> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ReachesAcrossBoundary> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<ReachesAcrossBoundary> entities, CancellationToken ct)
@@ -3168,7 +3168,7 @@ public partial class RelationChild
 
 ## Inventory.RelationChild.Repository.g.cs
 public partial class RelationChild
-    public partial class RelationChild.Repository : IRepository<RelationChild>, INavigationLoader<RelationChild>, INavigationLinker<RelationChild>
+    public partial class RelationChild.Repository : IRepository<RelationChild>, INavigationLoader<RelationChild>, INavigationLinker<RelationChild>, IBulkRepository<RelationChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationChild> Set { get; }
         internal DbContext Context { get; }
@@ -3189,7 +3189,7 @@ public partial class RelationChild
         public async Task<int> EnsureLoadedAsync(RelationChild entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RelationChild entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RelationChild> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RelationChild> filter, Action<UpdateSettersBuilder<RelationChild>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RelationChild> filter, Action<IBulkSetters<RelationChild>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RelationChild> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationChild> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationChild> entities, CancellationToken ct)
@@ -3266,7 +3266,7 @@ public partial class RelationParent
 
 ## Inventory.RelationParent.Repository.g.cs
 public partial class RelationParent
-    public partial class RelationParent.Repository : IRepository<RelationParent>, INavigationLoader<RelationParent>, INavigationLinker<RelationParent>
+    public partial class RelationParent.Repository : IRepository<RelationParent>, INavigationLoader<RelationParent>, INavigationLinker<RelationParent>, IBulkRepository<RelationParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationParent> Set { get; }
         internal DbContext Context { get; }
@@ -3287,7 +3287,7 @@ public partial class RelationParent
         public async Task<int> EnsureLoadedAsync(RelationParent entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RelationParent entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RelationParent> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RelationParent> filter, Action<UpdateSettersBuilder<RelationParent>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RelationParent> filter, Action<IBulkSetters<RelationParent>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RelationParent> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationParent> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationParent> entities, CancellationToken ct)
@@ -3326,7 +3326,7 @@ public partial class RelationSide
 
 ## Inventory.RelationSide.Repository.g.cs
 public partial class RelationSide
-    public partial class RelationSide.Repository : IRepository<RelationSide>, INavigationLoader<RelationSide>, INavigationLinker<RelationSide>
+    public partial class RelationSide.Repository : IRepository<RelationSide>, INavigationLoader<RelationSide>, INavigationLinker<RelationSide>, IBulkRepository<RelationSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationSide> Set { get; }
         internal DbContext Context { get; }
@@ -3347,7 +3347,7 @@ public partial class RelationSide
         public async Task<int> EnsureLoadedAsync(RelationSide entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RelationSide entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RelationSide> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RelationSide> filter, Action<UpdateSettersBuilder<RelationSide>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RelationSide> filter, Action<IBulkSetters<RelationSide>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RelationSide> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationSide> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RelationSide> entities, CancellationToken ct)
@@ -3465,7 +3465,7 @@ public partial class RequiredIntoSoftDeleted
 
 ## Inventory.RequiredIntoSoftDeleted.Repository.g.cs
 public partial class RequiredIntoSoftDeleted
-    public partial class RequiredIntoSoftDeleted.Repository : IRepository<RequiredIntoSoftDeleted>, INavigationLoader<RequiredIntoSoftDeleted>, INavigationLinker<RequiredIntoSoftDeleted>
+    public partial class RequiredIntoSoftDeleted.Repository : IRepository<RequiredIntoSoftDeleted>, INavigationLoader<RequiredIntoSoftDeleted>, INavigationLinker<RequiredIntoSoftDeleted>, IBulkRepository<RequiredIntoSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RequiredIntoSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -3486,7 +3486,7 @@ public partial class RequiredIntoSoftDeleted
         public async Task<int> EnsureLoadedAsync(RequiredIntoSoftDeleted entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RequiredIntoSoftDeleted entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RequiredIntoSoftDeleted> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RequiredIntoSoftDeleted> filter, Action<UpdateSettersBuilder<RequiredIntoSoftDeleted>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RequiredIntoSoftDeleted> filter, Action<IBulkSetters<RequiredIntoSoftDeleted>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RequiredIntoSoftDeleted> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RequiredIntoSoftDeleted> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RequiredIntoSoftDeleted> entities, CancellationToken ct)
@@ -3784,7 +3784,7 @@ public partial class RollUpChild
 
 ## Inventory.RollUpChild.Repository.g.cs
 public partial class RollUpChild
-    public partial class RollUpChild.Repository : IRepository<RollUpChild>, INavigationLoader<RollUpChild>, INavigationLinker<RollUpChild>
+    public partial class RollUpChild.Repository : IRepository<RollUpChild>, INavigationLoader<RollUpChild>, INavigationLinker<RollUpChild>, IBulkRepository<RollUpChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RollUpChild> Set { get; }
         internal DbContext Context { get; }
@@ -3805,7 +3805,7 @@ public partial class RollUpChild
         public async Task<int> EnsureLoadedAsync(RollUpChild entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RollUpChild entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RollUpChild> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RollUpChild> filter, Action<UpdateSettersBuilder<RollUpChild>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RollUpChild> filter, Action<IBulkSetters<RollUpChild>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RollUpChild> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RollUpChild> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RollUpChild> entities, CancellationToken ct)
@@ -3844,7 +3844,7 @@ public partial class RollUpParent
 
 ## Inventory.RollUpParent.Repository.g.cs
 public partial class RollUpParent
-    public partial class RollUpParent.Repository : IRepository<RollUpParent>, INavigationLoader<RollUpParent>, INavigationLinker<RollUpParent>
+    public partial class RollUpParent.Repository : IRepository<RollUpParent>, INavigationLoader<RollUpParent>, INavigationLinker<RollUpParent>, IBulkRepository<RollUpParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RollUpParent> Set { get; }
         internal DbContext Context { get; }
@@ -3865,7 +3865,7 @@ public partial class RollUpParent
         public async Task<int> EnsureLoadedAsync(RollUpParent entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(RollUpParent entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<RollUpParent> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<RollUpParent> filter, Action<UpdateSettersBuilder<RollUpParent>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<RollUpParent> filter, Action<IBulkSetters<RollUpParent>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<RollUpParent> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RollUpParent> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<RollUpParent> entities, CancellationToken ct)
@@ -3903,7 +3903,7 @@ public partial class Scoped : ICreatable<Scoped>
 
 ## Inventory.Scoped.Repository.g.cs
 public partial class Scoped
-    public partial class Scoped.Repository : IRepository<Scoped>, INavigationLoader<Scoped>, INavigationLinker<Scoped>
+    public partial class Scoped.Repository : IRepository<Scoped>, INavigationLoader<Scoped>, INavigationLinker<Scoped>, IBulkRepository<Scoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Scoped> Set { get; }
         internal DbContext Context { get; }
@@ -3924,7 +3924,7 @@ public partial class Scoped
         public async Task<int> EnsureLoadedAsync(Scoped entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Scoped entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Scoped> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Scoped> filter, Action<UpdateSettersBuilder<Scoped>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Scoped> filter, Action<IBulkSetters<Scoped>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Scoped> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Scoped> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Scoped> entities, CancellationToken ct)
@@ -4003,7 +4003,7 @@ public partial class SelfReferencing
 
 ## Inventory.SelfReferencing.Repository.g.cs
 public partial class SelfReferencing
-    public partial class SelfReferencing.Repository : IRepository<SelfReferencing>, INavigationLoader<SelfReferencing>, INavigationLinker<SelfReferencing>
+    public partial class SelfReferencing.Repository : IRepository<SelfReferencing>, INavigationLoader<SelfReferencing>, INavigationLinker<SelfReferencing>, IBulkRepository<SelfReferencing>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SelfReferencing> Set { get; }
         internal DbContext Context { get; }
@@ -4024,7 +4024,7 @@ public partial class SelfReferencing
         public async Task<int> EnsureLoadedAsync(SelfReferencing entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(SelfReferencing entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<SelfReferencing> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<SelfReferencing> filter, Action<UpdateSettersBuilder<SelfReferencing>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<SelfReferencing> filter, Action<IBulkSetters<SelfReferencing>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<SelfReferencing> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SelfReferencing> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SelfReferencing> entities, CancellationToken ct)
@@ -4058,7 +4058,7 @@ public partial class SoftDeleted : ICreatable<SoftDeleted>
 
 ## Inventory.SoftDeleted.Repository.g.cs
 public partial class SoftDeleted
-    public partial class SoftDeleted.Repository : IRepository<SoftDeleted>, INavigationLoader<SoftDeleted>, INavigationLinker<SoftDeleted>
+    public partial class SoftDeleted.Repository : IRepository<SoftDeleted>, INavigationLoader<SoftDeleted>, INavigationLinker<SoftDeleted>, IBulkRepository<SoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -4079,7 +4079,7 @@ public partial class SoftDeleted
         public async Task<int> EnsureLoadedAsync(SoftDeleted entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(SoftDeleted entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<SoftDeleted> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<SoftDeleted> filter, Action<UpdateSettersBuilder<SoftDeleted>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<SoftDeleted> filter, Action<IBulkSetters<SoftDeleted>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<SoftDeleted> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeleted> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeleted> entities, CancellationToken ct)
@@ -4136,7 +4136,7 @@ public partial class SoftDeletedAndOwned
 
 ## Inventory.SoftDeletedAndOwned.Repository.g.cs
 public partial class SoftDeletedAndOwned
-    public partial class SoftDeletedAndOwned.Repository : IRepository<SoftDeletedAndOwned>, INavigationLoader<SoftDeletedAndOwned>, INavigationLinker<SoftDeletedAndOwned>
+    public partial class SoftDeletedAndOwned.Repository : IRepository<SoftDeletedAndOwned>, INavigationLoader<SoftDeletedAndOwned>, INavigationLinker<SoftDeletedAndOwned>, IBulkRepository<SoftDeletedAndOwned>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeletedAndOwned> Set { get; }
         internal DbContext Context { get; }
@@ -4157,7 +4157,7 @@ public partial class SoftDeletedAndOwned
         public async Task<int> EnsureLoadedAsync(SoftDeletedAndOwned entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(SoftDeletedAndOwned entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<SoftDeletedAndOwned> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<SoftDeletedAndOwned> filter, Action<UpdateSettersBuilder<SoftDeletedAndOwned>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<SoftDeletedAndOwned> filter, Action<IBulkSetters<SoftDeletedAndOwned>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<SoftDeletedAndOwned> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeletedAndOwned> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeletedAndOwned> entities, CancellationToken ct)
@@ -4201,7 +4201,7 @@ public partial class SoftDeletedWithLogicKey : ICreatable<SoftDeletedWithLogicKe
 
 ## Inventory.SoftDeletedWithLogicKey.Repository.g.cs
 public partial class SoftDeletedWithLogicKey
-    public partial class SoftDeletedWithLogicKey.Repository : IRepository<SoftDeletedWithLogicKey>, INavigationLoader<SoftDeletedWithLogicKey>, INavigationLinker<SoftDeletedWithLogicKey>
+    public partial class SoftDeletedWithLogicKey.Repository : IRepository<SoftDeletedWithLogicKey>, INavigationLoader<SoftDeletedWithLogicKey>, INavigationLinker<SoftDeletedWithLogicKey>, IBulkRepository<SoftDeletedWithLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeletedWithLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -4223,7 +4223,7 @@ public partial class SoftDeletedWithLogicKey
         public async Task<int> LinkAsync<TRelated>(SoftDeletedWithLogicKey entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<SoftDeletedWithLogicKey> Query(QueryStrategy strategy)
         public Task<SoftDeletedWithLogicKey?> GetByCodeAsync(string code, CancellationToken ct = default)
-        public Task<int> BulkUpdateAsync(ISpecification<SoftDeletedWithLogicKey> filter, Action<UpdateSettersBuilder<SoftDeletedWithLogicKey>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<SoftDeletedWithLogicKey> filter, Action<IBulkSetters<SoftDeletedWithLogicKey>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<SoftDeletedWithLogicKey> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeletedWithLogicKey> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<SoftDeletedWithLogicKey> entities, CancellationToken ct)
@@ -4274,7 +4274,7 @@ public partial class Tag
 
 ## Inventory.Tag.Repository.g.cs
 public partial class Tag
-    public partial class Tag.Repository : IRepository<Tag>, INavigationLoader<Tag>, INavigationLinker<Tag>
+    public partial class Tag.Repository : IRepository<Tag>, INavigationLoader<Tag>, INavigationLinker<Tag>, IBulkRepository<Tag>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Tag> Set { get; }
         internal DbContext Context { get; }
@@ -4295,7 +4295,7 @@ public partial class Tag
         public async Task<int> EnsureLoadedAsync(Tag entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Tag entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Tag> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Tag> filter, Action<UpdateSettersBuilder<Tag>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Tag> filter, Action<IBulkSetters<Tag>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Tag> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Tag> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Tag> entities, CancellationToken ct)
@@ -4333,7 +4333,7 @@ public partial class TaggedThing
 
 ## Inventory.TaggedThing.Repository.g.cs
 public partial class TaggedThing
-    public partial class TaggedThing.Repository : IRepository<TaggedThing>, INavigationLoader<TaggedThing>, INavigationLinker<TaggedThing>
+    public partial class TaggedThing.Repository : IRepository<TaggedThing>, INavigationLoader<TaggedThing>, INavigationLinker<TaggedThing>, IBulkRepository<TaggedThing>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TaggedThing> Set { get; }
         internal DbContext Context { get; }
@@ -4354,7 +4354,7 @@ public partial class TaggedThing
         public async Task<int> EnsureLoadedAsync(TaggedThing entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TaggedThing entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TaggedThing> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TaggedThing> filter, Action<UpdateSettersBuilder<TaggedThing>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TaggedThing> filter, Action<IBulkSetters<TaggedThing>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TaggedThing> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TaggedThing> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TaggedThing> entities, CancellationToken ct)
@@ -4398,7 +4398,7 @@ public partial class TaggedThingTag
 
 ## Inventory.TaggedThingTag.Repository.g.cs
 public partial class TaggedThingTag
-    public partial class TaggedThingTag.Repository : IRepository<TaggedThingTag>, INavigationLoader<TaggedThingTag>, INavigationLinker<TaggedThingTag>
+    public partial class TaggedThingTag.Repository : IRepository<TaggedThingTag>, INavigationLoader<TaggedThingTag>, INavigationLinker<TaggedThingTag>, IBulkRepository<TaggedThingTag>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TaggedThingTag> Set { get; }
         internal DbContext Context { get; }
@@ -4419,7 +4419,7 @@ public partial class TaggedThingTag
         public async Task<int> EnsureLoadedAsync(TaggedThingTag entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TaggedThingTag entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TaggedThingTag> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TaggedThingTag> filter, Action<UpdateSettersBuilder<TaggedThingTag>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TaggedThingTag> filter, Action<IBulkSetters<TaggedThingTag>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TaggedThingTag> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TaggedThingTag> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TaggedThingTag> entities, CancellationToken ct)
@@ -4460,7 +4460,7 @@ public partial class TemporalRow
 
 ## Inventory.TemporalRow.Repository.g.cs
 public partial class TemporalRow
-    public partial class TemporalRow.Repository : IRepository<TemporalRow>, INavigationLoader<TemporalRow>, INavigationLinker<TemporalRow>
+    public partial class TemporalRow.Repository : IRepository<TemporalRow>, INavigationLoader<TemporalRow>, INavigationLinker<TemporalRow>, IBulkRepository<TemporalRow>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TemporalRow> Set { get; }
         internal DbContext Context { get; }
@@ -4481,7 +4481,7 @@ public partial class TemporalRow
         public async Task<int> EnsureLoadedAsync(TemporalRow entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TemporalRow entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TemporalRow> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TemporalRow> filter, Action<UpdateSettersBuilder<TemporalRow>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TemporalRow> filter, Action<IBulkSetters<TemporalRow>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TemporalRow> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TemporalRow> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TemporalRow> entities, CancellationToken ct)
@@ -4550,7 +4550,7 @@ public partial class TenantScoped : ICreatable<TenantScoped>
 
 ## Inventory.TenantScoped.Repository.g.cs
 public partial class TenantScoped
-    public partial class TenantScoped.Repository : IRepository<TenantScoped>, INavigationLoader<TenantScoped>, INavigationLinker<TenantScoped>
+    public partial class TenantScoped.Repository : IRepository<TenantScoped>, INavigationLoader<TenantScoped>, INavigationLinker<TenantScoped>, IBulkRepository<TenantScoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TenantScoped> Set { get; }
         internal DbContext Context { get; }
@@ -4571,7 +4571,7 @@ public partial class TenantScoped
         public async Task<int> EnsureLoadedAsync(TenantScoped entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TenantScoped entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TenantScoped> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TenantScoped> filter, Action<UpdateSettersBuilder<TenantScoped>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TenantScoped> filter, Action<IBulkSetters<TenantScoped>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TenantScoped> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TenantScoped> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TenantScoped> entities, CancellationToken ct)
@@ -4613,7 +4613,7 @@ public static class TraitedBaseInheritanceConfiguration
 
 ## Inventory.TraitedBase.Repository.g.cs
 public partial class TraitedBase
-    public partial class TraitedBase.Repository : IRepository<TraitedBase>, INavigationLoader<TraitedBase>, INavigationLinker<TraitedBase>
+    public partial class TraitedBase.Repository : IRepository<TraitedBase>, INavigationLoader<TraitedBase>, INavigationLinker<TraitedBase>, IBulkRepository<TraitedBase>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TraitedBase> Set { get; }
         internal DbContext Context { get; }
@@ -4634,7 +4634,7 @@ public partial class TraitedBase
         public async Task<int> EnsureLoadedAsync(TraitedBase entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TraitedBase entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TraitedBase> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TraitedBase> filter, Action<UpdateSettersBuilder<TraitedBase>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TraitedBase> filter, Action<IBulkSetters<TraitedBase>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TraitedBase> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TraitedBase> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TraitedBase> entities, CancellationToken ct)
@@ -4682,7 +4682,7 @@ public partial class TraitedDerived : ICreatable<TraitedDerived>
 
 ## Inventory.TraitedDerived.Repository.g.cs
 public partial class TraitedDerived
-    public new partial class TraitedDerived.Repository : IRepository<TraitedDerived>, INavigationLoader<TraitedDerived>, INavigationLinker<TraitedDerived>
+    public new partial class TraitedDerived.Repository : IRepository<TraitedDerived>, INavigationLoader<TraitedDerived>, INavigationLinker<TraitedDerived>, IBulkRepository<TraitedDerived>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TraitedDerived> Set { get; }
         internal DbContext Context { get; }
@@ -4703,7 +4703,7 @@ public partial class TraitedDerived
         public async Task<int> EnsureLoadedAsync(TraitedDerived entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TraitedDerived entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TraitedDerived> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TraitedDerived> filter, Action<UpdateSettersBuilder<TraitedDerived>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TraitedDerived> filter, Action<IBulkSetters<TraitedDerived>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TraitedDerived> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TraitedDerived> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TraitedDerived> entities, CancellationToken ct)
@@ -4742,7 +4742,7 @@ public partial class TreeNode
 
 ## Inventory.TreeNode.Repository.g.cs
 public partial class TreeNode
-    public partial class TreeNode.Repository : IRepository<TreeNode>, INavigationLoader<TreeNode>, INavigationLinker<TreeNode>
+    public partial class TreeNode.Repository : IRepository<TreeNode>, INavigationLoader<TreeNode>, INavigationLinker<TreeNode>, IBulkRepository<TreeNode>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TreeNode> Set { get; }
         internal DbContext Context { get; }
@@ -4763,7 +4763,7 @@ public partial class TreeNode
         public async Task<int> EnsureLoadedAsync(TreeNode entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TreeNode entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TreeNode> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TreeNode> filter, Action<UpdateSettersBuilder<TreeNode>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TreeNode> filter, Action<IBulkSetters<TreeNode>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TreeNode> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TreeNode> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TreeNode> entities, CancellationToken ct)
@@ -4806,7 +4806,7 @@ public partial class TwoWaysToTheSameType
 
 ## Inventory.TwoWaysToTheSameType.Repository.g.cs
 public partial class TwoWaysToTheSameType
-    public partial class TwoWaysToTheSameType.Repository : IRepository<TwoWaysToTheSameType>, INavigationLoader<TwoWaysToTheSameType>, INavigationLinker<TwoWaysToTheSameType>
+    public partial class TwoWaysToTheSameType.Repository : IRepository<TwoWaysToTheSameType>, INavigationLoader<TwoWaysToTheSameType>, INavigationLinker<TwoWaysToTheSameType>, IBulkRepository<TwoWaysToTheSameType>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TwoWaysToTheSameType> Set { get; }
         internal DbContext Context { get; }
@@ -4827,7 +4827,7 @@ public partial class TwoWaysToTheSameType
         public async Task<int> EnsureLoadedAsync(TwoWaysToTheSameType entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(TwoWaysToTheSameType entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<TwoWaysToTheSameType> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<TwoWaysToTheSameType> filter, Action<UpdateSettersBuilder<TwoWaysToTheSameType>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<TwoWaysToTheSameType> filter, Action<IBulkSetters<TwoWaysToTheSameType>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<TwoWaysToTheSameType> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TwoWaysToTheSameType> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<TwoWaysToTheSameType> entities, CancellationToken ct)
@@ -4874,7 +4874,7 @@ public partial class UntypedTemporalRow : ICreatable<UntypedTemporalRow>
 
 ## Inventory.UntypedTemporalRow.Repository.g.cs
 public partial class UntypedTemporalRow
-    public partial class UntypedTemporalRow.Repository : IRepository<UntypedTemporalRow>, INavigationLoader<UntypedTemporalRow>, INavigationLinker<UntypedTemporalRow>
+    public partial class UntypedTemporalRow.Repository : IRepository<UntypedTemporalRow>, INavigationLoader<UntypedTemporalRow>, INavigationLinker<UntypedTemporalRow>, IBulkRepository<UntypedTemporalRow>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<UntypedTemporalRow> Set { get; }
         internal DbContext Context { get; }
@@ -4895,7 +4895,7 @@ public partial class UntypedTemporalRow
         public async Task<int> EnsureLoadedAsync(UntypedTemporalRow entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(UntypedTemporalRow entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<UntypedTemporalRow> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<UntypedTemporalRow> filter, Action<UpdateSettersBuilder<UntypedTemporalRow>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<UntypedTemporalRow> filter, Action<IBulkSetters<UntypedTemporalRow>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<UntypedTemporalRow> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<UntypedTemporalRow> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<UntypedTemporalRow> entities, CancellationToken ct)
@@ -4953,7 +4953,7 @@ public partial class Widget : ICreatable<Widget>
 
 ## Inventory.Widget.Repository.g.cs
 public partial class Widget
-    public partial class Widget.Repository : IRepository<Widget>, INavigationLoader<Widget>, INavigationLinker<Widget>
+    public partial class Widget.Repository : IRepository<Widget>, INavigationLoader<Widget>, INavigationLinker<Widget>, IBulkRepository<Widget>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Widget> Set { get; }
         internal DbContext Context { get; }
@@ -4974,7 +4974,7 @@ public partial class Widget
         public async Task<int> EnsureLoadedAsync(Widget entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(Widget entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<Widget> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<Widget> filter, Action<UpdateSettersBuilder<Widget>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<Widget> filter, Action<IBulkSetters<Widget>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<Widget> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Widget> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<Widget> entities, CancellationToken ct)
@@ -5043,7 +5043,7 @@ public partial class WithCompositeLogicKey : ICreatable<WithCompositeLogicKey>
 
 ## Inventory.WithCompositeLogicKey.Repository.g.cs
 public partial class WithCompositeLogicKey
-    public partial class WithCompositeLogicKey.Repository : IRepository<WithCompositeLogicKey>, INavigationLoader<WithCompositeLogicKey>, INavigationLinker<WithCompositeLogicKey>
+    public partial class WithCompositeLogicKey.Repository : IRepository<WithCompositeLogicKey>, INavigationLoader<WithCompositeLogicKey>, INavigationLinker<WithCompositeLogicKey>, IBulkRepository<WithCompositeLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithCompositeLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5065,7 +5065,7 @@ public partial class WithCompositeLogicKey
         public async Task<int> LinkAsync<TRelated>(WithCompositeLogicKey entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithCompositeLogicKey> Query(QueryStrategy strategy)
         public Task<WithCompositeLogicKey?> GetByCodeAndSeasonAsync(string code, int season, CancellationToken ct = default)
-        public Task<int> BulkUpdateAsync(ISpecification<WithCompositeLogicKey> filter, Action<UpdateSettersBuilder<WithCompositeLogicKey>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithCompositeLogicKey> filter, Action<IBulkSetters<WithCompositeLogicKey>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithCompositeLogicKey> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithCompositeLogicKey> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithCompositeLogicKey> entities, CancellationToken ct)
@@ -5103,7 +5103,7 @@ public partial class WithComputedDefault : ICreatable<WithComputedDefault>
 
 ## Inventory.WithComputedDefault.Repository.g.cs
 public partial class WithComputedDefault
-    public partial class WithComputedDefault.Repository : IRepository<WithComputedDefault>, INavigationLoader<WithComputedDefault>, INavigationLinker<WithComputedDefault>
+    public partial class WithComputedDefault.Repository : IRepository<WithComputedDefault>, INavigationLoader<WithComputedDefault>, INavigationLinker<WithComputedDefault>, IBulkRepository<WithComputedDefault>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithComputedDefault> Set { get; }
         internal DbContext Context { get; }
@@ -5124,7 +5124,7 @@ public partial class WithComputedDefault
         public async Task<int> EnsureLoadedAsync(WithComputedDefault entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithComputedDefault entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithComputedDefault> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithComputedDefault> filter, Action<UpdateSettersBuilder<WithComputedDefault>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithComputedDefault> filter, Action<IBulkSetters<WithComputedDefault>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithComputedDefault> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithComputedDefault> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithComputedDefault> entities, CancellationToken ct)
@@ -5159,7 +5159,7 @@ public partial class WithEventfulStateMachine : ICreatable<WithEventfulStateMach
 
 ## Inventory.WithEventfulStateMachine.Repository.g.cs
 public partial class WithEventfulStateMachine
-    public partial class WithEventfulStateMachine.Repository : IRepository<WithEventfulStateMachine>, INavigationLoader<WithEventfulStateMachine>, INavigationLinker<WithEventfulStateMachine>
+    public partial class WithEventfulStateMachine.Repository : IRepository<WithEventfulStateMachine>, INavigationLoader<WithEventfulStateMachine>, INavigationLinker<WithEventfulStateMachine>, IBulkRepository<WithEventfulStateMachine>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithEventfulStateMachine> Set { get; }
         internal DbContext Context { get; }
@@ -5180,7 +5180,7 @@ public partial class WithEventfulStateMachine
         public async Task<int> EnsureLoadedAsync(WithEventfulStateMachine entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithEventfulStateMachine entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithEventfulStateMachine> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithEventfulStateMachine> filter, Action<UpdateSettersBuilder<WithEventfulStateMachine>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithEventfulStateMachine> filter, Action<IBulkSetters<WithEventfulStateMachine>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithEventfulStateMachine> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithEventfulStateMachine> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithEventfulStateMachine> entities, CancellationToken ct)
@@ -5225,7 +5225,7 @@ public sealed class WithGeneratedValueNumberValueGenerator : IDefaultValueGenera
 
 ## Inventory.WithGeneratedValue.Repository.g.cs
 public partial class WithGeneratedValue
-    public partial class WithGeneratedValue.Repository : IRepository<WithGeneratedValue>, INavigationLoader<WithGeneratedValue>, INavigationLinker<WithGeneratedValue>
+    public partial class WithGeneratedValue.Repository : IRepository<WithGeneratedValue>, INavigationLoader<WithGeneratedValue>, INavigationLinker<WithGeneratedValue>, IBulkRepository<WithGeneratedValue>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithGeneratedValue> Set { get; }
         internal DbContext Context { get; }
@@ -5246,7 +5246,7 @@ public partial class WithGeneratedValue
         public async Task<int> EnsureLoadedAsync(WithGeneratedValue entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithGeneratedValue entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithGeneratedValue> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithGeneratedValue> filter, Action<UpdateSettersBuilder<WithGeneratedValue>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithGeneratedValue> filter, Action<IBulkSetters<WithGeneratedValue>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithGeneratedValue> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithGeneratedValue> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithGeneratedValue> entities, CancellationToken ct)
@@ -5281,7 +5281,7 @@ public partial class WithInvariant : ICreatable<WithInvariant>
 
 ## Inventory.WithInvariant.Repository.g.cs
 public partial class WithInvariant
-    public partial class WithInvariant.Repository : IRepository<WithInvariant>, INavigationLoader<WithInvariant>, INavigationLinker<WithInvariant>
+    public partial class WithInvariant.Repository : IRepository<WithInvariant>, INavigationLoader<WithInvariant>, INavigationLinker<WithInvariant>, IBulkRepository<WithInvariant>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithInvariant> Set { get; }
         internal DbContext Context { get; }
@@ -5302,7 +5302,7 @@ public partial class WithInvariant
         public async Task<int> EnsureLoadedAsync(WithInvariant entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithInvariant entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithInvariant> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithInvariant> filter, Action<UpdateSettersBuilder<WithInvariant>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithInvariant> filter, Action<IBulkSetters<WithInvariant>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithInvariant> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithInvariant> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithInvariant> entities, CancellationToken ct)
@@ -5337,7 +5337,7 @@ public partial class WithLogicKey : ICreatable<WithLogicKey>
 
 ## Inventory.WithLogicKey.Repository.g.cs
 public partial class WithLogicKey
-    public partial class WithLogicKey.Repository : IRepository<WithLogicKey>, INavigationLoader<WithLogicKey>, INavigationLinker<WithLogicKey>
+    public partial class WithLogicKey.Repository : IRepository<WithLogicKey>, INavigationLoader<WithLogicKey>, INavigationLinker<WithLogicKey>, IBulkRepository<WithLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5359,7 +5359,7 @@ public partial class WithLogicKey
         public async Task<int> LinkAsync<TRelated>(WithLogicKey entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithLogicKey> Query(QueryStrategy strategy)
         public Task<WithLogicKey?> GetByCodeAsync(string code, CancellationToken ct = default)
-        public Task<int> BulkUpdateAsync(ISpecification<WithLogicKey> filter, Action<UpdateSettersBuilder<WithLogicKey>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithLogicKey> filter, Action<IBulkSetters<WithLogicKey>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithLogicKey> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithLogicKey> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithLogicKey> entities, CancellationToken ct)
@@ -5396,7 +5396,7 @@ public partial class WithOrderedLogicKey : ICreatable<WithOrderedLogicKey>
 
 ## Inventory.WithOrderedLogicKey.Repository.g.cs
 public partial class WithOrderedLogicKey
-    public partial class WithOrderedLogicKey.Repository : IRepository<WithOrderedLogicKey>, INavigationLoader<WithOrderedLogicKey>, INavigationLinker<WithOrderedLogicKey>
+    public partial class WithOrderedLogicKey.Repository : IRepository<WithOrderedLogicKey>, INavigationLoader<WithOrderedLogicKey>, INavigationLinker<WithOrderedLogicKey>, IBulkRepository<WithOrderedLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithOrderedLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5418,7 +5418,7 @@ public partial class WithOrderedLogicKey
         public async Task<int> LinkAsync<TRelated>(WithOrderedLogicKey entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithOrderedLogicKey> Query(QueryStrategy strategy)
         public Task<WithOrderedLogicKey?> GetByVatAndCountryCodeAsync(string vat, string countryCode, CancellationToken ct = default)
-        public Task<int> BulkUpdateAsync(ISpecification<WithOrderedLogicKey> filter, Action<UpdateSettersBuilder<WithOrderedLogicKey>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithOrderedLogicKey> filter, Action<IBulkSetters<WithOrderedLogicKey>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithOrderedLogicKey> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithOrderedLogicKey> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithOrderedLogicKey> entities, CancellationToken ct)
@@ -5456,7 +5456,7 @@ public partial class WithPresets : ICreatable<WithPresets>
 
 ## Inventory.WithPresets.Repository.g.cs
 public partial class WithPresets
-    public partial class WithPresets.Repository : IRepository<WithPresets>, INavigationLoader<WithPresets>, INavigationLinker<WithPresets>
+    public partial class WithPresets.Repository : IRepository<WithPresets>, INavigationLoader<WithPresets>, INavigationLinker<WithPresets>, IBulkRepository<WithPresets>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithPresets> Set { get; }
         internal DbContext Context { get; }
@@ -5477,7 +5477,7 @@ public partial class WithPresets
         public async Task<int> EnsureLoadedAsync(WithPresets entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithPresets entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithPresets> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithPresets> filter, Action<UpdateSettersBuilder<WithPresets>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithPresets> filter, Action<IBulkSetters<WithPresets>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithPresets> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithPresets> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithPresets> entities, CancellationToken ct)
@@ -5522,7 +5522,7 @@ public partial class WithProjectable
 
 ## Inventory.WithProjectable.Repository.g.cs
 public partial class WithProjectable
-    public partial class WithProjectable.Repository : IRepository<WithProjectable>, INavigationLoader<WithProjectable>, INavigationLinker<WithProjectable>
+    public partial class WithProjectable.Repository : IRepository<WithProjectable>, INavigationLoader<WithProjectable>, INavigationLinker<WithProjectable>, IBulkRepository<WithProjectable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithProjectable> Set { get; }
         internal DbContext Context { get; }
@@ -5543,7 +5543,7 @@ public partial class WithProjectable
         public async Task<int> EnsureLoadedAsync(WithProjectable entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithProjectable entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithProjectable> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithProjectable> filter, Action<UpdateSettersBuilder<WithProjectable>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithProjectable> filter, Action<IBulkSetters<WithProjectable>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithProjectable> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithProjectable> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithProjectable> entities, CancellationToken ct)
@@ -5579,7 +5579,7 @@ public partial class WithStateMachine : ICreatable<WithStateMachine>
 
 ## Inventory.WithStateMachine.Repository.g.cs
 public partial class WithStateMachine
-    public partial class WithStateMachine.Repository : IRepository<WithStateMachine>, INavigationLoader<WithStateMachine>, INavigationLinker<WithStateMachine>
+    public partial class WithStateMachine.Repository : IRepository<WithStateMachine>, INavigationLoader<WithStateMachine>, INavigationLinker<WithStateMachine>, IBulkRepository<WithStateMachine>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithStateMachine> Set { get; }
         internal DbContext Context { get; }
@@ -5600,7 +5600,7 @@ public partial class WithStateMachine
         public async Task<int> EnsureLoadedAsync(WithStateMachine entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithStateMachine entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithStateMachine> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithStateMachine> filter, Action<UpdateSettersBuilder<WithStateMachine>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithStateMachine> filter, Action<IBulkSetters<WithStateMachine>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithStateMachine> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithStateMachine> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithStateMachine> entities, CancellationToken ct)
@@ -5640,7 +5640,7 @@ public partial class WithValueObject : ICreatable<WithValueObject>
 
 ## Inventory.WithValueObject.Repository.g.cs
 public partial class WithValueObject
-    public partial class WithValueObject.Repository : IRepository<WithValueObject>, INavigationLoader<WithValueObject>, INavigationLinker<WithValueObject>
+    public partial class WithValueObject.Repository : IRepository<WithValueObject>, INavigationLoader<WithValueObject>, INavigationLinker<WithValueObject>, IBulkRepository<WithValueObject>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithValueObject> Set { get; }
         internal DbContext Context { get; }
@@ -5661,7 +5661,7 @@ public partial class WithValueObject
         public async Task<int> EnsureLoadedAsync(WithValueObject entity, IReadOnlyList<string> paths, CancellationToken ct)
         public async Task<int> LinkAsync<TRelated>(WithValueObject entity, string navigation, IReadOnlyList<object> ids, string key, string strategy, Func<TRelated> stubFactory, CancellationToken ct)
         public IQueryable<WithValueObject> Query(QueryStrategy strategy)
-        public Task<int> BulkUpdateAsync(ISpecification<WithValueObject> filter, Action<UpdateSettersBuilder<WithValueObject>> updateAction, CancellationToken ct = default)
+        public Task<int> BulkUpdateAsync(ISpecification<WithValueObject> filter, Action<IBulkSetters<WithValueObject>> set, CancellationToken ct = default)
         public async Task<int> BulkDeleteAsync(ISpecification<WithValueObject> filter, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithValueObject> entities, BulkInsertOptions? options = null, CancellationToken ct = default)
         public Task<int> BulkInsertAsync(IReadOnlyList<WithValueObject> entities, CancellationToken ct)

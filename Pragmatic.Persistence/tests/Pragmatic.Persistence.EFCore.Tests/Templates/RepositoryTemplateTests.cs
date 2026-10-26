@@ -385,8 +385,9 @@ public class RepositoryTemplateTests
 
         source.Should().Contain("BulkUpdateAsync(");
         source.Should().Contain("Specification<");
-        source.Should().Contain("UpdateSettersBuilder<");
-        source.Should().Contain("ExecuteUpdateAsync(updateAction, ct)");
+        source.Should().Contain("global::Pragmatic.Persistence.Repository.IBulkSetters<");
+        source.Should().Contain("ExecuteUpdateAsync(__s => set(new global::Pragmatic.Persistence.EFCore.Bulk.EfBulkSetters<");
+        source.Should().Contain("global::Pragmatic.Persistence.Repository.IBulkRepository<");
     }
 
     [Fact]
