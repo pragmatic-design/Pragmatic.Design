@@ -53,9 +53,8 @@ internal sealed class TagEntityConfigTemplate : CSharpTemplate
         AppendLine("builder.HasIndex(e => new { e.Value, e.Scope })");
         AppendLine("    .IsUnique();");
         AppendLine();
-        AppendLine("builder.Property(e => e.Value).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.DisplayValue).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.Scope).HasMaxLength(128);");
-        AppendLine("builder.Property(e => e.CreatedBy).HasMaxLength(256);");
+        // The same list the tag an engine persists is declared from.
+        foreach (var column in Transforms.TraitColumns.Tag().Where(c => c.MaxLength is not null))
+            AppendLine($"builder.Property(e => e.{column.Name}).HasMaxLength({column.MaxLength}){(column.Required ? ".IsRequired()" : "")};");
     }
 }

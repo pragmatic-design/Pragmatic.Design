@@ -196,6 +196,14 @@ internal static class TraitFeature
         context.RegisterSourceOutputSafe(tagsWithFeatures, static (ctx, pair) =>
         {
             var (model, detectedFeatures) = pair;
+            if (TraitEngineChildren.Apply(detectedFeatures))
+            {
+                // The link an engine persists, and its actions on the tag's and the link's repositories.
+                foreach (var artifact in TraitEngineChildren.ForTag(model, detectedFeatures.HasActions, TraitEngineChildren.SerializableTags(model, detectedFeatures)))
+                    if (!artifact.IsEmpty) ctx.AddSource(artifact);
+                return;
+            }
+
             if (!detectedFeatures.HasPersistenceEFCore) return;
 
             // The shared tag entity and its config are emitted once per boundary from the aggregate
@@ -226,7 +234,8 @@ internal static class TraitFeature
         context.RegisterSourceOutputSafe(sharedTagEntities, static (ctx, pair) =>
         {
             var (models, detectedFeatures) = pair;
-            if (!detectedFeatures.HasPersistenceEFCore) return;
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
+            if (!engine && !detectedFeatures.HasPersistenceEFCore) return;
 
             var emitted = new HashSet<string>();
             foreach (var model in models)
@@ -235,6 +244,12 @@ internal static class TraitFeature
                 // same boundary share it, while two boundaries keep their own.
                 if (!emitted.Add(model.TagFullTypeName))
                     continue;
+
+                if (engine)
+                {
+                    ctx.AddSource(TraitEngineChildren.ForSharedTag(model)); // the tag an engine persists
+                    continue;
+                }
 
                 GenerateTagEntity(ctx, model);
                 GenerateTagEntityConfig(ctx, model);
@@ -314,20 +329,24 @@ internal static class TraitFeature
             if (!detectedFeatures.HasActions)
                 return ImmutableArray<ActionModel>.Empty;
 
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
             var builder = ImmutableArray.CreateBuilder<ActionModel>();
             foreach (var m in models)
             {
-                builder.AddRange(TraitActionModelBuilder.BuildTagActions(m));
+                builder.AddRange(engine ? TraitActionModelBuilder.BuildEngineTagActions(m) : TraitActionModelBuilder.BuildTagActions(m));
             }
             return builder.ToImmutable();
         });
 
-        // Build tag QueryModels for QueryFeature injection
-        var tagQueryModels = allTags.Select(static (models, _) =>
+        // Build tag QueryModels for QueryFeature injection. On an engine the query is read through the link's repository: the link is not one
+        // of Persistence's entities.
+        var tagQueryModels = allTags.Combine(features).Select(static (pair, _) =>
         {
+            var (models, detectedFeatures) = pair;
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
             var builder = ImmutableArray.CreateBuilder<Persistence.Models.QueryModel>();
             foreach (var m in models)
-                builder.Add(BuildListTagsQueryModel(m));
+                builder.Add(engine ? BuildListTagsQueryModel(m) with { ReadsThroughRepository = true } : BuildListTagsQueryModel(m));
             return builder.ToImmutable();
         });
 
@@ -664,8 +683,8 @@ internal static class TraitFeature
             Endpoints = combinedEndpoints,
             ManifestTypes = manifestTypes,
             Jobs = attachmentJobModels,
-            EngineSources = allComments.Combine(allNotes).Combine(features)
-                .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left, pair.Left.Right, pair.Right)),
+            EngineSources = allComments.Combine(allNotes).Combine(allTags).Combine(features)
+                .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left.Left, pair.Left.Left.Right, pair.Left.Right, pair.Right)),
         };
     }
 

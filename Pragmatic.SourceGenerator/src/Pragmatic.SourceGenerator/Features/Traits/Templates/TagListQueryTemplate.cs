@@ -11,7 +11,18 @@ namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 internal sealed class TagListQueryTemplate : CSharpTemplate
 {
     private readonly TagTraitModel _model;
-    public TagListQueryTemplate(TagTraitModel model) => _model = model;
+    private readonly bool _declaresItsSort;
+
+    /// <param name="model">The tag trait.</param>
+    /// <param name="declaresItsSort">
+    ///     True for an engine's link: the engine reads a query off its declarations, so the sort says so with <c>[Sort]</c>; with EF Core the
+    ///     query's model is handed to QueryFeature and the class carries none.
+    /// </param>
+    public TagListQueryTemplate(TagTraitModel model, bool declaresItsSort = false)
+    {
+        _model = model;
+        _declaresItsSort = declaresItsSort;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Traits";
     protected override string? TriggerInfo => $"[HasTags] list query for {_model.ParentTypeName}";
@@ -40,6 +51,8 @@ internal sealed class TagListQueryTemplate : CSharpTemplate
             AppendLine("public int PageSize { get => _pageSize; init => _pageSize = value is < 1 or > 200 ? 20 : value; }");
             // Paging without an order is not reproducible: PostgreSQL may return a row on page 2
             // that already appeared on page 1. Newest-first by default, still overridable.
+            if (_declaresItsSort)
+                AppendLine("[Sort(MapTo = \"AddedAt\", DefaultDirection = SortDirection.Descending)]");
             AppendLine("public SortDirection? AddedAtSort { get; init; }");
         },
         accessModifier: AccessModifier.Public,

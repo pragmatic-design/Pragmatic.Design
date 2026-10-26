@@ -32,9 +32,10 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
-    <!-- [HasComments] and [HasNotes]: the children TraitFeature generates for an engine's parent. -->
+    <!-- [HasComments], [HasNotes] and [HasTags]: the children TraitFeature generates for an engine's parent. -->
     <ProjectReference Include="..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Tags\src\Pragmatic.Tags\Pragmatic.Tags.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

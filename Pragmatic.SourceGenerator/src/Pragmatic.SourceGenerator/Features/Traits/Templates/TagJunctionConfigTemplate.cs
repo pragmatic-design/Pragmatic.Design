@@ -60,6 +60,8 @@ internal sealed class TagJunctionConfigTemplate : CSharpTemplate
         AppendLine("    .OnDelete(global::Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict);");
         AppendLine();
         AppendLine("builder.HasIndex(e => e.TagId);");
-        AppendLine("builder.Property(e => e.AddedBy).HasMaxLength(256);");
+        // The same list the link an engine persists is declared from.
+        foreach (var column in Transforms.TraitColumns.TagLink().Where(c => c.MaxLength is not null))
+            AppendLine($"builder.Property(e => e.{column.Name}).HasMaxLength({column.MaxLength}){(column.Required ? ".IsRequired()" : "")};");
     }
 }

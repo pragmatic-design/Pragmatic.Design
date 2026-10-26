@@ -25,6 +25,14 @@ public class TraitColumnsTests
     public void The_notes_columns_are_NoteBases_members()
         => AssertMirrors(typeof(NoteBase<Guid>), TraitColumns.Note(4000));
 
+    [Fact]
+    public void The_tags_columns_are_TagBases_members()
+        => AssertMirrors(typeof(Pragmatic.Tags.TagBase), TraitColumns.Tag());
+
+    [Fact]
+    public void The_tag_links_columns_are_EntityTagBases_members()
+        => AssertMirrors(typeof(Pragmatic.Tags.EntityTagBase<Guid>), TraitColumns.TagLink());
+
     private static void AssertMirrors(Type baseClass, EquatableArray<TraitColumnModel> columns)
     {
         var nullability = new NullabilityInfoContext();
@@ -40,7 +48,7 @@ public class TraitColumnsTests
     {
         if (Nullable.GetUnderlyingType(type) is { } underlying)
             return TypeName(underlying, false) + "?";
-        var name = type == typeof(string) ? "string" : type == typeof(bool) ? "bool" : "global::" + type.FullName;
+        var name = type == typeof(string) ? "string" : type == typeof(bool) ? "bool" : type == typeof(int) ? "int" : "global::" + type.FullName;
         return nullable && !type.IsValueType ? name + "?" : name;
     }
 }

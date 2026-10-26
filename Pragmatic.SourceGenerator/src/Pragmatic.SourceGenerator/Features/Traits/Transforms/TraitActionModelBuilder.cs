@@ -41,6 +41,23 @@ internal static class TraitActionModelBuilder
     public static ImmutableArray<ActionModel> BuildEngineNoteActions(NoteTraitModel model)
         => OnRepository(BuildNoteActions(model), "_notes", model.NoteFullTypeName);
 
+    /// <summary>
+    ///     The tag actions of tags the Sql or documents engine persists: their <c>DbContext</c> replaced by the tag's and the link's repositories and
+    ///     the invoker's unit of work, which the body saves and retries through (<c>TagActionsTemplate.Engine.cs</c>).
+    /// </summary>
+    public static ImmutableArray<ActionModel> BuildEngineTagActions(TagTraitModel model)
+        => BuildTagActions(model).Select(action => action with
+        {
+            Dependencies = action.Dependencies.SelectMany(d => d.FieldName == "_db"
+                ? new[]
+                {
+                    new DependencyModel { FieldName = "_tags", TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.TagFullTypeName}>", IsReadOnly = true },
+                    new DependencyModel { FieldName = "_links", TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.JunctionFullTypeName}>", IsReadOnly = true },
+                    new DependencyModel { FieldName = "_unitOfWork", TypeName = "global::Pragmatic.Persistence.Repository.IUnitOfWork", IsReadOnly = true },
+                }
+                : [d]).ToImmutableArray(),
+        }).ToImmutableArray();
+
     /// <summary>The actions with their <c>DbContext</c> replaced by the child's repository, under <paramref name="field" />.</summary>
     private static ImmutableArray<ActionModel> OnRepository(ImmutableArray<ActionModel> actions, string field, string childFullTypeName)
         => actions.Select(action => action with
