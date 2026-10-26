@@ -32,6 +32,27 @@ public class TraitEngineActionModelTests
     }
 
     [Fact]
+    public void BuildEngineAttachmentActions_WithBoundary_KeysTheUploadsUnitOfWorkByIt()
+    {
+        var model = new AttachmentTraitModel
+        {
+            ParentTypeName = "Property",
+            ParentNamespace = "Lettings",
+            ParentFullTypeName = "Lettings.Property",
+            IdType = "System.Guid",
+            BoundaryFullTypeName = "Lettings.Lettings",
+            BoundaryName = "Lettings",
+        };
+        var actions = TraitActionModelBuilder.BuildEngineAttachmentActions(model, includeDownload: true, includeThumbnail: false);
+
+        Assert.Equal("global::Lettings.Lettings", actions.Single(a => a.TypeName == "UploadPropertyAttachmentAction")
+            .Dependencies.Single(d => d.TypeName == UnitOfWork).KeyedServiceType);
+        // The others are saved by their invoker, which resolves the keyed unit of work itself; none reaches EF Core's DbContext.
+        Assert.All(actions.Where(a => a.TypeName != "UploadPropertyAttachmentAction"), a => Assert.DoesNotContain(a.Dependencies, d => d.TypeName == UnitOfWork));
+        Assert.All(actions, a => Assert.DoesNotContain(a.Dependencies, d => d.FieldName == "_db"));
+    }
+
+    [Fact]
     public void BuildEngineTagActions_WithoutBoundary_AsksForTheUnitOfWorkUnkeyed()
     {
         foreach (var action in TraitActionModelBuilder.BuildEngineTagActions(Tags(null)))

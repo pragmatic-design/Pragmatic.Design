@@ -507,11 +507,8 @@ internal static class TraitFeature
         context.RegisterSourceOutputSafe(attachmentsWithFeatures, static (ctx, pair) =>
         {
             var (model, detectedFeatures) = pair;
-            if (!detectedFeatures.HasPersistenceEFCore) return;
-
-            GenerateAttachmentEntity(ctx, model);
-            GenerateAttachmentEntityConfig(ctx, model);
-            GenerateParentAttachmentNavigation(ctx, model);
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
+            if (!engine && !detectedFeatures.HasPersistenceEFCore) return;
 
             if (detectedFeatures.HasActions)
             {
@@ -529,7 +526,22 @@ internal static class TraitFeature
                 if (model.ThumbnailRequested && !detectedFeatures.HasImaging)
                     ctx.ReportDiagnostic(TraitDiagnostics.TraitThumbnailRequiresImaging, model.Location,
                         model.ParentTypeName, model.ThumbnailMaxWidth, model.ThumbnailMaxHeight);
+            }
 
+            if (engine)
+            {
+                // The child an engine persists, its actions on the child's repository, and its purge job.
+                foreach (var artifact in TraitEngineChildren.ForAttachment(model, detectedFeatures))
+                    if (!artifact.IsEmpty) ctx.AddSource(artifact);
+                return;
+            }
+
+            GenerateAttachmentEntity(ctx, model);
+            GenerateAttachmentEntityConfig(ctx, model);
+            GenerateParentAttachmentNavigation(ctx, model);
+
+            if (detectedFeatures.HasActions)
+            {
                 GenerateAttachmentAction(ctx, model, AttachmentActionKind.Upload, detectedFeatures.HasImaging);
                 GenerateAttachmentAction(ctx, model, AttachmentActionKind.GetById);
                 // The download action returns Pragmatic.Endpoints' FileResponse; a module that
@@ -587,11 +599,15 @@ internal static class TraitFeature
         var attachmentActionModels = allAttachments.Combine(features).Select(static (pair, _) =>
         {
             var (models, detectedFeatures) = pair;
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
             var builder = ImmutableArray.CreateBuilder<ActionModel>();
             foreach (var m in models)
-                builder.AddRange(TraitActionModelBuilder.BuildAttachmentActions(
-                    m, detectedFeatures.HasEndpoints,
-                    detectedFeatures.HasEndpoints && detectedFeatures.HasImaging && m.ThumbnailRequested));
+            {
+                var thumbnail = detectedFeatures.HasEndpoints && detectedFeatures.HasImaging && m.ThumbnailRequested;
+                builder.AddRange(engine
+                    ? TraitActionModelBuilder.BuildEngineAttachmentActions(m, detectedFeatures.HasEndpoints, thumbnail)
+                    : TraitActionModelBuilder.BuildAttachmentActions(m, detectedFeatures.HasEndpoints, thumbnail));
+            }
             return builder.ToImmutable();
         });
 
@@ -612,11 +628,14 @@ internal static class TraitFeature
             return builder.ToImmutable();
         });
 
-        var attachmentQueryModels = allAttachments.Select(static (models, _) =>
+        // On an engine's child the query is read through the child's repository: the child is not one of Persistence's entities.
+        var attachmentQueryModels = allAttachments.Combine(features).Select(static (pair, _) =>
         {
+            var (models, detectedFeatures) = pair;
+            var engine = TraitEngineChildren.Apply(detectedFeatures);
             var builder = ImmutableArray.CreateBuilder<Persistence.Models.QueryModel>();
             foreach (var m in models)
-                builder.Add(BuildListAttachmentsQueryModel(m));
+                builder.Add(engine ? BuildListAttachmentsQueryModel(m) with { ReadsThroughRepository = true } : BuildListAttachmentsQueryModel(m));
             return builder.ToImmutable();
         });
 
@@ -683,8 +702,9 @@ internal static class TraitFeature
             Endpoints = combinedEndpoints,
             ManifestTypes = manifestTypes,
             Jobs = attachmentJobModels,
-            EngineSources = allComments.Combine(allNotes).Combine(allTags).Combine(features)
-                .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left.Left, pair.Left.Left.Right, pair.Left.Right, pair.Right)),
+            EngineSources = allComments.Combine(allNotes).Combine(allTags).Combine(allAttachments).Combine(features)
+                .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left.Left.Left, pair.Left.Left.Left.Right, pair.Left.Left.Right,
+                    pair.Left.Right, pair.Right)),
         };
     }
 

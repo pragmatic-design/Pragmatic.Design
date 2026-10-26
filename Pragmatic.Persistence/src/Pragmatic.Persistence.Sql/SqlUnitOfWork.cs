@@ -110,7 +110,9 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     /// <summary>
     ///     An entity to delete (<c>IRepository.Remove</c>). A <see cref="ISoftDelete" /> one is marked, as Pragmatic's repository marks it (now, by
     ///     the caller), and saved as an update of its flags; any other is deleted. One that is not tracked is attached first, as it is now, and
-    ///     the save checks that the caller may see its row (<paramref name="visible" />).
+    ///     the save checks that the caller may see its row (<paramref name="visible" />). Inside <see cref="SoftDeleteScope.Suspend" /> a
+    ///     <see cref="ISoftDelete" /> one is deleted too: an erasure, as the save then writes it (EF Core's <c>DbContext.Remove</c> under the same
+    ///     scope); without that, marking it here left nothing for the scope to change.
     /// </summary>
     public void Remove(object entity, Func<CancellationToken, Task<bool>> visible)
     {
@@ -121,7 +123,7 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
             return;
         }
 
-        if (entity is ISoftDelete soft)
+        if (entity is ISoftDelete soft && !SoftDeleteScope.IsSuspended)
         {
             soft.IsDeleted = true;
             soft.DeletedAt = _timeProvider.GetUtcNow();

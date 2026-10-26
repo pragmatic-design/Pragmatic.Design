@@ -52,16 +52,12 @@ internal sealed class AttachmentEntityConfigTemplate : CSharpTemplate
         AppendLine($"    .HasForeignKey(e => e.{_model.ParentFkPropertyName})");
         AppendLine("    .OnDelete(global::Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade);");
         AppendLine();
-        AppendLine("builder.Property(e => e.FileName).HasMaxLength(512).IsRequired();");
-        AppendLine("builder.Property(e => e.ContentType).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.StorageUri).HasMaxLength(2048).IsRequired();");
-        // Nullable beside a required StorageUri, and the pair is the contract: the original is the
-        // record, the thumbnail is derived from it. Null is the ordinary case — a PDF has none, and
-        // neither has anything uploaded before a thumbnail was declared.
-        AppendLine("builder.Property(e => e.ThumbnailUri).HasMaxLength(2048);");
-        AppendLine("builder.Property(e => e.Description).HasMaxLength(1000);");
-        AppendLine("builder.Property(e => e.UploadedBy).HasMaxLength(256).IsRequired();");
-        AppendLine("builder.Property(e => e.DeletedBy).HasMaxLength(256);");
+        // The same list the attachment an engine persists is declared from. ThumbnailUri is nullable beside a
+        // required StorageUri, and the pair is the contract: the original is the record, the thumbnail is
+        // derived from it. Null is the ordinary case — a PDF has none, and neither has anything uploaded
+        // before a thumbnail was declared.
+        foreach (var column in Transforms.TraitColumns.Attachment().Where(c => c.MaxLength is not null))
+            AppendLine($"builder.Property(e => e.{column.Name}).HasMaxLength({column.MaxLength}){(column.Required ? ".IsRequired()" : "")};");
         AppendLine();
         // Named, and not the anonymous overload: EF refuses a type carrying both, and the DbContext
         // adds the named "ParentTenant" filter to every trait child of a tenant-scoped parent.

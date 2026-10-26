@@ -25,8 +25,18 @@ namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
 {
     private readonly AttachmentTraitModel _model;
+    private readonly bool _engine;
 
-    public AttachmentPurgeJobTemplate(AttachmentTraitModel model) => _model = model;
+    /// <param name="model">The attachment trait.</param>
+    /// <param name="engine">
+    ///     True for an attachment the Sql or documents engine persists: the job reads through the child's repository with the engine's filters
+    ///     lifted, and removes through the boundary's unit of work, instead of EF Core's <c>DbContext</c>.
+    /// </param>
+    public AttachmentPurgeJobTemplate(AttachmentTraitModel model, bool engine = false)
+    {
+        _model = model;
+        _engine = engine;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Traits";
     protected override string? TriggerInfo => $"[HasAttachments(PurgeDeletedAfterDays = {_model.PurgeDeletedAfterDays})] on {_model.ParentTypeName}";
@@ -39,7 +49,8 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
     public override void RenderFile()
     {
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!_engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Microsoft.Extensions.Logging");
         AddUsing("Pragmatic.Jobs");
         AddUsing("Pragmatic.Jobs.Attributes");
@@ -69,6 +80,11 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
     private void RenderBody()
     {
         var logger = $"global::Microsoft.Extensions.Logging.ILogger<{_model.PurgeJobTypeName}>";
+        if (_engine)
+        {
+            RenderEngineMembers(logger);
+            return;
+        }
 
         AppendLine("private readonly DbContext _db;");
         AppendLine("private readonly IFileStorage _storage;");
@@ -98,7 +114,53 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
             AppendLine("_logger = logger;");
         });
         AppendLine();
+        RenderExecute();
+    }
 
+    /// <summary>
+    ///     The members of a job over an engine's attachments: the child's repository, the boundary's unit of work (keyed by the boundary's type,
+    ///     as an engine registers it) and the filter toggle the read lifts the filters with. The toggle is required: without it the soft delete
+    ///     hides every row this job is for, and a job that purges nothing forever is worse than one that does not resolve.
+    /// </summary>
+    private void RenderEngineMembers(string logger)
+    {
+        var repository = $"global::Pragmatic.Persistence.Repository.IRepository<{_model.AttachmentTypeName}>";
+        const string toggle = "global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle";
+        var unitOfWork = _model.BoundaryFullTypeName is not null
+            ? $"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof(global::{_model.BoundaryFullTypeName}))] global::Pragmatic.Persistence.Repository.IUnitOfWork"
+            : "global::Pragmatic.Persistence.Repository.IUnitOfWork";
+
+        AppendLine($"private readonly {repository} _attachments;");
+        AppendLine("private readonly global::Pragmatic.Persistence.Repository.IUnitOfWork _unitOfWork;");
+        AppendLine($"private readonly {toggle} _toggle;");
+        AppendLine("private readonly IFileStorage _storage;");
+        AppendLine("private readonly IClock _clock;");
+        AppendLine($"private readonly {logger} _logger;");
+        AppendLine();
+        AppendLine($"public {_model.PurgeJobTypeName}(");
+        IncreaseIndent();
+        AppendLine($"{repository} attachments,");
+        AppendLine($"{unitOfWork} unitOfWork,");
+        AppendLine($"{toggle} toggle,");
+        AppendLine("IFileStorage storage,");
+        AppendLine("IClock clock,");
+        AppendLine($"{logger} logger)");
+        DecreaseIndent();
+        Block(() =>
+        {
+            AppendLine("_attachments = attachments;");
+            AppendLine("_unitOfWork = unitOfWork;");
+            AppendLine("_toggle = toggle;");
+            AppendLine("_storage = storage;");
+            AppendLine("_clock = clock;");
+            AppendLine("_logger = logger;");
+        });
+        AppendLine();
+        RenderExecute();
+    }
+
+    private void RenderExecute()
+    {
         XmlSummary(
             "Deletes the stored files first — the derived thumbnail, then the original — and the row "
             + "second, for every expired attachment.");
@@ -131,13 +193,24 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
     {
         AppendLine($"var cutoff = _clock.UtcNow.AddDays(-{_model.PurgeDeletedAfterDays});");
         AppendLine();
-        // IgnoreQueryFilters is not an optimization: the generated EF configuration applies
-        // HasQueryFilter(e => !e.IsDeleted), so without it the query returns nothing at all and the
-        // job silently purges zero rows forever.
-        AppendLine($"var expired = await _db.Set<{_model.AttachmentTypeName}>()");
-        AppendLine("    .IgnoreQueryFilters()");
-        AppendLine("    .Where(a => a.IsDeleted && a.DeletedAt != null && a.DeletedAt < cutoff)");
-        AppendLine("    .ToListAsync(ct).ConfigureAwait(false);");
+        if (_engine)
+        {
+            // Raw, for the read and the save: the soft delete hides exactly these rows, and EF Core's
+            // IgnoreQueryFilters lifts every filter too.
+            AppendLine("using var _raw = _toggle.UseMode(global::Pragmatic.Persistence.Query.Filters.FilterMode.Raw);");
+            AppendLine($"var expired = await _attachments.FindAsync(global::Pragmatic.Specification.Spec<{_model.AttachmentTypeName}>");
+            AppendLine("    .Where(a => a.IsDeleted && a.DeletedAt != null && a.DeletedAt < cutoff), ct).ConfigureAwait(false);");
+        }
+        else
+        {
+            // IgnoreQueryFilters is not an optimization: the generated EF configuration applies
+            // HasQueryFilter(e => !e.IsDeleted), so without it the query returns nothing at all and the
+            // job silently purges zero rows forever.
+            AppendLine($"var expired = await _db.Set<{_model.AttachmentTypeName}>()");
+            AppendLine("    .IgnoreQueryFilters()");
+            AppendLine("    .Where(a => a.IsDeleted && a.DeletedAt != null && a.DeletedAt < cutoff)");
+            AppendLine("    .ToListAsync(ct).ConfigureAwait(false);");
+        }
         AppendLine();
         AppendLine("if (expired.Count == 0)");
         IncreaseIndent();
@@ -189,7 +262,10 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
                 AppendLine("continue;");
             });
             AppendLine();
-            AppendLine("_db.Remove(attachment);");
+            // An engine's repository marks a [SoftDelete] row when it is removed, unless the removal itself is an erasure.
+            AppendLine(_engine
+                ? "using (global::Pragmatic.Persistence.Entity.SoftDeleteScope.Suspend()) _attachments.Remove(attachment);"
+                : "_db.Remove(attachment);");
             AppendLine("purged++;");
         });
         AppendLine();
@@ -201,7 +277,7 @@ internal sealed class AttachmentPurgeJobTemplate : LogCallSiteTemplateBase
             // into a second flagging of rows that are flagged already, and the table would grow forever
             // while the job reported success.
             AppendLine("using (global::Pragmatic.Persistence.Entity.SoftDeleteScope.Suspend())");
-            Block(() => AppendLine("await _db.SaveChangesAsync(ct).ConfigureAwait(false);"));
+            Block(() => AppendLine(_engine ? "await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);" : "await _db.SaveChangesAsync(ct).ConfigureAwait(false);"));
             AppendLine("LogPurged(purged, expired.Count);");
         });
     }

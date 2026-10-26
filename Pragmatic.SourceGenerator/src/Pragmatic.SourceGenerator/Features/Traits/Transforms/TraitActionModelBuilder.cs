@@ -59,6 +59,27 @@ internal static class TraitActionModelBuilder
         }).ToImmutableArray();
 
     /// <summary>
+    ///     The attachment actions of an attachment the Sql or documents engine persists: their <c>DbContext</c> replaced by the child's repository,
+    ///     and for the upload the boundary's unit of work, which it commits its row through (<c>AttachmentActionsTemplate.Engine.cs</c>).
+    /// </summary>
+    public static ImmutableArray<ActionModel> BuildEngineAttachmentActions(AttachmentTraitModel model, bool includeDownload, bool includeThumbnail)
+        => BuildAttachmentActions(model, includeDownload, includeThumbnail).Select(action => action with
+        {
+            Dependencies = action.Dependencies.SelectMany(d => d.FieldName == "_db"
+                ? action.TypeName.StartsWith("Upload", StringComparison.Ordinal)
+                    ? new[] { AttachmentRepository(model), EngineUnitOfWork(model.BoundaryFullTypeName) }
+                    : new[] { AttachmentRepository(model) }
+                : [d]).ToImmutableArray(),
+        }).ToImmutableArray();
+
+    private static DependencyModel AttachmentRepository(AttachmentTraitModel model) => new()
+    {
+        FieldName = "_attachments",
+        TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.AttachmentFullTypeName}>",
+        IsReadOnly = true,
+    };
+
+    /// <summary>
     ///     The boundary's unit of work, keyed by the boundary's type: an engine registers it keyed and nothing unkeyed, as a hand-written action's
     ///     <c>IUnitOfWork</c> field is resolved (<c>BoundaryKeyedServices</c>). Unkeyed only for a parent without a boundary.
     /// </summary>
