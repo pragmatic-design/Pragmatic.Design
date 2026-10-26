@@ -85,6 +85,20 @@ internal static class PrivacyDiagnostics
         "Name a navigation or foreign-key property that leads towards the subject. A path that cannot " +
         "be followed produces an erasure that misses rows without failing.");
 
+    /// <summary>PRAG2914: on the Sql or documents engine, a path to the subject through a navigation with no declared foreign key.</summary>
+    /// <remarks>
+    ///     An engine's adapter follows the path by key, hop by hop, because a document keeps a relation as its key and has no navigation to
+    ///     follow. A hop whose key the generator cannot read leaves the entity with no adapter: its rows are neither exported nor erased, which
+    ///     is the failure worth an error.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor UnkeyedSubjectPath = DiagnosticFactory.Error(
+        "PRAG2914",
+        "A path to the subject the Sql or documents engine cannot follow by key",
+        "'{0}' reaches its subject through '{1}' → '{2}', and that navigation declares no foreign key the generator can read: on the Sql or " +
+        "documents engine its personal data is neither exported nor erased.",
+        "Declare the navigation with [Relation.ManyToOne<T>] on the entity that holds the key: an engine follows the path to the subject by " +
+        "foreign key.");
+
     /// <summary>PRAG2907: a field the erasure plan has no way to write.</summary>
     /// <remarks>
     ///     The plan writes either the property directly, when its setter is public, or the internal

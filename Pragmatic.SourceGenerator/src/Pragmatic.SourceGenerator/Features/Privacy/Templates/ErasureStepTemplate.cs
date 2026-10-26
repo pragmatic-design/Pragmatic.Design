@@ -38,8 +38,8 @@ internal sealed class ErasureStepTemplate : PrivacyAdapterTemplate
     private readonly string _planName;
     private readonly bool _deletesRow;
 
-    public ErasureStepTemplate(PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match)
-        : base(model, route, match)
+    public ErasureStepTemplate(PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match, bool engine = false)
+        : base(model, route, match, engine)
     {
         _typeName = NamingHelper.AppendSuffix(model.TypeName, "ErasureStep");
         _planName = NamingHelper.AppendSuffix(model.TypeName, "ErasurePlan");
@@ -55,7 +55,8 @@ internal sealed class ErasureStepTemplate : PrivacyAdapterTemplate
     {
         AddUsing("System.Collections.Generic");
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!Engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
 
         if (!string.IsNullOrEmpty(Model.Namespace))
         {
@@ -75,7 +76,7 @@ internal sealed class ErasureStepTemplate : PrivacyAdapterTemplate
 
     private void RenderBody()
     {
-        RenderDependencies(_typeName);
+        RenderDependencies(_typeName, writes: true);
 
         XmlSummary("Names this step in the erasure record.");
         AppendLine($"public string Name => \"{Model.FullTypeName}\";");
@@ -105,6 +106,11 @@ internal sealed class ErasureStepTemplate : PrivacyAdapterTemplate
     private void RenderErase()
     {
         RenderIdentityLookup("global::Pragmatic.Privacy.ErasureStepResult.Nothing");
+        if (Engine)
+        {
+            RenderEngineErase();
+            return;
+        }
 
         Comment("Tracked on purpose: the plan writes to these instances and SaveChanges persists them.");
         // ⚠️ Past the soft-delete filter and no other. A soft-deleted row is still stored
@@ -154,6 +160,43 @@ internal sealed class ErasureStepTemplate : PrivacyAdapterTemplate
 
         AppendLine();
 
+        RenderResult();
+    }
+
+    /// <summary>
+    ///     The rows read through the entity's repository (tracked by the boundary's unit of work, which the plan's writes and the removals
+    ///     go through), the plan applied or the rows removed, the unit of work saved. A removal is inside <c>SoftDeleteScope.Suspend()</c>, the
+    ///     removal and the save both: an engine's repository marks a soft-deleted row when it is removed unless the removal is an erasure.
+    /// </summary>
+    private void RenderEngineErase()
+    {
+        RenderEngineRows("global::Pragmatic.Privacy.ErasureStepResult.Nothing");
+        AppendLine();
+        AppendLine("if (rows.Count == 0) return global::Pragmatic.Privacy.ErasureStepResult.Nothing;");
+        AppendLine();
+        if (_deletesRow)
+        {
+            Comment("A field classified ErasureStrategy.Delete makes the whole row personal data, so the row goes rather than being blanked.");
+            AppendLine("using (global::Pragmatic.Persistence.Entity.SoftDeleteScope.Suspend())");
+            Block(() =>
+            {
+                AppendLine("foreach (var row in rows)");
+                IncreaseIndent();
+                AppendLine("_rows.Remove(row);");
+                DecreaseIndent();
+                AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
+            });
+        }
+        else
+        {
+            AppendLine("foreach (var row in rows)");
+            IncreaseIndent();
+            AppendLine($"global::{Sibling(_planName)}.Apply(row, subjectRef);");
+            DecreaseIndent();
+            AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
+        }
+
+        AppendLine();
         RenderResult();
     }
 

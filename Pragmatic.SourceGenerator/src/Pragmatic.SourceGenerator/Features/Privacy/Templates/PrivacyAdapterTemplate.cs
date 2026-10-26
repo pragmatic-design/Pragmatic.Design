@@ -13,14 +13,25 @@ namespace Pragmatic.SourceGenerator.Features.Privacy.Templates;
 ///     erasure that disagree about which rows belong to a subject is the worst outcome available here:
 ///     the export shows the subject data the erasure will not touch.
 /// </remarks>
-internal abstract class PrivacyAdapterTemplate : CSharpTemplate
+internal abstract partial class PrivacyAdapterTemplate : CSharpTemplate
 {
-    protected PrivacyAdapterTemplate(PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match)
+    /// <param name="model">The entity.</param>
+    /// <param name="route">Its route to the subject.</param>
+    /// <param name="match">How the subject's identity is compared.</param>
+    /// <param name="engine">
+    ///     True for an entity the Sql or documents engine persists: its repository and the route followed by key
+    ///     (<c>PrivacyAdapterTemplate.Engine.cs</c>) instead of EF Core's <c>DbContext</c>.
+    /// </param>
+    protected PrivacyAdapterTemplate(PrivacyEntityModel model, SubjectRoute route, SubjectIdentifierMatch match, bool engine)
     {
         Model = model;
         Route = route;
         Match = match;
+        Engine = engine;
     }
+
+    /// <summary>The entity is an engine's: see the constructor.</summary>
+    protected bool Engine { get; }
 
     protected PrivacyEntityModel Model { get; }
 
@@ -35,7 +46,7 @@ internal abstract class PrivacyAdapterTemplate : CSharpTemplate
 
     /// <summary>
     ///     Emits the fields and the constructor: the boundary's <c>DbContext</c> and the subject
-    ///     registry.
+    ///     registry; on an engine, the repositories <paramref name="writes" /> says.
     /// </summary>
     /// <remarks>
     ///     The context is asked for under the boundary type, the same key
@@ -43,8 +54,14 @@ internal abstract class PrivacyAdapterTemplate : CSharpTemplate
     ///     repository uses. An entity that declares no boundary falls back to the unkeyed
     ///     <c>DbContext</c>, which is what a single-context application has.
     /// </remarks>
-    protected void RenderDependencies(string typeName)
+    protected void RenderDependencies(string typeName, bool writes)
     {
+        if (Engine)
+        {
+            RenderEngineDependencies(typeName, writes);
+            return;
+        }
+
         AppendLine("private readonly global::Microsoft.EntityFrameworkCore.DbContext _db;");
         AppendLine("private readonly global::Pragmatic.Privacy.ISubjectRegistry _subjects;");
         AppendLine();

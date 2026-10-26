@@ -556,12 +556,21 @@ internal static class TraitPropertyResolver
     ///     reading the declaration is what lets those features work on generated keys at all.
     /// </remarks>
     public static VirtualProperty? DeclaredForeignKeyTo(INamedTypeSymbol entitySymbol, INamedTypeSymbol target)
+        => DeclaredForeignKeyTo(entitySymbol, target, navigation: null);
+
+    /// <summary>
+    ///     As <see cref="DeclaredForeignKeyTo(INamedTypeSymbol, INamedTypeSymbol)" />, the relation also chosen by its navigation's name
+    ///     (the target's name when the relation names none): an entity with two relations to one target has a key for each.
+    /// </summary>
+    public static VirtualProperty? DeclaredForeignKeyTo(INamedTypeSymbol entitySymbol, INamedTypeSymbol target, string? navigation)
     {
         foreach (var attr in entitySymbol.GetAttributes())
         {
             var (kind, declaredTarget) = RelationAttributeReader.Read(attr.AttributeClass);
             if (!RelationAttributeReader.OwnsForeignKey(kind) || declaredTarget is null
                 || !SymbolEqualityComparer.Default.Equals(declaredTarget, target))
+                continue;
+            if (navigation is not null && (ReadNavigationName(attr) ?? target.Name) != navigation)
                 continue;
 
             var targetIdType = GetEntityIdType(target);

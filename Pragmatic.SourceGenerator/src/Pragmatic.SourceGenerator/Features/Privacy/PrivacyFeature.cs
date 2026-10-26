@@ -24,9 +24,11 @@ internal static class PrivacyFeature
     /// <returns>
     ///     The privacy registration this compilation generates, for a host that declares its own
     ///     classified entities: the metadata attribute travels only to a host reading this assembly as a
-    ///     <em>reference</em>, and cannot reach the compilation that emits it.
+    ///     <em>reference</em>, and cannot reach the compilation that emits it. With it, the adapters of the entities an engine persists, for
+    ///     the engines' binding.
     /// </returns>
-    public static IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Register(
+    public static (IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Registrations,
+        IncrementalValueProvider<EquatableArray<Persistence.Models.ShapeSourceModel>> EngineSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<EndpointModel>>? endpoints = null)
@@ -81,7 +83,14 @@ internal static class PrivacyFeature
                     ctx, new PersonalDataMetadataTemplate(reachable, registration).RenderOutput());
         });
 
-        return all.Select(static (data, _) =>
+        var engineSources = all.Select(static (data, _) =>
+        {
+            var (((((fromSubjects, fromLinks), fromProperties), detected), _), _) = data;
+            var entities = Deduplicate(fromSubjects, fromLinks, fromProperties);
+            return EngineSources(detected, entities, SubjectGraphBuilder.Reachable(entities));
+        });
+
+        var registrations = all.Select(static (data, _) =>
         {
             var (((((fromSubjects, fromLinks), fromProperties), detected), _), rootNs) = data;
 
@@ -105,6 +114,8 @@ internal static class PrivacyFeature
                 MetadataSchemaVersions.PersonalData,
                 PrivacyRegistrationTemplate.FqnFor(RegistrationNamespace(rootNs))));
         });
+
+        return (registrations, engineSources);
     }
 
     /// <summary>Where the per-assembly privacy types are emitted.</summary>
@@ -126,9 +137,9 @@ internal static class PrivacyFeature
     {
         var planned = new List<(PrivacyEntityModel, SubjectRoute, SubjectIdentifierMatch)>();
 
-        // The adapters read a DbContext, so they belong where EF Core is, and they implement interfaces
+        // The adapters read a DbContext or an engine's repositories, so they belong where a persistence is, and they implement interfaces
         // that live in the runtime package rather than in the zero-dependency attributes one.
-        if (!detected.HasPrivacyRuntime || !detected.HasPersistenceEFCore)
+        if (!detected.HasPrivacyRuntime || (!detected.HasPersistenceEFCore && !AdaptersOnEngines(detected)))
             return planned;
 
         foreach (var entity in reachable)
@@ -138,6 +149,10 @@ internal static class PrivacyFeature
 
             var route = SubjectGraphBuilder.RouteTo(entity, entities);
             if (route is null)
+                continue;
+
+            // An engine follows the route by key: a hop without a declared key is PRAG2914, reported where the adapters are emitted.
+            if (AdaptersOnEngines(detected) && !route.IsKeyed)
                 continue;
 
             var match = SubjectIdentifierMatch.For(route.IdentifierTypeDisplay);
@@ -159,15 +174,18 @@ internal static class PrivacyFeature
     {
         var registrations = new List<PrivacyAdapterRegistration>();
 
-        if (!detected.HasPrivacyRuntime || !detected.HasPersistenceEFCore)
+        if (!detected.HasPrivacyRuntime || (!detected.HasPersistenceEFCore && !AdaptersOnEngines(detected)))
             return registrations;
 
         ReportUnsupportedIdentifiers(ctx, reachable);
+        if (AdaptersOnEngines(detected))
+            ReportUnkeyedRoutes(ctx, entities, reachable);
 
         foreach (var (entity, route, match) in PlanAdapters(detected, entities, reachable))
         {
-            var source = new PersonalDataSourceTemplate(entity, route, match);
-            var step = new ErasureStepTemplate(entity, route, match);
+            var engine = AdaptersOnEngines(detected);
+            var source = new PersonalDataSourceTemplate(entity, route, match, engine);
+            var step = new ErasureStepTemplate(entity, route, match, engine);
 
             SourceOutput.AddSource(ctx, source.RenderOutput());
             SourceOutput.AddSource(ctx, step.RenderOutput());
@@ -181,6 +199,51 @@ internal static class PrivacyFeature
         }
 
         return registrations;
+    }
+
+    /// <summary>
+    ///     True when the adapters are the engines': an engine's bridge referenced, EF Core's not. ASSUMPTION: as for the trait children and the
+    ///     cascade handlers, a compilation that references EF Core keeps EF Core's adapters; a module that mixes engines is the porting's item 15.
+    /// </summary>
+    private static bool AdaptersOnEngines(DetectedFeatures detected)
+        => !detected.HasPersistenceEFCore && (detected.HasPersistenceSql || detected.HasPersistenceDocuments);
+
+    /// <summary>
+    ///     PRAG2914 — on an engine, against the entity whose path has no declared key: its rows would not be found, so neither exported nor erased.
+    /// </summary>
+    private static void ReportUnkeyedRoutes(SourceProductionContext ctx, List<PrivacyEntityModel> entities, IReadOnlyList<PrivacyEntityModel> reachable)
+    {
+        foreach (var entity in reachable)
+        {
+            if (!entity.HasPersonalData || SubjectGraphBuilder.RouteTo(entity, entities) is not { IsKeyed: false } route)
+                continue;
+            var hop = route.Hops.First(h => h.ForeignKey is null);
+            ctx.ReportDiagnostic(Diagnostic.Create(PrivacyDiagnostics.UnkeyedSubjectPath, entity.Location?.ToLocation(), entity.TypeName,
+                hop.FromFullTypeName, hop.ToFullTypeName));
+        }
+    }
+
+    /// <summary>
+    ///     The adapters of the entities an engine persists, for the engines' binding: they read through <c>Spec&lt;T&gt;.Where</c>, which an
+    ///     engine compiles where it sees it, and no generator sees another's output. Empty without an engine's adapters.
+    /// </summary>
+    private static EquatableArray<Persistence.Models.ShapeSourceModel> EngineSources(DetectedFeatures detected, List<PrivacyEntityModel> entities,
+        IReadOnlyList<PrivacyEntityModel> reachable)
+    {
+        if (!detected.HasPrivacy || !AdaptersOnEngines(detected))
+            return EquatableArray<Persistence.Models.ShapeSourceModel>.Empty;
+        var sources = new List<Persistence.Models.ShapeSourceModel>();
+        foreach (var (entity, route, match) in PlanAdapters(detected, entities, reachable))
+        {
+            foreach (var artifact in new[] { new PersonalDataSourceTemplate(entity, route, match, engine: true).RenderOutput(),
+                         new ErasureStepTemplate(entity, route, match, engine: true).RenderOutput() })
+            {
+                if (!artifact.IsEmpty)
+                    sources.Add(new Persistence.Models.ShapeSourceModel(artifact.HintName, artifact.Text));
+            }
+        }
+
+        return sources.ToEquatableArray();
     }
 
     /// <summary>

@@ -686,6 +686,17 @@
           "Pragmatic.Persistence.Expressions": "[1.0.0, )"
         }
       },
+      "pragmatic.privacy": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Privacy.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.privacy.abstractions": {
+        "type": "Project"
+      },
       "pragmatic.resilience": {
         "type": "Project",
         "dependencies": {

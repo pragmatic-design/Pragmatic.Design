@@ -627,6 +627,7 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 | `PRAG2911` | Warning | An operation composes through another whose entities cannot be inferred and declares no `[ProcessesData]`, so the Article 30 register does not list it as processing anything. Declare `[ProcessesData<TEntity>]` for each entity it reaches. |
 | `PRAG2912` | Error | `ErasureStrategy.Anonymize` is declared on a type that has no value identifying nobody which a `NOT NULL` column would accept. Make the property nullable, or choose `Pseudonymize`, `Delete` or `Retain`. |
 | `PRAG2913` | Info | `[ProcessesData<T>]` restates what the generator already infers from the operation's repositories, invokers and loads. Remove it: the register lists the entity either way. |
+| `PRAG2914` | Error | On the Sql or documents engine, an entity reaches its subject through a navigation with no declared foreign key. The engine follows the path by key, one read per hop, so the entity gets no adapter and its data is neither exported nor erased. Declare the navigation with `[Relation.ManyToOne<T>]` on the entity that holds the key. |
 
 ### The Sql engine: `PRAG3001-3099`
 
