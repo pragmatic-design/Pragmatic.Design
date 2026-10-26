@@ -14,11 +14,19 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
     private readonly CommentTraitModel _model;
     private readonly string _actionTypeName;
     private readonly CommentActionKind _kind;
+    private readonly bool _engine;
 
-    public CommentActionsTemplate(CommentTraitModel model, CommentActionKind kind)
+    /// <param name="model">The comment trait.</param>
+    /// <param name="kind">The action.</param>
+    /// <param name="engine">
+    ///     True for a comment the Sql or documents engine persists: the action reads and writes through the child's repository
+    ///     (<c>CommentActionsTemplate.Engine.cs</c>), where the engine applies the comment's rules, instead of EF Core's <c>DbContext</c>.
+    /// </param>
+    public CommentActionsTemplate(CommentTraitModel model, CommentActionKind kind, bool engine = false)
     {
         _model = model;
         _kind = kind;
+        _engine = engine;
         _actionTypeName = kind switch
         {
             CommentActionKind.Add => $"Add{model.ParentTypeName}CommentAction",
@@ -40,7 +48,8 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
     public override void RenderFile()
     {
         AddUsing("System.Linq");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (!_engine)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Microsoft.Extensions.DependencyInjection");
         AddUsing("Pragmatic.Actions.Abstractions");
         AddUsing("Pragmatic.Actions.Attributes");
@@ -91,7 +100,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
 
     private void RenderBody()
     {
-        AppendLine("private DbContext _db = null!;");
+        AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.CommentTypeName}> _comments = null!;" : "private DbContext _db = null!;");
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // The policy is optional, so it is resolved on demand from the application service
@@ -176,7 +185,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
             DecreaseIndent();
             AppendLine("};");
             AppendLine();
-            AppendLine($"_db.Set<{_model.CommentTypeName}>().Add(comment);");
+            AppendLine(_engine ? "_comments.Add(comment);" : $"_db.Set<{_model.CommentTypeName}>().Add(comment);");
             AppendLine();
             AppendLine($"if (_policy is not null) await _policy.OnAddedAsync({_model.ParentTypeName}Id, comment.Id, ct);");
             AppendLine();
@@ -192,6 +201,12 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
         AppendLine("public required Guid CommentId { get; init; }");
         AppendLine();
         AppendLine($"public override async Task<Result<{dtoName}, IError>> Execute(CancellationToken ct = default)");
+        if (_engine)
+        {
+            Block(RenderEngineGetByIdBody);
+            return;
+        }
+
         Block(() =>
         {
             // The DbSet does not pass through the repository's row filters, so the InternalVisibility
@@ -338,6 +353,12 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
 
     private void RenderFindComment(bool ignoreQueryFilters = false)
     {
+        if (_engine)
+        {
+            RenderEngineFindComment(ignoreQueryFilters);
+            return;
+        }
+
         // Object-level auth: scope the lookup to the parent in the route, not just the child id.
         AppendLine($"var comment = await _db.Set<{_model.CommentTypeName}>()");
         if (ignoreQueryFilters)

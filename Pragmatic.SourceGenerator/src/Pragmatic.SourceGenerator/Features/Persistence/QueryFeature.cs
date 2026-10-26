@@ -365,7 +365,8 @@ internal static class QueryFeature
                 var engine = entityModels.FirstOrDefault(e => e.FullTypeName == model.EntityTypeFullName) is { } entity
                     ? Core.PersistenceEngineMarker.EngineOf(entity, detected)
                     : null;
-                if (engine is "Sql" or "Documents" && Core.PersistenceEngineMarker.Referenced(detected).Contains(engine))
+                // A trait's child an engine persists arrives already reading through its repository: it is not one of the entities.
+                if (model.ReadsThroughRepository || (engine is "Sql" or "Documents" && Core.PersistenceEngineMarker.Referenced(detected).Contains(engine)))
                     GenerateQueryInvoker(ctx, model with { ReadsThroughRepository = true });
                 else if (detected.HasPersistenceEFCore)
                     GenerateQueryInvoker(ctx, model);

@@ -38,7 +38,9 @@ internal static partial class DocumentGenerator
         var engines = PragmaticEngines.Of(compilation);
         var entities = PragmaticNames.AllTypes(compilation.GlobalNamespace)
             .Where(t => t.DeclaringSyntaxReferences.Length > 0 && DocModel.IsPragmatic(t) && engines.Serves(t, PragmaticEngine.Documents)).ToList();
-        entities.AddRange(SqlInterceptorGenerator.ShapeDeclaredEntities(compilation, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Documents))); // a trait's child (TraitEngineChildren)
+        // A trait's child and its list query exist only with the shape: both are read from that one compilation, so the query is the child's.
+        var shaped = compilation.AddSyntaxTrees(shapeTrees);
+        entities.AddRange(SqlInterceptorGenerator.ShapeDeclaredEntities(compilation, shaped, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Documents))); // a trait's child (TraitEngineChildren)
         if (entities.Count == 0)
             return null;
 
@@ -60,7 +62,6 @@ internal static partial class DocumentGenerator
         if (DocReadRepository.Applies(compilation))
         {
             // The documents as the shaped entities store them: what the declared queries and the grids order by and project from.
-            var shaped = compilation.AddSyntaxTrees(shapeTrees);
             var models = new Dictionary<string, DocModel>();
             foreach (var entity in entities)
             {
@@ -68,7 +69,9 @@ internal static partial class DocumentGenerator
                     models[entity.ToDisplayString()] = read; // its diagnostics are reported once, below
             }
 
-            var queries = DeclaredQueries(compilation, models, diagnostics, AddText);
+            var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Documents);
+            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Documents).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
+            var queries = DeclaredQueries(compilation, declared, models, diagnostics, AddText);
             foreach (var schema in PragmaticDocSchema.For(compilation, entities, models, queries.Select(q => q.Query).ToList()))
                 Add(new DocSchemaTemplate(schema).RenderOutput()); // each boundary's collections, indexes and Cosmos DB containers (DocSchema)
             foreach (var grid in PragmaticGrid.Read(compilation, PragmaticEngine.Documents))
@@ -111,7 +114,14 @@ internal static partial class DocumentGenerator
 
         spc.AddSource(new DocScopeRulesTemplate(scopeRules.ToEquatableArray()).RenderOutput());
         foreach (var diagnostic in diagnostics)
+        {
+            // A diagnostic on a trait's child falls in a shape file, which Roslyn refuses (the generator's whole output dropped with it). Not
+            // silent: a child the engine does not read gets no document type, and the code using it does not compile.
+            if (diagnostic.Location.SourceTree is { } tree && !compilation.ContainsSyntaxTree(tree))
+                continue;
             spc.ReportDiagnostic(diagnostic);
+        }
+
         return (shadow, written);
     }
 
@@ -120,16 +130,16 @@ internal static partial class DocumentGenerator
     ///     compiles, the sorts as a runtime ordering) with their projections; one the documents engine does not compile is reported (PRAG3108) and
     ///     refused at run time, as on the Sql engine.
     /// </summary>
-    private static List<(PragmaticQuery Query, string? Projection)> DeclaredQueries(Compilation compilation, Dictionary<string, DocModel> models, List<Diagnostic> diagnostics,
+    private static List<(PragmaticQuery Query, string? Projection)> DeclaredQueries(Compilation compilation, List<PragmaticQuery> declared, Dictionary<string, DocModel> models, List<Diagnostic> diagnostics,
         System.Func<(string Hint, string Source), SyntaxTree> add)
     {
         var queries = new List<(PragmaticQuery, string?)>();
-        foreach (var query in PragmaticQuery.Read(compilation, PragmaticEngine.Documents).Where(q => models.ContainsKey(q.Entity.ToDisplayString())))
+        foreach (var query in declared.Where(q => models.ContainsKey(q.Entity.ToDisplayString())))
         {
             var model = models[query.Entity.ToDisplayString()];
             var projection = DocQueries.Prepare(query, model);
             if (query.Unsupported is { } why)
-                diagnostics.Add(Diagnostic.Create(DocDiagnostics.QueryNotCompiled, query.Type.Locations.FirstOrDefault() ?? Location.None, query.Type.Name, why));
+                diagnostics.Add(Diagnostic.Create(DocDiagnostics.QueryNotCompiled, SqlInterceptorGenerator.ReportableLocation(query.Type, compilation), query.Type.Name, why));
             add(DocQueries.Shape(query, model));
             queries.Add((query, projection));
         }

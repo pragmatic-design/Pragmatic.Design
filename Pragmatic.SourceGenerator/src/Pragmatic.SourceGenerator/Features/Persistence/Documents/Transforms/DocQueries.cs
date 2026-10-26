@@ -37,8 +37,10 @@ internal static class DocQueries
                 return null;
             }
 
+            // A Pragmatic entity's Id is its shape's alias of the key (Id => PersistenceId), which a document stores as its key: read that.
+            var field = property.Name == "Id" && model.Field("Id") is null && model.IsPragmaticEntity && model.Key?.Property.Name == "PersistenceId" ? model.Key : model.Field(property.Name);
             // The field as the shaped entity declares it (the model is read on the compilation with the shape): the same type, or its nullable.
-            var source = model.Field(property.Name)?.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
+            var source = field?.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
             var target = property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
             if (source is null || (source != target && source + "?" != target))
             {
@@ -46,7 +48,7 @@ internal static class DocQueries
                 return null;
             }
 
-            assignments.Add($"{property.Name} = e.{property.Name}");
+            assignments.Add($"{property.Name} = e.{field!.Property.Name}");
         }
 
         return $".Select(e => new {query.ResultName} {{ {string.Join(", ", assignments)} }})";
