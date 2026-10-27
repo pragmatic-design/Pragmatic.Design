@@ -110,6 +110,8 @@ internal static partial class DocumentGenerator
                 interceptors.Add(interceptor);
         }
 
+        if (shadow is not null)
+            BulkUpdates(shadow, Model, interceptors, diagnostics);
         var specifications = shadow is null ? [] : Specifications(shadow, Model, diagnostics);
         spc.AddSource(new DocumentInterceptorsTemplate(interceptors.ToEquatableArray(), specifications.ToEquatableArray()).RenderOutput());
         // A diagnostic in a file this generator added (a repository's chain) has no place in the compilation: a note is dropped, a failure kept unplaced.

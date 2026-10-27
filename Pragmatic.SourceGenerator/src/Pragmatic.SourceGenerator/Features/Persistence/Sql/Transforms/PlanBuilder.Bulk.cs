@@ -7,7 +7,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// <summary>
 ///     A bulk write of <c>IBulkRepository&lt;T&gt;</c>, planned without a chain written on <c>SqlQuery&lt;T&gt;</c>: the rows a specification selects
 ///     (a predicate composed at runtime, as <c>Matching</c>'s) and, for an update, the SET list of the setters' lambda written at the call,
-///     its values recorded from the delegate when it runs (<c>SqlBulkValues</c>). Slots only (<c>valuesInSlots</c>).
+///     its values recorded from the delegate when it runs (<c>BulkSetterValues</c>). Slots only (<c>valuesInSlots</c>).
 /// </summary>
 internal sealed partial class PlanBuilder
 {

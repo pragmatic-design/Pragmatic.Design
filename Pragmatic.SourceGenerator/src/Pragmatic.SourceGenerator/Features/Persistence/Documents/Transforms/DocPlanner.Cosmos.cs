@@ -12,8 +12,8 @@ internal sealed partial class DocPlanner
 
     private void Cosmos()
     {
-        if (Commands.Contains(_call.Name) || _groupKey is not null)
-            return; // Cosmos DB writes by id only, and its GROUP BY is not translated: the execution refuses both there
+        if (_groupKey is not null)
+            return; // Cosmos DB's GROUP BY is not translated: the execution refuses it there
         var context = new DocCosmosText();
         var filter = DocCondition.All(_conditions);
         var families = _entity.IsPragmaticEntity || PredicateSlot >= 0; // the caller's filter families and the Matching predicate, resolved per execution (DocFamilies)
@@ -21,6 +21,9 @@ internal sealed partial class DocPlanner
         string? stateful = null; // what needs state across continuations, for the PRAG3106 note
         switch (_call.Name)
         {
+            case "ExecuteDeleteAsync" or "ExecuteUpdateAsync":
+                text = DocCosmosText.Select("*", filter, [], context, families: families); // the documents to write by id, read whole (DocExecution.CosmosCommandAsync)
+                break;
             case "CountAsync":
                 text = DocCosmosText.Select("VALUE COUNT(1)", filter, [], context, families: families);
                 stateful = "a count";

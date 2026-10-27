@@ -6,7 +6,8 @@ namespace PragmaticDocumentSamples.Orders;
 
 /// <summary>
 ///     MongoDB only: a GroupBy into a new object (one <c>$group</c>), and an update and a delete by filter (one command each). Cosmos DB refuses
-///     both forms (no GROUP BY translated, writes by id only); the transactions need a replica set, which the samples' server is not.
+///     the GroupBy (no GROUP BY translated) and runs the commands one document at a time (it writes by id); the transactions need a replica set,
+///     which the samples' server is not.
 /// </summary>
 internal static class Pipelines
 {

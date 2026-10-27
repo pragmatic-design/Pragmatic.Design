@@ -86,6 +86,44 @@ public sealed partial class DocSession
             throw new DocConcurrencyException($"{T.Collection}: the document with this key changed before it was deleted.");
     }
 
+    /// <summary>
+    ///     One document a command read (its etag kept by the read), written by its id with <c>If-Match</c> on that etag: deleted, or patched with
+    ///     <paramref name="update" />'s operations (<c>application/json_patch+json</c>).
+    /// </summary>
+    internal async Task<DocCommandOutcome> WriteReadAsync<T>(T entity, DocPatchWriter<T>? update, object?[] slots, CancellationToken ct) where T : IDocumentEntity<T>
+    {
+        var etag = ETagOf(entity!) ?? throw new InvalidOperationException($"{T.Collection}: a document a command writes is read first, with its etag.");
+        var link = $"dbs/{Database}/colls/{T.Collection}/docs/{Uri.EscapeDataString(T.Id(entity))}";
+        byte[]? body = null;
+        if (update is not null)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new Utf8JsonWriter(stream))
+            {
+                w.WriteStartObject();
+                w.WriteStartArray("operations");
+                update(w, entity, slots);
+                w.WriteEndArray();
+                w.WriteEndObject();
+            }
+
+            body = stream.ToArray();
+        }
+
+        var partitionKey = PartitionKey(entity);
+        var response = await CosmosClient.SendAsync(update is null ? HttpMethod.Delete : HttpMethod.Patch, "docs", link, link, body, h =>
+        {
+            h.TryAddWithoutValidation("x-ms-documentdb-partitionkey", partitionKey);
+            h.TryAddWithoutValidation("If-Match", etag);
+        }, "application/json_patch+json", ct, HttpStatusCode.PreconditionFailed, HttpStatusCode.NotFound).ConfigureAwait(false);
+        return response.Status switch
+        {
+            HttpStatusCode.PreconditionFailed => DocCommandOutcome.Stale,
+            HttpStatusCode.NotFound => DocCommandOutcome.Gone,
+            _ => DocCommandOutcome.Written,
+        };
+    }
+
     /// <summary>The stored document's version and etag, or null when there is none.</summary>
     private async Task<(long Version, string ETag)?> Read<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
     {

@@ -128,10 +128,15 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the documents engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class DocRepository(global::Pragmatic.Persistence.Documents.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>");
+        AppendLine($"    public sealed class DocRepository(global::Pragmatic.Persistence.Documents.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>,");
+        AppendLine($"        global::Pragmatic.Persistence.Repository.IBulkRepository<{type}>, global::Pragmatic.Persistence.Documents.IDocRepository");
         AppendLine("    {");
         AppendLine("        private readonly DocReadRepository _read = new(unitOfWork.Session);");
         AppendLine();
+        AppendLine("        /// <summary>The unit of work this repository reads and writes through.</summary>");
+        AppendLine("        public global::Pragmatic.Persistence.Documents.DocUnitOfWork UnitOfWork => unitOfWork;");
+        AppendLine();
+        RenderBulk(type);
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine("            => await _read.GetByIdAsync(id, ct) is { } read ? unitOfWork.Attach(read) : null;");
         AppendLine();
@@ -168,5 +173,38 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         AppendLine("            return async ct => await _read.GetByIdAsync(key, ct) is not null;");
         AppendLine("        }");
         AppendLine("    }");
+    }
+
+    /// <summary>
+    ///     <c>IBulkRepository</c>: the update is compiled where it is called (the generator intercepts the call, its plan run by <c>DocBulk</c>), so
+    ///     this body runs only for a call the generator did not see, and says so. The delete is a chain on the session, compiled here: the
+    ///     documents the specification selects among the caller's, marked when the entity is <c>[SoftDelete]</c> (the instant and the caller, as
+    ///     the unit of work marks one), deleted inside <c>SoftDeleteScope.Suspend</c> or when it is not. The insert and the upsert are the unit of
+    ///     work's, the save's phases applied to the documents alone; the upsert replaces only a document the caller may read.
+    /// </summary>
+    private void RenderBulk(string type)
+    {
+        const string NotCompiled = "throw new global::System.NotSupportedException(\"BulkUpdateAsync on the documents engine is compiled where it is called: this call was not seen by the generator (written in another assembly, or reached by reflection). Call it on IBulkRepository<{0}> in an assembly the Pragmatic generator runs on.\");";
+        AppendLine($"        public {Task}<int> BulkUpdateAsync({Spec}<{type}> filter, global::System.Action<global::Pragmatic.Persistence.Repository.IBulkSetters<{type}>> set, {Token})");
+        AppendLine("            => " + string.Format(System.Globalization.CultureInfo.InvariantCulture, NotCompiled, model.EntityName));
+        AppendLine();
+        AppendLine($"        public async {Task}<int> BulkDeleteAsync({Spec}<{type}> filter, {Token})");
+        AppendLine("        {");
+        AppendLine($"            var documents = unitOfWork.Session.Query<{type}>().Matching({ToPredicate}(filter));");
+        if (model.SoftDelete)
+        {
+            AppendLine("            if (!global::Pragmatic.Persistence.Entity.SoftDeleteScope.IsSuspended)");
+            AppendLine("                return checked((int)await documents.ExecuteUpdateAsync(static (s, stamp) => s.Set(o => o.IsDeleted, true).Set(o => o.DeletedAt, stamp.At).Set(o => o.DeletedBy, stamp.By), unitOfWork.DeletionStamp(), ct));");
+        }
+
+        AppendLine("            return checked((int)await documents.ExecuteDeleteAsync(ct));");
+        AppendLine("        }");
+        AppendLine();
+        AppendLine($"        public {Task}<int> BulkInsertAsync(global::System.Collections.Generic.IReadOnlyList<{type}> entities, global::System.Threading.CancellationToken ct)");
+        AppendLine("            => unitOfWork.InsertManyAsync(entities, ct);");
+        AppendLine();
+        AppendLine($"        public {Task}<int> BulkUpsertAsync(global::System.Collections.Generic.IReadOnlyList<{type}> entities, global::System.Threading.CancellationToken ct)");
+        AppendLine("            => unitOfWork.UpsertManyAsync(entities, async (entity, token) => await _read.GetByIdAsync(entity.PersistenceId, token) is not null, ct);");
+        AppendLine();
     }
 }

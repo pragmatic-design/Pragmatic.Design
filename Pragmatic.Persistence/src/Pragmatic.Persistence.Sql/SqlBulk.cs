@@ -1,3 +1,4 @@
+using Pragmatic.Persistence.Engines;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Specification;
 
@@ -6,7 +7,7 @@ namespace Pragmatic.Persistence.Sql;
 /// <summary>
 ///     The bulk writes of <see cref="IBulkRepository{TEntity}" /> on the Sql engine, as the generator intercepts them where they are called: the
 ///     statement compiled from the call (its plan), run on the session of the repository's unit of work with the rows the specification selects
-///     and, for an update, the values the setters' delegate records (<see cref="SqlBulkValues{TEntity}" />).
+///     and, for an update, the values the setters' delegate records (<c>BulkSetterValues</c>).
 /// </summary>
 /// <remarks>Set-based, as EF Core's <c>ExecuteUpdate</c>: the unit of work's tracked rows are not refreshed by it.</remarks>
 public static class SqlBulk
@@ -19,7 +20,7 @@ public static class SqlBulk
         ArgumentNullException.ThrowIfNull(filter);
         ArgumentNullException.ThrowIfNull(run);
         var unitOfWork = UnitOfWorkOf(repository);
-        return await run(unitOfWork.Session, SqlSpecifications.ToPredicate(filter), SqlBulkValues<TEntity>.Record(set), ct).ConfigureAwait(false);
+        return await run(unitOfWork.Session, SqlSpecifications.ToPredicate(filter), BulkSetterValues<TEntity>.Record(set), ct).ConfigureAwait(false);
     }
 
     /// <summary>

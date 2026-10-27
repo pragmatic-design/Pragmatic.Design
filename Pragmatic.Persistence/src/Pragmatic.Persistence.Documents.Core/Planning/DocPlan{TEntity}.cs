@@ -9,8 +9,10 @@ namespace Pragmatic.Persistence.Documents.Planning;
 /// </summary>
 public sealed class DocPlan<TEntity> where TEntity : IDocumentEntity<TEntity>
 {
-    public DocPlan(string origin, DocFilterWriter? filter, Action<BsonWriter>? sort, string[]? fields, int selectSlot = -1, string? aggregateField = null, DocCosmosQuery? cosmos = null, DocFilterWriter? update = null, Action<BsonWriter>? group = null, Func<BsonDocument, object>? groupRead = null, DocFilterWriter? having = null, Action<BsonWriter>? groupSort = null, string? unwind = null, int predicateSlot = -1, int orderingSlot = -1)
+    public DocPlan(string origin, DocFilterWriter? filter, Action<BsonWriter>? sort, string[]? fields, int selectSlot = -1, string? aggregateField = null, DocCosmosQuery? cosmos = null, DocFilterWriter? update = null, Action<BsonWriter>? group = null, Func<BsonDocument, object>? groupRead = null, DocFilterWriter? having = null, Action<BsonWriter>? groupSort = null, string? unwind = null, int predicateSlot = -1, int orderingSlot = -1, DocPatchWriter<TEntity>? cosmosUpdate = null, bool updatePipeline = false)
     {
+        CosmosUpdate = cosmosUpdate;
+        UpdatePipeline = updatePipeline;
         PredicateSlot = predicateSlot;
         OrderingSlot = orderingSlot;
         Unwind = unwind;
@@ -45,6 +47,18 @@ public sealed class DocPlan<TEntity> where TEntity : IDocumentEntity<TEntity>
 
     /// <summary>An ExecuteUpdateAsync's operators (the elements of the update document: <c>$set</c>, and <c>$inc</c> of a version), from the slots.</summary>
     public DocFilterWriter? Update { get; }
+
+    /// <summary>
+    ///     True when <see cref="Update" /> is the <c>$set</c> stage of an update pipeline (a value computed from the document's own fields, which
+    ///     only an aggregation expression reads): the update's <c>u</c> is then an array of that one stage.
+    /// </summary>
+    public bool UpdatePipeline { get; }
+
+    /// <summary>
+    ///     The same update as Cosmos DB's patch operations, one document at a time (Cosmos DB has no update by filter); null when it has none
+    ///     (a delete, or more fields than a patch takes).
+    /// </summary>
+    public DocPatchWriter<TEntity>? CosmosUpdate { get; }
 
     /// <summary>The Cosmos DB query of the same chain.</summary>
     public DocCosmosQuery? Cosmos { get; }

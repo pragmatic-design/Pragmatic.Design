@@ -384,6 +384,7 @@ internal sealed partial class DocPlanner
         source.Append(UnwindInitializer);
         source.Append(", ");
         source.Append(PredicateSlot).Append(", ").Append(OrderingSlot);
+        source.Append(", ").Append(CommandInitializer);
         source.Append(')');
         return source.ToString();
     }
