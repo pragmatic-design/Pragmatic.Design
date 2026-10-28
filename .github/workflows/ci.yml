@@ -185,7 +185,8 @@ jobs:
     name: Container suites (${{ matrix.shard }}/3)
     needs: [native, pdf-native, imaging-native]
     if: ${{ !cancelled() }}   # as the gate: run whatever the native jobs did, and fail if one failed
-    runs-on: ubuntu-latest
+    # Pinned, not latest: on ubuntu-26.04 the suites lose images and containers mid-run (#406).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
