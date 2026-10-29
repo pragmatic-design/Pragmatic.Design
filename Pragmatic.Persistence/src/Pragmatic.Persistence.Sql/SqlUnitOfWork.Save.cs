@@ -137,12 +137,15 @@ public sealed partial class SqlUnitOfWork
     }
 
     /// <summary>
-    ///     Inserts <paramref name="rows" />, or updates the ones whose key is there, each prepared as <see cref="InsertManyAsync{T}" /> prepares a
-    ///     row, in one transaction of the session. Not tracked afterwards, no domain events.
+    ///     Inserts <paramref name="rows" />, or updates the ones whose key the caller may see (<paramref name="visible" />, the read by key with the
+    ///     caller's filters), each prepared as <see cref="InsertManyAsync{T}" /> prepares a row, in one transaction of the session. A key the caller
+    ///     may not see (another tenant's, another owner's) is inserted, so the database refuses it as taken: a broken rule, never another caller's
+    ///     row overwritten. Not tracked afterwards, no domain events.
     /// </summary>
-    public async Task<int> UpsertManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) where T : class, IEntity
+    public async Task<int> UpsertManyAsync<T>(IReadOnlyList<T> rows, Func<T, CancellationToken, Task<bool>> visible, CancellationToken ct = default) where T : class, IEntity
     {
         ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(visible);
         var entries = await PreparedAsync(rows, ct).ConfigureAwait(false);
         if (entries.Count == 0)
             return 0;
@@ -150,8 +153,16 @@ public sealed partial class SqlUnitOfWork
         try
         {
             foreach (var entry in entries)
-                await Session.UpsertAsync((T)entry.Entity, ct).ConfigureAwait(false);
+            {
+                var row = (T)entry.Entity;
+                await (await visible(row, ct).ConfigureAwait(false) ? Session.UpsertAsync(row, ct) : Session.InsertAsync(row, ct)).ConfigureAwait(false);
+            }
+
             own?.Commit();
+        }
+        catch (System.Data.Common.DbException failure) when (SqlRuleViolations.Classify(failure, entries) is { } broken)
+        {
+            throw new PersistenceRuleViolationException(broken, failure);
         }
         finally
         {

@@ -13,6 +13,14 @@ internal sealed partial class PlanBuilder
 {
     private bool _recordedValues;
 
+    private bool _erasure;
+
+    /// <summary>
+    ///     A <c>[SoftDelete]</c> entity's bulk delete that removes the rows, the caller's filters kept: the plan <c>SqlBulk.DeleteAsync</c> runs
+    ///     only inside <c>SoftDeleteScope.Suspend</c>, so the delete a query cannot write on such an entity is meant here.
+    /// </summary>
+    public void AllowErasure() => _erasure = true;
+
     /// <summary>The rows a predicate composed at runtime selects, read from the slot <paramref name="slotText" /> fills: <c>Matching</c> without a step.</summary>
     public void AddRuntimePredicate(string slotText)
     {

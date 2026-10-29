@@ -14,7 +14,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 ///     compilation on an entity the Sql engine serves is compiled where it is written, into one statement: the rows the specification selects
 ///     (composed at runtime, as <c>Matching</c>'s predicate) and, for an update, the SET list of the setters' lambda, its values recorded when the
 ///     delegate runs. A <c>[SoftDelete]</c> entity's delete is the marking of its rows (the flag, the instant, the caller), as the unit of work
-///     marks one row. The call is intercepted to run that plan through <c>SqlBulk</c>, on the session of the repository's unit of work.
+///     marks one row, and the erasure inside <c>SoftDeleteScope.Suspend</c>: both are compiled, and <c>SqlBulk</c> picks one when the call runs.
+///     The call is intercepted to run the plan through <c>SqlBulk</c>, on the session of the repository's unit of work.
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
@@ -48,42 +49,57 @@ internal static partial class SqlInterceptorGenerator
                     continue;
                 }
 
-                var builder = new PlanBuilder(entity, lookup, compilation, valuesInSlots: true);
-                builder.AddRuntimePredicate("__predicate");
-                var markOnly = !update && entity.SoftDeleteColumn is not null;
-                if (update)
+                LambdaExpressionSyntax? setters = null;
+                if (update && (invocation.ArgumentList.Arguments.Count < 2 || (setters = invocation.ArgumentList.Arguments[1].Expression as LambdaExpressionSyntax) is null))
                 {
-                    if (invocation.ArgumentList.Arguments.Count < 2 || invocation.ArgumentList.Arguments[1].Expression is not LambdaExpressionSyntax setters)
-                    {
-                        diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedExpression, where, invocation.ArgumentList.ToString(), "set", "the setters are a lambda written at the call: s => s.SetProperty(o => o.Column, value), the SET list read from it"));
-                        continue;
-                    }
-
-                    if (!builder.AddRecordedSet(model, setters, where, diagnostics))
-                        continue;
-                }
-                else if (markOnly)
-                    builder.AddSoftDeleteMark();
-
-                var terminal = update || markOnly ? "ExecuteUpdateAsync" : "ExecuteDeleteAsync";
-                if (!builder.AddRules(where, diagnostics) || !builder.TryFinish(terminal, method, invocation.ArgumentList.Arguments, model, where, diagnostics))
+                    diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedExpression, where, invocation.ArgumentList.ToString(), "set", "the setters are a lambda written at the call: s => s.SetProperty(o => o.Column, value), the SET list read from it"));
                     continue;
+                }
 
-                var planName = $"Bulk_{count}";
                 var site = BulkSite(invocation);
                 var written = Regex.Replace(invocation.ToString(), @"\s+", " ");
-                plans.Add(builder.ToPlan(planName, origin: $"{site}: {Escape(written.Length > 240 ? written.Substring(0, 240) + "…" : written)}", site: site));
-
+                var origin = $"{site}: {Escape(written.Length > 240 ? written.Substring(0, 240) + "…" : written)}";
                 var type = entity.FullName;
-                var chain = $"session.Query<{type}>()" + string.Concat(builder.ValueSlots.Select((value, i) => $".WithSlot({i}, {value})"));
-                var run = $"static (session, __predicate, __values, ct) => {planName}.Instance.ExecuteAsync({chain}, ct)";
+
+                // One plan: the update, the delete, or a [SoftDelete] entity's marking. Null when it was refused (the diagnostic reported).
+                PlanBuilder? Plan(bool mark)
+                {
+                    var builder = new PlanBuilder(entity, lookup, compilation, valuesInSlots: true);
+                    builder.AddRuntimePredicate("__predicate");
+                    if (setters is not null && !builder.AddRecordedSet(model, setters, where, diagnostics))
+                        return null;
+                    if (mark)
+                        builder.AddSoftDeleteMark();
+                    else if (!update)
+                        builder.AllowErasure(); // a [SoftDelete] entity's erasure runs only inside SoftDeleteScope.Suspend
+                    var terminal = update || mark ? "ExecuteUpdateAsync" : "ExecuteDeleteAsync";
+                    return builder.AddRules(where, diagnostics) && builder.TryFinish(terminal, method, invocation.ArgumentList.Arguments, model, where, diagnostics) ? builder : null;
+                }
+
+                // The plan added, its translation reported; the run that hands it its slots.
+                string Run(PlanBuilder builder, string planName)
+                {
+                    plans.Add(builder.ToPlan(planName, origin: origin, site: site));
+                    diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, $"{method.Name} on {entityType.Name}", builder.DeclaredSql(global::Pragmatic.Persistence.Sql.SqlDialect.Sqlite)));
+                    var chain = $"session.Query<{type}>()" + string.Concat(builder.ValueSlots.Select((value, i) => $".WithSlot({i}, {value})"));
+                    return $"static (session, __predicate, __values, ct) => {planName}.Instance.ExecuteAsync({chain}, ct)";
+                }
+
+                // A [SoftDelete] entity's delete has both plans, the marking and the erasure: SqlBulk runs the erasure inside SoftDeleteScope.Suspend.
+                var marks = !update && entity.SoftDeleteColumn is not null;
+                var marking = marks ? Plan(mark: true) : null;
+                if (marks && marking is null || Plan(mark: false) is not { } plan)
+                    continue;
+
+                var mark = marking is null ? null : Run(marking, $"Bulk_{count}_Mark");
+                var run = Run(plan, $"Bulk_{count}");
+
                 var receiver = $"this {method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} repository";
                 var parameters = method.Parameters.Select(p => $"{p.Type.ToDisplayString(Annotated)} {p.Name}{(p.HasExplicitDefaultValue ? " = default" : "")}");
                 var body = update
                     ? $"global::Pragmatic.Persistence.Sql.SqlBulk.UpdateAsync(repository, filter, set, {run}, ct)"
-                    : $"global::Pragmatic.Persistence.Sql.SqlBulk.DeleteAsync(repository, filter, {run}, ct)";
+                    : $"global::Pragmatic.Persistence.Sql.SqlBulk.DeleteAsync(repository, filter, {mark ?? "null"}, {run}, ct)";
                 interceptors.Add(new(location.GetInterceptsLocationAttributeSyntax(), "global::System.Threading.Tasks.Task<int>", $"{method.Name}_{count}", "", [receiver, .. parameters], body, Comment: site, BodyOnNextLine: true));
-                diagnostics.Add(Diagnostic.Create(Diagnostics.Translated, where, $"{method.Name} on {entityType.Name}", builder.DeclaredSql(global::Pragmatic.Persistence.Sql.SqlDialect.Sqlite)));
                 count++;
             }
         }

@@ -1,4 +1,5 @@
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Persistence.Sql;
@@ -10,8 +11,9 @@ namespace PragmaticEntities.Tests;
 /// <summary>
 ///     <c>IBulkRepository</c> on the Sql engine, on the five databases. The update and the delete are compiled where they are called: one
 ///     statement over the rows the specification selects among the caller's (anna, in acme, holds desk-north), as EF Core's
-///     <c>ExecuteUpdate</c> keeps the query filters. A <c>[SoftDelete]</c> entity's delete marks its rows as the unit of work marks one. The
-///     insert and the upsert are the save's phases applied to the rows alone: the tenant stamped.
+///     <c>ExecuteUpdate</c> keeps the query filters. A <c>[SoftDelete]</c> entity's delete marks its rows as the unit of work marks one, and
+///     deletes them inside <c>SoftDeleteScope.Suspend</c>. The insert and the upsert are the save's phases applied to the rows alone: the tenant
+///     stamped; the upsert updates only a row the caller may read.
 /// </summary>
 [Collection("pragmatic databases")]
 public class BulkWritesTests(PragmaticDatabases databases)
@@ -66,6 +68,51 @@ public class BulkWritesTests(PragmaticDatabases databases)
         Assert.Equal(4, rows.Count); // marked, not removed
         var marked = Assert.Single(rows, r => r.IsDeleted);
         Assert.Equal(("anna", riva, UnitOfWorkTests.Now, "anna"), (marked.OwnerId, marked.PropertyId, marked.DeletedAt!.Value, marked.DeletedBy));
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_delete_of_a_soft_deleted_entity_inside_a_suspended_scope_removes_its_rows(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, unitOfWork) = await OpenAsync(dialect);
+        using var _ = session;
+        Guid mare;
+        using (_toggle.UseMode(FilterMode.Raw))
+            mare = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "MARE").Id;
+        IBulkRepository<Reservation> reservations = new Reservation.SqlRepository(unitOfWork);
+
+        int erased;
+        using (SoftDeleteScope.Suspend())
+            erased = await reservations.BulkDeleteAsync(Spec<Reservation>.Where(r => r.PropertyId == mare));
+
+        Assert.Equal(1, erased); // anna's at MARE
+        List<Reservation> rows;
+        using (_toggle.UseMode(FilterMode.Raw))
+            rows = await session.Query<Reservation>().ToListAsync();
+        Assert.Equal(3, rows.Count); // erased, as the unit of work erases one inside the scope
+        Assert.DoesNotContain(rows, r => r.IsDeleted || r.PropertyId == mare);
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task An_upsert_never_writes_over_a_row_the_caller_may_not_read(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, unitOfWork) = await OpenAsync(dialect);
+        using var _ = session;
+        Property alpe;
+        using (_toggle.UseMode(FilterMode.Raw))
+            alpe = (await session.Query<Property>().ToListAsync()).Single(p => p.Name == "ALPE"); // the tenant other's
+        IBulkRepository<Property> properties = new Property.SqlRepository(unitOfWork);
+        alpe.Name = "ALPE taken";
+
+        await Assert.ThrowsAsync<PersistenceRuleViolationException>(() => properties.BulkUpsertAsync([alpe], CancellationToken.None)); // inserted as acme's: the key is taken
+
+        List<Property> rows;
+        using (_toggle.UseMode(FilterMode.Raw))
+            rows = await session.Query<Property>().ToListAsync();
+        Assert.Equal(["other:ALPE"], rows.Where(p => p.Id == alpe.Id).Select(p => $"{p.TenantId}:{p.Name}").ToList());
     }
 
     [Theory]

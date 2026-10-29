@@ -195,7 +195,7 @@ internal sealed partial class PlanBuilder
             return RollUpRefusal(_entity);
         if (_terminal == "ExecuteUpdateAsync" && _sets.Count == 0)
             return "the update sets nothing";
-        if (_terminal == "ExecuteDeleteAsync" && _entity.SoftDeleteColumn is not null && !_withoutFilters)
+        if (_terminal == "ExecuteDeleteAsync" && _entity.SoftDeleteColumn is not null && !_withoutFilters && !_erasure)
             return $"{_entity.Type.Name} is [SoftDelete]: a set-based delete would remove the rows; mark them with ExecuteUpdateAsync, or purge with WithoutFilters()";
         if (_terminal is "ExecuteUpdateAsync" or "ExecuteDeleteAsync" && _joins.Any(j => j.StartsWith("LEFT JOIN", System.StringComparison.Ordinal) && !_innerAliases.Contains(JoinAlias(j))))
             return "an optional navigation in the predicate of an update or delete: the joined row may be missing; filter on a required navigation, on the foreign key, or test the navigation for null";
