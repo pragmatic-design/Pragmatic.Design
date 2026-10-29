@@ -1,4 +1,5 @@
 using Pragmatic.Persistence.Engines;
+using Pragmatic.Persistence.Entity;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Specification;
 
@@ -24,17 +25,21 @@ public static class SqlBulk
     }
 
     /// <summary>
-    ///     Runs a compiled delete: <paramref name="run" /> is the plan, given the session, the predicate and, for a <c>[SoftDelete]</c> entity's
-    ///     marking, the instant and the caller (the unit of work's), in that order.
+    ///     Runs a compiled delete: <paramref name="erase" /> is the plan that removes the rows; <paramref name="mark" />, for a <c>[SoftDelete]</c>
+    ///     entity, the plan that marks them, run unless <see cref="SoftDeleteScope.Suspend" /> says the erasure is meant (as the unit of work
+    ///     decides for one row). Each is given the session, the predicate and, for the marking, the instant and the caller (the unit of work's),
+    ///     in that order.
     /// </summary>
     public static async Task<int> DeleteAsync<TEntity>(IBulkRepository<TEntity> repository, ISpecification<TEntity> filter,
-        Func<SqlSession, SqlPredicate<TEntity>, object?[], CancellationToken, ValueTask<int>> run, CancellationToken ct)
+        Func<SqlSession, SqlPredicate<TEntity>, object?[], CancellationToken, ValueTask<int>>? mark,
+        Func<SqlSession, SqlPredicate<TEntity>, object?[], CancellationToken, ValueTask<int>> erase, CancellationToken ct)
         where TEntity : class
     {
         ArgumentNullException.ThrowIfNull(filter);
-        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(erase);
         var unitOfWork = UnitOfWorkOf(repository);
         var (at, by) = unitOfWork.DeletionStamp();
+        var run = mark is not null && !SoftDeleteScope.IsSuspended ? mark : erase;
         return await run(unitOfWork.Session, SqlSpecifications.ToPredicate(filter), [at, by], ct).ConfigureAwait(false);
     }
 

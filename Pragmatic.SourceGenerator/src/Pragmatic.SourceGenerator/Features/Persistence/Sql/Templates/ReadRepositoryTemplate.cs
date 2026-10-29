@@ -254,7 +254,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine("            => unitOfWork.InsertManyAsync(entities, ct);");
         AppendLine();
         AppendLine($"        public {Task}<int> BulkUpsertAsync(global::System.Collections.Generic.IReadOnlyList<{type}> entities, global::System.Threading.CancellationToken ct)");
-        AppendLine("            => unitOfWork.UpsertManyAsync(entities, ct);");
+        AppendLine("            => unitOfWork.UpsertManyAsync(entities, async (entity, token) => await _read.GetByIdAsync(entity.PersistenceId, token) is not null, ct);");
         AppendLine();
     }
 
