@@ -157,7 +157,7 @@ public sealed class PragmaticDatabasesCollection : ICollectionFixture<PragmaticD
 /// <summary>The tables of the test entities (DefaultSchema's), children before parents: the order a session empties them in.</summary>
 internal static class PragmaticSchema
 {
-    public static readonly string[] Tables = ["Categories", "ReviewComments","PropertyNotes", "PropertyTagLinks", "PropertyTags", "PropertyAttachments", "BookingRequests", "Bookings", "Guests", "StaffAssignments","PropertyAmenities", "Reviews", "Reservations", "RoomTypes", "Amenities", "Properties", "Vouchers"];
+    public static readonly string[] Tables = ["__EventOutbox", "Categories", "ReviewComments","PropertyNotes", "PropertyTagLinks", "PropertyTags", "PropertyAttachments", "BookingRequests", "Bookings", "Guests", "StaffAssignments","PropertyAmenities", "Reviews", "Reservations", "RoomTypes", "Amenities", "Properties", "Vouchers"];
 
     public static string Quote(SqlDialect dialect, string name) => dialect == SqlDialect.SqlServer ? "[" + name + "]" : "\"" + name + "\"";
 }

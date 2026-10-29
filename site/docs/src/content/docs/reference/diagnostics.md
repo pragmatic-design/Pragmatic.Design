@@ -601,7 +601,7 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 |----|----------|-----------------|
 | `PRAG2750` | Error | A type with `[Raises<T>]` does not derive from `DomainEventSource`, so the generated lifecycle events cannot be raised. |
 | `PRAG2751` | Warning | An event constructor parameter matched no entity member by name and is passed `default`. Rename it to match, or raise the event from a domain method. |
-| `PRAG2752` | Warning | `[EnableEventOutbox]` without a reference to `Pragmatic.Events.EFCore`: the outbox is not wired, so the attribute is a no-op. |
+| `PRAG2752` | Warning | `[EnableEventOutbox]` without a reference to the outbox package of the boundary's engine (`Pragmatic.Events.EFCore` on EF Core, `Pragmatic.Events.Engines` on the Sql and documents engines): the outbox is not wired, so the attribute is a no-op. |
 | `PRAG2753` | Error | `[Raises<T>]` on an **entity's method**: nothing generates that raise, while the class-level form on the same entity is wired. Declare it on the class, use `[RaisesEvent<T>]` on the state machine's target member, or call `RaiseEvent(...)` in the body. |
 
 ### Serialization / AOT: `PRAG2800`

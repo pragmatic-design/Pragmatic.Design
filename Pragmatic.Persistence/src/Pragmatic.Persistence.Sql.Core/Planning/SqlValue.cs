@@ -172,6 +172,8 @@ public static class SqlValue
 
     public static long Int64(DbDataReader reader, int ordinal) => reader.GetInt64(ordinal);
 
+    public static long? NullableInt64(DbDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetInt64(ordinal);
+
     public static double Double(DbDataReader reader, int ordinal) => reader.GetDouble(ordinal);
 
     /// <summary>

@@ -20,12 +20,17 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     public static readonly PragmaticRegistration Sql = new(new(
         "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Filters.ISqlFilters", "global::Pragmatic.Persistence.Sql.PragmaticSqlFilters",
         "global::Pragmatic.Persistence.Sql.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.ISqlSavePhase", "SqlRepository",
+        "global::Pragmatic.Events.Engines.Sql.SqlEventOutboxExtensions.AddSqlEventOutbox",
         "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(
         "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Filters.IDocFilters", "global::Pragmatic.Persistence.Documents.PragmaticDocFilters",
         "global::Pragmatic.Persistence.Documents.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.IDocSavePhase", "DocRepository",
+        "global::Pragmatic.Events.Engines.Documents.DocEventOutboxExtensions.AddDocEventOutbox",
         "DocPersistence", "Pragmatic.Persistence.Documents"));
+
+    /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
+    internal const string EngineEventOutbox = "Pragmatic.Events.Engines.IEngineEventOutboxDrainer`1";
 
     /// <summary>
     ///     One source per boundary of <paramref name="entities" /> (the ones the engine serves); none without the dependency injection abstractions
@@ -37,6 +42,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         if (compilation.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions") is null
             || compilation.GetTypeByMetadataName(engine.UnitOfWork.Substring("global::".Length)) is null)
             return sources;
+        var outbox = compilation.GetTypeByMetadataName(EngineEventOutbox) is not null;
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
         foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e) as INamedTypeSymbol)).Where(p => p.Boundary is not null)
@@ -51,10 +57,15 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
                 boundary.Name,
                 boundary.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 engine,
-                group.Select(p => p.Entity).OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray());
+                group.Select(p => p.Entity).OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray(),
+                outbox && EnablesEventOutbox(boundary));
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
 
         return sources;
     }
+
+    /// <summary>True when <paramref name="boundary" /> carries <c>[EnableEventOutbox]</c> (Pragmatic.Events'): its saves write their events to an outbox.</summary>
+    internal static bool EnablesEventOutbox(INamedTypeSymbol boundary)
+        => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Events.Attributes.EnableEventOutboxAttribute");
 }

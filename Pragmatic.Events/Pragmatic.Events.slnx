@@ -13,6 +13,7 @@
   <Folder Name="/src/">
     <Project Path="src/Pragmatic.Events/Pragmatic.Events.csproj" />
     <Project Path="src/Pragmatic.Events.EFCore/Pragmatic.Events.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Events.Engines/Pragmatic.Events.Engines.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Events.Tests/Pragmatic.Events.Tests.csproj" />

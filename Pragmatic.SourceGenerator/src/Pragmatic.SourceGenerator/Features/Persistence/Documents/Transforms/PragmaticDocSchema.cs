@@ -40,9 +40,12 @@ internal static class PragmaticDocSchema
                 : RootNamespace(first.ContainingNamespace.IsGlobalNamespace ? compilation.AssemblyName ?? "" : first.ContainingNamespace.ToDisplayString());
             var collections = group.OrderBy(e => models[e.ToDisplayString()].Collection, StringComparer.Ordinal)
                 .Select(e => CollectionText(e, models[e.ToDisplayString()], queries.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, e))))
-                .ToEquatableArray();
+                .ToList();
+            // [EnableEventOutbox]: the outbox's collection, as Pragmatic.Events.Engines describes it, beside the boundary's own.
+            if (boundary is not null && PragmaticRegistration.EnablesEventOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineEventOutbox) is not null)
+                collections.Add("global::Pragmatic.Events.Engines.Documents.EventOutboxDocument.Schema");
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
-                boundary?.Name ?? "the entities of no boundary", collections));
+                boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }
 
         return schemas;

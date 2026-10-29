@@ -50,8 +50,8 @@ The generator registers every `[EventHandler]` class (PRAG1670 if it implements 
 `SaveChanges`. Ordering and continue-on-failure are built in. When you need crash-safe, at-least-once
 delivery, put **`[EnableEventOutbox]`** on the boundary: its events are then written to the
 transactional outbox in the same transaction as the entity change and delivered asynchronously
-(at-least-once: handlers must be idempotent). The outbox ships in `Pragmatic.Events.EFCore`, not
-`Pragmatic.Messaging`. Add
+(at-least-once: handlers must be idempotent). The outbox ships in `Pragmatic.Events.EFCore`, and in
+`Pragmatic.Events.Engines` for a boundary on the Sql or documents engine, not in `Pragmatic.Messaging`. Add
 [Messaging](/modules/messaging/overview/) only for cross-service delivery over a broker.
 
 ## Installation
@@ -59,6 +59,7 @@ transactional outbox in the same transaction as the entity change and delivered 
 ```bash
 dotnet add package Pragmatic.Events
 dotnet add package Pragmatic.Events.EFCore   # post-SaveChanges interceptor dispatch
+dotnet add package Pragmatic.Events.Engines  # the outbox on the Sql and documents engines
 ```
 
 ## Status

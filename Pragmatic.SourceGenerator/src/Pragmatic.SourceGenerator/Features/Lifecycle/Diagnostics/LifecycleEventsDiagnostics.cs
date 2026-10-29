@@ -22,12 +22,13 @@ internal static class LifecycleEventsDiagnostics
         "Event constructor parameter '{0}' on entity '{1}' matched no entity member by name; it is passed 'default'. Rename the parameter to match an entity member, or raise this event from a domain method instead.",
         "Align the event constructor parameter name with an entity property, or use a domain method + RaiseEvent for events carrying non-entity data.");
 
-    // PRAG2752: [EnableEventOutbox] on a boundary whose assembly does not reference Pragmatic.Events.EFCore.
+    // PRAG2752: [EnableEventOutbox] on a boundary whose assembly does not reference the outbox package of the boundary's engine:
+    // Pragmatic.Events.EFCore on EF Core, Pragmatic.Events.Engines on the Sql and documents engines.
     public static readonly DiagnosticDescriptor EnableEventOutboxWithoutEFCore = DiagnosticFactory.Warning(
         "PRAG2752",
-        "[EnableEventOutbox] requires Pragmatic.Events.EFCore",
-        "Boundary '{0}' is marked [EnableEventOutbox] but this project does not reference Pragmatic.Events.EFCore, so the outbox is not wired (the attribute is a no-op). Reference Pragmatic.Events.EFCore.",
-        "Add a reference to Pragmatic.Events.EFCore to the boundary project so the generated DbContext can map __EventOutbox and wire the delivery service.");
+        "[EnableEventOutbox] requires the outbox package of the boundary's engine",
+        "Boundary '{0}' is marked [EnableEventOutbox] but this project does not reference {1}, so the outbox is not wired (the attribute is a no-op). Reference {1}.",
+        "Reference the outbox package of the boundary's engine in the boundary project: Pragmatic.Events.EFCore on EF Core (the generated DbContext maps __EventOutbox and wires the delivery service), Pragmatic.Events.Engines on the Sql and documents engines (the generated Add{Boundary}Persistence registers the outbox's phase and delivery).");
 
     // PRAG2753: [Raises<T>] on an ENTITY's method. It generates nothing — and read as wired, because
     // the class-level form on the same entity is. A generator cannot add a statement to a body the
