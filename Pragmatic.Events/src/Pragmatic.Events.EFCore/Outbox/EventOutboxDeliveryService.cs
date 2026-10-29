@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Pragmatic.Events.Outbox;
 
 namespace Pragmatic.Events.EFCore.Outbox;
 

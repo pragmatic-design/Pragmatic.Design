@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Events.EFCore.Outbox;
+using Pragmatic.Events.Outbox;
 using Pragmatic.Events.Extensions;
 using Pragmatic.Events.Tests.Fixtures;
 using Testcontainers.PostgreSql;

@@ -212,7 +212,7 @@ No service provider parameter: the interceptor has no dependencies. On a source-
 
 ## Transactional Outbox
 
-The transactional outbox lives in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`); it is **not** part of `Pragmatic.Messaging`. It has two moving parts.
+The transactional outbox lives in `Pragmatic.Events.EFCore` (namespace `Pragmatic.Events.EFCore.Outbox`); it is **not** part of `Pragmatic.Messaging`. It has two moving parts. What does not depend on the store is in `Pragmatic.Events` (namespace `Pragmatic.Events.Outbox`): `EventOutboxOptions`, the allowlist (`IEventOutboxTypeResolver`, `EventOutboxTypeResolver`), and `EventOutboxDelivery`, the form an event is captured in and the delivery of one captured row.
 
 ### EventOutboxInterceptor (capture)
 
@@ -226,13 +226,13 @@ A `BackgroundService` that polls on `PollingInterval`. Each pass:
 
 1. Selects up to `BatchSize` **eligible** candidate ids: `ProcessedAt == null`, `Attempts < MaxAttempts`, and either unclaimed or with an **expired** claim (`ClaimedUntil < now`).
 2. **Atomically claims** them with a compare-and-swap `ExecuteUpdate` that stamps a unique per-poll token into `ClaimedBy` and a lease into `ClaimedUntil`. Only rows this worker won are then loaded and processed: this is what stops multiple replicas from each delivering the same entry. A claim lease (5 minutes) means a crashed worker's rows become re-grabbable rather than stuck.
-3. For each claimed row: resolves the CLR type via the **fail-closed** `IEventOutboxTypeResolver`, deserializes the JSON payload, restores the originating trace (`StartActivity` parented to `TraceParent`) and tenant (`SetTenant(entry.TenantId)`), then dispatches through `IDomainEventDispatcher`. On success it sets `ProcessedAt`; on exception it increments `Attempts`, records `LastError`, and releases the claim so the row is retried on a later poll (within `MaxAttempts`).
+3. For each claimed row, `EventOutboxDelivery.DeliverAsync`: resolves the CLR type via the **fail-closed** `IEventOutboxTypeResolver`, deserializes the JSON payload, restores the originating trace (`StartActivity` parented to `TraceParent`) and tenant (`TenantScope.BeginScope(entry.TenantId)`), then dispatches through `IDomainEventDispatcher`. On success it sets `ProcessedAt`; on exception it increments `Attempts`, records `LastError`, and releases the claim so the row is retried on a later poll (within `MaxAttempts`).
 
 ### Guarantees and edges
 
 - **At-least-once.** A crash between dispatch and the `ProcessedAt` write re-delivers the event on the next poll. Handlers must be idempotent (`IDomainEvent.EventId` is the natural dedup key).
 - **Poison messages.** After `MaxAttempts`, a row is no longer eligible: it stays un-processed with its `LastError` populated. There is no separate dead-letter table.
-- **Fail-closed type resolution.** `EventOutboxTypeResolver` is built from an allowlist derived from the registered `IDomainEventHandler<T>` service descriptors (`AddEventOutbox` scans the `IServiceCollection`). A stored `EventType` string that is not in the allowlist resolves to `null` and the row is rejected (attempt counted); there is no `Type.GetType` on an arbitrary DB string, so the payload cannot be used to load an unexpected type (no deserialization gadget surface).
+- **Fail-closed type resolution.** `EventOutboxTypeResolver` is built from an allowlist derived from the registered `IDomainEventHandler<T>` service descriptors (`EventOutboxTypeResolver.FromHandlers`, which `AddEventOutbox` calls on the `IServiceCollection`). A stored `EventType` string that is not in the allowlist resolves to `null` and the row is rejected (attempt counted); there is no `Type.GetType` on an arbitrary DB string, so the payload cannot be used to load an unexpected type (no deserialization gadget surface).
 - **`AddEventOutbox<TContext>()` is idempotent.** The delivery `IHostedService` is registered via `TryAddEnumerable`, so calling it twice does not spin up duplicate delivery loops.
 
 ### EventOutboxOptions

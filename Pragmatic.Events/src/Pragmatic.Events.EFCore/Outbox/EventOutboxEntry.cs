@@ -43,7 +43,7 @@ public sealed class EventOutboxEntry
     /// <summary>
     ///     Number of delivery attempts made so far.
     ///     The delivery loop skips entries where <c>Attempts >= MaxAttempts</c> (see
-    ///     <see cref="EventOutboxOptions.MaxAttempts" />), so entries exceeding the ceiling
+    ///     <see cref="Pragmatic.Events.Outbox.EventOutboxOptions.MaxAttempts" />), so entries exceeding the ceiling
     ///     are silently abandoned — inspect <see cref="LastError" /> for diagnostics.
     /// </summary>
     public int Attempts { get; set; }

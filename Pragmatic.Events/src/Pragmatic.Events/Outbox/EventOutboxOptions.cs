@@ -1,4 +1,4 @@
-namespace Pragmatic.Events.EFCore.Outbox;
+namespace Pragmatic.Events.Outbox;
 
 /// <summary>
 ///     Options for the transactional event outbox delivery loop.

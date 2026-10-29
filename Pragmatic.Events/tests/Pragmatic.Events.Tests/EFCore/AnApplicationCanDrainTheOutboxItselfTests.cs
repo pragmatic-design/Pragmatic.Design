@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Events.EFCore.Outbox;
+using Pragmatic.Events.Outbox;
 using Pragmatic.Events.Tests.Fixtures;
 using Pragmatic.Serialization;
 using Pragmatic.Testing.Assertions;

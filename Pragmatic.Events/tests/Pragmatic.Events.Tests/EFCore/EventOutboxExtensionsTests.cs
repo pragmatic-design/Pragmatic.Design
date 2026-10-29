@@ -2,6 +2,7 @@ using Pragmatic.Testing.Assertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pragmatic.Events.EFCore.Outbox;
+using Pragmatic.Events.Outbox;
 using Pragmatic.Events.Tests.Fixtures;
 
 namespace Pragmatic.Events.Tests.EFCore;

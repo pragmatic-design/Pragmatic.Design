@@ -1,9 +1,8 @@
-namespace Pragmatic.Events.EFCore.Outbox;
+namespace Pragmatic.Events.Outbox;
 
 /// <summary>
-///     Resolves a stored outbox <see cref="EventOutboxEntry.EventType"/> string to a concrete
-///     <see cref="Type"/> through a <b>closed allowlist</b> built at startup from the registered
-///     domain-event handler types.
+///     Resolves a stored outbox event type string to a concrete <see cref="Type"/> through a
+///     <b>closed allowlist</b> built at startup from the registered domain-event handler types.
 /// </summary>
 /// <remarks>
 ///     Deserializing into a type obtained from <c>Type.GetType(dbString)</c> is a
@@ -18,8 +17,8 @@ public interface IEventOutboxTypeResolver
     ///     <see langword="null"/> if the name is not in the allowlist (rejected, fail-closed).
     /// </summary>
     /// <param name="storedTypeName">
-    ///     The value persisted in <see cref="EventOutboxEntry.EventType"/> (assembly-qualified,
-    ///     full, or simple name as written by <c>EventOutboxInterceptor</c>).
+    ///     The event type an outbox row holds (assembly-qualified, full, or simple name, as
+    ///     <see cref="EventOutboxDelivery.Capture"/> writes it).
     /// </param>
     Type? Resolve(string storedTypeName);
 }

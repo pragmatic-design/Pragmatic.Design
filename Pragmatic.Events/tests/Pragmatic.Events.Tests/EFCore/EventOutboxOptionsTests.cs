@@ -1,5 +1,5 @@
 using Pragmatic.Testing.Assertions;
-using Pragmatic.Events.EFCore.Outbox;
+using Pragmatic.Events.Outbox;
 
 namespace Pragmatic.Events.Tests.EFCore;
 

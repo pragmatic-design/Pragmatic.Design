@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Events.Outbox;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Serialization;
 
@@ -72,12 +73,12 @@ public sealed class EventOutboxInterceptor : SaveChangesInterceptor
         {
             foreach (var domainEvent in entity.DomainEvents)
             {
-                var eventType = domainEvent.GetType();
+                var (eventType, payload) = EventOutboxDelivery.Capture(domainEvent, serializerOptions);
                 context.Add(new EventOutboxEntry
                 {
                     Id = Guid.NewGuid(),
-                    EventType = eventType.AssemblyQualifiedName ?? eventType.FullName ?? eventType.Name,
-                    Payload = JsonSerializer.Serialize(domainEvent, serializerOptions.GetTypeInfo(eventType)),
+                    EventType = eventType,
+                    Payload = payload,
                     OccurredAt = domainEvent.OccurredAt,
                     CreatedAt = now,
                     TenantId = tenantId,

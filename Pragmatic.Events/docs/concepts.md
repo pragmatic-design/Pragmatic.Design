@@ -909,6 +909,8 @@ The `InMemoryEventDispatcher` is synchronous and in-process: it dispatches *afte
 
 ### Options: `EventOutboxOptions`
 
+In `Pragmatic.Events` (namespace `Pragmatic.Events.Outbox`), with the allowlist, because they do not depend on the store.
+
 | Option | Default | Constraint |
 |--------|---------|-----------|
 | `BatchSize` | 100 | at least 1 (validated on set) |
