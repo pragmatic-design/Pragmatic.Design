@@ -45,7 +45,7 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         AppendLine($"        {Services}.AddKeyedScoped<{e.UnitOfWork}>(services, {key}, (sp, k) => new {e.UnitOfWork}(");
         AppendLine($"            {Keyed}.GetRequiredKeyedService<{e.Session}>(sp, k), Get<global::System.TimeProvider>(sp),");
         AppendLine("            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), false, All<global::Pragmatic.Persistence.Lifecycle.IGeneratedValueBinding>(sp),");
-        AppendLine($"            Get<global::Pragmatic.Events.IDomainEventDispatcher>(sp), All<{e.Phase}>(sp), All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp)));");
+        AppendLine($"            Get<global::Pragmatic.Events.IDomainEventDispatcher>(sp), Phases<{e.Phase}>(sp, k), All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp)));");
         AppendLine($"        {Services}.AddKeyedScoped<global::Pragmatic.Persistence.Repository.IUnitOfWork>(services, {key},");
         AppendLine($"            (sp, k) => {Keyed}.GetRequiredKeyedService<{e.UnitOfWork}>(sp, k));");
         foreach (var type in model.EntityTypes)
@@ -56,6 +56,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"            sp => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Pragmatic.Persistence.Repository.IRepository<{type}>>(sp));");
         }
 
+        if (model.EventOutbox)
+        {
+            AppendLine($"        // [EnableEventOutbox]: the save's events go to {name}'s outbox (its phase, keyed by the boundary), delivered by its drainer.");
+            AppendLine($"        {e.EventOutbox}<{model.BoundaryType}>(services);");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();
@@ -63,6 +69,10 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         AppendLine();
         AppendLine("    private static global::System.Collections.Generic.IEnumerable<T> All<T>(global::System.IServiceProvider sp)");
         AppendLine("        => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetServices<T>(sp);");
+        AppendLine();
+        AppendLine("    /// <summary>The phases every unit of work runs, then the boundary's own (keyed by it: a module's outbox, which another boundary's saves do not feed).</summary>");
+        AppendLine("    private static global::System.Collections.Generic.IEnumerable<T> Phases<T>(global::System.IServiceProvider sp, object? key)");
+        AppendLine($"        => global::System.Linq.Enumerable.Concat(All<T>(sp), {Keyed}.GetKeyedServices<T>(sp, key));");
         AppendLine("}");
     }
 }

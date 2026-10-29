@@ -639,7 +639,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 |---|---|---|---|
 | `PRAG2750` | `MustBeDomainEventSource` | Error | Entity with [Raises<T>] must derive from DomainEventSource |
 | `PRAG2751` | `UnmatchedConstructorParameter` | Warning | Lifecycle event constructor parameter is unmatched |
-| `PRAG2752` | `EnableEventOutboxWithoutEFCore` | Warning | [EnableEventOutbox] requires Pragmatic.Events.EFCore |
+| `PRAG2752` | `EnableEventOutboxWithoutEFCore` | Warning | [EnableEventOutbox] requires the outbox package of the boundary's engine |
 | `PRAG2753` | `RaisesOnAnEntityMethodGeneratesNothing` | Error | [Raises<T>] on an entity's method generates nothing |
 
 *First free after the last used:* `PRAG2754`.

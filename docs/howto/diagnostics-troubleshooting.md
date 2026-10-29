@@ -255,7 +255,7 @@ dotnet_diagnostic.PRAG0303.severity = none
 | PRAG2701 | ValueObject | Warning | `[ValueObject]` missing `private static Validate` | Declare the method so `Create` can be generated |
 | PRAG2750 | Lifecycle | Error | `[Raises<T>]` requires `DomainEventSource` | Derive the entity from `DomainEventSource` |
 | PRAG2751 | Lifecycle | Warning | Event ctor parameter unmatched -- passed `default` | Rename it to match an entity member |
-| PRAG2752 | Lifecycle | Warning | `[EnableEventOutbox]` without Events.EFCore -- no-op | Add the Pragmatic.Events.EFCore reference |
+| PRAG2752 | Lifecycle | Warning | `[EnableEventOutbox]` without the outbox package of the boundary's engine -- no-op | Add Pragmatic.Events.EFCore (EF Core) or Pragmatic.Events.Engines (Sql, documents) |
 | PRAG2753 | Lifecycle | Error | `[Raises<T>]` on an entity's **method** -- nothing generates that raise | Declare it on the entity class, or use `[RaisesEvent<T>]` on the state machine's target member, or `RaiseEvent(...)` in the body |
 | PRAG9000 | SG infra | Error | A generator output failed | Report the triggering code; other outputs are unaffected |
 

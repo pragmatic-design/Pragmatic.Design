@@ -272,25 +272,29 @@ internal static class DbContextFeature
                 features.HasNotificationsEFCore ? notificationBoundaries : EquatableArray<string>.Empty);
         });
 
-        // Diagnostic (fires in the boundary library where [EnableEventOutbox] is authored):
-        // the attribute is a no-op unless the project references Pragmatic.Events.EFCore.
+        // Diagnostic (fires in the boundary library where [EnableEventOutbox] is authored): the attribute is a
+        // no-op unless the project references the outbox package of the boundary's engine (Pragmatic.Events.EFCore
+        // on EF Core, Pragmatic.Events.Engines on the Sql and documents engines).
         var enableOutboxSites = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 AttributeNames.EnableEventOutbox,
                 predicate: static (node, _) => node is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax,
                 transform: static (attrCtx, _) =>
-                    (Name: attrCtx.TargetSymbol.Name, Location: LocationInfo.From(attrCtx.TargetNode.GetLocation())))
+                    (Name: attrCtx.TargetSymbol.Name, Location: LocationInfo.From(attrCtx.TargetNode.GetLocation()),
+                     NamedEngine: attrCtx.TargetSymbol is INamedTypeSymbol boundary ? PersistenceEngineMarker.NamedOn(boundary) : null,
+                     HasEnginesOutbox: attrCtx.SemanticModel.Compilation.GetTypeByMetadataName(Sql.Transforms.PragmaticRegistration.EngineEventOutbox) is not null))
             .Combine(features);
 
         context.RegisterSourceOutputSafe(enableOutboxSites, static (ctx, pair) =>
         {
             var (site, feats) = pair;
-            if (feats.HasEventsEFCore)
+            var onEngines = PersistenceEngineMarker.EngineOf(site.NamedEngine, feats) is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+            if (onEngines ? site.HasEnginesOutbox : feats.HasEventsEFCore)
                 return;
             ctx.ReportDiagnostic(Diagnostic.Create(
                 Lifecycle.Diagnostics.LifecycleEventsDiagnostics.EnableEventOutboxWithoutEFCore,
                 site.Location?.ToLocation() ?? Location.None,
-                site.Name));
+                site.Name, onEngines ? "Pragmatic.Events.Engines" : "Pragmatic.Events.EFCore"));
         });
 
         // Diagnostic (fires in the boundary library where [EnableSagaPersistence] is authored):

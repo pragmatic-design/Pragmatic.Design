@@ -184,5 +184,44 @@ public class EventOutboxWiringTests
             source, GeneratorTestHelper.FromType<Pragmatic.Events.Attributes.EnableEventOutboxAttribute>());
 
         GeneratorTestHelper.HasDiagnostic(result, "PRAG2752").Should().BeTrue();
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG2752").Single().GetMessage().Should().Contain("does not reference Pragmatic.Events.EFCore");
+    }
+
+    // --- On the Sql and documents engines the outbox is Pragmatic.Events.Engines' ---
+
+    private const string EngineBoundary = """
+        using Pragmatic.Actions.Attributes;
+        using Pragmatic.Events.Attributes;
+        using Pragmatic.Persistence.Entity;
+
+        namespace MyApp.Sales
+        {
+            [Boundary]
+            [PersistenceEngine(PersistenceEngineKind.Sql)]
+            [EnableEventOutbox]
+            public sealed partial class SalesBoundary;
+        }
+        """;
+
+    [Fact]
+    public void Diagnostic_EnableEventOutbox_OnAnEngineBoundaryWithoutTheEnginesPackage_NamesPragmaticEventsEngines()
+    {
+        var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(EngineBoundary,
+            GeneratorTestHelper.FromType<Pragmatic.Events.Attributes.EnableEventOutboxAttribute>(), GeneratorTestHelper.FromType<Pragmatic.Persistence.Entity.EntityAttribute>(),
+            GeneratorTestHelper.FromType<Pragmatic.Actions.Attributes.BoundaryAttribute>());
+
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG2752").Single().GetMessage().Should().Contain("does not reference Pragmatic.Events.Engines");
+    }
+
+    [Fact]
+    public void Diagnostic_EnableEventOutbox_OnAnEngineBoundaryWithTheEnginesPackage_IsNotReported()
+    {
+        // Pragmatic.Events.Engines, by the type the generator recognises it by.
+        var engines = "namespace Pragmatic.Events.Engines { public interface IEngineEventOutboxDrainer<TBoundary> { } }";
+        var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(EngineBoundary + "\n" + engines,
+            GeneratorTestHelper.FromType<Pragmatic.Events.Attributes.EnableEventOutboxAttribute>(), GeneratorTestHelper.FromType<Pragmatic.Persistence.Entity.EntityAttribute>(),
+            GeneratorTestHelper.FromType<Pragmatic.Actions.Attributes.BoundaryAttribute>());
+
+        GeneratorTestHelper.HasDiagnostic(result, "PRAG2752").Should().BeFalse();
     }
 }

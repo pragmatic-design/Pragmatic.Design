@@ -259,6 +259,13 @@ internal static partial class EntityTransform
            || name.EndsWith(".EntityAttribute", StringComparison.Ordinal);
 
     /// <summary>
+    ///     The Sql engine's own <c>[Entity]</c>: a row the engine stores (an outbox's, a fixture's), never one of Pragmatic's entities, whose shape,
+    ///     boundary and engine this feature would otherwise give it. The name alone matches it, so it is told apart by its namespace.
+    /// </summary>
+    private static bool IsSqlEngineAttribute(INamedTypeSymbol attribute)
+        => attribute.ContainingNamespace?.ToDisplayString() == "Pragmatic.Persistence.Sql.Attributes";
+
+    /// <summary>
     ///     Transforms a syntax context into EntityMetadataModel if it has [Entity] attribute.
     /// </summary>
     public static EntityMetadataModel? TransformFromSyntax(
@@ -279,7 +286,7 @@ internal static partial class EntityTransform
         var entityAttr = typeSymbol.GetAttributes().FirstOrDefault(a =>
         {
             var attrClass = a.AttributeClass;
-            if (attrClass is null)
+            if (attrClass is null || IsSqlEngineAttribute(attrClass))
                 return false;
 
             // Check for generic Entity<T> attribute
@@ -571,7 +578,7 @@ internal static partial class EntityTransform
         var entityAttr = typeSymbol.GetAttributes().FirstOrDefault(a =>
         {
             var attrClass = a.AttributeClass;
-            if (attrClass is null)
+            if (attrClass is null || IsSqlEngineAttribute(attrClass))
                 return false;
 
             if (attrClass.IsGenericType)

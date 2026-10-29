@@ -312,6 +312,14 @@ What you get and what to keep in mind:
 > public sealed class OrdersBoundary;
 > ```
 
+> **A boundary on the Sql or documents engine?** The same attribute, with `Pragmatic.Events.Engines` in the
+> boundary project instead of `Pragmatic.Events.EFCore` (PRAG2752 names the one the boundary's engine needs).
+> The generated `Add{Boundary}Persistence` registers the outbox's phase on the boundary's unit of work, its
+> drainer (`IEngineEventOutboxDrainer<TBoundary>`, to drain on demand) and the delivery loop. On the Sql engine
+> the table is EF Core's `__EventOutbox`, in the database's generated schema; on the documents engine it is the
+> `__EventOutbox` collection in the boundary's `{Boundary}DocSchema`. The package does not bring the engines'
+> bridges: the application references the one its boundaries use, as it does without the outbox.
+
 ## Step 6: Test Your Events
 
 **Test that the entity raises the event:**

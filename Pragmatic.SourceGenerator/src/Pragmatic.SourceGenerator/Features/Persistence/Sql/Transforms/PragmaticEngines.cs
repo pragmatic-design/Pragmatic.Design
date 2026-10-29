@@ -105,6 +105,13 @@ internal sealed class PragmaticEngines
         return chosen is null ? _referenced.Count == 0 : chosen == engine;
     }
 
+    /// <summary>True when <paramref name="engine" /> persists <paramref name="boundary" />'s entities: the engine it names, else the only one referenced, else (none referenced) any.</summary>
+    public bool ServesBoundary(INamedTypeSymbol boundary, PragmaticEngine engine)
+    {
+        var chosen = MarkedEngine(boundary) ?? (_referenced.Count == 1 ? _referenced[0] : null);
+        return chosen is null ? _referenced.Count == 0 : chosen == engine;
+    }
+
     /// <summary>The generator that reports <see cref="Problems" />, so they are reported once: the Sql engine's when referenced, else the documents engine's.</summary>
     public bool Reports(PragmaticEngine engine)
         => engine == (_referenced.Contains(PragmaticEngine.Sql) ? PragmaticEngine.Sql : _referenced.Contains(PragmaticEngine.Documents) ? PragmaticEngine.Documents : engine);

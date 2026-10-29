@@ -921,6 +921,24 @@ In `Pragmatic.Events` (namespace `Pragmatic.Events.Outbox`), with the allowlist,
 
 On a **source-generated** boundary DbContext, mark the boundary `[EnableEventOutbox]`: the generator maps `__EventOutbox`, adds the interceptor, registers the delivery service, and includes the table in the schema metadata. The boundary project must reference `Pragmatic.Events.EFCore` (otherwise the generator emits **PRAG2752** rather than silently doing nothing). On a **hand-written** DbContext, use the three-step manual wiring (see the outbox Quick Start in [Getting Started](getting-started.md)). Two boundaries that share one physical database share a single `__EventOutbox` table; the atomic claim keeps delivery safe.
 
+### On the Sql and documents engines
+
+A boundary the Sql or documents engine persists enables the outbox with the same attribute; its project references `Pragmatic.Events.Engines` (PRAG2752 names the package the boundary's engine needs). The generated `Add{Boundary}Persistence` then registers, for that boundary only:
+
+| | Sql engine | Documents engine |
+|---|---|---|
+| Capture | `SqlEventOutboxPhase`: the events of the entities the save writes become `EventOutboxRow`s in the save's batch, its transaction | `DocEventOutboxPhase`: `EventOutboxDocument`s written through the save's session, in its transaction where MongoDB runs one |
+| Store | `__EventOutbox`, EF Core's table column for column (instants in UTC ticks), in the database's generated schema | the `__EventOutbox` collection, in the boundary's `{Boundary}DocSchema` |
+| Delivery | `SqlEventOutboxDrainer<TBoundary>` | `DocEventOutboxDrainer<TBoundary>` |
+
+Both drainers do what EF Core's does: read a batch of pending keys, claim them with one conditional update (a row another worker holds stays its until its lease runs out), deliver each through `EventOutboxDelivery` (allowlist, trace, tenant), and mark it delivered or count its failed attempt and release it. `IEngineEventOutboxDrainer<TBoundary>` runs one pass on demand; `EngineEventOutboxDeliveryService<TBoundary>` runs it every `PollingInterval`. The rows are read through the boundary's own session, by its key.
+
+Where they differ from EF Core:
+
+- **The phase sees the entities the save writes.** An entity that raised an event and changed nothing is not written, and its events are dispatched in process after the commit, as without the outbox. EF Core's interceptor reads every tracked entity.
+- **On a standalone MongoDB server and on Cosmos DB** a save is not one transaction: the outbox documents are written after the entities, and a failure in between leaves the entities written and their events lost.
+- **The package does not bring the engines' bridges.** The application references the bridge its boundaries use (`Pragmatic.Persistence.Sql`, `Pragmatic.Persistence.Documents`), as it does without the outbox; bringing both would make it reference two engines.
+
 ---
 
 ## Thread Safety
