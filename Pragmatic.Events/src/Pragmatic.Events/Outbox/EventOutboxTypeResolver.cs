@@ -1,4 +1,6 @@
-namespace Pragmatic.Events.EFCore.Outbox;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Pragmatic.Events.Outbox;
 
 /// <summary>
 ///     Default <see cref="IEventOutboxTypeResolver"/> backed by an immutable allowlist.
@@ -11,7 +13,7 @@ public sealed class EventOutboxTypeResolver : IEventOutboxTypeResolver
 
     /// <summary>
     ///     Builds the allowlist. Each allowed type is indexed by its assembly-qualified name,
-    ///     full name, and simple name so any form written by <c>EventOutboxInterceptor</c> resolves.
+    ///     full name, and simple name so any form an outbox row holds resolves.
     /// </summary>
     /// <param name="allowedEventTypes">The closed set of resolvable domain-event types.</param>
     public EventOutboxTypeResolver(IEnumerable<Type> allowedEventTypes)
@@ -23,13 +25,37 @@ public sealed class EventOutboxTypeResolver : IEventOutboxTypeResolver
         foreach (var type in allowedEventTypes)
         {
             // Last writer wins is fine: a collision means two forms map to the same type set;
-            // we index every form the interceptor might have persisted (AQN / FullName / Name).
+            // we index every form a capture might have persisted (AQN / FullName / Name).
             if (type.AssemblyQualifiedName is { } aqn)
                 _byName[aqn] = type;
             if (type.FullName is { } full)
                 _byName[full] = type;
             _byName[type.Name] = type;
         }
+    }
+
+    /// <summary>
+    ///     The allowlist of the event types <paramref name="services" /> registers an
+    ///     <see cref="IDomainEventHandler{TEvent}"/> for: every handler descriptor's generic argument, a
+    ///     set fixed when the services are built (no arbitrary type loading from the database).
+    /// </summary>
+    public static EventOutboxTypeResolver FromHandlers(IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var handlerInterface = typeof(IDomainEventHandler<>);
+        var eventTypes = new HashSet<Type>();
+
+        foreach (var descriptor in services)
+        {
+            var serviceType = descriptor.ServiceType;
+            if (serviceType.IsGenericType
+                && serviceType.GetGenericTypeDefinition() == handlerInterface)
+            {
+                eventTypes.Add(serviceType.GetGenericArguments()[0]);
+            }
+        }
+
+        return new EventOutboxTypeResolver(eventTypes);
     }
 
     /// <inheritdoc />

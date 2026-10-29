@@ -1,9 +1,7 @@
-using System.Diagnostics;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Pragmatic.MultiTenancy;
+using Pragmatic.Events.Outbox;
 using Pragmatic.Serialization;
 
 namespace Pragmatic.Events.EFCore.Outbox;
@@ -31,13 +29,6 @@ namespace Pragmatic.Events.EFCore.Outbox;
 public sealed class EventOutboxDrainer<TContext> : IEventOutboxDrainer<TContext>
     where TContext : DbContext
 {
-    /// <summary>Trace source for outbox delivery spans; links back to the originating request trace.</summary>
-    /// <remarks>
-    ///     The source's <em>name</em> is what observability configuration keys on, and it is unchanged
-    ///     — only the type that declares it moved here, beside the code that starts the span.
-    /// </remarks>
-    public static readonly ActivitySource ActivitySource = new("Pragmatic.Events.Outbox");
-
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly EventOutboxOptions _options;
     private readonly ILogger<EventOutboxDrainer<TContext>> _logger;
@@ -116,49 +107,16 @@ public sealed class EventOutboxDrainer<TContext> : IEventOutboxDrainer<TContext>
         {
             try
             {
-                // Fail-closed: only allowlisted (registered-handler) event types resolve.
-                var eventType = typeResolver.Resolve(entry.EventType);
-                if (eventType is null)
+                var refused = await EventOutboxDelivery.DeliverAsync(entry.EventType, entry.Payload, entry.TenantId, entry.TraceParent,
+                    typeResolver, serializerOptions, dispatcher, ct).ConfigureAwait(false);
+                if (refused is not null)
                 {
                     entry.Attempts++;
-                    // The allowlist is built from registered IDomainEventHandler<T> types, so a miss means
-                    // no handler is registered for this event (or the type was renamed/moved since it was written).
-                    entry.LastError =
-                        $"No registered handler for event type '{entry.EventType}' — the outbox deserialization " +
-                        "allowlist is derived from IDomainEventHandler<T> registrations. Register a handler, or the type was renamed.";
+                    entry.LastError = refused;
                     entry.ClaimedBy = null;
                     entry.ClaimedUntil = null;
-                    _logger.LogWarning("Skipped outbox event {OutboxEntryId}: no registered handler for type {EventType}", entry.Id, entry.EventType);
+                    _logger.LogWarning("Skipped outbox event {OutboxEntryId} of type {EventType}: {Reason}", entry.Id, entry.EventType, refused);
                     continue;
-                }
-
-                if (JsonSerializer.Deserialize(entry.Payload, serializerOptions.GetTypeInfo(eventType)) is not IDomainEvent domainEvent)
-                {
-                    entry.Attempts++;
-                    entry.LastError = "Payload did not deserialize to an IDomainEvent.";
-                    entry.ClaimedBy = null;
-                    entry.ClaimedUntil = null;
-                    continue;
-                }
-
-                // Re-attach to the originating distributed trace so handler work shows under the
-                // request that raised the event, across the async outbox boundary.
-                using var activity = StartDeliveryActivity(entry.TraceParent);
-
-                // Restore the originating tenant so tenant-scoped EF queries inside handlers
-                // resolve the correct filter instead of the worker's null tenant.
-                // ⚠️ TenantScope, not IMutableTenantContext.SetTenant. Five workers restored the tenant by
-                // hand, each resolving the mutable context from its own scope, while the mechanism the
-                // documentation points at had zero callers in the framework — because it could not be
-                // called: it lived in Pragmatic.MultiTenancy and these modules only reference
-                // Abstractions. Moving it beside the contract it serves is what made one way possible.
-                // The registered ITenantContext is AmbientTenantContext: it prefers the request tenant
-                // and falls back to this ambient one, and outside a request there is no request tenant.
-                using (entry.TenantId is { Length: > 0 } entryTenant
-                           ? TenantScope.BeginScope(entryTenant)
-                           : null)
-                {
-                    await dispatcher.DispatchAsync([domainEvent], ct).ConfigureAwait(false);
                 }
 
                 entry.ProcessedAt = DateTimeOffset.UtcNow;
@@ -182,14 +140,4 @@ public sealed class EventOutboxDrainer<TContext> : IEventOutboxDrainer<TContext>
 
         return delivered;
     }
-
-    /// <summary>
-    ///     Starts a delivery span, parented to the W3C trace captured at write time when present, so a
-    ///     distributed trace spans the asynchronous outbox boundary. Returns null when no listener is
-    ///     registered (zero overhead) — the dispatch still runs.
-    /// </summary>
-    private static Activity? StartDeliveryActivity(string? traceParent)
-        => !string.IsNullOrEmpty(traceParent) && ActivityContext.TryParse(traceParent, null, out var parent)
-            ? ActivitySource.StartActivity("EventOutbox.Deliver", ActivityKind.Consumer, parent)
-            : ActivitySource.StartActivity("EventOutbox.Deliver", ActivityKind.Consumer);
 }

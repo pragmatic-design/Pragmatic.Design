@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Pragmatic.Events.Outbox;
 
 namespace Pragmatic.Events.EFCore.Outbox;
 
@@ -55,8 +56,7 @@ public static class EventOutboxExtensions
         // Build a closed allowlist of resolvable event types from the registered handlers.
         // This replaces an unsafe Type.GetType(dbString) in the delivery loop (gadget surface)
         // with a fail-closed lookup: only events the app actually handles are deserializable.
-        services.TryAddSingleton<IEventOutboxTypeResolver>(_ =>
-            new EventOutboxTypeResolver(ResolveAllowedEventTypes(services)));
+        services.TryAddSingleton<IEventOutboxTypeResolver>(_ => EventOutboxTypeResolver.FromHandlers(services));
 
         // One delivery pass, reachable by name. The background loop below calls exactly this, and so
         // can the application: an outbox whose only trigger is a five-second timer can be asserted
@@ -69,28 +69,5 @@ public static class EventOutboxExtensions
             ServiceDescriptor.Singleton<IHostedService, EventOutboxDeliveryService<TContext>>());
 
         return services;
-    }
-
-    /// <summary>
-    ///     Derives the closed set of allowlisted event types from every registered
-    ///     <see cref="IDomainEventHandler{TEvent}"/> service descriptor's generic argument.
-    ///     This is a compile-time-determined set (no arbitrary type loading from the DB).
-    /// </summary>
-    private static IEnumerable<Type> ResolveAllowedEventTypes(IServiceCollection services)
-    {
-        var handlerInterface = typeof(Pragmatic.Events.IDomainEventHandler<>);
-        var eventTypes = new HashSet<Type>();
-
-        foreach (var descriptor in services)
-        {
-            var serviceType = descriptor.ServiceType;
-            if (serviceType.IsGenericType
-                && serviceType.GetGenericTypeDefinition() == handlerInterface)
-            {
-                eventTypes.Add(serviceType.GetGenericArguments()[0]);
-            }
-        }
-
-        return eventTypes;
     }
 }

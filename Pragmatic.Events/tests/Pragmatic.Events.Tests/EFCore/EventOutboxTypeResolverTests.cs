@@ -1,6 +1,7 @@
 using Pragmatic.Testing.Assertions;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Events.EFCore.Outbox;
+using Pragmatic.Events.Outbox;
 
 namespace Pragmatic.Events.Tests.EFCore;
 
