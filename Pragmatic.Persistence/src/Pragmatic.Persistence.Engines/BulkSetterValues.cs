@@ -1,15 +1,15 @@
 using System.Linq.Expressions;
 using Pragmatic.Persistence.Repository;
 
-namespace Pragmatic.Persistence.Sql;
+namespace Pragmatic.Persistence.Engines;
 
 /// <summary>
-///     The values a <c>BulkUpdateAsync</c>'s setters carry, in the order of their <c>SetProperty</c> calls: the generator compiled the statement
-///     (its columns, the values' slots) from the lambda where it is written, and the values come from running the delegate the caller passed,
-///     so a value it captures is read as it is. A value computed on the row is part of the statement and records nothing.
+///     The values a <c>BulkUpdateAsync</c>'s setters carry, in the order of their <c>SetProperty</c> calls: the generator compiled the update
+///     (its fields, the values' slots) from the lambda where it is written, and the values come from running the delegate the caller passed,
+///     so a value it captures is read as it is. A value computed on the row is part of the compiled update and records nothing.
 /// </summary>
 /// <typeparam name="TEntity">The entity.</typeparam>
-public sealed class SqlBulkValues<TEntity> : IBulkSetters<TEntity>
+internal sealed class BulkSetterValues<TEntity> : IBulkSetters<TEntity>
     where TEntity : class
 {
     private readonly List<object?> _values = [];
@@ -18,7 +18,7 @@ public sealed class SqlBulkValues<TEntity> : IBulkSetters<TEntity>
     public static object?[] Record(Action<IBulkSetters<TEntity>> set)
     {
         ArgumentNullException.ThrowIfNull(set);
-        var recorder = new SqlBulkValues<TEntity>();
+        var recorder = new BulkSetterValues<TEntity>();
         set(recorder);
         return [.. recorder._values];
     }

@@ -300,7 +300,7 @@ internal sealed partial class DocTranslator
         }
     }
 
-    private static string? Literal(object value, bool asEnum)
+    internal static string? Literal(object value, bool asEnum)
     {
         switch (value)
         {

@@ -6,7 +6,8 @@ namespace Pragmatic.Persistence.Documents.Core.Tests;
 
 /// <summary>
 ///     Commands by filter on MongoDB: an update of every document the chain selects (<c>$set</c> from a constant and the argument, the version
-///     incremented, so a copy read before is stale) and a delete, each one command answering the count; the other customer's document untouched.
+///     incremented, so a copy read before is stale; a pipeline when a value is computed from the document) and a delete, each one command
+///     answering the count; the other customer's document untouched.
 /// </summary>
 [Collection("mongo")]
 public class DocumentCommandTests(MongoServer mongo)
@@ -29,6 +30,10 @@ public class DocumentCommandTests(MongoServer mongo)
         var read = await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ToListAsync();
         Assert.All(read, o => Assert.Equal((OrderStatus.Paid, 99.5m, 1), (o.Status, o.Total, o.Version)));
         await Assert.ThrowsAsync<DocConcurrencyException>(() => session.ReplaceAsync(mine[0])); // read before the update: stale
+        // A value computed from the document's own fields: an update pipeline, the version moved on in it.
+        Assert.Equal(3, await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ExecuteUpdateAsync(s => s.Set(o => o.Total, o => o.Total * 2 - 0.5m)));
+        read = await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ToListAsync();
+        Assert.All(read, o => Assert.Equal((198.5m, 2), (o.Total, o.Version)));
         var untouched = (await session.Query<OrderDocument>().FirstOrDefaultAsync((o, id) => o.Id == id, other.Id))!;
         Assert.Equal((OrderStatus.Open, 39.98m, 0), (untouched.Status, untouched.Total, untouched.Version));
 

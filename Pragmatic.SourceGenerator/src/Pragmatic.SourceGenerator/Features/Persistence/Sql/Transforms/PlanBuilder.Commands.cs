@@ -104,7 +104,7 @@ internal sealed partial class PlanBuilder
             }
             else if (_recordedValues)
             {
-                // The value is the delegate's, whatever it captures: a slot filled from what it records (SqlBulkValues).
+                // The value is the delegate's, whatever it captures: a slot filled from what it records (BulkSetterValues).
                 var index = _kinds.Count;
                 ValueSlots.Add($"__values[{valueCalls - 1 - seenValues++}]");
                 _binds.Add($"p[{index}].Value = global::Pragmatic.Persistence.Sql.Planning.SqlValue.ToDatabase(d, q.Slot({ValueSlots.Count - 1}));");

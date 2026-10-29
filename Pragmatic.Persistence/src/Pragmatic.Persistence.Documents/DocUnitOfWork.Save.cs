@@ -93,19 +93,30 @@ public sealed partial class DocUnitOfWork
                     break;
             }
         }
-        catch (DocConcurrencyException stale)
+        catch (Exception refused) when (Refusal(refused, type, entry.State == DocEntryState.Added) is { } violation)
         {
-            throw new PersistenceRuleViolationException(new ConcurrencyError { Message = stale.Message, EntityTypeName = type }, stale);
+            throw violation;
         }
-        catch (MongoWriteException duplicate) when (duplicate.IsDuplicateKey)
+    }
+
+    /// <summary>
+    ///     A store's refusal of a write as Pragmatic's broken rule: a stale copy a <see cref="ConcurrencyError" />, a duplicate key (or, on Cosmos
+    ///     DB, a taken id of a new document) a conflict. Null for any other failure, which stays as it is.
+    /// </summary>
+    private static PersistenceRuleViolationException? Refusal(Exception refused, string type, bool added)
+    {
+        switch (refused)
         {
-            var (index, field) = DuplicateKey(duplicate.Message);
-            throw new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, field, index), duplicate);
-        }
-        catch (CosmosException taken) when (taken.IsConflict && entry.State == DocEntryState.Added)
-        {
-            // The id is taken in its partition (or a unique key policy refused the document): Cosmos DB names no field.
-            throw new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, null, null), taken);
+            case DocConcurrencyException stale:
+                return new PersistenceRuleViolationException(new ConcurrencyError { Message = stale.Message, EntityTypeName = type }, stale);
+            case MongoWriteException { IsDuplicateKey: true } duplicate:
+                var (index, field) = DuplicateKey(duplicate.Message);
+                return new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, field, index), duplicate);
+            case CosmosException { IsConflict: true } taken when added:
+                // The id is taken in its partition (or a unique key policy refused the document): Cosmos DB names no field.
+                return new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, null, null), taken);
+            default:
+                return null;
         }
     }
 

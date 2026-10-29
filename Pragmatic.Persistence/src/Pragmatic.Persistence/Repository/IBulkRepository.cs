@@ -12,7 +12,9 @@ namespace Pragmatic.Persistence.Repository;
 ///         Declared here, where there is no EF Core, so that code written against it does not depend on the persistence. EF Core's
 ///         generated repository implements it, translating the update to <c>ExecuteUpdate</c>. The Sql engine's does too: there the update
 ///         and the delete are compiled where they are called (a call the generator did not see, through a method group or in an assembly it
-///         does not run on, throws <see cref="NotSupportedException" />), and a <c>[RollUp]</c> participant's are refused at build.
+///         does not run on, throws <see cref="NotSupportedException" />), and a <c>[RollUp]</c> participant's are refused at build. The
+///         documents engine's too: the update is compiled where it is called, as on the Sql engine; MongoDB runs it as one command, Cosmos DB,
+///         which writes a document by its id, one document at a time and not atomically.
 ///     </para>
 ///     <para>
 ///         The entity's rules hold as on any write: the delete of a <c>[SoftDelete]</c> entity marks the rows, the read filters select them.

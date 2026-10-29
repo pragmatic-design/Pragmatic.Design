@@ -93,7 +93,7 @@ internal static partial class SqlInterceptorGenerator
     ///     The entity of a bulk write: the method is <c>IBulkRepository&lt;T&gt;</c>'s, or a repository's implementation of it (a call on the
     ///     concrete type). Null for any other method of that name.
     /// </summary>
-    private static INamedTypeSymbol? BulkEntity(IMethodSymbol method, INamedTypeSymbol bulk)
+    internal static INamedTypeSymbol? BulkEntity(IMethodSymbol method, INamedTypeSymbol bulk)
     {
         var owner = method.ContainingType;
         if (SymbolEqualityComparer.Default.Equals(owner.OriginalDefinition, bulk))

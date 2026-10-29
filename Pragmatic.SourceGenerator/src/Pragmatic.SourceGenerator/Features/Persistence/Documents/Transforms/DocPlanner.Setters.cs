@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -8,15 +6,16 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 
 /// <summary>
 ///     The commands' part of a plan: <c>ExecuteDeleteAsync</c> takes the chain's filter only; <c>ExecuteUpdateAsync</c>'s setters
-///     (<c>s => s.Set(o => o.Field, value).Set(…)</c>, the value a constant or code over the two-parameter form's argument) become the update
-///     document's <c>$set</c>, with an <c>$inc</c> of the version when the document has one (a copy read before the update is then stale).
+///     (<c>s => s.Set(o => o.Field, value).Set(o => o.Other, o => o.Other + 1)</c>, the value a constant, code over the two-parameter form's
+///     argument, or computed from the document's fields) become the update's <c>$set</c> (a pipeline's when a value is computed), with the version
+///     moved on when the document has one (a copy read before the update is then stale), and Cosmos DB's patch operations (<see cref="DocSetWriter" />).
 /// </summary>
 internal sealed partial class DocPlanner
 {
     public static readonly HashSet<string> Commands = ["ExecuteDeleteAsync", "ExecuteUpdateAsync"];
 
-    /// <summary>The update document's elements as statements over <c>w</c> and <c>s</c>; null for every other terminal.</summary>
-    private string? _update;
+    /// <summary>The update's sets; null for every other terminal.</summary>
+    private DocSetWriter? _update;
 
     private void Command(LambdaExpressionSyntax? lambda)
     {
@@ -67,7 +66,7 @@ internal sealed partial class DocPlanner
             return;
         }
 
-        var set = new StringBuilder();
+        var update = new DocSetWriter(_entity);
         foreach (var call in calls)
         {
             if (call.ArgumentList.Arguments[0].Expression is not SimpleLambdaExpressionSyntax { Body: ExpressionSyntax fieldBody } fieldLambda || _call.Model.GetDeclaredSymbol(fieldLambda.Parameter) is not IParameterSymbol row)
@@ -90,19 +89,37 @@ internal sealed partial class DocPlanner
                 return;
             }
 
-            var value = translator.SetValue(call.ArgumentList.Arguments[1].Expression, field);
+            var valueSyntax = call.ArgumentList.Arguments[1].Expression;
+            if (valueSyntax is SimpleLambdaExpressionSyntax { Body: ExpressionSyntax computedBody } computedLambda && _call.Model.GetDeclaredSymbol(computedLambda.Parameter) is IParameterSymbol document)
+            {
+                // The value computed from the document's own fields: Set(o => o.Stars, o => o.Stars + 1).
+                var computed = new DocComputedTranslator(_call.Model, _entity, _models, document, _diagnostics).Translate(computedBody, field);
+                if (computed is null)
+                {
+                    _failed = true;
+                    return;
+                }
+
+                update.Computed(path, computed);
+                continue;
+            }
+
+            var value = translator.SetValue(valueSyntax, field);
             if (value is null || translator.Failed)
             {
                 _failed = true;
                 return;
             }
 
-            set.Append(value.IsNull ? $"w.WriteNull({DocTypeEmitter.Literal(path)}); " : $"global::Pragmatic.Persistence.Documents.Conversion.DocValues.Write(w, {DocTypeEmitter.Literal(path)}, {value.Code}); ");
+            update.Value(path, value);
         }
 
-        var version = _entity.Version is { } v ? $"w.StartDocument(\"$inc\"); w.Write({DocTypeEmitter.Literal(v.Name)}, 1); w.EndDocument(); " : "";
-        _update = $"w.StartDocument(\"$set\"); {set}w.EndDocument(); {version}";
+        _update = update;
     }
 
-    private string UpdateInitializer => _update is null ? "null" : $"static (w, s) => {{ {_update}}}";
+    private string UpdateInitializer => _update is null ? "null" : $"static (w, s) => {{ {_update.Mongo()}}}";
+
+    /// <summary>The plan's last arguments: Cosmos DB's patch operations, and whether MongoDB's update is a pipeline.</summary>
+    private string CommandInitializer
+        => _update is null ? "null, false" : (_update.Cosmos() is { } patch ? $"static (w, e, s) => {{ {patch}}}" : "null") + ", " + (_update.Pipeline ? "true" : "false");
 }

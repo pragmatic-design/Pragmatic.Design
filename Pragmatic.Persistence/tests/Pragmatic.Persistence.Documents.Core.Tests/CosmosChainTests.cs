@@ -7,7 +7,8 @@ namespace Pragmatic.Persistence.Documents.Core.Tests;
 /// <summary>
 ///     The same chains on Cosmos DB (the emulator), through the queries the generator rendered from the same conditions as MongoDB's filters.
 ///     In the customer's partition every form runs on the server; across partitions an unordered list and Any run, an ordering, a count or an
-///     aggregate is refused with the remedy (the gateway does not serve them). Each answer compared with LINQ over the same documents.
+///     aggregate is refused with the remedy (the gateway does not serve them). An update or a delete by filter writes each document by its id.
+///     Each answer compared with LINQ over the same documents.
 /// </summary>
 [Collection("cosmos")]
 public class CosmosChainTests
@@ -121,9 +122,6 @@ public class CosmosChainTests
         // A count across partitions is sent to each partition key range and added up (owner's decision of 2026-10-22), as the SDKs do.
         Assert.Equal(cosmos.Orders.Count(o => !o.IsDeleted), await session.Query<OrderDocument>().CountAsync(o => !o.IsDeleted));
         await Assert.ThrowsAsync<NotSupportedException>(async () => await session.Query<OrderDocument>().MaxAsync(o => o.Total));
-        // No delete or update by filter: Cosmos DB writes a document by its id.
-        var command = await Assert.ThrowsAsync<NotSupportedException>(async () => await session.Query<OrderDocument>().Where(o => o.IsDeleted).ExecuteDeleteAsync());
-        Assert.Contains("by its id", command.Message, StringComparison.Ordinal);
         await Assert.ThrowsAsync<NotSupportedException>(async () => await session.Query<OrderDocument>().GroupBy(o => o.Status).Select(g => new { g.Key, Count = g.Count() }).ToListAsync());
     }
 
@@ -149,6 +147,38 @@ public class CosmosChainTests
         Assert.Equal((99m, OrderStatus.Paid, 2), (stored.Total, stored.Status, stored.Version));
         await session.DeleteAsync(stored);
         Assert.False(await session.Query<OrderDocument>().AnyAsync((o, id) => o.CustomerId == id, order.CustomerId));
+    }
+
+    [Fact]
+    public async Task An_update_and_a_delete_by_filter_write_each_document_by_its_id()
+    {
+        if (cosmos.Unavailable is not null)
+            return;
+        var session = cosmos.Session();
+        var customer = Guid.NewGuid();
+        OrderDocument New(string number) => new() { Id = Guid.NewGuid(), CustomerId = customer, Number = number, Status = OrderStatus.Open, Total = 10.5m, CreatedAt = new DateTimeOffset(2026, 10, 20, 10, 0, 0, TimeSpan.Zero), Lines = [new LineDocument { Id = Guid.NewGuid(), Sku = "NUT", Quantity = 2, UnitPrice = 5.25m }] };
+        var orders = new[] { New("ORD-0K1"), New("ORD-0K2"), New("ORD-0K3") };
+        await session.InsertManyAsync(orders);
+        try
+        {
+            // Cosmos DB has no update or delete by filter: the documents are read, then each one patched (or deleted) at the etag of that read.
+            var updated = await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c && o.Number != "ORD-0K3", customer)
+                .ExecuteUpdateAsync((s, status) => s.Set(o => o.Status, status).Set(o => o.Total, o => o.Total * 2 - 0.5m), OrderStatus.Paid);
+            Assert.Equal(2, updated);
+            var read = await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ToListAsync();
+            Assert.Equal([("ORD-0K1", OrderStatus.Paid, 20.5m, 1), ("ORD-0K2", OrderStatus.Paid, 20.5m, 1), ("ORD-0K3", OrderStatus.Open, 10.5m, 0)],
+                read.OrderBy(o => o.Number, StringComparer.Ordinal).Select(o => (o.Number, o.Status, o.Total, o.Version)));
+            await Assert.ThrowsAsync<DocConcurrencyException>(() => session.ReplaceAsync(orders[0])); // read before the update: stale
+
+            Assert.Equal(2, await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c && o.Status == OrderStatus.Paid, customer).ExecuteDeleteAsync());
+            Assert.Equal(["ORD-0K3"], (await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ToListAsync()).Select(o => o.Number));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await session.Query<OrderDocument>().Take(1).ExecuteDeleteAsync());
+        }
+        finally
+        {
+            // The workload's container, which the other tests read whole: these orders leave it, whatever happened above.
+            await session.Query<OrderDocument>().Where((o, c) => o.CustomerId == c, customer).ExecuteDeleteAsync();
+        }
     }
 
     [Fact]
