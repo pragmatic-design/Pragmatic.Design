@@ -96,7 +96,7 @@ public class DeclaredSpecificationExtensionsTests
         var result = Run(Source);
 
         var errors = string.Join(" | ", GeneratorTestHelper.GetCompilationErrors(result)
-            .Where(d => d.ToString().Contains("SpecificationExtensions"))
+            .Where(d => d.ToString().Contains("_Infra.Specifications.")) // the generated file's hint, which the errors name
             .Select(d => d.ToString()));
 
         errors.Should().BeEmpty();
@@ -139,6 +139,36 @@ public class DeclaredSpecificationExtensionsTests
         generated.Should().BeNull("neither member is a Specification<T>");
     }
 
+    /// <summary>
+    ///     A specification over a type that is not an <c>IEntity</c> (an engine's own row, the audit trail's) gets the queryable form only:
+    ///     <c>IReadRepository&lt;TEntity&gt;</c> takes an <c>IEntity</c>, so its terminals would not compile there.
+    /// </summary>
+    [Fact]
+    public void ASpecificationOverAPlainType_GetsTheQueryableFormOnly_AndCompiles()
+    {
+        var result = Run("""
+            using Pragmatic.Specification;
+
+            namespace TestApp;
+
+            public sealed class Row
+            {
+                public long Ticks { get; set; }
+            }
+
+            public static class RowSpecs
+            {
+                public static Specification<Row> After(long ticks) => Spec<Row>.Where(r => r.Ticks >= ticks);
+            }
+            """);
+        var generated = GeneratorTestHelper.GetGeneratedSource(result, "Specifications.TestApp.Row");
+
+        generated.Should().NotBeNull();
+        generated!.Should().Contain("After(this global::System.Linq.IQueryable<global::TestApp.Row> query, long ticks)");
+        generated.Should().NotContain("IReadRepository", "Row is not an IEntity");
+        string.Join(" | ", GeneratorTestHelper.GetCompilationErrors(result).Select(d => d.ToString())).Should().BeEmpty();
+    }
+
     private static string? GeneratedExtensions(string source)
         => GeneratorTestHelper.GetGeneratedSource(Run(source), "Specifications.TestApp.Order");
 
@@ -155,5 +185,6 @@ public class DeclaredSpecificationExtensionsTests
         GeneratorTestHelper.FromTypeAssembly(typeof(Ensure.Ensure)),
         GeneratorTestHelper.FromType<Specification.Specification<object>>(),
         GeneratorTestHelper.FromType<Microsoft.EntityFrameworkCore.DbContext>(),
+        GeneratorTestHelper.FromTypeAssembly(typeof(System.Linq.Queryable)), // the queryable form's System.Linq.Queryable.Where
     ];
 }
