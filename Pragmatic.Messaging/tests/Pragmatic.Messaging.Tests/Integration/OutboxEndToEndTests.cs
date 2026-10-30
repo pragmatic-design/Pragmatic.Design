@@ -2,6 +2,7 @@ using Pragmatic.Testing.Assertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Events;
+using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.Messaging.Entities;
 using Pragmatic.Messaging.Extensions;
 

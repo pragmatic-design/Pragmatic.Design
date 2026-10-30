@@ -50,7 +50,7 @@ timeout token, idempotency check, and telemetry, all inline.
 ## Installation
 
 ```bash
-dotnet add package Pragmatic.Messaging         # bridge to Events + EF Core: the outbox
+dotnet add package Pragmatic.Messaging         # bridge to Events: the outbox delivery
 dotnet add package Pragmatic.Messaging.Core     # interfaces, attributes, in-memory bus
 dotnet add package Pragmatic.SourceGenerator    # the unified analyzer
 ```
@@ -114,10 +114,10 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 
 | Package | Role |
 |---------|------|
-| `Pragmatic.Messaging` | Bridge to Events + EF Core: outbox interceptor, delivery service, event adapter |
+| `Pragmatic.Messaging` | Bridge to Events: outbox delivery service, event adapter; no dependency on EF Core |
 | `Pragmatic.Messaging.Core` | Interfaces, attributes, in-memory bus, middleware, routing, distributed request/reply; no dependency on Events or EF Core |
 | `Pragmatic.Messaging.Channels` / `.RabbitMQ` / `.Kafka` / `.AzureServiceBus` / `.Sql` | Transports (in-process / AMQP / streaming / cloud+emulator / PostgreSQL or SQL Server tables, no broker) |
-| `Pragmatic.Messaging.EFCore` | EF Core stores: outbox source, idempotency, audit persistence |
+| `Pragmatic.Messaging.EFCore` | EF Core: outbox capture interceptor and source, idempotency, audit persistence |
 | `Pragmatic.Messaging.Saga` | Saga orchestration over domain actions: compensation, timeouts, generated orchestrator |
 | `Pragmatic.Messaging.Batch` | Scatter/gather with progress tracking and rate limiting |
 | `Pragmatic.Messaging.ClaimCheck` | Large payloads moved to Pragmatic.Storage; the message carries the reference |

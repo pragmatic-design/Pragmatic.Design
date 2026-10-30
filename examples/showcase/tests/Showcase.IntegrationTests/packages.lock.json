@@ -965,7 +965,6 @@
       "pragmatic.messaging": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "[10.0.10, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
           "Pragmatic.Actions": "[1.0.0, )",

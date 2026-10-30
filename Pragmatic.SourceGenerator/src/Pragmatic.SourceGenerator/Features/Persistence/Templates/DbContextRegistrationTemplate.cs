@@ -279,7 +279,7 @@ internal sealed class DbContextRegistrationTemplate : CSharpTemplate
             {
                 AppendLine();
                 Comment("Messaging outbox interceptor — captures domain events into __OutboxMessages in the same transaction");
-                AppendLine("options.AddInterceptors(sp.GetRequiredService<global::Pragmatic.Messaging.Entities.OutboxInterceptor>());");
+                AppendLine("options.AddInterceptors(sp.GetRequiredService<global::Pragmatic.Messaging.EFCore.Outbox.OutboxInterceptor>());");
             }
 
             AppendLine();

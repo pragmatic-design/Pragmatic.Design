@@ -371,9 +371,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
-          "Pragmatic.Events": "[1.0.0, )",
-          "Pragmatic.Persistence.Documents": "[1.0.0, )",
-          "Pragmatic.Persistence.Sql": "[1.0.0, )"
+          "Pragmatic.Events": "[1.0.0, )"
         }
       },
       "pragmatic.internationalization": {

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Pragmatic.Events;
 using Pragmatic.Events.EFCore;
 using Pragmatic.Events.EFCore.Outbox;
-using Pragmatic.Messaging.Entities;
+using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.EFCore.Auditing;
 using Pragmatic.Persistence.EFCore.Interceptors;

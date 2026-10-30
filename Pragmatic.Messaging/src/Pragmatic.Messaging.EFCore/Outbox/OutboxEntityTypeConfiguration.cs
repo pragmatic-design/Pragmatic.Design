@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Pragmatic.Messaging.Entities;
 
-namespace Pragmatic.Messaging.Entities;
+namespace Pragmatic.Messaging.EFCore.Outbox;
 
 /// <summary>
 ///     EF Core entity configuration for <see cref="OutboxMessage"/>.

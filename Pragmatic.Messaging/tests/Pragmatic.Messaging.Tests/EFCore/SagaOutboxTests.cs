@@ -4,6 +4,7 @@ using Pragmatic.Testing.Assertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.Messaging.Entities;
 using Pragmatic.Messaging.Saga;
 

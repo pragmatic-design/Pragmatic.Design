@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Pragmatic.Persistence;
 
-namespace Pragmatic.Messaging.Entities;
+namespace Pragmatic.Messaging.EFCore.Outbox;
 
 /// <summary>
 ///     The tracked entries of the save in progress, read by an interceptor: the first one of the save

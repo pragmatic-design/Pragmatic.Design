@@ -9,10 +9,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Events;
 using Pragmatic.Identity;
+using Pragmatic.Messaging.Entities;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Serialization;
 
-namespace Pragmatic.Messaging.Entities;
+namespace Pragmatic.Messaging.EFCore.Outbox;
 
 /// <summary>
 ///     EF Core interceptor that captures domain events from tracked entities

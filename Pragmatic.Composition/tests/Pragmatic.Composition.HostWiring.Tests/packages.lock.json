@@ -458,7 +458,6 @@
       "pragmatic.messaging": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Pragmatic.Actions": "[1.0.0, )",
           "Pragmatic.Events": "[1.0.0, )",
           "Pragmatic.Mapping": "[1.0.0, )",
