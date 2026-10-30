@@ -55,50 +55,7 @@ internal sealed class EfCoreAuditTrailReader(AuditDbContext db) : IAuditTrailRea
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
-        var broken = new List<string>();
-        byte[]? expectedPrevious = null;
-        var first = true;
-
-        foreach (var segment in segments)
-        {
-            // Recompute the root from the entries as they are now. If a single entry was altered,
-            // added, removed or reordered, the root moves and this is where it shows.
-            var hashes = await AuditSealingService.LeafHashesAsync(db, segment.SegmentId, ct).ConfigureAwait(false);
-            var root = AuditHashing.MerkleRoot(hashes);
-
-            var rootMatches = segment.MerkleRoot is not null && root.SequenceEqual(segment.MerkleRoot);
-
-            // The link is only checked from the second segment on: the first one in the range legitimately
-            // links to something outside it. Checking it anyway would report every partial range as broken.
-            var linkMatches = first
-                || SequenceEqualOrBothNull(segment.PreviousHash, expectedPrevious)
-                || IsAcrossDeclaredGap(pruned, segment, expectedPrevious);
-
-            var ownHashMatches = segment.MerkleRoot is not null
-                && segment.SegmentHash is not null
-                && AuditHashing.HashSegment(segment.PreviousHash, segment.MerkleRoot, segment.SegmentId)
-                    .SequenceEqual(segment.SegmentHash);
-
-            if (!rootMatches || !linkMatches || !ownHashMatches)
-                broken.Add(segment.SegmentId);
-
-            expectedPrevious = segment.SegmentHash;
-            first = false;
-        }
-
-        return new IntegrityReport(segments.Count, broken, pruned);
+        return await AuditChain.VerifyAsync(segments, pruned, (id, token) => AuditSealingService.LeafHashesAsync(db, id, token), ct)
+            .ConfigureAwait(false);
     }
-
-    private static bool SequenceEqualOrBothNull(byte[]? a, byte[]? b)
-        => (a is null && b is null) || (a is not null && b is not null && a.SequenceEqual(b));
-
-    /// <summary>
-    ///     A segment whose predecessor was pruned links to the hash recorded in the gap declaration
-    ///     rather than to the segment now preceding it. A declared gap is not a broken chain.
-    /// </summary>
-    private static bool IsAcrossDeclaredGap(List<PrunedRange> pruned, AuditSegment segment, byte[]? expectedPrevious)
-        => pruned.Exists(p =>
-            string.CompareOrdinal(p.UntilSegmentId, segment.SegmentId) < 0
-            && SequenceEqualOrBothNull(segment.PreviousHash, p.LinkHash)
-            && expectedPrevious is not null);
 }
