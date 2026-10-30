@@ -30,6 +30,8 @@
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <!-- Both boundaries are [EnableEventOutbox]: their saves write their events to an outbox on their engine, delivered by its drainer. -->
     <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events.Engines\Pragmatic.Events.Engines.csproj" />
+    <!-- Orders and Shipments are [EnableOutbox]: their saves write their events to a Messaging outbox on their engine, read by the delivery pump. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the two bridge suites read as (TestUser): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

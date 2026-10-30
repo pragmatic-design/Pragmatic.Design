@@ -179,6 +179,47 @@ public class MessagingOutboxWiringTests
         var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(source, []);
 
         GeneratorTestHelper.HasDiagnostic(result, "PRAG0831").Should().BeTrue();
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG0831").Single().GetMessage().Should().Contain("does not reference Pragmatic.Messaging.EFCore");
+    }
+
+    // --- On the Sql and documents engines the outbox is Pragmatic.Messaging.Engines' ---
+
+    private const string EngineBoundary = """
+        using Pragmatic.Actions.Attributes;
+        using Pragmatic.Persistence.Entity;
+
+        namespace Pragmatic.Messaging.Attributes
+        {
+            [System.AttributeUsage(System.AttributeTargets.Class)]
+            public sealed class EnableOutboxAttribute : System.Attribute { }
+        }
+        namespace MyApp.Sales
+        {
+            [Boundary]
+            [PersistenceEngine(PersistenceEngineKind.Sql)]
+            [Pragmatic.Messaging.Attributes.EnableOutbox]
+            public sealed partial class SalesBoundary;
+        }
+        """;
+
+    [Fact]
+    public void Diagnostic_EnableOutbox_OnAnEngineBoundaryWithoutTheEnginesPackage_NamesPragmaticMessagingEngines()
+    {
+        var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(EngineBoundary,
+            GeneratorTestHelper.FromType<Pragmatic.Persistence.Entity.EntityAttribute>(), GeneratorTestHelper.FromType<Pragmatic.Actions.Attributes.BoundaryAttribute>());
+
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG0831").Single().GetMessage().Should().Contain("does not reference Pragmatic.Messaging.Engines");
+    }
+
+    [Fact]
+    public void Diagnostic_EnableOutbox_OnAnEngineBoundaryWithTheEnginesPackage_IsNotReported()
+    {
+        // Pragmatic.Messaging.Engines, by the type the generator recognises it by.
+        var engines = "namespace Pragmatic.Messaging.Engines.Sql { public sealed class OutboxMessageRow { } }";
+        var result = GeneratorTestHelper.RunGenerator<PragmaticSourceGenerator>(EngineBoundary + "\n" + engines,
+            GeneratorTestHelper.FromType<Pragmatic.Persistence.Entity.EntityAttribute>(), GeneratorTestHelper.FromType<Pragmatic.Actions.Attributes.BoundaryAttribute>());
+
+        GeneratorTestHelper.HasDiagnostic(result, "PRAG0831").Should().BeFalse();
     }
 
     [Fact]

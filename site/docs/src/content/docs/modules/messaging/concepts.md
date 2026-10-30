@@ -82,6 +82,24 @@ Handler_Pipeline (SG-generated):
   └── Logging (generated log call sites)
 ```
 
+### The outbox on the Sql and documents engines
+
+A boundary the Sql or documents engine persists enables the outbox with the same `[EnableOutbox]`; its project references `Pragmatic.Messaging.Engines` (PRAG0831 names the package the boundary's engine needs). The generated `Add{Boundary}Persistence` then registers, for that boundary only, the capture and the source the delivery pump reads:
+
+| | Sql engine | Documents engine |
+|---|---|---|
+| Capture | `SqlMessagingOutboxPhase`: the events of the entities the save writes become `OutboxMessageRow`s in the save's batch, its transaction | `DocMessagingOutboxPhase`: `OutboxMessageDocument`s written through the save's session, in its transaction where MongoDB runs one |
+| Store | `__OutboxMessages`, EF Core's table column for column (instants in UTC ticks), in the database's generated schema | the `__OutboxMessages` collection, in the boundary's `{Boundary}DocSchema` |
+| Source | `SqlOutboxSource` | `DocOutboxSource` |
+
+Everything after the capture is shared with EF Core. A message carries what `OutboxMessageCapture` takes from the save: the tenant, the user, the correlation and the trace headers. The sources claim, back off and release under `OutboxClaimPolicy`'s rules. The one `OutboxDeliveryService`, the retention purge and the `Messaging.Outbox` health contributor read every boundary's source, whatever its store.
+
+Where they differ from EF Core:
+
+- **The phase sees the entities the save writes.** An entity that raised an event and changed nothing is not written, and its events are dispatched in process after the commit, as without the outbox. EF Core's interceptor reads every tracked entity.
+- **On a standalone MongoDB server and on Cosmos DB** a save is not one transaction: the outbox documents are written after the entities, and a failure in between leaves the entities written and their events lost.
+- **The package does not bring the engines' bridges.** The application references the bridge its boundaries use (`Pragmatic.Persistence.Sql`, `Pragmatic.Persistence.Documents`), as it does without the outbox; bringing both would make it reference two engines.
+
 ### Handler Pipeline (SG-Generated)
 
 For each `[MessageHandler]` class, the SG generates `{Handler}_Pipeline.g.cs`:
@@ -204,6 +222,7 @@ These are **separate modules** with different scopes:
 | **Events** | Optional bridge: domain events reach message handlers via adapter |
 | **Actions** | Saga steps dispatch `DomainAction` via `IMessageBus` |
 | **Persistence.EFCore** | `OutboxInterceptor` on `SaveChanges`, `[EnableOutbox]` on DbContext |
+| **Persistence.Sql / Documents** | `Pragmatic.Messaging.Engines`: a save phase per `[EnableOutbox]` boundary, and its `IOutboxSource` |
 | **Authorization** | Pipeline generates `ICallContext.EnterInternalCall()` bypass |
 | **MultiTenancy** | `MessageContext.TenantId` propagated to Activity tags |
 | **Composition** | `PragmaticHostTemplate` auto-calls `AddPragmaticMessageHandlers()` |

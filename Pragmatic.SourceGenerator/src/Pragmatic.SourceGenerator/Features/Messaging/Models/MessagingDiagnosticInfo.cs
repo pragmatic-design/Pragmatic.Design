@@ -15,7 +15,7 @@ internal enum MessagingDiagnosticKind
     /// <summary>PRAG0813 — [Saga&lt;T&gt;] where T is not an enum.</summary>
     SagaStateNotEnum,
 
-    /// <summary>PRAG0831 — [EnableOutbox] without a Pragmatic.Messaging.EFCore reference.</summary>
+    /// <summary>PRAG0831 — [EnableOutbox] without the outbox package of the boundary's engine.</summary>
     EnableOutboxWithoutEfCore,
 
     /// <summary>PRAG0836 — [PublicEvent] on a type that does not implement IDomainEvent.</summary>

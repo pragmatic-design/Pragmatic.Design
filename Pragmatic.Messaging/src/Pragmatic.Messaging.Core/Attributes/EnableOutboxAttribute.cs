@@ -7,10 +7,14 @@ namespace Pragmatic.Messaging.Attributes;
 /// </summary>
 /// <remarks>
 ///     <para>
-///     Requires <c>Pragmatic.Messaging.EFCore</c> (else the attribute is a no-op — the SG reports
-///     PRAG0831). The SG maps the outbox table into the boundary's generated DbContext, adds the
-///     capture interceptor to its options, and registers the delivery pump and retention purge
-///     service — mirroring <c>[EnableSagaPersistence]</c> and the Events <c>[EnableEventOutbox]</c>.
+///     Requires the outbox package of the boundary's engine (else the attribute is a no-op — the SG
+///     reports PRAG0831). On EF Core, <c>Pragmatic.Messaging.EFCore</c>: the SG maps the outbox table
+///     into the boundary's generated DbContext, adds the capture interceptor to its options, and
+///     registers the delivery pump and retention purge service — mirroring
+///     <c>[EnableSagaPersistence]</c> and the Events <c>[EnableEventOutbox]</c>. On the Sql and
+///     documents engines, <c>Pragmatic.Messaging.Engines</c>: the generated
+///     <c>Add{Boundary}Persistence</c> registers the save phase that writes the rows, the boundary's
+///     outbox source, the pump and the purge, and the boundary's schema gets the table.
 ///     </para>
 ///     <para>
 ///     A boundary picks <b>one</b> outbox: this one publishes to the transport (cross-service),

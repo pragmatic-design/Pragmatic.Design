@@ -173,7 +173,7 @@ dotnet_diagnostic.PRAG0303.severity = none
 | PRAG0820 | Messaging | Error | Saga event has no correlation | Implement `ICorrelatedMessage` or mark a `[CorrelationKey]` |
 | PRAG0821 | Messaging | Warning | Multiple `[CorrelationKey]` properties | Keep exactly one per event type |
 | PRAG0822 | Messaging | Warning | Domain-event cascade cycle (analyzer) | Make a handler idempotent/terminal or guard the re-raise |
-| PRAG0831 | Messaging | Warning | `[EnableOutbox]` without Messaging.EFCore -- no-op | Add the Pragmatic.Messaging.EFCore reference |
+| PRAG0831 | Messaging | Warning | `[EnableOutbox]` without the outbox package of the boundary's engine -- no-op | Add Pragmatic.Messaging.EFCore (EF Core) or Pragmatic.Messaging.Engines (Sql, documents) |
 | PRAG0832 | Messaging | Warning | `[EnableSagaPersistence]` without Messaging.EFCore -- no-op | Add the Pragmatic.Messaging.EFCore reference |
 | PRAG0833 | Messaging | Warning | `[EnableOutbox]` + `[EnableEventOutbox]` on one boundary | Keep exactly one -- both clear the same events |
 | PRAG0834 | Messaging | Warning | `[EnableBatchProgress]` on more than one boundary | Keep it on the single boundary hosting `__BatchProgress` |
@@ -733,7 +733,7 @@ fails at build time and nothing works at runtime, which is exactly why they exis
 
 | Attribute | Missing reference | Consequence |
 |---|---|---|
-| `[EnableOutbox]` | `Pragmatic.Messaging.EFCore` | The outbox table is not mapped and no delivery pump is registered (PRAG0831) |
+| `[EnableOutbox]` | `Pragmatic.Messaging.EFCore` (EF Core), `Pragmatic.Messaging.Engines` (Sql, documents) | The outbox is not wired and no delivery pump is registered (PRAG0831) |
 | `[EnableSagaPersistence]` | `Pragmatic.Messaging.EFCore` | `__SagaInstances`/`__SagaSteps` are not mapped (PRAG0832) |
 | `[EnableBatchProgress]` | `Pragmatic.Messaging.Batch` | `__BatchProgress` is not mapped and no store is registered (PRAG0835) |
 

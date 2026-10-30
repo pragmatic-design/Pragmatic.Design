@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The Messaging transactional outbox on Pragmatic's Sql and documents engines: the outbox row written in the save of a boundary's unit of work, and the source the delivery pump reads, beside Pragmatic.Messaging.EFCore.</Description>
+    <PackageTags>messaging;outbox;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The outbox's own chains (the claim, the marks, the purge) are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The delivery pump, the purge, the health contributor and the capture every store shares; no EF Core. -->
+    <ProjectReference Include="..\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <!-- The engines' bridges: the phases of a unit of work's save (ISqlSavePhase, IDocSavePhase) and the sessions a boundary is registered with.
+         Private: an application brings the bridge of the engine it uses, as it does without the outbox. Flowing both to it would make every
+         application reference two engines, and every boundary that names none PRAG0743. The Sql outbox's types never touch the documents
+         engine's and the other way round (one registration class per engine), so the bridge the application lacks is never loaded. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The outbox row and document are the engines' own types: the generator describes them in this assembly, which is the one that declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

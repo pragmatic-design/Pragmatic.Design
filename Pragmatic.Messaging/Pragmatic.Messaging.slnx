@@ -19,6 +19,7 @@
     <Project Path="src/Pragmatic.Messaging.Core/Pragmatic.Messaging.Core.csproj" />
     <Project Path="src/Pragmatic.Messaging/Pragmatic.Messaging.csproj" />
     <Project Path="src/Pragmatic.Messaging.EFCore/Pragmatic.Messaging.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Messaging.Engines/Pragmatic.Messaging.Engines.csproj" />
     <Project Path="src/Pragmatic.Messaging.Channels/Pragmatic.Messaging.Channels.csproj" />
     <Project Path="src/Pragmatic.Messaging.RabbitMQ/Pragmatic.Messaging.RabbitMQ.csproj" />
     <Project Path="src/Pragmatic.Messaging.Kafka/Pragmatic.Messaging.Kafka.csproj" />

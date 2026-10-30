@@ -82,18 +82,30 @@ internal static partial class SqlInterceptorGenerator
             return model;
         }
 
-        // [EnableEventOutbox]: the outbox's table (Pragmatic.Events.Engines' row) in the database of each boundary the engine serves that enables
-        // it (read off the boundary, not its entities: the boundary owns none of them when the assembly declares several and none claims them).
-        var outbox = compilation.GetTypeByMetadataName(EventOutboxRowType) is { } outboxRow ? Lookup(outboxRow) : null;
-        var outboxDatabases = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var boundary in outbox is null ? Enumerable.Empty<INamedTypeSymbol>() : SchemaCandidates(compilation, topology.HasTopology)
-                     .Where(t => PragmaticRegistration.EnablesEventOutbox(t) && engines.ServesBoundary(t, PragmaticEngine.Sql)))
+        // A module's table (an outbox's row, declared by its engines package) in the database of each boundary the engine serves that enables
+        // the module (read off the boundary, not its entities: the boundary owns none of them when the assembly declares several and none claims
+        // them), with the indexes EF Core's configuration gives it.
+        var moduleTables = new List<(EntityModel Row, HashSet<string> Databases, Func<TableSchemaModel, TableSchemaModel> Indexes)>();
+        void ModuleTable(string rowType, Func<INamedTypeSymbol, bool> enables, Func<TableSchemaModel, TableSchemaModel> indexes)
         {
-            if (!topology.HasTopology)
-                outboxDatabases.Add("Default");
-            else if (databases.TryGetValue(boundary.ToDisplayString(), out var database))
-                outboxDatabases.Add(database);
+            if (compilation.GetTypeByMetadataName(rowType) is not { } rowSymbol || Lookup(rowSymbol) is not { } row)
+                return;
+            var rowDatabases = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var boundary in SchemaCandidates(compilation, topology.HasTopology).Where(t => enables(t) && engines.ServesBoundary(t, PragmaticEngine.Sql)))
+            {
+                if (!topology.HasTopology)
+                    rowDatabases.Add("Default");
+                else if (databases.TryGetValue(boundary.ToDisplayString(), out var database))
+                    rowDatabases.Add(database);
+            }
+
+            moduleTables.Add((row, rowDatabases, indexes));
         }
+
+        ModuleTable(EventOutboxRowType, PragmaticRegistration.EnablesEventOutbox, WithClaimIndex); // [EnableEventOutbox]
+        ModuleTable(MessagingOutboxRowType, PragmaticRegistration.EnablesMessagingOutbox, WithMessagingOutboxIndexes); // [EnableOutbox]
+        TableSchemaModel ModuleIndexes(TableSchemaModel table)
+            => moduleTables.FirstOrDefault(m => m.Row.Table == table.Name) is { Row: not null } module ? module.Indexes(table) : table;
 
         var schemas = new List<EngineSchemaModel>();
         foreach (var database in served.GroupBy(t => DatabaseOf(t)!, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
@@ -101,13 +113,12 @@ internal static partial class SqlInterceptorGenerator
             var entities = database.Select(Lookup).Where(e => e is not null).Select(e => e!).ToList();
             if (entities.Count == 0 || entities.Any(e => PragmaticSchemaProblem(e) is not null))
                 continue;
-            if (outboxDatabases.Contains(database.Key))
-                entities.Add(outbox!);
+            entities.AddRange(moduleTables.Where(m => m.Databases.Contains(database.Key)).Select(m => m.Row));
             // The namespace Pragmatic's EF branch derives from the database's entities: one of the application's, the first by name.
             var representative = database.FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.ContainingAssembly, compilation.Assembly)) ?? database.First();
             var ns = RootNamespace(representative.ContainingNamespace.IsGlobalNamespace ? compilation.AssemblyName ?? "" : representative.ContainingNamespace.ToDisplayString());
             schemas.Add(new EngineSchemaModel(database.Key, ns, ProviderName(dialect), configKeys.TryGetValue(database.Key, out var key) ? key : null,
-                PragmaticTables(entities, Lookup, dialect).Select(t => SchemaTableOf(t.Name == outbox?.Table ? WithClaimIndex(t) : t)).ToEquatableArray()));
+                PragmaticTables(entities, Lookup, dialect).Select(t => SchemaTableOf(ModuleIndexes(t))).ToEquatableArray()));
         }
 
         return schemas.ToEquatableArray();
@@ -186,6 +197,21 @@ internal static partial class SqlInterceptorGenerator
     /// </summary>
     private static TableSchemaModel WithClaimIndex(TableSchemaModel table)
         => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_ProcessedAt_ClaimedUntil_CreatedAt", ["ProcessedAt", "ClaimedUntil", "CreatedAt"], false, null)).ToEquatableArray() };
+
+    private const string MessagingOutboxRowType = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
+
+    /// <summary>
+    ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past
+    ///     its backoff, re-claimable, oldest first) and the correlation lookup.
+    /// </summary>
+    private static TableSchemaModel WithMessagingOutboxIndexes(TableSchemaModel table)
+        => table with
+        {
+            Indexes = table.Indexes
+                .Append(new IndexSchemaModel($"IX_{table.Name}_CorrelationId", ["CorrelationId"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_ProcessedAt_NextAttemptAt_ClaimedUntil_CreatedAt", ["ProcessedAt", "NextAttemptAt", "ClaimedUntil", "CreatedAt"], false, null))
+                .ToEquatableArray(),
+        };
 
     /// <summary>A table of the engine's model in the shape the schema template writes.</summary>
     private static MigratedTableModel SchemaTableOf(TableSchemaModel table) => new(

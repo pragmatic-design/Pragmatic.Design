@@ -89,7 +89,7 @@ build succeeds and the attribute does nothing, which is exactly why the diagnost
 
 | ID | Severity | Message | Fix |
 |----|----------|---------|-----|
-| PRAG0831 | Warning | `[EnableOutbox]` without `Pragmatic.Messaging.EFCore`: no outbox table, no delivery pump | Add the NuGet reference |
+| PRAG0831 | Warning | `[EnableOutbox]` without the outbox package of the boundary's engine: no outbox, no delivery pump | Reference `Pragmatic.Messaging.EFCore` (EF Core) or `Pragmatic.Messaging.Engines` (Sql, documents) |
 | PRAG0832 | Warning | `[EnableSagaPersistence]` without `Pragmatic.Messaging.EFCore`: saga tables not mapped | Add the NuGet reference |
 | PRAG0833 | Warning | `[EnableOutbox]` and `[EnableEventOutbox]` on one boundary: both clear the same events, one silently wins | Keep exactly one |
 | PRAG0834 | Warning | `[EnableBatchProgress]` on more than one boundary | Only one may host `__BatchProgress` |

@@ -105,14 +105,15 @@ internal static class MessagingDiagnostics
     // Outbox diagnostics (PRAG0831)
     // =========================================================================
 
-    // PRAG0831: [EnableOutbox] on a boundary without Messaging.EFCore reference. Boundary-level
+    // PRAG0831: [EnableOutbox] on a boundary without the outbox package of its engine (Messaging.EFCore,
+    // or Messaging.Engines on the Sql and documents engines). Boundary-level
     // (mirrors PRAG0832 for [EnableSagaPersistence]). [EnableOutbox] targets a boundary, not a
     // DbContext, so PRAG0830 ("must be a DbContext") is retired and not reused.
     public static readonly DiagnosticDescriptor EnableOutboxWithoutEFCore = DiagnosticFactory.Warning(
         "PRAG0831",
-        "[EnableOutbox] requires Pragmatic.Messaging.EFCore",
-        "Boundary '{0}' is marked [EnableOutbox] but this project does not reference Pragmatic.Messaging.EFCore, so the outbox table is not mapped and no delivery pump is registered (the attribute is a no-op). Reference Pragmatic.Messaging.EFCore.",
-        "Add a reference to Pragmatic.Messaging.EFCore to the boundary project so the generated DbContext can map __OutboxMessages and register the delivery pump.");
+        "[EnableOutbox] requires the outbox package of the boundary's engine",
+        "Boundary '{0}' is marked [EnableOutbox] but this project does not reference {1}, so the outbox is not wired and no delivery pump is registered (the attribute is a no-op). Reference {1}.",
+        "Reference the outbox package of the boundary's engine in the boundary project: Pragmatic.Messaging.EFCore on EF Core (the generated DbContext maps __OutboxMessages and registers the delivery pump), Pragmatic.Messaging.Engines on the Sql and documents engines (the generated Add{Boundary}Persistence registers the outbox's phase, its source and the delivery pump).");
 
     // PRAG0832: [EnableSagaPersistence] on a boundary without Messaging.EFCore reference
     public static readonly DiagnosticDescriptor EnableSagaPersistenceWithoutEFCore = DiagnosticFactory.Warning(
