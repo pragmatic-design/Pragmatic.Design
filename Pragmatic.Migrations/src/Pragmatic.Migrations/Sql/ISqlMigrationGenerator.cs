@@ -12,6 +12,12 @@ public interface ISqlMigrationGenerator
     /// <summary>Database provider name (e.g. "PostgreSql", "SqlServer", "Sqlite").</summary>
     string ProviderName { get; }
 
+    /// <summary>
+    ///     The most characters the database allows in an index, constraint or check name, as EF Core's provider declares it; null when no name
+    ///     a schema declares reaches it. The runner fits the desired schema's names to it (<see cref="SchemaIdentifiers" />).
+    /// </summary>
+    int? MaxIdentifierLength => null;
+
     /// <summary>Generates a complete idempotent SQL script for all changes in the diff.</summary>
     string GenerateScript(SchemaDiff diff);
 

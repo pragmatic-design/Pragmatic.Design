@@ -75,6 +75,8 @@ public class MySqlScenarioTests(MySqlContainerFixture fixture)
     protected override string TextType() => "longtext";
     protected override string IndexableTextType() => "varchar(255)";
     protected override string IntType() => "int";
+
+    protected override int? IdentifierLimit => 64;
     protected override string BoolType() => "tinyint(1)";
     protected override string DecimalType() => "decimal(18,2)";
     protected override string TimestampType() => "datetime(6)";
