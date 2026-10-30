@@ -1,6 +1,7 @@
 using Pragmatic.Testing.Assertions;
 using Microsoft.EntityFrameworkCore;
 using Pragmatic.Events;
+using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.Messaging.Entities;
 
 namespace Pragmatic.Messaging.Tests.EFCore;

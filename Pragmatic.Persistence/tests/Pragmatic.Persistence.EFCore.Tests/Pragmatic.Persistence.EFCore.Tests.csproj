@@ -53,7 +53,7 @@
     <!-- The interceptors of the other two assemblies that read the tracker during a save: one save detects
          changes once across all three (OneSaveDetectsChangesOnceTests). -->
     <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events.EFCore\Pragmatic.Events.EFCore.csproj" />
-    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.EFCore\Pragmatic.Messaging.EFCore.csproj" />
   </ItemGroup>
 
 </Project>

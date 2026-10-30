@@ -742,7 +742,6 @@
       "pragmatic.messaging": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "[10.0.10, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
           "Pragmatic.Actions": "[1.0.0, )",
@@ -750,6 +749,15 @@
           "Pragmatic.Mapping": "[1.0.0, )",
           "Pragmatic.Messaging.Core": "[1.0.0, )",
           "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.auditing": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Audit": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
         }
       },
       "pragmatic.messaging.core": {
@@ -762,6 +770,17 @@
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )",
           "Pragmatic.Resilience": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Messaging": "[1.0.0, )",
+          "Pragmatic.Messaging.Auditing": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {

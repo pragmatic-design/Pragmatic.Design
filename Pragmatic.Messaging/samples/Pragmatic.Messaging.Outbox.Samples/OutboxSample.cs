@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Pragmatic.Events;
 using Pragmatic.Messaging;
 using Pragmatic.Messaging.EFCore;
+using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.Messaging.Entities;
 using Pragmatic.Messaging.Extensions;
 

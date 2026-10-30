@@ -13,10 +13,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
     <ProjectReference Include="..\Pragmatic.Messaging.Auditing\Pragmatic.Messaging.Auditing.csproj" />
-    <!-- The outbox interceptor, delivery pump and entity config live in the bridge assembly; the
-         boundary-level [EnableOutbox] wiring (MessagingOutboxExtensions) consolidates them here so
-         the SG-generated host code depends only on Pragmatic.Messaging.EFCore (the HasMessagingEFCore
-         gate guarantees this reference). Acyclic: the bridge does not reference this assembly. -->
+    <!-- The delivery pump lives in the bridge assembly, which has no EF Core; the capture interceptor
+         and the table's configuration are here, so the SG-generated host code depends only on
+         Pragmatic.Messaging.EFCore (the HasMessagingEFCore gate guarantees this reference). Acyclic:
+         the bridge does not reference this assembly. -->
     <ProjectReference Include="..\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
   </ItemGroup>
 

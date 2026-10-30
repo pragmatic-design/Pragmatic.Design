@@ -6,7 +6,7 @@ namespace Pragmatic.Messaging.EFCore;
 /// <summary>
 ///     DbContext for messaging infrastructure tables: idempotency and audit.
 ///     Outbox tables are configured by the SG-generated DbContext via
-///     <c>OutboxEntityTypeConfiguration</c> in the bridge package.
+///     <see cref="Outbox.OutboxEntityTypeConfiguration" />.
 /// </summary>
 /// <remarks>
 ///     To co-locate these tables alongside your business data, call
