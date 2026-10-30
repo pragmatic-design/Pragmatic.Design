@@ -3,17 +3,16 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pragmatic.Messaging.Configuration;
-using Pragmatic.Messaging.Entities;
 
-namespace Pragmatic.Messaging.EFCore.Outbox;
+namespace Pragmatic.Messaging.Entities;
 
 /// <summary>
 ///     Periodically deletes delivered (<c>ProcessedAt != null</c>) outbox rows older than
 ///     <see cref="MessagingOptions.OutboxRetention"/> so <c>__OutboxMessages</c> does not grow
 ///     without bound. Mirrors <c>IdempotencyPurgeService</c>: registered once by
-///     <see cref="MessagingOutboxExtensions.AddMessagingOutbox{TContext}"/>, it sweeps every
-///     registered <see cref="IOutboxSource"/> from a fresh scope per run (each EF source is scoped
-///     to its DbContext).
+///     <see cref="OutboxDeliveryExtensions.AddOutboxDelivery"/>, it sweeps every
+///     registered <see cref="IOutboxSource"/> from a fresh scope per run (each source is scoped
+///     to its store's session).
 /// </summary>
 public sealed partial class OutboxPurgeService(
     IServiceScopeFactory scopeFactory,

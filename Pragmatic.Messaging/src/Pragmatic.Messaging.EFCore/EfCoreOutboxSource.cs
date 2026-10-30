@@ -13,9 +13,6 @@ public sealed partial class EfCoreOutboxSource(
     string boundaryName,
     ILogger<EfCoreOutboxSource> logger) : IOutboxSource
 {
-    /// <summary>How long a claim is held before another worker may re-grab the row (crash recovery).</summary>
-    private static readonly TimeSpan ClaimLease = TimeSpan.FromMinutes(5);
-
     /// <inheritdoc />
     public string BoundaryName => boundaryName;
 
@@ -23,12 +20,8 @@ public sealed partial class EfCoreOutboxSource(
     public async Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int batchSize, CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var claimedUntil = now + ClaimLease;
-
-        // Unique per-poll token: stamp eligible rows with it, then select only what we won.
-        // This makes claim+select atomic across replicas — a plain Where(...).Take() lets every
-        // replica grab the same rows and deliver each N times.
-        var claimToken = $"{Environment.MachineName}:{Guid.NewGuid():N}";
+        var claimedUntil = now + OutboxClaimPolicy.ClaimLease;
+        var claimToken = OutboxClaimPolicy.NewClaimToken();
 
         // A row is eligible when: unprocessed, past its backoff window, and either unclaimed
         // or its claim has expired (so a crashed worker's rows are re-grabbable).
@@ -81,10 +74,6 @@ public sealed partial class EfCoreOutboxSource(
             LogMessageNotFound(messageId, "MarkProcessed");
     }
 
-    // Backoff is capped so a long-failing message still gets retried at a sane cadence
-    // (and never overflows when shifting by a large RetryCount).
-    private static readonly TimeSpan MaxBackoff = TimeSpan.FromMinutes(30);
-
     /// <inheritdoc />
     public async Task MarkFailedAsync(Guid messageId, string error, CancellationToken ct = default)
     {
@@ -103,7 +92,7 @@ public sealed partial class EfCoreOutboxSource(
             return;
         }
 
-        var nextAttemptAt = now + ComputeBackoff(message.RetryCount + 1);
+        var nextAttemptAt = now + OutboxClaimPolicy.Backoff(message.RetryCount + 1);
 
         await dbContext.Set<OutboxMessage>()
             .Where(m => m.Id == messageId)
@@ -162,15 +151,6 @@ public sealed partial class EfCoreOutboxSource(
             .Take(max)
             .ToListAsync(ct)
             .ConfigureAwait(false);
-    }
-
-    /// <summary>Exponential backoff: 2^attempt seconds, capped at <see cref="MaxBackoff"/>.</summary>
-    private static TimeSpan ComputeBackoff(int attempt)
-    {
-        // Cap the exponent before shifting to avoid overflow on a long-failing message.
-        var exponent = Math.Min(attempt, 16);
-        var seconds = Math.Min(Math.Pow(2, exponent), MaxBackoff.TotalSeconds);
-        return TimeSpan.FromSeconds(seconds);
     }
 
     // =========================================================================
