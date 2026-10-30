@@ -45,6 +45,8 @@ public class SqliteScenarioTests : SchemaScenarioTestBase, IDisposable
     protected override string PkType() => "TEXT";
     protected override string TextType() => "TEXT";
     protected override string IntType() => "INTEGER";
+
+    protected override string IdentityKeyType() => "INTEGER";
     protected override string BoolType() => "INTEGER";
     protected override string DecimalType() => "REAL";
     protected override string TimestampType() => "TEXT";

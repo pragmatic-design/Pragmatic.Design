@@ -109,6 +109,10 @@ public sealed class OracleSchemaIntrospector : ISchemaIntrospector
     private static string? DefaultOf(string? reported)
     {
         var trimmed = reported?.Trim();
+        // An identity column reports the sequence Oracle made for it ("SCHEMA"."ISEQ$$_n".nextval) as its default: generated, not declared,
+        // as PostgreSQL's nextval(...) of a serial is, and dropped for the same reason.
+        if (trimmed is not null && trimmed.Contains("\"ISEQ$$_", StringComparison.Ordinal) && trimmed.EndsWith(".nextval", StringComparison.OrdinalIgnoreCase))
+            return null;
         return string.IsNullOrEmpty(trimmed) || string.Equals(trimmed, "NULL", StringComparison.OrdinalIgnoreCase) ? null : trimmed;
     }
 

@@ -121,7 +121,8 @@ public sealed class PragmaticDatabases : IAsyncLifetime
                 SqlDialect.PostgreSql => [$"CREATE DATABASE \"{name}\""],
                 SqlDialect.SqlServer => [$"CREATE DATABASE [{name}]"],
                 SqlDialect.MySql => [$"CREATE DATABASE `{name}`"],
-                _ => [$"CREATE USER {name} IDENTIFIED BY {Password} QUOTA UNLIMITED ON USERS", $"GRANT CREATE SESSION, CREATE TABLE TO {name}"],
+                // CREATE SEQUENCE: an identity column is backed by a sequence Oracle creates for it.
+                _ => [$"CREATE USER {name} IDENTIFIED BY {Password} QUOTA UNLIMITED ON USERS", $"GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE TO {name}"],
             };
             foreach (var statement in statements)
             {
