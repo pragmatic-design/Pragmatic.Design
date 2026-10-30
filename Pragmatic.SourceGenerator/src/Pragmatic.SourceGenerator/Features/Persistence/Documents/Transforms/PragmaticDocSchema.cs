@@ -44,6 +44,9 @@ internal static class PragmaticDocSchema
             // [EnableEventOutbox]: the outbox's collection, as Pragmatic.Events.Engines describes it, beside the boundary's own.
             if (boundary is not null && PragmaticRegistration.EnablesEventOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineEventOutbox) is not null)
                 collections.Add("global::Pragmatic.Events.Engines.Documents.EventOutboxDocument.Schema");
+            // [EnableOutbox]: the Messaging outbox's collection, as Pragmatic.Messaging.Engines describes it.
+            if (boundary is not null && PragmaticRegistration.EnablesMessagingOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineMessagingOutbox) is not null)
+                collections.Add("global::Pragmatic.Messaging.Engines.Documents.OutboxMessageDocument.Schema");
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
                 boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }

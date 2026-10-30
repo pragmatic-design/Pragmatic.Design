@@ -355,7 +355,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0820` | Error | A saga consumes an event that neither implements `ICorrelatedMessage` nor declares `[CorrelationKey]`, so it cannot be routed to an instance. |
 | `PRAG0821` | Warning | Several properties carry `[CorrelationKey]`; the first is used and the rest are ignored. |
 | `PRAG0822` | Warning | Domain events form a cascade cycle: a handler re-raises an event that loops back. Make a handler idempotent or terminal, or guard the re-raise. |
-| `PRAG0831` | Warning | `[EnableOutbox]` without a reference to `Pragmatic.Messaging.EFCore`: the outbox table is not mapped and no delivery pump runs, so the attribute is a no-op. |
+| `PRAG0831` | Warning | `[EnableOutbox]` without a reference to the outbox package of the boundary's engine (`Pragmatic.Messaging.EFCore` on EF Core, `Pragmatic.Messaging.Engines` on the Sql and documents engines): the outbox is not wired and no delivery pump runs, so the attribute is a no-op. |
 | `PRAG0832` | Warning | `[EnableSagaPersistence]` without a reference to `Pragmatic.Messaging.EFCore`: the saga tables are not mapped. |
 | `PRAG0833` | Warning | A boundary carries both `[EnableOutbox]` and `[EnableEventOutbox]`; both capture and clear the same domain events, so one silently wins. Keep exactly one. |
 | `PRAG0834` | Warning | More than one boundary carries `[EnableBatchProgress]`. Only one may host the `__BatchProgress` table. |

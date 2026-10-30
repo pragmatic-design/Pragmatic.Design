@@ -62,6 +62,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"        {e.EventOutbox}<{model.BoundaryType}>(services);");
         }
 
+        if (model.MessagingOutbox)
+        {
+            AppendLine($"        // [EnableOutbox]: the save's events go to {name}'s Messaging outbox (its phase, keyed by the boundary), read by the delivery pump.");
+            AppendLine($"        {e.MessagingOutbox}<{model.BoundaryType}>(services, \"{name}\");");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();

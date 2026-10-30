@@ -24,11 +24,13 @@ internal static class DialectSchemas
 
     /// <summary>
     ///     A boundary with [EnableEventOutbox] on the Sql engine: the database's schema has the outbox's table (<c>__EventOutbox</c>,
-    ///     Pragmatic.Events.Engines' row), which <see cref="EventOutboxTests" /> writes and drains on each database. Two boundaries, and neither
-    ///     claims an entity: one alone would own every entity of the suite, and a boundary changes their tables (the traits' children).
+    ///     Pragmatic.Events.Engines' row), which <see cref="EventOutboxTests" /> writes and drains on each database; and one with [EnableOutbox],
+    ///     whose table (<c>__OutboxMessages</c>, Pragmatic.Messaging.Engines' row) <see cref="MessagingOutboxTests" /> writes and reads (one
+    ///     boundary carrying both would be PRAG0833). Two boundaries, and neither claims an entity: one alone would own every entity of the suite,
+    ///     and a boundary changes their tables (the traits' children).
     /// </summary>
     private const string OutboxBoundary = "namespace PragmaticEntities.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Events.Attributes.EnableEventOutbox] public sealed partial class HotelBoundary; "
-                                          + "[Pragmatic.Actions.Attributes.Boundary] public sealed partial class FrontDeskBoundary; }";
+                                          + "[Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Messaging.Attributes.EnableOutbox] public sealed partial class FrontDeskBoundary; }";
 
     private static readonly ConcurrentDictionary<SqlDialect, SchemaVersion> Schemas = new();
 
@@ -44,6 +46,7 @@ internal static class DialectSchemas
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
                 typeof(global::Pragmatic.Events.Engines.Sql.EventOutboxRow),
+                typeof(global::Pragmatic.Messaging.Attributes.EnableOutboxAttribute), typeof(global::Pragmatic.Messaging.Engines.Sql.OutboxMessageRow),
                 typeof(global::Pragmatic.Comments.HasCommentsAttribute), typeof(global::Pragmatic.Notes.HasNotesAttribute), typeof(global::Pragmatic.Tags.HasTagsAttribute),
                 typeof(global::Pragmatic.Attachments.HasAttachmentsAttribute), typeof(global::Pragmatic.Privacy.DataSubjectAttribute)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));

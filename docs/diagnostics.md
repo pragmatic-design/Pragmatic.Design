@@ -341,7 +341,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0820` | `SagaEventWithoutCorrelation` | Error | Saga event has no correlation |
 | `PRAG0821` | `MultipleCorrelationKeys` | Warning | Multiple [CorrelationKey] properties |
 | `PRAG0822` | `Prag0822` | Warning | Domain-event cascade cycle |
-| `PRAG0831` | `EnableOutboxWithoutEFCore` | Warning | [EnableOutbox] requires Pragmatic.Messaging.EFCore |
+| `PRAG0831` | `EnableOutboxWithoutEFCore` | Warning | [EnableOutbox] requires the outbox package of the boundary's engine |
 | `PRAG0832` | `EnableSagaPersistenceWithoutEFCore` | Warning | [EnableSagaPersistence] requires Pragmatic.Messaging.EFCore |
 | `PRAG0833` | `ConflictingOutboxAttributes` | Warning | Conflicting outbox attributes on one boundary |
 | `PRAG0834` | `MultipleBatchProgressBoundaries` | Warning | [EnableBatchProgress] must mark exactly one boundary |

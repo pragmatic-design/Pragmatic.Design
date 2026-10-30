@@ -320,7 +320,8 @@ internal static class DbContextFeature
 
         // Diagnostics (fire in the boundary library where [EnableOutbox] is authored):
         // - PRAG0831: the Messaging transport-publish outbox is a no-op unless the project references
-        //   Pragmatic.Messaging.EFCore (mirrors the saga path above);
+        //   the outbox package of the boundary's engine: Pragmatic.Messaging.EFCore on EF Core,
+        //   Pragmatic.Messaging.Engines on the Sql and documents engines;
         // - PRAG0833: the same boundary also carries [EnableEventOutbox], so both capture the same events.
         var enableMessagingOutboxSites = context.SyntaxProvider
             .ForAttributeWithMetadataName(
@@ -331,17 +332,20 @@ internal static class DbContextFeature
                      Location: LocationInfo.From(attrCtx.TargetNode.GetLocation()),
                      HasEventOutbox: attrCtx.TargetSymbol.GetAttributes().Any(a =>
                          a.AttributeClass is { Name: "EnableEventOutboxAttribute" } cls
-                         && cls.ContainingNamespace?.ToDisplayString() == "Pragmatic.Events.Attributes")))
+                         && cls.ContainingNamespace?.ToDisplayString() == "Pragmatic.Events.Attributes"),
+                     NamedEngine: attrCtx.TargetSymbol is INamedTypeSymbol boundary ? PersistenceEngineMarker.NamedOn(boundary) : null,
+                     HasEnginesOutbox: attrCtx.SemanticModel.Compilation.GetTypeByMetadataName(Sql.Transforms.PragmaticRegistration.EngineMessagingOutbox) is not null))
             .Combine(features);
 
         context.RegisterSourceOutputSafe(enableMessagingOutboxSites, static (ctx, pair) =>
         {
             var (site, feats) = pair;
-            if (!feats.HasMessagingEFCore)
+            var onEngines = PersistenceEngineMarker.EngineOf(site.NamedEngine, feats) is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+            if (!(onEngines ? site.HasEnginesOutbox : feats.HasMessagingEFCore))
                 ctx.ReportDiagnostic(Diagnostic.Create(
                     Messaging.Diagnostics.MessagingDiagnostics.EnableOutboxWithoutEFCore,
                     site.Location?.ToLocation() ?? Location.None,
-                    site.Name));
+                    site.Name, onEngines ? "Pragmatic.Messaging.Engines" : "Pragmatic.Messaging.EFCore"));
 
             if (site.HasEventOutbox)
                 ctx.ReportDiagnostic(Diagnostic.Create(

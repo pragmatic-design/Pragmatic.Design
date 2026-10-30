@@ -45,6 +45,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
     <!-- The event outbox on the engine: its table in the schema the databases are migrated with, written by its phase and drained on each. -->
     <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events.Engines\Pragmatic.Events.Engines.csproj" />
+    <!-- The Messaging outbox on the engine, the same way: its table, its phase, and the source the delivery pump reads. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->

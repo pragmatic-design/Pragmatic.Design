@@ -118,6 +118,7 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 | `Pragmatic.Messaging.Core` | Interfaces, attributes, in-memory bus, middleware, routing, distributed request/reply; no dependency on Events or EF Core |
 | `Pragmatic.Messaging.Channels` / `.RabbitMQ` / `.Kafka` / `.AzureServiceBus` / `.Sql` | Transports (in-process / AMQP / streaming / cloud+emulator / PostgreSQL or SQL Server tables, no broker) |
 | `Pragmatic.Messaging.EFCore` | EF Core: outbox capture interceptor and source, idempotency, audit persistence |
+| `Pragmatic.Messaging.Engines` | The outbox on the Sql and documents engines: the save phase that writes the rows, and the source the delivery pump reads |
 | `Pragmatic.Messaging.Saga` | Saga orchestration over domain actions: compensation, timeouts, generated orchestrator |
 | `Pragmatic.Messaging.Batch` | Scatter/gather with progress tracking and rate limiting |
 | `Pragmatic.Messaging.ClaimCheck` | Large payloads moved to Pragmatic.Storage; the message carries the reference |
