@@ -102,6 +102,18 @@ jobs:
         with:
           node-version: '22'
 
+      # The libraries of this native source, from the cache: every job downloading them as artifacts ran the
+      # account into "503 Egress is over the account limit" (#424). The key only has to change with the
+      # source; what decides is fetch-native.mjs, which keeps a library whose stamp is this source's and
+      # downloads one that is missing or stale. On a miss the cache saves what it downloaded.
+      - name: Restore the native libraries
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            Pragmatic.Documents/runtimes/linux-x64/native/libpragmatic_pdf_native.so
+            Pragmatic.Imaging/runtimes/linux-x64/native/libpragmatic_imaging_native.so
+          key: native-linux-x64-${{ hashFiles('Pragmatic.Documents/native/pragmatic-pdf/**', 'Pragmatic.Imaging/native/pragmatic-imaging/**', 'shared/native/**') }}
+
       # Before anything reads runtimes/: the gate's source checks refuse a run without this machine's.
       - name: Native libraries
         env:
@@ -212,6 +224,15 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      # As in the gate job (#424): the same key, so the four jobs share one entry.
+      - name: Restore the native libraries
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            Pragmatic.Documents/runtimes/linux-x64/native/libpragmatic_pdf_native.so
+            Pragmatic.Imaging/runtimes/linux-x64/native/libpragmatic_imaging_native.so
+          key: native-linux-x64-${{ hashFiles('Pragmatic.Documents/native/pragmatic-pdf/**', 'Pragmatic.Imaging/native/pragmatic-imaging/**', 'shared/native/**') }}
 
       - name: Native libraries
         env:
