@@ -536,6 +536,7 @@
   <Folder Name="/Pragmatic.Audit/">
     <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.AdoNet/Pragmatic.Audit.AdoNet.csproj" />
     <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.EFCore/Pragmatic.Audit.EFCore.csproj" />
+    <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.Engines/Pragmatic.Audit.Engines.csproj" />
     <Project Path="Pragmatic.Audit/src/Pragmatic.Audit.Management/Pragmatic.Audit.Management.csproj" />
     <Project Path="Pragmatic.Audit/src/Pragmatic.Audit/Pragmatic.Audit.csproj" />
   </Folder>

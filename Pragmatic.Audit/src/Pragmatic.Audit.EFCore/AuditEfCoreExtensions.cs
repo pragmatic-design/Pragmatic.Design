@@ -35,6 +35,7 @@ public static class AuditEfCoreExtensions
         services.TryAddScoped<ITransactionalAuditTrail>(sp => sp.GetRequiredService<EfCoreAuditTrail>());
         services.TryAddScoped<IAuditTrailReader, EfCoreAuditTrailReader>();
         services.TryAddScoped<AuditSealingService>();
+        services.TryAddScoped<IAuditSealer>(sp => sp.GetRequiredService<AuditSealingService>());
 
         // Verification checks sealed segments only, so a trail nobody seals verifies as intact whatever
         // happened to it. The sealer is part of having a trail, not an extra to remember.

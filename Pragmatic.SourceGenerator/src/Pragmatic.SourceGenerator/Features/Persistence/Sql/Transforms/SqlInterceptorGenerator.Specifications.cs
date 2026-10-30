@@ -38,8 +38,9 @@ internal static partial class SqlInterceptorGenerator
                     || model.GetSymbolInfo(invocation).Symbol is not IMethodSymbol method
                     || !SymbolEqualityComparer.Default.Equals(method.ContainingType.OriginalDefinition, spec)
                     || method.ContainingType.TypeArguments[0] is not INamedTypeSymbol entityType
-                    || !PragmaticShape.IsPragmaticEntity(entityType)
-                    || !engines.Serves(entityType, PragmaticEngine.Sql) // another engine's entity: its generator compiles the leaf
+                    // A Pragmatic entity this engine serves (another engine's: its generator compiles the leaf), or one of the engine's own
+                    // [Entity] rows: a module's table (the audit trail's) is filtered by specifications as an entity is.
+                    || !(PragmaticShape.IsPragmaticEntity(entityType) ? engines.Serves(entityType, PragmaticEngine.Sql) : EntityModel.IsEntity(entityType))
                     || lookup(entityType) is not { } entity)
                     continue;
                 if (CompileLeaf(invocation, model, entity, lookup, out var why) is not var (texts, kinds, values))

@@ -88,8 +88,6 @@ internal static partial class SqlInterceptorGenerator
         var moduleTables = new List<(EntityModel Row, HashSet<string> Databases, Func<TableSchemaModel, TableSchemaModel> Indexes)>();
         void ModuleTable(string rowType, Func<INamedTypeSymbol, bool> enables, Func<TableSchemaModel, TableSchemaModel> indexes)
         {
-            if (compilation.GetTypeByMetadataName(rowType) is not { } rowSymbol || Lookup(rowSymbol) is not { } row)
-                return;
             var rowDatabases = new HashSet<string>(StringComparer.Ordinal);
             foreach (var boundary in SchemaCandidates(compilation, topology.HasTopology).Where(t => enables(t) && engines.ServesBoundary(t, PragmaticEngine.Sql)))
             {
@@ -99,11 +97,23 @@ internal static partial class SqlInterceptorGenerator
                     rowDatabases.Add(database);
             }
 
-            moduleTables.Add((row, rowDatabases, indexes));
+            ModuleTableIn(rowType, rowDatabases, indexes);
+        }
+
+        void ModuleTableIn(string rowType, HashSet<string> rowDatabases, Func<TableSchemaModel, TableSchemaModel> indexes)
+        {
+            if (compilation.GetTypeByMetadataName(rowType) is { } rowSymbol && Lookup(rowSymbol) is { } row)
+                moduleTables.Add((row, rowDatabases, indexes));
         }
 
         ModuleTable(EventOutboxRowType, PragmaticRegistration.EnablesEventOutbox, WithClaimIndex); // [EnableEventOutbox]
         ModuleTable(MessagingOutboxRowType, PragmaticRegistration.EnablesMessagingOutbox, WithMessagingOutboxIndexes); // [EnableOutbox]
+
+        // [Audited]: the trail's three tables in each database that holds an audited entity, as EF Core's schema puts them there.
+        var auditedDatabases = new HashSet<string>(served.Where(PragmaticRegistration.IsAudited).Select(t => DatabaseOf(t)!), StringComparer.Ordinal);
+        ModuleTableIn(AuditEntryRowType, auditedDatabases, WithAuditEntryIndexes);
+        ModuleTableIn(AuditSegmentRowType, auditedDatabases, WithAuditSegmentIndexes);
+        ModuleTableIn(AuditPrunedRangeRowType, auditedDatabases, static table => table);
         TableSchemaModel ModuleIndexes(TableSchemaModel table)
             => moduleTables.FirstOrDefault(m => m.Row.Table == table.Name) is { Row: not null } module ? module.Indexes(table) : table;
 
@@ -199,6 +209,24 @@ internal static partial class SqlInterceptorGenerator
         => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_ProcessedAt_ClaimedUntil_CreatedAt", ["ProcessedAt", "ClaimedUntil", "CreatedAt"], false, null)).ToEquatableArray() };
 
     private const string MessagingOutboxRowType = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
+
+    private const string AuditEntryRowType = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
+    private const string AuditSegmentRowType = "Pragmatic.Audit.Engines.Sql.AuditSegmentRow";
+    private const string AuditPrunedRangeRowType = "Pragmatic.Audit.Engines.Sql.AuditPrunedRangeRow";
+
+    /// <summary>The trail's entries with the indexes EF Core's schema gives them (<c>SchemaMetadataTransform</c>): a segment in order, and time.</summary>
+    private static TableSchemaModel WithAuditEntryIndexes(TableSchemaModel table)
+        => table with
+        {
+            Indexes = table.Indexes
+                .Append(new IndexSchemaModel($"IX_{table.Name}_SegmentId_Seq", ["SegmentId", "Seq"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_OccurredAt", ["OccurredAt"], false, null))
+                .ToEquatableArray(),
+        };
+
+    /// <summary>The trail's segments with the index verification walks sealed segments by.</summary>
+    private static TableSchemaModel WithAuditSegmentIndexes(TableSchemaModel table)
+        => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_SealedAt", ["SealedAt"], false, null)).ToEquatableArray() };
 
     /// <summary>
     ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past

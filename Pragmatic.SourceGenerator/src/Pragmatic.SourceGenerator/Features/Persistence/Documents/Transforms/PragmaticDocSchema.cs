@@ -47,6 +47,13 @@ internal static class PragmaticDocSchema
             // [EnableOutbox]: the Messaging outbox's collection, as Pragmatic.Messaging.Engines describes it.
             if (boundary is not null && PragmaticRegistration.EnablesMessagingOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineMessagingOutbox) is not null)
                 collections.Add("global::Pragmatic.Messaging.Engines.Documents.OutboxMessageDocument.Schema");
+            // [Audited]: the trail's three collections, beside the boundary's audited entities, as Pragmatic.Audit.Engines describes them.
+            if (group.Any(PragmaticRegistration.IsAudited) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineAuditTrail) is not null)
+            {
+                collections.Add("global::Pragmatic.Audit.Engines.Documents.AuditEntryDocument.Schema");
+                collections.Add("global::Pragmatic.Audit.Engines.Documents.AuditSegmentDocument.Schema");
+                collections.Add("global::Pragmatic.Audit.Engines.Documents.AuditPrunedRangeDocument.Schema");
+            }
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
                 boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }

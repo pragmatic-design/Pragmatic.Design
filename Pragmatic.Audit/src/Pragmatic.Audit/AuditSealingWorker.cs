@@ -2,16 +2,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Pragmatic.Audit.EFCore;
+namespace Pragmatic.Audit;
 
 /// <summary>
-///     Seals the trail's due segments on a timer, for as long as the host runs. Registered by
-///     <see cref="AuditEfCoreExtensions.AddAuditTrail" />.
+///     Seals the trail's due segments on a timer, for as long as the host runs. Registered with each store's trail (EF Core's
+///     <c>AddAuditTrail</c>, the engines' <c>AddSqlAuditTrail</c> and <c>AddDocAuditTrail</c>), and runs the store's <see cref="IAuditSealer" />.
 /// </summary>
 /// <remarks>
 ///     <para>
 ///         Sealing is what makes the trail verifiable: <see cref="IAuditTrailReader.VerifyAsync" /> checks
-///         sealed segments only. Without something calling <see cref="AuditSealingService" />, no segment
+///         sealed segments only. Without something calling the sealer, no segment
 ///         is ever sealed, and verification checks none and reports every trail intact — altered or not.
 ///     </para>
 ///     <para>
@@ -49,7 +49,7 @@ public sealed partial class AuditSealingWorker(
         {
             var scope = scopes.CreateAsyncScope();
             await using var _ = scope.ConfigureAwait(false);
-            var sealedIds = await scope.ServiceProvider.GetRequiredService<AuditSealingService>()
+            var sealedIds = await scope.ServiceProvider.GetRequiredService<IAuditSealer>()
                 .SealDueSegmentsAsync(ct)
                 .ConfigureAwait(false);
 
