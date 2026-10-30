@@ -96,6 +96,19 @@ jobs:
         with:
           node-version: '22'
 
+      # As in ci.yml (#424), every RID: fetch-native.mjs keeps what carries this source's stamp and downloads
+      # the rest. Not for a release, which takes only what its own run built.
+      - name: Restore the native libraries
+        if: ${{ !inputs.build-native }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            Pragmatic.Documents/runtimes/*/native/*pragmatic_pdf_native*
+            Pragmatic.Documents/runtimes/win-x64/native/Pragmatic.Pdf.Native.dll
+            Pragmatic.Imaging/runtimes/*/native/*pragmatic_imaging_native*
+            Pragmatic.Imaging/runtimes/win-x64/native/Pragmatic.Imaging.Native.dll
+          key: native-all-${{ hashFiles('Pragmatic.Documents/native/pragmatic-pdf/**', 'Pragmatic.Imaging/native/pragmatic-imaging/**', 'shared/native/**') }}
+
       # Every RID, before the build: the projects copy and pack whichever of them exist. A release takes
       # only what this run built.
       - name: Native libraries
