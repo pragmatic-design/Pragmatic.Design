@@ -35,20 +35,13 @@ public sealed class AuditRetentionService(AuditDbContext db, TimeProvider timePr
         if (due.Count == 0)
             return null;
 
-        var last = due[^1];
-
-        if (last.SegmentHash is null)
-            throw new InvalidOperationException(
-                $"Segment '{last.SegmentId}' is marked sealed but has no hash. Pruning it would leave a gap " +
-                "nothing can link across, so the chain could never be verified again.");
-
+        // Declared before anything is deleted: a segment without a hash refuses the prune while the rows are still there.
+        var range = AuditChain.Gap(due, timeProvider.GetUtcNow());
         var ids = due.ConvertAll(s => s.SegmentId);
 
         await db.Entries.Where(e => ids.Contains(e.SegmentId)).ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await db.Segments.Where(s => ids.Contains(s.SegmentId)).ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
-        // The declaration outlives what it describes: it is what turns a hole into a documented step.
-        var range = new PrunedRange(due[0].SegmentId, last.SegmentId, timeProvider.GetUtcNow(), last.SegmentHash);
         db.PrunedRanges.Add(range);
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
 

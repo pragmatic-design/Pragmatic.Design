@@ -34,9 +34,7 @@ public sealed class AuditSealingService(
 
         foreach (var segment in open)
         {
-            // Wait out the grace period: a write in flight when the window closed can still commit, and
-            // sealing over it would leave a real entry outside the root — reported later as tampering.
-            if (naming.WindowEnd(segment.SegmentId) + naming.GracePeriod > now)
+            if (!AuditChain.IsDue(segment, naming, now))
                 continue;
 
             await SealAsync(segment, sealedThisPass, ct).ConfigureAwait(false);
@@ -64,11 +62,7 @@ public sealed class AuditSealingService(
             .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
 
-        segment.EntryCount = hashes.Count;
-        segment.MerkleRoot = AuditHashing.MerkleRoot(hashes);
-        segment.PreviousHash = previous?.SegmentHash;
-        segment.SegmentHash = AuditHashing.HashSegment(segment.PreviousHash, segment.MerkleRoot, segment.SegmentId);
-        segment.SealedAt = timeProvider.GetUtcNow();
+        AuditChain.Seal(segment, previous, hashes, timeProvider.GetUtcNow());
     }
 
     /// <summary>

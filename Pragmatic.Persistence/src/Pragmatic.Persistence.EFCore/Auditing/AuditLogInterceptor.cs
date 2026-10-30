@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -7,7 +6,6 @@ using Pragmatic.Audit;
 using Pragmatic.Audit.EFCore;
 using Pragmatic.Identity;
 using Pragmatic.Persistence.Entity;
-using Pragmatic.Pipeline;
 
 namespace Pragmatic.Persistence.EFCore.Auditing;
 
@@ -78,48 +76,21 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
             return;
 
         var now = _timeProvider.GetUtcNow();
-        // ICurrentUser.Id stays the SUBJECT throughout a delegated call — that is what keeps ownership
-        // stamps, scope filters and preferences behaving. So reading it alone recorded the person an
-        // agent was working for in the field named "who acted", and the agent nowhere at all. In an
-        // application with first-class delegation that is the one question a trail is asked.
-        var delegation = _currentUser?.Delegation;
-        var subjectId = _currentUser?.IdOrNull();
-        var actorId = delegation?.ActorId ?? subjectId;
-        var onBehalfOf = delegation is null ? null : subjectId;
-        var correlationId = Activity.Current?.TraceId.ToString();
 
         foreach (var entry in audited)
         {
+            var operation = entry.State switch
+            {
+                EntityState.Added => AuditedChange.EntityCreated,
+                EntityState.Deleted => AuditedChange.EntityDeleted,
+                _ when Interceptors.SoftDeleteDetection.IsSoftDeleting(entry) => AuditedChange.EntityDeleted,
+                _ when Interceptors.SoftDeleteDetection.IsSoftRestoring(entry) => AuditedChange.EntityRestored,
+                _ => AuditedChange.EntityUpdated
+            };
+
             AuditEntryStaging.Stage(
                 context,
-                new AuditEntry
-                {
-                    SegmentId = string.Empty,        // assigned by the preparer
-                    OccurredAt = now,
-                    Category = AuditCategory.Data,
-                    // A constant per shape rather than "Data." + action: an operation assembled at
-                    // runtime cannot be found by searching the source.
-                    Operation = entry.State switch
-                    {
-                        EntityState.Added => "Data.EntityCreated",
-                        EntityState.Deleted => "Data.EntityDeleted",
-                        _ when Interceptors.SoftDeleteDetection.IsSoftDeleting(entry) => "Data.EntityDeleted",
-                        _ when Interceptors.SoftDeleteDetection.IsSoftRestoring(entry) => "Data.EntityRestored",
-                        _ => "Data.EntityUpdated"
-                    },
-                    // Already a reference by the time a message or a request reaches persistence: the
-                    // identity is pseudonymised where it enters the system, not looked up here.
-                    ActorRef = actorId,
-                    OnBehalfOfRef = onBehalfOf,
-                    CorrelationId = correlationId,
-                    // What the application was doing, as opposed to what happened to the row. Read from
-                    // the ambient the invokers set rather than from Activity.Current, which is null
-                    // wherever no tracing listener is registered.
-                    BusinessOperation = OperationScope.Current,
-                    TargetType = entry.Entity.GetType().Name,
-                    TargetId = GetPrimaryKey(entry),
-                    Outcome = AuditOutcome.Success,
-                },
+                AuditedChange.Entry(operation, entry.Entity.GetType().Name, GetPrimaryKey(entry), now, _currentUser),
                 _preparer);
         }
     }
