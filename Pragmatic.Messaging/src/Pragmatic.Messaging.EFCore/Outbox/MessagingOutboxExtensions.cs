@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging.Entities;
 
@@ -61,17 +60,8 @@ public static class MessagingOutboxExtensions
             boundaryName,
             sp.GetRequiredService<ILogger<EfCoreOutboxSource>>()));
 
-        // Single delivery pump and purge service, deduped across boundaries: both iterate every
-        // registered IOutboxSource, so one instance covers all boundaries.
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OutboxDeliveryService>());
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OutboxPurgeService>());
-
-        // Host health, deduped for the same reason as the pump: one contributor iterates every
-        // registered IOutboxSource. It existed but was never registered, so HostHealthAggregator —
-        // which the generated host DOES register — reported no outbox at all.
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<Pragmatic.ControlPlane.IHostHealthContributor, OutboxHealthContributor>());
-
-        return services;
+        // Single delivery pump, purge service and health contributor, deduped across boundaries:
+        // each iterates every registered IOutboxSource, so one instance covers all boundaries.
+        return services.AddOutboxDelivery();
     }
 }
