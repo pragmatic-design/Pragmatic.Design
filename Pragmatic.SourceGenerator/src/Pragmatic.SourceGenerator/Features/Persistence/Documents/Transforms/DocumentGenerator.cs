@@ -51,7 +51,7 @@ internal static partial class DocumentGenerator
         {
             var ((sites, compilation), shape) = found;
             var shaped = UsesDocuments(compilation) ? WithPragmaticShape(spc, compilation, shape) : null;
-            EmitInterceptors(spc, shaped is not { } s ? sites! : BindAgain(s.Written, s.Shadow, spc.CancellationToken), shaped?.Shadow);
+            EmitInterceptors(spc, shaped is not { } s ? sites! : BindAgain(s.Written, s.Shadow, spc.CancellationToken), shaped?.Shadow, compilation);
         });
     }
 
@@ -71,10 +71,14 @@ internal static partial class DocumentGenerator
             spc.ReportDiagnostic(diagnostic);
     }
 
-    /// <summary>The chains' interceptors; with <paramref name="shadow" /> (Pragmatic's entities, their shape), the specifications' too.</summary>
-    private static void EmitInterceptors(SourceProductionContext spc, ImmutableArray<DocCall> calls, Compilation? shadow)
+    /// <summary>
+    ///     The chains' interceptors and the specifications', the latter read from <paramref name="shadow" /> when there is one (Pragmatic's
+    ///     entities, their shape) and from <paramref name="compilation" /> otherwise: an assembly with the engine's own [Document] types only (a
+    ///     module's collections) filters them by specifications too.
+    /// </summary>
+    private static void EmitInterceptors(SourceProductionContext spc, ImmutableArray<DocCall> calls, Compilation? shadow, Compilation compilation)
     {
-        if (calls.IsEmpty && shadow is null)
+        if (calls.IsEmpty && shadow is null && !UsesDocuments(compilation))
             return;
         var diagnostics = new List<Diagnostic>();
         var models = new Dictionary<INamedTypeSymbol, DocModel?>(SymbolEqualityComparer.Default);
@@ -112,7 +116,9 @@ internal static partial class DocumentGenerator
 
         if (shadow is not null)
             BulkUpdates(shadow, Model, interceptors, diagnostics);
-        var specifications = shadow is null ? [] : Specifications(shadow, Model, diagnostics);
+        var specifications = Specifications(shadow ?? compilation, Model, diagnostics);
+        if (calls.IsEmpty && shadow is null && specifications.Count == 0)
+            return; // no chain and no specification: no file, as before
         spc.AddSource(new DocumentInterceptorsTemplate(interceptors.ToEquatableArray(), specifications.ToEquatableArray()).RenderOutput());
         // A diagnostic in a file this generator added (a repository's chain) has no place in the compilation: a note is dropped, a failure kept unplaced.
         var generated = shadow is null ? null : new HashSet<string>(shadow.SyntaxTrees.Where(t => t.FilePath.EndsWith(".g.cs", StringComparison.Ordinal)).Select(t => t.FilePath));
