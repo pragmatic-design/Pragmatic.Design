@@ -29,6 +29,9 @@ public sealed class MySqlMigrationGenerator : SqlGeneratorBase
 
     public override string ProviderName => MigrationConstants.ProviderMySql;
 
+    /// <summary>MySQL refuses a longer name ("Identifier name ... is too long").</summary>
+    public override int? MaxIdentifierLength => 64;
+
     protected override string QuoteIdentifier(string name) => $"`{name.Replace("`", "``")}`";
 
     private string Table(string name) => QuoteIdentifier(name);

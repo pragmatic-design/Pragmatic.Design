@@ -13,6 +13,9 @@ public abstract class SqlGeneratorBase : ISqlMigrationGenerator
 {
     public abstract string ProviderName { get; }
 
+    /// <inheritdoc />
+    public virtual int? MaxIdentifierLength => null;
+
     public virtual string GenerateScript(SchemaDiff diff)
     {
         var sb = new StringBuilder();

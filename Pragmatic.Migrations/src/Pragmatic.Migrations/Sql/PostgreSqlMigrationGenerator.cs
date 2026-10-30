@@ -17,6 +17,9 @@ public sealed class PostgreSqlMigrationGenerator : SqlGeneratorBase
 
     public override string ProviderName => MigrationConstants.ProviderPostgreSql;
 
+    /// <summary>PostgreSQL truncates a longer name to 63 bytes itself, so the catalogue would hold a name the schema does not declare.</summary>
+    public override int? MaxIdentifierLength => 63;
+
     // Double any embedded quote: an identifier carrying one would otherwise close the
     // quoted name early and change the meaning of the statement.
     protected override string QuoteIdentifier(string name) => $"\"{name.Replace("\"", "\"\"")}\"";

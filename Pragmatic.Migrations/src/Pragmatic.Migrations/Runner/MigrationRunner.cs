@@ -9,6 +9,7 @@ using Pragmatic.Migrations.Configuration;
 using Pragmatic.Migrations.Diff;
 using Pragmatic.Migrations.Diff.Changes;
 using Pragmatic.Migrations.Introspection;
+using Pragmatic.Migrations.Schema;
 using Pragmatic.Migrations.Sql;
 using Pragmatic.Telemetry.Conventions;
 
@@ -45,6 +46,10 @@ public sealed partial class MigrationRunner(
                 $"[{dbName}] Skipped (not in database filter)", DatabaseName: dbName));
             return MigrationResult.NoChanges;
         }
+
+        // The names the database will hold, fitted to its limit before anything compares or writes them: the hash, the diff, the DDL, the audit
+        // and a follower's check all see the same schema.
+        context = context with { DesiredSchema = SchemaIdentifiers.FitTo(context.DesiredSchema, providerFactory.GetGenerator(providerName).MaxIdentifierLength) };
 
         using var activity = MigrationDiagnostics.ActivitySource.StartActivity("Migrations.Migrate");
         activity?.SetTag(DbTags.Namespace, dbName);

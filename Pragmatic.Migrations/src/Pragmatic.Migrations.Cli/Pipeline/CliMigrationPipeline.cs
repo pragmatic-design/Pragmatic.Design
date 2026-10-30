@@ -334,10 +334,15 @@ public sealed class CliMigrationPipeline(
         }
     }
 
+    /// <summary>
+    ///     The schemas the filter selects, each with its names fitted to its database's limit (<see cref="SchemaIdentifiers" />), as the
+    ///     runner fits them: status, script and apply then see the names the database holds.
+    /// </summary>
     private static IEnumerable<SchemaVersion> FilterSchemas(IReadOnlyList<SchemaVersion> schemas, string? filter) =>
-        string.IsNullOrEmpty(filter)
+        (string.IsNullOrEmpty(filter)
             ? schemas
             : schemas.Where(s =>
-                string.Equals(s.DatabaseName, filter, StringComparison.OrdinalIgnoreCase));
+                string.Equals(s.DatabaseName, filter, StringComparison.OrdinalIgnoreCase)))
+        .Select(s => SchemaIdentifiers.FitTo(s, ProviderFactoryHelper.CreateGenerator(s.ProviderName).MaxIdentifierLength));
 }
 

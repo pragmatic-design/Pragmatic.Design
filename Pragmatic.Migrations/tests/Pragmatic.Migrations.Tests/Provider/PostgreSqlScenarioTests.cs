@@ -59,6 +59,8 @@ public class PostgreSqlScenarioTests(PostgreSqlContainerFixture fixture)
     protected override string PkType() => "uuid";
     protected override string TextType() => "text";
     protected override string IntType() => "integer";
+
+    protected override int? IdentifierLimit => 63;
     protected override string BoolType() => "boolean";
     protected override string DecimalType() => "numeric(18,2)";
     protected override string TimestampType() => "timestamptz";
