@@ -63,7 +63,9 @@ What they do differently:
   `GET_LOCK`, named after the database.
 - **Oracle** stores an empty string as `NULL`, so a `NOT NULL` text column refuses `""`. There is no
   advisory lock (`DBMS_LOCK` needs a grant): the `__PragmaticLock` leader election is what keeps two
-  instances from migrating at once.
+  instances from migrating at once. An identity column (a Sql engine `[Identity]` key) is backed by
+  a sequence Oracle creates with the table, so the migrating user needs `CREATE SEQUENCE` as well as
+  `CREATE TABLE`.
 
 ## API
 

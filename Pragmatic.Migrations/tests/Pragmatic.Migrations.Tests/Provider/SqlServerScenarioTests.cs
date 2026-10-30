@@ -60,6 +60,8 @@ public class SqlServerScenarioTests(SqlServerContainerFixture fixture)
     protected override string TextType() => "nvarchar(max)";
     protected override string IndexableTextType() => "nvarchar(450)";
     protected override string IntType() => "int";
+
+    protected override string IdentityKeyType() => "BIGINT IDENTITY(1,1)";
     protected override string BoolType() => "bit";
     protected override string DecimalType() => "decimal(18,2)";
     protected override string TimestampType() => "datetimeoffset";

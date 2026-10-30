@@ -395,6 +395,15 @@ public sealed class SchemaDiffEngine : ISchemaDiffEngine
             _ => normalized,
         };
 
+        // The same for the other two: MySQL's AUTO_INCREMENT and Oracle's GENERATED ... AS IDENTITY are column properties too, and the
+        // database reports the plain type (bigint, NUMBER(19)). Oracle's clause is cut where it starts, before its own "identity".
+        var generated = normalized.IndexOf(" generated ", StringComparison.Ordinal);
+        if (generated > 0)
+            normalized = normalized[..generated].Trim();
+        var autoIncrement = normalized.IndexOf("auto_increment", StringComparison.Ordinal);
+        if (autoIncrement > 0)
+            normalized = normalized[..autoIncrement].Trim();
+
         var identity = normalized.IndexOf("identity", StringComparison.Ordinal);
         if (identity > 0)
             normalized = normalized[..identity].Trim();

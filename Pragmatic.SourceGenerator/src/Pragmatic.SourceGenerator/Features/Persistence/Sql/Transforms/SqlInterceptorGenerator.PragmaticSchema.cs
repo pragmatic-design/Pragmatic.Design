@@ -310,6 +310,8 @@ internal static partial class SqlInterceptorGenerator
 
                 var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type); // Pragmatic's scopes column admits null
                 var type = SchemaTypes.Of(column, dialect, SchemaTypes.MaxLength(SchemaTypes.PropertyOf(entity, column)), keyed.Contains(column.Column)); // on SQL Server an indexed string is nvarchar(450), as EF Core's branch writes it
+                if (entity.Identity && entity.Keys.Contains(column))
+                    type = SchemaTypes.Identity(type, dialect);
                 columns.Add(new ColumnSchemaModel(column.Column, type, nullable, entity.Keys.Contains(column), softDelete && column.Column == "IsDeleted" ? falsy : null));
             }
 

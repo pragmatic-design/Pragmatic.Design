@@ -97,7 +97,7 @@ internal sealed partial class SqlSourceTemplate
         AppendLine("        {");
         foreach (var d in s.Dialects)
             AppendLine($"            {Dialect}.{d.Dialect} => new([{Join(d.Tables.Select(MigrationSchemaText.Table))}], {Literal(s.Name)}, global::Pragmatic.Migrations.MigrationConstants.{d.Provider}, {LiteralOrNull(s.ConfigKey)}),");
-        AppendLine("            _ => throw new global::System.NotSupportedException($\"Pragmatic.Migrations migrates PostgreSQL, SQL Server and SQLite, not {dialect}.\"),");
+        AppendLine("            _ => throw new global::System.NotSupportedException($\"Pragmatic.Migrations migrates PostgreSQL, SQL Server, SQLite, MySQL and Oracle, not {dialect}.\"),");
         AppendLine("        };");
         AppendLine("    }");
     }

@@ -21,7 +21,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private sealed class SchemaColumn(string name, ColumnModel source, bool nullable, bool key, string? defaultValue, int? maxLength, bool keyed)
+    private sealed class SchemaColumn(string name, ColumnModel source, bool nullable, bool key, string? defaultValue, int? maxLength, bool keyed, bool identity = false)
     {
         public string Name { get; } = name;
         public ColumnModel Source { get; } = source;
@@ -30,6 +30,7 @@ internal static partial class SqlInterceptorGenerator
         public string? DefaultValue { get; } = defaultValue;
         public int? MaxLength { get; } = maxLength;
         public bool Keyed { get; set; } = keyed; // a key, indexed or foreign key column: SQL Server's indexable string length
+        public bool Identity { get; } = identity; // the key of an [Identity] entity: the database assigns it
     }
 
     private sealed class SchemaTable(string name)
@@ -90,7 +91,7 @@ internal static partial class SqlInterceptorGenerator
             if (tables is null)
                 continue;
             var configKey = database.GetAttributes().First(a => a.AttributeClass?.Name == "SqlDatabaseAttribute").NamedArguments.FirstOrDefault(n => n.Key == "ConfigKey").Value.Value as string;
-            var dialects = new[] { (SqlDialect.PostgreSql, "ProviderPostgreSql"), (SqlDialect.SqlServer, "ProviderSqlServer"), (SqlDialect.Sqlite, "ProviderSqlite") }
+            var dialects = new[] { (SqlDialect.PostgreSql, "ProviderPostgreSql"), (SqlDialect.SqlServer, "ProviderSqlServer"), (SqlDialect.Sqlite, "ProviderSqlite"), (SqlDialect.MySql, "ProviderMySql"), (SqlDialect.Oracle, "ProviderOracle") }
                 .Select(d => new DialectSchemaModel(d.Item1.ToString(), d.Item2, tables.Select(t => TableModel(t, d.Item1)).ToEquatableArray()));
             extensions.Add(new DatabaseSchemaModel(NamespaceOf(database), database.Name, configKey, tables.Count, dialects.ToEquatableArray()));
         }
@@ -126,7 +127,6 @@ internal static partial class SqlInterceptorGenerator
                 continue; // a view; a table per concrete type's root view; a type below the root of a hierarchy in one table (the root's table has its columns)
             var where = entity.Type.Locations.FirstOrDefault() ?? Location.None;
             string? problem = entity.Tpt ? "a table per type hierarchy: write its tables in the schema by hand (the spike emits none)"
-                : entity.Identity ? "a key the database assigns ([Identity]): Pragmatic.Migrations describes no identity column; give it a Guid key"
                 : entity.Columns.FirstOrDefault(c => c.Generated > 0 && c.RollUpChild is null) is { } generated ? $"'{generated.Property}' is [DatabaseGenerated]: the schema has no default or computation for it"
                 : null;
             if (problem is not null)
@@ -143,7 +143,8 @@ internal static partial class SqlInterceptorGenerator
                     continue; // the view adds the type's name
                 var property = SchemaTypes.PropertyOf(entity, column);
                 var nullable = !column.IsDiscriminator && (EntityModel.IsNullable(column.Type) || column.OptionalOwner || column.DerivedOf is not null);
-                table.Columns.Add(new SchemaColumn(column.Column, column, nullable, entity.Keys.Contains(column), column.RollUpChild is not null ? "0" : null, SchemaTypes.MaxLength(property), entity.Keys.Contains(column)));
+                table.Columns.Add(new SchemaColumn(column.Column, column, nullable, entity.Keys.Contains(column), column.RollUpChild is not null ? "0" : null, SchemaTypes.MaxLength(property), entity.Keys.Contains(column),
+                    identity: entity.Identity && entity.Keys.Contains(column)));
                 if (!column.IsKey && SchemaTypes.IsMarkedIndexed(property))
                     table.Index(column.Column, SchemaTypes.IsUnique(property), SchemaTypes.IsUnique(property) ? live : null);
             }
@@ -222,7 +223,8 @@ internal static partial class SqlInterceptorGenerator
     private static TableSchemaModel TableModel(SchemaTable table, SqlDialect dialect)
         => new(
             table.Name,
-            table.Columns.Select(c => new ColumnSchemaModel(c.Name, SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed), c.Nullable, c.Key, c.DefaultValue)).ToEquatableArray(),
+            table.Columns.Select(c => new ColumnSchemaModel(c.Name, c.Identity ? SchemaTypes.Identity(SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed), dialect) : SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed),
+                c.Nullable, c.Key, c.DefaultValue)).ToEquatableArray(),
             table.Indexes.Select(i => new IndexSchemaModel(i.Name, i.Columns.ToEquatableArray(), i.Unique, i.Filter is null ? null : SqlDialects.ResolveBooleanLiterals(i.Filter, dialect))).ToEquatableArray(),
             table.ForeignKeys.Select(f => new ForeignKeySchemaModel(f.Name, f.Column, f.Table, f.ReferencedColumn)).ToEquatableArray());
 }
