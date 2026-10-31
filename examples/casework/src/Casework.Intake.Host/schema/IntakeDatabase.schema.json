@@ -595,6 +595,14 @@
       ],
       "indexes": [
         {
+          "name": "IX___AuditEntries_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
           "name": "IX___AuditEntries_OccurredAt",
           "columns": [
             "OccurredAt"
@@ -607,6 +615,15 @@
           "columns": [
             "SegmentId",
             "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SubjectRef_OccurredAt",
+          "columns": [
+            "SubjectRef",
+            "OccurredAt"
           ],
           "isUnique": false,
           "filter": null
@@ -1419,5 +1436,5 @@
   "databaseName": "IntakeDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Intake",
-  "hash": "e124a29b1cb2"
+  "hash": "ef7848c284cb"
 }

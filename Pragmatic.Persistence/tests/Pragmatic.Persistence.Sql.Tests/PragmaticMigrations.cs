@@ -49,6 +49,10 @@ internal static class PragmaticMigrations
 
     /// <summary>The changes between <paramref name="schema" /> and the database's, as the runner computes them.</summary>
     public static async Task<ImmutableArray<Pragmatic.Migrations.Diff.Changes.SchemaChange>> DiffAsync(SqlDialect dialect, string connectionString, SchemaVersion schema)
+        => new SchemaDiffEngine().ComputeDiff(schema, await IntrospectAsync(dialect, connectionString)).Changes;
+
+    /// <summary>The database's schema as the runner reads it.</summary>
+    public static async Task<SchemaVersion> IntrospectAsync(SqlDialect dialect, string connectionString)
     {
         ISchemaIntrospector introspector = dialect switch
         {
@@ -59,7 +63,7 @@ internal static class PragmaticMigrations
             _ => new SqlServerSchemaIntrospector { ExcludedTables = Excluded },
         };
         await using var connection = await OpenAsync(dialect, connectionString);
-        return new SchemaDiffEngine().ComputeDiff(schema, await introspector.IntrospectAsync(connection)).Changes;
+        return await introspector.IntrospectAsync(connection);
     }
 
     /// <summary>A connection opened and prepared as the engine's statements expect (MySQL's ANSI_QUOTES and UTC, Oracle's binary NLS and UTC).</summary>

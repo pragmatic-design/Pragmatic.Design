@@ -27,13 +27,18 @@ internal static partial class SqlInterceptorGenerator
     private const string AuditSegmentRowType = "Pragmatic.Audit.Engines.Sql.AuditSegmentRow";
     private const string AuditPrunedRangeRowType = "Pragmatic.Audit.Engines.Sql.AuditPrunedRangeRow";
 
-    /// <summary>The trail's entries with the indexes EF Core's schema gives them (<c>SchemaMetadataTransform</c>): a segment in order, and time.</summary>
+    /// <summary>
+    ///     The trail's entries with the indexes EF Core's schema gives them (<c>SchemaMetadataTransform</c>): a segment in order, a subject over
+    ///     time, time, and a request's correlation.
+    /// </summary>
     private static TableSchemaModel WithAuditEntryIndexes(TableSchemaModel table)
         => table with
         {
             Indexes = table.Indexes
                 .Append(new IndexSchemaModel($"IX_{table.Name}_SegmentId_Seq", ["SegmentId", "Seq"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_SubjectRef_OccurredAt", ["SubjectRef", "OccurredAt"], false, null))
                 .Append(new IndexSchemaModel($"IX_{table.Name}_OccurredAt", ["OccurredAt"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_CorrelationId", ["CorrelationId"], false, null))
                 .ToEquatableArray(),
         };
 

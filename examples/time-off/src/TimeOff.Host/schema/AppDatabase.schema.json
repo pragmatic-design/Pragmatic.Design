@@ -1072,6 +1072,14 @@
       ],
       "indexes": [
         {
+          "name": "IX___AuditEntries_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
           "name": "IX___AuditEntries_OccurredAt",
           "columns": [
             "OccurredAt"
@@ -1084,6 +1092,15 @@
           "columns": [
             "SegmentId",
             "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SubjectRef_OccurredAt",
+          "columns": [
+            "SubjectRef",
+            "OccurredAt"
           ],
           "isUnique": false,
           "filter": null
@@ -1401,5 +1418,5 @@
   "databaseName": "AppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "160a9c35947b"
+  "hash": "09f73103efa1"
 }

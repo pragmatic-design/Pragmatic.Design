@@ -739,9 +739,13 @@ internal static partial class SchemaMetadataTransform
             new ColumnSchemaModel("ValueHash", bytes, true, false),
             new ColumnSchemaModel("Detail", Str(2048), true, false));
 
+        // AuditEntryEntityTypeConfiguration's four: sealing reads a segment in order, and "what happened to this subject" and "what did this
+        // request do" are the questions the trail is read by.
         var indexes = ImmutableArray.Create(
             new IndexSchemaModel("IX___AuditEntries_SegmentId_Seq", ImmutableArray.Create("SegmentId", "Seq")),
-            new IndexSchemaModel("IX___AuditEntries_OccurredAt", ImmutableArray.Create("OccurredAt")));
+            new IndexSchemaModel("IX___AuditEntries_SubjectRef_OccurredAt", ImmutableArray.Create("SubjectRef", "OccurredAt")),
+            new IndexSchemaModel("IX___AuditEntries_OccurredAt", ImmutableArray.Create("OccurredAt")),
+            new IndexSchemaModel("IX___AuditEntries_CorrelationId", ImmutableArray.Create("CorrelationId")));
 
         return new TableSchemaModel("__AuditEntries", schemaName, null, columns, indexes,
             ImmutableArray<ForeignKeySchemaModel>.Empty);

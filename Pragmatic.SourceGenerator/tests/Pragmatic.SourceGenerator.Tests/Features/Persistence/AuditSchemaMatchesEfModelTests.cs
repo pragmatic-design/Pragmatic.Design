@@ -75,6 +75,43 @@ public class AuditSchemaMatchesEfModelTests
     }
 
     /// <summary>
+    ///     The indexes too, by name and columns: the migrated <c>__AuditEntries</c> had two of the four the EF model declares, so a migrated
+    ///     database answered "what happened to this subject" and "what did this request do" with a scan, and the column comparison above
+    ///     could not see it.
+    /// </summary>
+    [Theory]
+    [InlineData(AuditEntryEntityTypeConfiguration.TableName)]
+    [InlineData(AuditSegmentEntityTypeConfiguration.TableName)]
+    [InlineData(PrunedRangeEntityTypeConfiguration.TableName)]
+    public void TheSchemaAndTheEfModel_DescribeTheSameIndexes(string tableName)
+    {
+        var schema = AuditTables().First(t => t.TableName == tableName).Indexes.AsImmutableArray()
+            .Select(i => $"{i.Name}({string.Join(",", i.Columns.AsImmutableArray())})").Order(StringComparer.Ordinal);
+
+        schema.Should().Equal(EfIndexes(tableName));
+    }
+
+    /// <summary>The control: the trail's entries have indexes to compare, so an equality of two empty lists cannot pass.</summary>
+    [Fact]
+    public void TheIndexComparisonIsNotVacuous()
+    {
+        EfIndexes(AuditEntryEntityTypeConfiguration.TableName).Should().Contain("IX___AuditEntries_SubjectRef_OccurredAt(SubjectRef,OccurredAt)");
+    }
+
+    /// <summary>The EF model's indexes of <paramref name="tableName" />, as their database names and columns.</summary>
+    private static ImmutableArray<string> EfIndexes(string tableName)
+    {
+        var builder = new ModelBuilder();
+        builder.ApplyConfiguration(new AuditEntryEntityTypeConfiguration());
+        builder.ApplyConfiguration(new AuditSegmentEntityTypeConfiguration());
+        builder.ApplyConfiguration(new PrunedRangeEntityTypeConfiguration());
+
+        var type = builder.Model.GetEntityTypes().First(e => e.GetTableName() == tableName);
+
+        return [.. type.GetIndexes().Select(i => $"{i.GetDatabaseName()}({string.Join(",", i.Properties.Select(p => p.Name))})").Order(StringComparer.Ordinal)];
+    }
+
+    /// <summary>
     ///     ⚠️ The one that catches a whole table going missing, rather than a column.
     /// </summary>
     /// <remarks>
