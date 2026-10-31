@@ -80,6 +80,9 @@ These work on every engine, from the same declarations:
   attachments' purge;
 - the bulk operations of `IBulkRepository<T>`, compiled at the call site;
 - privacy's erasure and access over the entities the engine persists;
+- an owned type (`[Owned]`, a `[ValueObject]` of several members, an identity record such as `LocalIdentity`, with
+  the members of its base classes) is stored with its entity: as `{Property}_{Member}` columns on the Sql engine,
+  as on EF Core, and as a nested document on the documents engine. A query can compare one of its members;
 - `[ConcurrencyAware]`: a stale write is a `PersistenceRuleViolationException` whose error is a
   `ConcurrencyError`, as on EF Core.
 

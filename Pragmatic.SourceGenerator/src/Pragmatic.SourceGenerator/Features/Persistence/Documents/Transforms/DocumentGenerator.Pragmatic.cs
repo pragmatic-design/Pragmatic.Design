@@ -98,10 +98,12 @@ internal static partial class DocumentGenerator
         var shadow = compilation.AddSyntaxTrees(trees);
         var scopeRules = new List<string>();
         var bridged = shadow.GetTypeByMetadataName("Pragmatic.Persistence.Documents.CompiledScopeRules") is not null;
+        var documents = new List<DocModel>();
         foreach (var entity in entities)
         {
             if (shadow.GetTypeByMetadataName(entity.ToDisplayString()) is not { } shapedEntity || DocModel.Read(shapedEntity, diagnostics) is not { } model)
                 continue;
+            documents.Add(model);
             var hint = VirtualFolderHints.ForType(entity.Name, "Document", entity.ContainingNamespace.ToDisplayString());
             if (DocTypeEmitter.Model(model, hint, diagnostics, DocFamiliesEmitter.Families(model, shadow, diagnostics)) is not { } typeModel)
                 continue;
@@ -112,6 +114,8 @@ internal static partial class DocumentGenerator
                 scopeRules.AddRange(DocFamiliesEmitter.ScopeRuleRegistrations(model, shadow));
         }
 
+        foreach (var codec in DocOwnedCodec.For(documents, diagnostics))
+            spc.AddSource(new DocumentOwnedCodecTemplate(codec).RenderOutput()); // the owned types the entities hold, as nested documents
         spc.AddSource(new DocScopeRulesTemplate(scopeRules.ToEquatableArray()).RenderOutput());
         foreach (var diagnostic in diagnostics)
         {

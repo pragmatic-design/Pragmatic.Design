@@ -50,8 +50,17 @@ internal sealed class DocField
     /// <summary>A Nullable&lt;T&gt; of a value kind, or a reference that may be null.</summary>
     public bool Nullable { get; }
 
-    /// <summary>The [Embedded] type of an embedded field, or of a list's elements.</summary>
+    /// <summary>The [Embedded] type of an embedded field, or of a list's elements; the owned type of an <see cref="Owned" /> field.</summary>
     public INamedTypeSymbol? Embedded { get; }
+
+    /// <summary>
+    ///     A Pragmatic entity's owned type (<c>[Owned]</c>, <c>[ValueObject]</c>, an identity record) as a nested document: it is not this
+    ///     engine's partial, so it is written and read through the codec the generator emits for it (<see cref="Codec" />).
+    /// </summary>
+    public bool Owned { get; init; }
+
+    /// <summary>The generated codec of an <see cref="Owned" /> field's type, fully qualified; null for any other field.</summary>
+    public string? Codec => Owned ? DocOwnedCodec.QualifiedName(Embedded!) : null;
 
     /// <summary>The kind of a list's elements.</summary>
     public DocKind ElementKind { get; }
@@ -122,12 +131,23 @@ internal sealed class DocModel
 
     public static bool IsEmbeddedType(ITypeSymbol? type) => type is INamedTypeSymbol named && named.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == EmbeddedAttribute);
 
-    /// <summary>The model of a [Document] or [Embedded] type, its unsupported properties reported; null when it is neither, or has no key (a document).</summary>
+    /// <summary>
+    ///     An owned type by the rule both other branches use (<c>EntityModel.IsOwned</c>): a class the developer did not make this engine's
+    ///     <c>[Embedded]</c> partial. A struct is not one: its codec's null is the reference's.
+    /// </summary>
+    public static bool IsOwnedType(ITypeSymbol? type)
+        => type is INamedTypeSymbol { TypeKind: TypeKind.Class } named && !IsEmbeddedType(named) && EntityModel.IsOwned(named);
+
+    /// <summary>
+    ///     The model of a [Document], [Embedded] or owned type, its unsupported properties reported; null when it is none of them, or has no key
+    ///     (a document). An owned type is a field only of a Pragmatic entity, or of another owned type.
+    /// </summary>
     public static DocModel? Read(INamedTypeSymbol type, List<Diagnostic> diagnostics)
     {
         var document = type.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DocumentAttribute);
         var pragmatic = IsPragmatic(type);
-        if (document is null && !pragmatic && !IsEmbeddedType(type))
+        var owned = document is null && !pragmatic && IsOwnedType(type);
+        if (document is null && !pragmatic && !IsEmbeddedType(type) && !owned)
             return null;
         // A Pragmatic entity's collection is its table's name (Pragmatic's plural), unless a [Document] next to it names one.
         var collection = document is null
@@ -139,10 +159,12 @@ internal sealed class DocModel
         var versioned = pragmatic && HasPragmatic(type, "ConcurrencyAwareAttribute");
         foreach (var property in Properties(type, pragmatic))
         {
+            if (owned && property.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute"))
+                continue; // as the Sql engine leaves it out of the owner's columns
             // Pragmatic's shape: the key PersistenceId, the row version of a [ConcurrencyAware] entity (owner's decision of 2026-10-22: _v).
             var isKey = pragmatic ? property.Name == "PersistenceId" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.Attributes.KeyAttribute");
             var isVersion = pragmatic ? versioned && property.Name == "RowVersion" : property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Documents.Attributes.VersionAttribute");
-            var field = FieldOf(property, isKey ? "_id" : isVersion ? "_v" : property.Name, out var reason);
+            var field = FieldOf(property, isKey ? "_id" : isVersion ? "_v" : property.Name, pragmatic || owned, out var reason);
             if (field is null)
             {
                 diagnostics.Add(Diagnostic.Create(DocDiagnostics.UnsupportedMember, property.Locations.FirstOrDefault() ?? where, type.Name, property.Name, property.Type.ToDisplayString(), reason));
@@ -212,7 +234,8 @@ internal sealed class DocModel
         return false;
     }
 
-    private static DocField? FieldOf(IPropertySymbol property, string name, out string reason)
+    // allowOwned: a Pragmatic entity's field, or an owned type's. An owned type there is a nested document, through its codec.
+    private static DocField? FieldOf(IPropertySymbol property, string name, bool allowOwned, out string reason)
     {
         reason = "";
         var type = property.Type;
@@ -222,6 +245,8 @@ internal sealed class DocModel
             return new DocField(property, name, kind, nullable, null, kind, null);
         if (IsEmbeddedType(scalar))
             return new DocField(property, name, DocKind.Embedded, nullable, (INamedTypeSymbol)scalar, DocKind.Embedded, scalar);
+        if (allowOwned && IsOwnedType(scalar))
+            return new DocField(property, name, DocKind.Embedded, nullable, (INamedTypeSymbol)scalar.WithNullableAnnotation(NullableAnnotation.NotAnnotated), DocKind.Embedded, scalar) { Owned = true };
         if (scalar is INamedTypeSymbol { Name: "List", TypeArguments.Length: 1 } list && list.ContainingNamespace.ToDisplayString() == "System.Collections.Generic")
         {
             var element = list.TypeArguments[0];
@@ -248,7 +273,7 @@ internal sealed class DocModel
         var fields = new List<DocField>();
         foreach (var property in result.GetMembers().OfType<IPropertySymbol>())
         {
-            if (fieldOf.TryGetValue(property.Name, out var name) && FieldOf(property, name, out _) is { } field)
+            if (fieldOf.TryGetValue(property.Name, out var name) && FieldOf(property, name, allowOwned: false, out _) is { } field)
                 fields.Add(field);
         }
 
