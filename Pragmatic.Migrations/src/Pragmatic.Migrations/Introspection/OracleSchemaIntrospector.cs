@@ -45,11 +45,11 @@ public sealed class OracleSchemaIntrospector : ISchemaIntrospector
             """, r => (r.GetString(0), r.GetString(1)), ct).ConfigureAwait(false));
 
         var columns = Group(await ReadAsync(connection, """
-            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, DATA_PRECISION, DATA_SCALE, CHAR_LENGTH, CHAR_USED, NULLABLE, DATA_DEFAULT_VC
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, DATA_PRECISION, DATA_SCALE, CHAR_LENGTH, CHAR_USED, NULLABLE, DATA_DEFAULT_VC, DATA_LENGTH
             FROM USER_TAB_COLUMNS ORDER BY TABLE_NAME, COLUMN_ID
             """, r => (r.GetString(0), new ColumnSchema(
                 r.GetString(1),
-                TypeOf(r.GetString(2), Number(r, 3), Number(r, 4), Number(r, 5), r.IsDBNull(6) ? null : r.GetString(6)),
+                TypeOf(r.GetString(2), Number(r, 3), Number(r, 4), Number(r, 5), r.IsDBNull(6) ? null : r.GetString(6), Number(r, 9)),
                 r.GetString(7) == "Y",
                 primaryKeys.Contains((r.GetString(0), r.GetString(1))),
                 DefaultOf(r.IsDBNull(8) ? null : r.GetString(8)))), ct).ConfigureAwait(false), wanted);
@@ -96,10 +96,12 @@ public sealed class OracleSchemaIntrospector : ISchemaIntrospector
     }
 
     /// <summary>The column's type in the generator's spelling.</summary>
-    internal static string TypeOf(string dataType, int? precision, int? scale, int? charLength, string? charUsed) => dataType switch
+    /// <remarks>A <c>RAW</c>'s length is in bytes, which only <c>DATA_LENGTH</c> holds: without it every run would widen the column again.</remarks>
+    internal static string TypeOf(string dataType, int? precision, int? scale, int? charLength, string? charUsed, int? dataLength = null) => dataType switch
     {
         "VARCHAR2" or "CHAR" => $"{dataType}({charLength}{(charUsed == "C" ? " CHAR" : "")})",
         "NVARCHAR2" or "NCHAR" => $"{dataType}({charLength})",
+        "RAW" when dataLength is not null => $"RAW({dataLength})",
         "NUMBER" when precision is null => scale is 0 ? "NUMBER(*,0)" : "NUMBER",
         "NUMBER" => scale is null or 0 ? $"NUMBER({precision})" : $"NUMBER({precision},{scale})",
         "FLOAT" when precision is not null => $"FLOAT({precision})",

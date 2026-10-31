@@ -75,6 +75,29 @@ public class SubjectRegistrySchemaMatchesEfModelTests
             .Should().ContainSingle(i => i.IsUnique && i.Columns.AsImmutableArray().SequenceEqual(new[] { "LookupIndex" }));
     }
 
+    /// <summary>
+    ///     On SQL Server the blind index is a binary of its length, which an index can hold, and its uniqueness skips the forgotten subjects:
+    ///     <c>varbinary(max)</c> is no index key there, and a unique index counts a null (Pragmatic.Migrations' scenario 27 on each provider).
+    /// </summary>
+    [Fact]
+    public void OnSqlServer_TheLookupIndex_IsABinaryOfItsLength_UniqueAmongTheSubjectsThatHaveOne()
+    {
+        var subjects = SchemaMetadataTransform
+            .Transform(Entity(true), EfCoreProvider.SqlServer, "App", "MyApp", hasPrivacyEFCore: true)
+            .Tables.AsImmutableArray().First(t => t.TableName == SubjectRecordEntityTypeConfiguration.TableName);
+
+        subjects.Columns.AsImmutableArray().Single(c => c.Name == "LookupIndex").SqlType.Should().Be(
+            $"varbinary({EfType(SubjectRecordEntityTypeConfiguration.TableName).FindProperty("LookupIndex")!.GetMaxLength()})",
+            "the length the EF model gives the blind index");
+        subjects.Indexes.AsImmutableArray().Single(i => i.IsUnique).Filter.Should().Be("\"LookupIndex\" IS NOT NULL");
+    }
+
+    /// <summary>The EF model's length is the blind index's: an HMAC-SHA256.</summary>
+    [Fact]
+    public void TheEfModel_GivesTheLookupIndexTheLengthOfABlindIndex()
+        => EfType(SubjectRecordEntityTypeConfiguration.TableName).FindProperty("LookupIndex")!.GetMaxLength().Should().Be(
+            Pragmatic.Privacy.SubjectLookup.BlindIndex(new byte[32], "Customer", "c-1").Length);
+
     /// <summary>The controls: no data subject, or no registry package, and the tables are not there.</summary>
     [Theory]
     [InlineData(false, true)]

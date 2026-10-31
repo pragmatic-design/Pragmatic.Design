@@ -18,7 +18,8 @@ public sealed class SubjectRecordEntityTypeConfiguration : IEntityTypeConfigurat
         builder.HasKey(s => s.SubjectRef);
         builder.Property(s => s.SubjectRef).HasMaxLength(64).IsRequired();
         builder.Property(s => s.SubjectType).HasMaxLength(128).IsRequired();
-        builder.Property(s => s.LookupIndex);
+        // Its length, so a provider types it as a binary an index can hold (varbinary(max) cannot be an index key on SQL Server).
+        builder.Property(s => s.LookupIndex).HasMaxLength(SubjectLookup.BlindIndexLength);
         builder.Property(s => s.Identifier);
 
         // Stored as UTC ticks: several providers cannot translate a DateTimeOffset comparison into SQL,

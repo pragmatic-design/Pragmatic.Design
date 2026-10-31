@@ -63,6 +63,7 @@ public class PostgreSqlScenarioTests(PostgreSqlContainerFixture fixture)
     protected override int? IdentifierLimit => 63;
 
     protected override string IdentityKeyType() => "BIGSERIAL";
+    protected override string IndexableBinaryType(int length) => "bytea"; // PostgreSQL's binary has no length, and indexes as it is
     protected override string BoolType() => "boolean";
     protected override string DecimalType() => "numeric(18,2)";
     protected override string TimestampType() => "timestamptz";

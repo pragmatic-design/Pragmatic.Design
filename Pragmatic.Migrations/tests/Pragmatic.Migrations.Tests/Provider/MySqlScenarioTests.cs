@@ -79,6 +79,7 @@ public class MySqlScenarioTests(MySqlContainerFixture fixture)
     protected override int? IdentifierLimit => 64;
 
     protected override string IdentityKeyType() => "BIGINT AUTO_INCREMENT";
+    protected override string IndexableBinaryType(int length) => $"varbinary({length})";
     protected override string BoolType() => "tinyint(1)";
     protected override string DecimalType() => "decimal(18,2)";
     protected override string TimestampType() => "datetime(6)";

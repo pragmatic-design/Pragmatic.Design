@@ -12,6 +12,12 @@ public static class SubjectLookup
     private const int ReferenceBytes = 16;
 
     /// <summary>
+    ///     Length of a blind index, in bytes: an HMAC-SHA256. A store keeps it in a binary of this length, which an index can hold where a
+    ///     binary of no length cannot (SQL Server, MySQL, Oracle).
+    /// </summary>
+    public const int BlindIndexLength = HMACSHA256.HashSizeInBytes;
+
+    /// <summary>
     ///     Builds the keyed hash used to find a subject without storing anything searchable about them.
     /// </summary>
     /// <remarks>

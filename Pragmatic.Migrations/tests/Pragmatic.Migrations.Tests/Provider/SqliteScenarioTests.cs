@@ -47,6 +47,7 @@ public class SqliteScenarioTests : SchemaScenarioTestBase, IDisposable
     protected override string IntType() => "INTEGER";
 
     protected override string IdentityKeyType() => "INTEGER";
+    protected override string IndexableBinaryType(int length) => "BLOB"; // SQLite's binary has no length, and indexes as it is
     protected override string BoolType() => "INTEGER";
     protected override string DecimalType() => "REAL";
     protected override string TimestampType() => "TEXT";
