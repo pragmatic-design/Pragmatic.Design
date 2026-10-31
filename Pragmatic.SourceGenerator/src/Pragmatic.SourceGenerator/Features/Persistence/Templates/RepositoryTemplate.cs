@@ -1023,12 +1023,8 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             AppendLine("TargetId = \"(bulk: \" + __affected.ToString(global::System.Globalization.CultureInfo.InvariantCulture) + \" rows)\",");
             AppendLine("Outcome = global::Pragmatic.Audit.AuditOutcome.Success,");
             DecreaseIndent();
-            AppendLine("}, new global::Pragmatic.Audit.AuditEntryPreparer(");
-            IncreaseIndent();
-            AppendLine("new global::Pragmatic.Audit.PatternAuditDetailRedactor(),");
-            AppendLine("new global::Pragmatic.Audit.HourlyAuditSegmentNaming(),");
-            AppendLine("_timeProvider));");
-            DecreaseIndent();
+            // The trail's registered naming and redactor, read from the context's application services as the interceptor reads them.
+            AppendLine("}, _timeProvider);");
             AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
         });
     }

@@ -34,7 +34,6 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
 {
     private readonly TimeProvider _timeProvider;
     private readonly ICurrentUser? _currentUser;
-    private readonly AuditEntryPreparer _preparer;
 
     /// <summary>Creates the interceptor using the system clock and no user.</summary>
     public AuditLogInterceptor() : this(TimeProvider.System, null) { }
@@ -44,8 +43,6 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
     {
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _currentUser = currentUser;
-        _preparer = new AuditEntryPreparer(
-            new PatternAuditDetailRedactor(), new HourlyAuditSegmentNaming(), _timeProvider);
     }
 
     /// <inheritdoc />
@@ -76,6 +73,9 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
             return;
 
         var now = _timeProvider.GetUtcNow();
+        // The trail's registered naming and redactor, per save from the context's application services: the sealer closes segments by
+        // the same naming, so an entry filed by another one is a segment it cannot read.
+        var preparer = AuditEntryStaging.PreparerFor(context, _timeProvider);
 
         foreach (var entry in audited)
         {
@@ -91,7 +91,7 @@ public sealed class AuditLogInterceptor : SaveChangesInterceptor
             AuditEntryStaging.Stage(
                 context,
                 AuditedChange.Entry(operation, entry.Entity.GetType().Name, GetPrimaryKey(entry), now, _currentUser),
-                _preparer);
+                preparer);
         }
     }
 
