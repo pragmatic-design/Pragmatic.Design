@@ -169,6 +169,46 @@ public class DeclaredSpecificationExtensionsTests
         string.Join(" | ", GeneratorTestHelper.GetCompilationErrors(result).Select(d => d.ToString())).Should().BeEmpty();
     }
 
+    /// <summary>
+    ///     A specification whose own parameters are named as the extensions' receiver and token (<c>query</c>, <c>repository</c>, <c>ct</c>):
+    ///     the extensions compile, and pass the specification its own arguments. With the receiver named <c>query</c> regardless, the
+    ///     application did not compile: CS0100, a duplicate parameter, reported in the generated file.
+    /// </summary>
+    [Fact]
+    public void ASpecificationsParametersNamedAsTheReceiver_StillCompile_AndArePassedOn()
+    {
+        var result = Run("""
+            using System;
+            using Pragmatic.Persistence.Entity;
+            using Pragmatic.Specification;
+
+            namespace TestApp;
+
+            public class SalesBoundary;
+
+            [Entity]
+            [BelongsTo<SalesBoundary>]
+            public partial class Order : IEntity
+            {
+                public string Code { get; private set; } = "";
+            }
+
+            public static class OrderSpecs
+            {
+                public static Specification<Order> Matching(string query, string repository, string ct)
+                    => Spec<Order>.Where(o => o.Code == query + repository + ct);
+            }
+            """);
+        var generated = GeneratorTestHelper.GetGeneratedSource(result, "Specifications.TestApp.Order");
+
+        string.Join(" | ", GeneratorTestHelper.GetCompilationErrors(result).Where(d => d.ToString().Contains("_Infra.Specifications.")).Select(d => d.ToString()))
+            .Should().BeEmpty();
+        generated.Should().NotBeNull();
+        generated!.Should().Contain("global::TestApp.OrderSpecs.Matching(query, repository, ct)", "the specification receives its own arguments");
+        generated.Should().Contain("global::System.Linq.Queryable.Where(query1, ", "the queryable receiver is named so it collides with none of them");
+        generated.Should().Contain("repository1.FindAsync(global::TestApp.OrderSpecs.Matching(query, repository, ct), ct1)");
+    }
+
     private static string? GeneratedExtensions(string source)
         => GeneratorTestHelper.GetGeneratedSource(Run(source), "Specifications.TestApp.Order");
 
