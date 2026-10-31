@@ -167,7 +167,7 @@ internal sealed partial class EntityModel
                 var optional = IsNullable(property.Type);
                 var ownedType = (INamedTypeSymbol)Unwrap(property.Type);
                 var members = new List<ColumnModel>();
-                foreach (var member in ownedType.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.GetMethod is not null && p.SetMethod is not null && p.DeclaredAccessibility == Accessibility.Public))
+                foreach (var member in OwnedMembers(ownedType))
                 {
                     if (member.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute"))
                         continue;

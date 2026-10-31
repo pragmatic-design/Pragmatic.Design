@@ -6,7 +6,7 @@ namespace Pragmatic.Persistence.Workload;
 /// <summary>The tables of the entities in Extras.cs, in each dialect: dropped and created empty, after the workload's schema, by the tests and the native smoke.</summary>
 public static class ExtrasSchema
 {
-    public static IReadOnlyList<string> Tables { get; } = ["DossierNotes", "Halls", "Venues", "Dossiers", "OrderTagLabels", "Memberships", "CartLines", "Carts", "Prices", "Embeddings", "TypedRows", "Shipments", "Charges", "Categories", "Documents", "Reminders", "Assignments", "Tickets", "InvoiceLines", "Invoices", "CardPayments", "WirePayments", "ProjectLabels", "Projects", "Labels", "Gauges", "TagNotes", "SportsCars", "Cars", "Trucks", "Vehicles", "Bundles"];
+    public static IReadOnlyList<string> Tables { get; } = ["DossierNotes", "Halls", "Venues", "Dossiers", "OrderTagLabels", "Memberships", "CartLines", "Carts", "Prices", "Embeddings", "TypedRows", "Shipments", "Accounts", "Charges", "Categories", "Documents", "Reminders", "Assignments", "Tickets", "InvoiceLines", "Invoices", "CardPayments", "WirePayments", "ProjectLabels", "Projects", "Labels", "Gauges", "TagNotes", "SportsCars", "Cars", "Trucks", "Vehicles", "Bundles"];
 
     /// <summary>The sequence the tests number tickets with (<c>session.NextValueAsync</c>); created by <see cref="SqlSequences.CreateSql" />, dropped first so each run starts over.</summary>
     public const string TicketNumbers = "ticket_numbers";
@@ -127,6 +127,8 @@ public static class ExtrasSchema
             $"CREATE TABLE {Q("Embeddings")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("Label")} {text} NOT NULL, {Q("Vector")} {vector} NOT NULL)",
             $"CREATE TABLE {Q("TypedRows")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("When")} {stamp} NOT NULL, {Q("Blob")} {blob} NOT NULL, {Q("Day")} {day} NOT NULL, {Q("Clock")} {clock} NOT NULL, {Q("Span")} {big} NOT NULL, {Q("Stamp")} {big} NOT NULL, {Q("Status")} {text} NOT NULL, {Q("MaybeWhen")} {stamp} NULL, {Q("MaybeStamp")} {big} NULL)",
             $"CREATE TABLE {Q("Shipments")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("Code")} {text} NOT NULL, {Q("Destination_Street")} {text} NOT NULL, {Q("Destination_City")} {text} NOT NULL, {Q("Destination_Floor")} {integer} NOT NULL, {Q("Return_Street")} {text} NULL, {Q("Return_City")} {text} NULL, {Q("Return_Floor")} {integer} NULL)",
+            // An optional identity record (the tests' IdentityRecordTests): its own members and its base class's, every column nullable.
+            $"CREATE TABLE {Q("Accounts")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("Name")} {text} NOT NULL, {Q("Identity_PasswordHash")} {text} NULL, {Q("Identity_FailedLoginAttempts")} {integer} NULL, {Q("Identity_ExternalIdentityKey")} {text} NULL, {Q("Identity_ProvisionSource")} {integer} NULL, {Q("Identity_IsActive")} {flag} NULL, {Q("Identity_LastLoginAt")} {when} NULL)",
             $"CREATE TABLE {Q("Charges")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("Amount")} {money} NOT NULL, {Q("Description")} {text} NOT NULL, {Q("Kind")} {text} NOT NULL, {Q("Last4")} {text} NULL, {Q("Iban")} {text} NULL, {Q("Days")} {integer} NULL, {Q("Tier")} {integer} NULL)",
             $"CREATE TABLE {Q("Categories")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("ParentId")} {guid} NULL, {Q("Name")} {text} NOT NULL)",
             $"CREATE TABLE {Q("Documents")} ({Q("Id")} {guid} NOT NULL PRIMARY KEY, {Q("Name")} {text} NOT NULL, {Q("Spec")} {json} NOT NULL)",
