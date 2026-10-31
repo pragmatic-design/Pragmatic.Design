@@ -42,6 +42,13 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>The audit trail on the engines (Pragmatic.Audit.Engines), by the type the generator recognises it by: its Sql entry row.</summary>
     internal const string EngineAuditTrail = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
 
+    /// <summary>The subject registry on the engines (Pragmatic.Privacy.Engines), by the type the generator recognises it by: its Sql subject row.</summary>
+    internal const string EngineSubjectRegistry = "Pragmatic.Privacy.Engines.Sql.SubjectRow";
+
+    /// <summary>True when <paramref name="entity" /> carries <c>[DataSubject]</c>: its database holds the subject registry's tables, as EF Core's schema has them.</summary>
+    internal static bool IsDataSubject(INamedTypeSymbol entity)
+        => entity.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Privacy.DataSubjectAttribute");
+
     /// <summary>
     ///     One source per boundary of <paramref name="entities" /> (the ones the engine serves); none without the dependency injection abstractions
     ///     or the engine's unit of work in the compilation. An entity without a boundary is not registered: it has no key.
