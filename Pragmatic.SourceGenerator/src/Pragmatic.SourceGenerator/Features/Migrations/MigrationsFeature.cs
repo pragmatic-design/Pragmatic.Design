@@ -36,12 +36,14 @@ internal static class MigrationsFeature
                     generatedNs,
                     detected.HasNpgsqlDriver,
                     detected.HasSqlServerDriver,
-                    detected.HasSqliteDriver);
+                    detected.HasSqliteDriver,
+                    detected.HasMySqlDriver,
+                    detected.HasOracleDriver);
 
                 // Nothing to say when the host references the migrations runtime but no driver: the
                 // registry stays empty and MigrationsBuilder registers no provider, which is the same
                 // outcome the run-time probe produced.
-                if (!detected.HasNpgsqlDriver && !detected.HasSqlServerDriver && !detected.HasSqliteDriver)
+                if (!template.HasAny)
                     return;
 
                 ctx.AddSource(template.RenderOutput());

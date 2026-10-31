@@ -153,6 +153,12 @@ internal sealed record DetectedFeatures
 
     /// <summary>True when the host references Microsoft.Data.Sqlite.</summary>
     public bool HasSqliteDriver { get; init; }
+
+    /// <summary>True when the host references MySqlConnector.</summary>
+    public bool HasMySqlDriver { get; init; }
+
+    /// <summary>True when the host references Oracle.ManagedDataAccess.Core.</summary>
+    public bool HasOracleDriver { get; init; }
     public bool HasNotifications { get; init; }
 
     /// <summary>True when the compilation references the JSON serialization seam (Pragmatic.Serialization.PragmaticJsonOptions).</summary>

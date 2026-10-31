@@ -49,9 +49,8 @@ those changes are applied by rebuilding the table (rename → recreate with the 
 columns that exist on both sides → drop). The runner does this for you, in the same transaction as
 the rest of the migration.
 
-MySQL and Oracle are not registered by the source generator: name them with
-`UseProvider("MySql", cs => new MySqlConnection(cs))` or `UseProvider("Oracle", cs => new OracleConnection(cs))`.
-What they do differently:
+MySQL and Oracle are registered by the source generator as the other three are, when the host references
+`MySqlConnector` or `Oracle.ManagedDataAccess.Core`. What they do differently:
 
 - **DDL is committed statement by statement.** A migration that fails halfway keeps the changes
   before the failure; the runner's transaction cannot take them back.
@@ -338,7 +337,7 @@ Samples:
 ## Requirements
 
 - .NET 10.0+
-- PostgreSQL, SQL Server, SQLite, MySQL 8.0.16+ or Oracle 23ai+ (the last two through `UseProvider`)
+- PostgreSQL, SQL Server, SQLite, MySQL 8.0.16+ or Oracle 23ai+
 - `Pragmatic.SourceGenerator` analyzer (emits the desired `SchemaVersion`)
 
 ## License
