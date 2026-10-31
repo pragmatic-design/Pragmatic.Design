@@ -8,7 +8,7 @@ namespace Pragmatic.SourceGenerator.Features.Composition.Templates;
 /// <summary>
 ///     Generates Pragmatic.g.cs with RunAsync(), RunWorkerAsync().
 /// </summary>
-internal sealed class PragmaticEntryTemplate : CSharpTemplate
+internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
 {
     private readonly HostAggregationModel _model;
 
@@ -104,6 +104,8 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
                 $"global::{_model.RootNamespace}.PragmaticHost.RegisterAllDatabases(builder.Services, builder.Configuration);");
             AppendLine();
         }
+
+        RenderAuditTrailRegistration();
 
         AppendLine("// Call ConfigureServices on all pipeline steps (business wiring)");
         AppendLine(
@@ -839,6 +841,8 @@ internal sealed class PragmaticEntryTemplate : CSharpTemplate
                 $"global::{_model.RootNamespace}.PragmaticHost.RegisterAllDatabases(builder.Services, builder.Configuration);");
             AppendLine();
         }
+
+        RenderAuditTrailRegistration();
 
         AppendLine("// Call ConfigureServices on all pipeline steps (business wiring)");
         AppendLine(

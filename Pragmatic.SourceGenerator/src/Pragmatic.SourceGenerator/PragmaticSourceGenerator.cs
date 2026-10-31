@@ -239,8 +239,12 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // Each database's schema once, with the tables of every engine that persists a boundary on it; the host migrates each
         // database that has one, so the names travel with the persisted stores.
         var schemaDatabases = Features.Persistence.SchemaFeature.Register(context, efCoreSchemas, sqlSchemas);
-        var storesWithSchemas = persistedStores.Combine(schemaDatabases)
-            .Select(static (pair, _) => pair.Left with { SchemaDatabases = pair.Right });
+        // The engines' boundaries that hold [Audited] entities travel with them too: the host counts them beside EF Core's databases to
+        // decide whether there is one place to read the trail from.
+        var auditedEngineBoundaries = entityModels.Combine(features)
+            .Select(static (pair, _) => Features.Persistence.Models.PersistedStoresModel.EngineAuditedBoundaries(pair.Left, pair.Right));
+        var storesWithSchemas = persistedStores.Combine(schemaDatabases).Combine(auditedEngineBoundaries)
+            .Select(static (pair, _) => pair.Left.Left with { SchemaDatabases = pair.Left.Right, AuditedEngineBoundaries = pair.Right });
 
         // The jobs go on the other channel: JobsFeature registers each of them itself, and what was
         // missing was anyone checking what they take — a missing registration surfaced on a schedule,

@@ -56,6 +56,42 @@ internal sealed record PersistedStoresModel
     /// </summary>
     public EquatableArray<string> SubjectDatabases { get; init; } = EquatableArray<string>.Empty;
 
+    /// <summary>
+    ///     The boundaries the Sql and documents engines persist with an <c>[Audited]</c> entity, when the host references
+    ///     <c>Pragmatic.Audit.Engines</c>. Each counts as a place of its own beside <see cref="AuditedDatabases" />: the session is the
+    ///     application's to open, so the host cannot tell that two boundaries open the same database.
+    /// </summary>
+    public EquatableArray<AuditedEngineBoundaryModel> AuditedEngineBoundaries { get; init; } = EquatableArray<AuditedEngineBoundaryModel>.Empty;
+
+    /// <summary>
+    ///     The places the trail's entries are written to: the EF Core databases with an <c>[Audited]</c> entity (when
+    ///     <c>Pragmatic.Audit.EFCore</c> is referenced) and the engines' boundaries with one. The host registers the trail itself only when
+    ///     there is one; with more, the application names the one the trail is read from.
+    /// </summary>
+    public int AuditTrailPlaces(bool auditEFCore)
+        => (auditEFCore ? AuditedDatabases.Count : 0) + AuditedEngineBoundaries.Count;
+
+    /// <summary>
+    ///     The engines' boundaries with an <c>[Audited]</c> entity among <paramref name="entities" />, those of the referenced modules included,
+    ///     ordered by name. Empty outside a host, or without <c>Pragmatic.Audit.Engines</c>.
+    /// </summary>
+    public static EquatableArray<AuditedEngineBoundaryModel> EngineAuditedBoundaries(
+        ImmutableArray<EntityMetadataModel> entities, Core.DetectedFeatures features)
+    {
+        if (!features.IsHostMode || !features.HasAuditEngines || entities.IsDefaultOrEmpty)
+            return EquatableArray<AuditedEngineBoundaryModel>.Empty;
+
+        return entities
+            .Where(e => e.IsValid && e.IsAudited && !string.IsNullOrEmpty(e.BoundaryTypeFullName)
+                        && Core.PersistenceEngineMarker.HasEngine(e, features))
+            .Select(e => (Boundary: "global::" + StripGlobal(e.BoundaryTypeFullName!), Engine: Core.PersistenceEngineMarker.EngineOf(e, features)!))
+            .Where(p => p.Engine is Core.PersistenceEngineMarker.Sql or Core.PersistenceEngineMarker.Documents)
+            .Distinct()
+            .OrderBy(p => p.Boundary, StringComparer.Ordinal)
+            .Select(p => new AuditedEngineBoundaryModel(p.Boundary, p.Engine))
+            .ToImmutableArray();
+    }
+
     public bool HasDbContextRegistration(string? methodName)
         => methodName is not null && DbContextRegistrations.AsImmutableArray().Contains(methodName);
 

@@ -148,6 +148,12 @@ internal sealed record HostAggregationModel
     /// </summary>
     public required Persistence.Models.PersistedStoresModel PersistedStores { get; init; }
 
+    /// <summary>
+    ///     True when a boundary of the Sql or documents engine holds an <c>[Audited]</c> entity: the host writes <c>RegisterAuditTrail</c>,
+    ///     which registers the trail there when it is the only place, and says so when it is not.
+    /// </summary>
+    public bool HasEngineAuditTrail => PersistedStores.AuditedEngineBoundaries.Count > 0;
+
     /// <summary>Gets discovered service registrations from enriched DI metadata in referenced assemblies.</summary>
     public EquatableArray<DiscoveredServiceInfo> DiscoveredServices { get; init; } =
         EquatableArray<DiscoveredServiceInfo>.Empty;

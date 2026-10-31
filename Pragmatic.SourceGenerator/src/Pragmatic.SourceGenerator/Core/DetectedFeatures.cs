@@ -187,6 +187,12 @@ internal sealed record DetectedFeatures
     /// </summary>
     public bool HasAuditEFCore { get; init; }
 
+    /// <summary>
+    ///     <c>Pragmatic.Audit.Engines</c> is referenced: the host registers the trail on the boundary of the Sql or documents engine that
+    ///     holds the <c>[Audited]</c> entities, when only one place holds them.
+    /// </summary>
+    public bool HasAuditEngines { get; init; }
+
     /// <summary>True when the compilation has an entry point (executable project).</summary>
     public bool IsHostMode { get; init; }
 

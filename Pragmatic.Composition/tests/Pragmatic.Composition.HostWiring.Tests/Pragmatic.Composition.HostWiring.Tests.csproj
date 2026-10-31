@@ -78,6 +78,9 @@
     <!-- The documents engine's bridge: a module persisted there writes its schema only with the bridge's unit of work, so the stand-in
          the Sql test uses is not enough. Kept out of every compilation but the one that asks for it (HostWiringFixture.EngineBridge). -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <!-- The audit trail on the engines: the host registers its store on the engine boundary holding the [Audited] entities. Kept out of
+         every compilation but the ones that ask for it, as the documents engine's bridge is. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
   </ItemGroup>
 
 </Project>

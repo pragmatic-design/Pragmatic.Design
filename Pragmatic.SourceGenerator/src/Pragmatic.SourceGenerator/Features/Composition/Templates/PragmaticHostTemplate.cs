@@ -298,6 +298,13 @@ internal sealed partial class PragmaticHostTemplate : CSharpTemplate
             RenderRegisterAllDatabasesMethod();
         }
 
+        // 9-bis. RegisterAuditTrail (only when an engine's boundary holds [Audited] entities)
+        if (_model.HasEngineAuditTrail)
+        {
+            AppendLine();
+            RenderRegisterAuditTrailMethod();
+        }
+
         // 10. ValidateConfiguration (only when modules declare [RequiresConfig])
         if (_model.HasRequiredConfigValidation)
         {
