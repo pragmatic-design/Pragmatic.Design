@@ -62,6 +62,8 @@ public class SqlServerScenarioTests(SqlServerContainerFixture fixture)
     protected override string IntType() => "int";
 
     protected override string IdentityKeyType() => "BIGINT IDENTITY(1,1)";
+    protected override string IndexableBinaryType(int length) => $"varbinary({length})";
+    protected override string? UniqueOverNullableFilter(string column) => $"\"{column}\" IS NOT NULL"; // SQL Server counts a null in a unique index
     protected override string BoolType() => "bit";
     protected override string DecimalType() => "decimal(18,2)";
     protected override string TimestampType() => "datetimeoffset";

@@ -15,6 +15,9 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 /// </remarks>
 internal static partial class SchemaMetadataTransform
 {
+    /// <summary>Pragmatic.Privacy's <c>SubjectLookup.BlindIndexLength</c>: <c>SubjectRegistrySchemaMatchesEfModelTests</c> holds the two equal.</summary>
+    private const int BlindIndexLength = 32;
+
     /// <summary>Each subject's reference, its blind index and its encrypted identity.</summary>
     /// <remarks>
     ///     Timestamps are ticks, as in the EF configuration: several providers cannot translate a
@@ -32,19 +35,24 @@ internal static partial class SchemaMetadataTransform
         string Str(int len) => SqlTypeMapper.MapToSqlType("System.String", provider, len, null, null, false);
         var ticks = SqlTypeMapper.MapToSqlType("System.Int64", provider);
         var bytes = SqlTypeMapper.MapToSqlType("System.Byte[]", provider);
+        // The blind index's length (SubjectLookup.BlindIndexLength, an HMAC-SHA256), as the EF configuration declares it: on SQL Server a
+        // binary of no length is no index key.
+        var blindIndex = SqlTypeMapper.MapToSqlType("System.Byte[]", provider, BlindIndexLength);
 
         var columns = ImmutableArray.Create(
             new ColumnSchemaModel("SubjectRef", Str(64), false, true),
             new ColumnSchemaModel("SubjectType", Str(128), false, false),
-            new ColumnSchemaModel("LookupIndex", bytes, true, false),
+            new ColumnSchemaModel("LookupIndex", blindIndex, true, false),
             new ColumnSchemaModel("Identifier", bytes, true, false),
             new ColumnSchemaModel("CreatedAt", ticks, false, false),
             new ColumnSchemaModel("ForgottenAt", ticks, true, false));
 
-        // Unique: two live subjects sharing a blind index would make a reference ambiguous. An erased row
-        // keeps a null index, which a unique index does not compare.
+        // Unique: two live subjects sharing a blind index would make a reference ambiguous. An erased row keeps a null index, which a unique
+        // index does not compare, except on SQL Server, where it counts as a value: there the index holds the rows that have one, or the
+        // second forgotten subject would be refused.
         var indexes = ImmutableArray.Create(
-            new IndexSchemaModel("IX___Subjects_LookupIndex", ImmutableArray.Create("LookupIndex"), IsUnique: true));
+            new IndexSchemaModel("IX___Subjects_LookupIndex", ImmutableArray.Create("LookupIndex"), IsUnique: true,
+                Filter: provider == EfCoreProvider.SqlServer ? "\"LookupIndex\" IS NOT NULL" : null));
 
         return new TableSchemaModel("__Subjects", schemaName, null, columns, indexes,
             ImmutableArray<ForeignKeySchemaModel>.Empty);

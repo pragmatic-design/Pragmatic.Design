@@ -48,6 +48,10 @@ internal static class SqlTypeMapper
                 _ => "TEXT"
             };
 
+        // Binary with MaxLength: what SQL Server can index (varbinary(max) is no index key there); PostgreSQL's and SQLite's binary has no length
+        if (normalized == "byte[]" && maxLength.HasValue && provider == EfCoreProvider.SqlServer)
+            return $"varbinary({maxLength.Value})";
+
         // Decimal with precision/scale
         if (normalized == "decimal" && precision.HasValue)
         {
