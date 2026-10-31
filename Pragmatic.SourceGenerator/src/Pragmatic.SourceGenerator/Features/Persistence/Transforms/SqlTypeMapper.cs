@@ -16,8 +16,9 @@ internal static class SqlTypeMapper
         int? scale = null,
         bool isEnum = false)
     {
+        // An enum is stored as its int: the same type name as an int column on each provider, SQLite's included.
         if (isEnum)
-            return provider == EfCoreProvider.SqlServer ? "int" : "integer";
+            return LookupBaseType("int", provider);
 
         // Primitive collections (List<T>, T[], IReadOnlyList<T>, … of a scalar/enum element).
         // A collection reaching the schema is necessarily a primitive collection — collections of
