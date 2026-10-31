@@ -154,6 +154,12 @@ internal sealed record HostAggregationModel
     /// </summary>
     public bool HasEngineAuditTrail => PersistedStores.AuditedEngineBoundaries.Count > 0;
 
+    /// <summary>
+    ///     True when a boundary of the Sql or documents engine holds a <c>[DataSubject]</c>: the host writes <c>RegisterSubjectRegistry</c>,
+    ///     which registers the registry there when it is the only place, and says so when it is not.
+    /// </summary>
+    public bool HasEngineSubjectRegistry => PersistedStores.SubjectEngineBoundaries.Count > 0;
+
     /// <summary>Gets discovered service registrations from enriched DI metadata in referenced assemblies.</summary>
     public EquatableArray<DiscoveredServiceInfo> DiscoveredServices { get; init; } =
         EquatableArray<DiscoveredServiceInfo>.Empty;

@@ -87,6 +87,8 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
         AppendLine($"global::{_model.RootNamespace}.PragmaticHost.RegisterAllPragmaticServices(builder.Services, builder.Configuration);");
         AppendLine();
 
+        RenderSubjectRegistryRegistration();
+
         Comment("Module strategy configuration — user overrides defaults via IPragmaticBuilder");
         AppendLine("var pragmaticBuilder = new PragmaticBuilder(builder.Services, builder.Configuration, builder.Environment);");
         AppendLine("configure?.Invoke(pragmaticBuilder);");
@@ -826,6 +828,8 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
         Comment("SG defaults — auto-register infrastructure modules");
         AppendLine($"global::{_model.RootNamespace}.PragmaticHost.RegisterAllPragmaticServices(builder.Services, builder.Configuration);");
         AppendLine();
+
+        RenderSubjectRegistryRegistration();
 
         Comment("Module strategy configuration");
         AppendLine("var pragmaticBuilder = new PragmaticBuilder(builder.Services, builder.Configuration, builder.Environment);");

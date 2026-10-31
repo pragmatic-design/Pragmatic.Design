@@ -243,8 +243,14 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // decide whether there is one place to read the trail from.
         var auditedEngineBoundaries = entityModels.Combine(features)
             .Select(static (pair, _) => Features.Persistence.Models.PersistedStoresModel.EngineAuditedBoundaries(pair.Left, pair.Right));
-        var storesWithSchemas = persistedStores.Combine(schemaDatabases).Combine(auditedEngineBoundaries)
-            .Select(static (pair, _) => pair.Left.Left with { SchemaDatabases = pair.Left.Right, AuditedEngineBoundaries = pair.Right });
+        // The engines' boundaries that hold [DataSubject] entities, for the subject registry's place, by the same count.
+        var subjectEngineBoundaries = entityModels.Combine(features)
+            .Select(static (pair, _) => Features.Persistence.Models.PersistedStoresModel.EngineSubjectBoundaries(pair.Left, pair.Right));
+        var storesWithSchemas = persistedStores.Combine(schemaDatabases).Combine(auditedEngineBoundaries).Combine(subjectEngineBoundaries)
+            .Select(static (pair, _) => pair.Left.Left.Left with
+            {
+                SchemaDatabases = pair.Left.Left.Right, AuditedEngineBoundaries = pair.Left.Right, SubjectEngineBoundaries = pair.Right,
+            });
 
         // The jobs go on the other channel: JobsFeature registers each of them itself, and what was
         // missing was anyone checking what they take — a missing registration surfaced on a schedule,
