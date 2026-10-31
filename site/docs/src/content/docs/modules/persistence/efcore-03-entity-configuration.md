@@ -3,7 +3,7 @@ title: "Entity Configuration"
 description: "EF Core needs to know how to map your entities to the database: which property is the primary key, which properties need indexes, how relationships are configur"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/03-entity-configuration.md
 sidebar:
-  order: 24
+  order: 25
 ---
 ## The Problem
 

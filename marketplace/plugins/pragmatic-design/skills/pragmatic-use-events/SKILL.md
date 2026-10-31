@@ -192,7 +192,7 @@ using Pragmatic.Events.Attributes;
 public partial class OrdersBoundary;
 ```
 
-Requires the boundary project to reference `Pragmatic.Events.EFCore`; otherwise the generator emits **PRAG2752** (rather than silently doing nothing). Two boundaries sharing one physical database share a single `__EventOutbox` table. The manual three-step wiring above stays the path for a hand-written DbContext.
+Requires the boundary project to reference `Pragmatic.Events.EFCore`, or `Pragmatic.Events.Engines` for a boundary on the Sql or documents engine (not in 1.0.0-alpha.3); otherwise the generator emits **PRAG2752** (rather than silently doing nothing). Two boundaries sharing one physical database share a single `__EventOutbox` table. The manual three-step wiring above stays the path for a hand-written DbContext.
 
 ## What the SG generates
 

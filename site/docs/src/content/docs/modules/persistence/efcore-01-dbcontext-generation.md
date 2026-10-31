@@ -3,7 +3,7 @@ title: "DbContext Generation"
 description: "EF Core requires a `DbContext` plus a consistent set of registrations:"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/01-dbcontext-generation.md
 sidebar:
-  order: 22
+  order: 23
 ---
 ## The Problem
 

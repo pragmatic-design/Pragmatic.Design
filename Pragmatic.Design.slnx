@@ -397,6 +397,7 @@
     <File Path="Pragmatic.Persistence/docs/18-data-ownership.md" />
     <File Path="Pragmatic.Persistence/docs/19-state-machine.md" />
     <File Path="Pragmatic.Persistence/docs/20-eager-loading.md" />
+    <File Path="Pragmatic.Persistence/docs/21-engines.md" />
     <File Path="Pragmatic.Persistence/docs/common-mistakes.md" />
     <File Path="Pragmatic.Persistence/docs/concepts.md" />
     <File Path="Pragmatic.Persistence/docs/troubleshooting.md" />

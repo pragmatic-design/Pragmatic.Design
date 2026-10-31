@@ -217,6 +217,7 @@ advanced areas are still settling. See the [roadmap](https://github.com/pragmati
 | [Architecture and Concepts](/modules/persistence/concepts/) | Mental model, entity lifecycle, decision tree for choosing patterns |
 | [Getting Started](/modules/persistence/01-getting-started/) | Activation requirements, partial classes, minimal example |
 | [Boundaries](/modules/persistence/17-boundaries/) | How boundaries partition entities, DbContexts, and transaction scopes |
+| [Engines](/modules/persistence/21-engines/) | A boundary on the Sql or documents engine: the session, the schema, what is the same as EF Core and what is not |
 
 ### Entity model
 

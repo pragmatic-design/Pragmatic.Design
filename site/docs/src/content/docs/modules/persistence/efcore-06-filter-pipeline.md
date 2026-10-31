@@ -3,7 +3,7 @@ title: "Filter Pipeline"
 description: "Query filters (see Query Filters) handle **root-level** filtering: when you query `repo.Query()`, soft-deleted records are automatically excluded."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/06-filter-pipeline.md
 sidebar:
-  order: 27
+  order: 28
 ---
 ## The Problem
 

@@ -15,6 +15,30 @@ tree per call, no reflection.
 The namespaces carry no `.Core`: the engine's types are in `Pragmatic.Persistence.Documents` and its
 sub-namespaces (`.Attributes`, `.Filters`, `.Planning`, `.Schema`, …).
 
+⚠️ None of these packages is in 1.0.0-alpha.3: the engine ships with a later release.
+
+## Pragmatic's entities on the engine
+
+A boundary on the engine keeps its `[Entity]` types, repositories, actions and endpoints. The host opens
+the session, and the generated `Add{Boundary}Persistence` registers the rest:
+
+```csharp
+services.AddArchiveBoundaryPersistence((sp, filters) =>
+    new DocSession(mongoClient, "archive") { Filters = filters });
+```
+
+- The factory runs once per scope. Pass `filters` on: they carry tenant, owner, soft delete and scopes.
+- The boundary's generated `{Boundary}DocSchema` (collections, indexes, Cosmos DB partition keys) is
+  applied at start through that session. What the backend cannot apply stops the start.
+- A save is one MongoDB transaction on a replica set. On a standalone server and on Cosmos DB the
+  documents are written one by one, and a failure leaves the earlier ones written.
+- `IReadRepository<T>.Query()` throws: write the chain on `DocSession.Query<T>()`, or a specification.
+- A load with `Include` is **PRAG3111**; a mutation that loads or writes navigations is **PRAG3112**.
+- A module's collections come from its engines package: `Pragmatic.Events.Engines`,
+  `Pragmatic.Messaging.Engines`, `Pragmatic.Audit.Engines`, `Pragmatic.Privacy.Engines`.
+
+The full list of what is the same as EF Core and what is not is the module's guide, `docs/21-engines.md`.
+
 ## Choosing the engine for a boundary
 
 ```csharp

@@ -3,7 +3,7 @@ title: "Pragmatic.Persistence.EFCore"
 description: "EF Core runtime implementation for the Pragmatic persistence stack."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/README.md
 sidebar:
-  order: 30
+  order: 31
 ---
 EF Core runtime implementation for the Pragmatic persistence stack.
 

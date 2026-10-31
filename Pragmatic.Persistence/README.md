@@ -211,6 +211,7 @@ advanced areas are still settling. See the [roadmap](../docs/ROADMAP.md).
 | [Architecture and Concepts](docs/concepts.md) | Mental model, entity lifecycle, decision tree for choosing patterns |
 | [Getting Started](docs/01-getting-started.md) | Activation requirements, partial classes, minimal example |
 | [Boundaries](docs/17-boundaries.md) | How boundaries partition entities, DbContexts, and transaction scopes |
+| [Engines](docs/21-engines.md) | A boundary on the Sql or documents engine: the session, the schema, what is the same as EF Core and what is not |
 
 ### Entity model
 
