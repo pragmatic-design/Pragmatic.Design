@@ -3093,6 +3093,14 @@
       ],
       "indexes": [
         {
+          "name": "IX___AuditEntries_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
           "name": "IX___AuditEntries_OccurredAt",
           "columns": [
             "OccurredAt"
@@ -3105,6 +3113,15 @@
           "columns": [
             "SegmentId",
             "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SubjectRef_OccurredAt",
+          "columns": [
+            "SubjectRef",
+            "OccurredAt"
           ],
           "isUnique": false,
           "filter": null
@@ -3635,5 +3652,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "e1b83b99d6c2"
+  "hash": "98a17af301b5"
 }

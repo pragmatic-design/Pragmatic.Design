@@ -34,6 +34,26 @@ public class PragmaticMigrationTests(PragmaticDatabases databases)
         Assert.Equal(0, again.ChangesApplied);
     }
 
+    /// <summary>
+    ///     The trail's entries, migrated, have the four indexes EF Core's configuration gives them: a segment in order, a subject over time, time,
+    ///     a request's correlation. The engines' schema had two, so a database both write answered "what happened to this subject" with a scan.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public async Task The_migrated_audit_trail_has_the_indexes_it_is_read_by(SqlDialect dialect)
+    {
+        var connectionString = await databases.CreateAsync(dialect, "audited");
+        var created = await PragmaticMigrations.MigrateAsync(connectionString, DialectSchemas.For(dialect));
+        Assert.True(created.Success, created.Error);
+
+        var entries = (await PragmaticMigrations.IntrospectAsync(dialect, connectionString)).Tables.Single(t => t.Name == "__AuditEntries");
+        var indexes = entries.Indexes.Select(i => (i.Name, Columns: string.Join(",", i.Columns))).ToList();
+        Assert.Contains(("IX___AuditEntries_SegmentId_Seq", "SegmentId,Seq"), indexes);
+        Assert.Contains(("IX___AuditEntries_SubjectRef_OccurredAt", "SubjectRef,OccurredAt"), indexes);
+        Assert.Contains(("IX___AuditEntries_OccurredAt", "OccurredAt"), indexes);
+        Assert.Contains(("IX___AuditEntries_CorrelationId", "CorrelationId"), indexes);
+    }
+
     [Theory]
     [MemberData(nameof(Dialects))]
     public async Task The_schema_evolves_by_a_column_and_an_index_without_losing_rows(SqlDialect dialect)

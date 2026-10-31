@@ -32,7 +32,8 @@ public class AuditTrailTests(PragmaticDatabases databases)
             [("SegmentId", "nvarchar(32)"), ("OccurredAt", "bigint"), ("Operation", "nvarchar(128)"), ("BusinessOperation", "nvarchar(256)"), ("Detail", "nvarchar(2048)")],
             entries.Columns.Where(c => c.Name is "SegmentId" or "OccurredAt" or "Operation" or "BusinessOperation" or "Detail").Select(c => (c.Name, c.SqlType)).OrderBy(c => Order(c.Name)));
         Assert.Equal(["Seq"], entries.Columns.Where(c => c.IsPrimaryKey).Select(c => c.Name));
-        Assert.Equal(["IX___AuditEntries_OccurredAt", "IX___AuditEntries_SegmentId_Seq"], entries.Indexes.Select(i => i.Name).Order());
+        Assert.Equal(["IX___AuditEntries_CorrelationId", "IX___AuditEntries_OccurredAt", "IX___AuditEntries_SegmentId_Seq", "IX___AuditEntries_SubjectRef_OccurredAt"],
+            entries.Indexes.Select(i => i.Name).Order(StringComparer.Ordinal));
 
         var segments = tables.Single(t => t.Name == "__AuditSegments");
         Assert.Equal(["SegmentId", "OpenedAt", "SealedAt", "EntryCount", "MerkleRoot", "PreviousHash", "SegmentHash"], segments.Columns.Select(c => c.Name));

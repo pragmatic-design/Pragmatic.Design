@@ -291,6 +291,14 @@
       ],
       "indexes": [
         {
+          "name": "IX___AuditEntries_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
           "name": "IX___AuditEntries_OccurredAt",
           "columns": [
             "OccurredAt"
@@ -303,6 +311,15 @@
           "columns": [
             "SegmentId",
             "Seq"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___AuditEntries_SubjectRef_OccurredAt",
+          "columns": [
+            "SubjectRef",
+            "OccurredAt"
           ],
           "isUnique": false,
           "filter": null
@@ -571,5 +588,5 @@
   "databaseName": "VerifyDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Verify",
-  "hash": "4f51e0c8a391"
+  "hash": "0e3d1e911b20"
 }
