@@ -71,6 +71,17 @@ internal static partial class SqlInterceptorGenerator
         var databases = AllTypes(compilation.Assembly.GlobalNamespace).Where(t => t.GetAttributes().Any(a => a.AttributeClass?.Name == "SqlDatabaseAttribute")).OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
         if (databases.Count == 0)
             return;
+
+        // A [SqlDatabase] holds the engine's own rows. A Pragmatic entity's table is in the host's DefaultSchema (PragmaticSchema), with what its
+        // boundary adds (trait children, outboxes): taken in here too, the one table was described twice, by two paths, and migrated as two.
+        foreach (var entity in own.Where(e => e.IsPragmatic))
+        {
+            if (ExplicitStoredIn(entity.Type) is { } named)
+                diagnostics.Add(Diagnostic.Create(Diagnostics.SchemaShape, entity.Type.Locations.FirstOrDefault() ?? Location.None, named.Name, entity.Type.Name,
+                    "a Pragmatic entity's table is in the host's DefaultSchema, with what its boundary adds; a [SqlDatabase] holds the engine's own [Entity] rows. Remove its [StoredIn]"));
+        }
+
+        own = own.Where(e => !e.IsPragmatic).ToList();
         foreach (var database in databases)
         {
             var where = database.Locations.FirstOrDefault() ?? Location.None;
@@ -106,6 +117,10 @@ internal static partial class SqlInterceptorGenerator
 
     /// <summary>The database a type is stored in: its [StoredIn&lt;T&gt;] or a base type's; the one database when the assembly declares one.</summary>
     private static INamedTypeSymbol? StoredIn(INamedTypeSymbol type, List<INamedTypeSymbol> databases)
+        => ExplicitStoredIn(type) ?? (databases.Count == 1 ? databases[0] : null);
+
+    /// <summary>The database a type's [StoredIn&lt;T&gt;], or a base type's, names; null when none does.</summary>
+    private static INamedTypeSymbol? ExplicitStoredIn(INamedTypeSymbol type)
     {
         for (var current = type; current is not null && current.SpecialType != SpecialType.System_Object; current = current.BaseType)
         {
@@ -113,7 +128,7 @@ internal static partial class SqlInterceptorGenerator
                 return mark.AttributeClass!.TypeArguments[0] as INamedTypeSymbol;
         }
 
-        return databases.Count == 1 ? databases[0] : null;
+        return null;
     }
 
     /// <summary>The tables of the database's entities, in table order; null with a diagnostic when one cannot be described.</summary>

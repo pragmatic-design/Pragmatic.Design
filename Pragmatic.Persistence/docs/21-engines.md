@@ -125,6 +125,5 @@ README describes its engines section.
 
 | Limit | Tracked in |
 |---|---|
-| A `[SqlDatabase]` schema takes in every Pragmatic entity of its assembly | #421 |
 | A module with an EF Core boundary beside an engine boundary hides the engine boundary's entities from the host | #426 |
 | `ProtectedValue` columns and their per-subject keys are EF Core's only | #431 |

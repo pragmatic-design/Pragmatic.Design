@@ -60,7 +60,7 @@ These are in `Pragmatic.Persistence.Sql.Attributes`, next to the engine's `[Enti
 | `[Indexed]` | property | the column has an index, so a `Where` on it does not scan. Read only when no committed `*.schema.json` among the AdditionalFiles lists the table: then that snapshot's indexes decide. A predicate on an unindexed column is **PRAG3011** (information) |
 | `[Interned]` | `string` property | values repeat across rows (a status, a country): the reader hands out one instance per distinct value from a bounded pool, so a page of rows keeps one string per value. It saves what the rows retain, not the allocation while reading |
 | `[NotMapped]` | property | the table has no such column (a navigation, a computed value) |
-| `[SqlDatabase]` | `partial` class | a database whose schema the generator emits for Pragmatic.Migrations: `public static SchemaVersion Schema(SqlDialect dialect)` with the tables of the assembly's entities. Emitted only when the compilation references Pragmatic.Migrations. With several databases, `[StoredIn<TDatabase>]` on an entity says which |
+| `[SqlDatabase]` | `partial` class | a database whose schema the generator emits for Pragmatic.Migrations: `public static SchemaVersion Schema(SqlDialect dialect)` with the tables of the assembly's engine `[Entity]` rows. Emitted only when the compilation references Pragmatic.Migrations. With several databases, `[StoredIn<TDatabase>]` on a row says which. A Pragmatic `[Entity]` is never in it: its table is in the host's `DefaultSchema`, and `[StoredIn]` on one is **PRAG3027** |
 | `[SqlFunction]` | `static partial` method | an application's SQL function, usable inside a query's lambdas like the catalog's `Sql.*` (below) |
 
 ### `[SqlFunction]`
