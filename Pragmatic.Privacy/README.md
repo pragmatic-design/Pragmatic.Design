@@ -68,6 +68,28 @@ the host references `Pragmatic.Privacy.EFCore`: the generated context applies
 are not written either: the generated host registers `PrivacyDbContext` on that database and calls
 `AddSubjectRegistry()`, unless the application registered the context itself. The keys stay yours.
 
+**On the Sql and documents engines** the same attribute does the same, with `Pragmatic.Privacy.Engines`
+referenced:
+
+- **Sql engine:** the tables are EF Core's column for column, in the database's generated schema.
+- **Documents engine:** the same two collections plus `__SubjectLookups`, in the boundary's `{Boundary}DocSchema`.
+- **Registration:** `AddSqlSubjectRegistry<TBoundary>()` or `AddDocSubjectRegistry<TBoundary>()` puts the registry
+  and the consent store on that boundary's session.
+- **Generated host:** it follows EF Core's rule across both. One place holds the `[DataSubject]` entities
+  (an EF Core database or an engine's boundary), and the host registers the registry there. More than one,
+  and it registers none and says so.
+- **Your own registry:** register it in `Program.cs` and it replaces the host's.
+
+Two things differ:
+
+- **The blind index on the documents engine is a document's id, not an indexed field.** It must be unique
+  among the subjects that have one and absent for the forgotten. MongoDB can limit a partial index only to a
+  soft delete's live documents, and Cosmos DB has no partial index at all; both count a missing value in a
+  unique one. So `__SubjectLookups` holds one document per known subject, keyed by its index, and forgetting
+  the subject deletes it.
+- **The per-subject keys of a `ProtectedValue` are not on the engines.** EF Core's host registers them with
+  the registry. The engines serve no `ProtectedValue` yet.
+
 **From an operation**, depend on the interfaces: `ISubjectAccess`, `ISubjectErasure`,
 `IProcessingRegisterBuilder`, which resolve to the same instances as `SubjectAccessService`,
 `ErasureOrchestrator` and `ProcessingRegisterBuilder`. The generator does not inject a concrete type into
@@ -159,6 +181,7 @@ not protect against.
 | `Pragmatic.Privacy.Abstractions` | The classification attributes (`[PersonalData]`, `[DataSubject]`, `[LinksToSubject]`, …); no dependencies, so entity assemblies can reference it alone |
 | `Pragmatic.Privacy` | The processes: erasure, access, portability, the Article 30 register (`AddPrivacy()`) |
 | `Pragmatic.Privacy.EFCore` | The subject registry and consent store over `PrivacyDbContext` (`AddSubjectRegistry()`) |
+| `Pragmatic.Privacy.Engines` | The same two on the Sql and documents engines, over a boundary's session (`AddSqlSubjectRegistry<TBoundary>()`, `AddDocSubjectRegistry<TBoundary>()`) |
 
 ## Status
 

@@ -500,12 +500,13 @@ public sealed class HostWiringFixture
     /// <summary>
     ///     An engine's bridge, which makes that engine one of the engines a compilation references: out of the set, or every module here
     ///     would reference two and name neither (PRAG0743). A test that needs one asks for it (<see cref="EngineBridge" />). The audit trail on
-    ///     the engines too, which the Sql bridge comes into the output with.
+    ///     the engines too, which the Sql bridge comes into the output with, and the subject registry on the engines.
     /// </summary>
     private static bool IsEngineBridge(string fileName)
         => fileName.Equals("Pragmatic.Persistence.Documents.dll", StringComparison.OrdinalIgnoreCase)
            || fileName.Equals("Pragmatic.Persistence.Sql.dll", StringComparison.OrdinalIgnoreCase)
-           || fileName.Equals("Pragmatic.Audit.Engines.dll", StringComparison.OrdinalIgnoreCase);
+           || fileName.Equals("Pragmatic.Audit.Engines.dll", StringComparison.OrdinalIgnoreCase)
+           || fileName.Equals("Pragmatic.Privacy.Engines.dll", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The bridge of an engine, from this suite's output, for the compilations of the test that persists a boundary there.</summary>
     internal static MetadataReference EngineBridge(string assemblyName)

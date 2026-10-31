@@ -61,7 +61,20 @@ internal sealed record PersistedStoresModel
     ///     <c>Pragmatic.Audit.Engines</c>. Each counts as a place of its own beside <see cref="AuditedDatabases" />: the session is the
     ///     application's to open, so the host cannot tell that two boundaries open the same database.
     /// </summary>
-    public EquatableArray<AuditedEngineBoundaryModel> AuditedEngineBoundaries { get; init; } = EquatableArray<AuditedEngineBoundaryModel>.Empty;
+    public EquatableArray<EngineBoundaryModel> AuditedEngineBoundaries { get; init; } = EquatableArray<EngineBoundaryModel>.Empty;
+
+    /// <summary>
+    ///     The boundaries the Sql and documents engines persist with a <c>[DataSubject]</c>, when the host references
+    ///     <c>Pragmatic.Privacy.Engines</c>: places of the subject registry beside <see cref="SubjectDatabases" />, counted as the trail's are.
+    /// </summary>
+    public EquatableArray<EngineBoundaryModel> SubjectEngineBoundaries { get; init; } = EquatableArray<EngineBoundaryModel>.Empty;
+
+    /// <summary>
+    ///     The places that hold the <c>[DataSubject]</c> entities: the EF Core databases (when <c>Pragmatic.Privacy.EFCore</c> is referenced)
+    ///     and the engines' boundaries. The host registers the registry itself only when there is one.
+    /// </summary>
+    public int SubjectRegistryPlaces(bool privacyEFCore)
+        => (privacyEFCore ? SubjectDatabases.Count : 0) + SubjectEngineBoundaries.Count;
 
     /// <summary>
     ///     The places the trail's entries are written to: the EF Core databases with an <c>[Audited]</c> entity (when
@@ -75,20 +88,32 @@ internal sealed record PersistedStoresModel
     ///     The engines' boundaries with an <c>[Audited]</c> entity among <paramref name="entities" />, those of the referenced modules included,
     ///     ordered by name. Empty outside a host, or without <c>Pragmatic.Audit.Engines</c>.
     /// </summary>
-    public static EquatableArray<AuditedEngineBoundaryModel> EngineAuditedBoundaries(
+    public static EquatableArray<EngineBoundaryModel> EngineAuditedBoundaries(
         ImmutableArray<EntityMetadataModel> entities, Core.DetectedFeatures features)
+        => features.HasAuditEngines ? EngineBoundariesHolding(entities, features, static e => e.IsAudited) : EquatableArray<EngineBoundaryModel>.Empty;
+
+    /// <summary>
+    ///     The engines' boundaries with a <c>[DataSubject]</c> among <paramref name="entities" />, those of the referenced modules included,
+    ///     ordered by name. Empty outside a host, or without <c>Pragmatic.Privacy.Engines</c>.
+    /// </summary>
+    public static EquatableArray<EngineBoundaryModel> EngineSubjectBoundaries(
+        ImmutableArray<EntityMetadataModel> entities, Core.DetectedFeatures features)
+        => features.HasPrivacyEngines ? EngineBoundariesHolding(entities, features, static e => e.IsDataSubject) : EquatableArray<EngineBoundaryModel>.Empty;
+
+    private static EquatableArray<EngineBoundaryModel> EngineBoundariesHolding(
+        ImmutableArray<EntityMetadataModel> entities, Core.DetectedFeatures features, Func<EntityMetadataModel, bool> holds)
     {
-        if (!features.IsHostMode || !features.HasAuditEngines || entities.IsDefaultOrEmpty)
-            return EquatableArray<AuditedEngineBoundaryModel>.Empty;
+        if (!features.IsHostMode || entities.IsDefaultOrEmpty)
+            return EquatableArray<EngineBoundaryModel>.Empty;
 
         return entities
-            .Where(e => e.IsValid && e.IsAudited && !string.IsNullOrEmpty(e.BoundaryTypeFullName)
+            .Where(e => e.IsValid && holds(e) && !string.IsNullOrEmpty(e.BoundaryTypeFullName)
                         && Core.PersistenceEngineMarker.HasEngine(e, features))
             .Select(e => (Boundary: "global::" + StripGlobal(e.BoundaryTypeFullName!), Engine: Core.PersistenceEngineMarker.EngineOf(e, features)!))
             .Where(p => p.Engine is Core.PersistenceEngineMarker.Sql or Core.PersistenceEngineMarker.Documents)
             .Distinct()
             .OrderBy(p => p.Boundary, StringComparer.Ordinal)
-            .Select(p => new AuditedEngineBoundaryModel(p.Boundary, p.Engine))
+            .Select(p => new EngineBoundaryModel(p.Boundary, p.Engine))
             .ToImmutableArray();
     }
 

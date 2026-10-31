@@ -114,6 +114,11 @@ internal static partial class SqlInterceptorGenerator
         ModuleTableIn(AuditEntryRowType, auditedDatabases, WithAuditEntryIndexes);
         ModuleTableIn(AuditSegmentRowType, auditedDatabases, WithAuditSegmentIndexes);
         ModuleTableIn(AuditPrunedRangeRowType, auditedDatabases, static table => table);
+
+        // [DataSubject]: the subject registry's two tables in each database that holds a data subject, as EF Core's schema puts them there.
+        var subjectDatabases = new HashSet<string>(served.Where(PragmaticRegistration.IsDataSubject).Select(t => DatabaseOf(t)!), StringComparer.Ordinal);
+        ModuleTableIn(SubjectRowType, subjectDatabases, table => WithSubjectIndexes(table, dialect));
+        ModuleTableIn(ConsentRowType, subjectDatabases, WithConsentIndexes);
         TableSchemaModel ModuleIndexes(TableSchemaModel table)
             => moduleTables.FirstOrDefault(m => m.Row.Table == table.Name) is { Row: not null } module ? module.Indexes(table) : table;
 
@@ -197,49 +202,6 @@ internal static partial class SqlInterceptorGenerator
             : compilation.GetTypeByMetadataName("Oracle.ManagedDataAccess.Client.OracleConnection") is not null ? SqlDialect.Oracle
             : null;
     }
-
-    /// <summary>The event outbox's row on the Sql engine (Pragmatic.Events.Engines): its table is EF Core's <c>__EventOutbox</c>, column for column.</summary>
-    private const string EventOutboxRowType = "Pragmatic.Events.Engines.Sql.EventOutboxRow";
-
-    /// <summary>
-    ///     The outbox's table with the index its delivery's claim reads (pending, re-claimable, oldest first), named as EF Core's configuration
-    ///     names it: an attribute of the row describes no index over several columns.
-    /// </summary>
-    private static TableSchemaModel WithClaimIndex(TableSchemaModel table)
-        => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_ProcessedAt_ClaimedUntil_CreatedAt", ["ProcessedAt", "ClaimedUntil", "CreatedAt"], false, null)).ToEquatableArray() };
-
-    private const string MessagingOutboxRowType = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
-
-    private const string AuditEntryRowType = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
-    private const string AuditSegmentRowType = "Pragmatic.Audit.Engines.Sql.AuditSegmentRow";
-    private const string AuditPrunedRangeRowType = "Pragmatic.Audit.Engines.Sql.AuditPrunedRangeRow";
-
-    /// <summary>The trail's entries with the indexes EF Core's schema gives them (<c>SchemaMetadataTransform</c>): a segment in order, and time.</summary>
-    private static TableSchemaModel WithAuditEntryIndexes(TableSchemaModel table)
-        => table with
-        {
-            Indexes = table.Indexes
-                .Append(new IndexSchemaModel($"IX_{table.Name}_SegmentId_Seq", ["SegmentId", "Seq"], false, null))
-                .Append(new IndexSchemaModel($"IX_{table.Name}_OccurredAt", ["OccurredAt"], false, null))
-                .ToEquatableArray(),
-        };
-
-    /// <summary>The trail's segments with the index verification walks sealed segments by.</summary>
-    private static TableSchemaModel WithAuditSegmentIndexes(TableSchemaModel table)
-        => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_SealedAt", ["SealedAt"], false, null)).ToEquatableArray() };
-
-    /// <summary>
-    ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past
-    ///     its backoff, re-claimable, oldest first) and the correlation lookup.
-    /// </summary>
-    private static TableSchemaModel WithMessagingOutboxIndexes(TableSchemaModel table)
-        => table with
-        {
-            Indexes = table.Indexes
-                .Append(new IndexSchemaModel($"IX_{table.Name}_CorrelationId", ["CorrelationId"], false, null))
-                .Append(new IndexSchemaModel($"IX_{table.Name}_ProcessedAt_NextAttemptAt_ClaimedUntil_CreatedAt", ["ProcessedAt", "NextAttemptAt", "ClaimedUntil", "CreatedAt"], false, null))
-                .ToEquatableArray(),
-        };
 
     /// <summary>A table of the engine's model in the shape the schema template writes.</summary>
     private static MigratedTableModel SchemaTableOf(TableSchemaModel table) => new(

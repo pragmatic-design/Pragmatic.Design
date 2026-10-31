@@ -305,6 +305,13 @@ internal sealed partial class PragmaticHostTemplate : CSharpTemplate
             RenderRegisterAuditTrailMethod();
         }
 
+        // 9-ter. RegisterSubjectRegistry (only when an engine's boundary holds [DataSubject] entities)
+        if (_model.HasEngineSubjectRegistry)
+        {
+            AppendLine();
+            RenderRegisterSubjectRegistryMethod();
+        }
+
         // 10. ValidateConfiguration (only when modules declare [RequiresConfig])
         if (_model.HasRequiredConfigValidation)
         {

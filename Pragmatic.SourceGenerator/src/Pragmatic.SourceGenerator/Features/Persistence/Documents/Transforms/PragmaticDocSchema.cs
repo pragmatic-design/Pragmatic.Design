@@ -54,6 +54,13 @@ internal static class PragmaticDocSchema
                 collections.Add("global::Pragmatic.Audit.Engines.Documents.AuditSegmentDocument.Schema");
                 collections.Add("global::Pragmatic.Audit.Engines.Documents.AuditPrunedRangeDocument.Schema");
             }
+            // [DataSubject]: the subject registry's collections, beside the boundary's data subjects, as Pragmatic.Privacy.Engines describes them.
+            if (group.Any(PragmaticRegistration.IsDataSubject) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSubjectRegistry) is not null)
+            {
+                collections.Add("global::Pragmatic.Privacy.Engines.Documents.SubjectDocument.Schema");
+                collections.Add("global::Pragmatic.Privacy.Engines.Documents.SubjectLookupDocument.Schema");
+                collections.Add("global::Pragmatic.Privacy.Engines.Documents.ConsentDocument.Schema");
+            }
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
                 boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }

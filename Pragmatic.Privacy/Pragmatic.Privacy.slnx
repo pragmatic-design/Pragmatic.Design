@@ -8,6 +8,7 @@
     <Project Path="src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
     <Project Path="src/Pragmatic.Privacy/Pragmatic.Privacy.csproj" />
     <Project Path="src/Pragmatic.Privacy.EFCore/Pragmatic.Privacy.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Privacy.Engines/Pragmatic.Privacy.Engines.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />

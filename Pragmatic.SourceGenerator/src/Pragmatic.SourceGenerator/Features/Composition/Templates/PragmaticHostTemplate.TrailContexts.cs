@@ -61,7 +61,8 @@ internal sealed partial class PragmaticHostTemplate
                 "global::Pragmatic.Audit.EFCore.AuditEfCoreExtensions.AddAuditTrail(services);");
         }
 
-        if (features.HasPrivacyEFCore && stores.SubjectDatabases.Count == 1 && stores.IsSubjectDatabase(databaseTypeName))
+        // One place in all, as the trail's: an engine's boundary that also holds [DataSubject] entities makes two, and the application chooses.
+        if (features.HasPrivacyEFCore && stores.SubjectRegistryPlaces(privacyEFCore: true) == 1 && stores.IsSubjectDatabase(databaseTypeName))
         {
             Comment($"Subject registry — the [DataSubject] entities live in {dbSimpleName}, whose migration creates its tables.");
             Comment("Its keys (ISecretEncryptor, ISubjectLookupKeyProvider) are the application's to register.");

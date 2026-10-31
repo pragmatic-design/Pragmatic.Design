@@ -53,6 +53,10 @@ internal static class SchemaTypes
         }
 
         var name = type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_Byte } ? "byte[]" : type.ToDisplayString();
+        // A binary with [MaxLength(n)] is one an index can hold on SQL Server, as EF Core's branch writes it (SqlTypeMapper); PostgreSQL's and
+        // SQLite's binary has no length.
+        if (name == "byte[]" && maxLength is { } binaryLength && dialect == SqlDialect.SqlServer)
+            return $"varbinary({binaryLength})";
         return (name, dialect) switch
         {
             ("int", SqlDialect.PostgreSql) => "integer",
@@ -111,6 +115,9 @@ internal static class SchemaTypes
         }
 
         var name = type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_Byte } ? "byte[]" : type.ToDisplayString();
+        // A binary with [MaxLength(n)] is one an index can hold: a BLOB is no index key on either (Pragmatic.Migrations' scenario 27).
+        if (name == "byte[]" && maxLength is { } binaryLength)
+            return mySql ? $"varbinary({binaryLength})" : $"RAW({binaryLength})";
         return (name, mySql) switch
         {
             ("int", true) => "int",

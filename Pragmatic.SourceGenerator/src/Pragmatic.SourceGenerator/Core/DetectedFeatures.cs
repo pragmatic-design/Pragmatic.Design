@@ -193,6 +193,12 @@ internal sealed record DetectedFeatures
     /// </summary>
     public bool HasAuditEngines { get; init; }
 
+    /// <summary>
+    ///     <c>Pragmatic.Privacy.Engines</c> is referenced: the host registers the subject registry on the boundary of the Sql or documents
+    ///     engine that holds the <c>[DataSubject]</c> entities, when only one place holds them.
+    /// </summary>
+    public bool HasPrivacyEngines { get; init; }
+
     /// <summary>True when the compilation has an entry point (executable project).</summary>
     public bool IsHostMode { get; init; }
 

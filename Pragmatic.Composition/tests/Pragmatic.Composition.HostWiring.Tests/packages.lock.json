@@ -591,6 +591,13 @@
           "Pragmatic.Privacy": "[1.0.0, )"
         }
       },
+      "pragmatic.privacy.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Cryptography": "[1.0.0, )",
+          "Pragmatic.Privacy": "[1.0.0, )"
+        }
+      },
       "pragmatic.redaction": {
         "type": "Project",
         "dependencies": {

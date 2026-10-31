@@ -34,6 +34,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
     <!-- Invoice and Letter are [Audited]: their saves append to the audit trail on their engine, which the application reads from one of them. -->
     <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
+    <!-- The subject registry on the documents engine: its collections in the members' boundary's schema, and its stores on MongoDB. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the two bridge suites read as (TestUser): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

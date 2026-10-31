@@ -721,6 +721,7 @@
   <Folder Name="/Pragmatic.Privacy/">
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Abstractions/Pragmatic.Privacy.Abstractions.csproj" />
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.EFCore/Pragmatic.Privacy.EFCore.csproj" />
+    <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy.Engines/Pragmatic.Privacy.Engines.csproj" />
     <Project Path="Pragmatic.Privacy/src/Pragmatic.Privacy/Pragmatic.Privacy.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Resilience/">
