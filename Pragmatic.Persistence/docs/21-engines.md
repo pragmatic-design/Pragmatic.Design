@@ -82,7 +82,8 @@ These work on every engine, from the same declarations:
 - privacy's erasure and access over the entities the engine persists;
 - an owned type (`[Owned]`, a `[ValueObject]` of several members, an identity record such as `LocalIdentity`, with
   the members of its base classes) is stored with its entity: as `{Property}_{Member}` columns on the Sql engine,
-  as on EF Core, and as a nested document on the documents engine. A query can compare one of its members;
+  as on EF Core, and as a nested document on the documents engine. A query can compare one of its members, and
+  the generated `{User}.LocalIdentityStore` signs a user in through it on every engine;
 - `[ConcurrencyAware]`: a stale write is a `PersistenceRuleViolationException` whose error is a
   `ConcurrencyError`, as on EF Core.
 

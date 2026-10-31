@@ -217,8 +217,9 @@ Permissions change in the database, but the user still sees the old permissions.
 1. **Does the `[PragmaticUser]` entity have a `LocalIdentity` property?** That is what makes the generator
    write `{User}.LocalIdentityStore`; without one there are no local credentials to store.
 
-2. **Is `Pragmatic.Persistence.EFCore` referenced by the project that declares the user?** The store saves
-   through the boundary's unit of work, which that package provides.
+2. **Does the project that declares the user reference a persistence engine?** `Pragmatic.Persistence.EFCore`,
+   `Pragmatic.Persistence.Sql` or `Pragmatic.Persistence.Documents`: the store saves through the boundary's
+   unit of work, which the engine provides.
 
 3. **Did you write your own?** A class implementing `ILocalIdentityStore` in the project turns the generated
    one off; check it is registered (`[Service]`) and its dependencies resolve.

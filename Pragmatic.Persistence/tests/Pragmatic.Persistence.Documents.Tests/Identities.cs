@@ -1,49 +1,27 @@
 using Pragmatic.Identity;
+using Pragmatic.Identity.Local;
 using Pragmatic.Persistence.Entity;
 
-namespace Pragmatic.Identity
+namespace PragmaticDocuments.Tests;
+
+/// <summary>
+///     An account that signs in locally, as an application's user does: a <c>[PragmaticUser]</c> owning Pragmatic.Identity.Local's own
+///     <c>LocalIdentity</c> (optional, null when the document holds none), created from it at a self-registration. The generator writes its
+///     <c>LocalIdentityStore</c>.
+/// </summary>
+[Entity]
+[PragmaticUser(MatchClaim = "sub")]
+public partial class Account : IEntity, ISelfRegisteringUser<Account>
 {
-    /// <summary>How an identity was provisioned: an enum on the base class.</summary>
-    public enum ProvisionSource
+    public string Name { get; set; } = "";
+
+    public LocalIdentity? Identity { get; set; }
+
+    public static Account Register(LocalIdentity identity)
     {
-        Manual = 0,
-        Scim = 1,
-    }
-
-    /// <summary>
-    ///     Pragmatic.Identity's base of every identity record, read by its name as the generator reads it (this suite does not reference the
-    ///     package): no attribute marks it owned, and the members an application signs in by are declared here, not on the derived record.
-    /// </summary>
-    public abstract class IdentityRecord
-    {
-        public string ExternalIdentityKey { get; set; } = string.Empty;
-
-        public ProvisionSource ProvisionSource { get; set; } = ProvisionSource.Manual;
-
-        public bool IsActive { get; set; } = true;
-
-        public DateTimeOffset? LastLoginAt { get; set; }
-    }
-}
-
-namespace PragmaticDocuments.Tests
-{
-    /// <summary>A provider's record, as <c>LocalIdentity</c>: its own members beside the base class's, and a constant that is not a field.</summary>
-    public sealed class Credentials : IdentityRecord
-    {
-        public const string Provider = "local";
-
-        public string PasswordHash { get; set; } = string.Empty;
-
-        public int FailedLoginAttempts { get; set; }
-    }
-
-    /// <summary>An account that may have no local sign-in: the record optional, null when the document holds none.</summary>
-    [Entity]
-    public partial class Account : IEntity
-    {
-        public string Name { get; set; } = "";
-
-        public Credentials? Identity { get; set; }
+        var account = Create();
+        account.Name = identity.Email ?? "";
+        account.Identity = identity;
+        return account;
     }
 }

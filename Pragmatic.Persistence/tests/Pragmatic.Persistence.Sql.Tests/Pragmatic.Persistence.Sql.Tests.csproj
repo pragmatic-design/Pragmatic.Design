@@ -43,6 +43,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
     <!-- [DataSubject], [PersonalData]: the privacy adapters (access and erasure) generated for the entities the engine persists. -->
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy\Pragmatic.Privacy.csproj" />
+    <!-- LocalIdentity, owned by a [PragmaticUser]: its columns, and the generated LocalIdentityStore on the engine. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
     <!-- The event outbox on the engine: its table in the schema the databases are migrated with, written by its phase and drained on each. -->
     <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events.Engines\Pragmatic.Events.Engines.csproj" />
     <!-- The Messaging outbox on the engine, the same way: its table, its phase, and the source the delivery pump reads. -->

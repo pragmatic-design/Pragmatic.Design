@@ -267,10 +267,11 @@ These actions are exposed as endpoints by the source generator when the host ref
 ### The identity store is generated
 
 When the `[PragmaticUser]` entity owns a `LocalIdentity` (a property of that type, stored in the user's
-row) and the project references `Pragmatic.Persistence.EFCore`, the generator writes
-`{User}.LocalIdentityStore` and registers it as `ILocalIdentityStore`. Its finders load the **user**,
-tracked, and hand back its identity, so `UpdateAsync` saves what the actions changed; every save goes
-through the boundary's unit of work. The emails it receives are already in their stored form
+row) and a persistence engine stores the user (EF Core, the Sql engine or the documents engine), the
+generator writes `{User}.LocalIdentityStore` and registers it as `ILocalIdentityStore`. Its finders load
+the **user**, tracked, and hand back its identity, so `UpdateAsync` saves what the actions changed; every
+save goes through the boundary's unit of work. They read through the repository's specifications, which
+every engine serves. The emails it receives are already in their stored form
 (`LocalIdentity.NormalizeEmail`): the actions normalize before they ask.
 
 Self-registration (`RegisterUser`) has to create a user, and what else a new user needs is the

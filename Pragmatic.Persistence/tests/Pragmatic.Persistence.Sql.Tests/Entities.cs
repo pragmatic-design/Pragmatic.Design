@@ -211,3 +211,25 @@ public partial class BookingRequest : IEntity
     [Pragmatic.Privacy.PersonalData(Pragmatic.Privacy.DataCategory.Identity, Erasure = Pragmatic.Privacy.ErasureStrategy.Delete)]
     public string Text { get; set; } = "";
 }
+
+/// <summary>
+///     An account that signs in locally, as an application's user does: a <c>[PragmaticUser]</c> owning Pragmatic.Identity.Local's own
+///     <c>LocalIdentity</c> (optional, its <c>Identity_*</c> columns null when it holds none), created from it at a self-registration. The
+///     generator writes its <c>LocalIdentityStore</c>, which <c>LocalIdentityStoreTests</c> signs in through.
+/// </summary>
+[Entity]
+[Pragmatic.Identity.PragmaticUser(MatchClaim = "sub")]
+public partial class Account : IEntity, Pragmatic.Identity.Local.ISelfRegisteringUser<Account>
+{
+    public string Name { get; set; } = "";
+
+    public Pragmatic.Identity.Local.LocalIdentity? Identity { get; set; }
+
+    public static Account Register(Pragmatic.Identity.Local.LocalIdentity identity)
+    {
+        var account = Create();
+        account.Name = identity.Email ?? "";
+        account.Identity = identity;
+        return account;
+    }
+}
