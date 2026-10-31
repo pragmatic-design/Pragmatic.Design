@@ -114,18 +114,19 @@ internal sealed class SpecificationExtensionsTemplate : CSharpTemplate
 
     private void RenderQueryable(DeclaredSpecificationModel spec, string call)
     {
+        var query = Free(spec, "query");
         XmlSummary($"Filters {_entityShortName} by the {spec.MemberName} specification.");
-        XmlParam("query", "The queryable to filter.");
+        XmlParam(query, "The queryable to filter.");
         foreach (var p in spec.Parameters)
             XmlParam(p.Name, $"Passed to {spec.MemberName}.");
         XmlReturns("The filtered queryable.");
 
-        var parameters = Declaration(spec, $"this {Queryable}<{_entityFullTypeName}> query");
+        var parameters = Declaration(spec, $"this {Queryable}<{_entityFullTypeName}> {query}");
 
         AppendLine($"public static {Queryable}<{_entityFullTypeName}> {spec.MemberName}({parameters})");
         // Qualified: the file declares no using, and a consumer without System.Linq among its implicit
         // usings would find no Where on the queryable.
-        Block(() => AppendLine($"return global::System.Linq.Queryable.Where(query, {call}.ToExpression());"));
+        Block(() => AppendLine($"return global::System.Linq.Queryable.Where({query}, {call}.ToExpression());"));
     }
 
     /// <summary>
@@ -145,22 +146,38 @@ internal sealed class SpecificationExtensionsTemplate : CSharpTemplate
             ? $"{spec.MemberName}{suffix}"
             : $"{verb}{spec.MemberName}{suffix}";
 
+        var repository = Free(spec, "repository");
+        var ct = Free(spec, "ct");
         XmlSummary($"Reads through the {spec.MemberName} specification.");
-        XmlParam("repository", "The repository to read through.");
+        XmlParam(repository, "The repository to read through.");
         foreach (var p in spec.Parameters)
             XmlParam(p.Name, $"Passed to {spec.MemberName}.");
-        XmlParam("ct", "Cancellation token.");
+        XmlParam(ct, "Cancellation token.");
 
         var parameters = Declaration(spec,
-            $"this {ReadRepository}<{_entityFullTypeName}> repository",
-            $"{CancellationToken} ct = default");
+            $"this {ReadRepository}<{_entityFullTypeName}> {repository}",
+            $"{CancellationToken} {ct} = default");
 
         AppendLine($"public static {returnType} {name}({parameters})");
         Block(() =>
         {
-            AppendLine("global::Pragmatic.Ensure.Ensure.ThrowIfNull(repository);");
-            AppendLine($"return repository.{repositoryMethod}({call}, ct);");
+            AppendLine($"global::Pragmatic.Ensure.Ensure.ThrowIfNull({repository});");
+            AppendLine($"return {repository}.{repositoryMethod}({call}, {ct});");
         });
+    }
+
+    /// <summary>
+    ///     <paramref name="preferred" />, or the first <c>{preferred}{n}</c> none of the specification's own parameters is named: the
+    ///     extension's receiver and token sit beside them, and a specification taking a <c>query</c> or a <c>ct</c> of its own made the
+    ///     generated file not compile (CS0100, a duplicate parameter, reported where the application cannot change it).
+    /// </summary>
+    private static string Free(DeclaredSpecificationModel spec, string preferred)
+    {
+        var taken = new HashSet<string>(spec.Parameters.Select(p => p.Name.TrimStart('@')), System.StringComparer.Ordinal);
+        var name = preferred;
+        for (var n = 1; taken.Contains(name); n++)
+            name = preferred + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return name;
     }
 
     /// <summary>The receiver, then the specification's own parameters, then whatever trails.</summary>
