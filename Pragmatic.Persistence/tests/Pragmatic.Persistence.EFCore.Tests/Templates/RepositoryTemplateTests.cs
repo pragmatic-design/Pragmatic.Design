@@ -879,6 +879,20 @@ public class RepositoryTemplateTests
         source.Should().Contain("Operation = \"Data.EntityBulkUpdated\"");
     }
 
+    /// <summary>
+    ///     The aggregate entry is shaped by the trail's registered naming and redactor (<c>AuditEntryStaging.PreparerFor</c>), as the
+    ///     interceptor's are: one built here, hourly, filed the entry under an id a registered naming did not produce.
+    /// </summary>
+    [Fact]
+    public void AuditedEntity_BulkAuditRow_IsShapedByTheRegisteredNaming()
+    {
+        var source = new RepositoryTemplate(CreateBasicModel() with { IsAudited = true }).RenderOutput().Text;
+
+        source.Should().NotContain("HourlyAuditSegmentNaming");
+        source.Should().NotContain("PatternAuditDetailRedactor");
+        source.Should().Contain("}, _timeProvider);");
+    }
+
     [Fact]
     public void AuditedSoftDeleteEntity_BulkDelete_SoftDeletesAndAudits()
     {
