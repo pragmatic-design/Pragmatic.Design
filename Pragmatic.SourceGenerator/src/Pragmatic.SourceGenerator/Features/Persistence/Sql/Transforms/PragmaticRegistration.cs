@@ -42,6 +42,12 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>The audit trail on the engines (Pragmatic.Audit.Engines), by the type the generator recognises it by: its Sql entry row.</summary>
     internal const string EngineAuditTrail = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
 
+    /// <summary>
+    ///     The application's multi-tenancy options (Pragmatic.MultiTenancy): where they exist, the unit of work is handed their
+    ///     <c>RequireTenant</c>, as EF Core's generated registration hands it to the tenant interceptor.
+    /// </summary>
+    internal const string MultiTenancyOptions = "Pragmatic.MultiTenancy.MultiTenancyOptions";
+
     /// <summary>The subject registry on the engines (Pragmatic.Privacy.Engines), by the type the generator recognises it by: its Sql subject row.</summary>
     internal const string EngineSubjectRegistry = "Pragmatic.Privacy.Engines.Sql.SubjectRow";
 
@@ -62,6 +68,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         var outbox = compilation.GetTypeByMetadataName(EngineEventOutbox) is not null;
         var messagingOutbox = compilation.GetTypeByMetadataName(EngineMessagingOutbox) is not null;
         var auditTrail = compilation.GetTypeByMetadataName(EngineAuditTrail) is not null;
+        var multiTenancy = compilation.GetTypeByMetadataName(MultiTenancyOptions) is not null;
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
         foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e) as INamedTypeSymbol)).Where(p => p.Boundary is not null)
@@ -79,7 +86,8 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
                 group.Select(p => p.Entity).OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray(),
                 outbox && EnablesEventOutbox(boundary),
                 messagingOutbox && EnablesMessagingOutbox(boundary),
-                auditTrail && group.Any(p => IsAudited(p.Entity)));
+                auditTrail && group.Any(p => IsAudited(p.Entity)),
+                multiTenancy);
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
 
