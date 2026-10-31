@@ -71,13 +71,14 @@ internal static class LocalIdentityStoreFeature
     private static ImmutableArray<EntityMetadataModel> StoresFor(
         ImmutableArray<EntityMetadataModel> entities, DetectedFeatures features, bool ownStore)
     {
-        if (ownStore || !features.HasPersistenceEFCore || entities.IsDefaultOrEmpty)
+        if (ownStore || !PersistenceEngineMarker.AnyReferenced(features) || entities.IsDefaultOrEmpty)
             return ImmutableArray<EntityMetadataModel>.Empty;
 
-        // EF Core's entities only: the store reads and writes through the boundary's DbContext.
+        // Whichever engine persists the user: the store reads through the repository's specifications and saves through the
+        // boundary's unit of work, which EF Core, the Sql engine and the documents engine all register.
         return entities
             .Where(e => e.IsValid && !e.IsFromReference && !string.IsNullOrEmpty(e.LocalIdentityProperty)
-                        && PersistenceEngineMarker.IsEfCore(e, features))
+                        && PersistenceEngineMarker.HasEngine(e, features))
             .ToImmutableArray();
     }
 

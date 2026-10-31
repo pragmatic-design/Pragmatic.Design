@@ -70,7 +70,37 @@ internal sealed class SpecificationTemplate : CSharpTemplate
                 AppendLine();
                 RenderByLogicKeySpecification();
             }
+
+            if (!string.IsNullOrEmpty(_model.LocalIdentityProperty))
+            {
+                AppendLine();
+                RenderLocalIdentitySpecifications();
+            }
         });
+    }
+
+    /// <summary>
+    ///     The reads of the generated <c>ILocalIdentityStore</c>: the user whose owned <c>LocalIdentity</c> has an email, or an external key.
+    /// </summary>
+    /// <remarks>
+    ///     Specifications rather than chains on <c>IReadRepository.Query()</c>, because every engine serves a specification and only EF Core an
+    ///     <c>IQueryable</c>. They live here, in the entity's shape, because the engines compile the specifications they can see, and the shape is
+    ///     what each engine's translation adds to the compilation it binds in: one written in the store's own file would be seen by no engine.
+    ///     Internal: the store is in the same assembly, and the application's own reads have the repository.
+    /// </remarks>
+    private void RenderLocalIdentitySpecifications()
+    {
+        var entityType = $"global::{_model.FullTypeName}";
+        var identity = _model.LocalIdentityProperty;
+
+        XmlSummary($"The {_model.TypeName} whose local identity has this email, in its stored form: what a local sign-in finds the user by.");
+        AppendLine($"internal static global::Pragmatic.Specification.Specification<{entityType}> ByLocalIdentityEmail(string email)");
+        Block(() => AppendLine($"return global::Pragmatic.Specification.Spec<{entityType}>.Where(e => e.{identity}!.Email == email);"));
+        AppendLine();
+
+        XmlSummary($"The {_model.TypeName} whose local identity has this external identity key.");
+        AppendLine($"internal static global::Pragmatic.Specification.Specification<{entityType}> ByLocalIdentityExternalKey(string externalKey)");
+        Block(() => AppendLine($"return global::Pragmatic.Specification.Spec<{entityType}>.Where(e => e.{identity}!.ExternalIdentityKey == externalKey);"));
     }
 
     /// <summary>

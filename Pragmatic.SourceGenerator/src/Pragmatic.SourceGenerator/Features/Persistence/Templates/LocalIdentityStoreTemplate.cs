@@ -20,8 +20,13 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 ///     <para>
 ///         ⚠️ The finders load the <b>user</b>, tracked, and return its identity. The identity actions
 ///         change what they found — a failed attempt, a reset token, a new password — and then call
-///         <c>UpdateAsync</c>, which can only save what the context tracks. A projection of the owned
+///         <c>UpdateAsync</c>, which can only save what the unit of work tracks. A projection of the owned
 ///         identity would be a detached copy: every change answered with success and lost.
+///     </para>
+///     <para>
+///         The finders read through the repository's specification reads (<c>{User}Specifications.ByLocalIdentity…</c>),
+///         which every engine serves, and not through <c>Query()</c>, which only EF Core does. Each engine's
+///         repository attaches what such a read returns to its unit of work, as EF Core's context tracks it.
 ///     </para>
 ///     <para>
 ///         Saved through the boundary's unit of work, like every other write: it fills generated values,
@@ -81,18 +86,19 @@ internal sealed class LocalIdentityStoreTemplate : CSharpTemplate
     private void RenderMembers()
     {
         var identity = _model.LocalIdentityProperty;
+        var specifications = $"global::{(string.IsNullOrEmpty(_model.Namespace) || _model.Namespace == "<global namespace>" ? "" : _model.Namespace + ".")}{_model.TypeName}Specifications";
 
         XmlInheritDoc();
         AppendLine("public async global::System.Threading.Tasks.ValueTask<global::Pragmatic.Identity.Local.LocalIdentity?> FindByEmailAsync(string email, global::System.Threading.CancellationToken ct = default)");
         IncreaseIndent();
-        AppendLine($"=> (await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(users.Query(), u => u.{identity}!.Email == email, ct).ConfigureAwait(false))?.{identity};");
+        AppendLine($"=> (await users.FirstOrDefaultAsync({specifications}.ByLocalIdentityEmail(email), ct).ConfigureAwait(false))?.{identity};");
         DecreaseIndent();
         AppendLine();
 
         XmlInheritDoc();
         AppendLine("public async global::System.Threading.Tasks.ValueTask<global::Pragmatic.Identity.Local.LocalIdentity?> FindByExternalKeyAsync(string externalKey, global::System.Threading.CancellationToken ct = default)");
         IncreaseIndent();
-        AppendLine($"=> (await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(users.Query(), u => u.{identity}!.ExternalIdentityKey == externalKey, ct).ConfigureAwait(false))?.{identity};");
+        AppendLine($"=> (await users.FirstOrDefaultAsync({specifications}.ByLocalIdentityExternalKey(externalKey), ct).ConfigureAwait(false))?.{identity};");
         DecreaseIndent();
         AppendLine();
 
@@ -110,7 +116,7 @@ internal sealed class LocalIdentityStoreTemplate : CSharpTemplate
         XmlInheritDoc();
         AppendLine("public async global::System.Threading.Tasks.ValueTask<bool> EmailExistsAsync(string email, global::System.Threading.CancellationToken ct = default)");
         IncreaseIndent();
-        AppendLine($"=> await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(users.Query(), u => u.{identity}!.Email == email, ct).ConfigureAwait(false);");
+        AppendLine($"=> await users.ExistsAsync({specifications}.ByLocalIdentityEmail(email), ct).ConfigureAwait(false);");
         DecreaseIndent();
     }
 

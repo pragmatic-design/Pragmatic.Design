@@ -425,8 +425,9 @@ services.AddScoped<ICurrentUser>(_ => SystemUser.Instance);
 
 **Runtime result:** `InvalidOperationException` at runtime when `RegisterUser` or `LoginUser` is invoked: "Unable to resolve service for type 'ILocalIdentityStore'". The SG generates invokers for the domain actions, but the persistence contract is not satisfied.
 
-**Right:** give the `[PragmaticUser]` entity a `LocalIdentity` property. With `Pragmatic.Persistence.EFCore`
-referenced, the generator writes `{User}.LocalIdentityStore` and registers it:
+**Right:** give the `[PragmaticUser]` entity a `LocalIdentity` property. With a persistence engine
+referenced (EF Core, the Sql engine or the documents engine), the generator writes
+`{User}.LocalIdentityStore` and registers it:
 
 ```csharp
 [Entity]

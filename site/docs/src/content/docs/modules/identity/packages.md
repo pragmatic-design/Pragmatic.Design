@@ -152,7 +152,7 @@ Self-hosted identity provider. Manages local credentials (email + password) with
 
 | Interface | Default Implementation | Description |
 |-----------|----------------------|-------------|
-| `ILocalIdentityStore` | Generated | Loads and saves the `LocalIdentity` owned by the `[PragmaticUser]` entity; the generator writes `{User}.LocalIdentityStore` when the project references `Pragmatic.Persistence.EFCore`. A class of your own implementing the interface replaces it. |
+| `ILocalIdentityStore` | Generated | Loads and saves the `LocalIdentity` owned by the `[PragmaticUser]` entity; the generator writes `{User}.LocalIdentityStore` when a persistence engine stores the user (EF Core, the Sql engine or the documents engine). A class of your own implementing the interface replaces it. |
 | `IPasswordHasher` | `BcryptPasswordHasher` | BCrypt with configurable work factor (default: 12). |
 | `ISecurityTokenService` | `HmacSecurityTokenService` | SHA-256 based token generation and verification. |
 | `IPasswordPolicy` | `DefaultPasswordPolicy` | Minimum length validation (default: 8 chars). Replace for complexity/history/breach checks. |

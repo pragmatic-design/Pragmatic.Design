@@ -118,12 +118,21 @@ public class TheLocalIdentityStoreIsGeneratedTests
 
         var store = Store(result);
         store.Should().NotBeNull();
-        store!.Should().Contain("u => u.Credentials!.Email == email",
-            "the finder reads the owned identity through the property the entity declares");
+        store!.Should().Contain("users.FirstOrDefaultAsync(global::Contoso.Accounts.MemberSpecifications.ByLocalIdentityEmail(email), ct)",
+            "the finder reads through a specification, which every engine serves");
+        store.Should().NotContain("Query()", "an IQueryable is EF Core's alone: the engines' repositories throw on it");
+        Specifications(result).Should().Contain("e => e.Credentials!.Email == email",
+            "the specification reads the owned identity through the property the entity declares");
         store.Should().Contain("unitOfWork.SaveChangesAsync(ct)",
             "every save goes through the unit of work, like any other write of the boundary");
         StoreErrors(result).Should().BeEmpty();
     }
+
+    private static string? Specifications(SourceGenRunResult result)
+        => GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result)
+            .Where(kv => kv.Key.Contains("Member.Specs"))
+            .Select(kv => kv.Value)
+            .FirstOrDefault();
 
     [Fact]
     public void TheStore_IsRegisteredAsTheLocalIdentityStore()

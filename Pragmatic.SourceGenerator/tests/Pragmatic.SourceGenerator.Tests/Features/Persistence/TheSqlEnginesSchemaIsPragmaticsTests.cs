@@ -236,6 +236,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         var entities = SqlPragmaticEntities();
         Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.StartsWith("table ", StringComparison.Ordinal) && l.EndsWith("Reviews", StringComparison.Ordinal));
         Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.StartsWith("table ", StringComparison.Ordinal) && l.EndsWith("Reviews", StringComparison.Ordinal));
+        // The account's LocalIdentity, a member of its base class among them: the owned identity is compared, not absent from both.
+        Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.Contains("column Accounts.Identity_ExternalIdentityKey", StringComparison.Ordinal));
+        Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.Contains("column Accounts.Identity_ExternalIdentityKey", StringComparison.Ordinal));
     }
 
     private static string SqlPragmaticEntities()
@@ -291,7 +294,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
         var compilation = CSharpCompilation.Create("SchemaProbe", sources.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References(runtime.Concat([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
-                typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion)])),
+                typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion),
+                // The bridge suite's Account owns a LocalIdentity: its columns are compared like every other entity's.
+                typeof(global::Pragmatic.Identity.PragmaticUserAttribute), typeof(global::Pragmatic.Identity.IdentityRecord), typeof(global::Pragmatic.Identity.Local.LocalIdentity)])),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out var diagnostics);

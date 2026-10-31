@@ -557,7 +557,7 @@ Self-hosted identity provider with domain actions for credential management:
 | `RequestEmailVerification` | void (token sent via notifier) | (none -- never reveals email existence/state) |
 | `ConfirmEmail` | void | `InvalidEmailVerificationTokenError` |
 
-The package defines `ILocalIdentityStore` which you must implement (typically via EF Core). Default implementations are provided for `IPasswordHasher` (BCrypt), `ISecurityTokenService` (HMAC-SHA256), and `IPasswordPolicy` (minimum length).
+The package defines `ILocalIdentityStore`, which the generator writes for a `[PragmaticUser]` that owns a `LocalIdentity`, on whichever engine stores it (a class of your own replaces it). Default implementations are provided for `IPasswordHasher` (BCrypt), `ISecurityTokenService` (HMAC-SHA256), and `IPasswordPolicy` (minimum length).
 
 **Token delivery is out-of-band.** `RequestPasswordReset` and `RequestEmailVerification` never return the
 token; they hand the plaintext to `IPasswordResetNotifier` / `IEmailVerificationNotifier`. The registered
