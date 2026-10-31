@@ -112,8 +112,10 @@ public sealed partial class MigrationRunner(
         var connection = await MigrationResilience.OpenWithRetryAsync(
             () => connectionFactory.CreateOpenConnectionAsync(context.ConnectionString, ct), ct).ConfigureAwait(false);
         await using var _ = connection.ConfigureAwait(false);
+        // The resolved provider's lock, as the election takes the resolved provider's dialect: the requested name may be null
+        // (one provider registered), and a null name fell into the no-op lock while the connection was PostgreSQL's.
         var migrationLock = await MigrationLock.AcquireAsync(
-            connection, providerName ?? "", ct, context.Options.LockTimeout).ConfigureAwait(false);
+            connection, connectionFactory.ProviderName, ct, context.Options.LockTimeout).ConfigureAwait(false);
         await using var __ = migrationLock.ConfigureAwait(false);
 
         // Phase 1: Introspect current schema
