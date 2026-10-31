@@ -37,6 +37,12 @@ internal sealed record DeclaredSpecificationModel
     /// </summary>
     public required bool IsPubliclyVisible { get; init; }
 
+    /// <summary>
+    ///     <c>true</c> when the entity is a Pragmatic entity (<c>IEntity</c>), the constraint of <c>IReadRepository&lt;TEntity&gt;</c>: only
+    ///     then are the repository reads generated. A specification over a plain row (an engine's own table) still gets the queryable one.
+    /// </summary>
+    public required bool IsRepositoryEntity { get; init; }
+
     /// <summary>The member's parameters, which become the extensions' parameters after the receiver.</summary>
     public EquatableArray<SpecificationParameter> Parameters { get; init; } =
         EquatableArray<SpecificationParameter>.Empty;

@@ -23,10 +23,14 @@ namespace Pragmatic.SourceGenerator.Features.Composition.Templates;
 /// </remarks>
 internal sealed partial class PragmaticHostTemplate
 {
-    /// <summary>States, once, the case the host cannot decide: the trail's tables in several databases.</summary>
+    /// <summary>
+    ///     States, once, the case the host cannot decide: the trail's tables in several databases. With an engine's boundary among them,
+    ///     <c>RegisterAuditTrail</c> states it instead.
+    /// </summary>
     private void RenderAuditTrailAmbiguity()
     {
-        if (!_model.DetectedFeatures.HasAuditEFCore || _model.PersistedStores.AuditedDatabases.Count < 2)
+        if (!_model.DetectedFeatures.HasAuditEFCore || _model.HasEngineAuditTrail
+            || _model.PersistedStores.AuditTrailPlaces(auditEFCore: true) < 2)
             return;
 
         Comment("[Audited] entities live in more than one database, and AuditDbContext reads one: register it");
@@ -42,7 +46,8 @@ internal sealed partial class PragmaticHostTemplate
         var stores = _model.PersistedStores;
         var useMethod = DatabaseProviderCall.UseMethod(provider);
 
-        if (features.HasAuditEFCore && stores.AuditedDatabases.Count == 1 && stores.IsAuditedDatabase(databaseTypeName))
+        // One place in all: an engine's boundary that also holds [Audited] entities makes two, and the application chooses.
+        if (features.HasAuditEFCore && stores.AuditTrailPlaces(auditEFCore: true) == 1 && stores.IsAuditedDatabase(databaseTypeName))
         {
             // Without the retry: the trail enlists in the transaction the change began, and a retrying
             // strategy refuses to run inside a transaction it did not start.

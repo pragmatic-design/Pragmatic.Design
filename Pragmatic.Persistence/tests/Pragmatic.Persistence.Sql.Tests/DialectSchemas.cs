@@ -47,6 +47,7 @@ internal static class DialectSchemas
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
                 typeof(global::Pragmatic.Events.Engines.Sql.EventOutboxRow),
                 typeof(global::Pragmatic.Messaging.Attributes.EnableOutboxAttribute), typeof(global::Pragmatic.Messaging.Engines.Sql.OutboxMessageRow),
+                typeof(global::Pragmatic.Audit.Engines.Sql.AuditEntryRow), typeof(global::Pragmatic.Audit.AuditEntry),
                 typeof(global::Pragmatic.Comments.HasCommentsAttribute), typeof(global::Pragmatic.Notes.HasNotesAttribute), typeof(global::Pragmatic.Tags.HasTagsAttribute),
                 typeof(global::Pragmatic.Attachments.HasAttachmentsAttribute), typeof(global::Pragmatic.Privacy.DataSubjectAttribute)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));

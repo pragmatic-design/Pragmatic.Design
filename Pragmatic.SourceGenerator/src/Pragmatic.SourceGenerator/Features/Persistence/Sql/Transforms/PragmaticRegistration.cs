@@ -22,6 +22,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "global::Pragmatic.Persistence.Sql.SqlUnitOfWork", "global::Pragmatic.Persistence.Sql.ISqlSavePhase", "SqlRepository",
         "global::Pragmatic.Events.Engines.Sql.SqlEventOutboxExtensions.AddSqlEventOutbox",
         "global::Pragmatic.Messaging.Engines.Sql.SqlMessagingOutboxExtensions.AddSqlMessagingOutbox",
+        "global::Pragmatic.Audit.Engines.Sql.SqlAuditExtensions.AddSqlAuditedEntities",
         "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(
@@ -29,6 +30,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "global::Pragmatic.Persistence.Documents.DocUnitOfWork", "global::Pragmatic.Persistence.Documents.IDocSavePhase", "DocRepository",
         "global::Pragmatic.Events.Engines.Documents.DocEventOutboxExtensions.AddDocEventOutbox",
         "global::Pragmatic.Messaging.Engines.Documents.DocMessagingOutboxExtensions.AddDocMessagingOutbox",
+        "global::Pragmatic.Audit.Engines.Documents.DocAuditExtensions.AddDocAuditedEntities",
         "DocPersistence", "Pragmatic.Persistence.Documents"));
 
     /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
@@ -36,6 +38,9 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
 
     /// <summary>The Messaging outbox on the engines (Pragmatic.Messaging.Engines), by the type the generator recognises it by: its Sql row.</summary>
     internal const string EngineMessagingOutbox = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
+
+    /// <summary>The audit trail on the engines (Pragmatic.Audit.Engines), by the type the generator recognises it by: its Sql entry row.</summary>
+    internal const string EngineAuditTrail = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
 
     /// <summary>
     ///     One source per boundary of <paramref name="entities" /> (the ones the engine serves); none without the dependency injection abstractions
@@ -49,6 +54,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
             return sources;
         var outbox = compilation.GetTypeByMetadataName(EngineEventOutbox) is not null;
         var messagingOutbox = compilation.GetTypeByMetadataName(EngineMessagingOutbox) is not null;
+        var auditTrail = compilation.GetTypeByMetadataName(EngineAuditTrail) is not null;
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
         foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e) as INamedTypeSymbol)).Where(p => p.Boundary is not null)
@@ -65,7 +71,8 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
                 engine,
                 group.Select(p => p.Entity).OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray(),
                 outbox && EnablesEventOutbox(boundary),
-                messagingOutbox && EnablesMessagingOutbox(boundary));
+                messagingOutbox && EnablesMessagingOutbox(boundary),
+                auditTrail && group.Any(p => IsAudited(p.Entity)));
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
 
@@ -79,4 +86,11 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>True when <paramref name="boundary" /> carries <c>[EnableOutbox]</c> (Pragmatic.Messaging's): its saves write their events to an outbox.</summary>
     internal static bool EnablesMessagingOutbox(INamedTypeSymbol boundary)
         => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Messaging.Attributes.EnableOutboxAttribute");
+
+    /// <summary>
+    ///     True when <paramref name="entity" /> carries <c>[Audited]</c>: its writes append to the audit trail. By the attribute, not by
+    ///     <c>IAuditedEntity</c>, which another output of this generator adds and this one cannot see.
+    /// </summary>
+    internal static bool IsAudited(INamedTypeSymbol entity)
+        => entity.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.AuditedAttribute");
 }

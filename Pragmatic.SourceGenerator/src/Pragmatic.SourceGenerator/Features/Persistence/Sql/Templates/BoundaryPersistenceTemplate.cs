@@ -68,6 +68,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"        {e.MessagingOutbox}<{model.BoundaryType}>(services, \"{name}\");");
         }
 
+        if (model.AuditedEntities)
+        {
+            AppendLine($"        // [Audited] entities: each write appends an entry to the audit trail, in the same save (the phase, keyed by {name}).");
+            AppendLine($"        {e.AuditedEntities}<{model.BoundaryType}>(services);");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();

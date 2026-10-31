@@ -99,9 +99,13 @@ public partial class StaffAssignment : IEntity, ITemporalRelation
     public DateTimeOffset? ValidTo { get; set; }
 }
 
-/// <summary>A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted.</summary>
+/// <summary>
+///     A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted, [Audited] (its writes
+///     append to the audit trail where a boundary's saves register the trail's phase).
+/// </summary>
 [Entity]
 [SoftDelete]
+[Audited]
 [GenerateHierarchy]
 [Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]
 public partial class Category : IEntity

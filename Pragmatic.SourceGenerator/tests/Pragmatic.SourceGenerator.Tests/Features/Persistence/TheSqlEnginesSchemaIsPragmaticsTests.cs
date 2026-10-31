@@ -139,7 +139,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     {
         using var stream = typeof(TheSqlEnginesSchemaIsPragmaticsTests).Assembly.GetManifestResourceStream("SqlPragmaticEntities.cs")!;
         using var reader = new StreamReader(stream);
-        return "global using System; global using System.Collections.Generic;\n" + reader.ReadToEnd();
+        // Without [Audited]: the trail's tables are a package's (Pragmatic.Audit.Engines on the Sql engine), not the entity's, and that package
+        // cannot be among this suite's references without making the Sql engine referenced in every test (see the project file).
+        return "global using System; global using System.Collections.Generic;\n" + reader.ReadToEnd().Replace("[Audited]", "", StringComparison.Ordinal);
     }
 
     /// <summary>The type the generator probes for each EF Core provider (<c>FeatureDetector.DetectEfCoreProvider</c>).</summary>

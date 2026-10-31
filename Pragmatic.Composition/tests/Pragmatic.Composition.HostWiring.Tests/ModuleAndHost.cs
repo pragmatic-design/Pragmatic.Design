@@ -168,7 +168,33 @@ internal static class ModuleAndHost
         string hostAssemblyName,
         string hostSource)
     {
+        var (errors, generatorDiagnostics, _) = CompileChain(modules, hostAssemblyName, hostSource, null);
+        return (errors, generatorDiagnostics);
+    }
+
+    /// <summary>
+    ///     <see cref="GenerateChain" />'s modules and host, with the host's generated files keyed by hint name; <c>extraReferences</c> are
+    ///     what every compilation gets beyond the suite's set, as in <see cref="Generate" />.
+    /// </summary>
+    public static (ImmutableArray<string> Errors, IReadOnlyDictionary<string, string> Generated) GenerateChainedSources(
+        IReadOnlyList<(string AssemblyName, string[] Sources)> modules,
+        string hostAssemblyName,
+        string hostSource,
+        IEnumerable<MetadataReference> extraReferences)
+    {
+        var (errors, _, generated) = CompileChain(modules, hostAssemblyName, hostSource, extraReferences);
+        return (errors, generated);
+    }
+
+    private static (ImmutableArray<string> Errors, ImmutableArray<Diagnostic> GeneratorDiagnostics, IReadOnlyDictionary<string, string> Generated)
+        CompileChain(
+            IReadOnlyList<(string AssemblyName, string[] Sources)> modules,
+            string hostAssemblyName,
+            string hostSource,
+            IEnumerable<MetadataReference>? extraReferences)
+    {
         var references = new List<MetadataReference>(HostWiringFixture.BuildReferenceSet());
+        references.AddRange(extraReferences ?? []);
 
         foreach (var (assemblyName, sources) in modules)
         {
@@ -211,7 +237,11 @@ internal static class ModuleAndHost
             .Select(Describe)
             .ToImmutableArray();
 
-        return (errors, generatorDiagnostics);
+        var generated = host.SyntaxTrees
+            .Where(t => t.FilePath.EndsWith(".g.cs", StringComparison.Ordinal))
+            .ToDictionary(t => Path.GetFileName(t.FilePath), t => t.GetText().ToString());
+
+        return (errors, generatorDiagnostics, generated);
     }
 
     private static string Describe(Diagnostic d)

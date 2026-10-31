@@ -96,6 +96,11 @@ internal sealed class SpecificationExtensionsTemplate : CSharpTemplate
             : $"{spec.ContainerFullTypeName}.{spec.MemberName}({Arguments(spec)})";
 
         RenderQueryable(spec, call);
+
+        // IReadRepository<TEntity> takes an IEntity: over any other type its reads would not compile.
+        if (!spec.IsRepositoryEntity)
+            return;
+
         AppendLine();
         RenderTerminal(spec, call, "Find", $"{Task}<global::System.Collections.Generic.List<{_entityFullTypeName}>>", "FindAsync");
         AppendLine();

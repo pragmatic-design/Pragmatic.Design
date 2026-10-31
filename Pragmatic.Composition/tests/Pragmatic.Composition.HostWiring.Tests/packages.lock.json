@@ -309,6 +309,13 @@
           "Pragmatic.Audit": "[1.0.0, )"
         }
       },
+      "pragmatic.audit.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Audit": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
       "pragmatic.authorization": {
         "type": "Project",
         "dependencies": {

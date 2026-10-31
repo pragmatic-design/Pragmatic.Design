@@ -23,6 +23,7 @@ time segments; a sealed segment gets a Merkle root, and each root chains to its 
 |---------|-----|
 | `Pragmatic.Audit` | The contracts: `IAuditTrail`, `ITransactionalAuditTrail`, `IAuditTrailReader`, `AuditEntry` |
 | `Pragmatic.Audit.EFCore` | The EF Core store: `AuditDbContext`, `AddAuditTrail()`, sealing and retention |
+| `Pragmatic.Audit.Engines` | The same trail on the Sql and documents engines: the save phase that writes the entries, and the store over a boundary's session |
 | `Pragmatic.Audit.AdoNet` | The same transactional write for a producer on raw ADO.NET |
 | `Pragmatic.Audit.Management` | `[UsePackage<AuditManagementPackage>]`: retention as a callable `PruneAuditTrail` action, for an application to trigger (the framework does not schedule it) |
 
@@ -82,6 +83,39 @@ never checked.
 
 The `__` prefix is what keeps them safe beside an application's own tables: the schema differ never drops
 a framework-prefixed table for being absent from the desired schema.
+
+## On the Sql and documents engines
+
+A boundary the Sql or documents engine persists audits its `[Audited]` entities with the same attribute;
+its project references `Pragmatic.Audit.Engines`. The generated `Add{Boundary}Persistence` registers, for
+that boundary only, the phase that turns each write into an entry in the same save:
+
+| | Sql engine | Documents engine |
+|---|---|---|
+| Capture | `SqlAuditPhase`: the entries in the save's batch, its transaction | `DocAuditPhase`: the entries written through the save's session, in its transaction where MongoDB runs one |
+| Store | `__AuditEntries`, `__AuditSegments`, `__AuditPrunedRanges`: EF Core's tables column for column, in the database's generated schema | the same three collections, in the boundary's `{Boundary}DocSchema` |
+| Trail | `AddSqlAuditTrail<TBoundary>()` | `AddDocAuditTrail<TBoundary>()` |
+
+The trail (`IAuditTrail`, `IAuditTrailReader`, the sealer, the retention and `AuditSealingWorker`) is
+registered once per application, on the session of the boundary it is read from. The generated host
+follows EF Core's rule: when one place holds the `[Audited]` entities, whether an EF Core database or an
+engine's boundary, it registers the trail there, after `Program.cs`'s `configure` callback, so a trail the
+application registered itself is the one it keeps. When more than one place holds them, the host registers
+none and says so in `RegisterAuditTrail`, and the application names the one to read from. Two boundaries count as two
+places even when they open the same database: the session is the application's to open, so the host
+cannot tell.
+
+Where they differ from EF Core:
+
+- **On the documents engine, entries of the same instant have no write order.** An entry's `Seq` is its
+  instant in UTC ticks and its `Id` breaks the tie, so a segment's entries are sealed and verified in
+  `(Seq, Id)` order without writers coordinating. Two entries written in the same tick come out ordered
+  by `Id`, not by which was written first. On the Sql engine `Seq` is an identity column, as on EF Core.
+- **On a standalone MongoDB server and on Cosmos DB** a save is not one transaction: the entries are
+  written after the entities, and a failure in between leaves the entities written and their entries
+  missing.
+- **The package does not bring the engines' bridges.** The application references the bridge its
+  boundaries use (`Pragmatic.Persistence.Sql`, `Pragmatic.Persistence.Documents`).
 
 ## Writing inside someone else's transaction
 

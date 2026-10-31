@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The audit trail on Pragmatic's Sql and documents engines: the entry an [Audited] entity's save writes, in the same save, and the trail's store (append, read, verify, seal, prune) over a boundary's session, beside Pragmatic.Audit.EFCore.</Description>
+    <PackageTags>pragmatic;audit;trail;merkle;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The trail's own chains (the segment lookups, the reads, the seal, the prune) are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The entry's shape, the preparer, the chain's rules, the sealing worker: every store's. -->
+    <ProjectReference Include="..\Pragmatic.Audit\Pragmatic.Audit.csproj" />
+    <!-- IAuditedEntity, the mark an [Audited] entity carries. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- The engines' bridges: the phases of a unit of work's save (ISqlSavePhase, IDocSavePhase) and the sessions a boundary is registered with.
+         Private: an application brings the bridge of the engine it uses, as it does without the trail. Flowing both to it would make every
+         application reference two engines, and every boundary that names none PRAG0743. The Sql trail's types never touch the documents
+         engine's and the other way round (one registration class per engine), so the bridge the application lacks is never loaded. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The trail's rows and documents are the engines' own types: the generator describes them in this assembly, which is the one that declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

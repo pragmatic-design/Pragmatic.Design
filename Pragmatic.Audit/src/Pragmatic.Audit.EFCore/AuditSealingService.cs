@@ -13,7 +13,7 @@ namespace Pragmatic.Audit.EFCore;
 public sealed class AuditSealingService(
     AuditDbContext db,
     IAuditSegmentNaming naming,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider) : IAuditSealer
 {
     /// <summary>
     ///     Seals every open segment whose window closed longer ago than the grace period, oldest first.

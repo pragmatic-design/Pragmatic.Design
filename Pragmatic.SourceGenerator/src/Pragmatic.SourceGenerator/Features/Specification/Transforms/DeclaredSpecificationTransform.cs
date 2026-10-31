@@ -88,6 +88,7 @@ internal static class DeclaredSpecificationTransform
             IsProperty = member is IPropertySymbol,
             IsPubliclyVisible = member.DeclaredAccessibility == Accessibility.Public
                                 && container.DeclaredAccessibility == Accessibility.Public,
+            IsRepositoryEntity = entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"),
             Parameters = parameters
                 .Select(p => new SpecificationParameter(
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),

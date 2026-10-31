@@ -37,8 +37,9 @@ internal static partial class DocumentGenerator
                     || model.GetSymbolInfo(invocation).Symbol is not IMethodSymbol method
                     || !SymbolEqualityComparer.Default.Equals(method.ContainingType.OriginalDefinition, spec)
                     || method.ContainingType.TypeArguments[0] is not INamedTypeSymbol entityType
-                    || !DocModel.IsPragmatic(entityType)
-                    || !engines.Serves(entityType, PragmaticEngine.Documents) // another engine's entity: its generator compiles the leaf
+                    // A Pragmatic entity this engine serves (another engine's: its generator compiles the leaf), or one of the engine's own
+                    // [Document] types: a module's collection (the audit trail's) is filtered by specifications as an entity is.
+                    || !(DocModel.IsPragmatic(entityType) ? engines.Serves(entityType, PragmaticEngine.Documents) : DocModel.IsDocument(entityType))
                     || models(entityType) is not { } entity)
                     continue;
                 if (invocation.ArgumentList.Arguments.Count != 1 || invocation.ArgumentList.Arguments[0].Expression is not SimpleLambdaExpressionSyntax { Body: ExpressionSyntax body } lambda

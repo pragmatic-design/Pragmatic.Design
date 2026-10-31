@@ -88,6 +88,7 @@ internal static class FeatureDetector
         HasPrivacyRuntime = TypeExists(compilation, "Pragmatic.Privacy.IPersonalDataSource"),
         HasAudit = TypeExists(compilation, "Pragmatic.Audit.IAuditTrail"),
         HasAuditEFCore = TypeExists(compilation, "Pragmatic.Audit.EFCore.AuditDbContext"),
+        HasAuditEngines = TypeExists(compilation, Features.Persistence.Sql.Transforms.PragmaticRegistration.EngineAuditTrail),
         HasNotifications = TypeExists(compilation, "Pragmatic.Notifications.INotificationService"),
         HasSerialization = TypeExists(compilation, "Pragmatic.Serialization.PragmaticJsonOptions"),
         IsHostMode = CompositionDetector.IsHostProject(compilation),

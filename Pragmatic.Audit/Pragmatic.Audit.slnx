@@ -8,6 +8,7 @@
     <Project Path="src/Pragmatic.Audit/Pragmatic.Audit.csproj" />
     <Project Path="src/Pragmatic.Audit.AdoNet/Pragmatic.Audit.AdoNet.csproj" />
     <Project Path="src/Pragmatic.Audit.EFCore/Pragmatic.Audit.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Audit.Engines/Pragmatic.Audit.Engines.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Audit.Tests/Pragmatic.Audit.Tests.csproj" />
