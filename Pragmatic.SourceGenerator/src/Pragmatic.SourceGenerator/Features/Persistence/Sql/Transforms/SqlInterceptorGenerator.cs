@@ -284,7 +284,6 @@ internal static partial class SqlInterceptorGenerator
         EmitTpcViews(hierarchies, own, Lookup, diagnostics); // the views of the table-per-concrete-type roots, as DDL text
         EmitTptViews(hierarchies, own, Lookup, diagnostics); // and of the table-per-type roots
         EmitSchemas(hierarchies, compilation, own, Lookup, diagnostics); // the [SqlDatabase] classes' schemas, for Pragmatic.Migrations
-        ReportPragmaticSchemaProblems(compilation, Lookup, diagnostics); // Pragmatic's entities' tables go to their database's schema (PragmaticSchemas)
 
         var models = entities.Values.Where(e => e is not null).Select(e => e!).OrderBy(e => e.FullName, StringComparer.Ordinal).ToList();
         var maps = ReadMaps(models, projections, functions, compilation, Lookup);

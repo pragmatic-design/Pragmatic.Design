@@ -114,6 +114,50 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         efCore.Except(engine).Concat(engine.Except(efCore)).Should().BeEmpty();
     }
 
+    /// <summary>An entity with a value object, required and optional: its members are columns of the entity's table, <c>{Property}_{Member}</c>.</summary>
+    private const string ValueObjectEntity = """
+        global using System;
+        using Pragmatic.Persistence.Entity;
+
+        namespace Probe.Entities;
+
+        [ValueObject]
+        public partial record TextSpan
+        {
+            public TextSpan(int start, int length) { Start = start; Length = length; }
+            public int Start { get; init; }
+            public int Length { get; init; }
+            private static TextSpan Validate(int start, int length) => new(start, length);
+        }
+
+        [Entity]
+        public partial class Excerpt : IEntity
+        {
+            public string Text { get; private set; } = "";
+            public TextSpan Span { get; private set; } = new(0, 0);
+            public TextSpan? Highlight { get; private set; }
+        }
+        """;
+
+    /// <summary>
+    ///     A value object's members on the Sql engine are EF Core's columns: the same names, types and nullability (an optional one's members
+    ///     admit null). A schema that refused it would leave the entity's whole database without one.
+    /// </summary>
+    [Theory]
+    [InlineData("PostgreSql")]
+    [InlineData("SqlServer")]
+    [InlineData("Sqlite")]
+    public void AValueObject_IsTheSameFlattenedColumnsOnBothBranches(string provider)
+    {
+        var efCore = Describe(EfCoreSchema(provider, ValueObjectEntity)).ToList();
+        var (sql, diagnostics) = SqlSchema(provider, ValueObjectEntity);
+        diagnostics.Should().NotContain(d => d.Id == "PRAG3027", "a value object is described, not refused");
+        var engine = Describe(sql).ToList();
+
+        efCore.Should().Contain(l => l.Contains("column Excerpts.Highlight_Start", StringComparison.Ordinal), "the control: the value object's columns are there");
+        efCore.Except(engine).Concat(engine.Except(efCore)).Should().BeEmpty();
+    }
+
     /// <summary>
     ///     EF Core's branch on SQL Server writes the live rows' filter in T-SQL: <c>"IsDeleted" = 0</c>. With <c>false</c>, which T-SQL does not
     ///     have, the index fails to create and the migration with it, as the soft-delete column's default did (<see cref="EfCoresBranch_OnSqlServer_WritesWhatSqlServerMigrates" />).

@@ -28,9 +28,8 @@ internal static partial class SqlInterceptorGenerator
     private const string SchemaVersionType = "Pragmatic.Migrations.Schema.SchemaVersion";
 
     /// <summary>
-    ///     The schema of each database the host's Sql-served entities live in; empty outside a host, without Pragmatic.Migrations, without a
-    ///     provider to type the tables for, or when an entity cannot be described yet (reported where it is declared,
-    ///     <see cref="ReportPragmaticSchemaProblems" />).
+    ///     The schema of each database the host's Sql-served entities live in; empty outside a host, without Pragmatic.Migrations, or without a
+    ///     provider to type the tables for. An owned type's members are columns of its owner's table, <c>{Property}_{Member}</c>, as on EF Core.
     /// </summary>
     internal static EquatableArray<EngineSchemaModel> PragmaticSchemas(Compilation compilation, ImmutableArray<INamedTypeSymbol> entityTypes,
         EquatableArray<ShapeSourceModel> shapeSources, DetectedFeatures features, CancellationToken ct)
@@ -126,7 +125,7 @@ internal static partial class SqlInterceptorGenerator
         foreach (var database in served.GroupBy(t => DatabaseOf(t)!, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
         {
             var entities = database.Select(Lookup).Where(e => e is not null).Select(e => e!).ToList();
-            if (entities.Count == 0 || entities.Any(e => PragmaticSchemaProblem(e) is not null))
+            if (entities.Count == 0)
                 continue;
             entities.AddRange(moduleTables.Where(m => m.Databases.Contains(database.Key)).Select(m => m.Row));
             // The namespace Pragmatic's EF branch derives from the database's entities: one of the application's, the first by name.
@@ -139,28 +138,6 @@ internal static partial class SqlInterceptorGenerator
         return schemas.ToEquatableArray();
     }
 
-    /// <summary>
-    ///     Reports, where they are declared, the Sql-served entities of this compilation the schema cannot describe yet: their database then
-    ///     gets none of the engine's tables (<see cref="PragmaticSchemas" />). Only with Pragmatic.Migrations referenced, the schema's reader.
-    /// </summary>
-    private static void ReportPragmaticSchemaProblems(Compilation compilation, Func<INamedTypeSymbol, EntityModel?> lookup, List<Diagnostic> diagnostics)
-    {
-        if (compilation.GetTypeByMetadataName(SchemaVersionType) is null)
-            return;
-        var engines = PragmaticEngines.Of(compilation);
-        foreach (var type in PragmaticNames.AllTypes(compilation.Assembly.GlobalNamespace)
-                     .Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql))
-                     .OrderBy(t => t.Name, StringComparer.Ordinal))
-        {
-            if (lookup(type) is { } entity && PragmaticSchemaProblem(entity) is { } problem)
-                diagnostics.Add(Diagnostic.Create(Diagnostics.SchemaShape, entity.Type.Locations.FirstOrDefault() ?? Location.None, "its database", entity.Type.Name, problem));
-        }
-    }
-
-    /// <summary>Why <paramref name="entity" /> cannot be described in the schema yet, or null.</summary>
-    private static string? PragmaticSchemaProblem(EntityModel entity)
-        => entity.Columns.FirstOrDefault(c => c.Owner is not null) is { } owned ? $"'{owned.Owner}' is an owned type: the schema does not flatten one yet"
-            : null;
 
     /// <summary>
     ///     The types a Sql-served entity of the schema can be: this compilation's, and with a topology the referenced assemblies' that see
@@ -298,7 +275,8 @@ internal static partial class SqlInterceptorGenerator
                     continue;
                 }
 
-                var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type); // Pragmatic's scopes column admits null
+                // Pragmatic's scopes column admits null, and so does every member of an optional owned type (EF Core's optional dependent).
+                var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type) || column.OptionalOwner;
                 var type = SchemaTypes.Of(column, dialect, SchemaTypes.MaxLength(SchemaTypes.PropertyOf(entity, column)), keyed.Contains(column.Column)); // on SQL Server an indexed string is nvarchar(450), as EF Core's branch writes it
                 if (entity.Identity && entity.Keys.Contains(column))
                     type = SchemaTypes.Identity(type, dialect);

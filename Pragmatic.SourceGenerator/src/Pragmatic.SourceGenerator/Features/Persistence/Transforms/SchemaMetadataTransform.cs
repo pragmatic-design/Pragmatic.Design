@@ -871,11 +871,13 @@ internal static partial class SchemaMetadataTransform
             // would diverge from the EF model (the latent Money complex-type gap, generalized and closed).
             if (!prop.ValueObjectColumns.IsDefaultOrEmpty)
             {
+                // An optional value object (a nullable property) is an optional complex property in EF Core's model: each of its columns
+                // admits null whatever the member says, or a row without one could not be written (AnOptionalValueObjectInTheEfModelTests).
                 foreach (var col in prop.ValueObjectColumns)
                     columns.Add(new ColumnSchemaModel(
                         col.ColumnName,
                         SqlTypeMapper.MapToSqlType(col.TypeName, provider, null, null, null, col.IsEnum),
-                        col.IsNullable,
+                        col.IsNullable || prop.IsNullable,
                         IsPrimaryKey: false));
                 continue;
             }
