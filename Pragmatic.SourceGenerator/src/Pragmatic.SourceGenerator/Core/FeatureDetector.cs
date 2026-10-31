@@ -84,6 +84,8 @@ internal static class FeatureDetector
         HasNpgsqlDriver = TypeExists(compilation, "Npgsql.NpgsqlConnection"),
         HasSqlServerDriver = TypeExists(compilation, "Microsoft.Data.SqlClient.SqlConnection"),
         HasSqliteDriver = TypeExists(compilation, "Microsoft.Data.Sqlite.SqliteConnection"),
+        HasMySqlDriver = TypeExists(compilation, "MySqlConnector.MySqlConnection"),
+        HasOracleDriver = TypeExists(compilation, "Oracle.ManagedDataAccess.Client.OracleConnection"),
         HasPrivacy = TypeExists(compilation, AttributeNames.PrivacyPersonalData),
         HasPrivacyRuntime = TypeExists(compilation, "Pragmatic.Privacy.IPersonalDataSource"),
         HasAudit = TypeExists(compilation, "Pragmatic.Audit.IAuditTrail"),

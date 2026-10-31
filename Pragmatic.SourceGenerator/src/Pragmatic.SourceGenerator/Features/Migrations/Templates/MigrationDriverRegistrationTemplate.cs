@@ -25,17 +25,22 @@ internal sealed class MigrationDriverRegistrationTemplate : CSharpTemplate
     [
         ("PostgreSql", "global::Npgsql.NpgsqlConnection"),
         ("SqlServer", "global::Microsoft.Data.SqlClient.SqlConnection"),
-        ("Sqlite", "global::Microsoft.Data.Sqlite.SqliteConnection")
+        ("Sqlite", "global::Microsoft.Data.Sqlite.SqliteConnection"),
+        ("MySql", "global::MySqlConnector.MySqlConnection"),
+        ("Oracle", "global::Oracle.ManagedDataAccess.Client.OracleConnection")
     ];
 
     private readonly bool[] _available;
     private readonly string _namespace;
 
-    public MigrationDriverRegistrationTemplate(string generatedNamespace, bool postgres, bool sqlServer, bool sqlite)
+    public MigrationDriverRegistrationTemplate(string generatedNamespace, bool postgres, bool sqlServer, bool sqlite, bool mySql, bool oracle)
     {
         _namespace = generatedNamespace;
-        _available = [postgres, sqlServer, sqlite];
+        _available = [postgres, sqlServer, sqlite, mySql, oracle];
     }
+
+    /// <summary>Whether the compilation references any driver this registers.</summary>
+    public bool HasAny => _available.Any(a => a);
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Migrations";
     protected override string? TriggerInfo => "referenced database drivers";

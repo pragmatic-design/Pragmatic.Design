@@ -214,9 +214,9 @@ public sealed class MigrationsBuilder
         if (_registeredProviders.Count == 0)
             throw new InvalidOperationException(
                 "Migrations found no usable database provider. Reference a driver package (Npgsql, "
-                + "Microsoft.Data.SqlClient or Microsoft.Data.Sqlite) together with the Pragmatic source "
-                + "generator, which registers its connection factory — or call UseProvider(...) to supply "
-                + "one explicitly (MySQL and Oracle: UseProvider(\"MySql\" or \"Oracle\", ...), the generator registers neither).");
+                + "Microsoft.Data.SqlClient, Microsoft.Data.Sqlite, MySqlConnector or Oracle.ManagedDataAccess.Core) "
+                + "together with the Pragmatic source generator, which registers its connection factory — or call "
+                + "UseProvider(...) to supply one explicitly.");
     }
 
     private readonly HashSet<string> _registeredProviders = new(StringComparer.OrdinalIgnoreCase);
