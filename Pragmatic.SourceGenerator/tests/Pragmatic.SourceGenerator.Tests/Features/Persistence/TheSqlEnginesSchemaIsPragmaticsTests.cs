@@ -159,6 +159,65 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    ///     An entity owning an identity record, as an application owns a <c>LocalIdentity</c>: the record carries no <c>[Owned]</c>, it is owned
+    ///     because it is an <c>IdentityRecord</c>, and half its members are the base class's.
+    /// </summary>
+    private const string IdentityEntity = """
+        global using System;
+        using Pragmatic.Persistence.Entity;
+
+        namespace Pragmatic.Identity
+        {
+            public enum ProvisionSource { Manual, Scim }
+
+            public abstract class IdentityRecord
+            {
+                public string ExternalIdentityKey { get; set; } = "";
+                public ProvisionSource ProvisionSource { get; set; }
+                public bool IsActive { get; set; } = true;
+                public DateTimeOffset? LastLoginAt { get; set; }
+            }
+        }
+
+        namespace Probe.Entities
+        {
+            public sealed class Credentials : Pragmatic.Identity.IdentityRecord
+            {
+                public const string Provider = "local";
+                public string PasswordHash { get; set; } = "";
+                public int FailedLoginAttempts { get; set; }
+            }
+
+            [Entity]
+            public partial class Member : IEntity
+            {
+                public string Name { get; private set; } = "";
+                public Credentials? Identity { get; private set; }
+            }
+        }
+        """;
+
+    /// <summary>
+    ///     An identity record on the Sql engine is EF Core's owned columns: its own members and its base class's, as <c>{Property}_{Member}</c>,
+    ///     each admitting null since the record is optional. Refused, a host with local accounts had no schema on the Sql engine at all.
+    /// </summary>
+    [Theory]
+    [InlineData("PostgreSql")]
+    [InlineData("SqlServer")]
+    [InlineData("Sqlite")]
+    public void AnIdentityRecord_IsTheSameOwnedColumnsOnBothBranches(string provider)
+    {
+        var efCore = Describe(EfCoreSchema(provider, IdentityEntity)).ToList();
+        var (sql, diagnostics) = SqlSchema(provider, IdentityEntity);
+        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
+        var engine = Describe(sql).ToList();
+
+        efCore.Should().Contain(l => l.Contains("column Members.Identity_PasswordHash", StringComparison.Ordinal), "the control: the record's own member is there");
+        efCore.Should().Contain(l => l.Contains("column Members.Identity_ExternalIdentityKey", StringComparison.Ordinal), "the control: the base class's member is there");
+        efCore.Except(engine).Concat(engine.Except(efCore)).Should().BeEmpty();
+    }
+
+    /// <summary>
     ///     EF Core's branch on SQL Server writes the live rows' filter in T-SQL: <c>"IsDeleted" = 0</c>. With <c>false</c>, which T-SQL does not
     ///     have, the index fails to create and the migration with it, as the soft-delete column's default did (<see cref="EfCoresBranch_OnSqlServer_WritesWhatSqlServerMigrates" />).
     /// </summary>

@@ -336,6 +336,22 @@
       "foreignKeys": []
     },
     {
+      "name": "Accounts",
+      "schemaName": null,
+      "columns": [
+        { "name": "Id", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": true },
+        { "name": "Name", "sqlType": "TEXT", "isNullable": false, "isPrimaryKey": false },
+        { "name": "Identity_PasswordHash", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Identity_FailedLoginAttempts", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Identity_ExternalIdentityKey", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Identity_ProvisionSource", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Identity_IsActive", "sqlType": "INTEGER", "isNullable": true, "isPrimaryKey": false },
+        { "name": "Identity_LastLoginAt", "sqlType": "TEXT", "isNullable": true, "isPrimaryKey": false }
+      ],
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
       "name": "Tickets",
       "schemaName": null,
       "columns": [
