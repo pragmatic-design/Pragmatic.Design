@@ -41,10 +41,15 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         AppendLine("            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), Get<global::Pragmatic.Authorization.IUserScopeResolver>(sp),");
         AppendLine("            Get<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle>(sp), Get<global::Pragmatic.Persistence.Query.Filters.QueryFilterOptions>(sp), Get<global::System.TimeProvider>(sp),");
         AppendLine("            All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp))));");
-        // ASSUMPTION: requireTenant false, as a unit of work built without options; the repo's tenant interceptor option is a porting item.
+        // The application's RequireTenant, as EF Core's registration hands it to the tenant interceptor: without it a tenant's entity would be
+        // written with no tenant resolved where the application requires one. Options nobody configured are the options' own defaults (the
+        // secure one: required), read from the class rather than restated here. Without Pragmatic.MultiTenancy there is no option to read.
+        var requireTenant = model.MultiTenancy
+            ? "(Get<global::Microsoft.Extensions.Options.IOptions<global::Pragmatic.MultiTenancy.MultiTenancyOptions>>(sp)?.Value ?? new global::Pragmatic.MultiTenancy.MultiTenancyOptions()).RequireTenant"
+            : "false";
         AppendLine($"        {Services}.AddKeyedScoped<{e.UnitOfWork}>(services, {key}, (sp, k) => new {e.UnitOfWork}(");
         AppendLine($"            {Keyed}.GetRequiredKeyedService<{e.Session}>(sp, k), Get<global::System.TimeProvider>(sp),");
-        AppendLine("            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), false, All<global::Pragmatic.Persistence.Lifecycle.IGeneratedValueBinding>(sp),");
+        AppendLine($"            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), {requireTenant}, All<global::Pragmatic.Persistence.Lifecycle.IGeneratedValueBinding>(sp),");
         AppendLine($"            Get<global::Pragmatic.Events.IDomainEventDispatcher>(sp), Phases<{e.Phase}>(sp, k), All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp)));");
         AppendLine($"        {Services}.AddKeyedScoped<global::Pragmatic.Persistence.Repository.IUnitOfWork>(services, {key},");
         AppendLine($"            (sp, k) => {Keyed}.GetRequiredKeyedService<{e.UnitOfWork}>(sp, k));");

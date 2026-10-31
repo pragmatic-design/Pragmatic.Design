@@ -434,6 +434,13 @@
           "Pragmatic.Messaging": "[1.0.0, )"
         }
       },
+      "pragmatic.multitenancy": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
       "pragmatic.persistence": {
         "type": "Project",
         "dependencies": {

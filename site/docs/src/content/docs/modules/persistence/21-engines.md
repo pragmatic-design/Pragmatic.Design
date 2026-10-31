@@ -57,6 +57,8 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
 - The factory runs once per scope (a request), with the filters the generator built from the request's services:
   tenant, current user, soft delete, data scopes. Passing them on as `Filters` is what applies them.
 - A `SqlSession` owns its connection and disposes it with the scope.
+- With Pragmatic.MultiTenancy referenced, the unit of work reads `MultiTenancyOptions.RequireTenant` (on by default, as on EF
+  Core): a tenant's entity written with no tenant resolved is refused with `TenantNotResolvedException`.
 - In a Pragmatic host the call goes in the `configure` callback of `PragmaticApp.RunAsync`, or anywhere the
   host's services are registered.
 
