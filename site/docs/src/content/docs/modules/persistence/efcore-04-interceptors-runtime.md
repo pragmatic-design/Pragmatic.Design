@@ -3,7 +3,7 @@ title: "Interceptors & Runtime"
 description: "Several fields on your entities need to be set automatically when saving to the database:"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/04-interceptors-runtime.md
 sidebar:
-  order: 25
+  order: 26
 ---
 ## The Problem
 

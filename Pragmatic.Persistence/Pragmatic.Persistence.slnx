@@ -23,6 +23,7 @@
     <File Path="docs/18-data-ownership.md" />
     <File Path="docs/19-state-machine.md" />
     <File Path="docs/20-eager-loading.md" />
+    <File Path="docs/21-engines.md" />
     <File Path="docs/common-mistakes.md" />
     <File Path="docs/concepts.md" />
     <File Path="docs/troubleshooting.md" />

@@ -3,7 +3,7 @@ title: "Bulk Operations"
 description: "`SaveChangesAsync()` is the right default for normal business writes, but it is a poor fit for large imports, wide updates, or provider-specific upsert flows."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/05-bulk-operations.md
 sidebar:
-  order: 26
+  order: 27
 ---
 ## The Problem
 

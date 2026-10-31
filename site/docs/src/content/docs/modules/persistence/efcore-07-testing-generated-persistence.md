@@ -3,7 +3,7 @@ title: "Testing Generated Persistence"
 description: "This guide is written for application teams that use generated repositories and DbContexts and want tests that are realistic without becoming fragile."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/07-testing-generated-persistence.md
 sidebar:
-  order: 28
+  order: 29
 ---
 This guide is written for application teams that use generated repositories and DbContexts and want tests that are realistic without becoming fragile.
 

@@ -16,7 +16,7 @@ namespace Pragmatic.Persistence.Documents;
 ///     (MongoDB: a <c>$set</c> of its changed fields; Cosmos DB: a replace at the etag it was read with), the modules' phases, the snapshots taken
 ///     again, the domain events out. A stale document is a <see cref="ConcurrencyError" /> and a duplicate key a conflict, raised as Pragmatic's
 ///     <see cref="PersistenceRuleViolationException" />. In one MongoDB transaction where the server runs them; otherwise the writes before a
-///     failure stay written (persistence/docs/write-surface.md).
+///     failure stay written (Pragmatic.Persistence/docs/21-engines.md, "What is different").
 /// </summary>
 public sealed partial class DocUnitOfWork
 {

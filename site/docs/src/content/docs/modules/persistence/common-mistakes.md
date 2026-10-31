@@ -3,7 +3,7 @@ title: "Common Mistakes"
 description: "These are the most common issues developers encounter when using Pragmatic.Persistence. Each section shows the wrong approach, the correct approach, and explain"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/common-mistakes.md
 sidebar:
-  order: 31
+  order: 32
 ---
 These are the most common issues developers encounter when using Pragmatic.Persistence. Each section shows the wrong approach, the correct approach, and explains why.
 

@@ -337,9 +337,9 @@ emitted for every engine, since every engine reads the same members. The reposit
 configuration, the projections over `IQueryable` and the queries are EF Core's, and only an entity EF Core persists
 gets them.
 
-⚠️ EF Core is the only engine in the repository today. The Sql and documents engines (`PersistenceEngineKind.Sql`,
-`PersistenceEngineKind.Documents`) are being ported; until they are, an entity on either gets its shape and nothing
-that reads or writes it.
+On the Sql and documents engines (`PersistenceEngineKind.Sql`, `PersistenceEngineKind.Documents`) the same entity
+gets the engine's repository and unit of work instead. What that engine serves and what it does not is in
+[Engines](21-engines.md).
 
 ---
 
