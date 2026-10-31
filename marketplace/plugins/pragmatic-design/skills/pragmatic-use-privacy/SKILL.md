@@ -52,6 +52,12 @@ there and calls `AddSubjectRegistry()`; do not write either in `Program.cs`. Wha
 keys: an `ISecretEncryptor` and an `ISubjectLookupKeyProvider`, from configuration, never from that
 database.
 
+On a boundary of the Sql or documents engine the same holds with `Pragmatic.Privacy.Engines` (not in
+1.0.0-alpha.3): the tables, or collections, come with that boundary's schema. The host registers
+`AddSqlSubjectRegistry<TBoundary>()` / `AddDocSubjectRegistry<TBoundary>()` when one place holds the
+`[DataSubject]` entities. With more than one place, register one in `Program.cs`. A `ProtectedValue`
+is not served on the engines yet.
+
 ⚠️ **Allocate the pseudonym where the person enters the system, not where they first act.** A handler
 on the registration event calling `GetOrCreateReferenceAsync`; it is idempotent, so the later call
 sites cost a lookup and nothing else. Allocating lazily, at first sign-in or first export, leaves a

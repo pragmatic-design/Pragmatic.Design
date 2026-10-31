@@ -132,7 +132,7 @@ app.UseMessaging(msg =>
 });
 ```
 
-The generator maps `__OutboxMessages` into that boundary's DbContext, adds the capture interceptor, and registers the delivery pump plus a retention purge. `OutboxInterceptor` writes the rows in the **same transaction** as `SaveChanges`; the pump publishes them to the transport and an AOT-safe `MessageTypeRegistry` deserializes. Without `Pragmatic.Messaging.EFCore` the attribute is inert → **PRAG0831**.
+The generator maps `__OutboxMessages` into that boundary's DbContext, adds the capture interceptor, and registers the delivery pump plus a retention purge. `OutboxInterceptor` writes the rows in the **same transaction** as `SaveChanges`; the pump publishes them to the transport and an AOT-safe `MessageTypeRegistry` deserializes. Without `Pragmatic.Messaging.EFCore` the attribute is inert → **PRAG0831**. A boundary on the Sql or documents engine references `Pragmatic.Messaging.Engines` instead (not in 1.0.0-alpha.3): the same attribute, the save's phase writes the rows, and the same pump reads them.
 
 Pick **one** outbox per boundary: this one publishes to the transport (cross-service); Events' `[EnableEventOutbox]` dispatches in-process. Both capture and clear the same domain events, so applying both → **PRAG0833**.
 

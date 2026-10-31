@@ -14,6 +14,29 @@ the reader, so nothing builds an expression tree per call.
 The namespaces carry no `.Core`: the engine's types are in `Pragmatic.Persistence.Sql` and its
 sub-namespaces (`.Attributes`, `.Functions`, `.Dialects`, `.Schema`, …).
 
+⚠️ Neither package is in 1.0.0-alpha.3: the engine ships with a later release.
+
+## Pragmatic's entities on the engine
+
+A boundary on the engine keeps its `[Entity]` types, repositories, actions and endpoints. The host opens
+the session, and the generated `Add{Boundary}Persistence` registers the rest:
+
+```csharp
+services.AddReportingBoundaryPersistence((sp, filters) =>
+    new SqlSession(new NpgsqlConnection(connectionString), SqlDialect.PostgreSql) { Filters = filters });
+```
+
+- The factory runs once per scope. Pass `filters` on: they carry tenant, owner, soft delete and scopes.
+  The session owns and disposes its connection.
+- The database's generated `{Database}Schema` is migrated at start by Pragmatic.Migrations, on
+  PostgreSQL, SQL Server, SQLite, MySQL and Oracle.
+- `IReadRepository<T>.Query()` throws: an `IQueryable` is EF Core's. Write the chain on
+  `SqlSession.Query<T>()`, or declare the read (`[Query]`, a specification).
+- A module's tables come from its engines package: `Pragmatic.Events.Engines`,
+  `Pragmatic.Messaging.Engines`, `Pragmatic.Audit.Engines`, `Pragmatic.Privacy.Engines`.
+
+The full list of what is the same as EF Core and what is not is the module's guide, `docs/21-engines.md`.
+
 ## Choosing the engine for a boundary
 
 ```csharp
