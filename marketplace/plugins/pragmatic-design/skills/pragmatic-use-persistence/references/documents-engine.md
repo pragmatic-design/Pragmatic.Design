@@ -34,6 +34,9 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
   documents are written one by one, and a failure leaves the earlier ones written.
 - `IReadRepository<T>.Query()` throws: write the chain on `DocSession.Query<T>()`, or a specification.
 - A load with `Include` is **PRAG3111**; a mutation that loads or writes navigations is **PRAG3112**.
+- An owned type (`[Owned]`, a `[ValueObject]` of several members, an identity record such as
+  `LocalIdentity`) is a nested document of its entity, with its base classes' members. It needs no
+  `[Embedded]`: the generator writes its reader and writer. A chain can compare one of its members.
 - A module's collections come from its engines package: `Pragmatic.Events.Engines`,
   `Pragmatic.Messaging.Engines`, `Pragmatic.Audit.Engines`, `Pragmatic.Privacy.Engines`.
 

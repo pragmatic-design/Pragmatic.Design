@@ -18,6 +18,8 @@ internal static class DocJsonEmitter
     public static string WriteField(DocField field, string value)
     {
         var name = DocTypeEmitter.Literal(DocModel.JsonName(field));
+        if (field.Owned)
+            return $"{field.Codec}.WriteJson(w, {name}, {value})";
         switch (field.Kind)
         {
             case DocKind.Embedded:
@@ -36,9 +38,9 @@ internal static class DocJsonEmitter
         => field.Kind == DocKind.UInt64 ? $"unchecked((long){value})"
             : field.Kind != DocKind.Enum ? value : field.Nullable ? $"({value} is {{ }} enumValue ? (int?)(int)enumValue : null)" : $"(int){value}";
 
-    public static string ReadField(DocField field) => field.Kind switch
+    public static string ReadField(DocField field) => field.Owned ? $"{field.Codec}.ReadJson(v)" : field.Kind switch
     {
-        DocKind.Embedded => $"{Json}.ReadEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(v)",
+        DocKind.Embedded =>$"{Json}.ReadEmbedded<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(v)",
         DocKind.List when field.ElementKind == DocKind.Embedded => $"{Json}.ReadEmbeddedList<{field.Embedded!.ToDisplayString(DocModel.Qualified)}>(v)",
         DocKind.List => $"{Json}.ReadList<{field.Element!.ToDisplayString(DocModel.Qualified)}>(v, static x => {ReadScalar(field.ElementKind, "x", field.Element!.ToDisplayString(DocModel.Qualified))})",
         _ => ReadScalar(field.Kind, "v", field.ScalarName),

@@ -65,6 +65,8 @@ internal static class DocTypeEmitter
     public static string WriteField(DocField field, string value, string? nameExpression = null)
     {
         var name = nameExpression ?? Literal(field.Name);
+        if (field.Owned)
+            return $"{field.Codec}.Write(w, {name}, {value})";
         switch (field.Kind)
         {
             case DocKind.Embedded:
@@ -86,8 +88,11 @@ internal static class DocTypeEmitter
         }
     }
 
-    private static string ReadField(DocField field)
+    /// <summary>The expression that reads one field's value from a <c>BsonReader r</c> positioned on it.</summary>
+    public static string ReadField(DocField field)
     {
+        if (field.Owned)
+            return $"{field.Codec}.Read(r.ReadDocument())";
         switch (field.Kind)
         {
             case DocKind.Embedded:

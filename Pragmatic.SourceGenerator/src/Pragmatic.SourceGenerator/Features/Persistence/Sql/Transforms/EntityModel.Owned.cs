@@ -44,13 +44,17 @@ internal sealed partial class EntityModel
     ///     parameters that all name a member (ignoring case). Empty when the type has a parameterless one (built with an initializer); null when none fits.
     /// </summary>
     public static List<string>? ConstructorMembers(INamedTypeSymbol type, IReadOnlyList<ColumnModel> members)
+        => ConstructorMembers(type, members.Select(m => m.Member!).ToList());
+
+    /// <summary>The same rule over the members' names: the documents engine's owned types, whose members are fields rather than columns.</summary>
+    public static List<string>? ConstructorMembers(INamedTypeSymbol type, IReadOnlyList<string> members)
     {
         var constructors = type.InstanceConstructors.Where(c => c.DeclaredAccessibility == Accessibility.Public).ToList();
         if (constructors.Any(c => c.Parameters.Length == 0))
             return [];
         foreach (var constructor in constructors.OrderByDescending(c => c.Parameters.Length))
         {
-            var names = constructor.Parameters.Select(p => members.FirstOrDefault(m => string.Equals(m.Member, p.Name, StringComparison.OrdinalIgnoreCase))?.Member).ToList();
+            var names = constructor.Parameters.Select(p => members.FirstOrDefault(m => string.Equals(m, p.Name, StringComparison.OrdinalIgnoreCase))).ToList();
             if (names.Count > 0 && names.All(n => n is not null))
                 return names!;
         }
