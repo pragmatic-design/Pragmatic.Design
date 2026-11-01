@@ -61,7 +61,7 @@ public sealed class MongoServer : IAsyncLifetime
     /// <summary>The image with the root user, its port, and the wait for the second "Waiting for connections".</summary>
     public static IContainer Start(ContainerBuilder builder)
         => builder.WithEnvironment("MONGO_INITDB_ROOT_USERNAME", User).WithEnvironment("MONGO_INITDB_ROOT_PASSWORD", Password).WithPortBinding(27017, true)
-            .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new ListeningTwice(), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
+            .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections", 2), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
 
     /// <summary>
     ///     The container's last log lines, what a failed start says about itself; null when there are none to read (no container, or Docker did
@@ -93,18 +93,6 @@ public sealed class MongoServer : IAsyncLifetime
 
     /// <summary>A fresh database name per test: the tests share the server, not their collections.</summary>
     public static string Database() => "t" + Guid.NewGuid().ToString("N")[..12];
-
-    private sealed class ListeningTwice : IWaitUntil
-    {
-        public async Task<bool> UntilAsync(IContainer container)
-        {
-            var (stdout, _) = await container.GetLogsAsync(timestampsEnabled: false);
-            var count = 0;
-            for (var at = stdout.IndexOf("Waiting for connections", StringComparison.Ordinal); at >= 0; at = stdout.IndexOf("Waiting for connections", at + 1, StringComparison.Ordinal))
-                count++;
-            return count >= 2;
-        }
-    }
 }
 
 [CollectionDefinition("mongo")]
