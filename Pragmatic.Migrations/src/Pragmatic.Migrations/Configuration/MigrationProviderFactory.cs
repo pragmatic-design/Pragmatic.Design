@@ -47,23 +47,24 @@ public sealed class MigrationProviderFactory(IServiceProvider serviceProvider)
         return Resolve<IConnectionFactory>(providerName);
     }
 
-    // Resolves the default (non-keyed) service, translating the DI framework's opaque
-    // InvalidOperationException into one that names the requested provider — the most common
-    // misconfiguration is a missing/typo'd provider key, which the raw DI message does not surface.
+    // Resolves the default (non-keyed) service, for a name that is null or matches no registration, translating the DI framework's opaque
+    // InvalidOperationException into one that names the requested provider.
     private T Resolve<T>(string? providerName) where T : notnull
     {
         // Each provider registration also sets the default, so with several registered the default is whichever came last: a schema
-        // that names none would migrate through a database it does not use, and fail with that database's error (#441).
-        if (providerName is null)
+        // that names none (#441), or names one nobody registered (#451), would migrate through a database it does not use, and fail
+        // with that database's error. With one registered, the default is that one: the generator writes "Generic" for an EF Core
+        // provider it does not recognise, and a host with a single driver migrates through it.
+        var registered = serviceProvider.GetServices<IConnectionFactory>()
+            .Select(f => f.ProviderName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (registered.Count > 1)
         {
-            var registered = serviceProvider.GetServices<IConnectionFactory>()
-                .Select(f => f.ProviderName)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (registered.Count > 1)
-                throw new InvalidOperationException(
-                    $"The schema names no provider and {registered.Count} are registered: {string.Join(", ", registered)}. " +
-                    $"Set {nameof(SchemaVersion)}.{nameof(SchemaVersion.ProviderName)} to the one this database uses.");
+            var named = providerName is null ? "names no provider" : $"names provider '{providerName}', which is not registered,";
+            throw new InvalidOperationException(
+                $"The schema {named} and {registered.Count} are registered: {string.Join(", ", registered)}. " +
+                $"Set {nameof(SchemaVersion)}.{nameof(SchemaVersion.ProviderName)} to the one this database uses.");
         }
 
         var service = serviceProvider.GetService<T>();
