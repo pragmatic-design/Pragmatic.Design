@@ -146,7 +146,7 @@ internal static class PersistenceFeature
 
         // Per-entity: Repositories, Query filters; Aggregate: FilterMapRegistry, Metadata
         var localRegistrations =
-            RepositoryFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures, isDebugProvider, localTraitEntities);
+            RepositoryFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures, shapeEntitiesWithFeatures, isDebugProvider, localTraitEntities);
 
         var (derivedQueryEndpoints, queryModels) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
         ProjectionFeature.Register(context, efEntitiesProvider, features);

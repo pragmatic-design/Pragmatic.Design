@@ -12,13 +12,22 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 internal sealed class PersistenceMetadataTemplate : CSharpTemplate
 {
     private readonly ImmutableArray<EntityMetadataModel> _entities;
+    private readonly ImmutableArray<EntityMetadataModel> _efCoreEntities;
     private readonly bool _indent;
 
+    /// <param name="entities">Every entity the module persists, whichever engine stores it: the host learns the module's entities here.</param>
+    /// <param name="indent">Whether the JSON is indented.</param>
+    /// <param name="isEfCore">
+    ///     Which of them EF Core stores; all of them when null. Only those carry a <c>repositoryType</c>, and only those reach the query filters'
+    ///     and the lookup caches' registrations: an engine's repository is registered by its boundary's <c>Add{Boundary}Persistence</c>.
+    /// </param>
     public PersistenceMetadataTemplate(
         ImmutableArray<EntityMetadataModel> entities,
-        bool indent)
+        bool indent,
+        System.Func<EntityMetadataModel, bool>? isEfCore = null)
     {
         _entities = entities;
+        _efCoreEntities = isEfCore is null ? entities : entities.Where(isEfCore).ToImmutableArray();
         _indent = indent;
     }
 
@@ -61,7 +70,7 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
         // host builds those from the payload below — but the filters live in a generated method that,
         // left to the application, would leave [HasAccessScopes]/[HasOwner] unenforced in any
         // application that did not know to call it.
-        var queryFilters = QueryFilterRegistrationTemplate.RegistrationMethodFor(_entities);
+        var queryFilters = QueryFilterRegistrationTemplate.RegistrationMethodFor(_efCoreEntities);
         if (queryFilters is null)
             builder.PropertyNull("registrationMethod");
         else
@@ -73,7 +82,7 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
         // ILookupCache<T, TId> in the container, no loader, no preload — and the documentation had
         // turned that into an instruction to the reader instead of a defect.
         var lookupRegistration = LookupCacheRegistrationTemplate.RegistrationMethodFor(
-            _entities.Where(e => e is { IsLookup: true, IsFromReference: false }).ToImmutableArray());
+            _efCoreEntities.Where(e => e is { IsLookup: true, IsFromReference: false }).ToImmutableArray());
         if (lookupRegistration is null)
             builder.PropertyNull("lookupRegistrationMethod");
         else
@@ -91,7 +100,9 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
             builder.StartObject();
             builder.Property("type", entity.FullTypeName);
             builder.Property("idType", GetFullIdType(entity.IdType));
-            builder.Property("repositoryType", $"{entity.Namespace}.{entity.TypeName}.Repository");
+            // EF Core's repository only: the host registers it from this field, and an engine's entity has none of that type.
+            if (_efCoreEntities.Contains(entity))
+                builder.Property("repositoryType", $"{entity.Namespace}.{entity.TypeName}.Repository");
 
             // Enriched entity metadata (schema 1.1+) — allows host to reconstruct
             // EntityMetadataModel from JSON without full type scan
