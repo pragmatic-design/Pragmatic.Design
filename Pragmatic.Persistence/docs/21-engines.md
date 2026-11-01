@@ -128,6 +128,4 @@ Base64 text.
 
 ## Known limits
 
-| Limit | Tracked in |
-|---|---|
-| On the documents engine a Pragmatic entity's `Id` is not translated in a chain: compare `PersistenceId` | #459 |
+None tracked at the moment.

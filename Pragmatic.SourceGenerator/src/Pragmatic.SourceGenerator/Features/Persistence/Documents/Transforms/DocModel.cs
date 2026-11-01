@@ -121,7 +121,24 @@ internal sealed class DocModel
     /// <summary>A Pragmatic <c>[Entity]</c>: its reads carry the caller's filter families.</summary>
     public bool IsPragmaticEntity => IsPragmatic(Type);
 
-    public DocField? Field(string property) => Fields.FirstOrDefault(f => f.Property.Name == property);
+    /// <summary>
+    ///     The field of <paramref name="property" />; or, for a get-only property that only returns a stored one (a Pragmatic entity's
+    ///     <c>Id =&gt; PersistenceId</c>), that one's field, as the Sql engine reads it as that column (<c>EntityModel.AliasTarget</c>).
+    /// </summary>
+    public DocField? Field(string property)
+        => Fields.FirstOrDefault(f => f.Property.Name == property)
+           ?? (AliasOf(property) is { } target ? Fields.FirstOrDefault(f => f.Property.Name == target) : null);
+
+    private string? AliasOf(string property)
+    {
+        for (var type = Type; type is not null; type = type.BaseType)
+        {
+            if (type.GetMembers(property).OfType<IPropertySymbol>().FirstOrDefault() is { } symbol)
+                return EntityModel.AliasTarget(symbol);
+        }
+
+        return null;
+    }
 
     public static bool IsDocument(ITypeSymbol? type) => type is INamedTypeSymbol named && named.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() is DocumentAttribute or EntityAttribute);
 

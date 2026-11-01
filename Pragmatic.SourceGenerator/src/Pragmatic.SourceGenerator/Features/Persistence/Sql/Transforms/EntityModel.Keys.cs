@@ -45,16 +45,30 @@ internal sealed partial class EntityModel
     private static Dictionary<string, string> AliasesOf(INamedTypeSymbol type, List<ColumnModel> columns)
     {
         var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var property in type.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.SetMethod is null && p.DeclaredAccessibility == Accessibility.Public))
+        foreach (var property in type.GetMembers().OfType<IPropertySymbol>())
         {
-            foreach (var reference in property.DeclaringSyntaxReferences)
-            {
-                if (reference.GetSyntax() is PropertyDeclarationSyntax { ExpressionBody.Expression: IdentifierNameSyntax target }
-                    && columns.Any(c => c.Owner is null && c.Property == target.Identifier.ValueText))
-                    aliases[property.Name] = target.Identifier.ValueText;
-            }
+            if (AliasTarget(property) is { } target && columns.Any(c => c.Owner is null && c.Property == target))
+                aliases[property.Name] = target;
         }
 
         return aliases;
+    }
+
+    /// <summary>
+    ///     The property a public, get-only, instance property only returns, by name (<c>public Guid Id =&gt; PersistenceId;</c>); null for any other
+    ///     body. Both engines read such a property as the one it returns, when that one is stored: the documents engine through
+    ///     <c>DocModel.Field</c>.
+    /// </summary>
+    internal static string? AliasTarget(IPropertySymbol property)
+    {
+        if (property.IsStatic || property.SetMethod is not null || property.DeclaredAccessibility != Accessibility.Public)
+            return null;
+        foreach (var reference in property.DeclaringSyntaxReferences)
+        {
+            if (reference.GetSyntax() is PropertyDeclarationSyntax { ExpressionBody.Expression: IdentifierNameSyntax target })
+                return target.Identifier.ValueText;
+        }
+
+        return null;
     }
 }
