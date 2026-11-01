@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Pragmatic.Documents.Model;
 using Pragmatic.Testing.Assertions;
+using Xunit.Abstractions;
 
 namespace Pragmatic.Documents.Pdf.Tests;
 
@@ -24,38 +25,60 @@ namespace Pragmatic.Documents.Pdf.Tests;
 ///         Three renders first, so fonts, first-use caches and the allocator's arenas have settled: on Linux,
 ///         glibc's allocator keeps the arenas a render grew, so the first renders of a fixed library still raise
 ///         private bytes (217 → 254 → 301 → 306 MB) and then stop, with an occasional step of one arena (306 →
-///         342). Then six renders of different documents, measured. With the leak, each kept about 30 MB on
-///         Windows and 36 MB on Linux, so six keep over 180 MB; without it, six keep at most one arena step on
-///         Linux and about 2.5 MB on Windows. 64 MB is far from both. A bound relative to the first render was
-///         tried and is not stable: that render's own growth depends on what ran before it in the process.
+///         342). A bound relative to the first render was tried and is not stable: that render's own growth
+///         depends on what ran before it in the process.
+///     </para>
+///     <para>
+///         Then seven renders of different documents, each measured on its own, and the assertion is on the
+///         median of the seven. The two cases differ in shape, not only in size: the leak keeps about 30 MB on
+///         Windows and 36 MB on Linux on <em>every</em> render, while an arena step is about the same size but
+///         lands on one render now and then. A bound on the total over six renders sat between one step and the
+///         leak, and two steps on a loaded runner crossed it with nothing leaking (#432). The median ignores up
+///         to three steps among seven renders and still sees a leak on all of them.
 ///     </para>
 /// </remarks>
 [Collection(nameof(ARenderGivesItsMemoryBackTests))]
 [CollectionDefinition(nameof(ARenderGivesItsMemoryBackTests), DisableParallelization = true)]
-public class ARenderGivesItsMemoryBackTests
+public class ARenderGivesItsMemoryBackTests(ITestOutputHelper output)
 {
     private const int Lines = 3_000;
 
     private const int WarmUpRenders = 3;
 
-    private const int MeasuredRenders = 6;
+    // Odd, so the median is one of the readings.
+    private const int MeasuredRenders = 7;
 
-    private const long Bound = 64 * 1024 * 1024;
+    // With the eviction taken out, the median was 31.7 MB on Windows (each render 28.6 to 32.2 MB) and 27.5 to
+    // 34.3 MB on Linux (each render 8.7 to 53.2 MB: glibc hands the leak back in uneven steps). With it, the
+    // median was 0.2 MB on Windows and at most 61 KB on Linux, over a run that took a 34.6 MB arena step.
+    private const long MedianBound = 10 * 1024 * 1024;
 
     [NativeRequiredFact]
     public void RepeatedRenders_DoNotKeepTheirNativeMemory()
     {
         for (var i = 0; i < WarmUpRenders; i++)
             PdfRenderer.Render(Report(i));
-        var settled = PrivateBytesAfterCollection();
 
-        for (var i = WarmUpRenders; i < WarmUpRenders + MeasuredRenders; i++)
-            PdfRenderer.Render(Report(i));
-        var kept = PrivateBytesAfterCollection() - settled;
+        var kept = new long[MeasuredRenders];
+        var before = PrivateBytesAfterCollection();
+        for (var i = 0; i < MeasuredRenders; i++)
+        {
+            PdfRenderer.Render(Report(WarmUpRenders + i));
+            var after = PrivateBytesAfterCollection();
+            kept[i] = after - before;
+            before = after;
+        }
 
-        kept.Should().BeLessThan(Bound,
-            $"{MeasuredRenders} renders of {Lines:N0}-line documents kept {kept:N0} bytes; a render that gives its "
-            + "memory back keeps at most an allocator arena, and one that does not keeps about 30 MB each");
+        var median = kept.Order().ElementAt(MeasuredRenders / 2);
+        var readings = $"each render of a {Lines:N0}-line document kept "
+            + $"[{string.Join(", ", kept.Select(k => k.ToString("N0")))}] bytes, a median of {median:N0}";
+
+        // Written when the test passes too: the margin on a runner is what a change of bound is measured by.
+        output.WriteLine(readings);
+
+        median.Should().BeLessThan(MedianBound,
+            $"{readings}; a render that gives its memory back keeps nothing but an occasional allocator arena, "
+            + "and one that does not keeps about 30 MB every time");
     }
 
     // A different document each time: memoized entries are keyed by content, so the same document twice could
