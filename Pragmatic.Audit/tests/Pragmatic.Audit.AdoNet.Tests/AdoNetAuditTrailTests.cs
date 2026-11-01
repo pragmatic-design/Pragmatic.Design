@@ -256,6 +256,65 @@ public class AdoNetAuditTrailTests : IDisposable
             dialect.CreateSchema.Should().Contain(table, $"{dialect.GetType().Name} creates {table}, the table EF Core reads");
     }
 
+    /// <summary>
+    ///     The three dialects create every index EF Core's model declares on the trail, by the name it gives them: a producer whose tables a
+    ///     dialect created otherwise answers "what happened to this subject" and "what did this request do" with a scan (#448).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void EveryDialect_CreatesTheIndexesTheEfModelDeclares(IAuditSqlDialect dialect)
+    {
+        var builder = new ModelBuilder();
+        AuditDbContext.ApplyAuditConfigurations(builder);
+        var indexes = builder.Model.GetEntityTypes().SelectMany(e => e.GetIndexes()).Select(i => i.GetDatabaseName()!).ToList();
+
+        indexes.Should().Contain("IX___AuditEntries_CorrelationId", "the control: the model is the one with the entries' four indexes");
+        foreach (var index in indexes)
+            dialect.CreateSchema.Should().Contain(index, $"{dialect.GetType().Name} creates {index}, the index EF Core declares");
+    }
+
+    /// <summary>On a database the SQLite dialect created, each index of EF Core's model exists, on the columns the model gives it, in order.</summary>
+    [Fact]
+    public async Task OnADialectsSchema_EachIndexOfTheEfModelExistsOnItsColumns()
+    {
+        var connection = new SqliteConnection("Filename=:memory:");
+        await using (connection.ConfigureAwait(false))
+        {
+            await connection.OpenAsync();
+            var create = connection.CreateCommand();
+            await using (create.ConfigureAwait(false))
+            {
+                create.CommandText = new SqliteAuditDialect().CreateSchema;
+                await create.ExecuteNonQueryAsync();
+            }
+
+            var builder = new ModelBuilder();
+            AuditDbContext.ApplyAuditConfigurations(builder);
+            var expected = builder.Model.GetEntityTypes().SelectMany(e => e.GetIndexes())
+                .Select(i => (Name: i.GetDatabaseName()!, Columns: string.Join(",", i.Properties.Select(p => p.GetColumnName()))))
+                .ToList();
+            expected.Should().HaveCount(5, "the control: four indexes on the entries and one on the segments");
+
+            foreach (var (name, columns) in expected)
+            {
+                var info = connection.CreateCommand();
+                await using (info.ConfigureAwait(false))
+                {
+                    info.CommandText = $"SELECT name FROM pragma_index_info('{name}') ORDER BY seqno";
+                    var actual = new List<string>();
+                    var reader = await info.ExecuteReaderAsync();
+                    await using (reader.ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync())
+                            actual.Add(reader.GetString(0));
+                    }
+
+                    string.Join(",", actual).Should().Be(columns, $"the dialect's schema holds {name} on ({columns})");
+                }
+            }
+        }
+    }
+
     public static TheoryData<IAuditSqlDialect> Dialects => [new SqliteAuditDialect(), new PostgresAuditDialect(), new SqlServerAuditDialect()];
 
     private sealed class LaterClock : TimeProvider

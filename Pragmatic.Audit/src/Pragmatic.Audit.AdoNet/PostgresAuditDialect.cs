@@ -66,5 +66,11 @@ public sealed class PostgresAuditDialect : IAuditSqlDialect
             ON "__AuditEntries" ("SegmentId", "Seq");
         CREATE INDEX IF NOT EXISTS "IX___AuditEntries_OccurredAt"
             ON "__AuditEntries" ("OccurredAt");
+        CREATE INDEX IF NOT EXISTS "IX___AuditEntries_SubjectRef_OccurredAt"
+            ON "__AuditEntries" ("SubjectRef", "OccurredAt");
+        CREATE INDEX IF NOT EXISTS "IX___AuditEntries_CorrelationId"
+            ON "__AuditEntries" ("CorrelationId");
+        CREATE INDEX IF NOT EXISTS "IX___AuditSegments_SealedAt"
+            ON "__AuditSegments" ("SealedAt");
         """;
 }
