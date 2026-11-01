@@ -166,7 +166,7 @@ loaded.Email.IsEmpty      // false: the ciphertext is still there
 await protector.TryReadAsync(loaded.Email.Packed)   // KeyDestroyed
 ```
 
-### On the Sql engine
+### On the Sql and documents engines
 
 An entity the Sql engine persists stores a `ProtectedValue` member the same way, as the same bytes in a
 binary column, once its project references `Pragmatic.Cryptography.Engines`. Nothing to configure: the
@@ -174,9 +174,12 @@ generator gives every such member the package's converter, `SqlProtectedValue`, 
 performs no cryptography. Without the package the member is refused at build time (PRAG3003, naming the
 package).
 
+On the documents engine the member is a field holding the bytes as Base64 text, as the audit trail's
+hashes are; that needs no package beyond `Pragmatic.Cryptography`, where the type is.
+
 ⚠️ The per-subject keys are still EF Core's only (`AddCryptographySubjectKeys`): on the Sql and documents
 engines the column is stored and read, and its key has to come from a `CryptographyDbContext`. The keys
-over a boundary's session, and the column on the documents engine, are #431.
+over a boundary's session are #431.
 
 ## Legacy values
 

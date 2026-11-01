@@ -24,6 +24,9 @@ internal enum DocKind
     Enum,
     Embedded,
     List,
+
+    /// <summary>A <c>Pragmatic.Cryptography.ProtectedValue</c>: its packed bytes as Base64 text, as the audit trail's hashes are stored.</summary>
+    Protected,
 }
 
 /// <summary>One field of a document: the property, its stored name, its kind; an embedded type's model, a list's element.</summary>
@@ -252,7 +255,7 @@ internal sealed class DocModel
             var element = list.TypeArguments[0];
             if (IsEmbeddedType(element))
                 return new DocField(property, name, DocKind.List, nullable, (INamedTypeSymbol)element, DocKind.Embedded, element);
-            if (ScalarKind(element) is { } elementKind and not DocKind.Enum)
+            if (ScalarKind(element) is { } elementKind and not (DocKind.Enum or DocKind.Protected))
                 return new DocField(property, name, DocKind.List, nullable, null, elementKind, element);
             reason = "a list holds [Embedded] documents or values of one kind (string, int, long, double, decimal, bool, Guid, DateTimeOffset)";
             return null;
@@ -260,7 +263,7 @@ internal sealed class DocModel
 
         reason = IsDocument(scalar)
             ? "a document does not hold another document: refer to it by its key, or make the type [Embedded]"
-            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, an enum, an [Embedded] type, and a List of these";
+            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, an enum, a ProtectedValue, an [Embedded] type, and a List of these";
         return null;
     }
 
@@ -297,6 +300,9 @@ internal sealed class DocModel
         }
 
         var name = type.ToDisplayString();
-        return name == "System.Guid" ? DocKind.Guid : name == "System.DateTimeOffset" ? DocKind.DateTimeOffset : null;
+        return name == "System.Guid" ? DocKind.Guid
+            : name == "System.DateTimeOffset" ? DocKind.DateTimeOffset
+            : name == Pragmatic.SourceGenerator.Core.ProtectedValueType.FullName ? DocKind.Protected
+            : null;
     }
 }

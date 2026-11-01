@@ -83,6 +83,8 @@ internal static class DocTypeEmitter
                 return field.Nullable ? $"{Runtime}.Conversion.DocMapping.Write(w, {name}, {value})" : $"{Runtime}.Conversion.DocValues.Write(w, {name}, {value})";
             case DocKind.UInt64:
                 return $"{Runtime}.Conversion.DocValues.Write(w, {name}, unchecked((long){value}))";
+            case DocKind.Protected:
+                return $"{Runtime}.Conversion.DocValues.Write(w, {name}, {ProtectedText(field, value)})";
             default:
                 return $"{Runtime}.Conversion.DocValues.Write(w, {name}, {value})";
         }
@@ -119,8 +121,19 @@ internal static class DocTypeEmitter
         DocKind.DateTimeOffset => $"{reader}.ReadDateTime()",
         DocKind.DateTime => $"{Runtime}.Conversion.DocMapping.ReadDateTime(ref {reader})",
         DocKind.Enum => $"({typeName}){Runtime}.Conversion.DocMapping.ReadInt32(ref {reader})",
+        DocKind.Protected => ProtectedFromText($"{reader}.ReadString()"),
         _ => $"default! /* {kind} */",
     };
+
+    /// <summary>A <c>ProtectedValue</c>'s packed bytes as the Base64 text the document holds; null for a null nullable one.</summary>
+    internal static string ProtectedText(DocField field, string value)
+        => field.Nullable
+            ? $"({value} is {{ }} protectedValue ? global::System.Convert.ToBase64String(protectedValue.Packed ?? global::System.Array.Empty<byte>()) : null)"
+            : $"global::System.Convert.ToBase64String({value}.Packed ?? global::System.Array.Empty<byte>())";
+
+    /// <summary>The <c>ProtectedValue</c> whose packed bytes are the Base64 <paramref name="text" />.</summary>
+    internal static string ProtectedFromText(string text)
+        => $"new global::{Pragmatic.SourceGenerator.Core.ProtectedValueType.FullName}(global::System.Convert.FromBase64String({text}))";
 
     public static string Literal(string text) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(text, quote: true);
 }

@@ -130,5 +130,5 @@ README describes its engines section.
 
 | Limit | Tracked in |
 |---|---|
-| A module with an EF Core boundary beside an engine boundary hides the engine boundary's entities from the host | #426 |
-| `ProtectedValue` columns and their per-subject keys are EF Core's only | #431 |
+| `ProtectedValue` columns are stored on both engines (Sql: a binary column through `Pragmatic.Cryptography.Engines`; documents: Base64 text), but their per-subject keys are EF Core's only | #431 |
+| On the documents engine a Pragmatic entity's `Id` is not translated in a chain: compare `PersistenceId` | #459 |
