@@ -68,8 +68,8 @@ public sealed class SqlServerAuditDialect : IAuditSqlDialect
             [ValueHash] VARBINARY(MAX) NULL,
             [Detail] NVARCHAR(2048) NULL
         );
-        IF OBJECT_ID(N'[__PrunedRanges]', N'U') IS NULL
-        CREATE TABLE [__PrunedRanges] (
+        IF OBJECT_ID(N'[__AuditPrunedRanges]', N'U') IS NULL
+        CREATE TABLE [__AuditPrunedRanges] (
             [FromSegmentId] VARCHAR(32) NOT NULL,
             [UntilSegmentId] VARCHAR(32) NOT NULL,
             [PrunedAt] BIGINT NOT NULL,

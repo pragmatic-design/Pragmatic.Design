@@ -203,6 +203,66 @@ public class AdoNetAuditTrailTests : IDisposable
         }
     }
 
+    /// <summary>
+    ///     On a database whose trail the dialect created, EF Core's retention prunes a sealed segment and declares the gap, and the gap reads
+    ///     back. The dialects created the third table as <c>__PrunedRanges</c>, EF Core and the engines name it <c>__AuditPrunedRanges</c>: the
+    ///     gap had no table to be recorded in.
+    /// </summary>
+    [Fact]
+    public async Task OnADialectsSchema_EfCoresRetentionDeclaresTheGap_AndItReadsBack()
+    {
+        var connection = new SqliteConnection("Filename=:memory:");
+        await using (connection.ConfigureAwait(false))
+        {
+            await connection.OpenAsync();
+            var create = connection.CreateCommand();
+            await using (create.ConfigureAwait(false))
+            {
+                create.CommandText = new SqliteAuditDialect().CreateSchema;
+                await create.ExecuteNonQueryAsync();
+            }
+
+            await _trail.RecordAsync(Entry("Before.Retention"), connection);
+            var db = new AuditDbContext(new DbContextOptionsBuilder<AuditDbContext>().UseSqlite(connection).Options);
+            await using (db.ConfigureAwait(false))
+            {
+                var segment = await db.Segments.SingleAsync();
+                segment.SealedAt = Now.AddHours(1);
+                segment.MerkleRoot = [1, 2, 3];
+                segment.SegmentHash = [4, 5, 6];
+                await db.SaveChangesAsync();
+
+                var pruned = await new AuditRetentionService(db, new LaterClock()).PruneOlderThanAsync(TimeSpan.FromDays(1));
+
+                pruned.Should().NotBeNull("the segment opened two days before the clock, and the retention is one day");
+                db.ChangeTracker.Clear();
+                (await db.PrunedRanges.SingleAsync()).FromSegmentId.Should().Be(segment.SegmentId);
+                (await db.Entries.CountAsync()).Should().Be(0);
+            }
+        }
+    }
+
+    /// <summary>The three dialects create the tables EF Core's model reads, by the names it reads them by.</summary>
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void EveryDialect_CreatesTheTablesTheEfModelNames(IAuditSqlDialect dialect)
+    {
+        var builder = new ModelBuilder();
+        AuditDbContext.ApplyAuditConfigurations(builder);
+        var tables = builder.Model.GetEntityTypes().Select(e => e.GetTableName()!).ToList();
+
+        tables.Should().Contain("__AuditPrunedRanges", "the control: the model is the one with the three tables");
+        foreach (var table in tables)
+            dialect.CreateSchema.Should().Contain(table, $"{dialect.GetType().Name} creates {table}, the table EF Core reads");
+    }
+
+    public static TheoryData<IAuditSqlDialect> Dialects => [new SqliteAuditDialect(), new PostgresAuditDialect(), new SqlServerAuditDialect()];
+
+    private sealed class LaterClock : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => Now.AddDays(2);
+    }
+
     [Fact]
     public async Task AnEntryWithoutAnOperation_IsRefusedBeforeAnySql()
     {

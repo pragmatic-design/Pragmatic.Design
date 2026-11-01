@@ -54,7 +54,7 @@ public sealed class SqliteAuditDialect : IAuditSqlDialect
             "ValueHash" BLOB NULL,
             "Detail" TEXT NULL
         );
-        CREATE TABLE IF NOT EXISTS "__PrunedRanges" (
+        CREATE TABLE IF NOT EXISTS "__AuditPrunedRanges" (
             "FromSegmentId" VARCHAR(32) NOT NULL,
             "UntilSegmentId" VARCHAR(32) NOT NULL,
             "PrunedAt" INTEGER NOT NULL,
