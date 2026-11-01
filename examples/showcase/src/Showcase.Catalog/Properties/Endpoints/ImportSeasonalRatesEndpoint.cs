@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Showcase.Catalog.Properties.Endpoints;
@@ -47,15 +46,11 @@ public partial class ImportSeasonalRatesEndpoint : Endpoint<ImportRatesResult>
 
         // Bulk load: one round-trip to fetch all requested RoomTypes for this property
         // instead of N individual GetByIdAsync calls in a loop.
-        // ⚠️ PersistenceId, not Id: Id is the entity's convenience face and is not a mapped column,
-        // so EF cannot translate it and the whole endpoint answered 500. Nothing noticed because the
-        // only test of this route asserts the 403 it gets without the permission, which never
-        // reaches the body.
         var requestedIds = Rates.Select(r => r.RoomTypeId).ToHashSet();
-        var roomTypes = await _roomTypes.Query()
-            .Where(rt => rt.PropertyId == PropertyId && requestedIds.Contains(rt.PersistenceId))
-            .ToDictionaryAsync(rt => rt.PersistenceId, ct)
-            .ConfigureAwait(false);
+        var roomTypes = (await _roomTypes
+                .FindAsync(RoomTypeSpecifications.OfPropertyAmong(PropertyId, requestedIds), ct)
+                .ConfigureAwait(false))
+            .ToDictionary(rt => rt.PersistenceId);
 
         var updated = 0;
         var skipped = 0;

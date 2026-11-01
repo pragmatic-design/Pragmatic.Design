@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Showcase.Booking.Guests.Actions;
 
 /// <summary>
@@ -8,7 +6,7 @@ namespace Showcase.Booking.Guests.Actions;
 /// - DomainAction with IRepository (write)
 /// - [LoadEntity&lt;Guest&gt;] pre-load guard: the guest must exist (404 otherwise) — the load runs
 ///   AFTER authorization, so an unauthorized caller is denied (403) before any DB read
-/// - Upsert via LINQ query on IQueryable (not GetByIdAsync — non-PK lookup)
+/// - Upsert via a specification (not GetByIdAsync — non-PK lookup), which every persistence engine reads
 /// - GuestPreferences.GuestId FK used as lookup key
 /// Boundary assignment is inferred from namespace (Showcase.Booking.Actions → BookingBoundary).
 /// </summary>
@@ -47,8 +45,8 @@ public partial class SetGuestPreferencesAction : DomainAction<Guid>
         // and it ran only after the [RequirePermission] check passed.
 
         // Upsert: lookup existing preferences by GuestId FK (non-PK query)
-        var existing = await _preferences.Query()
-            .FirstOrDefaultAsync(p => p.GuestId == GuestId, ct)
+        var existing = await _preferences
+            .FirstOrDefaultAsync(GuestPreferencesSpecifications.OfGuest(GuestId), ct)
             .ConfigureAwait(false);
 
         if (existing is null)
