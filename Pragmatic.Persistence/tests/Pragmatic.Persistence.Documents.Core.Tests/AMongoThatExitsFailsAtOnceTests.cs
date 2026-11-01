@@ -18,9 +18,14 @@ public class AMongoThatExitsFailsAtOnceTests
         var container = MongoServer.Start(new ContainerBuilder("mongo:9").WithCommand("--not-an-option"));
         await using var dispose = container.ConfigureAwait(false);
 
-        var clock = Stopwatch.StartNew();
+        // From the start of the container, not of StartAsync: that also pulls the image, and a runner that has not pulled it yet spent most of the
+        // bound on the network (30.02s on a merge queue run), which is not the wait this test is about.
+        var clock = new Stopwatch();
+        container.Starting += (_, _) => clock.Start();
         var thrown = await Record.ExceptionAsync(() => container.StartAsync());
         clock.Stop();
+
+        Assert.True(clock.ElapsedTicks > 0, "the container reached its start: the failure is the wait's, not the pull's or the create's");
 
         Assert.NotNull(thrown);
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(30), $"the start failed after {clock.Elapsed}: {thrown.GetType().Name}: {thrown.Message}");
