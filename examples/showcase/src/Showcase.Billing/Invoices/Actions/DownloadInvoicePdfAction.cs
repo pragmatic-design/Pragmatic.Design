@@ -1,12 +1,12 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Documents.Markup;
 using Pragmatic.Documents.Pdf;
 using Pragmatic.Documents.Templating.Data;
 using Pragmatic.Endpoints.Responses;
+using Showcase.Billing.Endpoints;
 using Showcase.Booking;
 using Showcase.Booking.Dtos;
 
-namespace Showcase.Billing.Endpoints;
+namespace Showcase.Billing.Actions;
 
 /// <summary>
 ///     The invoice as a PDF: <c>templates/invoice.pdxdoc</c>, in the guest's language.
@@ -24,36 +24,33 @@ namespace Showcase.Billing.Endpoints;
 ///         document that can change after it was sent is not the document that was sent.
 ///     </para>
 ///     <para>
-///         An invoice of another tenant is not found: it is read through the ordinary tenant-filtered
-///         repository, which is what makes the 404 true.
+///         An invoice of another tenant is not found: it is loaded through the ordinary tenant-filtered
+///         repository, which is what makes the 404 true. Its lines come with it, declared rather than
+///         written on <c>Query()</c>: an <c>Include</c> chain is EF Core's surface, and the declared load is
+///         what the Sql engine compiles too.
 ///     </para>
 /// </remarks>
+[DomainAction]
 [Endpoint(HttpVerb.Get, "/{id}/pdf")]
 [EndpointGroup<InvoicesGroup>]
 [RequirePermission(BillingPermissions.Invoice.Read)]
 [ApiSummary("Download Invoice (PDF)")]
 [ApiDescription("Renders the invoice from its template in the guest's language.")]
 [ApiTags("Invoices")]
-public partial class DownloadInvoicePdfEndpoint : Endpoint<FileResponse>
+[LoadEntity<Invoice>(nameof(Id), Include = "LineItems")]
+public partial class DownloadInvoicePdfAction : DomainAction<FileResponse, NotFoundError>
 {
     public const string Template = "invoice.pdxdoc";
 
-    private IReadRepository<Invoice> _invoices = null!;
     private IPdxTemplates _templates = null!;
     private IBookingActions _booking = null!;
 
     [FromRoute]
-    public Guid Id { get; set; }
+    public required Guid Id { get; init; }
 
-    public override async Task<Result<FileResponse>> HandleAsync(CancellationToken ct = default)
+    public override async Task<Result<FileResponse, IError>> Execute(CancellationToken ct = default)
     {
-        var invoice = await _invoices.Query()
-            .Include(i => i.LineItems)
-            .FirstOrDefaultAsync(i => i.PersistenceId == Id, ct)
-            .ConfigureAwait(false);
-
-        if (invoice is null)
-            return Result<FileResponse>.Failure(NotFoundError.For<Guid>("Invoice", Id));
+        var invoice = _invoice;
 
         // The guest lives in Booking: asked through its boundary, the way Billing asks it anything — a
         // local call in one host, an HTTP call when Booking is a service of its own. An invoice with no
@@ -61,7 +58,7 @@ public partial class DownloadInvoicePdfEndpoint : Endpoint<FileResponse>
         // should be.
         var guest = await _booking.Guests.GetGuest(invoice.GuestId, ct).ConfigureAwait(false);
         if (guest.IsFailure)
-            return Result<FileResponse>.Failure(NotFoundError.For<Guid>("Guest", invoice.GuestId));
+            return NotFoundError.For<Guid>("Guest", invoice.GuestId);
 
         var document = await ComposeAsync(_templates, invoice, guest.Value, ct).ConfigureAwait(false);
         var pdf = PdfRenderer.Render(document.Model);
