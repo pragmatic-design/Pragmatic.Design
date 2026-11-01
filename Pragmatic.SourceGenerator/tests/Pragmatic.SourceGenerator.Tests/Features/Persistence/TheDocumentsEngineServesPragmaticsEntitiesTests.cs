@@ -189,6 +189,36 @@ public class TheDocumentsEngineServesPragmaticsEntitiesTests
         GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result)["_Infra.Documents.Interceptors.g.cs"].Should().Contain("\"$eq\"");
     }
 
+    /// <summary>
+    ///     A Pragmatic entity's <c>Id</c>, which only returns <c>PersistenceId</c>, is the document's id in a chain, as the Sql engine reads it as
+    ///     the key column (#459). A get-only property that computes something is still refused: only a bare return of a stored one is an alias.
+    /// </summary>
+    [Fact]
+    public void TheEntitysId_IsTheDocumentsId_AndAComputedPropertyIsStillRefused()
+    {
+        var result = Run(Rooms + DocumentsBridge + """
+
+            namespace Probe.Binding
+            {
+                public partial class Room { public string Label => Code + "!"; }
+
+                public static class Reads
+                {
+                    public static System.Threading.Tasks.ValueTask<long> ById(Pragmatic.Persistence.Documents.DocSession s, System.Guid id)
+                        => s.Query<Room>().CountAsync((r, k) => r.Id == k, id);
+
+                    public static System.Threading.Tasks.ValueTask<long> ByLabel(Pragmatic.Persistence.Documents.DocSession s, string label)
+                        => s.Query<Room>().CountAsync((r, l) => r.Label == l, label);
+                }
+            }
+            """);
+
+        var refusals = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3101").Select(d => d.GetMessage()).ToList();
+        refusals.Should().ContainSingle("the computed Label is refused, the Id is not");
+        refusals[0].Should().Contain("r.Label == l");
+        GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result)["_Infra.Documents.Interceptors.g.cs"].Should().Contain("\"_id\"", "the Id is read as the document's id");
+    }
+
     [Fact]
     public void AnEntityWithMoreFieldsThanAMaskHolds_IsPrag3107()
     {
