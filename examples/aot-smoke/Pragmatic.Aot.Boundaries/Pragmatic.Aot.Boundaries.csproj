@@ -34,6 +34,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- Both boundaries are [EnableEventOutbox]: the outbox on the two engines is published Native AOT with them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events.Engines\Pragmatic.Events.Engines.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
@@ -44,6 +46,8 @@
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ReviewsBoundary.cs" Link="Shared\ReviewsBoundary.cs" />
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\Product.cs" Link="Shared\Product.cs" />
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ProductReview.cs" Link="Shared\ProductReview.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ProductListed.cs" Link="Shared\ProductListed.cs" />
+    <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ProductReviewed.cs" Link="Shared\ProductReviewed.cs" />
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\Specs.cs" Link="Shared\Specs.cs" />
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Boundaries.Tests\ReviewDesk.cs" Link="Shared\ReviewDesk.cs" />
     <Compile Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
