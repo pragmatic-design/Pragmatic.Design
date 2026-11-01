@@ -36,7 +36,7 @@ public sealed class DocumentServers : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _mongo = new ContainerBuilder().WithImage("mongo:8").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
+        _mongo = new ContainerBuilder().WithImage("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
             .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
         _cosmos = new ContainerBuilder().WithImage(CosmosImage).WithPortBinding(8081, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Now listening on", static wait => wait.WithTimeout(TimeSpan.FromMinutes(3)))).Build();

@@ -41,7 +41,7 @@ public sealed class MongoServer : IAsyncLifetime
     {
         try
         {
-            _container = Start(new ContainerBuilder().WithImage("mongo:8"));
+            _container = Start(new ContainerBuilder().WithImage("mongo:9"));
             await _container.StartAsync();
             ConnectionString = $"mongodb://{User}:{Password}@{_container.Hostname}:{_container.GetMappedPublicPort(27017)}/?authSource=admin";
             Client = new MongoClient(ConnectionString);

@@ -18,7 +18,7 @@ public sealed class MongoServer : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _mongo = new ContainerBuilder().WithImage("mongo:8").WithPortBinding(27017, true)
+        _mongo = new ContainerBuilder().WithImage("mongo:9").WithPortBinding(27017, true)
             .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
         await _mongo.StartAsync();
         Client = new MongoClient($"mongodb://{_mongo.Hostname}:{_mongo.GetMappedPublicPort(27017)}/");

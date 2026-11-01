@@ -22,7 +22,7 @@ public sealed class MongoReplicaSet : IAsyncLifetime
     {
         try
         {
-            _container = new ContainerBuilder().WithImage("mongo:8").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
+            _container = new ContainerBuilder().WithImage("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
                 .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"))).Build();
             await _container.StartAsync();
             await MongoshAsync("rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })");

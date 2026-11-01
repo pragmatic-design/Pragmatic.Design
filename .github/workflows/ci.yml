@@ -199,7 +199,7 @@ jobs:
     if: ${{ !cancelled() }}   # as the gate: run whatever the native jobs did, and fail if one failed
     # Pinned, not latest: MongoDB 8 refuses to start on Linux 6.19 and later, the kernel ubuntu-24.04
     # and ubuntu-26.04 now ship, and on 26.04 the suites also lose images mid-run (#406).
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read

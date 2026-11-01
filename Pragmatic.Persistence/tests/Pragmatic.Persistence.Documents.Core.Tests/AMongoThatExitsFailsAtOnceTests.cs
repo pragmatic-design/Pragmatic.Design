@@ -15,7 +15,7 @@ public class AMongoThatExitsFailsAtOnceTests
     public async Task AMongodThatRefusesItsOptions_FailsTheStartWithinSeconds_WithItsLog()
     {
         // mongod rejects an unknown option and exits: what a refusal to start looks like from the outside.
-        var container = MongoServer.Start(new ContainerBuilder().WithImage("mongo:8").WithCommand("--not-an-option"));
+        var container = MongoServer.Start(new ContainerBuilder().WithImage("mongo:9").WithCommand("--not-an-option"));
         await using var dispose = container.ConfigureAwait(false);
 
         var clock = Stopwatch.StartNew();
