@@ -6,7 +6,7 @@ using Xunit;
 namespace Pragmatic.Persistence.Documents.Core.Tests;
 
 /// <summary>
-///     MongoDB 8 as a one-member replica set (transactions need one; a standalone refuses them), without authentication (a replica set with
+///     MongoDB 9 as a one-member replica set (transactions need one; a standalone refuses them), without authentication (a replica set with
 ///     users wants a key file): started with <c>--replSet rs0</c>, initiated with <c>rs.initiate</c>, ready once the member is the writable
 ///     primary. A start that failed is <see cref="Unavailable" />.
 /// </summary>

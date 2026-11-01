@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Two boundaries on two engines in one host: Catalog on the Sql engine (SQLite in memory), Reviews on the documents engine (mongo:8),
+  <!-- Two boundaries on two engines in one host: Catalog on the Sql engine (SQLite in memory), Reviews on the documents engine (mongo:9),
        each named by [PersistenceEngine] on its [Boundary], each registered by the code the generator emits for it (Add{Boundary}Persistence). -->
   <PropertyGroup>
     <!-- Starts a Testcontainer (MongoDB): scripts/check.mjs runs these one at a time. -->

@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # Native AOT smoke for the documents engine's MongoDB driver: publishes Pragmatic.Aot.DocumentsMongo with PublishAot=true and every
-# warning an error, starts MongoDB 8 in Docker with a root user, runs the native binary against it, and asserts MONGO-AOT-OK. The
+# warning an error, starts MongoDB 9 in Docker with a root user, runs the native binary against it, and asserts MONGO-AOT-OK. The
 # container is removed whatever happens. Requires the platform native toolchain and Docker: without either it fails, it does not pass.
 $ErrorActionPreference = 'Stop'
 
@@ -28,7 +28,7 @@ if (-not $exe) { throw "Native binary not found" }
 $user = 'root'
 $password = 'aot-Pa55'
 $name = 'pragmatic-aot-mongo-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
-docker run -d --name $name -p 127.0.0.1::27017 -e "MONGO_INITDB_ROOT_USERNAME=$user" -e "MONGO_INITDB_ROOT_PASSWORD=$password" mongo:8 | Out-Null
+docker run -d --name $name -p 127.0.0.1::27017 -e "MONGO_INITDB_ROOT_USERNAME=$user" -e "MONGO_INITDB_ROOT_PASSWORD=$password" mongo:9 | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "MongoDB did not start in Docker (is Docker running?)" }
 try {
     # The image's entrypoint runs a first mongod on localhost only to create the user, then the real one: ready at the second

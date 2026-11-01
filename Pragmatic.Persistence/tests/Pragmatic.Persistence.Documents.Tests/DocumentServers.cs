@@ -16,7 +16,7 @@ public enum Store
 }
 
 /// <summary>
-///     MongoDB 8 as a one-member replica set, so a unit of work's save runs in a transaction (the documents tests' <c>MongoReplicaSet</c>: no
+///     MongoDB 9 as a one-member replica set, so a unit of work's save runs in a transaction (the documents tests' <c>MongoReplicaSet</c>: no
 ///     authentication, which <c>MongoServer</c> covers there), and the Cosmos DB emulator (the Linux vNext image, as <c>CosmosServer</c>), without
 ///     their workload: each test writes its own documents in a database of its own. A store that does not start fails the tests: they are the
 ///     signal that Pragmatic's entities hold on both. A standalone MongoDB's save (no transaction) runs in the documents samples.

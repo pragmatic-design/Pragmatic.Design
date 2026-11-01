@@ -9,7 +9,7 @@ using Xunit;
 namespace Pragmatic.Persistence.Documents.Core.Tests;
 
 /// <summary>
-///     MongoDB 8 in a container, with a root user (SCRAM-SHA-256). The image's entrypoint starts a first mongod on localhost only to create the
+///     MongoDB 9 in a container, with a root user (SCRAM-SHA-256). The image's entrypoint starts a first mongod on localhost only to create the
 ///     user, then the real one: ready when "Waiting for connections" was logged twice. A start that failed is <see cref="Unavailable" />, which
 ///     <c>The_server_started</c> reports.
 /// </summary>

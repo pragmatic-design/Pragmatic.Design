@@ -10,7 +10,7 @@ PRAGMATIC_SAMPLES_COSMOS="AccountEndpoint=http://localhost:8081/;AccountKey=…;
 dotnet publish … -c Release -r win-x64 -p:PragmaticAotSmokeRestore=true                          (Native AOT)
 ```
 
-The gate runs them in `Pragmatic.Persistence.Documents.Samples.Tests`, on a standalone MongoDB 8 and on the Cosmos DB emulator in containers:
+The gate runs them in `Pragmatic.Persistence.Documents.Samples.Tests`, on a standalone MongoDB 9 and on the Cosmos DB emulator in containers:
 42 checks on MongoDB, 40 on Cosmos DB, every one of them required to hold.
 
 The model is the aggregate: an order is one document with its lines inside (`[Embedded]`), nothing refers to another document. The classes are
@@ -30,7 +30,7 @@ and moved on by every write (`DocConcurrencyException` for a stale copy). A chai
 | Pragmatic's unit of work (`DocUnitOfWork`, the generated `{Entity}.DocRepository`): load, change, save with the audit and the soft delete, a versioned document (`[ConcurrencyAware]`), the second of two writers refused; this MongoDB is standalone, so the save runs without a transaction | `Flows/UnitOfWorkSamples.cs` |
 
 Multi-document transactions (`session.BeginTransaction()`, then `CommitAsync`, or dispose to abort) need a replica set: they are covered by
-the tests (`DocumentTransactionTests`, `mongo:8 --replSet`), not here (the samples' server is standalone). Cosmos DB refuses a GroupBy and the
+the tests (`DocumentTransactionTests`, `mongo:9 --replSet`), not here (the samples' server is standalone). Cosmos DB refuses a GroupBy and the
 transactions, with the reason. It writes a document by its id, so an update or a delete by filter reads the documents and writes each one at the
 etag of that read: not one command, and not atomic (`CosmosChainTests`).
 

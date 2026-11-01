@@ -197,8 +197,9 @@ jobs:
     name: Container suites (${{ matrix.shard }}/3)
     needs: [native, pdf-native, imaging-native]
     if: ${{ !cancelled() }}   # as the gate: run whatever the native jobs did, and fail if one failed
-    # Pinned, not latest: MongoDB 8 refuses to start on Linux 6.19 and later, the kernel ubuntu-24.04
-    # and ubuntu-26.04 now ship, and on 26.04 the suites also lose images mid-run (#406).
+    # latest is ubuntu-26.04: Linux 7 and Docker Engine 29 with the containerd image store. MongoDB 8
+    # refuses kernels from 6.19, so the suites run mongo:9; Testcontainers 4.2 lost images there ("No such
+    # image" at create) and 4.16, which supports Engine 29, does not (#406).
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -265,12 +266,6 @@ jobs:
       - name: Restore
         if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
-
-      - name: Kernel and Docker (measurement for #406)
-        run: |
-          uname -r
-          docker version
-          docker info
 
       - name: Container suites
         if: steps.change.outputs.scope != 'docs'
