@@ -8,7 +8,7 @@ using Pragmatic.Documents.Markup;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Testing.Assertions;
 using Showcase.Billing;
-using Showcase.Billing.Endpoints;
+using Showcase.Billing.Actions;
 using Showcase.Billing.Entities;
 using Showcase.Booking.Dtos;
 using Showcase.IntegrationTests.Infrastructure;
@@ -64,7 +64,7 @@ public class TheInvoiceAsAPdfTests(PostgresFixture fixture) : IntegrationTestBas
             .Include(i => i.LineItems)
             .SingleAsync(i => i.PersistenceId == invoiceId);
 
-        var document = await DownloadInvoicePdfEndpoint.ComposeAsync(
+        var document = await DownloadInvoicePdfAction.ComposeAsync(
             scope.ServiceProvider.GetRequiredService<IPdxTemplates>(), invoice, guest);
 
         var words = JsonSerializer.Serialize(document.Model);
