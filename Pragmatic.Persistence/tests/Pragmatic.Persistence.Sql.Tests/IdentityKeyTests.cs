@@ -18,10 +18,10 @@ public class IdentityKeyTests(PragmaticDatabases databases)
     [MemberData(nameof(Dialects))]
     public async Task An_identity_key_is_assigned_by_the_migrated_database_and_converges(SqlDialect dialect)
     {
-        // The generated table alone: the one database of an assembly holds every entity in it, the suite's Pragmatic entities too, whose own schema
-        // (DefaultSchema) the other tests migrate (#421).
-        var generated = TicketDatabase.Schema(dialect);
-        var schema = new SchemaVersion([generated.Tables.Single(t => t.Name == "Tickets")], generated.DatabaseName, generated.ProviderName, generated.ConfigKey);
+        // The database holds the engine's row alone: the suite's Pragmatic entities are in their own schema (DefaultSchema), which the other tests
+        // migrate, and a [SqlDatabase] no longer takes them in as well.
+        var schema = TicketDatabase.Schema(dialect);
+        Assert.Equal("Tickets", Assert.Single(schema.Tables).Name);
         var connectionString = await databases.CreateAsync(dialect, "identity");
 
         var created = await PragmaticMigrations.MigrateAsync(connectionString, schema);
