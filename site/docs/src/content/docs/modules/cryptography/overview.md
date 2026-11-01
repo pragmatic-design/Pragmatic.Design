@@ -56,6 +56,7 @@ string back   = encryptor.Decrypt(packed, associatedData: $"{tenantId}:{key}");
 |---------|-----|
 | `Pragmatic.Cryptography` | `ISecretEncryptor`, `AesGcmSecretEncryptor`, the key ring and key providers, `ISubjectDataProtector`, `ProtectedValue` |
 | `Pragmatic.Cryptography.EFCore` | Per-subject keys: `CryptographyDbContext`, `AddCryptographySubjectKeys()`, `ProtectedValueConverter` |
+| `Pragmatic.Cryptography.Engines` | `ProtectedValue` columns on Pragmatic's Sql engine (`SqlProtectedValue`) |
 
 ## Features
 
@@ -170,6 +171,18 @@ After erasure the row is untouched and unreadable, which is the point:
 loaded.Email.IsEmpty      // false: the ciphertext is still there
 await protector.TryReadAsync(loaded.Email.Packed)   // KeyDestroyed
 ```
+
+### On the Sql engine
+
+An entity the Sql engine persists stores a `ProtectedValue` member the same way, as the same bytes in a
+binary column, once its project references `Pragmatic.Cryptography.Engines`. Nothing to configure: the
+generator gives every such member the package's converter, `SqlProtectedValue`, which, like EF Core's,
+performs no cryptography. Without the package the member is refused at build time (PRAG3003, naming the
+package).
+
+⚠️ The per-subject keys are still EF Core's only (`AddCryptographySubjectKeys`): on the Sql and documents
+engines the column is stored and read, and its key has to come from a `CryptographyDbContext`. The keys
+over a boundary's session, and the column on the documents engine, are #431.
 
 ## Legacy values
 

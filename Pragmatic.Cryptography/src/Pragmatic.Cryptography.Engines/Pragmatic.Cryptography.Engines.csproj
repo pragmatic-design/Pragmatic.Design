@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>ProtectedValue columns and per-subject keys of Pragmatic.Cryptography on Pragmatic's Sql and documents engines, beside Pragmatic.Cryptography.EFCore: the value stored as the bytes it was encrypted to, its key kept and destroyed through a boundary's session (crypto-shredding).</Description>
+    <PackageTags>pragmatic;cryptography;keys;crypto-shredding;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ProtectedValue, the keys' contracts and the master key ring. -->
+    <ProjectReference Include="..\Pragmatic.Cryptography\Pragmatic.Cryptography.csproj" />
+    <!-- The Sql engine's bridge: ISqlConverter, through which a ProtectedValue column is read and bound. Private, as in Pragmatic.Audit.Engines:
+         an application brings the bridge of the engine it uses, and flowing it would make every application reference that engine. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

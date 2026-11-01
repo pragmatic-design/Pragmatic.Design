@@ -610,6 +610,12 @@
       "pragmatic.cryptography": {
         "type": "Project"
       },
+      "pragmatic.cryptography.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Cryptography": "[1.0.0, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },

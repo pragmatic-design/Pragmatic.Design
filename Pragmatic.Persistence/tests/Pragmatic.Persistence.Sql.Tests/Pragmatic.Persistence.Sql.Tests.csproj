@@ -53,6 +53,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
     <!-- The subject registry on the engine: its tables in the schema of the database holding the [DataSubject], and its stores. -->
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
+    <!-- ProtectedValue columns on the engine: the converter that stores the packed bytes. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.Engines\Pragmatic.Cryptography.Engines.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->
