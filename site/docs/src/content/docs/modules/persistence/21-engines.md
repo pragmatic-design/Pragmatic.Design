@@ -39,6 +39,11 @@ public partial class ReportingBoundary;
 The marker is optional while the compilation references one engine. With two or more, a boundary that names none
 is `PRAG0743`, and naming an engine the compilation does not reference is `PRAG0744` ([`[PersistenceEngine]`](/modules/persistence/03-attributes/#persistenceengine)).
 
+A relation between entities on different engines keeps only the key. Across boundaries that is already what a relation
+generates; `[ReadAccess<T>]` for an entity on another engine would add a navigation no engine can join, and a
+many-to-many has no key to keep, so both are `PRAG0745`. Store the other side's id, and read that side through its own
+boundary.
+
 ## Registering the session
 
 The generator writes `Add{Boundary}Persistence` for each boundary an engine serves. It registers the boundary's

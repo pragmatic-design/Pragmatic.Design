@@ -4,8 +4,8 @@ using Pragmatic.SourceGen;
 namespace Pragmatic.SourceGenerator.Features.Persistence.Diagnostics;
 
 /// <summary>
-///     <c>PRAG0743</c>-<c>PRAG0744</c>: the persistence engine of an entity, which its boundary names with
-///     <c>[PersistenceEngine]</c>.
+///     <c>PRAG0743</c>-<c>PRAG0745</c>: the persistence engine of an entity, which its boundary names with
+///     <c>[PersistenceEngine]</c>, and the relations that cross from one engine to another.
 /// </summary>
 /// <remarks>
 ///     Both are errors: an entity whose engine cannot be decided is persisted by none, which is an absence rather than a
@@ -27,4 +27,16 @@ internal static class PersistenceEngineDiagnostics
         "The boundary names a persistence engine that is not referenced",
         "'{0}' names the engine {1}, which this compilation does not reference (it references {2})",
         "Reference the engine's package, or name one the compilation references.");
+
+    /// <summary>
+    ///     PRAG0745: a navigation or a many-to-many between entities on different engines. No engine joins a table it
+    ///     does not hold, so only the key may cross.
+    /// </summary>
+    public static readonly DiagnosticDescriptor RelationBetweenEngines = DiagnosticFactory.Error(
+        "PRAG0745",
+        "A relation between entities on different engines keeps only the key",
+        "'{0}.{1}' relates '{0}' on the engine {2} to '{3}' on the engine {4}: no engine joins a table it does not hold",
+        "Keep only the key: drop [ReadAccess] for the other entity, so the relation generates its id and no navigation. A many-to-many "
+        + "has no key to keep: model it as an entity on one engine that holds the other side's id, and read that side through its own "
+        + "boundary.");
 }

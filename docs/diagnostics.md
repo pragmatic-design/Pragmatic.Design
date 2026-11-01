@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **474** |
-| Distinct IDs | **474** |
+| Declared descriptors | **475** |
+| Distinct IDs | **475** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -274,7 +274,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0691`.
 
-### Persistence.Query: 44 in use · range `PRAG0700`–`PRAG0799`
+### Persistence.Query: 45 in use · range `PRAG0700`–`PRAG0799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -322,8 +322,9 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0742` | `JoinTargetIsOutsideTheBoundary` | Error | The joined entity is not in this boundary's model |
 | `PRAG0743` | `EntityHasNoPersistenceEngine` | Error | The entity's boundary names no persistence engine |
 | `PRAG0744` | `PersistenceEngineNotReferenced` | Error | The boundary names a persistence engine that is not referenced |
+| `PRAG0745` | `RelationBetweenEngines` | Error | A relation between entities on different engines keeps only the key |
 
-*First free after the last used:* `PRAG0745`.
+*First free after the last used:* `PRAG0746`.
 
 ### Messaging: 19 in use · range `PRAG0800`–`PRAG0899`
 

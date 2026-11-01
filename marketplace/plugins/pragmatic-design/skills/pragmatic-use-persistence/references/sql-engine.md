@@ -46,7 +46,8 @@ public partial class ReportingBoundary;
 ```
 
 Optional while the compilation references one engine. With two or more, a boundary that names none is
-**PRAG0743**; naming an engine the compilation does not reference is **PRAG0744**.
+**PRAG0743**; naming an engine the compilation does not reference is **PRAG0744**. A relation to an entity on
+another engine keeps only its key: `[ReadAccess<T>]` for that entity, or a many-to-many with it, is **PRAG0745**.
 
 ## The engine's own attributes
 
