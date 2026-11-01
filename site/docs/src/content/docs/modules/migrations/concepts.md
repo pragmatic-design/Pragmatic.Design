@@ -123,9 +123,11 @@ You never specify the provider manually. The SG reads which EF Core provider pac
 and sets `SchemaVersion.ProviderName`. At runtime `MigrationProviderFactory` resolves the matching
 introspector, SQL generator and connection factory through keyed DI services.
 
-A schema you compose by hand may leave `ProviderName` null. That works while one provider is
-registered: the runner uses it. With more than one registered (a host referencing two drivers), the
-runner refuses with a message that names them, rather than pick one.
+A schema you compose by hand may leave `ProviderName` null, or name a provider nobody registered.
+The generator does the latter too: it writes `Generic` when the host references no EF Core provider
+it recognises. Either works while one provider is registered: the runner uses it. With more than one
+registered (a host referencing two drivers), the runner refuses with a message that names them,
+rather than pick one.
 
 ### Tables this host did not declare
 
