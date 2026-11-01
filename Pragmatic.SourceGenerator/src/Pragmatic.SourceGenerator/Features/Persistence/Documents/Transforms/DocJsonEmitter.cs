@@ -36,6 +36,7 @@ internal static class DocJsonEmitter
     /// <summary>The value as DocJson takes it: an enum as its Int32 (a nullable one as a nullable Int32).</summary>
     private static string Value(DocField field, string value)
         => field.Kind == DocKind.UInt64 ? $"unchecked((long){value})"
+            : field.Kind == DocKind.Protected ? DocTypeEmitter.ProtectedText(field, value)
             : field.Kind != DocKind.Enum ? value : field.Nullable ? $"({value} is {{ }} enumValue ? (int?)(int)enumValue : null)" : $"(int){value}";
 
     public static string ReadField(DocField field) => field.Owned ? $"{field.Codec}.ReadJson(v)" : field.Kind switch
@@ -59,6 +60,7 @@ internal static class DocJsonEmitter
         DocKind.DateTimeOffset => $"{Json}.ReadInstant({element})",
         DocKind.DateTime => $"{Json}.ReadDateTime({element})",
         DocKind.Enum => $"({typeName}){element}.GetInt32()",
+        DocKind.Protected => DocTypeEmitter.ProtectedFromText($"{element}.GetString()!"),
         _ => $"default! /* {kind} */",
     };
 

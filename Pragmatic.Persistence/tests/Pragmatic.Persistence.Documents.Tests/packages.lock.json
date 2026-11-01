@@ -322,6 +322,9 @@
           "Pragmatic.Result": "[1.0.0, )"
         }
       },
+      "pragmatic.cryptography": {
+        "type": "Project"
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
