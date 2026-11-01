@@ -233,3 +233,15 @@ public partial class Account : IEntity, Pragmatic.Identity.Local.ISelfRegisterin
         return account;
     }
 }
+
+/// <summary>
+///     A note kept encrypted under its subject's key (crypto-shredding): a <c>ProtectedValue</c>, stored as the bytes it was encrypted to, as EF
+///     Core's <c>ProtectedValueConverter</c> stores it. <c>ProtectedValueTests</c> writes and reads it.
+/// </summary>
+[Entity]
+public partial class Dossier : IEntity
+{
+    public string Owner { get; set; } = "";
+
+    public Pragmatic.Cryptography.ProtectedValue Note { get; set; }
+}

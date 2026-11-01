@@ -8,6 +8,7 @@
   <Folder Name="/src/">
     <Project Path="src/Pragmatic.Cryptography/Pragmatic.Cryptography.csproj" />
     <Project Path="src/Pragmatic.Cryptography.EFCore/Pragmatic.Cryptography.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Cryptography.Engines/Pragmatic.Cryptography.Engines.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Cryptography.Tests/Pragmatic.Cryptography.Tests.csproj" />

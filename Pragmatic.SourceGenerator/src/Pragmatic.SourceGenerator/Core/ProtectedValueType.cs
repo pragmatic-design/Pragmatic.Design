@@ -30,6 +30,9 @@ internal static class ProtectedValueType
     /// <summary>The converter that maps it to the bytes a column holds.</summary>
     public const string ConverterFullName = "Pragmatic.Cryptography.EFCore.ProtectedValueConverter";
 
+    /// <summary>The Sql engine's converter, the same bytes in the same binary column (<c>Pragmatic.Cryptography.Engines</c>).</summary>
+    public const string SqlConverterFullName = "Pragmatic.Cryptography.Engines.Sql.SqlProtectedValue";
+
     /// <summary>
     ///     Whether this type name is the protected value, however the caller's model spells it — bare,
     ///     qualified, or with the <c>global::</c> prefix, and nullable either way.

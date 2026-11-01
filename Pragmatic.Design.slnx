@@ -577,6 +577,7 @@
   </Folder>
   <Folder Name="/Pragmatic.Cryptography/">
     <Project Path="Pragmatic.Cryptography/src/Pragmatic.Cryptography.EFCore/Pragmatic.Cryptography.EFCore.csproj" />
+    <Project Path="Pragmatic.Cryptography/src/Pragmatic.Cryptography.Engines/Pragmatic.Cryptography.Engines.csproj" />
     <Project Path="Pragmatic.Cryptography/src/Pragmatic.Cryptography/Pragmatic.Cryptography.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Discovery/">

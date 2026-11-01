@@ -239,6 +239,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         // The account's LocalIdentity, a member of its base class among them: the owned identity is compared, not absent from both.
         Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.Contains("column Accounts.Identity_ExternalIdentityKey", StringComparison.Ordinal));
         Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.Contains("column Accounts.Identity_ExternalIdentityKey", StringComparison.Ordinal));
+        // The dossier's ProtectedValue: a binary column on both, not absent from both.
+        Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.Contains("column Dossiers.Note", StringComparison.Ordinal));
+        Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.Contains("column Dossiers.Note", StringComparison.Ordinal));
     }
 
     private static string SqlPragmaticEntities()
@@ -271,9 +274,24 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     /// </summary>
     private static (SchemaVersion Schema, ImmutableArray<Diagnostic> Diagnostics) SqlSchema(string dialect, string entities)
     {
-        var (generated, diagnostics) = Run([entities, Host, SqlBridge, DriverProbe(dialect)], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
+        var (generated, diagnostics) = Run([entities, Host, SqlBridge, DriverProbe(dialect), ProtectedValueConverter], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
         return (Read(Generated(generated, "_Infra.Persistence.SchemaMetadata.g.cs"), "DefaultSchema", "Current"), diagnostics);
     }
+
+    /// <summary>
+    ///     The Sql engine's <c>ProtectedValue</c> converter, as Pragmatic.Cryptography.Engines declares it: that package references the Sql
+    ///     engine's bridge, which cannot be among this suite's references (see the project file).
+    /// </summary>
+    private const string ProtectedValueConverter = """
+        namespace Pragmatic.Cryptography.Engines.Sql
+        {
+            public sealed class SqlProtectedValue : Pragmatic.Persistence.Sql.Conversion.ISqlConverter<Pragmatic.Cryptography.ProtectedValue, byte[]>
+            {
+                public static byte[] ToStore(Pragmatic.Cryptography.ProtectedValue value) => value.Packed;
+                public static Pragmatic.Cryptography.ProtectedValue FromStore(byte[] value) => new(value);
+            }
+        }
+        """;
 
     /// <summary>The driver type the Sql engine's schema probes for each dialect (<c>SqlInterceptorGenerator.SchemaDialect</c>).</summary>
     private static string DriverProbe(string dialect) => dialect switch
@@ -296,7 +314,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
             References(runtime.Concat([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion),
                 // The bridge suite's Account owns a LocalIdentity: its columns are compared like every other entity's.
-                typeof(global::Pragmatic.Identity.PragmaticUserAttribute), typeof(global::Pragmatic.Identity.IdentityRecord), typeof(global::Pragmatic.Identity.Local.LocalIdentity)])),
+                typeof(global::Pragmatic.Identity.PragmaticUserAttribute), typeof(global::Pragmatic.Identity.IdentityRecord), typeof(global::Pragmatic.Identity.Local.LocalIdentity),
+                // Its Dossier holds a ProtectedValue: a binary column on both branches.
+                typeof(global::Pragmatic.Cryptography.ProtectedValue)])),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out var diagnostics);
