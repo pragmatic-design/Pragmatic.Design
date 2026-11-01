@@ -34,15 +34,13 @@ namespace Showcase.Host.Distributed.Tests;
 /// </remarks>
 public sealed class SharedCacheFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _database = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("showcase_shared_cache")
         .WithUsername("pragmatic")
         .WithPassword("Pragmatic@Test!")
         .Build();
 
-    private readonly RedisContainer _redis = new RedisBuilder()
-        .WithImage("redis:7-alpine")
+    private readonly RedisContainer _redis = new RedisBuilder("redis:7-alpine")
         .Build();
 
     private WebApplicationFactory<Program>? _first;

@@ -28,8 +28,7 @@ namespace Pragmatic.Privacy.E2E.Tests;
 /// </remarks>
 internal sealed class ComplianceStackFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("compliance_e2e")
         .WithUsername("pragmatic")
         .WithPassword("Pragmatic@Test!")

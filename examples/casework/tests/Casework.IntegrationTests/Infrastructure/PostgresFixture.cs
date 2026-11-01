@@ -22,8 +22,7 @@ namespace Casework.IntegrationTests.Infrastructure;
 /// </remarks>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("casework")
         .WithUsername("casework")
         .WithPassword("Casework@Test!")

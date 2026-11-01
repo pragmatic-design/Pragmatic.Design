@@ -17,7 +17,7 @@ public sealed class SqlTransportMsSqlFixture : IAsyncLifetime
     {
         try
         {
-            _container = new MsSqlBuilder().Build();
+            _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04").Build();
             await _container.StartAsync();
             ConnectionString = _container.GetConnectionString();
         }

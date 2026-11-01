@@ -14,8 +14,7 @@ namespace Pragmatic.Persistence.EFCore.Tests.Integration;
 /// </remarks>
 public sealed class PostgresContainerFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
         .Build();
 
     public string ConnectionString => _container.GetConnectionString();
@@ -30,8 +29,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
 /// </summary>
 public sealed class SqlServerContainerFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _container = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     public string ConnectionString => _container.GetConnectionString();

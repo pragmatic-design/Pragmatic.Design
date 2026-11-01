@@ -36,7 +36,7 @@ public sealed class WarehouseFixture : IAsyncLifetime
     private readonly RabbitMqFixture _rabbit = new();
 
     /// <summary>The channel the two Stock instances broadcast cache invalidations over.</summary>
-    private readonly RedisContainer _redis = new RedisBuilder().WithImage("redis:7-alpine").Build();
+    private readonly RedisContainer _redis = new RedisBuilder("redis:7-alpine").Build();
     private readonly List<AgentDaemon> _agents = [];
 
     internal ServiceHost<OrdersHost> Orders { get; private set; } = null!;

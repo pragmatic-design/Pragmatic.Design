@@ -57,13 +57,13 @@ public sealed class TestDatabases : IAsyncLifetime
         try
         {
             // PostgreSQL 17 with pgvector (the vector type and its HNSW index); every statement in the container's log: what the origin comment is for.
-            _postgres = new PostgreSqlBuilder().WithImage("pgvector/pgvector:pg17").WithCommand("-c", "log_statement=all").Build();
+            _postgres = new PostgreSqlBuilder("pgvector/pgvector:pg17").WithCommand("-c", "log_statement=all").Build();
             await _postgres.StartAsync();
             // SQL Server 2025: the VECTOR type and VECTOR_DISTANCE; with the Full-Text component (docker/mssql-fts: the official image lacks it), built
             // once from the official image and kept under its tag (the layers cached: a later build is a check).
             var sqlServerImage = new ImageFromDockerfileBuilder().WithDockerfileDirectory(CommonDirectoryPath.GetProjectDirectory(), "docker/mssql-fts").WithName("pragmatic-spike/mssql-fts:2025").WithCleanUp(false).Build();
             await sqlServerImage.CreateAsync();
-            _sqlServer = new MsSqlBuilder().WithImage(sqlServerImage).Build();
+            _sqlServer = new MsSqlBuilder(sqlServerImage).Build();
             await _sqlServer.StartAsync();
             using (var master = new SqlConnection(_sqlServer.GetConnectionString()))
             {
@@ -75,12 +75,12 @@ public sealed class TestDatabases : IAsyncLifetime
             }
 
             // MySQL 8.4 (the LTS), through the generic container: no module package. Ready when the server listens on its port (its log says so twice: the bootstrap, then the server).
-            _mySql = new ContainerBuilder().WithImage("mysql:8.4").WithEnvironment("MYSQL_ROOT_PASSWORD", MySqlPassword).WithEnvironment("MYSQL_DATABASE", "spike").WithPortBinding(3306, true)
+            _mySql = new ContainerBuilder("mysql:8.4").WithEnvironment("MYSQL_ROOT_PASSWORD", MySqlPassword).WithEnvironment("MYSQL_DATABASE", "spike").WithPortBinding(3306, true)
                 .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("ready for connections.*port: 3306")).Build();
             await _mySql.StartAsync();
             // Oracle Database 23ai Free (gvenzl's image, the fast-start variant, not slim: Oracle Text, which CONTAINS needs, is in it): SYSTEM in the FREEPDB1 pluggable database.
             // The tables in an application user's schema (USERS tablespace: a VECTOR column is refused in SYSTEM's), with DBA for the tenant test's schemas.
-            _oracle = new ContainerBuilder().WithImage("gvenzl/oracle-free:23-faststart").WithEnvironment("ORACLE_PASSWORD", MySqlPassword)
+            _oracle = new ContainerBuilder("gvenzl/oracle-free:23-faststart").WithEnvironment("ORACLE_PASSWORD", MySqlPassword)
                 .WithEnvironment("APP_USER", "spike").WithEnvironment("APP_USER_PASSWORD", MySqlPassword).WithPortBinding(1521, true)
                 .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("DATABASE IS READY TO USE!")).Build();
             await _oracle.StartAsync();

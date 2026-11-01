@@ -17,7 +17,7 @@ public sealed class SqlTransportPostgresFixture : IAsyncLifetime
     {
         try
         {
-            _container = new PostgreSqlBuilder().Build();
+            _container = new PostgreSqlBuilder("postgres:15.1").Build();
             await _container.StartAsync();
             ConnectionString = _container.GetConnectionString();
         }

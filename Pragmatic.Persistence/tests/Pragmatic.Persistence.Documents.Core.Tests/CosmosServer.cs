@@ -40,7 +40,7 @@ public sealed class CosmosServer : IAsyncLifetime
     {
         try
         {
-            _container = new ContainerBuilder().WithImage(Image).WithPortBinding(8081, true)
+            _container = new ContainerBuilder(Image).WithPortBinding(8081, true)
                 .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Now listening on", static wait => wait.WithTimeout(TimeSpan.FromMinutes(3)))).Build();
             await _container.StartAsync();
             ConnectionString = $"AccountEndpoint=http://{_container.Hostname}:{_container.GetMappedPublicPort(8081)}/;AccountKey={Key};";

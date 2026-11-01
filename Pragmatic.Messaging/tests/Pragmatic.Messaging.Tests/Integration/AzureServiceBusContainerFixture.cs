@@ -63,7 +63,7 @@ public sealed class AzureServiceBusContainerFixture : IAsyncLifetime
     {
         try
         {
-            _container = new ServiceBusBuilder()
+            _container = new ServiceBusBuilder("mcr.microsoft.com/azure-messaging/servicebus-emulator:latest")
                 .WithAcceptLicenseAgreement(true)
                 .WithResourceMapping(
                     Encoding.UTF8.GetBytes(EmulatorConfig),

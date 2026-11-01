@@ -32,8 +32,7 @@ namespace Showcase.Host.Distributed.Tests;
 /// </remarks>
 public sealed class DistributedHostFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("showcase_distributed")
         .WithUsername("pragmatic")
         .WithPassword("Pragmatic@Test!")

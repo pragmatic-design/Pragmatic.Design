@@ -20,7 +20,7 @@ public sealed class RabbitMqContainerFixture : IAsyncLifetime
     {
         try
         {
-            _container = new RabbitMqBuilder().Build();
+            _container = new RabbitMqBuilder("rabbitmq:3.11").Build();
             await _container.StartAsync();
             ConnectionString = _container.GetConnectionString();
         }

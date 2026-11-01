@@ -24,8 +24,7 @@ namespace Showcase.Billing.Host.Tests;
 /// </remarks>
 public sealed class BillingHostFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("showcase_billing_standalone")
         .WithUsername("pragmatic")
         .WithPassword("Pragmatic@Test!")

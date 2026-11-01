@@ -9,8 +9,7 @@ namespace TimeOff.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("timeoff")
         .WithUsername("timeoff")
         .WithPassword("TimeOff@Test!")

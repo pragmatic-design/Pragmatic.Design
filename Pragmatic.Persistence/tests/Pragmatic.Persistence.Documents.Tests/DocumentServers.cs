@@ -36,9 +36,9 @@ public sealed class DocumentServers : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _mongo = new ContainerBuilder().WithImage("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
+        _mongo = new ContainerBuilder("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
             .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
-        _cosmos = new ContainerBuilder().WithImage(CosmosImage).WithPortBinding(8081, true)
+        _cosmos = new ContainerBuilder(CosmosImage).WithPortBinding(8081, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Now listening on", static wait => wait.WithTimeout(TimeSpan.FromMinutes(3)))).Build();
         await Task.WhenAll(_mongo.StartAsync(), _cosmos.StartAsync());
         await MongoshAsync("rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })");

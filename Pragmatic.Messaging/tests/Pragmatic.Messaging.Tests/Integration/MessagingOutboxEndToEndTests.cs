@@ -26,8 +26,7 @@ namespace Pragmatic.Messaging.Tests.Integration;
 #pragma warning disable CA2007
 public sealed class MessagingOutboxEndToEndTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .Build();
 
     public Task InitializeAsync() => _postgres.StartAsync();
