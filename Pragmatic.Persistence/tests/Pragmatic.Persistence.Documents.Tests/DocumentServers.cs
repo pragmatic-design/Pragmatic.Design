@@ -16,7 +16,7 @@ public enum Store
 }
 
 /// <summary>
-///     MongoDB 8 as a one-member replica set, so a unit of work's save runs in a transaction (the documents tests' <c>MongoReplicaSet</c>: no
+///     MongoDB 9 as a one-member replica set, so a unit of work's save runs in a transaction (the documents tests' <c>MongoReplicaSet</c>: no
 ///     authentication, which <c>MongoServer</c> covers there), and the Cosmos DB emulator (the Linux vNext image, as <c>CosmosServer</c>), without
 ///     their workload: each test writes its own documents in a database of its own. A store that does not start fails the tests: they are the
 ///     signal that Pragmatic's entities hold on both. A standalone MongoDB's save (no transaction) runs in the documents samples.
@@ -36,9 +36,9 @@ public sealed class DocumentServers : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _mongo = new ContainerBuilder().WithImage("mongo:8").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
+        _mongo = new ContainerBuilder("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
             .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
-        _cosmos = new ContainerBuilder().WithImage(CosmosImage).WithPortBinding(8081, true)
+        _cosmos = new ContainerBuilder(CosmosImage).WithPortBinding(8081, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Now listening on", static wait => wait.WithTimeout(TimeSpan.FromMinutes(3)))).Build();
         await Task.WhenAll(_mongo.StartAsync(), _cosmos.StartAsync());
         await MongoshAsync("rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })");

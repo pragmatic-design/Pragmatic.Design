@@ -20,7 +20,7 @@ public sealed class KafkaContainerFixture : IAsyncLifetime
     {
         try
         {
-            _container = new KafkaBuilder().Build();
+            _container = new KafkaBuilder("confluentinc/cp-kafka:6.1.9").Build();
             await _container.StartAsync();
             BootstrapServers = _container.GetBootstrapAddress();
         }

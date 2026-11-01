@@ -24,8 +24,7 @@ namespace Pragmatic.Events.Tests.Integration;
 /// </remarks>
 public sealed class EventOutboxPostgresTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
 
     private ServiceProvider _provider = null!;

@@ -6,7 +6,7 @@ using Xunit;
 namespace Pragmatic.Persistence.Documents.Core.Tests;
 
 /// <summary>
-///     MongoDB 8 as a one-member replica set (transactions need one; a standalone refuses them), without authentication (a replica set with
+///     MongoDB 9 as a one-member replica set (transactions need one; a standalone refuses them), without authentication (a replica set with
 ///     users wants a key file): started with <c>--replSet rs0</c>, initiated with <c>rs.initiate</c>, ready once the member is the writable
 ///     primary. A start that failed is <see cref="Unavailable" />.
 /// </summary>
@@ -22,7 +22,7 @@ public sealed class MongoReplicaSet : IAsyncLifetime
     {
         try
         {
-            _container = new ContainerBuilder().WithImage("mongo:8").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
+            _container = new ContainerBuilder("mongo:9").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
                 .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"))).Build();
             await _container.StartAsync();
             await MongoshAsync("rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })");

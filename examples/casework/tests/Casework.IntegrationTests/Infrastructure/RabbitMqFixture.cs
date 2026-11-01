@@ -26,8 +26,7 @@ namespace Casework.IntegrationTests.Infrastructure;
 /// </remarks>
 public sealed class RabbitMqFixture : IAsyncLifetime
 {
-    private readonly RabbitMqContainer _container = new RabbitMqBuilder()
-        .WithImage("rabbitmq:4-management-alpine")
+    private readonly RabbitMqContainer _container = new RabbitMqBuilder("rabbitmq:4-management-alpine")
         .WithPortBinding(15672, assignRandomHostPort: true)
         .Build();
 

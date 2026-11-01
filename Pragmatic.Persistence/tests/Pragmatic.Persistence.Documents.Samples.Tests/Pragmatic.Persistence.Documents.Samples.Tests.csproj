@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The documents samples run where the gate can run them: on a standalone MongoDB 8 and on the Cosmos DB emulator, in containers. The
+  <!-- The documents samples run where the gate can run them: on a standalone MongoDB 9 and on the Cosmos DB emulator, in containers. The
        samples' own program needs a server named in the environment, so the hermetic sample run leaves it out (scripts/samples-excluded.json). -->
   <PropertyGroup>
     <!-- Starts Testcontainers (MongoDB, the Cosmos DB emulator): scripts/check.mjs runs these one at a time. -->

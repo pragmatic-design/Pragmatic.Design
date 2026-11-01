@@ -33,10 +33,10 @@ public sealed class MongoTlsServer : IAsyncLifetime
             request.CertificateExtensions.Add(names.Build());
             using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
             var pem = certificate.ExportCertificatePem() + "\n" + key.ExportPkcs8PrivateKeyPem() + "\n";
-            _container = MongoServer.Start(new ContainerBuilder().WithImage("mongo:8")
+            _container = MongoServer.Start(new ContainerBuilder("mongo:9")
                 .WithResourceMapping(Encoding.ASCII.GetBytes(pem), "/etc/mongo/server.pem")
                 .WithResourceMapping(Encoding.ASCII.GetBytes(certificate.ExportCertificatePem() + "\n"), "/etc/mongo/ca.pem")
-                // MongoDB 8 wants a chain of trust with TLS (SERVER-72839): the self-signed certificate is its own CA; clients come without one.
+                // MongoDB 8 and later want a chain of trust with TLS (SERVER-72839): the self-signed certificate is its own CA; clients come without one.
                 .WithCommand("--tlsMode", "requireTLS", "--tlsCertificateKeyFile", "/etc/mongo/server.pem", "--tlsCAFile", "/etc/mongo/ca.pem", "--tlsAllowConnectionsWithoutCertificates"));
             await _container.StartAsync();
             Address = $"{_container.Hostname}:{_container.GetMappedPublicPort(27017)}";

@@ -13,8 +13,7 @@ namespace Warehouse.IntegrationTests.Infrastructure;
 /// </remarks>
 internal sealed class PostgresFixture : IAsyncDisposable
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("warehouse")
         .WithUsername("warehouse")
         .WithPassword("Warehouse@Test!")

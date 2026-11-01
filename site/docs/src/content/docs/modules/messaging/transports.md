@@ -120,7 +120,7 @@ The official emulator runs in Docker (AMQP only, no management API, entities fro
 Config.json). With Testcontainers:
 
 ```csharp
-var container = new ServiceBusBuilder()
+var container = new ServiceBusBuilder("mcr.microsoft.com/azure-messaging/servicebus-emulator:latest")
     .WithAcceptLicenseAgreement(true)
     .WithResourceMapping(configJsonBytes, "/ServiceBus_Emulator/ConfigFiles/Config.json")
     .Build();

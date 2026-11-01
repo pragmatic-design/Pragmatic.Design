@@ -19,8 +19,7 @@ public sealed class ConsulFixture : IAsyncLifetime
     {
         try
         {
-            _container = new ContainerBuilder()
-                .WithImage("hashicorp/consul:1.15")
+            _container = new ContainerBuilder("hashicorp/consul:1.15")
                 .WithPortBinding(8500, true)
                 .WithCommand("agent", "-dev", "-client", "0.0.0.0")
                 .WithWaitStrategy(

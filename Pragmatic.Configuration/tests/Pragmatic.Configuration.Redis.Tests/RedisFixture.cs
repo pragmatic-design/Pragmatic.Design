@@ -17,7 +17,7 @@ public sealed class RedisFixture : IAsyncLifetime
     {
         try
         {
-            _container = new RedisBuilder().Build();
+            _container = new RedisBuilder("redis:7.0").Build();
             await _container.StartAsync();
             ConnectionString = _container.GetConnectionString();
         }

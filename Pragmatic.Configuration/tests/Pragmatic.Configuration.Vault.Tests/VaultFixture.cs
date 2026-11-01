@@ -26,8 +26,7 @@ public sealed class VaultFixture : IAsyncLifetime
     {
         try
         {
-            _container = new ContainerBuilder()
-                .WithImage("hashicorp/vault:1.15")
+            _container = new ContainerBuilder("hashicorp/vault:1.15")
                 .WithEnvironment("VAULT_DEV_ROOT_TOKEN_ID", RootToken)
                 .WithEnvironment("VAULT_DEV_LISTEN_ADDRESS", "0.0.0.0:8200")
                 .WithPortBinding(8200, true)

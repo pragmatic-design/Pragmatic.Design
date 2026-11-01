@@ -40,15 +40,15 @@ public sealed class PragmaticDatabases : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _postgres = new PostgreSqlBuilder().WithImage("pgvector/pgvector:pg17").Build();
+        _postgres = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
         // SQL Server 2025 with Full-Text, from the SQL suite's Dockerfile: built here too, so this suite does not need that one to have run first.
         var sqlServerImage = new ImageFromDockerfileBuilder().WithDockerfileDirectory(CommonDirectoryPath.GetProjectDirectory(), "../Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts")
             .WithName("pragmatic-spike/mssql-fts:2025").WithCleanUp(false).Build();
         await sqlServerImage.CreateAsync();
-        _sqlServer = new MsSqlBuilder().WithImage(sqlServerImage).Build();
-        _mySql = new ContainerBuilder().WithImage("mysql:8.4").WithEnvironment("MYSQL_ROOT_PASSWORD", Password).WithEnvironment("MYSQL_DATABASE", "spike").WithPortBinding(3306, true)
+        _sqlServer = new MsSqlBuilder(sqlServerImage).Build();
+        _mySql = new ContainerBuilder("mysql:8.4").WithEnvironment("MYSQL_ROOT_PASSWORD", Password).WithEnvironment("MYSQL_DATABASE", "spike").WithPortBinding(3306, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("ready for connections.*port: 3306")).Build();
-        _oracle = new ContainerBuilder().WithImage("gvenzl/oracle-free:23-faststart").WithEnvironment("ORACLE_PASSWORD", Password)
+        _oracle = new ContainerBuilder("gvenzl/oracle-free:23-faststart").WithEnvironment("ORACLE_PASSWORD", Password)
             .WithEnvironment("APP_USER", "spike").WithEnvironment("APP_USER_PASSWORD", Password).WithPortBinding(1521, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("DATABASE IS READY TO USE!")).Build();
         await Task.WhenAll(_postgres.StartAsync(), _sqlServer.StartAsync(), _mySql.StartAsync(), _oracle.StartAsync());

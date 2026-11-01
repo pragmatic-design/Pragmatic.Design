@@ -25,7 +25,7 @@ public sealed class LocalStackFixture : IAsyncLifetime
     {
         try
         {
-            _container = new LocalStackBuilder().Build();
+            _container = new LocalStackBuilder("localstack/localstack:2.0").Build();
             await _container.StartAsync();
             ServiceUrl = _container.GetConnectionString();
         }

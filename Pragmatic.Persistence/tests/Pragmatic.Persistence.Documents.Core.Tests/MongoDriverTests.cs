@@ -6,7 +6,7 @@ using Xunit;
 namespace Pragmatic.Persistence.Documents.Core.Tests;
 
 /// <summary>
-///     The driver against MongoDB 8: handshake and SCRAM-SHA-256, a refused password, writes, a find read over several batches, a duplicate key,
+///     The driver against MongoDB 9: handshake and SCRAM-SHA-256, a refused password, writes, a find read over several batches, a duplicate key,
 ///     a cursor closed early, and decimal128 checked by the server itself (<c>$toString</c> of what the driver wrote, <c>$toDecimal</c> read back).
 /// </summary>
 [Collection("mongo")]

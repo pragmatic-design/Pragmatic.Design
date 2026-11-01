@@ -26,8 +26,7 @@ namespace Pragmatic.Migrations.Tests.Provider;
 /// </remarks>
 public sealed class SqlServerContainerFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _container = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     /// <summary>The container's own connection string, pointing at its default database.</summary>
@@ -44,8 +43,7 @@ public sealed class SqlServerContainerFixture : IAsyncLifetime
 /// </summary>
 public sealed class PostgreSqlContainerFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
         .Build();
 
     /// <summary>The container's own connection string, pointing at its default database.</summary>
@@ -64,8 +62,7 @@ public sealed class MySqlContainerFixture : IAsyncLifetime
 {
     public const string Password = "scenario";
 
-    private readonly IContainer _container = new ContainerBuilder()
-        .WithImage("mysql:8.4")
+    private readonly IContainer _container = new ContainerBuilder("mysql:8.4")
         .WithEnvironment("MYSQL_ROOT_PASSWORD", Password)
         .WithPortBinding(3306, true)
         .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("ready for connections.*port: 3306"))
@@ -87,8 +84,7 @@ public sealed class OracleContainerFixture : IAsyncLifetime
 {
     public const string Password = "scenario";
 
-    private readonly IContainer _container = new ContainerBuilder()
-        .WithImage("gvenzl/oracle-free:23-faststart")
+    private readonly IContainer _container = new ContainerBuilder("gvenzl/oracle-free:23-faststart")
         .WithEnvironment("ORACLE_PASSWORD", Password)
         .WithPortBinding(1521, true)
         .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("DATABASE IS READY TO USE!"))

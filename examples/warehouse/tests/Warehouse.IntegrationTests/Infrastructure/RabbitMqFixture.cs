@@ -26,8 +26,7 @@ internal sealed class RabbitMqFixture : IAsyncDisposable
 {
     private const string Silent = "silent";
 
-    private readonly RabbitMqContainer _container = new RabbitMqBuilder()
-        .WithImage("rabbitmq:4-management-alpine")
+    private readonly RabbitMqContainer _container = new RabbitMqBuilder("rabbitmq:4-management-alpine")
         .WithPortBinding(15672, assignRandomHostPort: true)
         .Build();
 
