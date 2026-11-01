@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Pragmatic.Persistence.Documents.Core.Tests;
 using Pragmatic.Persistence.Documents.Mongo;
 using Xunit;
 
@@ -18,7 +19,7 @@ public sealed class MongoServer : IAsyncLifetime
     public async Task InitializeAsync()
     {
         _mongo = new ContainerBuilder().WithImage("mongo:8").WithPortBinding(27017, true)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Waiting for connections", static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
+            .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
         await _mongo.StartAsync();
         Client = new MongoClient($"mongodb://{_mongo.Hostname}:{_mongo.GetMappedPublicPort(27017)}/");
     }

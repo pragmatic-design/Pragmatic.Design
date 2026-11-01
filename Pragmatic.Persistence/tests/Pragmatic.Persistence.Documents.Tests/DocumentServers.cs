@@ -1,6 +1,7 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Pragmatic.Persistence.Documents;
+using Pragmatic.Persistence.Documents.Core.Tests;
 using Pragmatic.Persistence.Documents.Cosmos;
 using Pragmatic.Persistence.Documents.Mongo;
 using Xunit;
@@ -36,7 +37,7 @@ public sealed class DocumentServers : IAsyncLifetime
     public async Task InitializeAsync()
     {
         _mongo = new ContainerBuilder().WithImage("mongo:8").WithCommand("--replSet", "rs0", "--bind_ip_all").WithPortBinding(27017, true)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Waiting for connections", static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
+            .WithWaitStrategy(Wait.ForUnixContainer().AddCustomWaitStrategy(new LoggedUnlessExited("Waiting for connections"), static wait => wait.WithTimeout(TimeSpan.FromMinutes(2)))).Build();
         _cosmos = new ContainerBuilder().WithImage(CosmosImage).WithPortBinding(8081, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Now listening on", static wait => wait.WithTimeout(TimeSpan.FromMinutes(3)))).Build();
         await Task.WhenAll(_mongo.StartAsync(), _cosmos.StartAsync());
