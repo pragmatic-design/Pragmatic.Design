@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Migrations.Introspection;
+using Pragmatic.Migrations.Schema;
 using Pragmatic.Migrations.Sql;
 
 namespace Pragmatic.Migrations.Configuration;
@@ -51,6 +52,20 @@ public sealed class MigrationProviderFactory(IServiceProvider serviceProvider)
     // misconfiguration is a missing/typo'd provider key, which the raw DI message does not surface.
     private T Resolve<T>(string? providerName) where T : notnull
     {
+        // Each provider registration also sets the default, so with several registered the default is whichever came last: a schema
+        // that names none would migrate through a database it does not use, and fail with that database's error (#441).
+        if (providerName is null)
+        {
+            var registered = serviceProvider.GetServices<IConnectionFactory>()
+                .Select(f => f.ProviderName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (registered.Count > 1)
+                throw new InvalidOperationException(
+                    $"The schema names no provider and {registered.Count} are registered: {string.Join(", ", registered)}. " +
+                    $"Set {nameof(SchemaVersion)}.{nameof(SchemaVersion.ProviderName)} to the one this database uses.");
+        }
+
         var service = serviceProvider.GetService<T>();
         if (service is not null) return service;
 

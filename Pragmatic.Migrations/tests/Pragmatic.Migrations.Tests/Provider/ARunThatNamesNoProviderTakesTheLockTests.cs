@@ -28,8 +28,8 @@ public class ARunThatNamesNoProviderTakesTheLockTests(PostgreSqlContainerFixture
         var held = await MigrationLock.AcquireAsync(holder, MigrationConstants.ProviderPostgreSql);
 
         // One provider, registered as the default only, as a host referencing one driver has it. Not through MigrationsBuilder: this
-        // suite references every driver, so the generator's registry gives the builder all five, and a null name would resolve to the
-        // last of them rather than to the one the issue is about.
+        // suite references every driver, so the generator's registry gives the builder all five, and with several registered a null name
+        // is refused (#441).
         var services = new ServiceCollection();
         services.AddSingleton<ISqlMigrationGenerator>(new PostgreSqlMigrationGenerator());
         services.AddSingleton<ISchemaIntrospector>(new PostgreSqlSchemaIntrospector());
