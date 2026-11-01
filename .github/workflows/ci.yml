@@ -266,6 +266,12 @@ jobs:
         if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
+      - name: Kernel and Docker (measurement for #406)
+        run: |
+          uname -r
+          docker version
+          docker info
+
       - name: Container suites
         if: steps.change.outputs.scope != 'docs'
         run: node scripts/check.mjs --tier docker --shard ${{ matrix.shard }}/3 --keep-going
