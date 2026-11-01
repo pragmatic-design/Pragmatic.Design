@@ -114,16 +114,20 @@ include the module's part:
 | Messaging outbox | `Pragmatic.Messaging.EFCore` | `Pragmatic.Messaging.Engines` | `[EnableOutbox]` on the boundary |
 | Audit trail | `Pragmatic.Audit.EFCore` | `Pragmatic.Audit.Engines` | `[Audited]` on an entity |
 | Subject registry | `Pragmatic.Privacy.EFCore` | `Pragmatic.Privacy.Engines` | `[DataSubject]` on an entity |
+| Per-subject keys (`__SubjectKeys`) | `Pragmatic.Cryptography.EFCore` | `Pragmatic.Cryptography.Engines` | `[DataSubject]` on an entity, beside the registry |
 
 The tables are EF Core's, column for column, so a database written by both engines holds one outbox, one trail,
-one registry. The audit trail and the subject registry are one per application. The generated host registers
-each where it is, when one place holds it (an EF Core database or an engine's boundary). When more than one
-place does, the host registers none and says so, and the application names the one in `Program.cs`. Each module's
-README describes its engines section.
+one registry and one set of keys. The audit trail and the subject registry are one per application, and the
+keys go with the registry. The generated host registers each where it is, when one place holds it (an EF Core
+database or an engine's boundary). When more than one place does, the host registers none and says so, and the
+application names the one in `Program.cs`. Each module's README describes its engines section.
+
+A `ProtectedValue` member is stored by both engines: on the Sql engine as a binary column, through
+`Pragmatic.Cryptography.Engines` (PRAG3003 names the package when it is missing), on the documents engine as
+Base64 text.
 
 ## Known limits
 
 | Limit | Tracked in |
 |---|---|
-| `ProtectedValue` columns are stored on both engines (Sql: a binary column through `Pragmatic.Cryptography.Engines`; documents: Base64 text), but their per-subject keys are EF Core's only | #431 |
 | On the documents engine a Pragmatic entity's `Id` is not translated in a chain: compare `PersistenceId` | #459 |

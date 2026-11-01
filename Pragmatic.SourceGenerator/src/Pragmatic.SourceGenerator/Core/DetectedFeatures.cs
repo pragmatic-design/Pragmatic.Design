@@ -205,6 +205,12 @@ internal sealed record DetectedFeatures
     /// </summary>
     public bool HasPrivacyEngines { get; init; }
 
+    /// <summary>
+    ///     <c>Pragmatic.Cryptography.Engines</c> is referenced: the host registers the per-subject keys beside the engine's subject registry, as
+    ///     EF Core's host registers <c>AddCryptographySubjectKeys</c> beside its.
+    /// </summary>
+    public bool HasCryptographyEngines { get; init; }
+
     /// <summary>True when the compilation has an entry point (executable project).</summary>
     public bool IsHostMode { get; init; }
 

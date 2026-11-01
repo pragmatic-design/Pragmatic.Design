@@ -177,6 +177,10 @@ public ProtectedValue? MedicalNotes { get; set; }     // the converter is applie
 - `services.AddCryptographySubjectKeys()` needs `CryptographyDbContext` and a master `ISecretEncryptor`
   (key ring from configuration or a secret store, never from the same database). **PRAG0652** reports a
   `ProtectedValue` without `Pragmatic.Cryptography.EFCore` referenced.
+- On the Sql or documents engine, reference `Pragmatic.Cryptography.Engines`: the `ProtectedValue` is stored
+  (a binary column; Base64 on documents), `__SubjectKeys` sits beside the subject registry, and the host
+  registers `AddSqlSubjectKeys<TBoundary>()` / `AddDocSubjectKeys<TBoundary>()` with it. On the Sql engine
+  **PRAG3003** names the package when a `ProtectedValue` member is there without it.
 
 ## Two judgements worth making the same way twice
 

@@ -118,6 +118,8 @@ internal static partial class SqlInterceptorGenerator
         var subjectDatabases = new HashSet<string>(served.Where(PragmaticRegistration.IsDataSubject).Select(t => DatabaseOf(t)!), StringComparer.Ordinal);
         ModuleTableIn(SubjectRowType, subjectDatabases, table => WithSubjectIndexes(table, dialect));
         ModuleTableIn(ConsentRowType, subjectDatabases, WithConsentIndexes);
+        // And their keys (__SubjectKeys), which open the ProtectedValue columns there, beside them as on EF Core.
+        ModuleTableIn(PragmaticRegistration.EngineSubjectKeys, subjectDatabases, WithSubjectKeyIndexes);
         TableSchemaModel ModuleIndexes(TableSchemaModel table)
             => moduleTables.FirstOrDefault(m => m.Row.Table == table.Name) is { Row: not null } module ? module.Indexes(table) : table;
 
