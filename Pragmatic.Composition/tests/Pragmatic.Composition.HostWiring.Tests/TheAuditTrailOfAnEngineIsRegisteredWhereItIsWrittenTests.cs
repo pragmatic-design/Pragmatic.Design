@@ -169,11 +169,7 @@ public sealed class TheAuditTrailOfAnEngineIsRegisteredWhereItIsWrittenTests
     ///     An EF Core database and an engine's boundary, both with <c>[Audited]</c> entities, are two places: EF Core's rule, which registered
     ///     <c>AuditDbContext</c> when one database held them, steps aside with the engine's.
     /// </summary>
-    /// <remarks>
-    ///     Two modules, not two boundaries of one: a module's Persistence metadata carries its EF Core entities only, and the host reads a
-    ///     module's entities from that metadata when there is one, so the Sql boundary of a module that also has an EF Core one does not
-    ///     reach the host (#426, a defect of its own, not this rule's).
-    /// </remarks>
+    /// <remarks>Two modules: <see cref="AnEfCoreAndASqlBoundaryOfOneModule_AreTwoPlaces_AndNeitherRegistersTheTrail" /> is the same in one.</remarks>
     [Fact]
     public void AnEfCoreDatabaseAndAnEnginesBoundary_AreTwoPlaces_AndNeitherRegistersTheTrail()
     {
@@ -185,6 +181,78 @@ public sealed class TheAuditTrailOfAnEngineIsRegisteredWhereItIsWrittenTests
         generated.Values.Should().NotContain(v => v.Contains("AddDbContext<global::Pragmatic.Audit.EFCore.AuditDbContext>", StringComparison.Ordinal),
             "the EF Core database is one of two places, and the trail is read from one");
     }
+
+    /// <summary>
+    ///     One module with a boundary on EF Core and one on the Sql engine, each holding an <c>[Audited]</c> entity: two places, as with two
+    ///     modules. The module's Persistence metadata carried its EF Core entities only, and the host reads a module's entities from that
+    ///     metadata when there is one: the Sql boundary's entity never reached it, one place was counted, and EF Core's <c>AuditDbContext</c>
+    ///     was registered as though its database were the only place the entries are written.
+    /// </summary>
+    [Fact]
+    public void AnEfCoreAndASqlBoundaryOfOneModule_AreTwoPlaces_AndNeitherRegistersTheTrail()
+    {
+        var (errors, generated) = ModuleAndHost.Generate("Shop.Ledger", [EfCoreAndSqlLedger], "Shop.Host", HostOfOneModuleOnADatabase, [AuditEngines]);
+
+        errors.Should().BeEmpty();
+        RegisterAuditTrail(generated).Should().NotContain(">(services);");
+        generated.Values.Should().NotContain(v => v.Contains("AddDbContext<global::Pragmatic.Audit.EFCore.AuditDbContext>", StringComparison.Ordinal),
+            "the module's EF Core database is one of two places, and the trail is read from one");
+    }
+
+    private const string EfCoreAndSqlLedger = """
+        using Pragmatic.Actions.Attributes;
+        using Pragmatic.Composition.Attributes;
+        using Pragmatic.Persistence.Entity;
+
+        namespace Shop.Ledger
+        {
+            [Boundary] [PersistenceEngine(PersistenceEngineKind.EfCore)]
+            public partial class LedgerBoundary;
+
+            [Boundary] [PersistenceEngine(PersistenceEngineKind.Sql)]
+            public partial class PayrollBoundary;
+
+            [Module(Name = "Shop.Ledger")]
+            public sealed class LedgerModule;
+        }
+
+        namespace Shop.Ledger.Entities
+        {
+            [Entity] [Audited] [BelongsTo<Shop.Ledger.LedgerBoundary>]
+            public partial class Invoice : IEntity
+            {
+                public string Number { get; private set; } = "";
+            }
+
+            [Entity] [Audited] [BelongsTo<Shop.Ledger.PayrollBoundary>]
+            public partial class Payslip : IEntity
+            {
+                public string Employee { get; private set; } = "";
+            }
+        }
+        """ + SqlMarker;
+
+    private const string HostOfOneModuleOnADatabase = """
+        using System.Threading.Tasks;
+        using Pragmatic.Composition.Attributes;
+        using Pragmatic.Composition.Database;
+        using Pragmatic.Composition.Enums;
+        using Shop.Ledger;
+
+        namespace Shop.Host;
+
+        [PragmaticDatabase(Provider = DatabaseProvider.PostgreSql, ConfigKey = "ConnectionStrings:App")]
+        public sealed class AppDatabase : PragmaticDatabase;
+
+        [Module]
+        [Include<LedgerModule, AppDatabase>]
+        public sealed class ShopHostModule;
+
+        internal static class Program
+        {
+            private static Task Main(string[] args) => Task.CompletedTask;
+        }
+        """;
 
     private const string EfCoreLedger = """
         using Pragmatic.Actions.Attributes;

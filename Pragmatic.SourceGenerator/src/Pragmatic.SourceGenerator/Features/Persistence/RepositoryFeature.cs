@@ -22,6 +22,7 @@ internal static class RepositoryFeature
         IncrementalGeneratorInitializationContext context,
         IncrementalValuesProvider<(EntityMetadataModel Entity, DetectedFeatures Features)> perEntityWithFeatures,
         IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> entitiesWithFeatures,
+        IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> allEntitiesWithFeatures,
         IncrementalValueProvider<bool> isDebugProvider,
         IncrementalValueProvider<ImmutableArray<Traits.Models.TraitEntityInfo>>? localTraitEntities)
     {
@@ -79,14 +80,16 @@ internal static class RepositoryFeature
                 .ToImmutableArray();
         }
 
-        // Aggregate: Persistence metadata (enriched with repository type info for host-side DI)
-        var entitiesWithFeaturesAndDebug = entitiesWithFeatures.Combine(isDebugProvider);
+        // Aggregate: Persistence metadata (enriched with repository type info for host-side DI). Every entity an engine of this
+        // compilation persists, not EF Core's alone: the host reads a module's entities from this document whenever there is one,
+        // so an engine boundary's entities left out of it never reached the host (its audit, privacy and permission rules).
+        var entitiesWithFeaturesAndDebug = allEntitiesWithFeatures.Combine(isDebugProvider);
         context.RegisterSourceOutputSafe(entitiesWithFeaturesAndDebug, static (ctx, pair) =>
         {
             var ((entities, detectedFeatures), isDebug) = pair;
             if (!detectedFeatures.HasPersistenceEFCore || !detectedFeatures.HasComposition)
                 return;
-            GeneratePersistenceMetadata(ctx, entities, isDebug);
+            GeneratePersistenceMetadata(ctx, entities, detectedFeatures, isDebug);
         });
 
         return entitiesWithFeaturesAndDebug.Select(static (input, _) => LocalPersistenceRegistrations(input));
@@ -114,7 +117,7 @@ internal static class RepositoryFeature
         if (entities.Length == 0)
             return EquatableArray<Composition.Models.MetadataEntry>.Empty;
 
-        var validEntities = entities.Where(e => e.IsValid && !e.IsFromReference).ToImmutableArray();
+        var validEntities = Persisted(entities, detectedFeatures);
         if (validEntities.Length == 0)
             return EquatableArray<Composition.Models.MetadataEntry>.Empty;
 
@@ -122,7 +125,7 @@ internal static class RepositoryFeature
             Composition.Models.HostLocalRegistration.CreatePayload(
                 Composition.MetadataCategoryIds.Persistence,
                 MetadataSchemaVersions.Persistence,
-                new PersistenceMetadataTemplate(validEntities, isDebug).BuildJson()));
+                new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, detectedFeatures)).BuildJson()));
     }
 
     // =========================================================================
@@ -245,18 +248,23 @@ internal static class RepositoryFeature
     private static void GeneratePersistenceMetadata(
         SourceProductionContext context,
         ImmutableArray<EntityMetadataModel> entities,
+        DetectedFeatures features,
         bool isDebug)
     {
         if (entities.Length == 0)
             return;
 
-        var validEntities = entities.Where(e => e.IsValid && !e.IsFromReference).ToImmutableArray();
+        var validEntities = Persisted(entities, features);
         if (validEntities.Length == 0)
             return;
 
-        var template = new PersistenceMetadataTemplate(validEntities, isDebug);
+        var template = new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, features));
         var artifact = template.RenderOutput();
         if (!artifact.IsEmpty)
             context.AddSource(artifact);
     }
+
+    /// <summary>The module's own entities an engine the compilation references persists: what its metadata describes.</summary>
+    private static ImmutableArray<EntityMetadataModel> Persisted(ImmutableArray<EntityMetadataModel> entities, DetectedFeatures features)
+        => entities.Where(e => e.IsValid && !e.IsFromReference && PersistenceEngineMarker.HasEngine(e, features)).ToImmutableArray();
 }
