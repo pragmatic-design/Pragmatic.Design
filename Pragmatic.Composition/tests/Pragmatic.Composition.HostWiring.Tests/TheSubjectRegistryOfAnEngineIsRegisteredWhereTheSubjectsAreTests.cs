@@ -98,6 +98,8 @@ public sealed class TheSubjectRegistryOfAnEngineIsRegisteredWhereTheSubjectsAreT
 
     private static readonly MetadataReference PrivacyEngines = HostWiringFixture.EngineBridge("Pragmatic.Privacy.Engines");
 
+    private static readonly MetadataReference CryptographyEngines = HostWiringFixture.EngineBridge("Pragmatic.Cryptography.Engines");
+
     [Fact]
     public void OneSqlBoundaryWithDataSubjects_GetsTheRegistry_BeforeTheApplicationsConfiguration()
     {
@@ -126,6 +128,33 @@ public sealed class TheSubjectRegistryOfAnEngineIsRegisteredWhereTheSubjectsAreT
         errors.Should().BeEmpty();
         RegisterSubjectRegistry(generated).Should().Contain(
             "global::Pragmatic.Privacy.Engines.Documents.DocPrivacyExtensions.AddDocSubjectRegistry<global::Shop.Customers.CustomersBoundary>(services);");
+    }
+
+    /// <summary>With Pragmatic.Cryptography.Engines referenced, the subjects' keys go beside the registry, on the same boundary's session.</summary>
+    [Theory]
+    [InlineData("Sql", "global::Pragmatic.Cryptography.Engines.Sql.SqlCryptographyExtensions.AddSqlSubjectKeys<global::Shop.Customers.CustomersBoundary>(services);")]
+    [InlineData("Documents", "global::Pragmatic.Cryptography.Engines.Documents.DocCryptographyExtensions.AddDocSubjectKeys<global::Shop.Customers.CustomersBoundary>(services);")]
+    public void TheKeys_AreRegisteredBesideTheRegistry_WhenTheHostReferencesThem(string engine, string keys)
+    {
+        MetadataReference[] references = engine == "Sql"
+            ? [PrivacyEngines, CryptographyEngines]
+            : [PrivacyEngines, CryptographyEngines, HostWiringFixture.EngineBridge("Pragmatic.Persistence.Documents")];
+        var (errors, generated) = ModuleAndHost.Generate("Shop.Customers", [Module(engine, true)], "Shop.Host", Host, references);
+
+        errors.Should().BeEmpty("the host has to compile, or the keys are registered by text nobody runs");
+        RegisterSubjectRegistry(generated).Should().Contain(keys, "the ProtectedValue columns there are opened by keys kept beside the subjects");
+    }
+
+    /// <summary>The control: without the package the registry is registered and the keys are not, as there is nothing to register them with.</summary>
+    [Fact]
+    public void WithoutTheKeysPackage_TheRegistryIsRegisteredAlone()
+    {
+        var (errors, generated) = ModuleAndHost.Generate("Shop.Customers", [Module("Sql", true)], "Shop.Host", Host, [PrivacyEngines]);
+
+        errors.Should().BeEmpty();
+        var method = RegisterSubjectRegistry(generated);
+        method.Should().Contain("AddSqlSubjectRegistry<");
+        method.Should().NotContain("SubjectKeys<");
     }
 
     [Fact]

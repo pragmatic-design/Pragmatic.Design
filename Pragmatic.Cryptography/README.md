@@ -50,7 +50,7 @@ string back   = encryptor.Decrypt(packed, associatedData: $"{tenantId}:{key}");
 |---------|-----|
 | `Pragmatic.Cryptography` | `ISecretEncryptor`, `AesGcmSecretEncryptor`, the key ring and key providers, `ISubjectDataProtector`, `ProtectedValue` |
 | `Pragmatic.Cryptography.EFCore` | Per-subject keys: `CryptographyDbContext`, `AddCryptographySubjectKeys()`, `ProtectedValueConverter` |
-| `Pragmatic.Cryptography.Engines` | `ProtectedValue` columns on Pragmatic's Sql engine (`SqlProtectedValue`) |
+| `Pragmatic.Cryptography.Engines` | The same on Pragmatic's Sql and documents engines: `AddSqlSubjectKeys<TBoundary>()`, `AddDocSubjectKeys<TBoundary>()`, `SqlProtectedValue` |
 
 ## Features
 
@@ -177,9 +177,12 @@ package).
 On the documents engine the member is a field holding the bytes as Base64 text, as the audit trail's
 hashes are; that needs no package beyond `Pragmatic.Cryptography`, where the type is.
 
-⚠️ The per-subject keys are still EF Core's only (`AddCryptographySubjectKeys`): on the Sql and documents
-engines the column is stored and read, and its key has to come from a `CryptographyDbContext`. The keys
-over a boundary's session are #431.
+The keys go with the subjects, as on EF Core: `__SubjectKeys` is in the schema of the boundary that holds
+the `[DataSubject]` entities (a table on the Sql engine, a collection on the documents engine, EF Core's
+columns), and `AddSqlSubjectKeys<TBoundary>()` or `AddDocSubjectKeys<TBoundary>()` registers
+`ISubjectKeyStore`, `IKeyResolver` and `ISubjectDataProtector` over that boundary's session. The generated
+host calls it beside the subject registry when one boundary holds the subjects; the master key ring
+(`ISecretEncryptor`) is yours to register, as with EF Core.
 
 ## Legacy values
 

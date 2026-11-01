@@ -61,6 +61,9 @@ internal static class PragmaticDocSchema
                 collections.Add("global::Pragmatic.Privacy.Engines.Documents.SubjectLookupDocument.Schema");
                 collections.Add("global::Pragmatic.Privacy.Engines.Documents.ConsentDocument.Schema");
             }
+            // And their keys, which open the ProtectedValue fields there, as Pragmatic.Cryptography.Engines describes them.
+            if (group.Any(PragmaticRegistration.IsDataSubject) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSubjectKeys) is not null)
+                collections.Add("global::Pragmatic.Cryptography.Engines.Documents.SubjectKeyDocument.Schema");
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
                 boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }

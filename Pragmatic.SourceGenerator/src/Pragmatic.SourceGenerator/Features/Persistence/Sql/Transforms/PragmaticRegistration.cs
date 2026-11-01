@@ -51,6 +51,12 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>The subject registry on the engines (Pragmatic.Privacy.Engines), by the type the generator recognises it by: its Sql subject row.</summary>
     internal const string EngineSubjectRegistry = "Pragmatic.Privacy.Engines.Sql.SubjectRow";
 
+    /// <summary>
+    ///     The per-subject keys on the engines (Pragmatic.Cryptography.Engines), by the type the generator recognises them by: their Sql row. Kept
+    ///     beside the subject registry, in the database of the <c>[DataSubject]</c> entities, as EF Core's schema keeps <c>__SubjectKeys</c>.
+    /// </summary>
+    internal const string EngineSubjectKeys = "Pragmatic.Cryptography.Engines.Sql.SubjectKeyRow";
+
     /// <summary>True when <paramref name="entity" /> carries <c>[DataSubject]</c>: its database holds the subject registry's tables, as EF Core's schema has them.</summary>
     internal static bool IsDataSubject(INamedTypeSymbol entity)
         => entity.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Privacy.DataSubjectAttribute");

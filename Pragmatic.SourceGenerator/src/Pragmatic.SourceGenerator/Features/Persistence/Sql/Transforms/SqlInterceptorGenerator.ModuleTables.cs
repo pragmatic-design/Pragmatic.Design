@@ -62,6 +62,13 @@ internal static partial class SqlInterceptorGenerator
                 .ToEquatableArray(),
         };
 
+    /// <summary>
+    ///     The subjects' keys with EF Core's unique index on the key id (<c>SchemaMetadataTransform.BuildSubjectKeysTable</c>): a reader holding only
+    ///     the ciphertext resolves by it, and two rows sharing one would mean a reused key.
+    /// </summary>
+    private static TableSchemaModel WithSubjectKeyIndexes(TableSchemaModel table)
+        => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_KeyId", ["KeyId"], true, null)).ToEquatableArray() };
+
     /// <summary>The consents with the index "what has this subject agreed to" reads.</summary>
     private static TableSchemaModel WithConsentIndexes(TableSchemaModel table)
         => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_SubjectRef", ["SubjectRef"], false, null)).ToEquatableArray() };

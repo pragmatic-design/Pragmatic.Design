@@ -87,8 +87,10 @@ Two things differ:
   soft delete's live documents, and Cosmos DB has no partial index at all; both count a missing value in a
   unique one. So `__SubjectLookups` holds one document per known subject, keyed by its index, and forgetting
   the subject deletes it.
-- **The per-subject keys of a `ProtectedValue` are not on the engines.** EF Core's host registers them with
-  the registry. The engines serve no `ProtectedValue` yet.
+- **The per-subject keys of a `ProtectedValue` go with the registry**, as EF Core's host registers them: with
+  `Pragmatic.Cryptography.Engines` referenced, `__SubjectKeys` is in the same schema, and the host registers
+  `AddSqlSubjectKeys<TBoundary>()` or `AddDocSubjectKeys<TBoundary>()` beside the registry
+  (Pragmatic.Cryptography's README).
 
 **From an operation**, depend on the interfaces: `ISubjectAccess`, `ISubjectErasure`,
 `IProcessingRegisterBuilder`, which resolve to the same instances as `SubjectAccessService`,

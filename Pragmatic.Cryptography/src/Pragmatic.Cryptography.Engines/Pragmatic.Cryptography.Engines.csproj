@@ -4,14 +4,25 @@
     <Description>ProtectedValue columns and per-subject keys of Pragmatic.Cryptography on Pragmatic's Sql and documents engines, beside Pragmatic.Cryptography.EFCore: the value stored as the bytes it was encrypted to, its key kept and destroyed through a boundary's session (crypto-shredding).</Description>
     <PackageTags>pragmatic;cryptography;keys;crypto-shredding;sql;documents;mongodb;cosmosdb</PackageTags>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The key stores' own chains (by subject, by key id) are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- ProtectedValue, the keys' contracts and the master key ring. -->
     <ProjectReference Include="..\Pragmatic.Cryptography\Pragmatic.Cryptography.csproj" />
-    <!-- The Sql engine's bridge: ISqlConverter, through which a ProtectedValue column is read and bound. Private, as in Pragmatic.Audit.Engines:
-         an application brings the bridge of the engine it uses, and flowing it would make every application reference that engine. -->
+    <!-- The engines' bridges: ISqlConverter, through which a ProtectedValue column is read and bound, and the sessions a boundary is registered
+         with. Private, as in Pragmatic.Audit.Engines: an application brings the bridge of the engine it uses, and flowing both would make every
+         application reference two engines (PRAG0743). The Sql store never touches the documents engine's types and the other way round. -->
     <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The keys' row and document are the engines' own types: the generator describes them in this assembly, which declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
 </Project>

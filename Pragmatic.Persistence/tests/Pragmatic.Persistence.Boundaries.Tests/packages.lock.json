@@ -371,6 +371,13 @@
       "pragmatic.cryptography": {
         "type": "Project"
       },
+      "pragmatic.cryptography.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Pragmatic.Cryptography": "[1.0.0, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },

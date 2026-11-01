@@ -15,9 +15,10 @@ namespace PragmaticBoundaries.Tests;
 /// </summary>
 public sealed class SubjectRegistryOnTheDocumentsEngineTests(MongoServer mongo) : IClassFixture<MongoServer>
 {
+    /// <summary>The registry's three, and the keys' beside them (Pragmatic.Cryptography.Engines, referenced here).</summary>
     [Fact]
     public void The_boundarys_schema_holds_the_registrys_collections()
-        => Assert.Equal(["__Consents", "__SubjectLookups", "__Subjects"],
+        => Assert.Equal(["__Consents", "__SubjectKeys", "__SubjectLookups", "__Subjects"],
             MembersBoundaryDocSchema.Collections.Select(c => c.Collection).Where(c => c.StartsWith("__", StringComparison.Ordinal)).Order());
 
     [Fact]

@@ -368,6 +368,12 @@
       "pragmatic.cryptography": {
         "type": "Project"
       },
+      "pragmatic.cryptography.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Cryptography": "[1.0.0, )"
+        }
+      },
       "pragmatic.endpoints": {
         "type": "Project",
         "dependencies": {

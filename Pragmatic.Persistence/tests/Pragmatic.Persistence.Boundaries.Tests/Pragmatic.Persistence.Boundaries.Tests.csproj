@@ -36,6 +36,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
     <!-- The subject registry on the documents engine: its collections in the members' boundary's schema, and its stores on MongoDB. -->
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
+    <!-- The per-subject keys on the engine: their collection beside the registry's, and the member's ProtectedValue opened by them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.Engines\Pragmatic.Cryptography.Engines.csproj" />
     <!-- MultiTenancyOptions: the generated registration reads RequireTenant from it, as EF Core's does. -->
     <ProjectReference Include="..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

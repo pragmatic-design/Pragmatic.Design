@@ -83,6 +83,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
     <!-- The subject registry on the engines, the same way: the host registers it on the engine boundary holding the [DataSubject] entities. -->
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
+    <!-- And their keys (Pragmatic.Cryptography.Engines), registered beside the registry when the host references them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.Engines\Pragmatic.Cryptography.Engines.csproj" />
   </ItemGroup>
 
 </Project>
