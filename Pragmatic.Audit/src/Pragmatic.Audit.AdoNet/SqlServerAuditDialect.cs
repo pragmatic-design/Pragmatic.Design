@@ -76,5 +76,15 @@ public sealed class SqlServerAuditDialect : IAuditSqlDialect
             [LinkHash] VARBINARY(MAX) NOT NULL,
             PRIMARY KEY ([FromSegmentId], [UntilSegmentId])
         );
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX___AuditEntries_SegmentId_Seq' AND object_id = OBJECT_ID(N'[__AuditEntries]'))
+        CREATE INDEX [IX___AuditEntries_SegmentId_Seq] ON [__AuditEntries] ([SegmentId], [Seq]);
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX___AuditEntries_OccurredAt' AND object_id = OBJECT_ID(N'[__AuditEntries]'))
+        CREATE INDEX [IX___AuditEntries_OccurredAt] ON [__AuditEntries] ([OccurredAt]);
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX___AuditEntries_SubjectRef_OccurredAt' AND object_id = OBJECT_ID(N'[__AuditEntries]'))
+        CREATE INDEX [IX___AuditEntries_SubjectRef_OccurredAt] ON [__AuditEntries] ([SubjectRef], [OccurredAt]);
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX___AuditEntries_CorrelationId' AND object_id = OBJECT_ID(N'[__AuditEntries]'))
+        CREATE INDEX [IX___AuditEntries_CorrelationId] ON [__AuditEntries] ([CorrelationId]);
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX___AuditSegments_SealedAt' AND object_id = OBJECT_ID(N'[__AuditSegments]'))
+        CREATE INDEX [IX___AuditSegments_SealedAt] ON [__AuditSegments] ([SealedAt]);
         """;
 }
