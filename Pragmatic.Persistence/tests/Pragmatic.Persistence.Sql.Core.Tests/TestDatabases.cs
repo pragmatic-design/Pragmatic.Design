@@ -15,9 +15,9 @@ using Xunit;
 namespace Pragmatic.Persistence.Sql.Core.Tests;
 
 /// <summary>
-///     The seeded databases the tests run against: SQLite in a file per test run, PostgreSQL, SQL Server and MySQL
-///     in Docker when it answers (otherwise those tests are skipped with the reason). One instance per
-///     test collection: containers start once.
+///     The seeded databases the tests run against: SQLite in a file per test run, PostgreSQL, SQL Server, MySQL and Oracle
+///     in Docker. A failed start is reported by <c>DatabasesTests</c>, and the Docker dialects' tests return early on it.
+///     One instance per test collection: containers start once.
 /// </summary>
 public sealed class TestDatabases : IAsyncLifetime
 {
@@ -37,10 +37,12 @@ public sealed class TestDatabases : IAsyncLifetime
 
     public string SqlitePath { get; } = Path.Combine(AppContext.BaseDirectory, $"tests-{Guid.NewGuid():N}.sqlite");
 
+    /// <summary>
+    ///     Why the Docker databases did not start, or null when they did. The Docker dialects' tests return early on it, and
+    ///     <c>DatabasesTests</c> fails with it: the suite runs only where Docker is (the gate refuses the container tier without it), so a
+    ///     failed start is a failure, never Docker's absence.
+    /// </summary>
     public string? DockerUnavailable => _dockerUnavailable;
-
-    /// <summary>True when Docker answered but a container or its seed failed: the Docker dialects' tests then skip, and <c>DatabasesTests</c> fails with the reason.</summary>
-    public bool DockerAnswered { get; private set; }
 
     /// <summary>The PostgreSQL container's log so far (statements included: the server runs with log_statement=all).</summary>
     public async Task<string> PostgresLogAsync()
@@ -57,7 +59,6 @@ public sealed class TestDatabases : IAsyncLifetime
             // PostgreSQL 17 with pgvector (the vector type and its HNSW index); every statement in the container's log: what the origin comment is for.
             _postgres = new PostgreSqlBuilder().WithImage("pgvector/pgvector:pg17").WithCommand("-c", "log_statement=all").Build();
             await _postgres.StartAsync();
-            DockerAnswered = true; // from here a failure is a container's or a seed's, not Docker's absence: DatabasesTests reports it
             // SQL Server 2025: the VECTOR type and VECTOR_DISTANCE; with the Full-Text component (docker/mssql-fts: the official image lacks it), built
             // once from the official image and kept under its tag (the layers cached: a later build is a check).
             var sqlServerImage = new ImageFromDockerfileBuilder().WithDockerfileDirectory(CommonDirectoryPath.GetProjectDirectory(), "docker/mssql-fts").WithName("pragmatic-spike/mssql-fts:2025").WithCleanUp(false).Build();
@@ -101,10 +102,9 @@ public sealed class TestDatabases : IAsyncLifetime
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            // A container that failed before PostgreSQL's start completed: its logs say Docker answered (the failure is the server's, reported
-            // by DatabasesTests with the last lines), no logs say Docker is not there (the Docker tests skip).
+            // Any failed start, reported by DatabasesTests with PostgreSQL's last log lines when it has any. No logs is not Docker's absence:
+            // an image that does not pull leaves none either (#365).
             var log = await TailAsync(_postgres);
-            DockerAnswered |= log is not null;
             _dockerUnavailable = "Docker containers did not start: " + e.GetType().Name + ": " + e.Message.Split('\n')[0] + (log is null ? "" : " — PostgreSQL log: " + log);
             _postgres = null;
             _sqlServer = null;
@@ -113,7 +113,7 @@ public sealed class TestDatabases : IAsyncLifetime
         }
     }
 
-    /// <summary>The container's last log lines; null when there are none to read (never created: Docker did not answer).</summary>
+    /// <summary>The container's last log lines; null when there are none to read (the container was never created).</summary>
     private static async Task<string?> TailAsync(IContainer? container)
     {
         if (container is null)
@@ -125,7 +125,7 @@ public sealed class TestDatabases : IAsyncLifetime
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            return null; // no logs: the container was never created, Docker did not answer
+            return null; // no logs: the container was never created
         }
     }
 
