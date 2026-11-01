@@ -76,7 +76,7 @@ if (!report.IsIntact)
 
 ## Where the tables come from
 
-The trail is three tables (`__AuditEntries`, `__AuditSegments` and `__PrunedRanges`) and they are only
+The trail is three tables (`__AuditEntries`, `__AuditSegments` and `__AuditPrunedRanges`) and they are only
 meaningful together: an entry whose segment row is missing cannot be sealed, so it can be written and
 never checked.
 
@@ -86,6 +86,11 @@ never checked.
   context that should hold them, then add a migration.
 - **With neither**: a producer on raw ADO.NET, such as the configuration store: the dialect carries
   the DDL: `IAuditSqlDialect.CreateSchema`.
+
+⚠️ The dialects used to name the third table `__PrunedRanges`, so EF Core's retention had no
+table to declare a gap in on a database they created. `CreateSchema` creates `__AuditPrunedRanges` now, and
+leaves an existing `__PrunedRanges` in place: rename it (`ALTER TABLE "__PrunedRanges" RENAME TO
+"__AuditPrunedRanges"`, `sp_rename` on SQL Server) to keep the gaps it recorded.
 
 The `__` prefix is what keeps them safe beside an application's own tables: the schema differ never drops
 a framework-prefixed table for being absent from the desired schema.

@@ -479,7 +479,7 @@ The store's two tables are auto-created, and the shared audit trail's beside the
 |-------|---------|
 | `pragmatic_config` | Key-value pairs with `tenant_id`, `environment`, `version` |
 | `pragmatic_secrets` | Encrypted values (AES-256-GCM) with tenant isolation |
-| `__AuditEntries`, `__AuditSegments`, `__PrunedRanges` | Every change on the shared trail of `Pragmatic.Audit`, in the same transaction as the change: who, when, which key, and a hash of the previous value, never the value itself |
+| `__AuditEntries`, `__AuditSegments`, `__AuditPrunedRanges` | Every change on the shared trail of `Pragmatic.Audit`, in the same transaction as the change: who, when, which key, and a hash of the previous value, never the value itself |
 
 ### SQL dialect abstraction
 

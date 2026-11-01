@@ -55,7 +55,7 @@ public sealed class PostgresAuditDialect : IAuditSqlDialect
             "ValueHash" BYTEA NULL,
             "Detail" TEXT NULL
         );
-        CREATE TABLE IF NOT EXISTS "__PrunedRanges" (
+        CREATE TABLE IF NOT EXISTS "__AuditPrunedRanges" (
             "FromSegmentId" VARCHAR(32) NOT NULL,
             "UntilSegmentId" VARCHAR(32) NOT NULL,
             "PrunedAt" BIGINT NOT NULL,
