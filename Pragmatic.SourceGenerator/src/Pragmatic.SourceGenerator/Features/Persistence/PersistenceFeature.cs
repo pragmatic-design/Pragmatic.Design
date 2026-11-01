@@ -106,6 +106,11 @@ internal static class PersistenceFeature
                 PersistenceEngineChoiceReader.Read(pair.Left.Left.Entities, pair.Left.Right, pair.Right));
         context.RegisterSourceOutputSafe(engineChoiceProvider, ReportPersistenceEngineChoice);
 
+        // A navigation between two engines: only the key may cross (PRAG0745).
+        context.RegisterSourceOutputSafe(
+            resolvedProvider.Combine(features).Select(static (pair, _) => RelationBetweenEnginesReader.Read(pair.Left.Entities, pair.Right)),
+            RelationBetweenEnginesReader.Report);
+
         var allEntitiesProvider = resolvedProvider
             .Select(static (r, _) => r.Entities)
             .WithComparer(ImmutableArraySequenceComparer<EntityMetadataModel>.Instance)
