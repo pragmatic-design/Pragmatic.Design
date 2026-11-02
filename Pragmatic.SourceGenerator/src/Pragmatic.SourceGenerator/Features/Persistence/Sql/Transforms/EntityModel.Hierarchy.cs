@@ -276,6 +276,15 @@ internal sealed partial class EntityModel
                 text = $"EntityMaps.{column.SetterName}({text}, {column.Read(reader, ordinal(i), dialect)})";
         }
 
+        // An owned type whose owner property has a private setter: built as the initializer would, set through its accessor.
+        foreach (var owned in Owned.Where(o => o.PrivateSetter && (subset is null || subset(o.Columns[0]))))
+        {
+            var at = Columns.IndexOf(owned.Columns[0]);
+            var construct = ConstructOwned(owned, m => owned.Columns[m].Read(reader, ordinal(at + m), dialect));
+            var value = owned.Optional ? $"({reader}.IsDBNull({ordinal(at)}) ? null : {construct})" : construct;
+            text = $"EntityMaps.{owned.SetterName}({text}, {value})";
+        }
+
         return text;
     }
 }

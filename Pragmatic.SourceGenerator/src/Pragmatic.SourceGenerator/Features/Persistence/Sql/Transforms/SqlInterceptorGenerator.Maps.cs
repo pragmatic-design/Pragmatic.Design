@@ -209,7 +209,14 @@ internal static partial class SqlInterceptorGenerator
         foreach (var column in entities.SelectMany(e => e.Columns).Where(c => c.PrivateSetter && c.Owner is null))
         {
             if (emitted.Add(column.SetterName))
-                yield return new PrivateSetterModel(column.SetterName, column.SetterOwner!, column.Type.ToDisplayString(Annotated), column.Property);
+                yield return new PrivateSetterModel(column.SetterName, column.SetterOwner!, column.Type.ToDisplayString(Annotated), column.Property, column.SetterOwnerSealed);
+        }
+
+        // A value object the entity keeps behind a private setter: the same accessor, typed as the owned type.
+        foreach (var owned in entities.SelectMany(e => e.Owned).Where(o => o.PrivateSetter))
+        {
+            if (emitted.Add(owned.SetterName))
+                yield return new PrivateSetterModel(owned.SetterName, owned.SetterOwner!, owned.Optional ? owned.TypeName + "?" : owned.TypeName, owned.Property, owned.SetterOwnerSealed);
         }
     }
 }

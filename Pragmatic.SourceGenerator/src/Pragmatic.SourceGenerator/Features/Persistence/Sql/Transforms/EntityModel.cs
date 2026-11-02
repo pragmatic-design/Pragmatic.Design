@@ -64,8 +64,8 @@ internal sealed partial class EntityModel
             }
 
             var owned = Owned.First(o => o.Property == column.Owner);
-            if (owned.Columns[0] != column)
-                continue; // the owned type's members are built together, at its first column
+            if (owned.Columns[0] != column || owned.PrivateSetter)
+                continue; // the owned type's members are built together, at its first column; one with a private setter is set around the initializer (Built)
             var at = i;
             var construct = ConstructOwned(owned, m => owned.Columns[m].Read(reader, ordinal(at + m), dialect)); // an initializer, or the constructor of a value object
             members.Add(owned.Optional ? $"{owned.Property} = ({reader}.IsDBNull({ordinal(i)}) ? null : {construct})" : $"{owned.Property} = {construct}");
@@ -190,7 +190,10 @@ internal sealed partial class EntityModel
                     return null;
                 }
 
-                owned.Add(new OwnedModel(property.Name, ownedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), optional, members) { Constructor = constructor });
+                var ownedModel = new OwnedModel(property.Name, ownedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), optional, members) { Constructor = constructor };
+                if (property.SetMethod is { } setter && setter.DeclaredAccessibility != Accessibility.Public)
+                    (ownedModel.PrivateSetter, ownedModel.SetterOwner, ownedModel.SetterOwnerSealed) = (true, property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), property.ContainingType.IsSealed);
+                owned.Add(ownedModel);
                 continue;
             }
 
@@ -238,7 +241,7 @@ internal sealed partial class EntityModel
             if (plain is null)
                 return null;
             if (property.SetMethod!.DeclaredAccessibility != Accessibility.Public)
-                (plain.PrivateSetter, plain.SetterOwner) = (true, property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                (plain.PrivateSetter, plain.SetterOwner, plain.SetterOwnerSealed) = (true, property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), property.ContainingType.IsSealed);
             columns.Add(plain);
             if (property.GetAttributes().Any(a => a.AttributeClass?.Name == "VersionAttribute") || plain.IsRowVersion)
                 version = property.Name;
