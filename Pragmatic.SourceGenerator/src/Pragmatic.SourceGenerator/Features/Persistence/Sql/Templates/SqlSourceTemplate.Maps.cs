@@ -46,7 +46,9 @@ internal sealed partial class SqlSourceTemplate
 
         foreach (var setter in maps.Setters)
         {
-            AppendLine($"        internal static TRow {setter.Name}<TRow>(TRow row, {setter.Type} value) where TRow : {setter.Owner}");
+            AppendLine(setter.OwnerIsSealed
+                ? $"        internal static {setter.Owner} {setter.Name}({setter.Owner} row, {setter.Type} value)"
+                : $"        internal static TRow {setter.Name}<TRow>(TRow row, {setter.Type} value) where TRow : {setter.Owner}");
             AppendLine("        {");
             AppendLine($"            {setter.Name}_Accessor(row, value);");
             AppendLine("            return row;");

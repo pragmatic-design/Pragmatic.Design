@@ -28,6 +28,21 @@ internal sealed class OwnedModel
 
     /// <summary>The members its constructor takes, in order (a value object without a parameterless constructor); empty: built with an initializer.</summary>
     public List<string> Constructor { get; set; } = [];
+
+    /// <summary>
+    ///     The owner property's setter is not public (a value object a Pragmatic entity keeps <c>{ get; private set; }</c>): the row sets it through
+    ///     <c>EntityMaps.Set_{Type}_{Property}</c>, an <c>[UnsafeAccessor]</c>, as a plain column with a private setter.
+    /// </summary>
+    public bool PrivateSetter { get; set; }
+
+    /// <summary>The type that declares the owner property (its accessor's target).</summary>
+    public string? SetterOwner { get; set; }
+
+    /// <summary>True when that type is sealed: its helper is not generic.</summary>
+    public bool SetterOwnerSealed { get; set; }
+
+    /// <summary>The accessor's helper in <c>EntityMaps</c>, named as a plain column's.</summary>
+    public string SetterName => "Set_" + SetterOwner!.Replace("global::", "").Replace('.', '_') + "_" + Property;
 }
 
 /// <summary>A derived type of a hierarchy stored in the root's table: its name (the discriminator value) and its own columns.</summary>
@@ -80,6 +95,9 @@ internal sealed class ColumnModel
 
     /// <summary>The type that declares the property with the private setter (its accessor's target: a base type's private member is not the derived type's).</summary>
     public string? SetterOwner { get; set; }
+
+    /// <summary>True when that type is sealed: its helper is not generic.</summary>
+    public bool SetterOwnerSealed { get; set; }
 
     /// <summary>The accessor's helper in <c>EntityMaps</c>: sets the property and returns the row, so the row stays one expression.</summary>
     public string SetterName => "Set_" + SetterOwner!.Replace("global::", "").Replace('.', '_') + "_" + Property;
