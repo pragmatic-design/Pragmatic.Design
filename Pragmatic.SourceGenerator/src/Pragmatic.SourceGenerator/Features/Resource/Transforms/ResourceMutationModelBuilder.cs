@@ -139,6 +139,8 @@ internal static class ResourceMutationModelBuilder
             // SoftDeleteFilter exists. The scaffolded Restore needs it: without it the generated load
             // lifts no filter and the marked row it exists to find is the one the filter hides.
             EntityDeclaresSoftDelete = model.IsSoftDelete,
+            // What the boundary names; the engine itself is decided where the referenced engines are known (ActionsFeature).
+            EntityNamedEngine = model.EntityNamedEngine,
             RequireAllPermissions = DefaultPermission(resource, mode),
             PermissionSource = SourceResourceDefault,
             InvalidReason = MutationInvalidReason.None,

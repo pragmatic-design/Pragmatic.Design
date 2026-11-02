@@ -52,6 +52,7 @@ internal static class ResourceCrudTransform
             LogicKeyName = logicKeyName,
             LogicKeyType = logicKeyType,
             IsSoftDelete = HasSoftDelete(entitySymbol),
+            EntityNamedEngine = PersistenceEngineMarker.NamedFor(entitySymbol),
             IsConcurrencyAware = HasConcurrencyToken(entitySymbol),
             GroupName = GroupOf(resource, operationNamespaceByEntity),
         };

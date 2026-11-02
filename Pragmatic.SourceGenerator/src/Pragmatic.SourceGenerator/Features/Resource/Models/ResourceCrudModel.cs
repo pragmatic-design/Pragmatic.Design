@@ -28,6 +28,12 @@ internal sealed record ResourceCrudModel
     /// </summary>
     public bool IsSoftDelete { get; init; }
 
+    /// <summary>
+    ///     The engine the entity's boundary names with <c>[PersistenceEngine]</c>; null when it names none. The scaffolded mutations carry it, so
+    ///     their invokers read through the engine that persists the entity, as a hand-written mutation's do.
+    /// </summary>
+    public string? EntityNamedEngine { get; init; }
+
     /// <summary>Whether the entity declares <c>[ConcurrencyAware]</c>.</summary>
     public bool IsConcurrencyAware { get; init; }
 

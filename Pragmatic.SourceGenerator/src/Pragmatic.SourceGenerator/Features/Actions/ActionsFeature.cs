@@ -207,9 +207,16 @@ internal static partial class ActionsFeature
         var allMutations = validMutations.Collect()
             .WithTrackingName(TrackingNames.ActionsAllMutations);
 
+        // The scaffolded mutations' engine, decided as a hand-written mutation's is above: without it their invokers took EF Core's branch on
+        // every engine, and the scaffolded restore read through Query().
+        var resolvedProgrammatic = programmaticMutations?.Combine(features)
+            .Select(static (pair, _) => pair.Left
+                .Select(m => m with { Engine = PersistenceEngineMarker.EngineOf(m.EntityNamedEngine, pair.Right) })
+                .ToImmutableArray());
+
         // The invokers as the engines bind them, from the models they are emitted from (ActionsFeature.Binding).
         var invokerSources = InvokerSources(allActions, allMutations,
-            programmaticMutations ?? context.CompilationProvider.Select(static (_, _) => ImmutableArray<MutationModel>.Empty), features);
+            resolvedProgrammatic ?? context.CompilationProvider.Select(static (_, _) => ImmutableArray<MutationModel>.Empty), features);
         // The reads with navigations the mutations' invokers ask of the Sql engine, for its generator to compile.
         var engineReads = EngineReads(allMutations);
 
@@ -217,12 +224,12 @@ internal static partial class ActionsFeature
         // The same shape as traitActions above, and for the same reason: they must reach every stage a
         // hand-written mutation reaches, or the scaffolded write is a second pipeline that quietly
         // skips validation, permissions, the commit strategy and the event hand-over.
-        if (programmaticMutations is not null)
+        if (resolvedProgrammatic is not null)
         {
-            allMutations = allMutations.Combine(programmaticMutations.Value)
+            allMutations = allMutations.Combine(resolvedProgrammatic.Value)
                 .Select(static (pair, _) => pair.Left.AddRange(pair.Right));
 
-            var programmaticMutationItems = programmaticMutations.Value
+            var programmaticMutationItems = resolvedProgrammatic.Value
                 .SelectMany(static (models, _) => models);
             context.RegisterSourceOutputSafe(programmaticMutationItems, GenerateMutationSetDependencies);
             context.RegisterSourceOutputSafe(programmaticMutationItems, GenerateMutationId);
