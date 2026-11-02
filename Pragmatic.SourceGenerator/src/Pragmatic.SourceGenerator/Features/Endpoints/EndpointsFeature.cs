@@ -132,7 +132,9 @@ internal static partial class EndpointsFeature
         var validAutocomplete = autocompleteProvider
             .Combine(features)
             .Where(static pair => pair.Right.HasEndpoints && pair.Left.IsValid)
-            .Select(static (pair, _) => pair.Left);
+            // The entity's engine, decided against the engines this compilation references: on the Sql or documents engine the endpoint reads
+            // through the repository's compiled read.
+            .Select(static (pair, _) => pair.Left with { Engine = PersistenceEngineMarker.EngineOf(pair.Left.EntityNamedEngine, pair.Right) });
 
         // Just the model: the autocomplete endpoint enforces its read permission in the one shape there
         // is, and whether anybody can hold that permission is the host's question, answered

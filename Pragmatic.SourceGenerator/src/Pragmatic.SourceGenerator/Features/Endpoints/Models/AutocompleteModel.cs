@@ -98,6 +98,19 @@ internal sealed record AutocompleteModel
     /// </summary>
     public string? EntityReadPermission { get; init; }
 
+    /// <summary>The engine the entity's boundary names with <c>[PersistenceEngine]</c>, as the transform read it; null when it names none.</summary>
+    public string? EntityNamedEngine { get; init; }
+
+    /// <summary>
+    ///     The engine that persists the entity in this compilation (<c>PersistenceEngineMarker.EngineOf</c>), resolved in the pipeline where the
+    ///     referenced engines are known. On the Sql or documents engine the endpoint reads through the repository's compiled read
+    ///     (<c>IAutocompleteReadRepository</c>), not through EF Core's <c>Query()</c>.
+    /// </summary>
+    public string? Engine { get; init; }
+
+    /// <summary>Whether the entity's engine compiles its reads: the Sql or the documents engine.</summary>
+    public bool ReadsThroughEngine => Engine is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+
     public LocationInfo? LocationInfo { get; init; }
     public Location? Location => LocationInfo?.ToLocation();
     public AutocompleteInvalidReason InvalidReason { get; init; } = AutocompleteInvalidReason.None;

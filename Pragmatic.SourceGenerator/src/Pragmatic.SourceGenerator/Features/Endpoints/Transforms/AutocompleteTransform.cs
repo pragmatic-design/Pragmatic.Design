@@ -90,6 +90,7 @@ internal static class AutocompleteTransform
             DtoTypeFullName = dtoTypeFqn,
             DtoTypeName = dtoTypeName,
             EntityReadPermission = DeriveReadPermission(boundaryType, containingType.Name),
+            EntityNamedEngine = PersistenceEngineMarker.NamedFor(containingType),
             InvalidReason = AutocompleteInvalidReason.None,
             LocationInfo = LocationInfo.From(propertySymbol.Locations.FirstOrDefault())
         };

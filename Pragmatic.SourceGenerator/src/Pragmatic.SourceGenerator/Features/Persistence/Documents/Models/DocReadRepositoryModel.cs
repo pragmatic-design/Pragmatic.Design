@@ -10,6 +10,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="Queries">The declared queries <c>RunAsync(IQuery)</c> dispatches on.</param>
 /// <param name="PagedQueries">The declared queries <c>RunAsync(IPagedQuery)</c> dispatches on.</param>
 /// <param name="SoftDelete">A <c>[SoftDelete]</c> entity: its bulk delete marks the documents.</param>
+/// <param name="Autocompletes">The entity's <c>[Autocomplete]</c> properties, a read each.</param>
 internal sealed record DocReadRepositoryModel(
     string Hint,
     string? Namespace,
@@ -17,4 +18,5 @@ internal sealed record DocReadRepositoryModel(
     string EntityType,
     EquatableArray<DocRunCaseModel> Queries,
     EquatableArray<DocRunCaseModel> PagedQueries,
-    bool SoftDelete);
+    bool SoftDelete,
+    EquatableArray<string> Autocompletes);

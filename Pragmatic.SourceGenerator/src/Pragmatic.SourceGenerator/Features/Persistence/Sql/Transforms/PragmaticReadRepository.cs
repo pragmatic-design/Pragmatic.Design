@@ -50,7 +50,8 @@ internal static class PragmaticReadRepository
                             && collection.AllInterfaces.Concat([collection]).Any(i => i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T)
                             && collection.TypeArguments[0].AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
                 .Select(p => new LinkNavigationModel(p.Name, ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
-                .ToEquatableArray());
+                .ToEquatableArray(),
+            AutocompleteReads.Of(entity));
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
 

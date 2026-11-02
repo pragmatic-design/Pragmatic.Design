@@ -16,6 +16,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
     private const string Spec = "global::Pragmatic.Specification.ISpecification";
     private const string Matching = "Matching(global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate(spec))";
     private const string Including = "global::Pragmatic.Persistence.Repository.IIncludingReadRepository";
+    private const string Autocompleting = "global::Pragmatic.Persistence.Repository.IAutocompleteReadRepository";
 
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
@@ -32,12 +33,13 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine($"partial class {model.EntityName}");
         AppendLine("{");
         AppendLine($"    /// <summary>Pragmatic's read repository for {model.EntityName} on the Sql engine: every read a compiled plan, the session's filters applied.</summary>");
-        AppendLine($"    public sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Including}<{type}>");
+        AppendLine($"    public sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>");
         AppendLine("    {");
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine($"            => await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
         AppendLine();
         RenderGetByIdIncluding();
+        RenderAutocomplete();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine($"            => await session.Query<{type}>().{Matching}.ToListAsync(ct);");
         AppendLine();
@@ -89,6 +91,41 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         }
 
         AppendLine($"            throw new global::System.NotSupportedException($\"No load of {model.EntityName} the Sql engine compiled ([LoadEntity] or a mutation's) includes '{{includes}}'.\");");
+        AppendLine("        }");
+        AppendLine();
+    }
+
+    /// <summary>
+    ///     <c>AutocompleteAsync</c>: a case per <c>[Autocomplete]</c> property, each a pair of chains (with the text, and without one) the generator
+    ///     binds and intercepts; a property with no case refused.
+    /// </summary>
+    private void RenderAutocomplete()
+    {
+        var type = model.EntityType;
+        AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> AutocompleteAsync(string property, string? search, int take, {Token})");
+        AppendLine("        {");
+        if (model.Autocompletes.Count > 0)
+        {
+            AppendLine("            switch (property)");
+            AppendLine("            {");
+            foreach (var name in model.Autocompletes)
+            {
+                AppendLine($"                case {SqlInterceptorGenerator.Literal(name)}:");
+                AppendLine("                    return string.IsNullOrEmpty(search)");
+                AppendLine($"                        ? await session.Query<{type}>().Take(take).ToListAsync(ct)");
+                // The text as the chain's argument: a value from outside the lambda reaches no compiled plan.
+                AppendLine($"                        : await session.Query<{type}>().Where((e, text) => e.{name}.Contains(text), search).Take(take).ToListAsync(ct);");
+            }
+
+            AppendLine("            }");
+            AppendLine();
+        }
+        else
+        {
+            AppendLine($"            await {Task}.CompletedTask; // no property of this entity is [Autocomplete]: every call is refused below");
+        }
+
+        AppendLine($"            throw new global::System.NotSupportedException($\"No [Autocomplete] property of {model.EntityName} is named '{{property}}'.\");");
         AppendLine("        }");
         AppendLine();
     }
@@ -170,7 +207,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>,");
+        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>,");
         AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>, global::Pragmatic.Persistence.Repository.INavigationLinker<{type}>,");
         AppendLine($"        global::Pragmatic.Persistence.Repository.IBulkRepository<{type}>, global::Pragmatic.Persistence.Sql.ISqlRepository");
         AppendLine("    {");
@@ -186,6 +223,10 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         // Tracked with its graph, the collections the paths name loaded: a link of keys may change them.
         AppendLine($"        public async {Task}<{type}?> GetByIdIncludingAsync(global::System.Guid id, string includes, {Token})");
         AppendLine("            => await _read.GetByIdIncludingAsync(id, includes, ct) is { } row ? unitOfWork.Attach(row, includes) : null;");
+        AppendLine();
+        // An autocomplete only reads: its rows are answered, never written, so they are not tracked.
+        AppendLine($"        public {Task}<global::System.Collections.Generic.List<{type}>> AutocompleteAsync(string property, string? search, int take, {Token})");
+        AppendLine("            => _read.AutocompleteAsync(property, search, take, ct);");
         AppendLine();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine("            => unitOfWork.AttachAll(await _read.FindAsync(spec, ct));");
