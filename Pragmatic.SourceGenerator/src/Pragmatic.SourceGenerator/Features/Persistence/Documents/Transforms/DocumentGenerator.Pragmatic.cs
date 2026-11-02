@@ -87,7 +87,9 @@ internal static partial class DocumentGenerator
                 AddText(registration); // each boundary's unit of work and repositories, keyed by the boundary
             foreach (var entity in entities)
             {
-                var own = queries.Where(q => SymbolEqualityComparer.Default.Equals(q.Query.Entity, entity)).ToList();
+                // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, and a symbol of
+                // one compilation is never equal to the same type's symbol of another.
+                var own = queries.Where(q => q.Query.Entity.ToDisplayString() == entity.ToDisplayString()).ToList();
                 if (DocReadRepository.For(entity, own) is { } repository)
                     written.Add(Add(new DocReadRepositoryTemplate(repository).RenderOutput())); // its chains are bound and intercepted with the application's
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Execution.DocHierarchy.KeysAsync") is { } hierarchy)
