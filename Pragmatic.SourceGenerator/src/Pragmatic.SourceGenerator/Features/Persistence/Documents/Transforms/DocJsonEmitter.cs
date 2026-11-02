@@ -37,6 +37,7 @@ internal static class DocJsonEmitter
     private static string Value(DocField field, string value)
         => field.Kind == DocKind.UInt64 ? $"unchecked((long){value})"
             : field.Kind == DocKind.Protected ? DocTypeEmitter.ProtectedText(field, value)
+            : field.Kind == DocKind.Localized ? DocTypeEmitter.LocalizedText(field, value)
             : field.Kind != DocKind.Enum ? value : field.Nullable ? $"({value} is {{ }} enumValue ? (int?)(int)enumValue : null)" : $"(int){value}";
 
     public static string ReadField(DocField field) => field.Owned ? $"{field.Codec}.ReadJson(v)" : field.Kind switch
@@ -61,6 +62,7 @@ internal static class DocJsonEmitter
         DocKind.DateTime => $"{Json}.ReadDateTime({element})",
         DocKind.Enum => $"({typeName}){element}.GetInt32()",
         DocKind.Protected => DocTypeEmitter.ProtectedFromText($"{element}.GetString()!"),
+        DocKind.Localized => DocTypeEmitter.LocalizedFromText($"{element}.GetString()"),
         _ => $"default! /* {kind} */",
     };
 
