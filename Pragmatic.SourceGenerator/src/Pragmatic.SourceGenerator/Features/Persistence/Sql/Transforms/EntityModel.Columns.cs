@@ -41,6 +41,20 @@ internal sealed partial class EntityModel
             store = ((INamedTypeSymbol)Unwrap(property.Type)).GetMembers("Packed").OfType<IPropertySymbol>().First().Type;
         }
 
+        // A LocalizedString: the JSON text EF Core's LocalizedStringValueConverter writes, in a text column, through the converter of
+        // Pragmatic.Internationalization.Engines (Read refuses the entity when the compilation does not have it).
+        if (converter is null && IsLocalizedString(property.Type))
+        {
+            if (StringOf(property.Type) is not { } text)
+            {
+                diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedPropertyType, property.Locations.FirstOrDefault(), property.Name, declaring.Name, $"{LocalizedStringType.FullName}, whose ToString() does not answer a string"));
+                return null;
+            }
+
+            converter = "global::" + LocalizedStringType.SqlConverterFullName;
+            store = text;
+        }
+
         // A [ConcurrencyAware] Pragmatic entity's RowVersion (the shape's ulong): stored as a bigint, the providers having no unsigned 64-bit type.
         var rowVersion = owner is null && IsRowVersionProperty(property);
         if (rowVersion)
@@ -135,6 +149,36 @@ internal sealed partial class EntityModel
             var property = type.GetMembers(column.Property.Split('.')[0]).FirstOrDefault();
             diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedPropertyType, property?.Locations.FirstOrDefault() ?? type.Locations.FirstOrDefault(), column.Property, type.Name,
                 $"{ProtectedValueType.FullName}, stored through {ProtectedValueType.SqlConverterFullName}: reference the Pragmatic.Cryptography.Engines package"));
+        }
+
+        return false;
+    }
+
+    /// <summary><c>Pragmatic.Internationalization.Types.LocalizedString</c>: by its full name, not a type that merely ends the same way.</summary>
+    internal static bool IsLocalizedString(ITypeSymbol type)
+        => Unwrap(type).ToDisplayString() == LocalizedStringType.FullName;
+
+    /// <summary>
+    ///     <c>string</c>, the store type of a <c>LocalizedString</c> column, with no compilation at hand: the return type of the type's own
+    ///     <c>ToString()</c> override. A lookup by name in an assembly can miss (a facade forwards its types); null when the type has no such override.
+    /// </summary>
+    private static ITypeSymbol? StringOf(ITypeSymbol type)
+        => Unwrap(type).GetMembers("ToString").OfType<IMethodSymbol>().FirstOrDefault(m => m.Parameters.Length == 0 && m.ReturnType.SpecialType == SpecialType.System_String)?.ReturnType;
+
+    /// <summary>
+    ///     A <c>LocalizedString</c> column is read and bound through <c>Pragmatic.Internationalization.Engines</c>' converter: an assembly without
+    ///     that package is told so on the property, as for a <c>ProtectedValue</c>.
+    /// </summary>
+    private static bool CanStoreLocalizedStrings(INamedTypeSymbol type, List<ColumnModel> columns, Compilation compilation, List<Diagnostic> diagnostics)
+    {
+        var converter = "global::" + LocalizedStringType.SqlConverterFullName;
+        if (compilation.GetTypeByMetadataName(LocalizedStringType.SqlConverterFullName) is not null || columns.All(c => c.Converter != converter))
+            return true;
+        foreach (var column in columns.Where(c => c.Converter == converter))
+        {
+            var property = type.GetMembers(column.Property.Split('.')[0]).FirstOrDefault();
+            diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedPropertyType, property?.Locations.FirstOrDefault() ?? type.Locations.FirstOrDefault(), column.Property, type.Name,
+                $"{LocalizedStringType.FullName}, stored through {LocalizedStringType.SqlConverterFullName}: reference the {LocalizedStringType.EnginesPackage} package"));
         }
 
         return false;

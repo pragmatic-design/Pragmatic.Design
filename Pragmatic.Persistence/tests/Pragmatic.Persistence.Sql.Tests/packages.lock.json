@@ -708,6 +708,12 @@
           "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
+      "pragmatic.internationalization.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Internationalization": "[1.0.0, )"
+        }
+      },
       "pragmatic.jobs": {
         "type": "Project",
         "dependencies": {

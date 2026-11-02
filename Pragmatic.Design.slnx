@@ -649,6 +649,7 @@
   <Folder Name="/Pragmatic.Internationalization/">
     <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.AspNetCore/Pragmatic.Internationalization.AspNetCore.csproj" />
     <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.EFCore/Pragmatic.Internationalization.EFCore.csproj" />
+    <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.Engines/Pragmatic.Internationalization.Engines.csproj" />
     <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization.SourceGenerator/Pragmatic.Internationalization.SourceGenerator.csproj" />
     <Project Path="Pragmatic.Internationalization/src/Pragmatic.Internationalization/Pragmatic.Internationalization.csproj" />
   </Folder>

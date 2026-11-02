@@ -15,6 +15,7 @@
     <Project Path="src/Pragmatic.Internationalization/Pragmatic.Internationalization.csproj" />
     <Project Path="src/Pragmatic.Internationalization.AspNetCore/Pragmatic.Internationalization.AspNetCore.csproj" />
     <Project Path="src/Pragmatic.Internationalization.EFCore/Pragmatic.Internationalization.EFCore.csproj" />
+    <Project Path="src/Pragmatic.Internationalization.Engines/Pragmatic.Internationalization.Engines.csproj" />
     <Project Path="src/Pragmatic.Internationalization.SourceGenerator/Pragmatic.Internationalization.SourceGenerator.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -245,3 +245,17 @@ public partial class Dossier : IEntity
 
     public Pragmatic.Cryptography.ProtectedValue Note { get; set; }
 }
+
+/// <summary>
+///     A leaflet printed in several languages: its title a <c>LocalizedString</c>, stored as the JSON text EF Core's
+///     <c>LocalizedStringValueConverter</c> writes. <c>LocalizedStringTests</c> writes and reads it.
+/// </summary>
+[Entity]
+public partial class Leaflet : IEntity
+{
+    public string Code { get; set; } = "";
+
+    public Pragmatic.Internationalization.Types.LocalizedString Title { get; set; } = new();
+
+    public Pragmatic.Internationalization.Types.LocalizedString? Subtitle { get; set; }
+}

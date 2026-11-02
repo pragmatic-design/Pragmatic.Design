@@ -27,6 +27,9 @@ internal enum DocKind
 
     /// <summary>A <c>Pragmatic.Cryptography.ProtectedValue</c>: its packed bytes as Base64 text, as the audit trail's hashes are stored.</summary>
     Protected,
+
+    /// <summary>A <c>Pragmatic.Internationalization.Types.LocalizedString</c>: the JSON text of culture → text EF Core's converter writes.</summary>
+    Localized,
 }
 
 /// <summary>One field of a document: the property, its stored name, its kind; an embedded type's model, a list's element.</summary>
@@ -272,7 +275,7 @@ internal sealed class DocModel
             var element = list.TypeArguments[0];
             if (IsEmbeddedType(element))
                 return new DocField(property, name, DocKind.List, nullable, (INamedTypeSymbol)element, DocKind.Embedded, element);
-            if (ScalarKind(element) is { } elementKind and not (DocKind.Enum or DocKind.Protected))
+            if (ScalarKind(element) is { } elementKind and not (DocKind.Enum or DocKind.Protected or DocKind.Localized))
                 return new DocField(property, name, DocKind.List, nullable, null, elementKind, element);
             reason = "a list holds [Embedded] documents or values of one kind (string, int, long, double, decimal, bool, Guid, DateTimeOffset)";
             return null;
@@ -280,7 +283,7 @@ internal sealed class DocModel
 
         reason = IsDocument(scalar)
             ? "a document does not hold another document: refer to it by its key, or make the type [Embedded]"
-            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, an enum, a ProtectedValue, an [Embedded] type, and a List of these";
+            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, an enum, a ProtectedValue, a LocalizedString, an [Embedded] type, and a List of these";
         return null;
     }
 
@@ -316,10 +319,12 @@ internal sealed class DocModel
             case SpecialType.System_DateTime: return DocKind.DateTime;
         }
 
-        var name = type.ToDisplayString();
+        // Without the nullable annotation: a reference type's `?` (LocalizedString?) is in its display string, a struct's is a Nullable<T> unwrapped before.
+        var name = type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString();
         return name == "System.Guid" ? DocKind.Guid
             : name == "System.DateTimeOffset" ? DocKind.DateTimeOffset
             : name == Pragmatic.SourceGenerator.Core.ProtectedValueType.FullName ? DocKind.Protected
+            : name == Pragmatic.SourceGenerator.Core.LocalizedStringType.FullName ? DocKind.Localized
             : null;
     }
 }

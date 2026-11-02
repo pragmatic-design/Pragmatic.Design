@@ -30,6 +30,12 @@ internal static class LocalizedStringType
     /// <summary>The simple name, which is how a source file usually spells it.</summary>
     public const string SimpleName = "LocalizedString";
 
+    /// <summary>The Sql engine's converter, the same JSON text EF Core's converter writes (<c>Pragmatic.Internationalization.Engines</c>).</summary>
+    public const string SqlConverterFullName = "Pragmatic.Internationalization.Engines.Sql.SqlLocalizedString";
+
+    /// <summary>The package that declares <see cref="SqlConverterFullName" />, named by the diagnostic when the compilation does not have it.</summary>
+    public const string EnginesPackage = "Pragmatic.Internationalization.Engines";
+
     /// <summary>
     ///     Whether this type name is the localized string, however the caller's model spells it —
     ///     bare, qualified, or with the <c>global::</c> prefix, and nullable either way.

@@ -242,6 +242,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
         // The dossier's ProtectedValue: a binary column on both, not absent from both.
         Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.Contains("column Dossiers.Note", StringComparison.Ordinal));
         Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.Contains("column Dossiers.Note", StringComparison.Ordinal));
+        // The leaflet's optional LocalizedString: a nullable text column on both, not absent from both.
+        Describe(EfCoreSchema("PostgreSql", entities)).Should().Contain(l => l.Contains("column Leaflets.Subtitle text NULL", StringComparison.Ordinal));
+        Describe(SqlSchema("PostgreSql", entities).Schema).Should().Contain(l => l.Contains("column Leaflets.Subtitle text NULL", StringComparison.Ordinal));
     }
 
     private static string SqlPragmaticEntities()
@@ -274,7 +277,7 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
     /// </summary>
     private static (SchemaVersion Schema, ImmutableArray<Diagnostic> Diagnostics) SqlSchema(string dialect, string entities)
     {
-        var (generated, diagnostics) = Run([entities, Host, SqlBridge, DriverProbe(dialect), ProtectedValueConverter], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
+        var (generated, diagnostics) = Run([entities, Host, SqlBridge, DriverProbe(dialect), ProtectedValueConverter, LocalizedStringConverter], [typeof(global::Pragmatic.Persistence.Sql.SqlSession)]);
         return (Read(Generated(generated, "_Infra.Persistence.SchemaMetadata.g.cs"), "DefaultSchema", "Current"), diagnostics);
     }
 
@@ -289,6 +292,21 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
             {
                 public static byte[] ToStore(Pragmatic.Cryptography.ProtectedValue value) => value.Packed;
                 public static Pragmatic.Cryptography.ProtectedValue FromStore(byte[] value) => new(value);
+            }
+        }
+        """;
+
+    /// <summary>
+    ///     The Sql engine's <c>LocalizedString</c> converter, as Pragmatic.Internationalization.Engines declares it, for the same reason as
+    ///     <see cref="ProtectedValueConverter" />.
+    /// </summary>
+    private const string LocalizedStringConverter = """
+        namespace Pragmatic.Internationalization.Engines.Sql
+        {
+            public sealed class SqlLocalizedString : Pragmatic.Persistence.Sql.Conversion.ISqlConverter<Pragmatic.Internationalization.Types.LocalizedString, string>
+            {
+                public static string ToStore(Pragmatic.Internationalization.Types.LocalizedString value) => value.ToJson();
+                public static Pragmatic.Internationalization.Types.LocalizedString FromStore(string value) => Pragmatic.Internationalization.Types.LocalizedString.FromJson(value);
             }
         }
         """;
@@ -316,7 +334,9 @@ public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
                 // The bridge suite's Account owns a LocalIdentity: its columns are compared like every other entity's.
                 typeof(global::Pragmatic.Identity.PragmaticUserAttribute), typeof(global::Pragmatic.Identity.IdentityRecord), typeof(global::Pragmatic.Identity.Local.LocalIdentity),
                 // Its Dossier holds a ProtectedValue: a binary column on both branches.
-                typeof(global::Pragmatic.Cryptography.ProtectedValue)])),
+                typeof(global::Pragmatic.Cryptography.ProtectedValue),
+                // Its Leaflet holds a LocalizedString: a text column on both branches.
+                typeof(global::Pragmatic.Internationalization.Types.LocalizedString)])),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out var diagnostics);

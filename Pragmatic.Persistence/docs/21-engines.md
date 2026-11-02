@@ -131,6 +131,11 @@ A `ProtectedValue` member is stored by both engines: on the Sql engine as a bina
 `Pragmatic.Cryptography.Engines` (PRAG3003 names the package when it is missing), on the documents engine as
 Base64 text.
 
+A `LocalizedString` member is stored by both engines as the JSON object of culture → text that EF Core's
+converter writes (`LocalizedString.ToJson`), so one database holds the same text whichever persistence wrote it:
+on the Sql engine as a text column, through `Pragmatic.Internationalization.Engines` (PRAG3003 names the package
+when it is missing), on the documents engine as a text field.
+
 ## Known limits
 
 None tracked at the moment.

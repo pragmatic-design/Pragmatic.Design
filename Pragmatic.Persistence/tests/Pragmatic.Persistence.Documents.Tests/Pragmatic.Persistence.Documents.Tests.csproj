@@ -46,6 +46,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
     <!-- ProtectedValue: a document field, its bytes as Base64 text (ProtectedValueTests). -->
     <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography\Pragmatic.Cryptography.csproj" />
+    <!-- LocalizedString fields: the engine stores them through LocalizedString's own JSON, with no bridge. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the Sql engine's bridge suite reads as (TestUser, TestScopes): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />

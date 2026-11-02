@@ -69,6 +69,7 @@ Full walkthrough: [Getting Started](/modules/i18n/getting-started/).
 | `Pragmatic.Internationalization` | Core: context, Money/CurrencyCode, formatting, humanizers, generated `T` |
 | `Pragmatic.Internationalization.AspNetCore` | Culture middleware, ProblemDetails localization, frontend endpoint |
 | `Pragmatic.Internationalization.EFCore` | `LocalizedString` (JSON column) and `CurrencyCode` (varchar(3)) entity storage |
+| `Pragmatic.Internationalization.Engines` | `LocalizedString` on Pragmatic's Sql engine: the same JSON text EF Core writes. The documents engine needs no package |
 
 ## Installation
 

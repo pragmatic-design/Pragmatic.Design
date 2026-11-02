@@ -254,6 +254,8 @@ internal sealed partial class EntityModel
 
         if (compilation is not null && !CanStoreProtectedValues(type, columns, compilation, diagnostics))
             return null;
+        if (compilation is not null && !CanStoreLocalizedStrings(type, columns, compilation, diagnostics))
+            return null;
 
         List<DerivedModel>? derived = null;
         string? fixedPredicate = null;

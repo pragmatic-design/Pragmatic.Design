@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>LocalizedString columns of Pragmatic.Internationalization on Pragmatic's Sql engine, beside Pragmatic.Internationalization.EFCore: the translations stored as the JSON text EF Core's converter writes, so one database holds the same text whichever persistence wrote it.</Description>
+    <PackageTags>pragmatic;internationalization;i18n;localization;sql</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- LocalizedString, and its stored form (ToJson, FromJson). -->
+    <ProjectReference Include="..\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <!-- ISqlConverter, through which a LocalizedString column is read and bound. Private, as in Pragmatic.Cryptography.Engines: an application
+         brings the bridge of the engine it uses. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
