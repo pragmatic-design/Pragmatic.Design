@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -42,7 +43,8 @@ internal static class ResourceFeature
         IncrementalValueProvider<ImmutableArray<EndpointModel>> Endpoints,
         IncrementalValueProvider<ImmutableArray<Actions.Models.MutationModel>> Mutations,
         IncrementalValueProvider<ImmutableArray<Mapping.Models.MappingModel>> Mappings,
-        IncrementalValueProvider<ImmutableArray<Manifest.Models.ManifestTypeModel>> ManifestTypes) Register(
+        IncrementalValueProvider<ImmutableArray<Manifest.Models.ManifestTypeModel>> ManifestTypes,
+        IncrementalValueProvider<EquatableArray<Persistence.Models.ShapeSourceModel>> EngineSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features)
     {
@@ -224,8 +226,12 @@ internal static class ResourceFeature
         var resourceManifestTypes = crudModels.Select(static (models, _) =>
             Transforms.ResourceManifestTypeBuilder.Build(models));
 
+        // The read DTOs and queries, for the engines to bind and compile as they do the application's own.
+        var engineSources = crudModels.Combine(features)
+            .Select(static (pair, _) => EngineSources(pair.Left, pair.Right));
+
         return (allResources, resourceQueryModels, resourceEndpointModels,
-            resourceMutationModels, resourceMappingModels, resourceManifestTypes);
+            resourceMutationModels, resourceMappingModels, resourceManifestTypes, engineSources);
     }
 
     // ResourceCapabilities flags
@@ -391,9 +397,40 @@ internal static class ResourceFeature
 
     private static void GenerateCrud(SourceProductionContext ctx, ResourceCrudModel crudModel)
     {
-        var caps = crudModel.Resource.Capabilities;
-
         ReportInapplicableCapabilities(ctx, crudModel);
+
+        foreach (var template in CrudTemplates(crudModel))
+            EmitArtifact(ctx, template);
+    }
+
+    /// <summary>
+    ///     The read DTOs and the queries above, as the engines bind them; empty when the entities are EF Core's. An engine compiles a declared
+    ///     query it sees: these are this generator's output, which the compilation it is handed does not have, so without them the scaffolded
+    ///     queries got neither their <c>IQuery</c> shape nor their case of <c>RunAsync</c> (CS0411 at the invoker's call).
+    /// </summary>
+    public static EquatableArray<Persistence.Models.ShapeSourceModel> EngineSources(ImmutableArray<ResourceCrudModel> models, DetectedFeatures features)
+    {
+        if (features.HasPersistenceEFCore || !(features.HasPersistenceSql || features.HasPersistenceDocuments))
+            return EquatableArray<Persistence.Models.ShapeSourceModel>.Empty;
+
+        var sources = new List<Persistence.Models.ShapeSourceModel>();
+        foreach (var model in models)
+        {
+            foreach (var template in CrudTemplates(model))
+            {
+                var artifact = template.RenderOutput();
+                if (!artifact.IsEmpty)
+                    sources.Add(new Persistence.Models.ShapeSourceModel(artifact.HintName, artifact.Text));
+            }
+        }
+
+        return sources.ToEquatableArray();
+    }
+
+    /// <summary>The read DTOs and the queries a resource scaffolds: one list, for its emission and for the engines.</summary>
+    private static IEnumerable<CSharpTemplate> CrudTemplates(ResourceCrudModel crudModel)
+    {
+        var caps = crudModel.Resource.Capabilities;
 
         // DTOs — the read shapes only. A mutation is its own input contract, so a CreateDto/UpdateDto
         // described a body that already had a type. And only while something still answers with them:
@@ -406,27 +443,27 @@ internal static class ResourceFeature
         // resource that only creates, or only deletes, named a DTO nobody emitted: a build error
         // inside a file its author cannot open, from a declaration that reads as perfectly ordinary.
         if (crudModel.NeedsScaffoldedReadDto)
-            EmitArtifact(ctx, new ResourceDtoTemplate(crudModel, ResourceDtoKind.Read));
+            yield return new ResourceDtoTemplate(crudModel, ResourceDtoKind.Read);
 
         if ((caps & CapList) != 0 && crudModel.NeedsScaffoldedListItemDto)
-            EmitArtifact(ctx, new ResourceDtoTemplate(crudModel, ResourceDtoKind.ListItem));
+            yield return new ResourceDtoTemplate(crudModel, ResourceDtoKind.ListItem);
 
         // Reading one row is a Single query, not an action that calls the repository by hand: it gets
         // the query pipeline's filters and its 404. Create/Update/Delete/Restore are mutations, and
         // their declarations are emitted from the injected MutationModels — see Register.
         if ((caps & CapRead) != 0)
         {
-            EmitArtifact(ctx, new ResourceQueryTemplate(crudModel, ResourceQueryKind.Read));
+            yield return new ResourceQueryTemplate(crudModel, ResourceQueryKind.Read);
             if (crudModel.LogicKeyName is not null)
-                EmitArtifact(ctx, new ResourceQueryTemplate(crudModel, ResourceQueryKind.ReadByLogicKey));
+                yield return new ResourceQueryTemplate(crudModel, ResourceQueryKind.ReadByLogicKey);
         }
 
         // Query classes (List/Search) — Apply() generated by QueryFeature from injected QueryModel
         if ((caps & CapList) != 0)
-            EmitArtifact(ctx, new ResourceQueryTemplate(crudModel, ResourceQueryKind.List));
+            yield return new ResourceQueryTemplate(crudModel, ResourceQueryKind.List);
 
         if ((caps & CapSearch) != 0)
-            EmitArtifact(ctx, new ResourceQueryTemplate(crudModel, ResourceQueryKind.Search));
+            yield return new ResourceQueryTemplate(crudModel, ResourceQueryKind.Search);
     }
 
     private static void EmitArtifact(SourceProductionContext ctx, CSharpTemplate template)

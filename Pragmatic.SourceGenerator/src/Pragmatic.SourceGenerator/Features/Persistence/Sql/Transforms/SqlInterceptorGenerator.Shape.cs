@@ -67,7 +67,10 @@ internal static partial class SqlInterceptorGenerator
                     .Concat(engineReads.Where(r => r.EntityFullTypeName == entityName).Select(r => (IReadOnlyList<string>)r.Paths.AsImmutableArray()));
                 // Its collections as the shape declares them: the navigations a [Relation] generates are members only there.
                 var asShaped = shaped.GetTypeByMetadataName(entity.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted))) ?? entity;
-                if (PragmaticReadRepository.For(entity, asShaped, declared.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, entity)).ToList(), includeSets) is { } repository)
+                // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, its entity
+                // too, and a symbol of one compilation is never equal to the same type's symbol of another.
+                var ofEntity = declared.Where(q => q.Entity.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == entityName).ToList();
+                if (PragmaticReadRepository.For(entity, asShaped, ofEntity, includeSets) is { } repository)
                     repositories.Add(repository);
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
                     repositories.Add(hierarchy); // its chains are bound and intercepted, as a repository's
