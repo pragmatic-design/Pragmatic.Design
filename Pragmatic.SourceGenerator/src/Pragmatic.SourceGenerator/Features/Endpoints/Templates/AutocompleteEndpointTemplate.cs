@@ -76,6 +76,12 @@ internal sealed class AutocompleteEndpointTemplate : CSharpTemplate
 
         Block(() =>
         {
+            if (_model.ReadsThroughEngine)
+            {
+                RenderEngineRead();
+                return;
+            }
+
             // Repository.Query() applies all filters (soft-delete, tenant, temporal)
             AppendLine("var query = repository.Query();");
             AppendLine();
@@ -118,6 +124,24 @@ internal sealed class AutocompleteEndpointTemplate : CSharpTemplate
 
         AppendLine();
         AppendLine("return builder;");
+    }
+
+    /// <summary>
+    ///     On the Sql or documents engine: the repository's compiled read for this property (<c>IAutocompleteReadRepository</c>), the session's
+    ///     filters applied, then the rows projected in .NET, after the <c>Take</c>. A read built here would reach the engine uncompiled: a
+    ///     generator does not see its own output.
+    /// </summary>
+    private void RenderEngineRead()
+    {
+        var entityFqn = $"global::{_model.EntityTypeFullName}";
+        AppendLine($"var rows = await ((global::Pragmatic.Persistence.Repository.IAutocompleteReadRepository<{entityFqn}>)repository)");
+        AppendLine($"    .AutocompleteAsync(\"{StringHelper.CSharpLiteral(_model.PropertyName)}\", search, limit ?? {_model.DefaultLimit}, ct).ConfigureAwait(false);");
+        AppendLine();
+        AppendLine(_model.HasCustomDto
+            ? $"var results = rows.Select({_model.DtoTypeFullName}.FromEntity).ToList();"
+            : $"var results = rows.Select(e => new global::Pragmatic.Endpoints.Responses.AutocompleteItem<{_model.KeyPropertyTypeName}>(e.{_model.KeyPropertyName}, e.{_model.PropertyName})).ToList();");
+        AppendLine();
+        AppendLine("return Microsoft.AspNetCore.Http.Results.Ok(results);");
     }
 
     /// <summary>

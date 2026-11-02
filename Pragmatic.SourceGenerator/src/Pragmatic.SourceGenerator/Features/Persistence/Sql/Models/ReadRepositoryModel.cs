@@ -4,7 +4,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 
 /// <summary>
 ///     A Pragmatic entity's read repository and repository on the Sql engine, with its declared queries' cases, plain and paged, and the reads
-///     by key with navigations its loads declare.
+///     by key with navigations its loads declare, and the reads its <c>[Autocomplete]</c> properties answer.
 /// </summary>
 internal sealed record ReadRepositoryModel(
     string Hint,
@@ -14,4 +14,5 @@ internal sealed record ReadRepositoryModel(
     EquatableArray<RunCaseModel> Queries,
     EquatableArray<RunCaseModel> PagedQueries,
     EquatableArray<IncludeReadModel> IncludeReads,
-    EquatableArray<LinkNavigationModel> Collections);
+    EquatableArray<LinkNavigationModel> Collections,
+    EquatableArray<string> Autocompletes);
