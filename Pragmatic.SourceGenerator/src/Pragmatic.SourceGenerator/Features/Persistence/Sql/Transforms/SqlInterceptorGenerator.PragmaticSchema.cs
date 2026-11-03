@@ -261,6 +261,16 @@ internal static partial class SqlInterceptorGenerator
                 foreignKeys.Add(ForeignKey($"FK_{entity.Table}_{column}_{target.Table}", column, target.Table, target.KeyColumn, PragmaticRelations.OnDelete(entity.Type, navigation.Property, navigation.Target)));
             }
 
+            // A reference to a [Lookup] entity has its key and no navigation member, and keeps the index and the constraint EF Core configures.
+            foreach (var reference in PragmaticRelations.LookupReferences(entity.Type).Where(r => !entity.Navigations.Any(n => n.Property == r.Navigation) && entity.Column(r.ForeignKey) is not null))
+            {
+                var column = entity.Column(reference.ForeignKey)!.Column;
+                Index([column]);
+                if (!Holds(reference.Target) || lookup(reference.Target) is not { } target)
+                    continue;
+                foreignKeys.Add(ForeignKey($"FK_{entity.Table}_{column}_{target.Table}", column, target.Table, target.KeyColumn, PragmaticRelations.OnDelete(entity.Type, reference.Navigation, reference.Target)));
+            }
+
             var keyed = new HashSet<string>(indexes.SelectMany(i => i.Columns).Concat(entity.Keys.Select(k => k.Column)), StringComparer.Ordinal);
             var columns = new List<ColumnSchemaModel>();
             foreach (var column in entity.Columns)

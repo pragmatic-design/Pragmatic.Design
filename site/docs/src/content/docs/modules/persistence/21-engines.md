@@ -151,6 +151,16 @@ the document: one of its own, or a member of an embedded or owned field that is 
 (`[MapProperty("Placement.Floor")]`). A path through a navigation (`[MapProperty("Property.Name")]`) is
 `PRAG3108`, naming the navigation: a document keeps a relation as its key, not as the related document.
 
+A declared query's `[ComplexFilter]` is compiled by the Sql engine: the filter object's members are composed as
+its `[FilterDto<T>]` composes them for EF Core, a member that is not set filtering nothing, the members of a
+`[FilterGroup(FilterLogic.Or)]` joined with OR, the rest with AND. A `Between` member refuses the query
+(`PRAG3033`). The documents engine does not compile it yet (`PRAG3108`).
+
+`[GenerateHierarchy]` on an entity whose tree is a declared relation
+(`[Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]`) walks the parent key on the Sql
+engine, whatever else the entity declares (`[Lookup]` included). A reference to a `[Lookup]` entity has its key and
+no navigation member; the Sql engine's schema still gives that key the index and the foreign key EF Core gives it.
+
 ## Known limits
 
 None tracked at the moment.

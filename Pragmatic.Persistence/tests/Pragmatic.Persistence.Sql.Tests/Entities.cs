@@ -101,11 +101,12 @@ public partial class StaffAssignment : IEntity, ITemporalRelation
 
 /// <summary>
 ///     A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted, [Audited] (its writes
-///     append to the audit trail where a boundary's saves register the trail's phase).
+///     append to the audit trail where a boundary's saves register the trail's phase), and a [Lookup] as the Showcase's categories are.
 /// </summary>
 [Entity]
 [SoftDelete]
 [Audited]
+[Lookup]
 [GenerateHierarchy]
 [Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]
 public partial class Category : IEntity

@@ -54,3 +54,36 @@ public partial class ReviewLinesQuery
     [Sort]
     public SortDirection? TextSort { get; init; }
 }
+
+/// <summary>Where a review was written, or by whom: a [FilterGroup(FilterLogic.Or)], as the Showcase's city-or-country group.</summary>
+[FilterDto<Review>]
+public partial class ReviewSourceFilter
+{
+    [Filter(Operator = FilterOperator.EndsWith, MapTo = nameof(Review.Text))]
+    public string? At { get; set; }
+
+    [Filter(Operator = FilterOperator.StartsWith, MapTo = nameof(Review.Text))]
+    public string? By { get; set; }
+}
+
+/// <summary>A filter object: an OR group, and a member joined to it with AND.</summary>
+[FilterDto<Review>]
+public partial class ReviewFilter
+{
+    [FilterGroup(FilterLogic.Or)]
+    public ReviewSourceFilter? Source { get; set; }
+
+    [Filter(Operator = FilterOperator.GreaterOrEqual, MapTo = nameof(Review.Stars))]
+    public int? MinStars { get; set; }
+}
+
+/// <summary>An unpaged query whose filters are one [ComplexFilter], as the Showcase's property search carries its location.</summary>
+[Query<Review>]
+public partial class FilterReviewsQuery
+{
+    [ComplexFilter]
+    public ReviewFilter? Where { get; init; }
+
+    [Sort(DefaultDirection = SortDirection.Ascending)]
+    public SortDirection? TextSort { get; init; }
+}

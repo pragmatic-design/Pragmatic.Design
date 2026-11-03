@@ -36,6 +36,8 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
             AppendLine($"        var spec = global::Pragmatic.Specification.Spec<{entity}>.True;");
             foreach (var c in model.Conditions)
                 AppendLine($"        {(c.Guard is null ? "" : $"if ({c.Guard}) ")}spec = spec & global::Pragmatic.Specification.Spec<{entity}>.Where(e => {c.Condition});");
+            foreach (var group in model.Groups)
+                RenderGroup(group, "spec", parentOr: null, "        ");
             AppendLine("        return spec;");
             AppendLine("    }");
             AppendLine();
@@ -44,6 +46,38 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
         }
 
         AppendLine("}");
+    }
+
+    private int _groupCount;
+
+    /// <summary>
+    ///     A filter object (<c>[ComplexFilter]</c>, or a <c>[FilterGroup]</c> inside one) as Pragmatic's <c>[FilterDto]</c> composes it: null until a
+    ///     member is set, each set member joined with the group's AND or OR, then joined into <paramref name="target" />: the query's specification
+    ///     with AND (<paramref name="parentOr" /> null), else the enclosing group with that group's logic.
+    /// </summary>
+    private void RenderGroup(QueryFilterGroupModel group, string target, bool? parentOr, string indent)
+    {
+        var entity = model.EntityType;
+        var specification = $"global::Pragmatic.Specification.Specification<{entity}>";
+        var name = $"__group{_groupCount++}";
+        var join = group.Or ? "|" : "&";
+        AppendLine($"{indent}if ({group.Guard})");
+        AppendLine($"{indent}{{");
+        AppendLine($"{indent}    {specification}? {name} = null;");
+        foreach (var c in group.Conditions)
+        {
+            AppendLine($"{indent}    {(c.Guard is null ? "" : $"if ({c.Guard}) ")}{{");
+            AppendLine($"{indent}        var __leaf = global::Pragmatic.Specification.Spec<{entity}>.Where(e => {c.Condition});");
+            AppendLine($"{indent}        {name} = {name} is null ? __leaf : ({name} {join} __leaf);");
+            AppendLine($"{indent}    }}");
+        }
+
+        foreach (var nested in group.Groups)
+            RenderGroup(nested, name, group.Or, indent + "    ");
+        AppendLine(parentOr is null
+            ? $"{indent}    if ({name} is not null) {target} = {target} & {name};"
+            : $"{indent}    if ({name} is not null) {target} = {target} is null ? {name} : ({target} {(parentOr.Value ? "|" : "&")} {name});");
+        AppendLine($"{indent}}}");
     }
 
     /// <summary>The sorts as an ordering of the engine's keys, the entity's key last so the order is total.</summary>

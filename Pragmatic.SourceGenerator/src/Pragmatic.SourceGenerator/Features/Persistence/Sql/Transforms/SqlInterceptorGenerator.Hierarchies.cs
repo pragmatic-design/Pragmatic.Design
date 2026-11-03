@@ -12,7 +12,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 ///     <c>[GenerateHierarchy]</c>: for an entity with a navigation to itself, two plans with a recursive CTE (the descendants of a
 ///     key, its ancestors; the node itself excluded) and the two session extensions that run them, named as the repository's
 ///     (<c>GetDescendantsByParent</c>, <c>GetAncestorsByParent</c>). The CTE walks the foreign key; the rows come out through the
-///     entity's reader. ASSUMPTION: the entity's visibility rules are not applied inside the walk.
+///     entity's reader. ASSUMPTION: the entity's visibility rules are not applied inside the walk. A Pragmatic <c>[Entity]</c> is not
+///     walked here: its tree is the declared relation, which <c>PragmaticHierarchy</c> serves.
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
@@ -22,7 +23,9 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>The plans into <paramref name="plans" /> (inside the generated namespace) and the extension classes into <paramref name="extensions" /> (in the entity's namespace, after it).</summary>
     private static void EmitHierarchies(List<PlanSectionModel> plans, List<TrailerSectionModel> extensions, IEnumerable<EntityModel> entities, List<Diagnostic> diagnostics)
     {
-        foreach (var entity in entities)
+        // A Pragmatic entity's tree is its declared relation, walked through the parent key (PragmaticHierarchy): its navigation is generated,
+        // so it is not among the members this model reads, and a chain over the entity (a [Lookup]'s) would bring it here only to be refused.
+        foreach (var entity in entities.Where(e => !PragmaticShape.IsPragmaticEntity(e.Type)))
         {
             foreach (var attribute in entity.Type.GetAttributes().Where(a => a.AttributeClass?.Name == "GenerateHierarchyAttribute"))
             {

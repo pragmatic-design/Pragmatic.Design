@@ -81,6 +81,16 @@ internal static class PragmaticRelations
     }
 
     /// <summary>
+    ///     The ManyToOne references of an entity to a <c>[Lookup]</c> entity: the navigation's name, its key property (<c>{Navigation}Id</c> unless the
+    ///     relation names one) and the target. Persistence generates the key and no navigation for them (the lookup feature's member of that name is
+    ///     read from its cache), so they are not among the navigations the entity's members show; EF Core still gives the key its index and constraint.
+    /// </summary>
+    public static IEnumerable<(string Navigation, string ForeignKey, INamedTypeSymbol Target)> LookupReferences(INamedTypeSymbol entity)
+        => Declarations(entity)
+            .Where(d => d.Kind == "ManyToOne" && d.Target.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.LookupAttribute"))
+            .Select(d => (d.Name ?? d.Target.Name, d.ForeignKey ?? (d.Name ?? d.Target.Name) + "Id", d.Target));
+
+    /// <summary>
     ///     What deleting <paramref name="target" /> does to <paramref name="dependent" />'s rows along <paramref name="navigation" />, as Pragmatic's
     ///     <c>DeleteBehavior</c> name: the dependent's ManyToOne/OneToOne declaration (Restrict unless it says), else the target's OneToMany of the
     ///     dependent (Cascade unless it says), else NoAction. ASSUMPTION: when both sides declare, the dependent's holds (Pragmatic's
