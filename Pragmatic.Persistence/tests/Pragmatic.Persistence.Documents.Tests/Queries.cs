@@ -56,3 +56,25 @@ public partial class ReviewLinesQuery
     [Sort]
     public SortDirection? TextSort { get; init; }
 }
+
+/// <summary>A stay's card: its code under another name and its arrival, both read through <c>[MapProperty]</c> from the document's own fields.</summary>
+[MapFrom<Stay>]
+public sealed class StayCard
+{
+    [MapProperty("Code")]
+    public string Label { get; init; } = "";
+
+    [MapProperty("Arrival")]
+    public DateOnly ArrivesOn { get; init; }
+}
+
+/// <summary>One batch's stay cards, sorted by arrival when asked.</summary>
+[Query<Stay, StayCard>]
+public partial class StayCardsQuery
+{
+    [Filter(Operator = FilterOperator.Equals)]
+    public string? Batch { get; init; }
+
+    [Sort(MapTo = nameof(Stay.Arrival))]
+    public SortDirection? ArrivalSort { get; init; }
+}

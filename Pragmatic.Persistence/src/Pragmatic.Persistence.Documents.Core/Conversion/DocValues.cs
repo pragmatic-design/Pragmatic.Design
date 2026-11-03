@@ -35,6 +35,39 @@ public static class DocValues
     /// <summary>A DateTime as the UTC instant it names (a local or unspecified one is taken as UTC, as BSON has no zone).</summary>
     public static void Write(BsonWriter w, string name, DateTime value) => w.Write(name, new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc)));
 
+    /// <summary>A day as its <c>yyyy-MM-dd</c> text, which sorts as the day does.</summary>
+    public static void Write(BsonWriter w, string name, DateOnly value) => w.Write(name, DocTimeText.Day(value));
+
+    /// <summary>A time of day as its <c>HH:mm:ss.fffffff</c> text, which sorts as the time does.</summary>
+    public static void Write(BsonWriter w, string name, TimeOnly value) => w.Write(name, DocTimeText.Clock(value));
+
+    /// <summary>A duration as its 64-bit ticks.</summary>
+    public static void Write(BsonWriter w, string name, TimeSpan value) => w.Write(name, value.Ticks);
+
+    public static void Write(BsonWriter w, string name, DateOnly? value)
+    {
+        if (value is { } v)
+            Write(w, name, v);
+        else
+            w.WriteNull(name);
+    }
+
+    public static void Write(BsonWriter w, string name, TimeOnly? value)
+    {
+        if (value is { } v)
+            Write(w, name, v);
+        else
+            w.WriteNull(name);
+    }
+
+    public static void Write(BsonWriter w, string name, TimeSpan? value)
+    {
+        if (value is { } v)
+            Write(w, name, v);
+        else
+            w.WriteNull(name);
+    }
+
     public static void Write(BsonWriter w, string name, int? value)
     {
         if (value is { } v)

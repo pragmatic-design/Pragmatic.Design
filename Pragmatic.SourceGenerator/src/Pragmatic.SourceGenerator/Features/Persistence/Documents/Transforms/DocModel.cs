@@ -30,6 +30,15 @@ internal enum DocKind
 
     /// <summary>A <c>Pragmatic.Internationalization.Types.LocalizedString</c>: the JSON text of culture → text EF Core's converter writes.</summary>
     Localized,
+
+    /// <summary>A <c>DateOnly</c>, as its <c>yyyy-MM-dd</c> text: the Sql engine's text form, which sorts as the day does.</summary>
+    DateOnly,
+
+    /// <summary>A <c>TimeOnly</c>, as its <c>HH:mm:ss.fffffff</c> text: the Sql engine's text form, which sorts as the time does.</summary>
+    TimeOnly,
+
+    /// <summary>A <c>TimeSpan</c>, as its 64-bit ticks, as the Sql engine stores it.</summary>
+    TimeSpan,
 }
 
 /// <summary>One field of a document: the property, its stored name, its kind; an embedded type's model, a list's element.</summary>
@@ -149,7 +158,7 @@ internal sealed class DocModel
     public static bool IsPragmatic(ITypeSymbol? type) => type is INamedTypeSymbol named && named.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == EntityAttribute);
 
     /// <summary>A Pragmatic entity, or a collection of them: a navigation, which a document leaves out (its key is the relation).</summary>
-    private static bool IsNavigation(ITypeSymbol type)
+    internal static bool IsNavigation(ITypeSymbol type)
         => IsPragmatic(type) || (type is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } generic && type.SpecialType != SpecialType.System_String && IsPragmatic(generic.TypeArguments[0]));
 
     public static bool IsEmbeddedType(ITypeSymbol? type) => type is INamedTypeSymbol named && named.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == EmbeddedAttribute);
@@ -275,7 +284,7 @@ internal sealed class DocModel
             var element = list.TypeArguments[0];
             if (IsEmbeddedType(element))
                 return new DocField(property, name, DocKind.List, nullable, (INamedTypeSymbol)element, DocKind.Embedded, element);
-            if (ScalarKind(element) is { } elementKind and not (DocKind.Enum or DocKind.Protected or DocKind.Localized))
+            if (ScalarKind(element) is { } elementKind and not (DocKind.Enum or DocKind.Protected or DocKind.Localized or DocKind.DateOnly or DocKind.TimeOnly or DocKind.TimeSpan))
                 return new DocField(property, name, DocKind.List, nullable, null, elementKind, element);
             reason = "a list holds [Embedded] documents or values of one kind (string, int, long, double, decimal, bool, Guid, DateTimeOffset)";
             return null;
@@ -283,7 +292,7 @@ internal sealed class DocModel
 
         reason = IsDocument(scalar)
             ? "a document does not hold another document: refer to it by its key, or make the type [Embedded]"
-            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, an enum, a ProtectedValue, a LocalizedString, an [Embedded] type, and a List of these";
+            : "the kinds are string, int, long, double, decimal, bool, Guid, DateTimeOffset, DateTime, DateOnly, TimeOnly, TimeSpan, an enum, a ProtectedValue, a LocalizedString, an [Embedded] type, and a List of these";
         return null;
     }
 
@@ -323,6 +332,9 @@ internal sealed class DocModel
         var name = type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString();
         return name == "System.Guid" ? DocKind.Guid
             : name == "System.DateTimeOffset" ? DocKind.DateTimeOffset
+            : name == "System.DateOnly" ? DocKind.DateOnly
+            : name == "System.TimeOnly" ? DocKind.TimeOnly
+            : name == "System.TimeSpan" ? DocKind.TimeSpan
             : name == Pragmatic.SourceGenerator.Core.ProtectedValueType.FullName ? DocKind.Protected
             : name == Pragmatic.SourceGenerator.Core.LocalizedStringType.FullName ? DocKind.Localized
             : null;

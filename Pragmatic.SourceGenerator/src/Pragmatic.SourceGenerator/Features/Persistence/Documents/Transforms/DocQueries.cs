@@ -10,7 +10,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 /// <summary>
 ///     A declared query's documents half (its model and <c>ToSpecification()</c> are <see cref="PragmaticQuery" />'s, engine-neutral): its sorts as an
 ///     ordering chosen at runtime (<c>ToDocOrdering()</c>, one <c>DocOrderKey</c> per field), and its result as a projection the documents engine runs
-///     in .NET: every settable property of the DTO from the entity's field of the same name. What it cannot map refuses the query (PRAG3108), as the
+///     in .NET: every settable property of the DTO from the entity's field of the same name, or of the path its <c>[MapProperty]</c> names (a field
+///     of the document's own, or of an embedded or owned one). What it cannot map refuses the query (PRAG3108), as the
 ///     Sql engine's PRAG3033 does.
 /// </summary>
 internal static class DocQueries
@@ -31,14 +32,24 @@ internal static class DocQueries
         {
             if (property.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute"))
                 continue;
-            if (property.GetAttributes().Any(a => a.AttributeClass?.Name == "MapPropertyAttribute"))
+            DocField? field;
+            var read = "e.";
+            if (property.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "MapPropertyAttribute") is { } map)
             {
-                query.Refuse($"{query.Result.Name}.{property.Name} is mapped by [MapProperty], which the documents engine does not read yet");
-                return null;
+                var path = map.ConstructorArguments.FirstOrDefault().Value as string ?? "";
+                field = Follow(query.Entity, model, path, out read, out var problem);
+                if (field is null)
+                {
+                    query.Refuse($"{query.Result.Name}.{property.Name} is mapped by [MapProperty(\"{path}\")]: {problem}");
+                    return null;
+                }
+            }
+            else
+            {
+                // A Pragmatic entity's Id is its shape's alias of the key (Id => PersistenceId), which a document stores as its key: read that.
+                field = property.Name == "Id" && model.Field("Id") is null && model.IsPragmaticEntity && model.Key?.Property.Name == "PersistenceId" ? model.Key : model.Field(property.Name);
             }
 
-            // A Pragmatic entity's Id is its shape's alias of the key (Id => PersistenceId), which a document stores as its key: read that.
-            var field = property.Name == "Id" && model.Field("Id") is null && model.IsPragmaticEntity && model.Key?.Property.Name == "PersistenceId" ? model.Key : model.Field(property.Name);
             // The field as the shaped entity declares it (the model is read on the compilation with the shape): the same type, or its nullable.
             var source = field?.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
             var target = property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
@@ -48,10 +59,67 @@ internal static class DocQueries
                 return null;
             }
 
-            assignments.Add($"{property.Name} = e.{field!.Property.Name}");
+            assignments.Add($"{property.Name} = {read}{field!.Property.Name}");
         }
 
         return $".Select(e => new {query.ResultName} {{ {string.Join(", ", assignments)} }})";
+    }
+
+    /// <summary>
+    ///     The field a <c>[MapProperty]</c> path names on the document: a field of its own, or a member of an embedded or owned field that is never
+    ///     null (<c>Placement.Floor</c>); <paramref name="read" /> is the code before the field's name (<c>e.Placement.</c>). Null with the reason
+    ///     otherwise; a path through a navigation names it, since a document keeps a relation as its key and the related one is not in it.
+    /// </summary>
+    private static DocField? Follow(INamedTypeSymbol entity, DocModel model, string path, out string read, out string problem)
+    {
+        read = "e.";
+        problem = "";
+        var segments = path.Split('.');
+        var current = model;
+        INamedTypeSymbol owner = entity;
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var field = current.Field(segments[i]);
+            if (field is null)
+            {
+                problem = i == 0 && IsNavigation(owner, segments[i])
+                    ? $"the path runs through the navigation {segments[i]}, which a document keeps as its key, not as the related document"
+                    : $"{owner.Name} has no field {segments[i]} in the document";
+                return null;
+            }
+
+            if (i == segments.Length - 1)
+                return field;
+            if (field.Kind != DocKind.Embedded || field.Embedded is null || DocModel.Read(field.Embedded, []) is not { } inner)
+            {
+                problem = $"{segments[i]} is not an embedded or owned field, so {segments[i + 1]} is not a member of it";
+                return null;
+            }
+
+            if (field.Nullable)
+            {
+                problem = $"{segments[i]} may be null, and the projection reads {segments[i + 1]} through it";
+                return null;
+            }
+
+            read += field.Property.Name + ".";
+            current = inner;
+            owner = field.Embedded;
+        }
+
+        return null;
+    }
+
+    /// <summary>A property of <paramref name="type" /> or a base type named <paramref name="name" /> that is a navigation (an entity, or a collection of them).</summary>
+    private static bool IsNavigation(INamedTypeSymbol type, string name)
+    {
+        for (var t = type; t is not null; t = t.BaseType)
+        {
+            if (t.GetMembers(name).OfType<IPropertySymbol>().FirstOrDefault() is { } property)
+                return DocModel.IsNavigation(property.Type);
+        }
+
+        return false;
     }
 
     /// <summary>The query's shape on the documents engine (hint name, text).</summary>
