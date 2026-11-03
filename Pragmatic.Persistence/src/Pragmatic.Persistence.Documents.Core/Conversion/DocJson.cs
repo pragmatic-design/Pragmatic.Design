@@ -34,6 +34,12 @@ public static class DocJson
 
     public static void Write(Utf8JsonWriter w, string name, DateTime value) => w.WriteString(name, Instant(new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc))));
 
+    public static void Write(Utf8JsonWriter w, string name, DateOnly value) => w.WriteString(name, DocTimeText.Day(value));
+
+    public static void Write(Utf8JsonWriter w, string name, TimeOnly value) => w.WriteString(name, DocTimeText.Clock(value));
+
+    public static void Write(Utf8JsonWriter w, string name, TimeSpan value) => w.WriteNumber(name, value.Ticks);
+
     public static void Write<TValue>(Utf8JsonWriter w, string name, TValue? value) where TValue : struct
     {
         w.WritePropertyName(name);
@@ -66,6 +72,12 @@ public static class DocJson
     public static void WriteValue(Utf8JsonWriter w, DateTimeOffset value) => w.WriteStringValue(Instant(value));
 
     public static void WriteValue(Utf8JsonWriter w, DateTime value) => w.WriteStringValue(Instant(new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc))));
+
+    public static void WriteValue(Utf8JsonWriter w, DateOnly value) => w.WriteStringValue(DocTimeText.Day(value));
+
+    public static void WriteValue(Utf8JsonWriter w, TimeOnly value) => w.WriteStringValue(DocTimeText.Clock(value));
+
+    public static void WriteValue(Utf8JsonWriter w, TimeSpan value) => w.WriteNumberValue(value.Ticks);
 
     public static void WriteValue<TValue>(Utf8JsonWriter w, TValue? value) where TValue : struct
     {
@@ -159,6 +171,12 @@ public static class DocJson
 
     public static DateTime ReadDateTime(JsonElement e) => ReadInstant(e).UtcDateTime;
 
+    public static DateOnly ReadDateOnly(JsonElement e) => DocTimeText.ParseDay(e.GetString()!);
+
+    public static TimeOnly ReadTimeOnly(JsonElement e) => DocTimeText.ParseClock(e.GetString()!);
+
+    public static TimeSpan ReadTimeSpan(JsonElement e) => TimeSpan.FromTicks(e.GetInt64());
+
     /// <summary>A number as a decimal from its JSON text (exact as written, up to what Cosmos kept: 15 significant digits).</summary>
     public static decimal ReadDecimal(JsonElement e) => e.GetDecimal();
 
@@ -176,6 +194,9 @@ public static class DocJson
             case Guid id: w.WriteStringValue(id.ToString("D")); break;
             case DateTimeOffset instant: w.WriteStringValue(Instant(instant)); break;
             case DateTime stamp: w.WriteStringValue(Instant(new DateTimeOffset(DateTime.SpecifyKind(stamp, DateTimeKind.Utc)))); break;
+            case DateOnly day: w.WriteStringValue(DocTimeText.Day(day)); break;
+            case TimeOnly clock: w.WriteStringValue(DocTimeText.Clock(clock)); break;
+            case TimeSpan span: w.WriteNumberValue(span.Ticks); break;
             default: throw new NotSupportedException($"A {typeof(TValue).Name} is not a document value.");
         }
     }

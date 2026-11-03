@@ -136,6 +136,16 @@ converter writes (`LocalizedString.ToJson`), so one database holds the same text
 on the Sql engine as a text column, through `Pragmatic.Internationalization.Engines` (PRAG3003 names the package
 when it is missing), on the documents engine as a text field.
 
+A `DateOnly`, `TimeOnly` or `TimeSpan` member is stored by the documents engine in the Sql engine's portable
+forms: a day as `yyyy-MM-dd` text, a time of day as `HH:mm:ss.fffffff` text, a duration as its 64-bit ticks.
+Each sorts and compares as the value does, so a filter or an ordering on the field means what it means in .NET.
+A list of them is not a document field yet.
+
+A declared query's result reads a `[MapProperty]` path on the documents engine when the path names a field of
+the document: one of its own, or a member of an embedded or owned field that is never null
+(`[MapProperty("Placement.Floor")]`). A path through a navigation (`[MapProperty("Property.Name")]`) is
+`PRAG3108`, naming the navigation: a document keeps a relation as its key, not as the related document.
+
 ## Known limits
 
 None tracked at the moment.

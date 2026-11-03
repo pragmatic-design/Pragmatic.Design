@@ -108,6 +108,12 @@ public static class DocMapping
     /// <summary>A DateTime as the UTC instant stored.</summary>
     public static DateTime ReadDateTime(ref BsonReader reader) => reader.ReadDateTime().UtcDateTime;
 
+    public static DateOnly ReadDateOnly(ref BsonReader reader) => DocTimeText.ParseDay(reader.ReadString());
+
+    public static TimeOnly ReadTimeOnly(ref BsonReader reader) => DocTimeText.ParseClock(reader.ReadString());
+
+    public static TimeSpan ReadTimeSpan(ref BsonReader reader) => TimeSpan.FromTicks(ReadInt64(ref reader));
+
     public static void Write(BsonWriter w, string name, DateTime? value)
     {
         if (value is { } v)
