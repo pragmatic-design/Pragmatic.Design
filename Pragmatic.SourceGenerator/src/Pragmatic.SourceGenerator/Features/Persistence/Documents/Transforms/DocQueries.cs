@@ -22,6 +22,9 @@ internal static class DocQueries
     /// </summary>
     public static string? Prepare(PragmaticQuery query, DocModel model)
     {
+        // The shape would compose it (PragmaticQuery reads it for the Sql engine); no documents suite runs a filter object's OR yet.
+        if (query.HasComplexFilter)
+            query.Refuse("[ComplexFilter] is not compiled on the documents engine yet");
         foreach (var sort in query.Sorts.Where(s => DocOrderKeys.Texts(model, s.Column) is null))
             query.Refuse($"the sort {sort.Name} orders by {sort.Column}, which is not a field of the document");
         if (SymbolEqualityComparer.Default.Equals(query.Result, query.Entity))

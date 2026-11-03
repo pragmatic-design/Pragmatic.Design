@@ -96,10 +96,16 @@ internal sealed partial class PragmaticQuery
         if (property.Name.Equals("Page", StringComparison.OrdinalIgnoreCase) || property.Name.Equals("PageSize", StringComparison.OrdinalIgnoreCase))
             return;
         var marks = property.GetAttributes().Select(a => a.AttributeClass?.Name).Where(n => n is not null).ToList();
-        foreach (var mark in new[] { "SearchAcrossAttribute", "FromCurrentUserAttribute", "FromClockAttribute", "BindSpecificationAttribute", "ComplexFilterAttribute", "FilterGroupAttribute" })
+        foreach (var mark in new[] { "SearchAcrossAttribute", "FromCurrentUserAttribute", "FromClockAttribute", "BindSpecificationAttribute", "FilterGroupAttribute" })
         {
             if (marks.Contains(mark))
                 Unsupported ??= $"[{mark.Substring(0, mark.Length - "Attribute".Length)}] on {property.Name} is not compiled yet";
+        }
+
+        if (Mark(property, "ComplexFilterAttribute") is not null)
+        {
+            ReadComplexFilter(property);
+            return;
         }
 
         if (property.Type is INamedTypeSymbol { Name: "Specification" or "ISpecification" })
@@ -133,21 +139,7 @@ internal sealed partial class PragmaticQuery
         var value = $"this.{property.Name}";
         var valueAccess = required || !nullable ? value : property.Type.IsValueType ? value + ".Value" : value + "!";
         var entityPath = $"e.{path}";
-        string Comparison(string column, string v) => operatorKind switch
-        {
-            1 => $"{column} != {v}",
-            2 => $"{column}.Contains({v})",
-            3 => $"{column}.StartsWith({v})",
-            4 => $"{column}.EndsWith({v})",
-            5 => $"{column} > {v}",
-            6 => $"{column} >= {v}",
-            7 => $"{column} < {v}",
-            8 => $"{column} <= {v}",
-            9 => $"{v}.Contains({column})",
-            10 => "",
-            _ => $"{column} == {v}",
-        };
-        var condition = ignoreCase ? Comparison(entityPath + ".ToLower()", valueAccess + ".ToLower()") : Comparison(entityPath, valueAccess);
+        var condition = ignoreCase ? Compare(operatorKind, entityPath + ".ToLower()", valueAccess + ".ToLower()") : Compare(operatorKind, entityPath, valueAccess);
         if (condition.Length == 0)
         {
             Unsupported ??= $"Between on {property.Name} is not compiled yet";
@@ -160,6 +152,22 @@ internal sealed partial class PragmaticQuery
         var guard = collection ? $"{value} != null && global::System.Linq.Enumerable.Any({value})" : required ? null : nullable ? $"{value} is not null" : $"{value} != default";
         _conditions.Add(new QueryConditionModel(guard, condition));
     }
+
+    /// <summary>The comparison of <paramref name="column" /> with <paramref name="v" /> under a <c>FilterOperator</c>; empty for Between, which is not compiled.</summary>
+    private static string Compare(int operatorKind, string column, string v) => operatorKind switch
+    {
+        1 => $"{column} != {v}",
+        2 => $"{column}.Contains({v})",
+        3 => $"{column}.StartsWith({v})",
+        4 => $"{column}.EndsWith({v})",
+        5 => $"{column} > {v}",
+        6 => $"{column} >= {v}",
+        7 => $"{column} < {v}",
+        8 => $"{column} <= {v}",
+        9 => $"{v}.Contains({column})",
+        10 => "",
+        _ => $"{column} == {v}",
+    };
 
     internal string EntityName => "global::" + Entity.ToDisplayString();
 
@@ -182,6 +190,7 @@ internal sealed partial class PragmaticQuery
             ResultName,
             Unsupported is null,
             _conditions.ToEquatableArray(),
+            _groups.ToEquatableArray(),
             ordering);
         return (model.Hint, new QueryShapeTemplate(model).ToSourceText().ToString());
     }
