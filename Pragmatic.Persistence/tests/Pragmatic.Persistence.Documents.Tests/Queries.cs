@@ -57,6 +57,30 @@ public partial class ReviewLinesQuery
     public SortDirection? TextSort { get; init; }
 }
 
+/// <summary>A booking's card: its nights, and its guest's email and name read through the navigation (<c>[MapProperty("Guest.…")]</c>).</summary>
+[MapFrom<Booking>]
+public sealed class BookingCard
+{
+    public int Nights { get; init; }
+
+    [MapProperty("Guest.Email")]
+    public string? GuestEmail { get; init; }
+
+    [MapProperty("Guest.FullName")]
+    public string? GuestName { get; init; }
+}
+
+/// <summary>The cards of the bookings whose phone starts with a prefix, by nights.</summary>
+[Query<Booking, BookingCard>]
+public partial class BookingCardsQuery
+{
+    [Filter(Operator = FilterOperator.StartsWith)]
+    public string? Phone { get; init; }
+
+    [Sort(MapTo = nameof(Booking.Nights), DefaultDirection = SortDirection.Ascending)]
+    public SortDirection? NightsSort { get; init; }
+}
+
 /// <summary>A stay's card: its code under another name and its arrival, both read through <c>[MapProperty]</c> from the document's own fields.</summary>
 [MapFrom<Stay>]
 public sealed class StayCard

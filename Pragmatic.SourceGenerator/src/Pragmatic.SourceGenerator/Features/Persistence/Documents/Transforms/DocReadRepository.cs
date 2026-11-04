@@ -22,7 +22,7 @@ internal static class DocReadRepository
            && compilation.GetTypeByMetadataName("Pragmatic.Persistence.Documents.DocUnitOfWork") is not null;
 
     /// <summary>The repositories nested in <paramref name="entity" />'s partial class; null for an entity that is not an <c>IEntity</c>.</summary>
-    public static DocReadRepositoryModel? For(INamedTypeSymbol entity, IReadOnlyList<(PragmaticQuery Query, string? Projection)> queries)
+    public static DocReadRepositoryModel? For(INamedTypeSymbol entity, IReadOnlyList<(PragmaticQuery Query, string? Projection, List<DocLookupModel> Lookups)> queries)
     {
         if (!entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
             return null;
@@ -37,6 +37,7 @@ internal static class DocReadRepository
             AutocompleteReads.Of(entity));
     }
 
-    private static DocRunCaseModel RunCaseOf((PragmaticQuery Query, string? Projection) declared)
-        => new("global::" + declared.Query.Type.ToDisplayString(), declared.Query.Type.Name, declared.Query.Unsupported, declared.Query.ResultName, declared.Projection ?? "");
+    private static DocRunCaseModel RunCaseOf((PragmaticQuery Query, string? Projection, List<DocLookupModel> Lookups) declared)
+        => new("global::" + declared.Query.Type.ToDisplayString(), declared.Query.Type.Name, declared.Query.Unsupported, declared.Query.ResultName, declared.Projection ?? "",
+            declared.Lookups.ToEquatableArray());
 }
