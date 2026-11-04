@@ -192,6 +192,15 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
             AppendLine($"                        : {Linq}.ToDictionary(await session.Query<{lookup.RelatedType}>().Where((r, keys) => keys.Contains(r.{lookup.RelatedKey}), __keys{lookup.Index}).ToListAsync(ct), r => r.{lookup.RelatedKey});");
         }
 
+        // An inner [Join<T>] (#508): the documents whose joined one is not found are dropped, as the join drops their rows. Not paged (refused).
+        foreach (var lookup in query.Lookups.Where(l => l.Drops))
+        {
+            var found = lookup.ForeignKeyNullable
+                ? $"e => e.{lookup.ForeignKey} is {{ }} __key && __related{lookup.Index}.ContainsKey(__key)"
+                : $"e => __related{lookup.Index}.ContainsKey(e.{lookup.ForeignKey})";
+            AppendLine($"                    documents = {Linq}.ToList({Linq}.Where(documents, {found}));");
+        }
+
         if (query.InMemory)
         {
             RenderInMemory(query);

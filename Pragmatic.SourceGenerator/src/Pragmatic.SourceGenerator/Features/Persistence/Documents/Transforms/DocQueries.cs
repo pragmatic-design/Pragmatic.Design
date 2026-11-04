@@ -45,6 +45,14 @@ internal static partial class DocQueries
         {
             if (property.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute"))
                 continue;
+            if (Joined(query, model, models, property, lookups) is { } joined)
+            {
+                if (joined.Length == 0)
+                    return null; // refused, with the reason
+                assignments.Add(joined);
+                continue;
+            }
+
             DocField? field;
             var read = "e.";
             if (property.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "MapPropertyAttribute") is { } map)
@@ -93,6 +101,13 @@ internal static partial class DocQueries
             }
 
             assignments.Add($"{property.Name} = {read}{field!.Property.Name}");
+        }
+
+        // An inner join drops the documents whose joined one is not found, whether or not the result reads a field of it.
+        if (query.JoinTarget is not null && query.JoinDrops && JoinLookup(query, model, models, lookups, out _, out var unread) is null)
+        {
+            query.Refuse($"[Join<{query.JoinTarget.Name}>] {unread}");
+            return null;
         }
 
         return $"e => new {query.ResultName} {{ {string.Join(", ", assignments)} }}";

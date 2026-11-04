@@ -188,6 +188,12 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
             AppendLine($"                    var rows = await {filtered}{grouped}.ToListAsync(ct);");
             AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
         }
+        else if (query.Joined is { } joined)
+        {
+            // A [Join<T>] by key (#508): the filters and the sorts, then the join, the joined entity's filters in its ON clause. Not paged (refused).
+            AppendLine($"                    var rows = await {filtered}.OrderedBy(q.ToSqlOrdering()){joined}.ToListAsync(ct);");
+            AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
+        }
         else if (paged)
         {
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
