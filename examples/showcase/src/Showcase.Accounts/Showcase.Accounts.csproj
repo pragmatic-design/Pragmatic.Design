@@ -30,6 +30,8 @@
     <!-- The RBAC management package. Its operations declare a DbContext and it declares no boundary
          of its own, so the import names one: [UsePackage<TPackage, TBoundary>]. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <!-- The package names no engine: its rows are read through the store of the importing boundary's, EF Core's here. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.EFCore\Pragmatic.Authorization.Management.EFCore.csproj" />
     <!-- The other admin surface, beside authorization's: reading configuration values. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration.Management\Pragmatic.Configuration.Management.csproj" />
     <!-- Identity.Persistence turns on AppUserResolver, Internationalization turns on the per-user

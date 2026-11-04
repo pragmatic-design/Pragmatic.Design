@@ -85,6 +85,11 @@
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
     <!-- And their keys (Pragmatic.Cryptography.Engines), registered beside the registry when the host references them. -->
     <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.Engines\Pragmatic.Cryptography.Engines.csproj" />
+    <!-- Pragmatic.Authorization.Management and its stores on each engine: an import's registration calls the store of the importing
+         boundary's engine (APackagesStoreIsTheImportingBoundarysEnginesTests). Kept out of every other compilation, as the bridges are. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.EFCore\Pragmatic.Authorization.Management.EFCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.Engines\Pragmatic.Authorization.Management.Engines.csproj" />
   </ItemGroup>
 
 </Project>

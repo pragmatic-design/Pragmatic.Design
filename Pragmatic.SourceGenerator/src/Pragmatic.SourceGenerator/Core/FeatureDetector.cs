@@ -97,7 +97,28 @@ internal static class FeatureDetector
         HasSerialization = TypeExists(compilation, "Pragmatic.Serialization.PragmaticJsonOptions"),
         IsHostMode = CompositionDetector.IsHostProject(compilation),
         EfCoreProvider = DetectEfCoreProvider(compilation),
+        IsEnginelessPackage = IsEnginelessPackage(compilation),
     };
+
+    /// <summary>
+    ///     A package (a type of this assembly implements <c>Pragmatic.Composition.IPackageDefinition</c>) that references no engine. The walk
+    ///     over the assembly's types runs only where no engine is referenced and the interface exists, which no application compilation is.
+    /// </summary>
+    private static bool IsEnginelessPackage(Compilation compilation)
+    {
+        if (TypeExists(compilation, "Pragmatic.Persistence.EFCore.PragmaticDbContextAttribute")
+            || TypeExists(compilation, "Pragmatic.Persistence.Sql.PragmaticSqlFilters")
+            || TypeExists(compilation, "Pragmatic.Persistence.Documents.PragmaticDocFilters"))
+            return false;
+        if (compilation.GetTypeByMetadataName("Pragmatic.Composition.IPackageDefinition") is not { } definition)
+            return false;
+
+        return Declares(compilation.Assembly.GlobalNamespace);
+
+        bool Declares(INamespaceSymbol ns)
+            => ns.GetTypeMembers().Any(t => t.AllInterfaces.Contains(definition, SymbolEqualityComparer.Default))
+               || ns.GetNamespaceMembers().Any(Declares);
+    }
 
     private static bool TypeExists(Compilation compilation, string fullyQualifiedName)
         => compilation.GetTypeByMetadataName(fullyQualifiedName) is not null;

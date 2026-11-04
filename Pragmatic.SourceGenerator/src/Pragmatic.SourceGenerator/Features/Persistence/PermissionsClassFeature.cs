@@ -53,7 +53,7 @@ internal static class PermissionsClassFeature
             // Every engine's entities: a permission is the operation's, not the storage's.
             List<EntityMetadataModel> local = all
                 .Where(e => e.IsValid && e is { IsFromReference: false, IsAbstract: false }
-                            && PersistenceEngineMarker.HasEngine(e, detected))
+                            && PersistenceEngineMarker.HasShape(e, detected))
                 .ToList();
             if (local.Count == 0 && customs.IsDefaultOrEmpty)
                 return;

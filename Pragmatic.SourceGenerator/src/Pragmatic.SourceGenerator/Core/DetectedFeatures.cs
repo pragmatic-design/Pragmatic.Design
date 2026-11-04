@@ -39,6 +39,12 @@ internal sealed record DetectedFeatures
     /// <summary>Whether the documents engine's bridge is referenced: one of the engines a boundary can name.</summary>
     public bool HasPersistenceDocuments { get; init; }
 
+    /// <summary>
+    ///     Whether this compilation is a package (it declares an <c>IPackageDefinition</c>) and references no engine: its entities are
+    ///     persisted by the engine of the boundary that imports it, and their shape is written here (<c>PersistenceEngineMarker.HasShape</c>).
+    /// </summary>
+    public bool IsEnginelessPackage { get; init; }
+
     /// <summary>Whether EF Core itself is referenced, with or without Pragmatic.Persistence.</summary>
     /// <remarks>
     ///     ⚠️ Not the same question as <see cref="HasPersistenceEFCore" />, and the difference

@@ -84,6 +84,20 @@ internal static class PersistenceEngineMarker
     public static bool HasEngine(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
         => EngineOf(entity, features) is { } engine && Referenced(features).Contains(engine);
 
+    /// <summary>
+    ///     Whether the entity's shape (its key, its traits, its setters, its permissions) is written in this compilation: when an engine it
+    ///     references persists the entity, and when it is a package that references none.
+    /// </summary>
+    /// <remarks>
+    ///     A package's entity (<c>Pragmatic.Authorization.Management</c>'s) is persisted by the engine of the boundary that imports it,
+    ///     decided in another compilation, and its shape is the same on every engine, so it is written here, where the type is. What depends
+    ///     on the engine (a repository, a context's configuration) is not. Any other compilation with no engine writes nothing, as before:
+    ///     an entity there has nothing to be persisted by. Two engines referenced and none named is still undecided, and still
+    ///     <c>PRAG0743</c>.
+    /// </remarks>
+    public static bool HasShape(Features.Persistence.Models.EntityMetadataModel entity, DetectedFeatures features)
+        => HasEngine(entity, features) || features.IsEnginelessPackage;
+
     /// <summary>Whether the compilation references any engine's bridge.</summary>
     public static bool AnyReferenced(DetectedFeatures features)
         => features.HasPersistenceEFCore || features.HasPersistenceSql || features.HasPersistenceDocuments;

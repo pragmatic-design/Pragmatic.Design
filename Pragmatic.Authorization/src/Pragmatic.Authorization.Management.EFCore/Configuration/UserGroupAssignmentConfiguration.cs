@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pragmatic.Authorization.Management.Entities;
 
-namespace Pragmatic.Authorization.Management.Configuration;
+namespace Pragmatic.Authorization.Management.EFCore.Configuration;
 
 /// <summary>
 ///     EF Core configuration for <see cref="UserGroupAssignment"/>.

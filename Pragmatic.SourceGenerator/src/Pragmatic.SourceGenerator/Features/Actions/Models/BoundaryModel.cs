@@ -54,6 +54,18 @@ internal sealed record BoundaryModel
     ///     request to that boundary's keyed instance.
     /// </remarks>
     public string? PackageBoundaryKey { get; init; }
+
+    /// <summary>
+    ///     The engine that persists <see cref="PackageBoundaryKey" /> (<c>Core.PersistenceEngineMarker</c>'s names), or null when it is
+    ///     undecided. Only EF Core's boundary has a <c>DbContext</c> to bridge.
+    /// </summary>
+    public string? PackageBoundaryEngine { get; init; }
+
+    /// <summary>
+    ///     The registrations, fully qualified without <c>global::</c>, that add the imported packages' stores on that engine keyed by
+    ///     <see cref="PackageBoundaryKey" /> (<c>Core.PackageStores</c>): called before the bridge answers the unkeyed requests.
+    /// </summary>
+    public EquatableArray<string> PackageStoreRegistrations { get; init; } = EquatableArray<string>.Empty;
 }
 
 internal enum BoundaryInvalidReason

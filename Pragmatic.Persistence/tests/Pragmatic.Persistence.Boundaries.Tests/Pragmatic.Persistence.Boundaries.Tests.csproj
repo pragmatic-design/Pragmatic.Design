@@ -38,11 +38,17 @@
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Engines\Pragmatic.Privacy.Engines.csproj" />
     <!-- The per-subject keys on the engine: their collection beside the registry's, and the member's ProtectedValue opened by them. -->
     <ProjectReference Include="..\..\..\Pragmatic.Cryptography\src\Pragmatic.Cryptography.Engines\Pragmatic.Cryptography.Engines.csproj" />
+    <!-- Pragmatic.Authorization.Management imported into a boundary on each engine, with no EF Core referenced: the store of the boundary's
+         engine registered by the boundary's generated registration, its collections in the documents boundary's schema. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.Engines\Pragmatic.Authorization.Management.Engines.csproj" />
     <!-- MultiTenancyOptions: the generated registration reads RequireTenant from it, as EF Core's does. -->
     <ProjectReference Include="..\..\..\Pragmatic.MultiTenancy\src\Pragmatic.MultiTenancy\Pragmatic.MultiTenancy.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The callers the two bridge suites read as (TestUser): the same callers on both engines. -->
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
+    <!-- The authorization management package's operations, the same scenario the Sql suite runs on its five databases. -->
+    <Compile Include="..\Pragmatic.Persistence.Sql.Tests\AuthorizationManagementScenario.cs" Link="Shared\AuthorizationManagementScenario.cs" />
     <!-- The one MongoDB readiness wait: a server that exits fails the start at once, with its log. -->
     <Compile Include="..\Pragmatic.Persistence.Documents.Core.Tests\LoggedUnlessExited.cs" Link="Shared\LoggedUnlessExited.cs" />
   </ItemGroup>

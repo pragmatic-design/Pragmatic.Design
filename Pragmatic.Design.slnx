@@ -543,6 +543,8 @@
   </Folder>
   <Folder Name="/Pragmatic.Authorization/">
     <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization.Management/Pragmatic.Authorization.Management.csproj" />
+    <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization.Management.EFCore/Pragmatic.Authorization.Management.EFCore.csproj" />
+    <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization.Management.Engines/Pragmatic.Authorization.Management.Engines.csproj" />
     <Project Path="Pragmatic.Authorization/src/Pragmatic.Authorization/Pragmatic.Authorization.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Caching/">

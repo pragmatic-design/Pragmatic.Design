@@ -76,7 +76,14 @@
           "Pragmatic.Actions": "[1.0.0, )",
           "Pragmatic.Authorization": "[1.0.0, )",
           "Pragmatic.Events": "[1.0.0, )",
-          "Pragmatic.Persistence.EFCore": "[1.0.0, )"
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization.management.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Authorization.Management": "[1.0.0, )"
         }
       },
       "pragmatic.caching": {
@@ -419,6 +426,7 @@
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Actions": "[1.0.0, )",
           "Pragmatic.Authorization.Management": "[1.0.0, )",
+          "Pragmatic.Authorization.Management.EFCore": "[1.0.0, )",
           "Pragmatic.Configuration.Management": "[1.0.0, )",
           "Pragmatic.Endpoints": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )",

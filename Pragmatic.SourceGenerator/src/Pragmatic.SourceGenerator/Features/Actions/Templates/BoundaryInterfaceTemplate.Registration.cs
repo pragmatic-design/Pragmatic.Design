@@ -2,6 +2,7 @@
 using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Actions.Models;
+using Pragmatic.SourceGenerator.Features.Actions.Transforms;
 
 namespace Pragmatic.SourceGenerator.Features.Actions.Templates;
 
@@ -491,10 +492,6 @@ internal sealed partial class BoundaryInterfaceTemplate
     ///         registration.
     ///     </para>
     /// </remarks>
-    private const string PackageDbContext = "global::Microsoft.EntityFrameworkCore.DbContext";
-
-    private const string PackageUnitOfWork = "global::Pragmatic.Persistence.Repository.IUnitOfWork";
-
     private void RenderPackageBoundaryBridge()
     {
         if (string.IsNullOrEmpty(_boundary.PackageBoundaryKey))
@@ -511,13 +508,24 @@ internal sealed partial class BoundaryInterfaceTemplate
         // brings their generated repositories, and those ask for the context and its unit of work
         // together — so bridging only what an action declared left the container unable to construct a
         // repository nobody wrote, which is where the two halves of an import came apart.
+        // The context only where the boundary has one: on the Sql and documents engines there is no
+        // DbContext, and the module need not reference EF Core at all.
+        var hasContext = _boundary.PackageBoundaryEngine is not (PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents);
         var needed = declared
-            .Concat([PackageDbContext, PackageUnitOfWork])
+            .Concat(new[] { BoundaryKeyedServices.DbContext, BoundaryKeyedServices.UnitOfWork })
+            .Where(n => hasContext || n != BoundaryKeyedServices.DbContext)
             .Distinct(StringComparer.Ordinal)
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
 
+        // The packages' stores on this boundary's engine, keyed by it, which the bridge below answers unkeyed.
         AppendLine();
+        foreach (var registration in _boundary.PackageStoreRegistrations)
+        {
+            Comment("An imported package's store, on this boundary's engine");
+            AppendLine($"global::{registration}<{_boundary.PackageBoundaryKey}>(services);");
+        }
+
         Comment($"Imported package operations resolve these from {_boundary.PackageBoundaryKey}");
         foreach (var service in needed)
         {

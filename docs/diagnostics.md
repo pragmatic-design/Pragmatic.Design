@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **475** |
-| Distinct IDs | **475** |
+| Declared descriptors | **476** |
+| Distinct IDs | **476** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -99,7 +99,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0342`.
 
-### Actions: 67 in use · range `PRAG0400`–`PRAG0499`
+### Actions: 68 in use · range `PRAG0400`–`PRAG0499`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -170,10 +170,11 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0466` | `BodyAlsoTransitions` | Error | The body transitions to the state the invoker already moves the entity to |
 | `PRAG0467` | `AfterBodyOnAnAction` | Error | A domain action cannot transition after its body |
 | `PRAG0468` | `TransitionOnAMutationThatIsNotAnUpdate` | Error | [TransitionsTo] needs an Update mutation |
+| `PRAG0469` | `PackageStoreNotReferenced` | Error | The imported package's store is not referenced for the boundary's engine |
 
 *Free inside the used span:* `PRAG0402`, `PRAG0417`.
 
-*First free after the last used:* `PRAG0469`.
+*First free after the last used:* `PRAG0470`.
 
 ### Endpoints: 37 in use · range `PRAG0500`–`PRAG0599`
 

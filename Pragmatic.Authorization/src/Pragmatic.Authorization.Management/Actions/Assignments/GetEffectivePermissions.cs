@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
-using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Authorization.Stores;
 using Pragmatic.Identity;
 using Pragmatic.Result;
@@ -18,7 +17,7 @@ namespace Pragmatic.Authorization.Management.Actions.Assignments;
 [RequirePermission(AuthorizationPermissions.View)]
 public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string>>
 {
-    private DbContext _dbContext = null!;
+    private IAuthorizationManagementStore _store = null!;
     private IRolePermissionStore _roleStore = null!;
     private ICurrentUser _currentUser = null!;
 
@@ -39,15 +38,9 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
         var now = DateTimeOffset.UtcNow;
 
         // Get active role assignments for the user
-        var activeRoles = await _dbContext.Set<UserRoleAssignment>()
-            .Where(a => a.UserId == UserId
-                        && (a.TenantId == null || a.TenantId == TenantId)
-                        && a.ValidFrom <= now
-                        && (a.ValidTo == null || a.ValidTo > now))
-            .Select(a => a.RoleName)
-            .Distinct()
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
+        var activeRoles = (await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false))
+            .Where(a => a.IsInForceAt(now))
+            .Select(a => a.RoleName);
 
         var roleNames = new HashSet<string>(activeRoles, StringComparer.OrdinalIgnoreCase);
 
@@ -57,15 +50,10 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
         // resolved lazily instead of being a hard ctor dependency of the invoker.
         if (_rootServices.GetService<IGroupRoleStore>() is { } groupStore)
         {
-            var activeGroups = await _dbContext.Set<UserGroupAssignment>()
-                .Where(a => a.UserId == UserId
-                            && (a.TenantId == null || a.TenantId == TenantId)
-                            && a.ValidFrom <= now
-                            && (a.ValidTo == null || a.ValidTo > now))
+            var activeGroups = (await _store.GetUserGroupsAsync(UserId, TenantId, ct).ConfigureAwait(false))
+                .Where(a => a.IsInForceAt(now))
                 .Select(a => a.GroupName)
-                .Distinct()
-                .ToListAsync(ct)
-                .ConfigureAwait(false);
+                .Distinct();
 
             foreach (var group in activeGroups)
             {

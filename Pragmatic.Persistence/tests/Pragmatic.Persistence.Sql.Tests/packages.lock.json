@@ -639,6 +639,22 @@
           "Pragmatic.Abstractions": "[1.0.0, )"
         }
       },
+      "pragmatic.authorization.management": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Authorization": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization.management.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Pragmatic.Authorization.Management": "[1.0.0, )"
+        }
+      },
       "pragmatic.caching": {
         "type": "Project",
         "dependencies": {

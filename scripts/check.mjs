@@ -2259,11 +2259,12 @@ const COUNTS_FILE = 'artifacts/gate-counts.json';
  * never raise it to make a build pass.
  *
  * The one legitimate reason it moves up: every entity brings a generated repository whose
- * `AsQueryable` is IL2026 + IL3050, so a package that starts owning entities adds that surface —
- * `Pragmatic.Authorization.Management`'s five are ten of the warnings counted here. That is surface
- * arriving, not a regression in code that already existed, and it is said in the commit that raises it.
+ * `AsQueryable` is IL2026 + IL3050, so a package that starts owning entities adds that surface. That is
+ * surface arriving, not a regression in code that already existed, and it is said in the commit that
+ * raises it. `Pragmatic.Authorization.Management`'s five took it to 108; the package names no engine
+ * now, so it has no repository of its own, and those ten are gone.
  */
-const TRIM_WARNING_BUDGET = 108;
+const TRIM_WARNING_BUDGET = 98;
 
 /**
  * A ratchet on the OTHER trim family: warnings that say a reflective requirement is not DECLARED.

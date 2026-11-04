@@ -17,8 +17,8 @@ namespace Showcase.IntegrationTests.Authorization;
 ///     catalog — in its tenant, and not in another.
 /// </summary>
 /// <remarks>
-///     The package shipped <c>EfDynamicRoleStore</c> and <c>EfDynamicPermissionStore</c> and nothing
-///     registered them, so <c>ListRoles</c> and <c>ListPermissions</c> answered with the compiled catalog
+///     The package shipped its role and permission stores (<c>ManagedDynamicRoleStore</c>,
+///     <c>ManagedDynamicPermissionStore</c>) and nothing registered them, so <c>ListRoles</c> and <c>ListPermissions</c> answered with the compiled catalog
 ///     alone: a role an administrator had just created was nowhere in the list they were given.
 /// </remarks>
 public class ARoleCreatedAtRuntimeIsCatalogedTests(PostgresFixture fixture) : IntegrationTestBase(fixture)

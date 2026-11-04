@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Catalog;

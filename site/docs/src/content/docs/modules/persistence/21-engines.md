@@ -125,12 +125,15 @@ include the module's part:
 | Audit trail | `Pragmatic.Audit.EFCore` | `Pragmatic.Audit.Engines` | `[Audited]` on an entity |
 | Subject registry | `Pragmatic.Privacy.EFCore` | `Pragmatic.Privacy.Engines` | `[DataSubject]` on an entity |
 | Per-subject keys (`__SubjectKeys`) | `Pragmatic.Cryptography.EFCore` | `Pragmatic.Cryptography.Engines` | `[DataSubject]` on an entity, beside the registry |
+| Roles, permissions and assignments | `Pragmatic.Authorization.Management.EFCore` | `Pragmatic.Authorization.Management.Engines` | `[UsePackage<AuthorizationManagementPackage, TBoundary>]` on a module: in that boundary's database |
 
 The tables are EF Core's, column for column, so a database written by both engines holds one outbox, one trail,
 one registry and one set of keys. The audit trail and the subject registry are one per application, and the
 keys go with the registry. The generated host registers each where it is, when one place holds it (an EF Core
 database or an engine's boundary). When more than one place does, the host registers none and says so, and the
-application names the one in `Program.cs`. Each module's README describes its engines section.
+application names the one in `Program.cs`. The authorization management package's store is the importing
+boundary's: its generated registration adds the store of its engine, and the import is `PRAG0469` when the
+package of that engine is missing. Each module's README describes its engines section.
 
 A `ProtectedValue` member is stored by both engines: on the Sql engine as a binary column, through
 `Pragmatic.Cryptography.Engines` (PRAG3003 names the package when it is missing), on the documents engine as

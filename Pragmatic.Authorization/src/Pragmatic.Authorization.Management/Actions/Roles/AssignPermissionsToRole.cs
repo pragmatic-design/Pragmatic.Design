@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
@@ -14,7 +14,7 @@ namespace Pragmatic.Authorization.Management.Actions.Roles;
 [RequirePermission(AuthorizationPermissions.Roles.Manage)]
 public partial class AssignPermissionsToRole : VoidDomainAction
 {
-    private DbContext _dbContext = null!;
+    private IAuthorizationManagementStore _store = null!;
     private ICurrentUser _currentUser = null!;
 
     // Optional: registered only with a cross-request permission cache, and without one there is
@@ -44,44 +44,35 @@ public partial class AssignPermissionsToRole : VoidDomainAction
 
         var now = DateTimeOffset.UtcNow;
 
-        // Get existing active assignments for this role
-        var existing = await _dbContext.Set<DynamicRolePermission>()
-            .Where(rp => rp.RoleName == RoleName
-                         && (rp.TenantId == TenantId)
-                         && rp.ValidFrom <= now
-                         && (rp.ValidTo == null || rp.ValidTo > now))
+        // The role's grants in force in exactly this tenant: a global grant of the same permission is another row.
+        var grants = await _store.GetRolePermissionsAsync([RoleName], TenantId, ct).ConfigureAwait(false);
+        var existing = grants
+            .Where(rp => rp.RoleName == RoleName && rp.TenantId == TenantId && rp.IsInForceAt(now))
             .Select(rp => rp.PermissionName)
-            .ToHashSetAsync(ct)
-            .ConfigureAwait(false);
+            .ToHashSet();
 
-        foreach (var permission in Permissions)
-        {
-            if (existing.Contains(permission))
-                continue;
-
-            _dbContext.Set<DynamicRolePermission>().Add(new DynamicRolePermission
+        var added = Permissions
+            .Where(permission => existing.Add(permission))
+            .Select(permission => new DynamicRolePermission
             {
                 RoleName = RoleName,
                 PermissionName = permission,
                 TenantId = TenantId,
                 ValidFrom = now
-            });
-        }
+            })
+            .ToList();
 
-        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        await _store.AddRolePermissionsAsync(added, ct).ConfigureAwait(false);
 
         // The cache tags a user's claim roles, not the roles this package assigns, so the users who
         // hold this role here are found and evicted one by one.
         if (_permissionCache is not null)
         {
-            var holders = await _dbContext.Set<UserRoleAssignment>()
-                .Where(a => a.RoleName == RoleName
-                            && (TenantId == null || a.TenantId == null || a.TenantId == TenantId)
+            var holders = (await _store.GetRoleHoldersAsync(RoleName, ct).ConfigureAwait(false))
+                .Where(a => (TenantId == null || a.TenantId == null || a.TenantId == TenantId)
                             && (a.ValidTo == null || a.ValidTo > now))
                 .Select(a => a.UserId)
-                .Distinct()
-                .ToListAsync(ct)
-                .ConfigureAwait(false);
+                .Distinct();
 
             foreach (var holder in holders)
                 await _permissionCache.InvalidateUserAsync(holder, ct).ConfigureAwait(false);

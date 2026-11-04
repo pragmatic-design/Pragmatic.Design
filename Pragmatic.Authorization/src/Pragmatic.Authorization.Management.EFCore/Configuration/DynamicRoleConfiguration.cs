@@ -2,14 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pragmatic.Authorization.Management.Entities;
 
-namespace Pragmatic.Authorization.Management.Configuration;
+namespace Pragmatic.Authorization.Management.EFCore.Configuration;
 
 /// <summary>
-///     EF Core configuration for <see cref="DynamicPermission"/>.
+///     EF Core configuration for <see cref="DynamicRole"/>.
 /// </summary>
-public sealed class DynamicPermissionConfiguration : IEntityTypeConfiguration<DynamicPermission>
+public sealed class DynamicRoleConfiguration : IEntityTypeConfiguration<DynamicRole>
 {
-    public void Configure(EntityTypeBuilder<DynamicPermission> builder)
+    public void Configure(EntityTypeBuilder<DynamicRole> builder)
     {
         builder.HasIndex(e => new { e.Name, e.TenantId })
             .IsUnique()
@@ -17,7 +17,6 @@ public sealed class DynamicPermissionConfiguration : IEntityTypeConfiguration<Dy
 
         builder.Property(e => e.Name).HasMaxLength(256).IsRequired();
         builder.Property(e => e.Description).HasMaxLength(500);
-        builder.Property(e => e.Category).HasMaxLength(128);
         builder.Property(e => e.TenantId).HasMaxLength(128);
     }
 }

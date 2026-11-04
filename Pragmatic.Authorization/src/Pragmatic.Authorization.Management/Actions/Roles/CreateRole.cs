@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
@@ -13,7 +13,7 @@ namespace Pragmatic.Authorization.Management.Actions.Roles;
 [RequirePermission(AuthorizationPermissions.Roles.Manage)]
 public partial class CreateRole : DomainAction<Guid, ConflictError>
 {
-    private DbContext _dbContext = null!;
+    private IAuthorizationManagementStore _store = null!;
     private ICurrentUser _currentUser = null!;
 
     public required string Name { get; init; }
@@ -25,22 +25,20 @@ public partial class CreateRole : DomainAction<Guid, ConflictError>
         if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "create-role") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
-        var exists = await _dbContext.Set<DynamicRole>()
-            .AnyAsync(r => r.Name == Name && r.TenantId == TenantId, ct)
-            .ConfigureAwait(false);
-
-        if (exists)
+        var roles = await _store.GetRolesAsync(TenantId, ct).ConfigureAwait(false);
+        if (roles.Any(r => r.Name == Name && r.TenantId == TenantId))
             return ConflictError.AlreadyExists("DynamicRole", Name);
 
         var role = new DynamicRole
         {
             Name = Name,
             Description = Description,
-            TenantId = TenantId
+            TenantId = TenantId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = _currentUser.Id
         };
 
-        _dbContext.Set<DynamicRole>().Add(role);
-        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        await _store.AddRoleAsync(role, ct).ConfigureAwait(false);
         return role.PersistenceId;
     }
 }

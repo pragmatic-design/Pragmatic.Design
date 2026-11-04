@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
-using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
@@ -14,7 +13,7 @@ namespace Pragmatic.Authorization.Management.Actions.Assignments;
 [RequirePermission(AuthorizationPermissions.Assignments.Manage)]
 public partial class RevokeRoleFromUser : VoidDomainAction<NotFoundError>
 {
-    private DbContext _dbContext = null!;
+    private IAuthorizationManagementStore _store = null!;
     private ICurrentUser _currentUser = null!;
 
     // Optional: registered only with a cross-request permission cache, and without one there is
@@ -32,21 +31,14 @@ public partial class RevokeRoleFromUser : VoidDomainAction<NotFoundError>
 
         var now = DateTimeOffset.UtcNow;
 
-        var assignment = await _dbContext.Set<UserRoleAssignment>()
-            .FirstOrDefaultAsync(a =>
-                a.UserId == UserId
-                && a.RoleName == RoleName
-                && (a.TenantId == TenantId)
-                && a.ValidFrom <= now
-                && (a.ValidTo == null || a.ValidTo > now), ct)
-            .ConfigureAwait(false);
+        var assignments = await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false);
+        var assignment = assignments.FirstOrDefault(a => a.RoleName == RoleName && a.TenantId == TenantId && a.IsInForceAt(now));
 
         if (assignment is null)
             return VoidResult<IError>.Failure(
                 NotFoundError.Create("UserRoleAssignment", $"{UserId}/{RoleName}"));
 
-        assignment.ValidTo = now;
-        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        await _store.EndUserRoleAsync(assignment, now, ct).ConfigureAwait(false);
 
         // A revocation that waits for the cache to expire is a revocation that has not happened yet.
         if (_permissionCache is not null)

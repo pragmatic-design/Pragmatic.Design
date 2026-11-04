@@ -2,7 +2,7 @@ namespace Pragmatic.Authorization.Stores;
 
 /// <summary>
 ///     Store for dynamically managed roles (e.g., created at runtime via RBAC management).
-///     Implementations: EfDynamicRoleStore (Phase 3).
+///     Implementations: ManagedDynamicRoleStore (Pragmatic.Authorization.Management).
 /// </summary>
 public interface IDynamicRoleStore
 {
