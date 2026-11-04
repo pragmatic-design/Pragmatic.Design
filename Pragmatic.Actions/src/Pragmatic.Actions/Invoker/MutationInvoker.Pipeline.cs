@@ -281,7 +281,7 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
         // re-checking it against itself would false-positive.
         if (isCreate)
         {
-            var temporalError = CheckTemporalConstraints(entity);
+            var temporalError = await CheckTemporalConstraintsAsync(entity, ct).ConfigureAwait(false);
             if (temporalError is not null)
             {
                 LogEntityValidationFailed(mutationType, temporalError.Code);

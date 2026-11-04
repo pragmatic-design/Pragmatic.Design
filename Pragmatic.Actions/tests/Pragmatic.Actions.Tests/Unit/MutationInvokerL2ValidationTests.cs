@@ -372,10 +372,10 @@ public class MutationInvokerL2ValidationTests
         protected override void PersistNew(ValidatableProduct entity) { }
         protected override void DeleteEntity(ValidatableProduct entity) { }
         protected override Task SaveChangesAsync(CancellationToken ct) => Task.CompletedTask;
-        protected override IError? CheckTemporalConstraints(ValidatableProduct entity)
+        protected override ValueTask<IError?> CheckTemporalConstraintsAsync(ValidatableProduct entity, CancellationToken ct)
         {
             log.Add("temporal");
-            return error;
+            return new(error);
         }
     }
 
@@ -393,10 +393,10 @@ public class MutationInvokerL2ValidationTests
         protected override void PersistNew(ValidatableProduct entity) { }
         protected override void DeleteEntity(ValidatableProduct entity) { }
         protected override Task SaveChangesAsync(CancellationToken ct) => Task.CompletedTask;
-        protected override IError? CheckTemporalConstraints(ValidatableProduct entity)
+        protected override ValueTask<IError?> CheckTemporalConstraintsAsync(ValidatableProduct entity, CancellationToken ct)
         {
             log.Add("temporal");
-            return null;
+            return new((IError?)null);
         }
     }
 

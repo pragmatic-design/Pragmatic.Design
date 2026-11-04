@@ -10,13 +10,13 @@ namespace Pragmatic.Persistence.Entity;
 ///         <list type="bullet">
 ///             <item><description>Generate <c>Active()</c> and <c>ActiveAt(date)</c> query extension methods</description></item>
 ///             <item><description>Add temporal filter to the FilterMap (only active records by default)</description></item>
-///             <item><description>Generate <c>ValidateTemporalConstraints()</c> when <see cref="MaxActive"/> is set</description></item>
-///             <item><description>Generate <c>AutoClosePrevious()</c> when <see cref="MaxActive"/> is 1</description></item>
+///             <item><description>Generate <c>ValidateTemporalConstraintsAsync(repository)</c> when <see cref="MaxActive"/> is set or overlap is not allowed, on every engine</description></item>
+///             <item><description>On EF Core, generate <c>ValidateTemporalConstraints(IQueryable)</c> too, and <c>AutoClosePrevious()</c> when <see cref="MaxActive"/> is 1</description></item>
 ///         </list>
 ///     </para>
 ///     <para>
 ///         <b>Enforcement lives in the mutation pipeline, not in <c>SaveChanges</c>.</b> A create
-///         mutation targeting the entity calls <c>ValidateTemporalConstraints()</c> before persisting
+///         mutation targeting the entity calls <c>ValidateTemporalConstraintsAsync()</c> before persisting
 ///         and rejects a breach. <c>AutoClosePrevious()</c> is a helper your operation must call itself
 ///         (e.g. in a mutation's <c>ApplyAsync</c>). Outside a mutation, a plain <c>Add</c> +
 ///         <c>SaveChanges</c> neither rejects a <see cref="MaxActive"/> violation nor auto-closes the

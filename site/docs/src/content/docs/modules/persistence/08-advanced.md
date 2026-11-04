@@ -35,9 +35,12 @@ public partial class UserRole
 
 | Setting | Generated Method | What It Does |
 |---------|-----------------|-------------|
-| `MaxActive > 0` | `ValidateTemporalConstraints(existing)` | Checks how many records are currently active. Returns a `TemporalOverlapError` if the limit is exceeded. |
-| `MaxActive == 1` | `AutoClosePrevious(existing, closedAt)` | Finds the currently active record, sets its `ValidTo` to `closedAt`, and returns the modified records so you can save them. |
-| `AllowOverlap = false` | Overlap check in `ValidateTemporalConstraints` | Checks if the new record's validity period overlaps with any existing record. |
+| `MaxActive > 0` | `ValidateTemporalConstraintsAsync(repository)`, and on EF Core `ValidateTemporalConstraints(existing)` | Checks how many records are currently active. Returns a `TemporalOverlapError` if the limit is exceeded. |
+| `MaxActive == 1` | `AutoClosePrevious(existing, closedAt)` (EF Core) | Finds the currently active record, sets its `ValidTo` to `closedAt`, and returns the modified records so you can save them. |
+| `AllowOverlap = false` | Overlap check in both | Checks if the new record's validity period overlaps with any existing record. |
+
+A create mutation calls `ValidateTemporalConstraintsAsync` before it persists, on every engine: it reads the existing records through the
+repository's specifications, inside the caller's filters, and a breach rejects the mutation.
 
 ### Example: Assigning a New Role
 

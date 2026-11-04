@@ -4506,6 +4506,10 @@ public static partial class TemporalRowSpecifications
     public static Specification<TemporalRow> ById(Guid id)
     public static IQueryable<TemporalRow> ById(this IQueryable<TemporalRow> query, Guid id)
 
+## Inventory.TemporalRow.TemporalConstraints.g.cs
+public partial class TemporalRow
+    public async Task<TemporalOverlapError?> ValidateTemporalConstraintsAsync(IReadRepository<TemporalRow> existing, CancellationToken ct = default)
+
 ## Inventory.TemporalRow.TemporalExtensions.g.cs
 public static class TemporalRowTemporalExtensions
     public static IQueryable<TemporalRow> Active(this IQueryable<TemporalRow> query, TimeProvider? timeProvider = null)
@@ -4919,6 +4923,10 @@ public partial class UntypedTemporalRow : IChangeTracking
 public static partial class UntypedTemporalRowSpecifications
     public static Specification<UntypedTemporalRow> ById(Guid id)
     public static IQueryable<UntypedTemporalRow> ById(this IQueryable<UntypedTemporalRow> query, Guid id)
+
+## Inventory.UntypedTemporalRow.TemporalConstraints.g.cs
+public partial class UntypedTemporalRow
+    public async Task<TemporalOverlapError?> ValidateTemporalConstraintsAsync(IReadRepository<UntypedTemporalRow> existing, CancellationToken ct = default)
 
 ## Inventory.UntypedTemporalRow.TemporalExtensions.g.cs
 public static class UntypedTemporalRowTemporalExtensions

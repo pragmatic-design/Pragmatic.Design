@@ -98,6 +98,8 @@ These work on every engine, from the same declarations:
   modified, owner, tenant) and soft delete;
 - the query filters: soft delete, tenant, owner, data scopes, permission-based visibility;
 - declared queries (`[Query]`), the generated actions and endpoints, and `[LoadEntity]` loads;
+- a `[TemporalRelation]`'s constraints (`MaxActive`, no overlap), which a create mutation checks against the records already written,
+  through the repository's specifications;
 - a query derived from a specification (`[Query]` on a static member returning `Specification<T>`), with its route
   when the specification declares one: the specification is its filter, and the specification's parameters are its
   inputs. A declared query's own `Specification<T>` property is ANDed into its filters the same way;

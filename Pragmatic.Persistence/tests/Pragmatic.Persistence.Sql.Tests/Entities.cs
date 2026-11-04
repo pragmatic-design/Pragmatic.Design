@@ -100,6 +100,24 @@ public partial class StaffAssignment : IEntity, ITemporalRelation
 }
 
 /// <summary>
+///     Who holds the front desk of a property, two at a time: a <c>[TemporalRelation]</c> scoped to its property with <c>MaxActive = 2</c>,
+///     whose stretches may overlap. A mutation that opens a third stretch at a property is refused (#512). Not <c>MaxActive = 1</c>, as the
+///     Showcase's <c>StaffAssignment</c> is: that is also a partial unique index, which MySQL and Oracle, among this suite's databases, cannot
+///     migrate.
+/// </summary>
+[Entity]
+[Relation.ManyToOne<Property>]
+[TemporalRelation<Property>(MaxActive = 2, AllowOverlap = true)]
+public partial class DeskDuty : IEntity, ITemporalRelation
+{
+    public string Person { get; set; } = "";
+
+    public DateTimeOffset ValidFrom { get; set; }
+
+    public DateTimeOffset? ValidTo { get; set; }
+}
+
+/// <summary>
 ///     A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted, [Audited] (its writes
 ///     append to the audit trail where a boundary's saves register the trail's phase), and a [Lookup] as the Showcase's categories are.
 /// </summary>

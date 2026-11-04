@@ -351,12 +351,13 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
     /// <summary>Generates the CheckTemporalConstraints override enforcing [TemporalRelation] MaxActive/overlap.</summary>
     private void RenderCheckTemporalConstraints()
     {
-        XmlSummary("Enforces the entity's [TemporalRelation] MaxActive/overlap constraints on create by calling its generated ValidateTemporalConstraints against existing records; a breach rejects the mutation (409).");
+        XmlSummary("Enforces the entity's [TemporalRelation] MaxActive/overlap constraints on create by calling its generated ValidateTemporalConstraintsAsync against existing records; a breach rejects the mutation (409).");
+        // Through the repository's specification reads, which every engine serves: Query() is EF Core's only (#512).
         AppendLine(
-            "protected override global::Pragmatic.Result.IError? " +
-            $"CheckTemporalConstraints({_model.EntityFullTypeName} entity)");
+            "protected override async global::System.Threading.Tasks.ValueTask<global::Pragmatic.Result.IError?> " +
+            $"CheckTemporalConstraintsAsync({_model.EntityFullTypeName} entity, global::System.Threading.CancellationToken ct)");
         Block(() =>
-            AppendLine("return entity.ValidateTemporalConstraints(_repository.Query());"));
+            AppendLine("return await entity.ValidateTemporalConstraintsAsync(_repository, ct).ConfigureAwait(false);"));
     }
 
     /// <summary>Builds the mutation's <c>[Raises&lt;T&gt;]</c> events (ctor filled by name); dispatched by the pipeline.</summary>
