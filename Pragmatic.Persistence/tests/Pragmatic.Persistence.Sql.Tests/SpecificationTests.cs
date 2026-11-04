@@ -1,4 +1,5 @@
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Attributes;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Sql;
 using Pragmatic.Specification;
@@ -30,6 +31,10 @@ public static partial class ReviewSpecifications
 
     public static Specification<Review> Search(string? owner, bool onlyPublished)
         => Spec<Review>.True.AndIf(owner is not null, () => By(owner!)).AndIf(onlyPublished, Published());
+
+    /// <summary>A rule promoted to a query (#511): Pragmatic derives <c>PublishedByQuery</c>, whose filter is this rule.</summary>
+    [Query<Review>]
+    public static Specification<Review> PublishedBy(string owner) => Published() & By(owner);
 }
 
 /// <summary>

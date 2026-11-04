@@ -153,7 +153,7 @@ internal static class PersistenceFeature
         var localRegistrations =
             RepositoryFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures, shapeEntitiesWithFeatures, isDebugProvider, localTraitEntities);
 
-        var (derivedQueryEndpoints, queryModels) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
+        var (derivedQueryEndpoints, queryModels, derivedEngineSources) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
         ProjectionFeature.Register(context, efEntitiesProvider, features);
         AdvancedFeature.Register(context, entitiesWithFeatures, features);
         var (persistedStores, efCoreSchemas) = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);
@@ -178,10 +178,15 @@ internal static class PersistenceFeature
         // too, which are Identity's to read, so they are registered after it.
 
         // With the cascade handlers the engines persist: they read through Spec<T>.Where, compiled where the engine sees it. Empty stays empty:
-        // the empty shape is what says no engine's bridge is referenced.
+        // the empty shape is what says no engine's bridge is referenced. With the queries derived from specifications too, whose IQuery
+        // shape an engine declares only for a type it sees (#511).
         var shapeSources = shapeEntitiesWithFeatures
             .Select(static (pair, _) => EntityShapeArtifacts.ForBinding(pair.Left, pair.Right))
             .Combine(cascadeSources)
+            .Select(static (pair, _) => pair.Left.IsDefaultOrEmpty || pair.Right.IsDefaultOrEmpty
+                ? pair.Left
+                : new EquatableArray<ShapeSourceModel>(pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())))
+            .Combine(derivedEngineSources)
             .Select(static (pair, _) => pair.Left.IsDefaultOrEmpty || pair.Right.IsDefaultOrEmpty
                 ? pair.Left
                 : new EquatableArray<ShapeSourceModel>(pair.Left.AsImmutableArray().AddRange(pair.Right.AsImmutableArray())));

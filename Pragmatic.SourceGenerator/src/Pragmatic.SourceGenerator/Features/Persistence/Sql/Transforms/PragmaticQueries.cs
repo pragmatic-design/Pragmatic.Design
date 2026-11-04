@@ -119,6 +119,7 @@ internal sealed partial class PragmaticQuery
             queries.Add(query);
         }
 
+        queries.AddRange(ReadDerived(compilation, engine, engines));
         return queries;
     }
 
@@ -163,11 +164,14 @@ internal sealed partial class PragmaticQuery
             return;
         }
 
-        if (property.Type is INamedTypeSymbol { Name: "Specification" or "ISpecification" })
+        if (property.Type is INamedTypeSymbol { Name: "Specification" or "ISpecification" } specification)
         {
-            Unsupported ??= $"the specification property {property.Name} is not compiled yet";
+            ReadRule(property, specification);
             return;
         }
+
+        if (Derived)
+            return; // a specification's parameter: an input of the rule, not a filter of its own (EF Core's IsFilter = false)
 
         var sort = Mark(property, "SortAttribute");
         if (sort is not null)
@@ -246,6 +250,7 @@ internal sealed partial class PragmaticQuery
             ResultName,
             Unsupported is null,
             _conditions.ToEquatableArray(),
+            _rules.ToEquatableArray(),
             _groups.ToEquatableArray(),
             ordering);
         return (model.Hint, new QueryShapeTemplate(model).ToSourceText().ToString());

@@ -57,6 +57,22 @@ public class DeclaredQueryTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_query_derived_from_a_specification_filters_by_its_rule(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, reviews, _) = await Seeded(dialect);
+        using (session)
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            // Published() & By(owner): anna's unpublished ALPE is out, and the owner is the query's input.
+            Assert.Equal(["anna@MARE", "anna@RIVA"], (await reviews.RunAsync(new PublishedByQuery { Owner = "anna" })).Select(r => r.Text).Order(StringComparer.Ordinal));
+            Assert.Equal(["bruno@RIVA"], (await reviews.RunAsync(new PublishedByQuery { Owner = "bruno" })).Select(r => r.Text));
+            Assert.Empty(await reviews.RunAsync(new PublishedByQuery { Owner = "nobody" }));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task A_query_declared_paged_gets_its_page_and_its_default_size(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
