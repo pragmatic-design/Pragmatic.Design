@@ -38,6 +38,9 @@ internal sealed partial class PragmaticQuery
 
     public bool Paged { get; private set; }
 
+    /// <summary>True when the query is <c>Paged = true</c> and does not declare <c>Page</c> and <c>PageSize</c>: its shape writes them.</summary>
+    public bool WritesPaging { get; private set; }
+
     /// <summary>Why the engine does not compile this query yet; null when it does.</summary>
     public string? Unsupported { get; private set; }
 
@@ -85,7 +88,10 @@ internal sealed partial class PragmaticQuery
         if (Type.GetMembers("Apply").Length > 0)
             Unsupported ??= "it writes its own Apply";
         var properties = Type.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.DeclaredAccessibility == Accessibility.Public && p.GetMethod is not null).ToList();
-        if (properties.Any(p => p.Name.Equals("Page", StringComparison.OrdinalIgnoreCase)) && properties.Any(p => p.Name.Equals("PageSize", StringComparison.OrdinalIgnoreCase)))
+        var declaresPaging = properties.Any(p => p.Name.Equals("Page", StringComparison.OrdinalIgnoreCase)) && properties.Any(p => p.Name.Equals("PageSize", StringComparison.OrdinalIgnoreCase));
+        // Paged = true with no Page and PageSize written: the shape writes them, as EF Core's half of the query does (QueryApplyTemplate, #504).
+        WritesPaging = Paged && !declaresPaging;
+        if (declaresPaging)
             Paged = true;
         foreach (var property in properties)
             ReadProperty(property);
@@ -186,6 +192,7 @@ internal sealed partial class PragmaticQuery
             Type.ContainingNamespace.IsGlobalNamespace ? null : Type.ContainingNamespace.ToDisplayString(),
             Type.Name,
             Paged,
+            WritesPaging,
             EntityName,
             ResultName,
             Unsupported is null,

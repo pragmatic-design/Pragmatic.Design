@@ -72,6 +72,24 @@ public class DeclaredQueryTests(DocumentServers servers)
 
     [Theory]
     [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_query_declared_paged_gets_its_page_and_its_default_size(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await ReviewsAsync(servers, store, _toggle);
+        IReadRepository<Review> reviews = new Review.DocReadRepository(session);
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            var second = await reviews.RunAsync(new PagedReviewsQuery { Page = 2, PageSize = 3 });
+            var whole = await reviews.RunAsync(new PagedReviewsQuery());
+
+            Assert.Equal(Page(["bruno@RIVA"], 4), Page([.. second.Items.Select(r => r.Text)], second.TotalCount)); // the ascending default sort, past the first three
+            Assert.Equal(Page(["anna@ALPE", "anna@MARE", "anna@RIVA", "bruno@RIVA"], 4), Page([.. whole.Items.Select(r => r.Text)], whole.TotalCount)); // page 1 of twenty
+            Assert.Equal((1, 20), (new PagedReviewsQuery().Page, new PagedReviewsQuery().PageSize));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
     public async Task A_declared_query_reads_inside_the_callers_filters_and_projects(Store store)
     {
         using var tenant = TenantScope.BeginScope("acme");

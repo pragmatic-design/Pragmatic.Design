@@ -25,6 +25,17 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
         AppendLine();
         AppendLine($"partial class {model.TypeName} : global::Pragmatic.Persistence.Query.Interfaces.{(model.Paged ? "IPagedQuery" : "IQuery")}<{entity}, {model.ResultType}>");
         AppendLine("{");
+        if (model.WritesPaging)
+        {
+            // Paged = true: the two properties EF Core's half of the query writes, with its defaults (QueryApplyTemplate.RenderPagingSurface).
+            AppendLine("    /// <summary>The page to return, 1-based.</summary>");
+            AppendLine("    public int Page { get; init; } = 1;");
+            AppendLine();
+            AppendLine("    /// <summary>How many rows the page holds.</summary>");
+            AppendLine("    public int PageSize { get; init; } = 20;");
+            AppendLine();
+        }
+
         AppendLine($"    public global::System.Linq.IQueryable<{entity}> Apply(global::System.Linq.IQueryable<{entity}> query)");
         AppendLine($"        => throw new global::System.NotSupportedException(\"{model.TypeName} runs on the {model.Engine}, which reads the declaration (IReadRepository.RunAsync), not an IQueryable.\");");
         if (model.Compiled)

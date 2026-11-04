@@ -13,6 +13,7 @@ internal sealed record QueryShapeModel(
     string? Namespace,
     string TypeName,
     bool Paged,
+    bool WritesPaging,
     string EntityType,
     string ResultType,
     bool Compiled,
