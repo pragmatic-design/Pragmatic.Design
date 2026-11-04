@@ -182,7 +182,13 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var read = query.InMemory ? "entities" : "rows";
         AppendLine($"                case {query.QueryType} q:");
         AppendLine("                {");
-        if (paged)
+        if (query.Grouped is { } grouped)
+        {
+            // A grouped [QueryView] (#507): the filters, then the view's grouping and aggregates, in one statement. Not paged, not ordered (refused).
+            AppendLine($"                    var rows = await {filtered}{grouped}.ToListAsync(ct);");
+            AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
+        }
+        else if (paged)
         {
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
             AppendLine($"                    var {read} = await {filtered}.OrderedBy(q.ToSqlOrdering()){project}.Skip(paged.Skip).Take(paged.Take).ToListAsync(ct);");

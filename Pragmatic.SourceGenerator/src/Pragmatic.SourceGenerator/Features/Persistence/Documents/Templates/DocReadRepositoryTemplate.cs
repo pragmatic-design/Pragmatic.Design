@@ -142,7 +142,13 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         if (paged)
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
         var page = paged ? ".Skip(paged.Skip).Take(paged.Take)" : "";
-        if (query.Lookups.Count == 0 && !query.InMemory)
+        if (query.Grouped is { } grouped)
+        {
+            // A grouped [QueryView] (#507): the matched documents read whole, grouped and aggregated in .NET. Not paged, not ordered (refused).
+            AppendLine("                    var documents = await filtered.ToListAsync(ct);");
+            AppendLine($"                    var rows = {grouped};");
+        }
+        else if (query.Lookups.Count == 0 && !query.InMemory)
         {
             var select = query.Projection.Length == 0 ? "" : $".Select({query.Projection})";
             AppendLine($"                    var rows = await filtered.OrderedBy(q.ToDocOrdering()){select}{page}.ToListAsync(ct);");

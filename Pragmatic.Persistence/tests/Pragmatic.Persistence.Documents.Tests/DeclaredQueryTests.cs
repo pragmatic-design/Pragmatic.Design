@@ -72,6 +72,25 @@ public class DeclaredQueryTests(DocumentServers servers)
 
     [Theory]
     [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_grouped_view_counts_sums_and_takes_the_maximum_per_group_inside_the_filters(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await ReviewsAsync(servers, store, _toggle);
+        IReadRepository<Review> reviews = new Review.DocReadRepository(session);
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            var all = await reviews.RunAsync(new ReviewsByPublicationQuery());
+            var riva = await reviews.RunAsync(new ReviewsByPublicationQuery { Text = "RIVA" });
+
+            // Published: RIVA 5 and 3, MARE 4; not published: ALPE 2.
+            Assert.Equal([(false, 1, 2, 2), (true, 3, 12, 5)], all.Select(g => (g.Published, g.Reviews, g.Stars, g.Best)).OrderBy(g => g.Published));
+            // Only RIVA's, both published: the unpublished group has no document inside the filter, and is not there.
+            Assert.Equal([(true, 2, 8, 5)], riva.Select(g => (g.Published, g.Reviews, g.Stars, g.Best)));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
     public async Task A_query_declared_paged_gets_its_page_and_its_default_size(Store store)
     {
         using var tenant = TenantScope.BeginScope("acme");
