@@ -952,6 +952,8 @@
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Documents.Workload/Pragmatic.Persistence.Documents.Workload.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Sql.ReferencedModule/Pragmatic.Persistence.Sql.ReferencedModule.csproj" />
+    <Project Path="Pragmatic.Persistence/tests/Fixtures/Pragmatic.Persistence.Documents.ReferencedModule/Pragmatic.Persistence.Documents.ReferencedModule.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.E2E.Tests/Pragmatic.Privacy.E2E.Tests.csproj" />
     <Project Path="Pragmatic.Privacy/tests/Pragmatic.Privacy.Tests/Pragmatic.Privacy.Tests.csproj" />
     <Project Path="Pragmatic.Persistence/tests/Pragmatic.Persistence.Tests/Pragmatic.Persistence.Tests.csproj" />

@@ -832,6 +832,14 @@
           "Pragmatic.Persistence.Expressions": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.sql.referencedmodule": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Sql": "[1.0.0, )",
+          "Pragmatic.Persistence.Sql.Core": "[1.0.0, )"
+        }
+      },
       "pragmatic.privacy": {
         "type": "Project",
         "dependencies": {

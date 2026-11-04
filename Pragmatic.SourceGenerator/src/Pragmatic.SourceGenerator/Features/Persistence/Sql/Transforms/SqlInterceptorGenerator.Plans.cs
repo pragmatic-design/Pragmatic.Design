@@ -177,10 +177,15 @@ internal static partial class SqlInterceptorGenerator
         return position + where;
     }
 
-    /// <summary>The lambda of a rule's <c>ToExpression</c>, when the rule is declared in this compilation with an expression body.</summary>
+    /// <summary>
+    ///     The lambda of a rule's <c>ToExpression</c>, when the rule is declared in this compilation with an expression body, or when the
+    ///     assembly declaring it stated its source (<see cref="RuleSources" />).
+    /// </summary>
     internal static LambdaExpressionSyntax? RuleLambda(INamedTypeSymbol rule, Compilation compilation, out SemanticModel? model)
     {
         model = null;
+        if (rule.DeclaringSyntaxReferences.Length == 0)
+            return RuleSources.Lambda(rule, compilation, out model);
         var method = rule.GetMembers("ToExpression").OfType<IMethodSymbol>().FirstOrDefault();
         if (method is null)
             return null;

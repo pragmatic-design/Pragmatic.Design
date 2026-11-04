@@ -43,7 +43,7 @@ internal sealed partial class EntityModel
     }
 
     private static IEnumerable<IPropertySymbol> OwnProperties(INamedTypeSymbol type)
-        => type.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.GetMethod is not null && p.SetMethod is not null && p.DeclaredAccessibility == Accessibility.Public);
+        => type.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.GetMethod is not null && Core.StoredProperty.HasSetter(p) && p.DeclaredAccessibility == Accessibility.Public);
 
     /// <summary>True in a table-per-type hierarchy: read through the view <see cref="Table" />, written to <see cref="WriteTable" /> and <see cref="PartTable" />.</summary>
     public bool Tpt { get; set; }

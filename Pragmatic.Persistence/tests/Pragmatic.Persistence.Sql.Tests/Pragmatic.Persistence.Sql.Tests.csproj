@@ -61,6 +61,9 @@
          its operations over the package's store on each database. -->
     <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.Engines\Pragmatic.Authorization.Management.Engines.csproj" />
+    <!-- Entities of another module, read from this assembly as metadata (ReferencedModuleTests): their tables come from their source,
+         which DialectSchemas hands the generator with the suite's own. -->
+    <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\Pragmatic.Persistence.Sql.ReferencedModule.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <!-- The schema the Sql engine describes for the entities migrates the databases (Pragmatic.Migrations' runner). A host's schema is
          typed for its one driver, and this suite migrates five: the generator runs again in process, once per dialect (DialectSchemas). -->
@@ -72,6 +75,10 @@
   <ItemGroup>
     <!-- The entities' source, which DialectSchemas hands the generator. -->
     <EmbeddedResource Include="Entities.cs" LogicalName="Entities.cs" />
+    <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\Supplier.cs" LogicalName="ReferencedModule.Supplier.cs" />
+    <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\Part.cs" LogicalName="ReferencedModule.Part.cs" />
+    <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\ListedOnly.cs" LogicalName="ReferencedModule.ListedOnly.cs" />
+    <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\SupplierStatuses.cs" LogicalName="ReferencedModule.SupplierStatuses.cs" />
   </ItemGroup>
 
   <!-- The engine's namespaces the suite reads. Not its attributes: [Entity] here is Pragmatic's. -->

@@ -74,6 +74,8 @@
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Workload/Pragmatic.Persistence.Workload.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Documents.Workload/Pragmatic.Persistence.Documents.Workload.csproj" />
+    <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.ReferencedModule/Pragmatic.Persistence.Sql.ReferencedModule.csproj" />
+    <Project Path="tests/Fixtures/Pragmatic.Persistence.Documents.ReferencedModule/Pragmatic.Persistence.Documents.ReferencedModule.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Pragmatic.Persistence.Samples/Pragmatic.Persistence.Samples.csproj" />

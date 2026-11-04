@@ -245,9 +245,10 @@ internal sealed class DocModel
         {
             foreach (var property in t.GetMembers().OfType<IPropertySymbol>())
             {
-                if (property.IsStatic || property.IsIndexer || property.DeclaredAccessibility != Accessibility.Public || property.GetMethod is null || property.SetMethod is null)
+                // A Pragmatic entity of another assembly is metadata, where a private setter does not show (Core.StoredProperty).
+                if (property.IsStatic || property.IsIndexer || property.DeclaredAccessibility != Accessibility.Public || property.GetMethod is null || !Core.StoredProperty.HasSetter(property))
                     continue;
-                if (pragmatic ? IsNavigation(property.Type) || property.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute") : property.SetMethod.DeclaredAccessibility != Accessibility.Public)
+                if (pragmatic ? IsNavigation(property.Type) || property.GetAttributes().Any(a => a.AttributeClass?.Name == "NotMappedAttribute") : !Core.StoredProperty.HasPublicSetter(property))
                     continue;
                 yield return property;
             }

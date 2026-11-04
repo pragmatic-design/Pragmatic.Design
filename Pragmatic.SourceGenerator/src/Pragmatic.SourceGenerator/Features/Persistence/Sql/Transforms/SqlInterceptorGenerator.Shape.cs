@@ -86,6 +86,7 @@ internal static partial class SqlInterceptorGenerator
         }
 
         var trees = new List<SyntaxTree>(shapeTrees);
+        trees.AddRange(RuleSources.Referenced(compilation, options)); // another module's rules, as source: bound here, never emitted
         foreach (var (hint, text) in shapes.Concat(repositories))
         {
             spc.AddSource(hint, text);
