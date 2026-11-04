@@ -9,7 +9,7 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 /// <summary>
 ///     A declared query's <c>[ComplexFilter]</c> on the Sql engine (#477): the filter object's members are written into the query's
 ///     <c>ToSpecification()</c> as <c>[FilterDto]</c> composes them, a <c>[FilterGroup(FilterLogic.Or)]</c> joining its members with OR. Before, the
-///     attribute refused the query (PRAG3033), as it refused the Showcase's <c>SearchPropertiesQuery</c>. The documents engine still refuses it.
+///     attribute refused the query (PRAG3033), as it refused the Showcase's <c>SearchPropertiesQuery</c>. The documents engine compiles it too (#488).
 /// </summary>
 /// <remarks>The bridges are declared by the types the generator recognises them by; the composition itself runs in <c>Pragmatic.Persistence.Sql.Tests</c>.</remarks>
 public class AComplexFilterIsComposedOnSqlTests
@@ -85,14 +85,19 @@ public class AComplexFilterIsComposedOnSqlTests
         shape.Should().Contain("if (__group0 is not null) spec = spec & __group0;", "and the filter object with the query's other filters");
     }
 
-    /// <summary>The control: the documents engine reads the same declaration and still refuses it, by name.</summary>
+    /// <summary>
+    ///     The documents engine reads the same declaration and compiles it too (#488): the composition is the query's shape, which both engines
+    ///     share; the documents suite (<c>ComplexFilterTests</c> there) runs it on MongoDB and Cosmos DB.
+    /// </summary>
     [Fact]
-    public void OnTheDocumentsEngine_TheQueryIsStillRefused()
+    public void OnTheDocumentsEngine_TheQueryIsCompiledToo()
     {
         var result = GeneratorTestHelper.RunGeneratorWithInterceptors<PragmaticSourceGenerator>(Hotels + DocumentsBridge, "Pragmatic.Persistence.Documents.Generated",
             [.. References, GeneratorTestHelper.FromType<global::Pragmatic.Persistence.Documents.DocSession>()]);
 
-        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3108").Should().Contain(d => d.GetMessage().Contains("[ComplexFilter] is not compiled on the documents engine", StringComparison.Ordinal));
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3108").Should().NotContain(d => d.GetMessage().Contains("SearchHotelsQuery", StringComparison.Ordinal));
+        string.Concat(GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Values)
+            .Should().Contain("__group1 = __group1 is null ? __leaf : (__group1 | __leaf)", "the Or group, in the shape the documents engine shares");
     }
 
     private static readonly MetadataReference[] References =
