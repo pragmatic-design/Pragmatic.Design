@@ -254,10 +254,10 @@ internal static partial class SqlInterceptorGenerator
             if (tenant)
                 Index(["TenantId"]);
             var foreignKeys = new List<ForeignKeySchemaModel>();
-            foreach (var navigation in entity.Navigations.Where(n => !n.IsComposite && entity.Column(n.ForeignKey) is not null))
+            foreach (var navigation in entity.Navigations.Where(n => !n.IsComposite && !n.Principal && entity.Column(n.ForeignKey) is not null))
             {
                 var column = entity.Column(navigation.ForeignKey)!.Column;
-                Index([column]);
+                Index([column], PragmaticRelations.IsOneToOneDependent(entity.Type, navigation.Property, navigation.Target)); // a one-to-one's key is unique, as EF Core indexes it
                 if (!Holds(navigation.Target) || lookup(navigation.Target) is not { } target)
                     continue; // another engine's, boundary's or database's row: the key without the constraint, as Pragmatic skips a cross-boundary one
                 foreignKeys.Add(ForeignKey($"FK_{entity.Table}_{column}_{target.Table}", column, target.Table, target.KeyColumn, PragmaticRelations.OnDelete(entity.Type, navigation.Property, navigation.Target)));

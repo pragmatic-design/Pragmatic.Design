@@ -113,6 +113,7 @@ These work on every engine, from the same declarations:
 | A save | one batch in one transaction | one MongoDB transaction where the server runs them (a replica set); on a standalone server and on Cosmos DB the documents are written one by one, and a failure leaves the earlier ones written |
 | `[LoadEntity(Include = …)]` | compiled; a load the engine cannot compile is `PRAG3036` | not supported: `PRAG3111` |
 | A mutation that writes navigations | references one-to-one: `PRAG3037`; collections and `[LinkIds]` are tracked | `PRAG3112` |
+| The principal side of a one-to-one (`IsPrincipal = true`) | a LEFT JOIN on the dependent's key, in an include, a projection or a predicate; a chain translated at run time does not follow it | no navigation, as for any relation |
 | A LINQ operator the engine cannot translate | `PRAG3001` at the call site | `PRAG3101` at the call site |
 
 A chain the generator did not see (written in another assembly, or reached by reflection) has no plan, and its

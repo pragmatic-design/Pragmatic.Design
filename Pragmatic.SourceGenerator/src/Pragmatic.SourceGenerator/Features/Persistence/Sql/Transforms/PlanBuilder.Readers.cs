@@ -142,7 +142,10 @@ internal sealed partial class PlanBuilder
         foreach (var child in node.Children.Where(c => !c.IsCollection))
             children.Add($"{child.Property} = {Hydrate(child, ref ordinal)}");
         var built = target.Construct("r", "d", i => (start + i).ToString(), string.Join(", ", children));
-        return node.Hop.Navigation is { Required: true } ? built : $"(r.IsDBNull({keyOrdinal}) ? null : {built})";
+        // The principal side of a one-to-one is optional, but Persistence's shape declares its member not nullable: a principal with no dependent
+        // gets the null EF Core gives it there, said with ! (#503).
+        var none = node.Hop.Navigation is { Principal: true } ? "null!" : "null";
+        return node.Hop.Navigation is { Required: true } ? built : $"(r.IsDBNull({keyOrdinal}) ? {none} : {built})";
     }
 
     /// <summary>The reader that shapes one row of this statement: the entity, with its to-one includes nested; a projection; an aggregate's value; none for a scalar.</summary>

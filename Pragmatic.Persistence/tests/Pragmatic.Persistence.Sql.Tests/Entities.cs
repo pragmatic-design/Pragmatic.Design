@@ -236,6 +236,25 @@ public partial class Account : IEntity, Pragmatic.Identity.Local.ISelfRegisterin
 }
 
 /// <summary>
+///     A desk, the principal side of a one-to-one (#503): it declares the navigation to its lamp and holds no key of it, as the Showcase's
+///     <c>Guest.Preferences</c>. The lamp's row holds the desk's key (<c>DeskId</c>); a desk may have none.
+/// </summary>
+[Entity]
+[Relation.OneToOne<DeskLamp>.WithNavigation("Lamp", Inverse = "Desk", IsPrincipal = true)]
+public partial class Desk : IEntity
+{
+    public string Code { get; set; } = "";
+}
+
+/// <summary>A desk's lamp, the dependent side of the one-to-one: its <c>DeskId</c> is the key the desk's navigation joins on.</summary>
+[Entity]
+[Relation.OneToOne<Desk>.WithNavigation("Desk", Inverse = "Lamp")]
+public partial class DeskLamp : IEntity
+{
+    public int Watts { get; set; }
+}
+
+/// <summary>
 ///     A note kept encrypted under its subject's key (crypto-shredding): a <c>ProtectedValue</c>, stored as the bytes it was encrypted to, as EF
 ///     Core's <c>ProtectedValueConverter</c> stores it. <c>ProtectedValueTests</c> writes and reads it.
 /// </summary>

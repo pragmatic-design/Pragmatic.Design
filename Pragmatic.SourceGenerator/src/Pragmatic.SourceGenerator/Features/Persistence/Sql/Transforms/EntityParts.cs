@@ -241,7 +241,14 @@ internal sealed class NavigationModel
 
     public INamedTypeSymbol Target { get; }
 
-    /// <summary>The foreign key property; the first of <see cref="ForeignKeys" /> towards a composite key.</summary>
+    /// <summary>
+    ///     The principal side of a one-to-one (<c>[Relation.OneToOne&lt;T&gt;.WithNavigation(…, IsPrincipal = true)]</c>, #503): the key is the
+    ///     target's, <see cref="ForeignKey" /> a property of <see cref="Target" /> holding this entity's key. Optional (a principal may have no
+    ///     dependent), so it joins LEFT; this entity has no column for it, and never writes through it.
+    /// </summary>
+    public bool Principal { get; set; } // set, not init: the generator compiles for netstandard2.0
+
+    /// <summary>The foreign key property, of this entity (of <see cref="Target" /> when <see cref="Principal" />); the first of <see cref="ForeignKeys" /> towards a composite key.</summary>
     public string ForeignKey { get; }
 
     /// <summary>The foreign key properties, one per key column of the target in its order (<c>{Navigation}{KeyProperty}</c> towards a composite key).</summary>

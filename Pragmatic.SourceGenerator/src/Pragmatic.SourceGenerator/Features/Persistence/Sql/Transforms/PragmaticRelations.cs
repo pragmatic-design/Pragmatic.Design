@@ -98,6 +98,26 @@ internal static class PragmaticRelations
             .Select(d => (d.Name ?? d.Target.Name, d.ForeignKey ?? (d.Name ?? d.Target.Name) + "Id", d.Target));
 
     /// <summary>
+    ///     The key property of <paramref name="target" /> holding <paramref name="entity" />'s key, when <paramref name="navigation" /> is the
+    ///     principal side of a one-to-one (<c>IsPrincipal = true</c>): the relation's <c>ForeignKey</c>, else <c>{Inverse}Id</c>, else
+    ///     <c>{Entity}Id</c>, as Persistence's shape names the dependent's key. Null for any other navigation.
+    /// </summary>
+    public static string? PrincipalKey(INamedTypeSymbol entity, string navigation, INamedTypeSymbol target)
+    {
+        var relation = Declarations(entity).FirstOrDefault(d => d.Kind == "OneToOne" && d.IsPrincipal && SymbolEqualityComparer.Default.Equals(d.Target, target) && (d.Name ?? d.Target.Name) == navigation);
+        return relation is null ? null : relation.ForeignKey ?? (relation.Inverse ?? entity.Name) + "Id";
+    }
+
+    /// <summary>
+    ///     True when <paramref name="navigation" /> of <paramref name="entity" /> is the dependent side of a one-to-one: its own OneToOne declaration
+    ///     that is not the principal's, or the principal's declaration on <paramref name="target" /> naming it as the inverse. Its key holds at most
+    ///     one row per target, which is the unique index EF Core configures on it.
+    /// </summary>
+    public static bool IsOneToOneDependent(INamedTypeSymbol entity, string navigation, INamedTypeSymbol target)
+        => Declarations(entity).Any(d => d.Kind == "OneToOne" && !d.IsPrincipal && SymbolEqualityComparer.Default.Equals(d.Target, target) && (d.Name ?? d.Target.Name) == navigation)
+           || Declarations(target).Any(d => d.Kind == "OneToOne" && d.IsPrincipal && SymbolEqualityComparer.Default.Equals(d.Target, entity) && (d.Inverse ?? entity.Name) == navigation);
+
+    /// <summary>
     ///     What deleting <paramref name="target" /> does to <paramref name="dependent" />'s rows along <paramref name="navigation" />, as Pragmatic's
     ///     <c>DeleteBehavior</c> name: the dependent's ManyToOne/OneToOne declaration (Restrict unless it says), else the target's OneToMany of the
     ///     dependent (Cascade unless it says), else NoAction. ASSUMPTION: when both sides declare, the dependent's holds (Pragmatic's

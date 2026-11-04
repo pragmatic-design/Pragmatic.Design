@@ -190,7 +190,7 @@ internal static partial class SqlInterceptorGenerator
         foreach (var entity in stored)
         {
             var table = tables[entity.Table];
-            foreach (var navigation in entity.Navigations.Where(n => !n.IsComposite))
+            foreach (var navigation in entity.Navigations.Where(n => !n.IsComposite && !n.Principal)) // the principal side's key is the dependent's, constrained on its table
             {
                 var column = entity.Column(navigation.ForeignKey)?.Column ?? navigation.ForeignKey;
                 if (lookup(navigation.Target) is { } target && Holds(target))

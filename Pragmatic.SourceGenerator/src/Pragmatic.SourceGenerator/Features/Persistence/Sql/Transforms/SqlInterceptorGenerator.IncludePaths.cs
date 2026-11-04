@@ -48,7 +48,13 @@ internal static partial class SqlInterceptorGenerator
                     return null;
                 }
 
-                if (target.HasCompositeKey && navigation.ForeignKeys.Length != target.Keys.Count)
+                if (navigation.Principal && current.HasCompositeKey)
+                {
+                    error = $"'{name}' is the principal side of a one-to-one and {current.Type.Name} has a composite key ({current.KeyList}): the dependent holds one key column";
+                    return null;
+                }
+
+                if (!navigation.Principal && target.HasCompositeKey && navigation.ForeignKeys.Length != target.Keys.Count)
                 {
                     error = $"'{target.Type.Name}' has a composite key ({target.KeyList}): the navigation joins on one foreign key per key column ({name}{{KeyProperty}})";
                     return null;

@@ -68,7 +68,9 @@ internal static partial class SqlInterceptorGenerator
             entity.Table,
             keys.Select(k => k.Column).ToEquatableArray(),
             entity.Columns.Select(ColumnMapOf).ToEquatableArray(),
-            entity.Navigations.Select(n => NavigationMapOf(entity, n, lookup)).ToEquatableArray(), // a composite navigation with one foreign key column per key column of its target
+            // A composite navigation with one foreign key column per key column of its target. Not the principal side of a one-to-one: the runtime
+            // map joins on a column of this entity, which that side does not have; the runtime path reports it as no navigation (#503).
+            entity.Navigations.Where(n => !n.Principal).Select(n => NavigationMapOf(entity, n, lookup)).ToEquatableArray(),
             entity.Collections.Select(c => CollectionMapOf(entity, c, lookup)).ToEquatableArray(),
             entity.Rules.Select(r => r.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToEquatableArray(),
             Safe(entity),
