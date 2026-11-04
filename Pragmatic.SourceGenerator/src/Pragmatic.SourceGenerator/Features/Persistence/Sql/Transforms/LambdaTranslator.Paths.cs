@@ -241,6 +241,17 @@ internal sealed partial class LambdaTranslator
         var asKey = entity.Navigation(last);
         if (asKey is null)
             return Fail(member, $"'{last}' is not a mapped column of {entity.Type.Name}");
+        if (asKey.Principal)
+        {
+            // The principal side of a one-to-one holds no key: the dependent's row stands for it, through its join (#503).
+            var dependentOptional = LastColumnOptional;
+            var dependent = Hop(entity, ref alias, ref dependentOptional, last, null, member, wanted: _orDepth == 0 && _nullTest == NullTest.IsNotNull);
+            if (dependent is null)
+                return null;
+            LastColumnOptional = dependentOptional;
+            return $"{alias}.\"{dependent.KeyColumn}\"";
+        }
+
         if (_orDepth == 0 && _nullTest == NullTest.IsNotNull)
             _innerAliases.Add(AliasOf(alias, last)); // the predicate asks for the target: its join, if any, can be INNER
         var key = entity.Column(asKey.ForeignKey);
@@ -293,7 +304,13 @@ internal sealed partial class LambdaTranslator
             return null;
         }
 
-        if (target.HasCompositeKey && navigation.ForeignKeys.Length != target.Keys.Count)
+        if (navigation.Principal && entity.HasCompositeKey)
+        {
+            Fail(where, $"'{segment}' is the principal side of a one-to-one and {entity.Type.Name} has a composite key ({entity.KeyList}): the dependent holds one key column");
+            return null;
+        }
+
+        if (!navigation.Principal && target.HasCompositeKey && navigation.ForeignKeys.Length != target.Keys.Count)
         {
             Fail(where, $"'{navigation.Target.Name}' has a composite key ({target.KeyList}): the navigation joins on one foreign key per key column ({segment}{{KeyProperty}} on {entity.Type.Name})");
             return null;

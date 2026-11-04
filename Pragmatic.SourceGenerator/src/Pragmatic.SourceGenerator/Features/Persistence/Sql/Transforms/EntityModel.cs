@@ -115,8 +115,16 @@ internal sealed partial class EntityModel
     ///     LEFT whatever the key says with <paramref name="optional" /> (a derived type's navigation reached through a cast: the row may be of another type).
     /// </summary>
     public string Join(NavigationModel navigation, EntityModel target, string parentAlias, string alias, bool optional = false)
-        => $"{(navigation.Required && !optional ? "INNER" : "LEFT")} JOIN \"{target.Table}\" {alias} ON "
-           + string.Join(" AND ", navigation.ForeignKeys.Select((fk, i) => $"{alias}.\"{(navigation.IsComposite ? target.Keys[i].Column : target.KeyColumn)}\" = {parentAlias}.\"{Column(fk)?.Column ?? fk}\""));
+        => $"{(navigation.Required && !optional ? "INNER" : "LEFT")} JOIN \"{target.Table}\" {alias} ON " + JoinOn(navigation, target, parentAlias, alias);
+
+    /// <summary>
+    ///     The equality of a navigation's join, the target under <paramref name="alias" />: its key against this entity's foreign key; for the
+    ///     principal side of a one-to-one, its foreign key against this entity's key (#503).
+    /// </summary>
+    public string JoinOn(NavigationModel navigation, EntityModel target, string parentAlias, string alias)
+        => navigation.Principal
+            ? $"{alias}.\"{target.Column(navigation.ForeignKey)?.Column ?? navigation.ForeignKey}\" = {parentAlias}.\"{KeyColumn}\""
+            : string.Join(" AND ", navigation.ForeignKeys.Select((fk, i) => $"{alias}.\"{(navigation.IsComposite ? target.Keys[i].Column : target.KeyColumn)}\" = {parentAlias}.\"{Column(fk)?.Column ?? fk}\""));
 
     /// <summary>True for a type that admits null: <c>Nullable&lt;T&gt;</c>, or a reference type annotated <c>?</c>.</summary>
     public static bool IsNullable(ITypeSymbol type)
@@ -207,6 +215,9 @@ internal sealed partial class EntityModel
                     navigations.Add(new NavigationModel(property.Name, (INamedTypeSymbol)property.Type, key.Name, required: !IsNullable(key.Type)));
                 else if (composite is not null && composite.All(p => p is not null))
                     navigations.Add(new NavigationModel(property.Name, (INamedTypeSymbol)property.Type, composite[0]!.Name, required: composite.All(p => !IsNullable(p!.Type)), composite.Select(p => p!.Name).ToArray()));
+                else if (PragmaticRelations.PrincipalKey(type, property.Name, (INamedTypeSymbol)property.Type) is { } dependentKey
+                         && MappedProperties((INamedTypeSymbol)property.Type, null).Any(p => p.Name == dependentKey))
+                    navigations.Add(new NavigationModel(property.Name, (INamedTypeSymbol)property.Type, dependentKey, required: false) { Principal = true }); // the key is the dependent's (#503)
                 else
                     diagnostics.Add(Diagnostic.Create(Diagnostics.NavigationWithoutKey, property.Locations.FirstOrDefault(), type.Name, property.Name, property.Type.Name));
                 continue;
