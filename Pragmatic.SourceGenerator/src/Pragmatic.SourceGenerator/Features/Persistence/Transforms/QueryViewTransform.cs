@@ -18,16 +18,26 @@ internal static class QueryViewTransform
         if (context.TargetSymbol is not INamedTypeSymbol typeSymbol)
             return null;
 
-        var syntax = context.TargetNode;
-        var isRecord = syntax is RecordDeclarationSyntax;
+        return Transform(typeSymbol, context.Attributes.FirstOrDefault(), context.SemanticModel.Compilation, context.TargetNode is RecordDeclarationSyntax, ct);
+    }
 
+    /// <summary>
+    ///     The view as a declared query's result reads it (#507): the same model, from the view's symbol and its <c>[QueryView&lt;TRoot&gt;]</c>,
+    ///     for an engine that groups as EF Core's <c>Build</c> does.
+    /// </summary>
+    public static QueryViewModel? Of(INamedTypeSymbol view, Compilation compilation)
+    {
+        var attribute = view.GetAttributes().FirstOrDefault(a => a.AttributeClass is { Name: "QueryViewAttribute", TypeArguments.Length: 1 });
+        return attribute is null ? null : Transform(view, attribute, compilation, view.IsRecord, CancellationToken.None);
+    }
+
+    private static QueryViewModel? Transform(INamedTypeSymbol typeSymbol, AttributeData? attr, Compilation compilation, bool isRecord, CancellationToken ct)
+    {
         // Get [QueryView<TRoot>] attribute
-        var attr = context.Attributes.FirstOrDefault();
         if (attr?.AttributeClass is not INamedTypeSymbol { TypeArguments.Length: 1 } attrClass)
             return null;
 
         var rootEntityType = attrClass.TypeArguments[0];
-        var compilation = context.SemanticModel.Compilation;
 
         var groupByProperties = new List<GroupByModel>();
         var aggregateProperties = new List<AggregatePropertyModel>();

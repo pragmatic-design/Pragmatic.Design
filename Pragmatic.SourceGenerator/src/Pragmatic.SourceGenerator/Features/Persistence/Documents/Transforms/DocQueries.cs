@@ -28,6 +28,15 @@ internal static partial class DocQueries
             query.Refuse($"the sort {sort.Name} orders by {sort.Column}, which is not a field of the document");
         if (query.MapsInMemory)
             return query.Unsupported is null ? InMemory(query, model, models, lookups) : null;
+        if (query.View is not null)
+        {
+            // A grouped [QueryView] (#507): the matched documents grouped in .NET (DocReadRepositoryTemplate); a key through a navigation has
+            // nothing to group through, since a document keeps a relation as its key.
+            if (query.NavigationKey is { } through)
+                query.Refuse($"the view {query.Result.Name} groups by {through}, through a navigation, which a document keeps as its key");
+            return query.Unsupported is null ? "" : null;
+        }
+
         if (SymbolEqualityComparer.Default.Equals(query.Result, query.Entity))
             return "";
 

@@ -111,6 +111,7 @@ internal sealed partial class PragmaticQuery
             var result = attribute.TypeArguments.Length > 1 ? attribute.TypeArguments[1] as INamedTypeSymbol ?? entity : entity;
             var query = new PragmaticQuery(type, entity, result);
             query.ReadMembers(type.GetAttributes().First(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attribute)));
+            query.ReadView(compilation);
             queries.Add(query);
         }
 

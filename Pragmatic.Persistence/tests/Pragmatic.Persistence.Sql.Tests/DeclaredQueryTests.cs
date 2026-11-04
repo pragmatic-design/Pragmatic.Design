@@ -75,6 +75,25 @@ public class DeclaredQueryTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_grouped_view_counts_sums_and_takes_the_maximum_per_group_inside_the_filters(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, reviews, _) = await Seeded(dialect);
+        using (session)
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            var all = await reviews.RunAsync(new ReviewsByPublicationQuery());
+            var riva = await reviews.RunAsync(new ReviewsByPublicationQuery { Text = "RIVA" });
+
+            // Published: RIVA 5 and 3, MARE 4; not published: ALPE 2.
+            Assert.Equal([(false, 1, 2, 2), (true, 3, 12, 5)], all.Select(g => (g.Published, g.Reviews, g.Stars, g.Best)).OrderBy(g => g.Published));
+            // Only RIVA's, both published: the unpublished group has no row inside the filter, and is not there.
+            Assert.Equal([(true, 2, 8, 5)], riva.Select(g => (g.Published, g.Reviews, g.Stars, g.Best)));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task A_query_that_maps_in_memory_reads_its_navigation_and_runs_the_selector(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
