@@ -103,6 +103,10 @@ public sealed class BookingCard
 
     [MapProperty("Guest.FullName")]
     public string? GuestName { get; init; }
+
+    /// <summary>The same field into a property that is not nullable, as the Showcase's <c>RoomTypeSummaryDto.PropertyName</c> is (#497).</summary>
+    [MapProperty("Guest.Email")]
+    public string GuestContact { get; init; } = "";
 }
 
 /// <summary>The cards of the bookings whose phone starts with a prefix, by nights.</summary>

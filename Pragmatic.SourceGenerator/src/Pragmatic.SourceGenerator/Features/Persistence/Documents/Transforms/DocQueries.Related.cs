@@ -64,7 +64,10 @@ internal static partial class DocQueries
         }
 
         // The property's default when the related document is not found: null for a reference or a nullable, as EF Core's left join reads it.
-        var fallback = $"default({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier))})";
+        // A reference the property declares not nullable gets that null too, said with !: it is where EF Core would put it (#497).
+        var fallback = property.Type.IsReferenceType && property.Type.NullableAnnotation != NullableAnnotation.Annotated
+            ? "default!"
+            : $"default({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier))})";
         var found = $"__{property.Name}";
         var key0 = lookup.ForeignKeyNullable ? $"e.{lookup.ForeignKey} is {{ }} __key{property.Name} && " : "";
         var keyRead = lookup.ForeignKeyNullable ? $"__key{property.Name}" : $"e.{lookup.ForeignKey}";
