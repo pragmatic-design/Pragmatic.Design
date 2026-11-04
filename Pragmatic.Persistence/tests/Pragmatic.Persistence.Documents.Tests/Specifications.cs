@@ -1,3 +1,4 @@
+using Pragmatic.Persistence.Query.Attributes;
 using Pragmatic.Specification;
 
 namespace PragmaticDocuments.Tests;
@@ -20,4 +21,11 @@ public static partial class ReviewSpecifications
 
     /// <summary>An ordinal comparison named explicitly: case-sensitive, as the match without a StringComparison.</summary>
     public static Specification<Review> StartingOrdinally(string prefix) => Spec<Review>.Where(r => r.Text.StartsWith(prefix, System.StringComparison.Ordinal));
+
+    /// <summary>
+    ///     A rule promoted to a query (#511): Pragmatic derives <c>RatedQuery</c>, whose filter is this rule. Its <c>Stars</c> is the rule's
+    ///     input and names a field of the review: read as a filter of its own it would be an equality, and <c>AtLeast</c> would read one rating.
+    /// </summary>
+    [Query<Review>]
+    public static Specification<Review> Rated(int? stars) => stars is null ? Spec<Review>.True : AtLeast(stars.Value);
 }

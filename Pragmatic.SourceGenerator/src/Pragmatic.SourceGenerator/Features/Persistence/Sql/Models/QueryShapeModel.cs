@@ -18,5 +18,6 @@ internal sealed record QueryShapeModel(
     string ResultType,
     bool Compiled,
     EquatableArray<QueryConditionModel> Conditions,
+    EquatableArray<QueryRuleModel> Rules,
     EquatableArray<QueryFilterGroupModel> Groups,
     QueryOrderingModel? Ordering);

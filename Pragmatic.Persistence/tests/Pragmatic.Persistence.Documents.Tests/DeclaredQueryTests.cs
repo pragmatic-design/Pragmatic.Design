@@ -72,6 +72,24 @@ public class DeclaredQueryTests(DocumentServers servers)
 
     [Theory]
     [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_query_derived_from_a_specification_filters_by_its_rule(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _) = await ReviewsAsync(servers, store, _toggle);
+        IReadRepository<Review> reviews = new Review.DocReadRepository(session);
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            async Task<string[]> Rated(int? stars) => [.. (await reviews.RunAsync(new RatedQuery { Stars = stars })).Select(r => r.Text).Order(StringComparer.Ordinal)];
+
+            // AtLeast(stars): four stars reads MARE's 4 and RIVA's 5, not only the 4; no stars is the rule's Spec.True.
+            Assert.Equal(["anna@MARE", "anna@RIVA"], await Rated(4));
+            Assert.Equal(["anna@RIVA"], await Rated(5));
+            Assert.Equal(["anna@ALPE", "anna@MARE", "anna@RIVA", "bruno@RIVA"], await Rated(null));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
     public async Task A_grouped_view_counts_sums_and_takes_the_maximum_per_group_inside_the_filters(Store store)
     {
         using var tenant = TenantScope.BeginScope("acme");

@@ -47,6 +47,8 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
             AppendLine($"        var spec = global::Pragmatic.Specification.Spec<{entity}>.True;");
             foreach (var c in model.Conditions)
                 AppendLine($"        {(c.Guard is null ? "" : $"if ({c.Guard}) ")}spec = spec & global::Pragmatic.Specification.Spec<{entity}>.Where(e => {c.Condition});");
+            foreach (var rule in model.Rules)
+                AppendLine($"        {(rule.Guard is null ? "" : $"if ({rule.Guard}) ")}spec = spec & {rule.Specification};");
             foreach (var group in model.Groups)
                 RenderGroup(group, "spec", parentOr: null, "        ");
             AppendLine("        return spec;");

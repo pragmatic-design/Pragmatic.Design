@@ -27,10 +27,12 @@ internal static class QueryFeature
     ///     The derived query is a type this generator writes, so it is never a symbol the endpoint
     ///     feature could find: its route travels as a model, on the same channel <c>[Resource]</c> and
     ///     the traits already use. That is the reason for the return value — the derivation happens here,
-    ///     and the endpoints are assembled two features later.
+    ///     and the endpoints are assembled two features later. The derived types travel to the engines the same way
+    ///     (<c>DerivedEngineSources</c>), as source an engine binds against.
     /// </remarks>
     public static (IncrementalValueProvider<ImmutableArray<Endpoints.Models.EndpointModel>> DerivedEndpoints,
-        IncrementalValueProvider<ImmutableArray<QueryModel>> QueryModels) Register(
+        IncrementalValueProvider<ImmutableArray<QueryModel>> QueryModels,
+        IncrementalValueProvider<EquatableArray<ShapeSourceModel>> DerivedEngineSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<ImmutableArray<QueryModel>>? resourceQueries = null)
@@ -131,7 +133,7 @@ internal static class QueryFeature
         // the whole generator's output for a duplicate hint under a warning.
         context.RegisterSourceOutputSafe(derivedQueries.Combine(features), static (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.AnyReferenced(pair.Right))
                 return;
 
             foreach (var group in CollidingDerivedNames(pair.Left))
@@ -159,7 +161,7 @@ internal static class QueryFeature
                 models.Combine(features).Combine(collidingNames),
                 (ctx, pair) =>
                 {
-                    if (!pair.Left.Right.HasPersistenceEFCore)
+                    if (!PersistenceEngineMarker.AnyReferenced(pair.Left.Right))
                         return;
 
                     var model = pair.Left.Left;
@@ -170,13 +172,22 @@ internal static class QueryFeature
                     if (!artifact.IsEmpty)
                         ctx.AddSource(artifact);
 
-                    GenerateQueryCode(ctx, ToQueryModel(model));
+                    // The rest of the query (Apply, ToSpecification, the projection) is EF Core's; an engine writes its own shape
+                    // for the derived type, which it reads from DerivedEngineSources below.
+                    if (pair.Left.Right.HasPersistenceEFCore)
+                        GenerateQueryCode(ctx, ToQueryModel(model));
                 });
         }
 
+        // The derived types as the engines bind them: written by this generator, so absent from the compilation an engine is handed,
+        // and an engine declares the IQuery shape only of a query it sees (without it the invoker's RunAsync was CS0411, #511).
+        var derivedEngineSources = derivedQueries.Combine(features).Combine(collidingNames)
+            .Select(static (pair, _) => DerivedQueryEngineSources.For(pair.Left.Left, pair.Left.Right, pair.Right));
+
         var derivedEndpoints = derivedQueries
             .Combine(features)
-            .Select(static (pair, _) => pair.Right.HasPersistenceEFCore
+            // On every engine: the route runs the query through its invoker, which reads through the entity's repository.
+            .Select(static (pair, _) => PersistenceEngineMarker.AnyReferenced(pair.Right)
                 ? DerivedQueryEndpointBuilder.Build(pair.Left)
                 : ImmutableArray<Endpoints.Models.EndpointModel>.Empty);
 
@@ -300,7 +311,7 @@ internal static class QueryFeature
         var allQueryModels = collected.Aggregate(static (left, right) =>
             left.Combine(right).Select(static (pair, _) => pair.Left.AddRange(pair.Right)));
 
-        return (derivedEndpoints, allQueryModels);
+        return (derivedEndpoints, allQueryModels, derivedEngineSources);
     }
 
     /// <summary>
