@@ -39,6 +39,10 @@ public class ReadRepositoryTests(DocumentServers servers)
             ("drafts", ReviewSpecifications.Drafts), // none visible: the rule holds
             ("list", ReviewSpecifications.AnyOf(["bruno@RIVA", "nobody"])),
             ("twice", ReviewSpecifications.AtLeast(5) & !ReviewSpecifications.AtLeast(10)), // one leaf twice, its values its own each time
+            ("contains ignoring case", ReviewSpecifications.Containing("ANNA@")),
+            ("ends ignoring case", ReviewSpecifications.EndingWith("riva")),
+            ("ordinal keeps the case", ReviewSpecifications.StartingOrdinally("ANNA")), // none: the control of the two above
+            ("ordinal", ReviewSpecifications.StartingOrdinally("bruno")),
         };
         foreach (var (name, specification) in specifications)
         {

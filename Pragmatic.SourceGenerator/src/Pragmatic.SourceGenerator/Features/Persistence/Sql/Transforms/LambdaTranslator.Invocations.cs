@@ -45,8 +45,18 @@ internal sealed partial class LambdaTranslator
         {
             switch (method.Name)
             {
-                case "Contains" or "StartsWith" or "EndsWith" when invocation.ArgumentList.Arguments.Count == 1:
+                case "Contains" or "StartsWith" or "EndsWith" when invocation.ArgumentList.Arguments.Count is 1 or 2:
                 {
+                    // With a StringComparison: ordinal as without one, or ignoring case (LOWER on both sides); a culture's rules are refused.
+                    bool? ignoreCase = false;
+                    if (invocation.ArgumentList.Arguments.Count == 2)
+                    {
+                        var comparison = invocation.ArgumentList.Arguments[1].Expression;
+                        ignoreCase = TextComparison.IgnoresCase(_model, comparison, out var refused);
+                        if (ignoreCase is null)
+                            return Fail(comparison, refused);
+                    }
+
                     var column = Translate(target, $"Captured.Target({path})", asPredicate: false);
                     if (column is null)
                         return null;
@@ -62,7 +72,9 @@ internal sealed partial class LambdaTranslator
                     // A constant pattern is one string; otherwise the wildcards are added around the value when it is bound.
                     var pattern = isConstant && _model.GetConstantValue(argument).Value is string constant ? ConstantText(prefix + constant + suffix, null) : $"\"{prefix}\" + ({text}) + \"{suffix}\"";
                     Add($"Captured.Like(Captured.Argument({path}, 0), \"{prefix}\", \"{suffix}\")", "String", pattern, isConstant);
-                    return $"{column} LIKE {{{_parameterPaths.Count - 1}}}";
+                    return ignoreCase == true
+                        ? $"LOWER({column}) LIKE LOWER({{{_parameterPaths.Count - 1}}})"
+                        : $"{column} LIKE {{{_parameterPaths.Count - 1}}}";
                 }
 
                 case "ToLower" or "ToLowerInvariant" when invocation.ArgumentList.Arguments.Count == 0:
