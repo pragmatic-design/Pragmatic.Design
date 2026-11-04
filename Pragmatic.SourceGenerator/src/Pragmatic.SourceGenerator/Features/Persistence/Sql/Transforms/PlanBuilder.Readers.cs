@@ -126,7 +126,12 @@ internal sealed partial class PlanBuilder
         return new PlanReaderModel(PlanReaderKind.Include, SqlInterceptorGenerator.Safe(_entity), includes.ToEquatableArray());
     }
 
-    /// <summary>The included object read from its columns (null when the join found nothing), its own to-one children nested in the initializer; the ordinals follow the select list's depth-first order.</summary>
+    /// <summary>
+    ///     The included object read from its columns, its own to-one children nested in the initializer; the ordinals follow the select list's
+    ///     depth-first order. Null when the join found nothing, which only an optional navigation's LEFT JOIN can: a required one is an INNER JOIN
+    ///     (<see cref="EntityModel.Join(NavigationModel, EntityModel, string, string, bool)" />), so its row is always there, and its member, which
+    ///     is not nullable, is read without a null branch.
+    /// </summary>
     private static string Hydrate(IncludeNode node, ref int ordinal)
     {
         var target = node.Target;
@@ -136,7 +141,8 @@ internal sealed partial class PlanBuilder
         var children = new List<string>();
         foreach (var child in node.Children.Where(c => !c.IsCollection))
             children.Add($"{child.Property} = {Hydrate(child, ref ordinal)}");
-        return $"(r.IsDBNull({keyOrdinal}) ? null : {target.Construct("r", "d", i => (start + i).ToString(), string.Join(", ", children))})";
+        var built = target.Construct("r", "d", i => (start + i).ToString(), string.Join(", ", children));
+        return node.Hop.Navigation is { Required: true } ? built : $"(r.IsDBNull({keyOrdinal}) ? null : {built})";
     }
 
     /// <summary>The reader that shapes one row of this statement: the entity, with its to-one includes nested; a projection; an aggregate's value; none for a scalar.</summary>
