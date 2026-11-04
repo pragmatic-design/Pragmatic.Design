@@ -10,4 +10,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="ForeignKeyNullable">Whether that field is optional: a document without one reads no related document.</param>
 /// <param name="RelatedKey">The related document's key property (<c>PersistenceId</c>).</param>
 /// <param name="KeyType">The key's type, fully qualified, not nullable.</param>
-internal sealed record DocLookupModel(int Index, string RelatedType, string ForeignKey, bool ForeignKeyNullable, string RelatedKey, string KeyType);
+internal sealed record DocLookupModel(int Index, string RelatedType, string ForeignKey, bool ForeignKeyNullable, string RelatedKey, string KeyType)
+{
+    /// <summary>The navigation the lookup reads for (<c>Guest</c>): what a query that maps in memory sets on the document before its Selector (#505).</summary>
+    public string Navigation { get; init; } = "";
+}

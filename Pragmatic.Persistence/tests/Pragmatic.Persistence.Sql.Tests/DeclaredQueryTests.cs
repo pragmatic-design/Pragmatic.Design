@@ -75,6 +75,26 @@ public class DeclaredQueryTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_query_that_maps_in_memory_reads_its_navigation_and_runs_the_selector(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, _, _) = await Seeded(dialect);
+        using (session)
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            IReadRepository<Reservation> reservations = new Reservation.SqlReadRepository(session);
+            var annas = await reservations.RunAsync(new ReservationCardsQuery { OwnerId = "anna" });
+            var second = await reservations.RunAsync(new ReservationCardsQuery { Page = 2, PageSize = 3 });
+
+            Assert.Equal(["anna@ALPE", "anna@MARE", "anna@RIVA"], annas.Items.Select(c => c.Card).Order()); // the property's name, read through the include
+            Assert.Equal(3, annas.TotalCount);
+            Assert.Single(second.Items); // four reservations: the second page of three holds one, mapped
+            Assert.Equal(4, second.TotalCount);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task A_declared_query_reads_inside_the_callers_filters_and_projects(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");

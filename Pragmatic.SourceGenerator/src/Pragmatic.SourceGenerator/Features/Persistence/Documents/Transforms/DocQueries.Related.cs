@@ -37,31 +37,15 @@ internal static partial class DocQueries
 
         if (segments.Length > 2)
             return Refuse($"the path runs through the navigation {segments[0]} and on through {segments[1]}; one navigation's own field is read");
-        if (model.Field(reference.ForeignKey) is not { } foreignKey)
-            return Refuse($"{query.Entity.Name} has no field {reference.ForeignKey} holding the key of {segments[0]}");
-        if (Served(reference.Target, models) is not { Key: { } key } related)
-            return Refuse($"{reference.Target.Name}, which {segments[0]} reaches, is not a document the engine serves");
-        if (related.Field(segments[1]) is not { } field)
+        if (LookupOf(query, model, models, segments[0], lookups, out var related, out var why) is not { } lookup)
+            return Refuse(why);
+        if (related!.Field(segments[1]) is not { } field)
             return Refuse($"{reference.Target.Name} has no field {segments[1]} in the document");
-
-        var keyType = key.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var foreignKeyType = foreignKey.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        if (foreignKeyType != keyType && foreignKeyType != $"global::System.Nullable<{keyType}>" && foreignKeyType != keyType + "?")
-            return Refuse($"{query.Entity.Name}.{reference.ForeignKey} is not of the type of {reference.Target.Name}'s key");
 
         var source = field.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
         var target = property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
         if (source != target && source + "?" != target)
             return Refuse($"{reference.Target.Name}.{segments[1]} is not of the type of {query.Result.Name}.{property.Name}");
-
-        var lookup = lookups.FirstOrDefault(l => l.ForeignKey == reference.ForeignKey);
-        if (lookup is null)
-        {
-            lookup = new DocLookupModel(lookups.Count, "global::" + reference.Target.ToDisplayString(), reference.ForeignKey,
-                foreignKey.Nullable || foreignKeyType.EndsWith("?", System.StringComparison.Ordinal) || foreignKeyType.StartsWith("global::System.Nullable<", System.StringComparison.Ordinal),
-                key.Property.Name, keyType);
-            lookups.Add(lookup);
-        }
 
         // The property's default when the related document is not found: null for a reference or a nullable, as EF Core's left join reads it.
         // A reference the property declares not nullable gets that null too, said with !: it is where EF Core would put it (#497).
@@ -72,6 +56,52 @@ internal static partial class DocQueries
         var key0 = lookup.ForeignKeyNullable ? $"e.{lookup.ForeignKey} is {{ }} __key{property.Name} && " : "";
         var keyRead = lookup.ForeignKeyNullable ? $"__key{property.Name}" : $"e.{lookup.ForeignKey}";
         return $"{property.Name} = {key0}__related{lookup.Index}.TryGetValue({keyRead}, out var {found}) ? {found}.{field.Property.Name} : {fallback}";
+    }
+
+    /// <summary>
+    ///     The lookup of the related documents a to-one <paramref name="navigation" /> of the query's entity reaches, added to
+    ///     <paramref name="lookups" /> once per foreign key; null with the reason (<paramref name="why" />) when the documents engine cannot read them.
+    /// </summary>
+    private static DocLookupModel? LookupOf(PragmaticQuery query, DocModel model, Dictionary<string, DocModel> models, string navigation, List<DocLookupModel> lookups,
+        out DocModel? related, out string why)
+    {
+        related = null;
+        why = "";
+        if (PragmaticRelations.References(query.Entity, "ManyToOne", "OneToOne").FirstOrDefault(r => r.Navigation == navigation) is not { Navigation: not null } reference)
+        {
+            why = $"{navigation} is not a to-one navigation {query.Entity.Name} declares";
+            return null;
+        }
+
+        if (model.Field(reference.ForeignKey) is not { } foreignKey)
+        {
+            why = $"{query.Entity.Name} has no field {reference.ForeignKey} holding the key of {navigation}";
+            return null;
+        }
+
+        if (Served(reference.Target, models) is not { Key: { } key } target)
+        {
+            why = $"{reference.Target.Name}, which {navigation} reaches, is not a document the engine serves";
+            return null;
+        }
+
+        var keyType = key.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var foreignKeyType = foreignKey.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (foreignKeyType != keyType && foreignKeyType != $"global::System.Nullable<{keyType}>" && foreignKeyType != keyType + "?")
+        {
+            why = $"{query.Entity.Name}.{reference.ForeignKey} is not of the type of {reference.Target.Name}'s key";
+            return null;
+        }
+
+        related = target;
+        var lookup = lookups.FirstOrDefault(l => l.ForeignKey == reference.ForeignKey);
+        if (lookup is not null)
+            return lookup;
+        lookup = new DocLookupModel(lookups.Count, "global::" + reference.Target.ToDisplayString(), reference.ForeignKey,
+            foreignKey.Nullable || foreignKeyType.EndsWith("?", System.StringComparison.Ordinal) || foreignKeyType.StartsWith("global::System.Nullable<", System.StringComparison.Ordinal),
+            key.Property.Name, keyType) { Navigation = navigation };
+        lookups.Add(lookup);
+        return lookup;
     }
 
     /// <summary>

@@ -39,5 +39,5 @@ internal static class DocReadRepository
 
     private static DocRunCaseModel RunCaseOf((PragmaticQuery Query, string? Projection, List<DocLookupModel> Lookups) declared)
         => new("global::" + declared.Query.Type.ToDisplayString(), declared.Query.Type.Name, declared.Query.Unsupported, declared.Query.ResultName, declared.Projection ?? "",
-            declared.Lookups.ToEquatableArray());
+            declared.Lookups.ToEquatableArray(), declared.Query.MapsInMemory && declared.Query.Unsupported is null);
 }
