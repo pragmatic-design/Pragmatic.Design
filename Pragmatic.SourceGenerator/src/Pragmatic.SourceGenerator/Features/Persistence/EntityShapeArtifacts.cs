@@ -31,6 +31,9 @@ internal static class EntityShapeArtifacts
             yield return new OwnershipPropertyTemplate(entity).RenderOutput();
         if (entity.IsScopedEntity)
             yield return new ScopedPropertyTemplate(entity).RenderOutput();
+        // The check a mutation's invoker makes on a create, through specifications every engine serves (#512).
+        if (entity.IsTemporalRelation)
+            yield return new TemporalConstraintsTemplate(entity).RenderOutput();
     }
 
     /// <summary>

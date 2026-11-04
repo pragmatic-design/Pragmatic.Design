@@ -80,6 +80,22 @@ public partial class StaffAssignment : IEntity, ITemporalRelation
     public DateTimeOffset? ValidTo { get; set; }
 }
 
+/// <summary>
+///     Who holds the front desk of a property: a <c>[TemporalRelation]</c> scoped to its property with <c>MaxActive = 1</c>, as the
+///     Showcase's <c>StaffAssignment</c> is. A mutation that opens a second stretch at a property is refused (#512).
+/// </summary>
+[Entity]
+[Relation.ManyToOne<Property>]
+[TemporalRelation<Property>(MaxActive = 1)]
+public partial class DeskDuty : IEntity, ITemporalRelation
+{
+    public string Person { get; set; } = "";
+
+    public DateTimeOffset ValidFrom { get; set; }
+
+    public DateTimeOffset? ValidTo { get; set; }
+}
+
 /// <summary>A category in a tree of categories: [GenerateHierarchy] over its optional parent (Parent, ParentId), soft deleted.</summary>
 [Entity]
 [SoftDelete]

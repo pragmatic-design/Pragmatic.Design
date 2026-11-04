@@ -211,16 +211,19 @@ internal sealed class TemporalValidationTemplate : CSharpTemplate
         AppendLine("return active;");
     }
 
-    private string GetParentFkType()
+    private string GetParentFkType() => ParentFkType(_model);
+
+    /// <summary>The type of the parent's key a typed temporal relation is scoped by, fully qualified.</summary>
+    internal static string ParentFkType(EntityMetadataModel model)
     {
-        if (_model.TemporalParentFkProperty is null)
+        if (model.TemporalParentFkProperty is null)
             return "global::System.Guid";
 
         // The key is generated from the declared relation, so it is among the generated
         // properties, not the source ones.
-        var generated = _model.GeneratedRelationProperties.AsImmutableArray()
-            .FirstOrDefault(p => p.Kind == RelationPropertyKind.ForeignKey && p.Name == _model.TemporalParentFkProperty);
-        var prop = _model.Properties.FirstOrDefault(p => p.Name == _model.TemporalParentFkProperty);
+        var generated = model.GeneratedRelationProperties.AsImmutableArray()
+            .FirstOrDefault(p => p.Kind == RelationPropertyKind.ForeignKey && p.Name == model.TemporalParentFkProperty);
+        var prop = model.Properties.FirstOrDefault(p => p.Name == model.TemporalParentFkProperty);
         var typeName = generated?.TypeName ?? prop?.TypeName ?? "System.Guid";
         return typeName.StartsWith("global::") ? typeName : $"global::{typeName}";
     }

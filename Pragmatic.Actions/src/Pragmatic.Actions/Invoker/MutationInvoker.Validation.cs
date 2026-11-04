@@ -32,13 +32,15 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
     /// <summary>
     ///     Enforces the entity's temporal constraints (<c>[TemporalRelation]</c> MaxActive / overlap).
     ///     The source generator overrides this for a temporal entity to call its generated
-    ///     <c>ValidateTemporalConstraints</c> against the existing records; the default returns
+    ///     <c>ValidateTemporalConstraintsAsync</c>, which reads the existing records through the
+    ///     repository's specifications, so every engine serves it; the default returns
     ///     <see langword="null"/>. Returns a <see cref="Persistence.Entity.TemporalOverlapError"/> when
     ///     violated, so a MaxActive/overlap breach is rejected (409) instead of silently persisted — the
     ///     pipeline enforces the validation rather than leaving it to an opt-in helper. Runs after
     ///     invariants, before persist.
     /// </summary>
-    protected virtual IError? CheckTemporalConstraints(TEntity entity) => null;
+    protected virtual ValueTask<IError?> CheckTemporalConstraintsAsync(TEntity entity, CancellationToken ct)
+        => new((IError?)null);
 
     /// <summary>
     ///     The operations this write passes through, besides itself.
