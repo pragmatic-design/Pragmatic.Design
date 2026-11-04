@@ -47,5 +47,8 @@ public class RelatedFieldProjectionTests(DocumentServers servers)
             (3, bob.Email, null),
             (4, null, null),
         ], cards.Select(c => (c.Nights, c.GuestEmail, c.GuestName)));
+
+        // Into a property that is not nullable: the related field, and null for a missing related document, as EF Core's left join reads it.
+        Assert.Equal([ada.Email, ada.Email, bob.Email, null], cards.Select(c => (string?)c.GuestContact));
     }
 }
