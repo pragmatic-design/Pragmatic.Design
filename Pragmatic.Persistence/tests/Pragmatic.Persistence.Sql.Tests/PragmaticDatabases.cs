@@ -51,7 +51,10 @@ public sealed class PragmaticDatabases : IAsyncLifetime
         _oracle = new ContainerBuilder("gvenzl/oracle-free:23-faststart").WithEnvironment("ORACLE_PASSWORD", Password)
             .WithEnvironment("APP_USER", "spike").WithEnvironment("APP_USER_PASSWORD", Password).WithPortBinding(1521, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("DATABASE IS READY TO USE!")).Build();
-        await Task.WhenAll(_postgres.StartAsync(), _sqlServer.StartAsync(), _mySql.StartAsync(), _oracle.StartAsync());
+        // One after another, as the SQL suite's TestDatabases starts them: four servers starting at once on a CI runner is the one difference
+        // from that suite left when SQL Server crashed at start here and not there (#487).
+        foreach (var container in new IContainer[] { _postgres, _sqlServer, _mySql, _oracle })
+            await container.StartAsync();
         foreach (var dialect in new[] { SqlDialect.PostgreSql, SqlDialect.SqlServer, SqlDialect.MySql, SqlDialect.Oracle })
         {
             var migrated = await PragmaticMigrations.MigrateAsync(ConnectionString(dialect), DialectSchemas.For(dialect));
