@@ -121,13 +121,22 @@ internal sealed partial class DocTranslator
             return Fail(invocation, "the call is not one of Contains, StartsWith, EndsWith, Any");
         var arguments = invocation.ArgumentList.Arguments;
         var name = method.Name;
-        // A string field's text: Contains, StartsWith, EndsWith with one argument (ordinal, case-sensitive, as LINQ's default).
+        // A string field's text: Contains, StartsWith, EndsWith with the text (ordinal, case-sensitive, as LINQ's default), or with a
+        // StringComparison that is ordinal or ignores case (Sql.Transforms.TextComparison); a culture's rules are refused.
         if (name is "Contains" or "StartsWith" or "EndsWith" && method.ContainingType.SpecialType == SpecialType.System_String)
         {
-            if (arguments.Count != 1)
-                return Fail(invocation, $"{name} takes the text alone (no StringComparison: the match is ordinal, case-sensitive)");
+            if (arguments.Count is not (1 or 2))
+                return Fail(invocation, $"{name} takes the text, and a StringComparison at most");
+            var comparisonIgnoresCase = false;
+            if (arguments.Count == 2)
+            {
+                if (Sql.Transforms.TextComparison.IgnoresCase(_model, arguments[1].Expression, out var refused) is not { } ignores)
+                    return Fail(arguments[1].Expression, refused);
+                comparisonIgnoresCase = ignores;
+            }
+
             var loweredPath = LoweredPath(access.Expression, out var textField); // e.Text.ToLower().StartsWith(v.ToLower())
-            var ignoreCase = loweredPath is not null;
+            var ignoreCase = loweredPath is not null || comparisonIgnoresCase;
             if ((loweredPath ?? Path(access.Expression, out textField)) is not { } textPath || textField?.Kind != DocKind.String)
                 return Fail(invocation, $"{name} is called on a string field");
             var text = Value(arguments[0].Expression, textField);

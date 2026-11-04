@@ -12,4 +12,12 @@ public static partial class ReviewSpecifications
     public static Specification<Review> Drafts => Spec<Review>.Where(r => !r.Published);
 
     public static Specification<Review> AnyOf(string[] texts) => Spec<Review>.Where(r => texts.Contains(r.Text));
+
+    /// <summary>A text match that ignores case (#495), as the Showcase's <c>PropertySpecifications.NameContains</c> writes it.</summary>
+    public static Specification<Review> Containing(string text) => Spec<Review>.Where(r => r.Text.Contains(text, System.StringComparison.OrdinalIgnoreCase));
+
+    public static Specification<Review> EndingWith(string text) => Spec<Review>.Where(r => r.Text.EndsWith(text, System.StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>An ordinal comparison named explicitly: case-sensitive, as the match without a StringComparison.</summary>
+    public static Specification<Review> StartingOrdinally(string prefix) => Spec<Review>.Where(r => r.Text.StartsWith(prefix, System.StringComparison.Ordinal));
 }

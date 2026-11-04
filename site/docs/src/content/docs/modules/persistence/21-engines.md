@@ -163,6 +163,13 @@ its `[FilterDto<T>]` composes them for EF Core, a member that is not set filteri
 `[FilterGroup(FilterLogic.Or)]` joined with OR, the rest with AND. A `Between` member refuses the query
 (`PRAG3033` on the Sql engine, `PRAG3108` on the documents engine).
 
+A text match in a chain or a specification (`Contains`, `StartsWith`, `EndsWith`) may name its comparison:
+`StringComparison.Ordinal` is the match without one, and `OrdinalIgnoreCase` (or `InvariantCultureIgnoreCase`)
+ignores case on both engines: `LOWER` on both sides on the Sql engine, a case-insensitive regex on MongoDB,
+`CONTAINS(…, true)` and its kin on Cosmos DB. A culture's comparison is refused (`PRAG3031`, `PRAG3101`), naming
+it. A database's own collation still decides the case of a match without one: SQL Server's and MySQL's defaults
+ignore it.
+
 `[GenerateHierarchy]` on an entity whose tree is a declared relation
 (`[Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]`) walks the parent key on the Sql
 engine, whatever else the entity declares (`[Lookup]` included). A reference to a `[Lookup]` entity has its key and

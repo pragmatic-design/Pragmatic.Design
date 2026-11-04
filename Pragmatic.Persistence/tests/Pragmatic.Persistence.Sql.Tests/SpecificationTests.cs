@@ -20,6 +20,14 @@ public static partial class ReviewSpecifications
 
     public static Specification<Review> At(Guid[] properties) => Spec<Review>.Where(r => properties.Contains(r.PropertyId));
 
+    /// <summary>A text match that ignores case (#495), as the Showcase's <c>PropertySpecifications.NameContains</c> writes it.</summary>
+    public static Specification<Review> Containing(string text) => Spec<Review>.Where(r => r.Text.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+    public static Specification<Review> EndingWith(string text) => Spec<Review>.Where(r => r.Text.EndsWith(text, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>An ordinal comparison named explicitly: the match without a StringComparison.</summary>
+    public static Specification<Review> StartingOrdinally(string prefix) => Spec<Review>.Where(r => r.Text.StartsWith(prefix, StringComparison.Ordinal));
+
     public static Specification<Review> Search(string? owner, bool onlyPublished)
         => Spec<Review>.True.AndIf(owner is not null, () => By(owner!)).AndIf(onlyPublished, Published());
 }
@@ -66,6 +74,9 @@ public class SpecificationTests(PragmaticDatabases databases)
                 ReviewSpecifications.Search(null, onlyPublished: false), // Spec.True: every row
                 ReviewSpecifications.At(all.Where(r => r.Text.EndsWith("RIVA", StringComparison.Ordinal)).Select(r => r.PropertyId).Distinct().ToArray()),
                 ReviewSpecifications.At([]), // an empty IN list matches nothing
+                ReviewSpecifications.Containing("ANNA@"), // case ignored: anna's three
+                ReviewSpecifications.EndingWith("riva"), // case ignored: RIVA's two
+                ReviewSpecifications.StartingOrdinally("anna@") & ReviewSpecifications.Containing("mare"),
             };
             foreach (var specification in specifications)
                 Assert.Equal(Expected(all, specification), await Read(session, specification));
