@@ -219,7 +219,7 @@ These interfaces support runtime RBAC management (creating roles and permissions
 > reads `UserRoleAssignment` and `DynamicRolePermission` on every resolution, and its assign and revoke
 > actions evict the users they change from the permission cache.
 >
-> The management package registers `EfDynamicRoleStore` and `EfDynamicPermissionStore`, so a role or
+> The management package registers `ManagedDynamicRoleStore` and `ManagedDynamicPermissionStore`, so a role or
 > permission created with `CreateRole`/`CreatePermission` is listed by `ListRoles`/`ListPermissions` in its
 > tenant (and, when global, in every tenant). They read the tenant the request resolved first and the
 > tenant claim second. `IPermissionCatalog` is scoped for the same reason: resolve it from a scope, not

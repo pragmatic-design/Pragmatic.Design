@@ -31,7 +31,7 @@ internal static class EntityCoreFeature
         // members, so they are emitted whichever engine persists the entity.
         context.RegisterSourceOutputSafe(perEntityWithFeatures, static (ctx, pair) =>
         {
-            if (!PersistenceEngineMarker.HasEngine(pair.Entity, pair.Features))
+            if (!PersistenceEngineMarker.HasShape(pair.Entity, pair.Features))
                 return;
             GeneratePerEntityOutputs(ctx, pair.Entity, pair.Features);
         });
@@ -101,7 +101,7 @@ internal static class EntityCoreFeature
         context.RegisterSourceOutputSafe(settersProvider, static (ctx, pair) =>
         {
             var ((entity, detectedFeatures), cascadeSources) = pair;
-            if (!PersistenceEngineMarker.HasEngine(entity, detectedFeatures))
+            if (!PersistenceEngineMarker.HasShape(entity, detectedFeatures))
                 return;
             GenerateEntitySetters(ctx, entity, cascadeSources);
         });

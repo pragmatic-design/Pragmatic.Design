@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
@@ -14,7 +14,7 @@ namespace Pragmatic.Authorization.Management.Actions.Assignments;
 [RequirePermission(AuthorizationPermissions.Assignments.Manage)]
 public partial class AssignRoleToUser : DomainAction<Guid>
 {
-    private DbContext _dbContext = null!;
+    private IAuthorizationManagementStore _store = null!;
     private ICurrentUser _currentUser = null!;
 
     // Optional: registered only with a cross-request permission cache, and without one there is
@@ -36,16 +36,8 @@ public partial class AssignRoleToUser : DomainAction<Guid>
             return Result<Guid, IError>.Failure(tenantError);
 
         // Guard: prevent duplicate active assignment for the same user/role/tenant
-        var alreadyAssigned = await _dbContext.Set<UserRoleAssignment>()
-            .AnyAsync(a =>
-                a.UserId == UserId
-                && a.RoleName == RoleName
-                && a.TenantId == TenantId
-                && a.ValidFrom <= now
-                && (a.ValidTo == null || a.ValidTo > now), ct)
-            .ConfigureAwait(false);
-
-        if (alreadyAssigned)
+        var assignments = await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false);
+        if (assignments.Any(a => a.RoleName == RoleName && a.TenantId == TenantId && a.IsInForceAt(now)))
             return ConflictError.AlreadyExists("UserRoleAssignment", $"{UserId}/{RoleName}");
 
         var assignment = new UserRoleAssignment
@@ -58,8 +50,7 @@ public partial class AssignRoleToUser : DomainAction<Guid>
             ValidTo = ValidTo
         };
 
-        _dbContext.Set<UserRoleAssignment>().Add(assignment);
-        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        await _store.AddUserRoleAsync(assignment, ct).ConfigureAwait(false);
 
         if (_permissionCache is not null)
             await _permissionCache.InvalidateUserAsync(UserId, ct).ConfigureAwait(false);

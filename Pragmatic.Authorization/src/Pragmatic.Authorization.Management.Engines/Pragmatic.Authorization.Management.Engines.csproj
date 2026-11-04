@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Pragmatic.Authorization.Management on Pragmatic's Sql and documents engines: the package's roles, permissions and assignments over the session of the boundary that imports it, on the tables EF Core maps them to, beside Pragmatic.Authorization.Management.EFCore.</Description>
+    <PackageTags>authorization;rbac;permissions;roles;management;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The stores' own chains are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The contract (IAuthorizationManagementStore) and the entities the rows and documents stand for. -->
+    <ProjectReference Include="..\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <!-- The engines' bridges: the sessions a boundary is registered with. Private, as in Pragmatic.Audit.Engines: an application brings the
+         bridge of the engine it uses, and flowing both would make every application reference two engines (PRAG0743). -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The rows and documents are the engines' own types: the generator describes them in this assembly, which declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

@@ -41,13 +41,23 @@ Important current limits:
 
 ## Quick Start
 
-Import the package:
+Import the package into the boundary whose database holds its tables:
 
 ```csharp
 [Module]
-[UsePackage<AuthorizationManagementPackage>]
+[UsePackage<AuthorizationManagementPackage, MyBoundary>]
 public sealed class MyModule;
 ```
+
+Reference the package of that boundary's engine beside this one:
+
+| Engine | Package |
+|--------|---------|
+| EF Core | `Pragmatic.Authorization.Management.EFCore` |
+| Sql, documents | `Pragmatic.Authorization.Management.Engines` |
+
+The boundary's generated registration adds the store of its engine. Without that package the import is
+`PRAG0469`, which names it.
 
 Optionally expose only the endpoints you want:
 
@@ -128,12 +138,27 @@ platform operator, is not bound by this.
 
 | Store | Implements |
 |-------|------------|
-| `EfDynamicPermissionStore` | `IDynamicPermissionStore` |
-| `EfDynamicRoleStore` | `IDynamicRoleStore` |
+| `ManagedDynamicPermissionStore` | `IDynamicPermissionStore` |
+| `ManagedDynamicRoleStore` | `IDynamicRoleStore` |
 
 The package registers both, and `DefaultPermissionCatalog` merges them with the compiled permissions and
 roles: `ListRoles` and `ListPermissions` show what was created at runtime, in the caller's tenant and
 globally.
+
+## Engines
+
+The package references no engine. Its actions, its permission provider and the stores above read and
+write through `IAuthorizationManagementStore`, which the importing boundary's registration answers with
+the store of its engine:
+
+| Engine | Store | Where the rows are |
+|--------|-------|--------------------|
+| EF Core | `EfAuthorizationManagementStore` | the entities' tables, mapped by the importing boundary's context |
+| Sql | `SqlAuthorizationManagementStore` | the same tables, column for column, in the schema of the boundary's database |
+| Documents | `DocAuthorizationManagementStore` | one collection per entity, in the boundary's `{Boundary}DocSchema` |
+
+Which assignment is in force at an instant, and the tenant rule (a tenant's rows and the global ones), are
+decided by the package, the same on every engine.
 
 ## Recommended Learning Path
 

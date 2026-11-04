@@ -322,6 +322,28 @@
           "Pragmatic.Abstractions": "[1.0.0, )"
         }
       },
+      "pragmatic.authorization.management": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Authorization": "[1.0.0, )",
+          "Pragmatic.Events": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization.management.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Pragmatic.Authorization.Management": "[1.0.0, )"
+        }
+      },
+      "pragmatic.authorization.management.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Authorization.Management": "[1.0.0, )"
+        }
+      },
       "pragmatic.caching": {
         "type": "Project",
         "dependencies": {

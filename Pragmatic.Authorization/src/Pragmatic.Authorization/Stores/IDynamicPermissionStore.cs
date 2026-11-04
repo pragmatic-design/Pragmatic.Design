@@ -2,7 +2,7 @@ namespace Pragmatic.Authorization.Stores;
 
 /// <summary>
 ///     Store for dynamically managed permissions (e.g., created at runtime via RBAC management).
-///     Implementations: EfDynamicPermissionStore (Phase 3).
+///     Implementations: ManagedDynamicPermissionStore (Pragmatic.Authorization.Management).
 /// </summary>
 public interface IDynamicPermissionStore
 {

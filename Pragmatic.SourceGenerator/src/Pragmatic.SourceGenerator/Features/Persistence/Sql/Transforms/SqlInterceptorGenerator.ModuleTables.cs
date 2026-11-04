@@ -1,6 +1,11 @@
 using Pragmatic.Persistence.Sql;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
+using Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 using Pragmatic.SourceGen;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
@@ -72,6 +77,24 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>The consents with the index "what has this subject agreed to" reads.</summary>
     private static TableSchemaModel WithConsentIndexes(TableSchemaModel table)
         => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_SubjectRef", ["SubjectRef"], false, null)).ToEquatableArray() };
+
+    /// <summary>
+    ///     The tables of the packages imported into a boundary the engine serves whose rows live in that boundary's database
+    ///     (<see cref="Core.PackageStores" />): in its database, with no index of their own, as EF Core maps the package's entities there.
+    /// </summary>
+    private static void PackageTables(Compilation compilation, PragmaticEngines engines, Func<INamedTypeSymbol, string?> databaseOf,
+        Action<string, HashSet<string>, Func<TableSchemaModel, TableSchemaModel>> tableIn, CancellationToken ct)
+    {
+        foreach (var import in EntityMetadataReader.ReadPackageAdoptions(compilation, ct))
+        {
+            if (Core.PackageStores.OfPackage(import.Key) is not { } store || !engines.ServesBoundary(import.Value, PragmaticEngine.Sql)
+                || databaseOf(import.Value) is not { } database)
+                continue;
+
+            foreach (var row in store.SqlRows)
+                tableIn(row, new HashSet<string>(StringComparer.Ordinal) { database }, static table => table);
+        }
+    }
 
     /// <summary>
     ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past

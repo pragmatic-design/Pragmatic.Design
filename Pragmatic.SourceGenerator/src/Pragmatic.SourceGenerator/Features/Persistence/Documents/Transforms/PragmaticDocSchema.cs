@@ -64,6 +64,13 @@ internal static class PragmaticDocSchema
             // And their keys, which open the ProtectedValue fields there, as Pragmatic.Cryptography.Engines describes them.
             if (group.Any(PragmaticRegistration.IsDataSubject) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSubjectKeys) is not null)
                 collections.Add("global::Pragmatic.Cryptography.Engines.Documents.SubjectKeyDocument.Schema");
+            // A package imported into the boundary whose rows live in its database (PackageStores): its collections, as its engines package
+            // describes them.
+            if (boundary is not null)
+                collections.AddRange(PackageStores.ImportedInto(compilation, boundary, default)
+                    .SelectMany(store => store.Documents)
+                    .Where(document => compilation.GetTypeByMetadataName(document) is not null)
+                    .Select(document => $"global::{document}.Schema"));
             schemas.Add(new DocSchemaModel(VirtualFolderHints.ForType(name, "DocSchema", ns), ns.Length == 0 ? null : ns, name,
                 boundary?.Name ?? "the entities of no boundary", collections.ToEquatableArray()));
         }

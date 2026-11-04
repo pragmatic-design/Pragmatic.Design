@@ -122,11 +122,11 @@ internal static partial class ActionsFeature
             if (publicMembers.IsEmpty && internalMembers.IsEmpty && allSubBoundaries.IsEmpty && pkgRegs.IsEmpty)
                 continue;
 
-            var enrichedBoundary = boundary with
+            var enrichedBoundary = WithPackageStores(context, compilation, boundary with
             {
                 SubBoundaries = allSubBoundaries,
                 PackageBoundaryKey = importedBoundary
-            };
+            }, import, pkgRegs);
 
             // Generate separate files: Definition (interfaces + DI switch), Local, Remote
             // Remote is skipped when HttpClient isn't available (e.g., test contexts without ASP.NET Core)

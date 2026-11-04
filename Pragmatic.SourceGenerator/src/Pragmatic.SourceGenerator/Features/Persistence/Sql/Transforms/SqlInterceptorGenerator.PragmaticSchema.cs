@@ -120,6 +120,8 @@ internal static partial class SqlInterceptorGenerator
         ModuleTableIn(ConsentRowType, subjectDatabases, WithConsentIndexes);
         // And their keys (__SubjectKeys), which open the ProtectedValue columns there, beside them as on EF Core.
         ModuleTableIn(PragmaticRegistration.EngineSubjectKeys, subjectDatabases, WithSubjectKeyIndexes);
+        PackageTables(compilation, engines, boundary => !topology.HasTopology ? "Default" : databases.TryGetValue(boundary.ToDisplayString(), out var database) ? database : null,
+            ModuleTableIn, ct);
         TableSchemaModel ModuleIndexes(TableSchemaModel table)
             => moduleTables.FirstOrDefault(m => m.Row.Table == table.Name) is { Row: not null } module ? module.Indexes(table) : table;
 

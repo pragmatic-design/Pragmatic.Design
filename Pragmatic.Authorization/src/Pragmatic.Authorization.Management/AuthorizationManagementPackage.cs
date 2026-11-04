@@ -4,7 +4,7 @@ namespace Pragmatic.Authorization.Management;
 
 /// <summary>
 ///     RBAC management package. Provides dynamic CRUD for permissions, roles, groups,
-///     and user assignments with EF Core persistence.
+///     and user assignments, persisted by the engine of the boundary that imports it.
 /// </summary>
 public sealed class AuthorizationManagementPackage : IPackageDefinition
 {

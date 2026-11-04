@@ -1,5 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Composition.Attributes;
 using Pragmatic.Identity;
 using Pragmatic.MultiTenancy;
@@ -24,13 +23,13 @@ namespace Pragmatic.Authorization.Management.Providers;
 ///         the global rows.
 ///     </para>
 ///     <para>
-///         <c>DbContext</c> is the importing boundary's: the host bridges it for this package's services.
+///         The store is the importing boundary's, on its engine: the host bridges it for this package's services.
 ///     </para>
 /// </remarks>
-/// <param name="dbContext">The context of the boundary that imported the package.</param>
+/// <param name="store">The rows of the boundary that imported the package.</param>
 /// <param name="tenantContext">The resolved tenant, when multi-tenancy is in use.</param>
 [Service<IPermissionProvider>(Multiple = true)]
-public sealed class ManagedRolePermissionProvider(DbContext dbContext, ITenantContext? tenantContext = null)
+public sealed class ManagedRolePermissionProvider(IAuthorizationManagementStore store, ITenantContext? tenantContext = null)
     : IPermissionProvider
 {
     /// <inheritdoc />
@@ -47,31 +46,19 @@ public sealed class ManagedRolePermissionProvider(DbContext dbContext, ITenantCo
 
         var tenant = tenantContext?.TenantId is { Length: > 0 } resolved ? resolved : user.TenantId;
         var now = DateTimeOffset.UtcNow;
-        var userId = user.Id;
 
-        var roles = await dbContext.Set<UserRoleAssignment>()
-            .AsNoTracking()
-            .Where(a => a.UserId == userId
-                        && (a.TenantId == null || a.TenantId == tenant)
-                        && a.ValidFrom <= now
-                        && (a.ValidTo == null || a.ValidTo > now))
+        var roles = (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
+            .Where(a => a.IsInForceAt(now))
             .Select(a => a.RoleName)
             .Distinct()
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
+            .ToList();
 
         if (roles.Count == 0)
             return permissions;
 
-        var granted = await dbContext.Set<DynamicRolePermission>()
-            .AsNoTracking()
-            .Where(rp => roles.Contains(rp.RoleName)
-                         && (rp.TenantId == null || rp.TenantId == tenant)
-                         && rp.ValidFrom <= now
-                         && (rp.ValidTo == null || rp.ValidTo > now))
-            .Select(rp => rp.PermissionName)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
+        var granted = (await store.GetRolePermissionsAsync(roles, tenant, ct).ConfigureAwait(false))
+            .Where(rp => rp.IsInForceAt(now))
+            .Select(rp => rp.PermissionName);
 
         permissions.UnionWith(granted);
         return permissions;

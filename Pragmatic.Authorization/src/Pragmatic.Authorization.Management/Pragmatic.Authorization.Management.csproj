@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>RBAC management package for Pragmatic.Design. Dynamic permissions, roles, groups, and user assignments with EF Core persistence.</Description>
+    <Description>RBAC management package for Pragmatic.Design. Dynamic permissions, roles, groups, and user assignments, persisted by the engine of the boundary that imports it: with Pragmatic.Authorization.Management.EFCore on EF Core, with Pragmatic.Authorization.Management.Engines on the Sql and documents engines.</Description>
     <PackageTags>authorization;rbac;permissions;roles;groups;management</PackageTags>
   </PropertyGroup>
 
@@ -11,7 +11,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
-    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.EFCore\Pragmatic.Persistence.EFCore.csproj" />
+    <!-- Not an engine's bridge: the rows are read and written through IAuthorizationManagementStore, which each engine's package
+         implements, so a module on any engine can import this one. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
