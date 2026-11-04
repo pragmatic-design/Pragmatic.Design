@@ -14,4 +14,10 @@ internal sealed record DocLookupModel(int Index, string RelatedType, string Fore
 {
     /// <summary>The navigation the lookup reads for (<c>Guest</c>): what a query that maps in memory sets on the document before its Selector (#505).</summary>
     public string Navigation { get; init; } = "";
+
+    /// <summary>
+    ///     An inner <c>[Join&lt;T&gt;]</c>'s lookup (#508): a document whose related one is not found (missing, or outside the caller's filters) is
+    ///     dropped, as the inner join drops its row.
+    /// </summary>
+    public bool Drops { get; init; }
 }

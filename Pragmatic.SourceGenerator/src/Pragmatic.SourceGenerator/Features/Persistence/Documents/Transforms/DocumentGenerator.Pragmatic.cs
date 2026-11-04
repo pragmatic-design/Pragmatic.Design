@@ -69,8 +69,8 @@ internal static partial class DocumentGenerator
                     models[entity.ToDisplayString()] = read; // its diagnostics are reported once, below
             }
 
-            var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Documents);
-            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Documents).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
+            var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Documents, shaped);
+            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Documents, shaped).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
             var queries = DeclaredQueries(compilation, declared, models, diagnostics, AddText);
             foreach (var schema in PragmaticDocSchema.For(compilation, entities, models, queries.Select(q => q.Query).ToList()))
                 Add(new DocSchemaTemplate(schema).RenderOutput()); // each boundary's collections, indexes and Cosmos DB containers (DocSchema)

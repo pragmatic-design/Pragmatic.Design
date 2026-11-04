@@ -97,8 +97,11 @@ internal sealed partial class PragmaticQuery
     /// <summary>The sorts: the property, the entity's field it orders by, the default direction (-1: none), the priority.</summary>
     internal IReadOnlyList<(string Name, string Column, int Direction, int Priority)> Sorts => _sorts;
 
-    /// <summary>The declared queries of the compilation on the Pragmatic entities <paramref name="engine" /> serves.</summary>
-    public static List<PragmaticQuery> Read(Compilation compilation, PragmaticEngine engine)
+    /// <summary>
+    ///     The declared queries of the compilation on the Pragmatic entities <paramref name="engine" /> serves. <paramref name="shaped" /> is the
+    ///     compilation with the entities' shape, where a join's keys are looked up (a relation's foreign key is a member of the shape only).
+    /// </summary>
+    public static List<PragmaticQuery> Read(Compilation compilation, PragmaticEngine engine, Compilation shaped)
     {
         var queries = new List<PragmaticQuery>();
         var engines = PragmaticEngines.Of(compilation);
@@ -112,6 +115,7 @@ internal sealed partial class PragmaticQuery
             var query = new PragmaticQuery(type, entity, result);
             query.ReadMembers(type.GetAttributes().First(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attribute)));
             query.ReadView(compilation);
+            query.ReadJoins(shaped);
             queries.Add(query);
         }
 

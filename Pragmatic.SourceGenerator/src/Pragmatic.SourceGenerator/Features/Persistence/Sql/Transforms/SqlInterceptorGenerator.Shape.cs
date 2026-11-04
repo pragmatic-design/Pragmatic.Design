@@ -46,8 +46,8 @@ internal static partial class SqlInterceptorGenerator
         {
             // A trait's child and its list query exist only with the shape: both are read from that one compilation, so the query is the child's.
             var shaped = compilation.AddSyntaxTrees(shapeTrees);
-            var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Sql);
-            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Sql).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
+            var declared = PragmaticQuery.Read(compilation, PragmaticEngine.Sql, shaped);
+            declared.AddRange(PragmaticQuery.Read(shaped, PragmaticEngine.Sql, shaped).Where(q => q.Type.DeclaringSyntaxReferences.Any(r => shapeTrees.Contains(r.SyntaxTree))));
             foreach (var query in declared)
             {
                 shapes.Add(query.Shape());

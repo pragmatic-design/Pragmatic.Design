@@ -94,6 +94,33 @@ public class DeclaredQueryTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_declared_join_reads_the_aliased_side_keeps_on_left_and_drops_on_inner(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, reviews, _) = await Seeded(dialect);
+        using (session)
+        {
+            // Anna (acme, desk-north) sees her published reviews, at RIVA and MARE, and only RIVA among the properties (MARE is desk-south).
+            var left = await reviews.RunAsync(new ReviewPlacesQuery());
+            var inner = await reviews.RunAsync(new ReviewPlacesInnerQuery());
+
+            Assert.Equal([("anna@MARE", null), ("anna@RIVA", "RIVA")], left.Select(r => (r.Text, r.PlaceName)));
+            Assert.Equal([("anna@RIVA", "RIVA")], inner.Select(r => (r.Text, r.PlaceName)));
+
+            using (_toggle.UseMode(FilterMode.Raw))
+            {
+                // Every review and every property: the name read from each one's own property, the query's filter and sort applied.
+                var raw = await reviews.RunAsync(new ReviewPlacesQuery { TextSort = SortDirection.Descending });
+                var riva = await reviews.RunAsync(new ReviewPlacesQuery { Text = "RIVA" });
+
+                Assert.Equal([("bruno@RIVA", "RIVA"), ("anna@RIVA", "RIVA"), ("anna@MARE", "MARE"), ("anna@ALPE", "ALPE")], raw.Select(r => (r.Text, r.PlaceName)));
+                Assert.Equal([("anna@RIVA", "RIVA"), ("bruno@RIVA", "RIVA")], riva.Select(r => (r.Text, r.PlaceName)));
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task A_query_that_maps_in_memory_reads_its_navigation_and_runs_the_selector(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
