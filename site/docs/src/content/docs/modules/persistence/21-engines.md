@@ -44,6 +44,18 @@ generates; `[ReadAccess<T>]` for an entity on another engine would add a navigat
 many-to-many has no key to keep, so both are `PRAG0745`. Store the other side's id, and read that side through its own
 boundary.
 
+On the same engine, a boundary reads another module's entities (`[ReadAccess<T>]`, a relation to them) as its own:
+a chain filters on their columns, a declared query projects their fields (`[MapProperty("Property.Name")]`), and
+their `[VisibleWhen]` rules hide their rows here too. The other module is compiled already, so the generator reads
+it from its assembly:
+
+- its entities' members, the generated ones included (a foreign key, a private setter);
+- on the Sql engine, the source of its rules, which its own build states in
+  `[assembly: VisibilityRuleSource<TRule>(…)]`. A rule whose predicate reads something only its module can reach (a
+  member of the rule, a non-public member of another type) does not bind there, and is reported as untranslated
+  where the entity is read;
+- on the documents engine, the reader and the filters its own build compiled into the document type.
+
 ## Registering the session
 
 The generator writes `Add{Boundary}Persistence` for each boundary an engine serves. It registers the boundary's

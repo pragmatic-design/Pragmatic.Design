@@ -39,7 +39,7 @@ internal static partial class DocQueries
             return Refuse($"the path runs through the navigation {segments[0]} and on through {segments[1]}; one navigation's own field is read");
         if (model.Field(reference.ForeignKey) is not { } foreignKey)
             return Refuse($"{query.Entity.Name} has no field {reference.ForeignKey} holding the key of {segments[0]}");
-        if (!models.TryGetValue(reference.Target.ToDisplayString(), out var related) || related.Key is not { } key)
+        if (Served(reference.Target, models) is not { Key: { } key } related)
             return Refuse($"{reference.Target.Name}, which {segments[0]} reaches, is not a document the engine serves");
         if (related.Field(segments[1]) is not { } field)
             return Refuse($"{reference.Target.Name} has no field {segments[1]} in the document");
@@ -73,4 +73,24 @@ internal static partial class DocQueries
         var keyRead = lookup.ForeignKeyNullable ? $"__key{property.Name}" : $"e.{lookup.ForeignKey}";
         return $"{property.Name} = {key0}__related{lookup.Index}.TryGetValue({keyRead}, out var {found}) ? {found}.{field.Property.Name} : {fallback}";
     }
+
+    /// <summary>
+    ///     The document <paramref name="target" /> is, when the engine serves it: one of this compilation's, or a Pragmatic entity of another module
+    ///     whose own assembly made it a document (<c>IDocumentEntity&lt;T&gt;</c>, its reader there), as a boundary reads it through
+    ///     <c>[ReadAccess&lt;T&gt;]</c> (#502). That one's model is read from its metadata once, and kept with the others.
+    /// </summary>
+    private static DocModel? Served(INamedTypeSymbol target, Dictionary<string, DocModel> models)
+    {
+        var name = target.ToDisplayString();
+        if (models.TryGetValue(name, out var own))
+            return own;
+        if (target.DeclaringSyntaxReferences.Length > 0 || !IsDocumentOfItsAssembly(target) || DocModel.Read(target, []) is not { } referenced)
+            return null;
+        models[name] = referenced;
+        return referenced;
+    }
+
+    private static bool IsDocumentOfItsAssembly(INamedTypeSymbol type)
+        => type.AllInterfaces.Any(i => i is { Name: "IDocumentEntity", TypeArguments.Length: 1 } && i.ContainingNamespace.ToDisplayString() == "Pragmatic.Persistence.Documents"
+                                        && SymbolEqualityComparer.Default.Equals(i.TypeArguments[0], type));
 }

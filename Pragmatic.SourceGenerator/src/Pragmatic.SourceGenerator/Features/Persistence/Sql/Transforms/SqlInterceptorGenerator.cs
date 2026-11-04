@@ -176,6 +176,7 @@ internal static partial class SqlInterceptorGenerator
         if (!UsesSql(compilation))
             return;
         var input = new HashSet<SyntaxTree>(compilation.SyntaxTrees); // the trees a diagnostic may be reported in: not the ones added below
+        spc.AddSource(new Templates.VisibilityRuleSourcesTemplate(RuleSources.Declared(compilation)).RenderOutput()); // this assembly's rules, for a module reading its entities
         WithPragmaticShape(spc, shapeSources, engineReads, ref compilation, ref calls, ref entityTypes, ref queries, ref dtos, ref functionMethods); // Pragmatic's entities without EF Core: their shape, the chains bound on it
         var diagnostics = new List<Diagnostic>();
         var censusEntries = new List<CensusEntry>(); // every translated terminal and [Query], for the census file

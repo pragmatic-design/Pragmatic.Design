@@ -49,7 +49,7 @@ internal static class DialectSchemas
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
-        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Host, SqlBridge, OutboxBoundary, StaffImport, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
+        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
@@ -90,11 +90,17 @@ internal static class DialectSchemas
         _ => "namespace Microsoft.Data.Sqlite { public sealed class SqliteConnection { } }",
     };
 
-    private static string Entities()
+    private static string Entities() => "global using System; global using System.Collections.Generic;\n" + Resource("Entities.cs");
+
+    /// <summary>
+    ///     An embedded source: the suite's entities, or one of the other module's (<c>ReferencedModule.*</c>), whose tables are in the same
+    ///     database. The suite reads those from their own assembly; their schema comes from their source here.
+    /// </summary>
+    private static string Resource(string name)
     {
-        using var stream = typeof(DialectSchemas).Assembly.GetManifestResourceStream("Entities.cs")!;
+        using var stream = typeof(DialectSchemas).Assembly.GetManifestResourceStream(name)!;
         using var reader = new StreamReader(stream);
-        return "global using System; global using System.Collections.Generic;\n" + reader.ReadToEnd();
+        return reader.ReadToEnd();
     }
 
     private static List<MetadataReference> References(IEnumerable<Type> runtime)

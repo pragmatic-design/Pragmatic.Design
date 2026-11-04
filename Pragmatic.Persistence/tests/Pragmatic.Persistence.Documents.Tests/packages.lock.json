@@ -469,6 +469,14 @@
       "pragmatic.persistence.documents.mongo": {
         "type": "Project"
       },
+      "pragmatic.persistence.documents.referencedmodule": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents": "[1.0.0, )",
+          "Pragmatic.Persistence.Documents.Core": "[1.0.0, )"
+        }
+      },
       "pragmatic.persistence.engines": {
         "type": "Project",
         "dependencies": {

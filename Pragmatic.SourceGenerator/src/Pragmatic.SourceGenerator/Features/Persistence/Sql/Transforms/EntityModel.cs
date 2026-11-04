@@ -191,7 +191,7 @@ internal sealed partial class EntityModel
                 }
 
                 var ownedModel = new OwnedModel(property.Name, ownedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), optional, members) { Constructor = constructor };
-                if (property.SetMethod is { } setter && setter.DeclaredAccessibility != Accessibility.Public)
+                if (!Core.StoredProperty.HasPublicSetter(property))
                     (ownedModel.PrivateSetter, ownedModel.SetterOwner, ownedModel.SetterOwnerSealed) = (true, property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), property.ContainingType.IsSealed);
                 owned.Add(ownedModel);
                 continue;
@@ -240,7 +240,7 @@ internal sealed partial class EntityModel
             var plain = TryColumn(property, type, diagnostics, owner: null, optionalOwner: false);
             if (plain is null)
                 return null;
-            if (property.SetMethod!.DeclaredAccessibility != Accessibility.Public)
+            if (!Core.StoredProperty.HasPublicSetter(property))
                 (plain.PrivateSetter, plain.SetterOwner, plain.SetterOwnerSealed) = (true, property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), property.ContainingType.IsSealed);
             columns.Add(plain);
             if (property.GetAttributes().Any(a => a.AttributeClass?.Name == "VersionAttribute") || plain.IsRowVersion)

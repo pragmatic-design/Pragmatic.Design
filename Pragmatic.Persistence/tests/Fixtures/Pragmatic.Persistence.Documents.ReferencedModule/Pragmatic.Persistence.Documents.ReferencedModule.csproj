@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The module of Pragmatic.Persistence.Sql.ReferencedModule on the documents engine: the same entities and rule, linked, with the documents
+       engine's bridge. Pragmatic.Persistence.Documents.Tests reads them from its own assembly, as a boundary reads another module's entities
+       through [ReadAccess<T>]. A test fixture, not a package. -->
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.ReferencedModule</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Test code, awaited by the tests only. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Pragmatic.Persistence.Sql.ReferencedModule\Supplier.cs" Link="Supplier.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Sql.ReferencedModule\Part.cs" Link="Part.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Sql.ReferencedModule\ListedOnly.cs" Link="ListedOnly.cs" />
+    <Compile Include="..\Pragmatic.Persistence.Sql.ReferencedModule\SupplierStatuses.cs" Link="SupplierStatuses.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
