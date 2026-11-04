@@ -57,6 +57,24 @@ public class DeclaredQueryTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_query_declared_paged_gets_its_page_and_its_default_size(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var (session, reviews, _) = await Seeded(dialect);
+        using (session)
+        using (_toggle.UseMode(FilterMode.Raw))
+        {
+            var second = await reviews.RunAsync(new PagedReviewsQuery { Page = 2, PageSize = 3 });
+            var whole = await reviews.RunAsync(new PagedReviewsQuery());
+
+            Assert.Equal(Page(["bruno@RIVA"], 4), Page([.. second.Items.Select(r => r.Text)], second.TotalCount)); // the ascending default sort, past the first three
+            Assert.Equal(Page(["anna@ALPE", "anna@MARE", "anna@RIVA", "bruno@RIVA"], 4), Page([.. whole.Items.Select(r => r.Text)], whole.TotalCount)); // page 1 of twenty
+            Assert.Equal((1, 20), (new PagedReviewsQuery().Page, new PagedReviewsQuery().PageSize));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task A_declared_query_reads_inside_the_callers_filters_and_projects(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
