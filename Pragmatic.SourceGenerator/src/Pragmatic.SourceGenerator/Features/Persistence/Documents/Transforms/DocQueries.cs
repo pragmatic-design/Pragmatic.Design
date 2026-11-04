@@ -22,7 +22,7 @@ internal static partial class DocQueries
     ///     projection's selector: <c>e =&gt; new R { P = e.P, … }</c>, empty when the result is the entity, null when the query is refused. A
     ///     <c>[MapProperty("Nav.Field")]</c> through a reference navigation adds the related documents to read to <paramref name="lookups" />.
     /// </summary>
-    public static string? Prepare(PragmaticQuery query, DocModel model, Dictionary<string, DocModel> models, List<DocLookupModel> lookups)
+    public static string? Prepare(PragmaticQuery query, DocModel model, Dictionary<string, DocModel> models, List<DocLookupModel> lookups, Compilation compilation)
     {
         foreach (var sort in query.Sorts.Where(s => DocOrderKeys.Texts(model, s.Column) is null))
             query.Refuse($"the sort {sort.Name} orders by {sort.Column}, which is not a field of the document");
@@ -60,6 +60,18 @@ internal static partial class DocQueries
             {
                 // A Pragmatic entity's Id is its shape's alias of the key (Id => PersistenceId), which a document stores as its key: read that.
                 field = property.Name == "Id" && model.Field("Id") is null && model.IsPragmaticEntity && model.Key?.Property.Name == "PersistenceId" ? model.Key : model.Field(property.Name);
+                string? problem = null;
+                if (field is null && Computed(query, model, property, compilation, out problem) is { } computed)
+                {
+                    assignments.Add($"{property.Name} = {computed}");
+                    continue;
+                }
+
+                if (problem is not null)
+                {
+                    query.Refuse(problem);
+                    return null;
+                }
             }
 
             // The field as the shaped entity declares it (the model is read on the compilation with the shape): the same type, or its nullable.

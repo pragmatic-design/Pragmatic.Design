@@ -144,7 +144,7 @@ internal static partial class DocumentGenerator
         {
             var model = models[query.Entity.ToDisplayString()];
             var lookups = new List<Models.DocLookupModel>();
-            var projection = DocQueries.Prepare(query, model, models, lookups);
+            var projection = DocQueries.Prepare(query, model, models, lookups, compilation);
             if (query.Unsupported is { } why)
                 diagnostics.Add(Diagnostic.Create(DocDiagnostics.QueryNotCompiled, SqlInterceptorGenerator.ReportableLocation(query.Type, compilation), query.Type.Name, why));
             add(DocQueries.Shape(query, model));

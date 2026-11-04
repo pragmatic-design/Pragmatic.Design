@@ -157,6 +157,10 @@ public partial class Booking : IEntity
     public string? Phone { get; set; }
 
     public int Nights { get; set; }
+
+    /// <summary>A computed member a declared projection reads (#506): two fields and a condition, computed from the document's fields.</summary>
+    [Pragmatic.Persistence.Query.Attributes.Projectable]
+    public int Score => Nights * 10 + (Phone == null ? 0 : 1);
 }
 
 /// <summary>A request made on a booking, two hops from the subject and soft deleted: the whole document is the guest's, so it is deleted.</summary>
