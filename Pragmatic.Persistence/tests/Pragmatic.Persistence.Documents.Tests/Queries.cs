@@ -57,6 +57,41 @@ public partial class ReviewLinesQuery
     public SortDirection? TextSort { get; init; }
 }
 
+/// <summary>An OR group of a filter object: where a booking's phone ends, or how it starts (the Sql engine's <c>ReviewSourceFilter</c>).</summary>
+[FilterDto<Booking>]
+public partial class BookingPhoneFilter
+{
+    [Filter(Operator = FilterOperator.EndsWith, MapTo = nameof(Booking.Phone))]
+    public string? At { get; set; }
+
+    [Filter(Operator = FilterOperator.StartsWith, MapTo = nameof(Booking.Phone))]
+    public string? By { get; set; }
+}
+
+/// <summary>A filter object: an OR group, and a member joined to it with AND.</summary>
+[FilterDto<Booking>]
+public partial class BookingFilter
+{
+    [FilterGroup(FilterLogic.Or)]
+    public BookingPhoneFilter? Phone { get; set; }
+
+    [Filter(Operator = FilterOperator.GreaterOrEqual, MapTo = nameof(Booking.Nights))]
+    public int? MinNights { get; set; }
+}
+
+/// <summary>One guest's bookings whose filters are one [ComplexFilter], as the Showcase's property search carries its location.</summary>
+[Query<Booking>]
+public partial class FilterBookingsQuery
+{
+    public Guid? GuestId { get; init; }
+
+    [ComplexFilter]
+    public BookingFilter? Where { get; init; }
+
+    [Sort(MapTo = nameof(Booking.Phone), DefaultDirection = SortDirection.Ascending)]
+    public SortDirection? PhoneSort { get; init; }
+}
+
 /// <summary>A booking's card: its nights, and its guest's email and name read through the navigation (<c>[MapProperty("Guest.…")]</c>).</summary>
 [MapFrom<Booking>]
 public sealed class BookingCard

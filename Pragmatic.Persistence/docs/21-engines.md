@@ -153,10 +153,10 @@ session's filters, and a document whose related one is not found reads the prope
 reference or a nullable, as EF Core's left join gives it. A path through a navigation no relation declares, or on
 past the related document's own field, is `PRAG3108`, naming it.
 
-A declared query's `[ComplexFilter]` is compiled by the Sql engine: the filter object's members are composed as
+A declared query's `[ComplexFilter]` is compiled by both engines: the filter object's members are composed as
 its `[FilterDto<T>]` composes them for EF Core, a member that is not set filtering nothing, the members of a
 `[FilterGroup(FilterLogic.Or)]` joined with OR, the rest with AND. A `Between` member refuses the query
-(`PRAG3033`). The documents engine does not compile it yet (`PRAG3108`).
+(`PRAG3033` on the Sql engine, `PRAG3108` on the documents engine).
 
 `[GenerateHierarchy]` on an entity whose tree is a declared relation
 (`[Relation.ManyToOne<Category>.WithNavigation("Parent", Required = false)]`) walks the parent key on the Sql
