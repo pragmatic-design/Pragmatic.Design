@@ -74,6 +74,7 @@ internal static partial class SqlInterceptorGenerator
             var collections = new List<ProjectedCollection>();
             var named = new List<(string Name, string Kind)>(); // the members by name, in the columns' order, for a shaped read
             string? keyProperty = null;
+            var computedMember = false; // a [Projectable] member reads several columns: the members are no longer one column each
             var keyProperties = new string?[entity.Keys.Count]; // a composite key's DTO properties, by key column
             foreach (var property in dto.GetMembers().OfType<IPropertySymbol>().Where(p => !p.IsStatic && p.SetMethod is not null && p.DeclaredAccessibility == Accessibility.Public))
             {
@@ -141,6 +142,21 @@ internal static partial class SqlInterceptorGenerator
                     }
                 }
 
+                // A [Projectable] member of the entity: its body over the columns it reads, computed in .NET (#506).
+                string? computedProblem = null;
+                if (column is null && TryComputed(property, path, entity, compilation, columns, out computedProblem) is { } computed)
+                {
+                    assignments.Add($"{property.Name} = {computed}");
+                    computedMember = true;
+                    continue;
+                }
+
+                if (computedProblem is not null)
+                {
+                    Report(property.Name, computedProblem);
+                    return null;
+                }
+
                 // A converted column is read with its own reader (the DTO's property has the model type); an optional owned type's member as nullable; any other with the property's type.
                 var reader = source is not null ? source.ProjectedReader(property.Type) : EntityModel.ReaderFor(property.Type);
                 if (column is null || reader is null)
@@ -185,7 +201,7 @@ internal static partial class SqlInterceptorGenerator
 
             visiting.Remove(dto);
             var fullName = dto.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return new Projection(columns, $"new {fullName} {{ {string.Join(", ", assignments)} }}", fullName, isAnonymous: false, collections, keyProperty, dto.IsValueType) { Members = named, KeyProperties = entity.Keys.Count > 1 && collections.Count > 0 ? keyProperties.Select(p => p!).ToList() : null };
+            return new Projection(columns, $"new {fullName} {{ {string.Join(", ", assignments)} }}", fullName, isAnonymous: false, collections, keyProperty, dto.IsValueType) { Members = computedMember ? null : named, KeyProperties = entity.Keys.Count > 1 && collections.Count > 0 ? keyProperties.Select(p => p!).ToList() : null };
         }
 
         /// <summary>A collection member: the entity's collection of that name (or the path's), whose child DTO carries <c>[MapFrom&lt;Child&gt;]</c> and is read with its own declared projection.</summary>
