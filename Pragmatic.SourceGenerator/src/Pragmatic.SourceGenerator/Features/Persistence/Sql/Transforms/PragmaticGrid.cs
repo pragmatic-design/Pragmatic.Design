@@ -88,7 +88,7 @@ internal sealed partial class PragmaticGrid
             }
 
             var property = properties.FirstOrDefault(p => p.Name.Equals(path, StringComparison.OrdinalIgnoreCase));
-            if (property is null || Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name) || !mapped.Add(property.Name))
+            if (property is null || Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name) || LeftOutAsComputed(property) || !mapped.Add(property.Name))
                 continue;
             Fields.Add(FieldOf(json, property, Named(custom, "Filterable") is not false, Named(custom, "Sortable") is not false, NamedArray(custom, "AllowedOperators")));
             jsonNames.Add(json);
@@ -96,7 +96,8 @@ internal sealed partial class PragmaticGrid
 
         foreach (var property in properties)
         {
-            if (excluded.Contains(property.Name) || Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name) || IsNavigation(property.Type))
+            if (excluded.Contains(property.Name) || Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(property.Name) || IsNavigation(property.Type)
+                || LeftOutAsComputed(property))
                 continue;
             var json = char.ToLowerInvariant(property.Name[0]) + property.Name.Substring(1);
             if (jsonNames.Contains(json) || !mapped.Add(property.Name))
@@ -108,6 +109,21 @@ internal sealed partial class PragmaticGrid
         var filterable = new HashSet<string>(Fields.Where(x => x.Filterable).Select(x => x.Json), StringComparer.OrdinalIgnoreCase);
         Withheld.AddRange(properties.Select(p => p.Name).Where(n => Pragmatic.Contracts.SensitiveGridFieldNames.IsSensitive(n) && !filterable.Contains(n))
             .Select(n => n.ToLowerInvariant()).Distinct());
+    }
+
+    /// <summary>
+    ///     True, and reported once (<see cref="Omitted" />), for a <c>[Projectable]</c> member (#516): its value is its body over the columns, not
+    ///     a column, and neither engine translates a predicate or a sort on that body. EF Core's grid composes it; on an engine the field is
+    ///     refused as unknown, rather than written as a predicate the engine then refuses inside a generated file.
+    /// </summary>
+    private bool LeftOutAsComputed(IPropertySymbol property)
+    {
+        if (!ProjectableBody.IsProjectable(property))
+            return false;
+        var reason = $"the [Projectable] member {property.Name}: a filter or sort on its body is not compiled yet, and the field is refused as unknown";
+        if (!Omitted.Contains(reason))
+            Omitted.Add(reason);
+        return true;
     }
 
     /// <summary>A field: a <c>[GridField(AllowedOperators)]</c> restriction is kept with its aliases, as the clause checks it.</summary>
