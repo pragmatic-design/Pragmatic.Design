@@ -136,18 +136,19 @@ internal static partial class DocumentGenerator
     ///     compiles, the sorts as a runtime ordering) with their projections; one the documents engine does not compile is reported (PRAG3108) and
     ///     refused at run time, as on the Sql engine.
     /// </summary>
-    private static List<(PragmaticQuery Query, string? Projection)> DeclaredQueries(Compilation compilation, List<PragmaticQuery> declared, Dictionary<string, DocModel> models, List<Diagnostic> diagnostics,
+    private static List<(PragmaticQuery Query, string? Projection, List<Models.DocLookupModel> Lookups)> DeclaredQueries(Compilation compilation, List<PragmaticQuery> declared, Dictionary<string, DocModel> models, List<Diagnostic> diagnostics,
         System.Func<(string Hint, string Source), SyntaxTree> add)
     {
-        var queries = new List<(PragmaticQuery, string?)>();
+        var queries = new List<(PragmaticQuery, string?, List<Models.DocLookupModel>)>();
         foreach (var query in declared.Where(q => models.ContainsKey(q.Entity.ToDisplayString())))
         {
             var model = models[query.Entity.ToDisplayString()];
-            var projection = DocQueries.Prepare(query, model);
+            var lookups = new List<Models.DocLookupModel>();
+            var projection = DocQueries.Prepare(query, model, models, lookups);
             if (query.Unsupported is { } why)
                 diagnostics.Add(Diagnostic.Create(DocDiagnostics.QueryNotCompiled, SqlInterceptorGenerator.ReportableLocation(query.Type, compilation), query.Type.Name, why));
             add(DocQueries.Shape(query, model));
-            queries.Add((query, projection));
+            queries.Add((query, projection, lookups));
         }
 
         return queries;

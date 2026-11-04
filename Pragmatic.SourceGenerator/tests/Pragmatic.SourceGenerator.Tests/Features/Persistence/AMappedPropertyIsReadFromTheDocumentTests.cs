@@ -7,9 +7,9 @@ using Xunit;
 namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 
 /// <summary>
-///     A declared query's result with <c>[MapProperty]</c> on the documents engine (#476): a path of the document's own fields, nested in an owned
-///     one too, is projected; a path through a navigation stays PRAG3108, naming the navigation, since a document keeps a relation as its key.
-///     Before, every <c>[MapProperty]</c> refused the query, as it refused the Showcase's <c>SearchRoomTypesQuery</c>.
+///     A declared query's result with <c>[MapProperty]</c> on the documents engine (#476, #486): a path of the document's own fields, nested in an
+///     owned one too, is projected; a path through a declared reference reads the related document by its key; a path through a navigation no
+///     relation declares stays PRAG3108, naming the navigation.
 /// </summary>
 /// <remarks>The bridge is declared by the types the generator recognises it by, as in <see cref="TheDocumentsEngineServesPragmaticsEntitiesTests" />.</remarks>
 public class AMappedPropertyIsReadFromTheDocumentTests
@@ -68,6 +68,23 @@ public class AMappedPropertyIsReadFromTheDocumentTests
             [Pragmatic.Persistence.Query.Attributes.Query<Room, RoomCard>]
             public partial class RoomCardsQuery { public string? Code { get; init; } }
 
+            // The Showcase's shape (RoomTypeSummaryDto.PropertyName): a declared reference, read through its navigation.
+            [Pragmatic.Persistence.Entity.Entity]
+            public partial class Property : Pragmatic.Persistence.Entity.IEntity { public string Name { get; set; } = ""; }
+
+            [Pragmatic.Persistence.Entity.Entity]
+            [Pragmatic.Persistence.Entity.Relation.ManyToOne<Property>]
+            public partial class RoomType : Pragmatic.Persistence.Entity.IEntity { public string Code { get; set; } = ""; }
+
+            public sealed class RoomTypeSummary
+            {
+                public string Code { get; init; } = "";
+                [MapProperty("Property.Name")] public string? PropertyName { get; init; }
+            }
+
+            [Pragmatic.Persistence.Query.Attributes.Query<RoomType, RoomTypeSummary>]
+            public partial class SearchRoomTypesQuery { public string? Code { get; init; } }
+
             [Pragmatic.Persistence.Query.Attributes.Query<Room, RoomWithBuilding>]
             public partial class RoomsWithBuildingQuery { public string? Code { get; init; } }
         }
@@ -85,8 +102,26 @@ public class AMappedPropertyIsReadFromTheDocumentTests
         generated.Should().Contain("Floor = e.Placement.Floor", "the owned field's member is read through it");
     }
 
+    /// <summary>
+    ///     A path through a declared reference (#486), the Showcase's <c>SearchRoomTypesQuery</c>: the related documents are read by the keys of the
+    ///     page's documents and the field from the one each finds, the property's default when none is.
+    /// </summary>
     [Fact]
-    public void APathThroughANavigation_IsPrag3108_NamingIt()
+    public void APathThroughADeclaredReference_ReadsTheRelatedDocument()
+    {
+        var result = Run(Rooms + DocumentsBridge);
+
+        GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3108").Should().NotContain(d => d.GetMessage().Contains("SearchRoomTypesQuery", StringComparison.Ordinal),
+            "the related document is read by its key");
+        var generated = string.Concat(GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Values);
+        generated.Should().Contain("Where((r, keys) => keys.Contains(r.PersistenceId), __keys0)", "the related documents are read by the page's keys");
+        generated.Should().Contain("PropertyName = __related0.TryGetValue(e.PropertyId, out var __PropertyName) ? __PropertyName.Name : default(global::System.String?)",
+            "the field is read from the related document its key finds, null when none is");
+    }
+
+    /// <summary>The control: a navigation no relation declares (a property written by hand) has no key the engine knows, and stays PRAG3108.</summary>
+    [Fact]
+    public void APathThroughAnUndeclaredNavigation_IsPrag3108_NamingIt()
     {
         var result = Run(Rooms + DocumentsBridge);
 

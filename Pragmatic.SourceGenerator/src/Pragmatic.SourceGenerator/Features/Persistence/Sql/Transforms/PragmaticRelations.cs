@@ -86,8 +86,15 @@ internal static class PragmaticRelations
     ///     read from its cache), so they are not among the navigations the entity's members show; EF Core still gives the key its index and constraint.
     /// </summary>
     public static IEnumerable<(string Navigation, string ForeignKey, INamedTypeSymbol Target)> LookupReferences(INamedTypeSymbol entity)
+        => References(entity, "ManyToOne").Where(r => r.Target.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.LookupAttribute"));
+
+    /// <summary>
+    ///     The references an entity declares of <paramref name="kinds" /> (<c>ManyToOne</c>, <c>OneToOne</c>): the navigation's name, its key
+    ///     property (<c>{Navigation}Id</c> unless the relation names one) and the target.
+    /// </summary>
+    public static IEnumerable<(string Navigation, string ForeignKey, INamedTypeSymbol Target)> References(INamedTypeSymbol entity, params string[] kinds)
         => Declarations(entity)
-            .Where(d => d.Kind == "ManyToOne" && d.Target.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.LookupAttribute"))
+            .Where(d => kinds.Contains(d.Kind))
             .Select(d => (d.Name ?? d.Target.Name, d.ForeignKey ?? (d.Name ?? d.Target.Name) + "Id", d.Target));
 
     /// <summary>

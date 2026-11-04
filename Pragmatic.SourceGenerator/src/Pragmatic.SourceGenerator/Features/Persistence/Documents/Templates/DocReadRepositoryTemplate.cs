@@ -140,19 +140,53 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         AppendLine("                {");
         AppendLine($"                    var filtered = session.Query<{type}>().Matching({ToPredicate}(q.ToSpecification()));");
         if (paged)
-        {
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
-            AppendLine($"                    var rows = await filtered.OrderedBy(q.ToDocOrdering()){query.Projection}.Skip(paged.Skip).Take(paged.Take).ToListAsync(ct);");
+        var page = paged ? ".Skip(paged.Skip).Take(paged.Take)" : "";
+        if (query.Lookups.Count == 0)
+        {
+            var select = query.Projection.Length == 0 ? "" : $".Select({query.Projection})";
+            AppendLine($"                    var rows = await filtered.OrderedBy(q.ToDocOrdering()){select}{page}.ToListAsync(ct);");
+        }
+        else
+        {
+            RenderLookups(query, page);
+        }
+
+        if (paged)
+        {
             AppendLine("                    var total = checked((int)await filtered.CountAsync(ct));");
             AppendLine($"                    return (global::Pragmatic.Persistence.Query.Results.PagedResult<TResult>)(object)global::Pragmatic.Persistence.Query.Results.PagedResult<{query.ResultType}>.Success(rows, total, paged.Page, paged.PageSize);");
         }
         else
         {
-            AppendLine($"                    var rows = await filtered.OrderedBy(q.ToDocOrdering()){query.Projection}.ToListAsync(ct);");
             AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
         }
 
         AppendLine("                }");
+    }
+
+    /// <summary>
+    ///     A projection that reads related documents (<see cref="DocLookupModel" />): the page's documents whole, then each navigation's related
+    ///     documents by the keys among them (one read per navigation, a compiled plan with the session's filters, as on Cosmos DB there is no join
+    ///     across containers), then the result projected in .NET with each found by its key.
+    /// </summary>
+    private void RenderLookups(DocRunCaseModel query, string page)
+    {
+        const string Linq = "global::System.Linq.Enumerable";
+        AppendLine($"                    var documents = await filtered.OrderedBy(q.ToDocOrdering()){page}.ToListAsync(ct);");
+        foreach (var lookup in query.Lookups)
+        {
+            var keys = lookup.ForeignKeyNullable
+                ? $"{Linq}.Select({Linq}.Where(documents, e => e.{lookup.ForeignKey} != null), e => e.{lookup.ForeignKey}!.Value)"
+                : $"{Linq}.Select(documents, e => e.{lookup.ForeignKey})";
+            // A list, whose Contains is its own: the chain's lambda is compiled with no using of System.Linq.
+            AppendLine($"                    var __keys{lookup.Index} = {Linq}.ToList({Linq}.Distinct({keys}));");
+            AppendLine($"                    var __related{lookup.Index} = __keys{lookup.Index}.Count == 0");
+            AppendLine($"                        ? new global::System.Collections.Generic.Dictionary<{lookup.KeyType}, {lookup.RelatedType}>()");
+            AppendLine($"                        : {Linq}.ToDictionary(await session.Query<{lookup.RelatedType}>().Where((r, keys) => keys.Contains(r.{lookup.RelatedKey}), __keys{lookup.Index}).ToListAsync(ct), r => r.{lookup.RelatedKey});");
+        }
+
+        AppendLine($"                    var rows = {Linq}.ToList({Linq}.Select(documents, {query.Projection}));");
     }
 
     /// <summary>

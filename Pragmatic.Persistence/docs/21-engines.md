@@ -146,8 +146,12 @@ A list of them is not a document field yet.
 
 A declared query's result reads a `[MapProperty]` path on the documents engine when the path names a field of
 the document: one of its own, or a member of an embedded or owned field that is never null
-(`[MapProperty("Placement.Floor")]`). A path through a navigation (`[MapProperty("Property.Name")]`) is
-`PRAG3108`, naming the navigation: a document keeps a relation as its key, not as the related document.
+(`[MapProperty("Placement.Floor")]`), or a field of the document a declared reference reaches
+(`[MapProperty("Property.Name")]` over `[Relation.ManyToOne<Property>]`). A document keeps the relation as its key,
+so the related documents are read by the keys of the page's documents, one read per navigation through the
+session's filters, and a document whose related one is not found reads the property's default: null for a
+reference or a nullable, as EF Core's left join gives it. A path through a navigation no relation declares, or on
+past the related document's own field, is `PRAG3108`, naming it.
 
 A declared query's `[ComplexFilter]` is compiled by the Sql engine: the filter object's members are composed as
 its `[FilterDto<T>]` composes them for EF Core, a member that is not set filtering nothing, the members of a

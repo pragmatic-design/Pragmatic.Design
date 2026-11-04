@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
@@ -11,16 +12,17 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Transforms;
 ///     A declared query's documents half (its model and <c>ToSpecification()</c> are <see cref="PragmaticQuery" />'s, engine-neutral): its sorts as an
 ///     ordering chosen at runtime (<c>ToDocOrdering()</c>, one <c>DocOrderKey</c> per field), and its result as a projection the documents engine runs
 ///     in .NET: every settable property of the DTO from the entity's field of the same name, or of the path its <c>[MapProperty]</c> names (a field
-///     of the document's own, or of an embedded or owned one). What it cannot map refuses the query (PRAG3108), as the
+///     of the document's own, of an embedded or owned one, or of the document a declared reference reaches). What it cannot map refuses the query (PRAG3108), as the
 ///     Sql engine's PRAG3033 does.
 /// </summary>
-internal static class DocQueries
+internal static partial class DocQueries
 {
     /// <summary>
     ///     The documents engine's checks on top of the model's (the sorts name stored fields, the result maps from the entity), and the result's
-    ///     projection: <c>.Select(e =&gt; new R { P = e.P, … })</c>, empty when the result is the entity, null when the query is refused.
+    ///     projection's selector: <c>e =&gt; new R { P = e.P, … }</c>, empty when the result is the entity, null when the query is refused. A
+    ///     <c>[MapProperty("Nav.Field")]</c> through a reference navigation adds the related documents to read to <paramref name="lookups" />.
     /// </summary>
-    public static string? Prepare(PragmaticQuery query, DocModel model)
+    public static string? Prepare(PragmaticQuery query, DocModel model, Dictionary<string, DocModel> models, List<DocLookupModel> lookups)
     {
         // The shape would compose it (PragmaticQuery reads it for the Sql engine); no documents suite runs a filter object's OR yet.
         if (query.HasComplexFilter)
@@ -40,6 +42,14 @@ internal static class DocQueries
             if (property.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "MapPropertyAttribute") is { } map)
             {
                 var path = map.ConstructorArguments.FirstOrDefault().Value as string ?? "";
+                if (Related(query, model, models, path, property, lookups) is { } related)
+                {
+                    if (related.Length == 0)
+                        return null; // refused, with the reason
+                    assignments.Add(related);
+                    continue;
+                }
+
                 field = Follow(query.Entity, model, path, out read, out var problem);
                 if (field is null)
                 {
@@ -65,7 +75,7 @@ internal static class DocQueries
             assignments.Add($"{property.Name} = {read}{field!.Property.Name}");
         }
 
-        return $".Select(e => new {query.ResultName} {{ {string.Join(", ", assignments)} }})";
+        return $"e => new {query.ResultName} {{ {string.Join(", ", assignments)} }}";
     }
 
     /// <summary>
