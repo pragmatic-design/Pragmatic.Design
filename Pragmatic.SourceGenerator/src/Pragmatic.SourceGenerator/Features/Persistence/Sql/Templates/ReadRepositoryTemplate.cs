@@ -176,24 +176,35 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         }
 
         var type = model.EntityType;
-        var project = query.Projected ? $".Project<{query.ResultType}>()" : "";
+        // MapInMemory (#505): the entities with the navigations the mapper reads, then the result's Selector over them, as EF Core's MapEach.
+        var project = query.Projected ? $".Project<{query.ResultType}>()" : string.Concat(query.Includes.Select(n => $".Include(e => e.{n})"));
         var filtered = $"session.Query<{type}>().Matching(global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate(q.ToSpecification()))";
+        var read = query.InMemory ? "entities" : "rows";
         AppendLine($"                case {query.QueryType} q:");
         AppendLine("                {");
         if (paged)
         {
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
-            AppendLine($"                    var rows = await {filtered}.OrderedBy(q.ToSqlOrdering()){project}.Skip(paged.Skip).Take(paged.Take).ToListAsync(ct);");
+            AppendLine($"                    var {read} = await {filtered}.OrderedBy(q.ToSqlOrdering()){project}.Skip(paged.Skip).Take(paged.Take).ToListAsync(ct);");
+            RenderInMemory(query);
             AppendLine($"                    var total = await {filtered}.CountAsync(ct);");
             AppendLine($"                    return (global::Pragmatic.Persistence.Query.Results.PagedResult<TResult>)(object)global::Pragmatic.Persistence.Query.Results.PagedResult<{query.ResultType}>.Success(rows, total, paged.Page, paged.PageSize);");
         }
         else
         {
-            AppendLine($"                    var rows = await {filtered}.OrderedBy(q.ToSqlOrdering()){project}.ToListAsync(ct);");
+            AppendLine($"                    var {read} = await {filtered}.OrderedBy(q.ToSqlOrdering()){project}.ToListAsync(ct);");
+            RenderInMemory(query);
             AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
         }
 
         AppendLine("                }");
+    }
+
+    /// <summary>The rows of a query that maps in memory: the result's generated Selector over the entities read.</summary>
+    private void RenderInMemory(RunCaseModel query)
+    {
+        if (query.InMemory)
+            AppendLine($"                    var rows = global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(entities, {query.ResultType}.Selector));");
     }
 
     /// <summary>

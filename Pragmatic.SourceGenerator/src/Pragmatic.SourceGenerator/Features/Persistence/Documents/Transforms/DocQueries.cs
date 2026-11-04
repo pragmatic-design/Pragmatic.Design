@@ -26,6 +26,8 @@ internal static partial class DocQueries
     {
         foreach (var sort in query.Sorts.Where(s => DocOrderKeys.Texts(model, s.Column) is null))
             query.Refuse($"the sort {sort.Name} orders by {sort.Column}, which is not a field of the document");
+        if (query.MapsInMemory)
+            return query.Unsupported is null ? InMemory(query, model, models, lookups) : null;
         if (SymbolEqualityComparer.Default.Equals(query.Result, query.Entity))
             return "";
 

@@ -142,7 +142,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         if (paged)
             AppendLine($"                    var paged = (global::Pragmatic.Persistence.Query.Interfaces.IPagedQuery<{type}>)q;");
         var page = paged ? ".Skip(paged.Skip).Take(paged.Take)" : "";
-        if (query.Lookups.Count == 0)
+        if (query.Lookups.Count == 0 && !query.InMemory)
         {
             var select = query.Projection.Length == 0 ? "" : $".Select({query.Projection})";
             AppendLine($"                    var rows = await filtered.OrderedBy(q.ToDocOrdering()){select}{page}.ToListAsync(ct);");
@@ -186,7 +186,39 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
             AppendLine($"                        : {Linq}.ToDictionary(await session.Query<{lookup.RelatedType}>().Where((r, keys) => keys.Contains(r.{lookup.RelatedKey}), __keys{lookup.Index}).ToListAsync(ct), r => r.{lookup.RelatedKey});");
         }
 
+        if (query.InMemory)
+        {
+            RenderInMemory(query);
+            return;
+        }
+
         AppendLine($"                    var rows = {Linq}.ToList({Linq}.Select(documents, {query.Projection}));");
+    }
+
+    /// <summary>
+    ///     A query that maps in memory (#505): each document's navigations set to the related documents found by their keys, a document whose
+    ///     required one is missing (or hidden by the session's filters) left out as an INNER JOIN leaves it, then the result's Selector.
+    /// </summary>
+    private void RenderInMemory(DocRunCaseModel query)
+    {
+        AppendLine($"                    var rows = new global::System.Collections.Generic.List<{query.ResultType}>(documents.Count);");
+        AppendLine("                    foreach (var e in documents)");
+        AppendLine("                    {");
+        foreach (var lookup in query.Lookups)
+        {
+            var found = $"__found{lookup.Index}";
+            if (lookup.ForeignKeyNullable)
+                AppendLine($"                        e.{lookup.Navigation} = e.{lookup.ForeignKey} is {{ }} __key{lookup.Index} && __related{lookup.Index}.TryGetValue(__key{lookup.Index}, out var {found}) ? {found} : null!;");
+            else
+            {
+                AppendLine($"                        if (!__related{lookup.Index}.TryGetValue(e.{lookup.ForeignKey}, out var {found}))");
+                AppendLine("                            continue;");
+                AppendLine($"                        e.{lookup.Navigation} = {found};");
+            }
+        }
+
+        AppendLine($"                        rows.Add({query.Projection}(e));");
+        AppendLine("                    }");
     }
 
     /// <summary>

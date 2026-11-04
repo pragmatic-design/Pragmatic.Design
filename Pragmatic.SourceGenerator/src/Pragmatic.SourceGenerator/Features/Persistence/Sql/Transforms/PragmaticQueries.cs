@@ -41,6 +41,50 @@ internal sealed partial class PragmaticQuery
     /// <summary>True when the query is <c>Paged = true</c> and does not declare <c>Page</c> and <c>PageSize</c>: its shape writes them.</summary>
     public bool WritesPaging { get; private set; }
 
+    /// <summary>
+    ///     <c>MapInMemory = true</c> (#505): the engine reads the entities, with <see cref="InMemoryNavigations" /> loaded, and runs the result's
+    ///     generated <c>Selector</c> over them, as EF Core's executor runs it (<c>MapEach</c>).
+    /// </summary>
+    public bool MapsInMemory { get; private set; }
+
+    /// <summary>
+    ///     The to-one navigations an in-memory mapping reads: the query's <c>[EagerLoad]</c> paths and the navigations the result's
+    ///     <c>[MapProperty("Nav.Field")]</c> members read through, once each, in that order.
+    /// </summary>
+    public List<string> InMemoryNavigations { get; } = [];
+
+    /// <summary>
+    ///     The navigations an in-memory mapping needs, each a to-one reference the entity declares: one hop is compiled, a longer path refuses
+    ///     the query with its reason.
+    /// </summary>
+    private void ReadInMemory()
+    {
+        MapsInMemory = true;
+        if (!Result.GetAttributes().Any(a => a.AttributeClass is { Name: "MapFromAttribute", TypeArguments.Length: 1 } map && SymbolEqualityComparer.Default.Equals(map.TypeArguments[0], Entity)))
+        {
+            Unsupported ??= $"MapInMemory maps with the Selector [MapFrom<{Entity.Name}>] generates, which {Result.Name} does not declare";
+            return;
+        }
+
+        var paths = Type.GetAttributes().Where(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Actions.Mutation.EagerLoadAttribute")
+            .Select(a => a.ConstructorArguments.Length == 1 ? a.ConstructorArguments[0].Value as string : null)
+            .Concat(Result.GetMembers().OfType<IPropertySymbol>()
+                .Select(p => p.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "MapPropertyAttribute")?.ConstructorArguments.FirstOrDefault().Value as string)
+                .Where(p => p is not null && p.Contains('.'))
+                .Select(p => p!.Substring(0, p.LastIndexOf('.'))))
+            .Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p!).Distinct().ToList();
+        var references = PragmaticRelations.References(Entity, "ManyToOne", "OneToOne").Select(r => r.Navigation).ToList();
+        foreach (var path in paths)
+        {
+            if (path.Contains('.'))
+                Unsupported ??= $"MapInMemory reads {path}, a path of more than one navigation, which is not compiled yet";
+            else if (!references.Contains(path))
+                Unsupported ??= $"MapInMemory reads {path}, which is not a to-one navigation {Entity.Name} declares";
+            else
+                InMemoryNavigations.Add(path);
+        }
+    }
+
     /// <summary>Why the engine does not compile this query yet; null when it does.</summary>
     public string? Unsupported { get; private set; }
 
@@ -80,7 +124,7 @@ internal sealed partial class PragmaticQuery
             // Single = true compiles as the unpaged list of its filters and sorts: the invoker answers its first row, or the NotFoundError
             // EF Core's executor answers (QueryInvokerTemplate). Every matching row is read, where EF Core reads one.
             if (named.Key == "MapInMemory" && named.Value.Value is true)
-                Unsupported ??= $"{named.Key} = true is not compiled yet";
+                ReadInMemory();
             if (named.Key == "Paged" && named.Value.Value is true)
                 Paged = true;
         }

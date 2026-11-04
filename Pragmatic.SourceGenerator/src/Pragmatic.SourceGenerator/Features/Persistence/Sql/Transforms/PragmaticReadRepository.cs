@@ -56,5 +56,6 @@ internal static class PragmaticReadRepository
     }
 
     private static RunCaseModel RunCaseOf(PragmaticQuery query)
-        => new("global::" + query.Type.ToDisplayString(), query.Type.Name, query.Unsupported, "global::" + query.Result.ToDisplayString(), !SymbolEqualityComparer.Default.Equals(query.Result, query.Entity));
+        => new("global::" + query.Type.ToDisplayString(), query.Type.Name, query.Unsupported, "global::" + query.Result.ToDisplayString(),
+            !query.MapsInMemory && !SymbolEqualityComparer.Default.Equals(query.Result, query.Entity), query.MapsInMemory, query.InMemoryNavigations.ToEquatableArray());
 }
