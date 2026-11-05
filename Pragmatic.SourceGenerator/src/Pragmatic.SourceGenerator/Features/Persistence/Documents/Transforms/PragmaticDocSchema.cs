@@ -112,6 +112,10 @@ internal static class PragmaticDocSchema
                 Index([key.Name]); // a reference's key, named after it (PragmaticRelations): the relation a document keeps
         }
 
+        // [Index] (#524): not unique, the fields as written; last, as the Sql engine's schema adds them.
+        foreach (var declared in Persistence.Transforms.EntityTransform.CollectIndexes(entity))
+            Index([.. declared.Columns.Select(n => model.Field(n)?.Name ?? n)]);
+
         // Cosmos DB: an ORDER BY on several keys needs its composite index. A declared query's default ordering is its sorts with a default
         // direction, by priority; another combination chosen at run time needs its own, which the declaration does not say.
         var composites = new List<string>();

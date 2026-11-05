@@ -14,9 +14,13 @@ public partial class SchemaTag : IEntity
     public string Code { get; set; } = "";
 }
 
-/// <summary>A tenant's product, its SKU unique within the tenant: on Cosmos DB a unique key within the /TenantId partition.</summary>
+/// <summary>
+///     A tenant's product, its SKU unique within the tenant: on Cosmos DB a unique key within the /TenantId partition. Indexed by name and
+///     rank too (<c>[Index]</c>, #524): not unique, the columns as written.
+/// </summary>
 [Entity]
 [Unique(nameof(Sku))]
+[Index(nameof(Name), nameof(Rank))]
 public partial class SchemaProduct : IEntity, ITenantEntity
 {
     public string Sku { get; set; } = "";

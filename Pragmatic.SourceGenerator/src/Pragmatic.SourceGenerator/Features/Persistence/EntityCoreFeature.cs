@@ -453,9 +453,11 @@ internal static class EntityCoreFeature
         // PRAG0627: a [Unique] naming a property that does not exist. The names arrive as strings, so
         // nameof is a convention and not a guarantee; without this the author gets a CS1061 inside a
         // generated file, naming a property on a type they did not write the configuration for.
-        foreach (var index in entity.UniqueIndexes)
+        var declaredIndexes = entity.UniqueIndexes.Select(i => (Attribute: "Unique", i.Columns))
+            .Concat(entity.Indexes.Select(i => (Attribute: "Index", i.Columns)));
+        foreach (var (attribute, columns) in declaredIndexes)
         {
-            foreach (var column in index.Columns)
+            foreach (var column in columns)
             {
                 // TenantId is added by the generator, not declared, so it is not in Properties.
                 if (propertyNames.Contains(column) || column == "TenantId")
@@ -465,7 +467,8 @@ internal static class EntityCoreFeature
                     PersistenceDiagnostics.UniqueIndexPropertyNotFound,
                     entity.DeclarationLocation?.ToLocation(),
                     entity.TypeName,
-                    column));
+                    column,
+                    attribute));
             }
         }
         // PRAG0651 asks the author to supply what EF Core cannot infer. Two kinds of property look

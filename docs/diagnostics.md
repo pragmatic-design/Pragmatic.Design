@@ -245,7 +245,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0624` | `PartialTraitProperties` | Error | A trait's properties are only partly declared |
 | `PRAG0625` | `MixedLogicKeyScope` | Error | The parts of a domain key disagree about its scope |
 | `PRAG0626` | `TenantEntityWithManualId` | Warning | A tenant-scoped entity assigns its own primary key |
-| `PRAG0627` | `UniqueIndexPropertyNotFound` | Error | A unique index names a property that does not exist |
+| `PRAG0627` | `UniqueIndexPropertyNotFound` | Error | An index names a property that does not exist |
 | `PRAG0628` | `MultipleModulesInOneAssembly` | Error | An assembly declares more than one module |
 | `PRAG0629` | `EntityClaimedByNoBoundary` | Error | No boundary owns this entity |
 | `PRAG0630` | `EntityClaimedByTwoBoundaries` | Error | Two boundaries own the same entity |

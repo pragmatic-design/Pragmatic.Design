@@ -314,6 +314,7 @@ internal static partial class EntityMetadataReader
             NamedPersistenceEngine = GetJsonString(element, "persistenceEngine"),
             LogicKeys = ReadLogicKeys(element),
             UniqueIndexes = ReadUniqueIndexes(element),
+            Indexes = ReadIndexes(element),
             CustomTableName = GetJsonString(element, "customTableName"),
             CustomSchemaName = GetJsonString(element, "customSchemaName"),
             InheritanceStrategy = GetJsonString(element, "inheritanceStrategy"),
@@ -597,6 +598,23 @@ internal static partial class EntityMetadataReader
                 Columns = columns!.Split(',').ToImmutableArray(),
                 IsGlobal = GetJsonString(index, "scope") == "global"
             });
+        }
+
+        return indexes.ToImmutable();
+    }
+
+    /// <summary>The <c>[Index]</c> indexes (#524), read as <see cref="ReadUniqueIndexes" /> reads the unique ones, for the same reason.</summary>
+    private static EquatableArray<IndexModel> ReadIndexes(JsonElement element)
+    {
+        if (!element.TryGetProperty("indexes", out var declared) || declared.ValueKind != JsonValueKind.Array)
+            return EquatableArray<IndexModel>.Empty;
+
+        var indexes = ImmutableArray.CreateBuilder<IndexModel>();
+        foreach (var index in declared.EnumerateArray())
+        {
+            var columns = GetJsonString(index, "columns");
+            if (!string.IsNullOrEmpty(columns))
+                indexes.Add(new IndexModel { Columns = columns!.Split(',').ToImmutableArray() });
         }
 
         return indexes.ToImmutable();

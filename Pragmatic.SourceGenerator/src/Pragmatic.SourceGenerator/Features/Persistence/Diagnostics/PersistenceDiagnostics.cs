@@ -457,17 +457,18 @@ internal static class PersistenceDiagnostics
         "Let the generator assign PersistenceId, and keep a carried-over identifier as an ordinary "
         + "property with [Unique] on it.");
 
-    /// <summary>PRAG0627: a [Unique] index names a property the entity does not have.</summary>
+    /// <summary>PRAG0627: a [Unique] or [Index] index names a property the entity does not have.</summary>
     /// <remarks>
     ///     The names go in as strings, so <c>nameof</c> is a convention rather than a guarantee — and a
     ///     name that matches nothing produces a generated configuration the compiler rejects, blaming a
     ///     file the author never opened. This says which name was wrong and on which entity, which is
-    ///     the part <c>CS1061</c> inside a <c>.g.cs</c> leaves out.
+    ///     the part <c>CS1061</c> inside a <c>.g.cs</c> leaves out. One ID for both attributes: the
+    ///     mistake and its fix are the same (#524).
     /// </remarks>
     public static readonly DiagnosticDescriptor UniqueIndexPropertyNotFound = DiagnosticFactory.Error(
         "PRAG0627",
-        "A unique index names a property that does not exist",
-        "[Unique] on '{0}' names '{1}', which '{0}' does not have",
+        "An index names a property that does not exist",
+        "[{2}] on '{0}' names '{1}', which '{0}' does not have",
         "Use nameof so the compiler keeps the name honest when the property is renamed.");
 
     // =========================================================================

@@ -26,7 +26,7 @@ namespace Pragmatic.SourceGenerator.Tests.Features.Persistence;
 ///         provider package: both are stood for by a type of the name the generator probes. Each schema file is compiled alone and read.
 ///     </para>
 /// </remarks>
-public class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
+public partial class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper output)
 {
     private const string EfCoreGate = "namespace Pragmatic.Persistence.EFCore { public sealed class PragmaticDbContextAttribute : System.Attribute { } }";
 
