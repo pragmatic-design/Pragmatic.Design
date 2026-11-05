@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Showcase.Accounts on the Sql engine: the same source files as src/Showcase.Accounts, linked, with the Sql engine's bridge in place of
+       EF Core's. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <RootNamespace>Showcase.Accounts</RootNamespace>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Showcase.Accounts\**\*.cs" Exclude="..\..\src\Showcase.Accounts\obj\**;..\..\src\Showcase.Accounts\bin\**" LinkBase="Accounts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Local\Pragmatic.Identity.Local.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management\Pragmatic.Authorization.Management.csproj" />
+    <!-- The RBAC package's store on this engine, which the boundary's registration adds (src's project references the .EFCore one). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.Engines\Pragmatic.Authorization.Management.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration.Management\Pragmatic.Configuration.Management.csproj" />
+    <!-- Not Pragmatic.Identity.Persistence, which src's project references: it is EF Core's, and the user resolver it turns on reads through
+         EF Core (#547, owner decision). Until #549 this module has no user resolver and no per-user culture on this engine. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
