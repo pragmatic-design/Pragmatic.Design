@@ -6,6 +6,7 @@ namespace Pragmatic.Authorization.Management.Entities;
 ///     Assigns a user to a group with temporal validity.
 /// </summary>
 [Entity]
+[Index(nameof(UserId), nameof(GroupName), nameof(TenantId))] // the lookup of a user's groups; not unique: an ended assignment is kept
 public partial class UserGroupAssignment : ITemporalRelation, IEntity
 {
     /// <summary>The user identifier.</summary>

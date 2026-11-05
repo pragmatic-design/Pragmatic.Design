@@ -6,7 +6,12 @@ namespace Pragmatic.Authorization.Management.Entities;
 ///     A permission created at runtime (not declared with [assembly: Permission] at compile time).
 ///     Stored in the database for dynamic RBAC management.
 /// </summary>
+/// <remarks>
+///     A name is unique in its tenant, enforced by the database as well as by <c>CreatePermission</c>'s check, unfiltered and with the
+///     same NULL rule for a global permission as <see cref="DynamicRole" />.
+/// </remarks>
 [Entity]
+[Unique(nameof(Name), nameof(TenantId))]
 public partial class DynamicPermission : IAuditable, ISoftDelete, IEntity
 {
     /// <inheritdoc />

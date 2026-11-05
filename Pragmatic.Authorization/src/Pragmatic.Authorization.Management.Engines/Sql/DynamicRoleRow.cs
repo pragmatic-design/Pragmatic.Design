@@ -9,6 +9,8 @@ namespace Pragmatic.Authorization.Management.Engines.Sql;
 /// </summary>
 [Entity]
 [Table("DynamicRoles")]
+// The entity's [Unique] (#490), Pragmatic's: a package's row is read as an entity is, so the table has the same index on every engine.
+[Pragmatic.Persistence.Entity.Unique(nameof(Name), nameof(TenantId))]
 public sealed class DynamicRoleRow
 {
     [Key]

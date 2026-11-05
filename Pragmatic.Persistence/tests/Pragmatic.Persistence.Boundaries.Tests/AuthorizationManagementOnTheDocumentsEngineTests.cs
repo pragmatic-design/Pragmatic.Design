@@ -23,6 +23,21 @@ public sealed class AuthorizationManagementOnTheDocumentsEngineTests(MongoServer
         => Assert.Equal(["Desks", "DynamicPermissions", "DynamicRolePermissions", "DynamicRoles", "UserGroupAssignments", "UserRoleAssignments"],
             StaffOnDocumentsBoundaryDocSchema.Collections.Select(c => c.Collection).Order(StringComparer.Ordinal));
 
+    /// <summary>The package's collections carry the indexes its entities declare, as the Sql engine's and EF Core's tables do (#490).</summary>
+    [Fact]
+    public void The_packages_collections_have_the_entities_indexes()
+        => Assert.Equal(
+            [
+                "DynamicPermissions: IX_DynamicPermissions_Name_TenantId (Name, TenantId) unique",
+                "DynamicRolePermissions: IX_DynamicRolePermissions_RoleName_PermissionName_TenantId (RoleName, PermissionName, TenantId)",
+                "DynamicRoles: IX_DynamicRoles_Name_TenantId (Name, TenantId) unique",
+                "UserGroupAssignments: IX_UserGroupAssignments_UserId_GroupName_TenantId (UserId, GroupName, TenantId)",
+                "UserRoleAssignments: IX_UserRoleAssignments_UserId_RoleName_TenantId (UserId, RoleName, TenantId)",
+            ],
+            StaffOnDocumentsBoundaryDocSchema.Collections.Where(c => c.Collection != "Desks")
+                .SelectMany(c => c.Indexes.Select(i => $"{c.Collection}: {i.Name} ({string.Join(", ", i.Fields)}){(i.Unique ? " unique" : "")}"))
+                .Order(StringComparer.Ordinal));
+
     /// <summary>The package's operation, resolved as the application resolves it, writes through the documents engine's store.</summary>
     [Fact]
     public async Task The_boundarys_registration_answers_the_packages_operations_with_its_engines_store()
@@ -42,7 +57,9 @@ public sealed class AuthorizationManagementOnTheDocumentsEngineTests(MongoServer
     [Fact]
     public async Task Roles_and_permissions_are_created_assigned_listed_and_revoked()
     {
-        await using var provider = Boundary(new DocSession(mongo.Client, "a" + Guid.NewGuid().ToString("N")[..12]));
+        var session = new DocSession(mongo.Client, "a" + Guid.NewGuid().ToString("N")[..12]);
+        await StaffOnDocumentsBoundaryDocSchema.EnsureAsync(session); // the collections' indexes, as a host applies them at start: the scenario's duplicate meets the unique one
+        await using var provider = Boundary(session);
         await using var scope = provider.CreateAsyncScope();
 
         await AuthorizationManagementScenario.RunAsync(scope.ServiceProvider.GetRequiredService<IAuthorizationManagementStore>());
