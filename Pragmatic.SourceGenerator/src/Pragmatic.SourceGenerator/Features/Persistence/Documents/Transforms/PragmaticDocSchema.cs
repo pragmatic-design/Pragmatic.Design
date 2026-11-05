@@ -38,7 +38,9 @@ internal static class PragmaticDocSchema
             var ns = boundary is not null
                 ? boundary.ContainingNamespace.IsGlobalNamespace ? "" : boundary.ContainingNamespace.ToDisplayString()
                 : RootNamespace(first.ContainingNamespace.IsGlobalNamespace ? compilation.AssemblyName ?? "" : first.ContainingNamespace.ToDisplayString());
-            var collections = group.OrderBy(e => models[e.ToDisplayString()].Collection, StringComparer.Ordinal)
+            // A hierarchy is its root's collection (#539): a derived type adds none of its own.
+            var collections = group.Where(e => models[e.ToDisplayString()].Inheritance is not { IsRoot: false })
+                .OrderBy(e => models[e.ToDisplayString()].Collection, StringComparer.Ordinal)
                 .Select(e => CollectionText(e, models[e.ToDisplayString()], queries.Where(q => SymbolEqualityComparer.Default.Equals(q.Entity, e))))
                 .ToList();
             // [EnableEventOutbox]: the outbox's collection, as Pragmatic.Events.Engines describes it, beside the boundary's own.
@@ -115,6 +117,9 @@ internal static class PragmaticDocSchema
             Index(["OwnerId"]);
         if (tenant)
             Index(["TenantId"]);
+        // A hierarchy's root: its derived types' reads match on the discriminator (#539).
+        if (model.Inheritance is { IsRoot: true } inheritance)
+            Index([inheritance.Discriminator]);
         // The references are the shape's members: read on the model's type, the entity as the shaped compilation has it.
         foreach (var reference in model.Type.GetMembers().OfType<IPropertySymbol>().Where(p => DocModel.IsPragmatic(p.Type)).OrderBy(p => p.Name, StringComparer.Ordinal))
         {

@@ -36,7 +36,8 @@ internal static class DocTrackingEmitter
             type.ContainingNamespace.IsGlobalNamespace ? null : type.ContainingNamespace.ToDisplayString(),
             type.Name,
             name,
-            tracked.Select(f => new TrackedFieldModel(Value(f, name), DocTypeEmitter.WriteField(f, "e." + f.Property.Name))).ToEquatableArray());
+            tracked.Select(f => new TrackedFieldModel(Value(f, name), DocTypeEmitter.WriteField(f, "e." + f.Property.Name))).ToEquatableArray(),
+            Sql.Transforms.PragmaticReadRepository.DerivesFromAnEntity(type));
     }
 
     /// <summary>The field's value as the snapshot keeps it.</summary>

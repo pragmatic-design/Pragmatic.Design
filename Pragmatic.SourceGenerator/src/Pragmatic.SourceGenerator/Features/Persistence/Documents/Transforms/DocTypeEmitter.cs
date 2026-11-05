@@ -31,6 +31,7 @@ internal static class DocTypeEmitter
 
         var name = model.FullName;
         var contract = model.IsEmbedded ? $"{Runtime}.IEmbeddedDocument<{name}>" : $"{Runtime}.IDocumentEntity<{name}>";
+        var accessors = new List<string>();
         var fields = model.Fields.Select(f => new DocumentFieldModel(
             f.Property.Name,
             Literal(f.Name),
@@ -39,14 +40,16 @@ internal static class DocTypeEmitter
             Literal(DocModel.JsonName(f)),
             DocJsonEmitter.WriteField(f, "e." + f.Property.Name),
             f.Name == "_id" ? DocJsonEmitter.ParseId(f) : DocJsonEmitter.ReadField(f),
-            f.Name == "_id")).ToEquatableArray();
+            f.Name == "_id",
+            Setter(type, f.Property, accessors))).ToEquatableArray();
         var ns = type.ContainingNamespace.IsGlobalNamespace ? null : type.ContainingNamespace.ToDisplayString();
         if (model.IsEmbedded)
-            return new DocumentTypeModel(hint, ns, type.Name, name, contract, IsEmbedded: true, null, fields, null, false, "0", "", null, null, null, (families ?? []).ToEquatableArray());
+            return new DocumentTypeModel(hint, ns, type.Name, name, contract, IsEmbedded: true, null, fields, null, false, "0", "", null, null, null, (families ?? []).ToEquatableArray(), accessors.ToEquatableArray());
 
         var key = model.Key!;
         var version = model.Version;
         var partition = model.PartitionKey!;
+        var versionSet = version is null ? "" : fields.First(f => f.PropertyName == version.Property.Name).Assign($"unchecked(({version.ScalarName})version)") + " ";
         return new DocumentTypeModel(
             hint, ns, type.Name, name, contract, IsEmbedded: false,
             Literal(model.Collection!),
@@ -54,11 +57,31 @@ internal static class DocTypeEmitter
             WriteField(key, "e." + key.Property.Name, "name"),
             version is not null,
             version is null ? "0" : "unchecked((long)e." + version.Property.Name + ")",
-            version is null ? "" : $"e.{version.Property.Name} = unchecked(({version.ScalarName})version); ",
+            versionSet,
             DocJsonEmitter.IdText(key, "e." + key.Property.Name),
             Literal("/" + DocModel.JsonName(partition)),
             DocJsonEmitter.PartitionKeyWrite(key, partition),
-            (families ?? []).ToEquatableArray());
+            (families ?? []).ToEquatableArray(),
+            accessors.ToEquatableArray(),
+            model.Inheritance is { } inheritance
+                ? new DocumentInheritanceModel(Literal(inheritance.Discriminator), Literal(DocInheritanceTree.NameOf(type)), type.IsAbstract,
+                    inheritance.Below.Select(b => new DocumentSubtypeModel(b.ToDisplayString(DocModel.Qualified), Literal(DocInheritanceTree.NameOf(b)))).ToEquatableArray())
+                : null);
+    }
+
+    /// <summary>
+    ///     The accessor a read sets <paramref name="property" /> through, its declaration added to <paramref name="accessors" />, when the partial of
+    ///     <paramref name="type" /> cannot assign it: a base type's private setter (#539), as the Sql engine's <c>EntityMaps</c> sets one. Null when
+    ///     the partial assigns it.
+    /// </summary>
+    private static string? Setter(INamedTypeSymbol type, IPropertySymbol property, List<string> accessors)
+    {
+        if (SymbolEqualityComparer.Default.Equals(property.ContainingType, type) || property.SetMethod is { DeclaredAccessibility: not Accessibility.Private })
+            return null;
+        var setter = "__Set_" + property.Name;
+        accessors.Add($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"set_{property.Name}\")]");
+        accessors.Add($"private static extern void {setter}({property.ContainingType.ToDisplayString(DocModel.Qualified)} e, {property.Type.ToDisplayString(DocModel.Qualified)} value);");
+        return setter;
     }
 
     /// <summary>The statement that writes one field's value under its name (or under <paramref name="nameExpression" />, a C# expression).</summary>

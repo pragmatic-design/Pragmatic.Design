@@ -34,7 +34,8 @@ internal static class DocReadRepository
             queries.Where(q => !q.Query.Paged).Select(RunCaseOf).ToEquatableArray(),
             queries.Where(q => q.Query.Paged).Select(RunCaseOf).ToEquatableArray(),
             PragmaticShape.Has(entity, "SoftDeleteAttribute"),
-            AutocompleteReads.Of(entity));
+            AutocompleteReads.Of(entity),
+            PragmaticReadRepository.DerivesFromAnEntity(entity));
     }
 
     private static DocRunCaseModel RunCaseOf((PragmaticQuery Query, string? Projection, List<DocLookupModel> Lookups) declared)

@@ -50,7 +50,7 @@ internal sealed class DocumentTrackingTemplate(DocumentTrackingModel model) : CS
         AppendLine("    }");
         AppendLine();
         AppendLine("    [global::System.Runtime.CompilerServices.ModuleInitializer]");
-        AppendLine($"    internal static void __RegisterDocumentTracker() => {Runtime}.Writing.DocTrackers.Register<{name}>();");
+        AppendLine($"    internal static {(model.HidesBase ? "new " : "")}void __RegisterDocumentTracker() => {Runtime}.Writing.DocTrackers.Register<{name}>();");
         AppendLine("}");
     }
 }

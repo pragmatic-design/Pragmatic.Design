@@ -23,6 +23,8 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
 
     public override Artifact RenderOutput() => new(model.Hint, ToSourceText());
 
+    private string Hides => model.HidesBase ? "new " : "";
+
     public override void RenderFile()
     {
         var type = model.EntityType;
@@ -33,7 +35,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         AppendLine($"partial class {model.EntityName}");
         AppendLine("{");
         AppendLine($"    /// <summary>Pragmatic's read repository for {model.EntityName} on the documents engine: every read a compiled plan, the session's filters applied.</summary>");
-        AppendLine($"    public sealed class DocReadRepository(global::Pragmatic.Persistence.Documents.DocSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Autocompleting}<{type}>");
+        AppendLine($"    public {Hides}sealed class DocReadRepository(global::Pragmatic.Persistence.Documents.DocSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Autocompleting}<{type}>");
         AppendLine("    {");
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine($"            => await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
@@ -246,7 +248,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the documents engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class DocRepository(global::Pragmatic.Persistence.Documents.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Autocompleting}<{type}>,");
+        AppendLine($"    public {Hides}sealed class DocRepository(global::Pragmatic.Persistence.Documents.DocUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Autocompleting}<{type}>,");
         AppendLine($"        global::Pragmatic.Persistence.Repository.IBulkRepository<{type}>, global::Pragmatic.Persistence.Documents.IDocRepository");
         AppendLine("    {");
         AppendLine("        private readonly DocReadRepository _read = new(unitOfWork.Session);");

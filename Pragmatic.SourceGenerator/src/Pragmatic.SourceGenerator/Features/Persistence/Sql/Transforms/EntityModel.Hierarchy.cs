@@ -17,7 +17,7 @@ internal sealed partial class EntityModel
     public bool IsHierarchyRoot => Derived is not null;
 
     /// <summary>The type with <c>[Inheritance]</c> this one is, or derives from; null outside a hierarchy.</summary>
-    private static INamedTypeSymbol? HierarchyRootOf(INamedTypeSymbol type)
+    internal static INamedTypeSymbol? HierarchyRootOf(INamedTypeSymbol type)
     {
         for (var current = type; current is not null && current.SpecialType != SpecialType.System_Object; current = current.BaseType)
         {
@@ -168,7 +168,7 @@ internal sealed partial class EntityModel
     }
 
     /// <summary>How many levels <paramref name="type" /> sits below <paramref name="ancestor" />.</summary>
-    private static int Depth(INamedTypeSymbol type, INamedTypeSymbol ancestor)
+    internal static int Depth(INamedTypeSymbol type, INamedTypeSymbol ancestor)
     {
         var depth = 0;
         for (var current = type; current is not null && !SymbolEqualityComparer.Default.Equals(current, ancestor); current = current.BaseType)
@@ -213,7 +213,7 @@ internal sealed partial class EntityModel
     }
 
     /// <summary>The [Entity] classes of the root's assembly below <paramref name="ancestor" />, at any depth, wherever their namespace.</summary>
-    private static IEnumerable<INamedTypeSymbol> DerivedTypesOf(INamedTypeSymbol ancestor)
+    internal static IEnumerable<INamedTypeSymbol> DerivedTypesOf(INamedTypeSymbol ancestor)
     {
         var pending = new Stack<INamespaceOrTypeSymbol>();
         pending.Push(ancestor.ContainingAssembly.GlobalNamespace);
