@@ -28,7 +28,8 @@
     <!-- The RBAC package's store on this engine, which the boundary's registration adds (src's project references the .EFCore one). -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization.Management.Engines\Pragmatic.Authorization.Management.Engines.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration.Management\Pragmatic.Configuration.Management.csproj" />
-    <ProjectReference Include="..\..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.Persistence\Pragmatic.Identity.Persistence.csproj" />
+    <!-- Not Pragmatic.Identity.Persistence, which src's project references: it is EF Core's, and the user resolver it turns on reads through
+         EF Core (#547, owner decision). Until #549 this module has no user resolver and no per-user culture on this engine. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
   </ItemGroup>
 
