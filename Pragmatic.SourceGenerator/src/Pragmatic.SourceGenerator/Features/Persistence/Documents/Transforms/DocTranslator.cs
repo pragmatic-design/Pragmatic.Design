@@ -50,13 +50,17 @@ internal sealed partial class DocTranslator
 
     public DocCondition? Condition(ExpressionSyntax expression)
     {
+        // The constant true or false (e => true, as an export of every row writes it), folded out of the combinations below.
+        if (_model.GetConstantValue(expression) is { HasValue: true, Value: bool constant })
+            return new DocCondition.Constant(constant);
         switch (expression)
         {
             case ParenthesizedExpressionSyntax paren:
                 return Condition(paren.Expression);
             case BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.LogicalAndExpression) || binary.IsKind(SyntaxKind.LogicalOrExpression):
             {
-                var op = binary.IsKind(SyntaxKind.LogicalAndExpression) ? "$and" : "$or";
+                var and = binary.IsKind(SyntaxKind.LogicalAndExpression);
+                var op = and ? "$and" : "$or";
                 var left = Condition(binary.Left);
                 var right = Condition(binary.Right);
                 if (left is null || right is null)
@@ -64,13 +68,26 @@ internal sealed partial class DocTranslator
                 var items = new List<DocCondition>();
                 foreach (var side in new[] { left, right })
                 {
+                    // A constant is neutral (x && true, x || false: dropped) or absorbing (x && false, x || true: the whole is that constant).
+                    if (side is DocCondition.Constant constantSide)
+                    {
+                        if (constantSide.Value != and)
+                            return constantSide;
+                        continue;
+                    }
+
                     if (side is DocLogical logical && logical.Op == op)
                         items.AddRange(logical.Items); // a && b && c: one $and
                     else
                         items.Add(side);
                 }
 
-                return new DocLogical(op, items);
+                return items.Count switch
+                {
+                    0 => new DocCondition.Constant(and),
+                    1 => items[0],
+                    _ => new DocLogical(op, items),
+                };
             }
 
             case PrefixUnaryExpressionSyntax not when not.IsKind(SyntaxKind.LogicalNotExpression):
@@ -78,7 +95,12 @@ internal sealed partial class DocTranslator
                 if (Path(not.Operand, out var flag) is { } flagPath && flag?.Kind == DocKind.Boolean)
                     return new DocCondition.Compare(flagPath, "$ne", new DocValue("true"));
                 var inner = Condition(not.Operand);
-                return inner is null ? null : new DocLogical("$nor", [inner]);
+                return inner switch
+                {
+                    null => null,
+                    DocCondition.Constant constantInner => new DocCondition.Constant(!constantInner.Value),
+                    _ => new DocLogical("$nor", [inner]),
+                };
             }
 
             case BinaryExpressionSyntax comparison when Operator(comparison.Kind()) is { } op:
@@ -160,7 +182,14 @@ internal sealed partial class DocTranslator
             var inner = new DocTranslator(_model, elementModel, _models, element, _argument, _argumentCode, _diagnostics, _where, _treePaths, _captures);
             var condition = inner.Condition(body);
             Failed |= inner.Failed;
-            return condition is null ? null : new DocCondition.ElemMatch(arrayPath, condition);
+            // A constant element condition: any element (the array not empty), or none; $expr has no place inside $elemMatch.
+            return condition switch
+            {
+                null => null,
+                DocCondition.Constant { Value: true } => new DocCondition.NonEmpty(arrayPath),
+                DocCondition.Constant => condition,
+                _ => new DocCondition.ElemMatch(arrayPath, condition),
+            };
         }
 
         // A scalar field's Equals with one value (e.PersistenceId.Equals(id), as Pragmatic's generated specifications write a read by key): ==.

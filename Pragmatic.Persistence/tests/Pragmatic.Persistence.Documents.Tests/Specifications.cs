@@ -22,6 +22,23 @@ public static partial class ReviewSpecifications
     /// <summary>An ordinal comparison named explicitly: case-sensitive, as the match without a StringComparison.</summary>
     public static Specification<Review> StartingOrdinally(string prefix) => Spec<Review>.Where(r => r.Text.StartsWith(prefix, System.StringComparison.Ordinal));
 
+    /// <summary>Every review, as the Showcase's invoice export writes it (#538): the condition is the constant true.</summary>
+    public static Specification<Review> Everything => Spec<Review>.Where(r => true);
+
+    /// <summary>No review: the constant false.</summary>
+    public static Specification<Review> Nothing => Spec<Review>.Where(r => false);
+
+    /// <summary>Constants inside a condition (#538): neutral (<c>&amp;&amp; true</c>, <c>|| false</c>) or absorbing (<c>|| true</c>, <c>&amp;&amp; false</c>).</summary>
+    public static Specification<Review> AtLeastAndTrue(int stars) => Spec<Review>.Where(r => r.Stars >= stars && true);
+
+    public static Specification<Review> AtLeastOrTrue(int stars) => Spec<Review>.Where(r => r.Stars >= stars || true);
+
+    public static Specification<Review> AtLeastOrFalse(int stars) => Spec<Review>.Where(r => r.Stars >= stars || false);
+
+    public static Specification<Review> AtLeastAndFalse(int stars) => Spec<Review>.Where(r => r.Stars >= stars && false);
+
+    public static Specification<Review> NotFalse => Spec<Review>.Where(r => !false);
+
     /// <summary>
     ///     A rule promoted to a query (#511): Pragmatic derives <c>RatedQuery</c>, whose filter is this rule. Its <c>Stars</c> is the rule's
     ///     input and names a field of the review: read as a filter of its own it would be an equality, and <c>AtLeast</c> would read one rating.
