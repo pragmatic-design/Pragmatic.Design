@@ -79,6 +79,7 @@ import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
+import { ENGINE_PROJECTS_DIR, engineProjectProblems } from './engine-projects.mjs';
 import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 // The gate owns its processes and leaves none behind.
@@ -1893,6 +1894,29 @@ function dockerShardsAreWhole() {
 }
 
 /**
+ * The Showcase's module projects on each engine reach no EF Core and leave out only the allowed files, each with its reason
+ * (engine-projects.mjs).
+ */
+function engineProjectsHold() {
+  process.stdout.write('  the Showcase on each engine: no EF Core, only the allowed exclusions … ');
+  const projects = readdirSync(ENGINE_PROJECTS_DIR, { withFileTypes: true }).filter((d) => d.isDirectory())
+    .map((d) => `${ENGINE_PROJECTS_DIR}/${d.name}/${d.name}.csproj`).filter((path) => existsSync(path))
+    .map((path) => ({ path, text: readFileSync(path, 'utf-8') }));
+  const read = (path) => (existsSync(path) ? readFileSync(path, 'utf-8') : null);
+  const problems = engineProjectProblems(projects, read, existsSync);
+
+  if (problems.length === 0) {
+    console.log(`${ok('ok')} ${dim(`(${projects.length} projects)`)}`);
+    return true;
+  }
+
+  console.log(bad('FAIL'));
+  for (const p of problems) console.log(`    ${p}`);
+  console.log(dim('    scripts/engine-projects.mjs: the allowed exclusions and why'));
+  return false;
+}
+
+/**
  * Every project CI restores has a NuGet lock file, and every CI restore is locked to it (lock-files.mjs).
  */
 function everyRestoreIsLocked() {
@@ -2695,6 +2719,8 @@ function sourceChecks() {
   return verifyPaths() && everyProjectIsInTheSolution() && everyTestSourceHasAProject()
     && dockerShardsAreWhole()
     && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
+    && engineProjectsHold()
+    && nodeTestCases('scripts/engine-projects.test.mjs', 'the engine-projects check refuses EF Core and an exclusion not allowed')
     && everyRestoreIsLocked()
     && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
     && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet()
