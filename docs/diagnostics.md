@@ -522,7 +522,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
-| `PRAG2100` | `StoresNotificationsWithoutEFCore` | Warning | [StoresNotifications] requires Pragmatic.Notifications.EFCore |
+| `PRAG2100` | `StoresNotificationsWithoutEFCore` | Warning | [StoresNotifications] requires the notification store package of the boundary's engine |
 
 *First free after the last used:* `PRAG2101`.
 

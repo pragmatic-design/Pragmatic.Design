@@ -23,6 +23,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "global::Pragmatic.Events.Engines.Sql.SqlEventOutboxExtensions.AddSqlEventOutbox",
         "global::Pragmatic.Messaging.Engines.Sql.SqlMessagingOutboxExtensions.AddSqlMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Sql.SqlAuditExtensions.AddSqlAuditedEntities",
+        "global::Pragmatic.Notifications.Engines.Sql.SqlNotificationStoreExtensions.AddSqlNotificationStore",
         "SqlPersistence", "Pragmatic.Persistence.Sql"));
 
     public static readonly PragmaticRegistration Documents = new(new(
@@ -31,6 +32,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "global::Pragmatic.Events.Engines.Documents.DocEventOutboxExtensions.AddDocEventOutbox",
         "global::Pragmatic.Messaging.Engines.Documents.DocMessagingOutboxExtensions.AddDocMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Documents.DocAuditExtensions.AddDocAuditedEntities",
+        "global::Pragmatic.Notifications.Engines.Documents.DocNotificationStoreExtensions.AddDocNotificationStore",
         "DocPersistence", "Pragmatic.Persistence.Documents"));
 
     /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
@@ -38,6 +40,9 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
 
     /// <summary>The Messaging outbox on the engines (Pragmatic.Messaging.Engines), by the type the generator recognises it by: its Sql row.</summary>
     internal const string EngineMessagingOutbox = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
+
+    /// <summary>The notification store on the engines (Pragmatic.Notifications.Engines), by the type the generator recognises it by: its Sql row.</summary>
+    internal const string EngineNotificationStore = "Pragmatic.Notifications.Engines.Sql.NotificationRow";
 
     /// <summary>The audit trail on the engines (Pragmatic.Audit.Engines), by the type the generator recognises it by: its Sql entry row.</summary>
     internal const string EngineAuditTrail = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
@@ -74,6 +79,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         var outbox = compilation.GetTypeByMetadataName(EngineEventOutbox) is not null;
         var messagingOutbox = compilation.GetTypeByMetadataName(EngineMessagingOutbox) is not null;
         var auditTrail = compilation.GetTypeByMetadataName(EngineAuditTrail) is not null;
+        var notificationStore = compilation.GetTypeByMetadataName(EngineNotificationStore) is not null;
         var multiTenancy = compilation.GetTypeByMetadataName(MultiTenancyOptions) is not null;
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
@@ -93,6 +99,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
                 outbox && EnablesEventOutbox(boundary),
                 messagingOutbox && EnablesMessagingOutbox(boundary),
                 auditTrail && group.Any(p => IsAudited(p.Entity)),
+                notificationStore && StoresNotifications(boundary),
                 multiTenancy);
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
@@ -103,6 +110,10 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>True when <paramref name="boundary" /> carries <c>[EnableEventOutbox]</c> (Pragmatic.Events'): its saves write their events to an outbox.</summary>
     internal static bool EnablesEventOutbox(INamedTypeSymbol boundary)
         => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Events.Attributes.EnableEventOutboxAttribute");
+
+    /// <summary>True when <paramref name="boundary" /> carries <c>[StoresNotifications]</c> (Pragmatic.Notifications'): its database holds the notification records.</summary>
+    internal static bool StoresNotifications(INamedTypeSymbol boundary)
+        => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == AttributeNames.StoresNotifications);
 
     /// <summary>True when <paramref name="boundary" /> carries <c>[EnableOutbox]</c> (Pragmatic.Messaging's): its saves write their events to an outbox.</summary>
     internal static bool EnablesMessagingOutbox(INamedTypeSymbol boundary)

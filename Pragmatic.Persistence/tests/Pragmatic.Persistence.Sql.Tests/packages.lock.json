@@ -681,6 +681,18 @@
           "Pragmatic.Cryptography": "[1.0.0, )"
         }
       },
+      "pragmatic.email": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "System.Security.Cryptography.Pkcs": "[9.0.21, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
@@ -792,6 +804,25 @@
         "type": "Project",
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Email": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Notifications": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {

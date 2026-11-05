@@ -47,6 +47,9 @@ internal static class PragmaticDocSchema
             // [EnableOutbox]: the Messaging outbox's collection, as Pragmatic.Messaging.Engines describes it.
             if (boundary is not null && PragmaticRegistration.EnablesMessagingOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineMessagingOutbox) is not null)
                 collections.Add("global::Pragmatic.Messaging.Engines.Documents.OutboxMessageDocument.Schema");
+            // [StoresNotifications]: the notification records' collection, as Pragmatic.Notifications.Engines describes it.
+            if (boundary is not null && PragmaticRegistration.StoresNotifications(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineNotificationStore) is not null)
+                collections.Add("global::Pragmatic.Notifications.Engines.Documents.NotificationDocument.Schema");
             // [Audited]: the trail's three collections, beside the boundary's audited entities, as Pragmatic.Audit.Engines describes them.
             if (group.Any(PragmaticRegistration.IsAudited) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineAuditTrail) is not null)
             {

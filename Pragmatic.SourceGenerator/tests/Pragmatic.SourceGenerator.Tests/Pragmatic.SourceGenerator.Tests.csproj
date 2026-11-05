@@ -87,6 +87,12 @@
          same file, not a copy that could drift from it. -->
     <EmbeddedResource Include="..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Sql.Tests\Entities.cs"
                       LogicalName="SqlPragmaticEntities.cs" Link="Features\Persistence\SqlPragmaticEntities.cs" />
+    <!-- Pragmatic.Notifications.Engines' Sql row: TheSqlEnginesSchemaIsPragmaticsTests compares its table with EF Core's __Notifications,
+         from the package's own source. The package references the Sql engine's bridge, which cannot be among this suite's references. -->
+    <EmbeddedResource Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Sql\NotificationRow.cs"
+                      LogicalName="NotificationRow.cs" Link="Features\Persistence\NotificationRow.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\INotificationFields.cs"
+                      LogicalName="INotificationFields.cs" Link="Features\Persistence\INotificationFields.cs" />
   </ItemGroup>
 
 </Project>

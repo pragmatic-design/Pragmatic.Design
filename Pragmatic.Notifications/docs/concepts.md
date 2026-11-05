@@ -82,6 +82,15 @@ Before each delivery attempt, a `NotificationRecord` with `Status = Pending` is 
 
 The record includes: audience, recipient address, channel, subject, category, tenant ID, metadata, and lifecycle timestamps (`CreatedAt`, `SentAt`, `DeliveredAt`, `ReadAt`).
 
+The records are kept in the database of the boundary marked `[StoresNotifications]`, in `__Notifications`. Which package provides the store follows the boundary's engine:
+
+| Engine | Package | The store |
+|--------|---------|-----------|
+| EF Core | `Pragmatic.Notifications.EFCore` | `UseEfCoreStore`, pointed at that boundary's database; the generated context maps the table |
+| Sql, documents | `Pragmatic.Notifications.Engines` | registered by the boundary's generated `Add{Boundary}Persistence`, over the boundary's session; the table (or collection) is in the engine's schema |
+
+The table is the same on both, column for column and index for index, so one database holds one `__Notifications` whichever engine writes it. On the documents engine the instants are stored as UTC ticks, since a BSON date keeps milliseconds only. Without the package of the boundary's engine the attribute maps nothing, and the generator reports `PRAG2100` naming it.
+
 ## Audiences
 
 The `NotificationAudience` enum categorizes the intent of a notification:

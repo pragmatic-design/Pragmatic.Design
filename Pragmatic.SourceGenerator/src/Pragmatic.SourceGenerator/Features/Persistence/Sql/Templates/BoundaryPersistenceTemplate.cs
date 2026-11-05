@@ -79,6 +79,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"        {e.AuditedEntities}<{model.BoundaryType}>(services);");
         }
 
+        if (model.NotificationStore)
+        {
+            AppendLine($"        // [StoresNotifications]: the notification records in {name}'s database, through its session, in place of the in-memory store.");
+            AppendLine($"        {e.NotificationStore}<{model.BoundaryType}>(services);");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();

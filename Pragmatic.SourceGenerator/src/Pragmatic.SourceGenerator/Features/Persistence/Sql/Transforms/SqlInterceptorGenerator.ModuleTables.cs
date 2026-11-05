@@ -97,6 +97,21 @@ internal static partial class SqlInterceptorGenerator
     }
 
     /// <summary>
+    ///     The notification records' table with EF Core's four indexes (<c>NotificationEntityTypeConfiguration</c>): the status, the creation
+    ///     time, the tenant, and the pending records oldest first, which the delivery worker reads.
+    /// </summary>
+    private static TableSchemaModel WithNotificationIndexes(TableSchemaModel table)
+        => table with
+        {
+            Indexes = table.Indexes
+                .Append(new IndexSchemaModel($"IX_{table.Name}_Status", ["Status"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_CreatedAt", ["CreatedAt"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_TenantId", ["TenantId"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_Status_CreatedAt", ["Status", "CreatedAt"], false, null))
+                .ToEquatableArray(),
+        };
+
+    /// <summary>
     ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past
     ///     its backoff, re-claimable, oldest first) and the correlation lookup.
     /// </summary>

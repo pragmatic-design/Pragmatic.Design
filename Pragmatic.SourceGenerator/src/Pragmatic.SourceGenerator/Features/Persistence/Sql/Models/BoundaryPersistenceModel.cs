@@ -7,8 +7,9 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 ///     outbox when the boundary is <c>[EnableEventOutbox]</c> and Pragmatic.Events.Engines is referenced (<paramref name="EventOutbox" />); its
 ///     Messaging outbox when the boundary is <c>[EnableOutbox]</c> and Pragmatic.Messaging.Engines is referenced (<paramref name="MessagingOutbox" />);
 ///     the audit trail's entries when one of its entities is <c>[Audited]</c> and Pragmatic.Audit.Engines is referenced (<paramref name="AuditedEntities" />);
-///     the application's <c>MultiTenancyOptions.RequireTenant</c> handed to the unit of work when Pragmatic.MultiTenancy is referenced
-///     (<paramref name="MultiTenancy" />).
+///     the notification store when the boundary is <c>[StoresNotifications]</c> and Pragmatic.Notifications.Engines is referenced
+///     (<paramref name="NotificationStore" />); the application's <c>MultiTenancyOptions.RequireTenant</c> handed to the unit of work when
+///     Pragmatic.MultiTenancy is referenced (<paramref name="MultiTenancy" />).
 /// </summary>
 internal sealed record BoundaryPersistenceModel(string Hint, string? Namespace, string BoundaryName, string BoundaryType, EngineRegistrationModel Engine, EquatableArray<string> EntityTypes,
-    bool EventOutbox, bool MessagingOutbox, bool AuditedEntities, bool MultiTenancy);
+    bool EventOutbox, bool MessagingOutbox, bool AuditedEntities, bool NotificationStore, bool MultiTenancy);
