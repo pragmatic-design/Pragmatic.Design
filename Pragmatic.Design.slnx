@@ -1011,6 +1011,16 @@
     <Project Path="examples/showcase/tests/Showcase.IntegrationTests/Showcase.IntegrationTests.csproj" />
     <Project Path="examples/showcase/tests/Showcase.Tests/Showcase.Tests.csproj" />
   </Folder>
+  <Folder Name="/Examples/Showcase.Engines/">
+    <Project Path="examples/showcase/engines/Showcase.Accounts.Documents/Showcase.Accounts.Documents.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Accounts.Sql/Showcase.Accounts.Sql.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Billing.Documents/Showcase.Billing.Documents.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Billing.Sql/Showcase.Billing.Sql.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Booking.Documents/Showcase.Booking.Documents.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Booking.Sql/Showcase.Booking.Sql.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Catalog.Documents/Showcase.Catalog.Documents.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Catalog.Sql/Showcase.Catalog.Sql.csproj" />
+  </Folder>
   <Folder Name="/Examples/Showcase.Distributed/">
     <Project Path="examples/showcase/src/Showcase.Billing.Host/Showcase.Billing.Host.csproj" />
     <Project Path="examples/showcase/src/Showcase.Host.Distributed/Showcase.Host.Distributed.csproj" />
