@@ -51,9 +51,17 @@ internal static class PragmaticReadRepository
                             && collection.TypeArguments[0].AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
                 .Select(p => new LinkNavigationModel(p.Name, ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
                 .ToEquatableArray(),
-            AutocompleteReads.Of(entity));
+            AutocompleteReads.Of(entity),
+            DerivesFromAnEntity(entity));
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
+
+    /// <summary>
+    ///     True when <paramref name="entity" /> derives from another Pragmatic entity (a hierarchy's derived type): that entity has the members the
+    ///     engines nest in an entity too, so the derived type's hide them.
+    /// </summary>
+    internal static bool DerivesFromAnEntity(INamedTypeSymbol entity)
+        => entity.BaseType is { } baseType && baseType.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity");
 
     private static RunCaseModel RunCaseOf(PragmaticQuery query)
         => new("global::" + query.Type.ToDisplayString(), query.Type.Name, query.Unsupported, "global::" + query.Result.ToDisplayString(),

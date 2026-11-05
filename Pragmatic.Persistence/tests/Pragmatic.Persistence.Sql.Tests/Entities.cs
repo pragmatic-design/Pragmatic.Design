@@ -302,3 +302,43 @@ public partial class Leaflet : IEntity
 
     public Pragmatic.Internationalization.Types.LocalizedString? Subtitle { get; set; }
 }
+
+/// <summary>
+///     A charge on a stay, the root of a table-per-hierarchy (#536): one table, <c>ChargeType</c> naming the row's type. Its members have private
+///     setters, as Showcase.Billing's <c>Fee</c>'s do: a derived type cannot assign them, the engine writes them through its accessors. Auditable,
+///     as <c>Fee</c> is.
+/// </summary>
+[Entity]
+[Auditable]
+[Inheritance(InheritanceStrategy.Tph, DiscriminatorColumn = "ChargeType")]
+public partial class Charge : IEntity
+{
+    public decimal Amount { get; private set; }
+
+    public string Reason { get; private set; } = "";
+
+    /// <summary>The charge's amount and reason, the only way to set them.</summary>
+    public void Charged(decimal amount, string reason)
+    {
+        Amount = amount;
+        Reason = reason;
+    }
+}
+
+/// <summary>A late check-out's charge: a derived type with a private setter of its own.</summary>
+[Entity]
+public partial class LateCharge : Charge
+{
+    public int HoursLate { get; private set; }
+
+    public void Late(int hours) => HoursLate = hours;
+}
+
+/// <summary>A damage's charge: the other derived type.</summary>
+[Entity]
+public partial class DamageCharge : Charge
+{
+    public string Item { get; private set; } = "";
+
+    public void Damaged(string item) => Item = item;
+}

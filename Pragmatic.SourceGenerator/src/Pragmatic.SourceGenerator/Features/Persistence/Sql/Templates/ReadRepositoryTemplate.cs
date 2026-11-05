@@ -18,6 +18,9 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
     private const string Including = "global::Pragmatic.Persistence.Repository.IIncludingReadRepository";
     private const string Autocompleting = "global::Pragmatic.Persistence.Repository.IAutocompleteReadRepository";
 
+    /// <summary><c>new </c> on a hierarchy's derived type, whose base entity nests repositories of the same names.</summary>
+    private string Hides => model.HidesBase ? "new " : "";
+
     protected override string? GeneratorName => "Pragmatic.Persistence.Sql";
 
     protected override string? SourceInfo => $"Pragmatic's read repository for {model.EntityName} on the Sql engine";
@@ -33,7 +36,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine($"partial class {model.EntityName}");
         AppendLine("{");
         AppendLine($"    /// <summary>Pragmatic's read repository for {model.EntityName} on the Sql engine: every read a compiled plan, the session's filters applied.</summary>");
-        AppendLine($"    public sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>");
+        AppendLine($"    public {Hides}sealed class SqlReadRepository(global::Pragmatic.Persistence.Sql.SqlSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>");
         AppendLine("    {");
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine($"            => await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
@@ -230,7 +233,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         var type = model.EntityType;
         AppendLine();
         AppendLine($"    /// <summary>Pragmatic's repository for {model.EntityName} on the Sql engine: the reads tracked by the unit of work, the writes staged in it.</summary>");
-        AppendLine($"    public sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>,");
+        AppendLine($"    public {Hides}sealed class SqlRepository(global::Pragmatic.Persistence.Sql.SqlUnitOfWork unitOfWork) : global::Pragmatic.Persistence.Repository.IRepository<{type}>, {Including}<{type}>, {Autocompleting}<{type}>,");
         AppendLine($"        global::Pragmatic.Persistence.Repository.INavigationLoader<{type}>, global::Pragmatic.Persistence.Repository.INavigationLinker<{type}>,");
         AppendLine($"        global::Pragmatic.Persistence.Repository.IBulkRepository<{type}>, global::Pragmatic.Persistence.Sql.ISqlRepository");
         AppendLine("    {");

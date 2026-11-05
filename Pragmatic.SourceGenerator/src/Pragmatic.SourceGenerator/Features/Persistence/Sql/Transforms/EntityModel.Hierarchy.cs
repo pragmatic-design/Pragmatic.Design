@@ -195,7 +195,16 @@ internal sealed partial class EntityModel
             var column = TryColumn(property, derivedType, diagnostics, owner: null, optionalOwner: false);
             if (column is null)
                 return null;
-            var seenFromRoot = new ColumnModel(column.Property, column.Column, column.Type, column.Reader, false, column.Converter, column.Store, column.Cast) { DerivedOf = derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) };
+            // A private setter stays one seen from the root: the root's read builds the derived type, and writes its member through the
+            // declaring type's accessor, as it writes its own (an initializer outside the declaring type cannot assign it).
+            var privateSetter = !Core.StoredProperty.HasPublicSetter(property);
+            var seenFromRoot = new ColumnModel(column.Property, column.Column, column.Type, column.Reader, false, column.Converter, column.Store, column.Cast)
+            {
+                DerivedOf = derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                PrivateSetter = privateSetter,
+                SetterOwner = privateSetter ? property.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) : null,
+                SetterOwnerSealed = privateSetter && property.ContainingType.IsSealed,
+            };
             own.Add(seenFromRoot);
             columns.Add(seenFromRoot);
         }

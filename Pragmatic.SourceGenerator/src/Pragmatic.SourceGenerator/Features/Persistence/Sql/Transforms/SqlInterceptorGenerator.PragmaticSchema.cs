@@ -225,6 +225,11 @@ internal static partial class SqlInterceptorGenerator
 
         foreach (var entity in entities)
         {
+            // A table-per-hierarchy's derived type shares the root's table, which the root describes whole (its own columns and its derived
+            // types', those nullable): the derived type's own model would replace it with its columns only.
+            if (entities.Exists(root => root.Derived is { } derived && !root.Tpt && !root.Tpc && root.Table == entity.Table
+                                        && derived.Exists(d => SymbolEqualityComparer.Default.Equals(d.Type, entity.Type))))
+                continue;
             var softDelete = PragmaticShape.Has(entity.Type, "SoftDeleteAttribute");
             var tenant = entity.Type.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity");
             var indexes = new List<(string Name, string[] Columns, bool Unique, string? Filter)>();
@@ -299,7 +304,8 @@ internal static partial class SqlInterceptorGenerator
                 }
 
                 // Pragmatic's scopes column admits null, and so does every member of an optional owned type (EF Core's optional dependent).
-                var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type) || column.OptionalOwner;
+                // A derived type's own column in the hierarchy's table: null on the rows of the other types, as EF Core's TPH maps it.
+                var nullable = column.Column == "AccessScopes" || EntityModel.IsNullable(column.Type) || column.OptionalOwner || column.DerivedOf is not null;
                 var type = SchemaTypes.Of(column, dialect, SchemaTypes.MaxLength(SchemaTypes.PropertyOf(entity, column)), keyed.Contains(column.Column)); // on SQL Server an indexed string is nvarchar(450), as EF Core's branch writes it
                 if (entity.Identity && entity.Keys.Contains(column))
                     type = SchemaTypes.Identity(type, dialect);
