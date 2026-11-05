@@ -115,6 +115,12 @@ public class DocumentChainTests(MongoServer mongo)
         Assert.Equal(mongo.Orders.Count(o => o.ShipTo != null && o.ShipTo.Country == "IT"), await session.Query<OrderDocument>().CountAsync(o => o.ShipTo!.Country == "IT"));
         Assert.Equal(mongo.Orders.Count(o => o.ShipTo != null && o.ShipTo.Floor > 3), await session.Query<OrderDocument>().CountAsync(o => o.ShipTo!.Floor > 3));
         Assert.Equal(mongo.Orders.Count(o => o.Lines.Count > 0), await session.Query<OrderDocument>().CountAsync(o => o.Lines.Any()));
+        // Constant conditions (#538): folded, an element condition among them; $expr has no place inside $elemMatch.
+        Assert.Equal(mongo.Orders.Count(o => o.Lines.Count > 0), await session.Query<OrderDocument>().CountAsync(o => o.Lines.Any(l => true)));
+        Assert.Equal(0, await session.Query<OrderDocument>().CountAsync(o => o.Lines.Any(l => l.Quantity > 8 && false)));
+        Assert.Equal(mongo.Orders.Count(o => o.ShipTo == null), await session.Query<OrderDocument>().CountAsync(o => o.ShipTo == null || false));
+        Assert.Equal(mongo.Orders.Count, await session.Query<OrderDocument>().CountAsync(o => true));
+        Assert.Equal(0, await session.Query<OrderDocument>().CountAsync(o => !true));
     }
 
     [Fact]

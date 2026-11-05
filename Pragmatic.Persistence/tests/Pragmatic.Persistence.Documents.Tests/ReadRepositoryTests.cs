@@ -43,6 +43,14 @@ public class ReadRepositoryTests(DocumentServers servers)
             ("ends ignoring case", ReviewSpecifications.EndingWith("riva")),
             ("ordinal keeps the case", ReviewSpecifications.StartingOrdinally("ANNA")), // none: the control of the two above
             ("ordinal", ReviewSpecifications.StartingOrdinally("bruno")),
+            ("true", ReviewSpecifications.Everything),
+            ("false", ReviewSpecifications.Nothing),
+            ("and true", ReviewSpecifications.AtLeastAndTrue(10)),
+            ("or true", ReviewSpecifications.AtLeastOrTrue(10)),
+            ("or false", ReviewSpecifications.AtLeastOrFalse(10)),
+            ("and false", ReviewSpecifications.AtLeastAndFalse(5)),
+            ("not false", ReviewSpecifications.NotFalse),
+            ("true and not false", ReviewSpecifications.Everything & !ReviewSpecifications.Nothing),
         };
         foreach (var (name, specification) in specifications)
         {

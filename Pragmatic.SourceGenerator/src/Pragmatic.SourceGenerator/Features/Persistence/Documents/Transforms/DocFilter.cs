@@ -146,6 +146,25 @@ internal abstract class DocCondition
         public override string RenderCosmos(DocCosmosText context, string root) => $"ARRAY_LENGTH({DocCosmosText.Path(path, root)}) > 0";
     }
 
+    /// <summary>
+    ///     A condition that is the constant <c>true</c> or <c>false</c> (#538). The translator folds it out of every combination, so it reaches a
+    ///     filter only as the whole of one: true writes nothing (every document), false a top-level <c>$expr: false</c> (none).
+    /// </summary>
+    internal sealed class Constant(bool value) : DocCondition
+    {
+        public bool Value { get; } = value;
+
+        public override void Render(StringBuilder source, string indent)
+        {
+            if (!Value)
+                source.AppendLine($"{indent}w.Write(\"$expr\", false);");
+        }
+
+        public override string Describe() => Value ? "{ }" : "{ $expr: false }";
+
+        public override string RenderCosmos(DocCosmosText context, string root) => Value ? "true" : "false";
+    }
+
     private static string Show(DocValue value) => value.IsNull ? "null" : value.Code.Contains("s[") ? "@arg" : value.Code;
 }
 
