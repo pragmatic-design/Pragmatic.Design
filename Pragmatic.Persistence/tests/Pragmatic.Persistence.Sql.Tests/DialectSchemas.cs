@@ -46,6 +46,12 @@ internal static class DialectSchemas
     /// </summary>
     private const string NotificationsBoundary = "namespace PragmaticEntities.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Notifications.Attributes.StoresNotifications] public sealed partial class InboxBoundary; }";
 
+    /// <summary>
+    ///     The stays' boundary, as the saga fixture compiles it (<c>SagaFixture.Sql</c>): [EnableSagaPersistence], so the
+    ///     database's schema has the saga tables (Pragmatic.Messaging.Engines' rows) that <see cref="SagaStoreTests" /> runs StaySaga on.
+    /// </summary>
+    private const string SagasBoundary = "namespace PragmaticSagas.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Messaging.Attributes.EnableSagaPersistence] public sealed partial class StaysBoundary; }";
+
     private static readonly ConcurrentDictionary<SqlDialect, SchemaVersion> Schemas = new();
 
     /// <summary>The database's schema on <paramref name="dialect" />.</summary>
@@ -55,7 +61,7 @@ internal static class DialectSchemas
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
-        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
+        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
@@ -70,7 +76,8 @@ internal static class DialectSchemas
                 typeof(global::Pragmatic.Internationalization.Types.LocalizedString), typeof(global::Pragmatic.Internationalization.Engines.Sql.SqlLocalizedString),
                 typeof(global::Pragmatic.Composition.Attributes.ModuleAttribute), typeof(global::Pragmatic.Authorization.Management.AuthorizationManagementPackage),
                 typeof(global::Pragmatic.Authorization.Management.Engines.Sql.DynamicRoleRow),
-                typeof(global::Pragmatic.Notifications.Attributes.StoresNotificationsAttribute), typeof(global::Pragmatic.Notifications.Engines.Sql.NotificationRow)]),
+                typeof(global::Pragmatic.Notifications.Attributes.StoresNotificationsAttribute), typeof(global::Pragmatic.Notifications.Engines.Sql.NotificationRow),
+                typeof(global::Pragmatic.Messaging.Attributes.EnableSagaPersistenceAttribute), typeof(global::Pragmatic.Messaging.Engines.Sql.SagaInstanceRow)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new generator::Pragmatic.SourceGenerator.PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out _);

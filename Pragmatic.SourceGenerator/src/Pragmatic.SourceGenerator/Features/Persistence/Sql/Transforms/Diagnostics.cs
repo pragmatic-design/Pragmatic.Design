@@ -265,6 +265,19 @@ internal static class Diagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     A warning: on MySQL and Oracle, which have no partial index, the saga instances' unique index (one active saga per type, correlation
+    ///     and tenant: <c>"Status" = 0</c>) is left out of the Sql engine's schema, so the database does not refuse a second active saga for one
+    ///     correlation. Owner decision (2026-11-05): filtered where the database can express it, left out and reported where it cannot.
+    /// </summary>
+    public static readonly DiagnosticDescriptor SagaUniquenessLeftOut = new(
+        "PRAG3038",
+        "The active sagas' unique index is left out on a database without partial indexes",
+        "{0} keeps its sagas on {1}, which has no partial index: the unique index on the active sagas of a type, correlation and tenant is left out of the schema, and the database does not refuse a second active saga for one correlation",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor InGeneratedSource = new(
         "PRAG3032",
         "A chain the Sql engine generated did not translate",

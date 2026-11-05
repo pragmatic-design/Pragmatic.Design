@@ -121,6 +121,8 @@ internal static partial class SqlInterceptorGenerator
         var combined = calls.Where(static c => c is not null).Collect().Combine(entities.Collect()).Combine(queries.Collect()).Combine(dtos.Collect()).Combine(functions.Collect()).Combine(context.CompilationProvider).Combine(census).Combine(committed).Combine(schemas).Combine(shapeSources.Combine(engineReads));
         context.RegisterSourceOutput(combined, static (spc, all) => { var (source, (shape, reads)) = all; Emit(spc, source.Left.Left.Left.Left.Left.Left.Left.Left!, source.Left.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Right, source.Left.Left.Left.Right, source.Left.Left.Right, source.Left.Right.FirstOrDefault(), source.Right, shape, reads); });
 
+        context.RegisterSourceOutput(context.CompilationProvider.Combine(features), static (spc, pair) => ReportSagaUniquenessLeftOut(spc, pair.Left, pair.Right));
+
         return entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
             .Select(static (all, ct) => PragmaticSchemas(all.Left.Left.Right, all.Left.Left.Left, all.Left.Right, all.Right, ct));
     }

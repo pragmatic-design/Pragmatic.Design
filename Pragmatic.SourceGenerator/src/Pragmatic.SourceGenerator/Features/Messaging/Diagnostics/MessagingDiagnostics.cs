@@ -118,9 +118,9 @@ internal static class MessagingDiagnostics
     // PRAG0832: [EnableSagaPersistence] on a boundary without Messaging.EFCore reference
     public static readonly DiagnosticDescriptor EnableSagaPersistenceWithoutEFCore = DiagnosticFactory.Warning(
         "PRAG0832",
-        "[EnableSagaPersistence] requires Pragmatic.Messaging.EFCore",
-        "Boundary '{0}' is marked [EnableSagaPersistence] but this project does not reference Pragmatic.Messaging.EFCore, so the saga tables are not mapped (the attribute is a no-op). Reference Pragmatic.Messaging.EFCore.",
-        "Add a reference to Pragmatic.Messaging.EFCore to the boundary project so the generated DbContext can map __SagaInstances/__SagaSteps.");
+        "[EnableSagaPersistence] requires the saga store package of the boundary's engine",
+        "Boundary '{0}' is marked [EnableSagaPersistence] but this project does not reference {1}, so the saga tables are not mapped (the attribute is a no-op). Reference {1}.",
+        "Reference the saga store package of the boundary's engine in the boundary project: Pragmatic.Messaging.EFCore on EF Core (the generated DbContext maps __SagaInstances/__SagaSteps), Pragmatic.Messaging.Engines on the Sql and documents engines (the generated saga registration adds the engine's repository, and the engine's schema holds the two tables).");
 
     // PRAG0833: a boundary marked with BOTH [EnableOutbox] and [EnableEventOutbox]. Both interceptors
     // capture and clear the same IHasDomainEvents domain events on SaveChanges — whichever runs first

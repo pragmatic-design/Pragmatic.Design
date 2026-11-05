@@ -285,7 +285,7 @@ app.UseMessaging(msg =>
 
 // Durable sagas are opt-in per boundary, not a host call:
 [Boundary]
-[EnableSagaPersistence]              // EF Core-backed saga repository (needs Pragmatic.Messaging.EFCore)
+[EnableSagaPersistence]              // durable saga repository (needs Pragmatic.Messaging.EFCore, or .Engines on the Sql and documents engines)
 public partial class BookingBoundary;
 ```
 

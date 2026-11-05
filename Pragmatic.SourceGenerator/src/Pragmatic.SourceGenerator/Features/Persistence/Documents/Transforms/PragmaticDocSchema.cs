@@ -47,6 +47,13 @@ internal static class PragmaticDocSchema
             // [EnableOutbox]: the Messaging outbox's collection, as Pragmatic.Messaging.Engines describes it.
             if (boundary is not null && PragmaticRegistration.EnablesMessagingOutbox(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineMessagingOutbox) is not null)
                 collections.Add("global::Pragmatic.Messaging.Engines.Documents.OutboxMessageDocument.Schema");
+            // [EnableSagaPersistence]: the saga instances' and steps' collections, as Pragmatic.Messaging.Engines describes them.
+            if (boundary is not null && PragmaticRegistration.EnablesSagaPersistence(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSagaStore) is not null)
+            {
+                collections.Add("global::Pragmatic.Messaging.Engines.Documents.SagaInstanceDocument.Schema");
+                collections.Add("global::Pragmatic.Messaging.Engines.Documents.SagaStepDocument.Schema");
+            }
+
             // [StoresNotifications]: the notification records' collection, as Pragmatic.Notifications.Engines describes it.
             if (boundary is not null && PragmaticRegistration.StoresNotifications(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineNotificationStore) is not null)
                 collections.Add("global::Pragmatic.Notifications.Engines.Documents.NotificationDocument.Schema");

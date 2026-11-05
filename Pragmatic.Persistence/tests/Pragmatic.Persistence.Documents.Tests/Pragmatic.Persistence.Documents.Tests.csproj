@@ -50,6 +50,9 @@
     <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
     <!-- The notification store on the engine: its collection and its four operations on both stores (NotificationStoreTests). -->
     <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Pragmatic.Notifications.Engines.csproj" />
+    <!-- The saga store on the engine: StaySaga, its boundary and their generated registration (an assembly of their own), run on both stores
+         (SagaStoreTests). -->
+    <ProjectReference Include="..\Fixtures\SagaFixture.Documents\SagaFixture.Documents.csproj" />
     <!-- Documents of another module, read from this assembly as metadata (ReferencedModuleTests). -->
     <ProjectReference Include="..\Fixtures\Pragmatic.Persistence.Documents.ReferencedModule\Pragmatic.Persistence.Documents.ReferencedModule.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -57,6 +60,8 @@
     <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Callers.cs" Link="Shared\Callers.cs" />
     <!-- The one MongoDB readiness wait: a server that exits fails the start at once, with its log. -->
     <Compile Include="..\Pragmatic.Persistence.Documents.Core.Tests\LoggedUnlessExited.cs" Link="Shared\LoggedUnlessExited.cs" />
+    <!-- The scenario StaySaga runs, one source shared with the Sql bridge suite: the same saga on both engines. -->
+    <Compile Include="..\Pragmatic.Persistence.Sql.Tests\Sagas\*.cs" Link="Sagas\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

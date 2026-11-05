@@ -93,6 +93,15 @@
                       LogicalName="NotificationRow.cs" Link="Features\Persistence\NotificationRow.cs" />
     <EmbeddedResource Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\INotificationFields.cs"
                       LogicalName="INotificationFields.cs" Link="Features\Persistence\INotificationFields.cs" />
+    <!-- Pragmatic.Messaging.Engines' saga rows, compared with EF Core's __SagaInstances and __SagaSteps the same way. -->
+    <EmbeddedResource Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Sql\SagaInstanceRow.cs"
+                      LogicalName="SagaInstanceRow.cs" Link="Features\Persistence\SagaInstanceRow.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Sql\SagaStepRow.cs"
+                      LogicalName="SagaStepRow.cs" Link="Features\Persistence\SagaStepRow.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\ISagaInstanceRecord.cs"
+                      LogicalName="ISagaInstanceRecord.cs" Link="Features\Persistence\ISagaInstanceRecord.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\ISagaStepRecord.cs"
+                      LogicalName="ISagaStepRecord.cs" Link="Features\Persistence\ISagaStepRecord.cs" />
   </ItemGroup>
 
 </Project>

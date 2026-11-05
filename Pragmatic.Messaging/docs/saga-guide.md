@@ -135,12 +135,31 @@ saga in the boundary that implements `ISaga<TState>`, resolving that DbContext a
 the boundary project to reference `Pragmatic.Messaging.EFCore`; without it the attribute is inert and the
 generator reports **PRAG0832**.
 
-EF Core persistence uses two tables:
+On a boundary the Sql or documents engine persists, the package is `Pragmatic.Messaging.Engines` instead.
+The generated registration adds `SqlSagaRepository<TSaga, TState>` or `DocSagaRepository<TSaga, TState>`
+over the boundary's session, and the engine's schema holds the same two tables (collections on the
+documents engine), with EF Core's columns and indexes. PRAG0832 names that package when it is missing.
+
+- **The active sagas' unique index** (one active saga per type, correlation and tenant) is a partial
+  index, `"Status" = 0`. MySQL and Oracle have none: there it is left out, the database does not refuse a
+  second active saga for one correlation, and the generator reports **PRAG3038** in the host. Cosmos DB
+  has no partial unique key either and reports it from `EnsureAsync`.
+- **One transaction.** A save writes the instance, the executed step and the outbox messages in one
+  transaction on the Sql engine and on MongoDB where the server runs transactions (a replica set). On
+  Cosmos DB and a standalone MongoDB they are three writes: the instance's conditional update is the
+  commit point, so a save that loses the race writes nothing, and a failure after it leaves the state
+  advanced with the step record or the messages missing.
+- **Concurrency** is the same as on EF Core: the instance is updated only at the version its state was
+  read with, and a save from a stale read throws `SagaConcurrencyException`.
+- `Pragmatic.Messaging.Saga` references EF Core Relational (for `EfCoreSagaRepository`), so an
+  application on the engines carries it too, unused.
+
+Saga persistence uses two tables:
 
 | Table | Purpose |
 |-------|---------|
 | `__SagaInstances` | Saga state, correlation, timestamps, status |
-| `__SagaSteps` | Per-step history; the table is provisioned but not yet written by the repository |
+| `__SagaSteps` | Per-step history, written in the same save as the state; the compensation reads it |
 
 ### Delivery semantics (save-before-publish)
 

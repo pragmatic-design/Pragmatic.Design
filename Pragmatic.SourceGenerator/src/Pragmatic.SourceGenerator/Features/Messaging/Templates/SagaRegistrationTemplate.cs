@@ -13,11 +13,16 @@ internal sealed class SagaRegistrationTemplate : CSharpTemplate
 {
     private readonly ImmutableArray<SagaModel> _sagas;
     private readonly bool _hasEfCore;
+    private readonly DetectedFeatures? _features;
 
-    public SagaRegistrationTemplate(ImmutableArray<SagaModel> sagas, bool hasEfCore)
+    /// <param name="sagas">The sagas of the assembly.</param>
+    /// <param name="hasEfCore">Whether Pragmatic.Messaging.EFCore is referenced.</param>
+    /// <param name="features">The compilation's features, which decide the engine of a saga's boundary; without them no saga is on an engine.</param>
+    public SagaRegistrationTemplate(ImmutableArray<SagaModel> sagas, bool hasEfCore, DetectedFeatures? features = null)
     {
         _sagas = sagas;
         _hasEfCore = hasEfCore;
+        _features = features;
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Messaging";
@@ -75,11 +80,19 @@ internal sealed class SagaRegistrationTemplate : CSharpTemplate
                 // implements ISaga<TState> gets an EF Core-backed repository (Scoped) resolving that
                 // boundary's DbContext lazily — so registration order does not matter. Otherwise it
                 // stays on the in-memory Singleton (state kept across per-request scopes, lost on restart).
-                var useEfCore = _hasEfCore && saga.ImplementsISaga && !string.IsNullOrEmpty(saga.PersistenceDbContextFqn);
+                // On the Sql or documents engine (the boundary's, decided as for its entities) the repository is
+                // Pragmatic.Messaging.Engines', over the boundary's keyed session.
+                var engine = saga.PersistenceBoundaryFqn is null || _features is null ? null : PersistenceEngineMarker.EngineOf(saga.NamedPersistenceEngine, _features);
+                var onEngine = saga.ImplementsISaga && saga.HasEnginesSagaStore && engine is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+                var useEfCore = !onEngine && _hasEfCore && saga.ImplementsISaga && !string.IsNullOrEmpty(saga.PersistenceDbContextFqn);
                 AppendLine($"if (!services.Any(d => d.ServiceType == typeof(ISagaRepository<{sagaFqn}>)))");
                 AppendLine("{");
                 IncreaseIndent();
-                if (useEfCore)
+                if (onEngine)
+                {
+                    RenderEngineRepo(saga, sagaFqn, engine == PersistenceEngineMarker.Sql);
+                }
+                else if (useEfCore)
                 {
                     // Resolve the boundary DbContext via the keyed SagaPersistenceMarker (registered by the
                     // host DbContext registration). The lookup is inside the factory so it runs at resolution
@@ -218,6 +231,23 @@ internal sealed class SagaRegistrationTemplate : CSharpTemplate
     // host DbContext registration uses when it registers the SagaPersistenceMarker.
     private static string StripGlobal(string fqn) =>
         fqn.StartsWith("global::", System.StringComparison.Ordinal) ? fqn.Substring("global::".Length) : fqn;
+
+    // An engine's repository: Scoped, as the boundary's session it reads (keyed by the boundary's type) is. The outbox flag is the
+    // boundary's [EnableOutbox], known here: the repository writes a step's messages to the outbox only where the boundary has one.
+    private void RenderEngineRepo(SagaModel saga, string sagaFqn, bool sql)
+    {
+        var repository = sql
+            ? $"global::Pragmatic.Messaging.Engines.Sql.SqlSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>"
+            : $"global::Pragmatic.Messaging.Engines.Documents.DocSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>";
+        var session = sql ? "global::Pragmatic.Persistence.Sql.SqlSession" : "global::Pragmatic.Persistence.Documents.DocSession";
+        AppendLine($"services.AddScoped<ISagaRepository<{sagaFqn}>>(sp => new {repository}(");
+        AppendLine($"    sp.GetRequiredKeyedService<{session}>(typeof({saga.PersistenceBoundaryFqn})),");
+        AppendLine($"    sp.GetRequiredService<global::Microsoft.Extensions.Logging.ILogger<{repository}>>(),");
+        AppendLine("    sp.GetService<global::Pragmatic.Serialization.PragmaticJsonOptions>(),");
+        AppendLine("    sp.GetService<global::Pragmatic.MultiTenancy.ITenantContext>(),");
+        AppendLine($"    {(saga.BoundaryHasOutbox ? "true" : "false")},");
+        AppendLine("    sp.GetService<global::System.TimeProvider>()));");
+    }
 
     // In-memory repository: Singleton so state survives across the per-request scopes that dispatch
     // saga events. Accessors read the ISaga core members without requiring the interface.

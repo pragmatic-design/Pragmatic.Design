@@ -12,6 +12,9 @@
   <ItemGroup>
     <!-- The delivery pump, the purge, the health contributor and the capture every store shares; no EF Core. -->
     <ProjectReference Include="..\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <!-- The saga contract (ISagaRepository, ISaga, the statuses) the engines' repositories implement. ⚠️ It references EF Core Relational for
+         EfCoreSagaRepository, which then flows to an application on the engines too, unused. -->
+    <ProjectReference Include="..\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
     <!-- The engines' bridges: the phases of a unit of work's save (ISqlSavePhase, IDocSavePhase) and the sessions a boundary is registered with.
          Private: an application brings the bridge of the engine it uses, as it does without the outbox. Flowing both to it would make every
          application reference two engines, and every boundary that names none PRAG0743. The Sql outbox's types never touch the documents

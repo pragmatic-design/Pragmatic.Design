@@ -239,7 +239,7 @@ internal static class MessagingFeature
             {
                 if (!x.Right.HasMessaging || x.Left.IsDefaultOrEmpty) return;
 
-                var registration = new SagaRegistrationTemplate(x.Left, x.Right.HasMessagingEFCore).RenderOutput();
+                var registration = new SagaRegistrationTemplate(x.Left, x.Right.HasMessagingEFCore, x.Right).RenderOutput();
                 ctx.AddSource(registration);
 
                 // Emit assembly metadata so PragmaticHost auto-invokes AddPragmaticSagas()

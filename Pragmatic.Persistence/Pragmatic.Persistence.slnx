@@ -75,6 +75,8 @@
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.Explain/Pragmatic.Persistence.Sql.Explain.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Documents.Workload/Pragmatic.Persistence.Documents.Workload.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Sql.ReferencedModule/Pragmatic.Persistence.Sql.ReferencedModule.csproj" />
+    <Project Path="tests/Fixtures/SagaFixture.Sql/SagaFixture.Sql.csproj" />
+    <Project Path="tests/Fixtures/SagaFixture.Documents/SagaFixture.Documents.csproj" />
     <Project Path="tests/Fixtures/Pragmatic.Persistence.Documents.ReferencedModule/Pragmatic.Persistence.Documents.ReferencedModule.csproj" />
   </Folder>
   <Folder Name="/samples/">
