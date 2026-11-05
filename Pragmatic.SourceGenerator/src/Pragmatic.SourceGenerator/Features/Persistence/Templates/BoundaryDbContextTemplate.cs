@@ -397,7 +397,7 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
                 {
                     AppendLine();
                     Comment("Saga persistence (__SagaInstances/__SagaSteps) — [EnableSagaPersistence] boundary");
-                    AppendLine("var __sagaConfig = new global::Pragmatic.Messaging.Saga.SagaEntityTypeConfiguration();");
+                    AppendLine("var __sagaConfig = new global::Pragmatic.Messaging.EFCore.Sagas.SagaEntityTypeConfiguration();");
                     AppendLine("modelBuilder.ApplyConfiguration<global::Pragmatic.Messaging.Saga.SagaInstance>(__sagaConfig);");
                     AppendLine("modelBuilder.ApplyConfiguration<global::Pragmatic.Messaging.Saga.SagaStep>(__sagaConfig);");
                 }

@@ -3,6 +3,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Pragmatic.Messaging.EFCore.Sagas;
 using Pragmatic.Messaging.Saga;
 using Pragmatic.Testing.Assertions;
 

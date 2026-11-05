@@ -511,7 +511,6 @@
       "pragmatic.messaging.saga": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Pragmatic.Messaging.Core": "[1.0.0, )"
         }
       },

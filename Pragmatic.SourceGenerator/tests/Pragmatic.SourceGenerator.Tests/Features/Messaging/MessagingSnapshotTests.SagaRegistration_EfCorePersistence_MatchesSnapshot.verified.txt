@@ -29,9 +29,9 @@ public static partial class PragmaticSagaRegistration
             services.AddScoped<ISagaRepository<global::MyApp.Ordering.OrderSaga>>(sp =>
             {
                 var __marker = sp.GetRequiredKeyedService<global::Pragmatic.Messaging.Configuration.SagaPersistenceMarker>("MyApp.Ordering.Entities.OrderingDbContext");
-                return new global::Pragmatic.Messaging.Saga.EfCoreSagaRepository<global::MyApp.Ordering.OrderSaga, global::MyApp.Ordering.OrderState>(
+                return new global::Pragmatic.Messaging.EFCore.Sagas.EfCoreSagaRepository<global::MyApp.Ordering.OrderSaga, global::MyApp.Ordering.OrderState>(
                     (global::Microsoft.EntityFrameworkCore.DbContext)sp.GetRequiredService(__marker.DbContextType),
-                    sp.GetRequiredService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.Messaging.Saga.EfCoreSagaRepository<global::MyApp.Ordering.OrderSaga, global::MyApp.Ordering.OrderState>>>(),
+                    sp.GetRequiredService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.Messaging.EFCore.Sagas.EfCoreSagaRepository<global::MyApp.Ordering.OrderSaga, global::MyApp.Ordering.OrderState>>>(),
                     sp.GetService<global::Pragmatic.Serialization.PragmaticJsonOptions>(),
                     sp.GetService<global::Pragmatic.MultiTenancy.ITenantContext>());
             });

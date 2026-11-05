@@ -103,9 +103,9 @@ internal sealed class SagaRegistrationTemplate : CSharpTemplate
                     AppendLine("{");
                     IncreaseIndent();
                     AppendLine($"var __marker = sp.GetRequiredKeyedService<global::Pragmatic.Messaging.Configuration.SagaPersistenceMarker>(\"{markerKey}\");");
-                    AppendLine($"return new global::Pragmatic.Messaging.Saga.EfCoreSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>(");
+                    AppendLine($"return new global::Pragmatic.Messaging.EFCore.Sagas.EfCoreSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>(");
                     AppendLine("    (global::Microsoft.EntityFrameworkCore.DbContext)sp.GetRequiredService(__marker.DbContextType),");
-                    AppendLine($"    sp.GetRequiredService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.Messaging.Saga.EfCoreSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>>>(),");
+                    AppendLine($"    sp.GetRequiredService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.Messaging.EFCore.Sagas.EfCoreSagaRepository<{sagaFqn}, {saga.StateTypeFqn}>>>(),");
                     // Pass the DI-configured PragmaticJsonOptions so the repository resolves the saga's
                     // JsonTypeInfo from the app's generated JsonSerializerContext (AOT-safe). Null-safe:
                     // the repository falls back to PragmaticJsonOptions.Default when it is not registered.

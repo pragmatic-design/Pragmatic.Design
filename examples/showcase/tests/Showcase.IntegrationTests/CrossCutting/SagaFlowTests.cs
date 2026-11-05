@@ -5,6 +5,7 @@ using Pragmatic.Testing.Assertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Messaging;
+using Pragmatic.Messaging.EFCore.Sagas;
 using Pragmatic.Messaging.Saga;
 using Pragmatic.MultiTenancy;
 using Showcase.Booking.Entities;

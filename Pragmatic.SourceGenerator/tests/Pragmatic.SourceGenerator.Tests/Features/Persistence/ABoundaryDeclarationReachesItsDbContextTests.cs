@@ -45,7 +45,7 @@ public class ABoundaryDeclarationReachesItsDbContextTests
             "global::Pragmatic.Events.EFCore.Outbox.EventOutboxEntryConfiguration()",
             "__EventOutbox" },
         { "global::Pragmatic.Messaging.Attributes.EnableSagaPersistence",
-            "global::Pragmatic.Messaging.Saga.SagaEntityTypeConfiguration()",
+            "global::Pragmatic.Messaging.EFCore.Sagas.SagaEntityTypeConfiguration()",
             "__SagaInstances" },
         { "global::Pragmatic.Messaging.Attributes.EnableOutbox",
             "global::Pragmatic.Messaging.EFCore.Outbox.MessagingOutboxExtensions.AddMessagingOutbox(modelBuilder)",

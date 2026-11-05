@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Messaging.EFCore.Outbox;
 using Pragmatic.Messaging.Entities;
+using Pragmatic.Messaging.EFCore.Sagas;
 using Pragmatic.Messaging.Saga;
 
 namespace Pragmatic.Messaging.Tests.EFCore;

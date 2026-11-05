@@ -49,7 +49,7 @@ public class SagaPersistenceWiringTests
     {
         var source = new BoundaryDbContextTemplate(BuildModel(hasSagaPersistence: true)).RenderOutput().Text;
 
-        source.Should().Contain("new global::Pragmatic.Messaging.Saga.SagaEntityTypeConfiguration()");
+        source.Should().Contain("new global::Pragmatic.Messaging.EFCore.Sagas.SagaEntityTypeConfiguration()");
         source.Should().Contain("ApplyConfiguration<global::Pragmatic.Messaging.Saga.SagaInstance>");
         source.Should().Contain("ApplyConfiguration<global::Pragmatic.Messaging.Saga.SagaStep>");
     }

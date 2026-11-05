@@ -3,10 +3,11 @@ using System.Text.Json.Serialization.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging.Entities;
+using Pragmatic.Messaging.Saga;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Serialization;
 
-namespace Pragmatic.Messaging.Saga;
+namespace Pragmatic.Messaging.EFCore.Sagas;
 
 /// <summary>
 ///     EF Core-backed saga repository. Persists saga state as JSON in <see cref="SagaInstance"/>.

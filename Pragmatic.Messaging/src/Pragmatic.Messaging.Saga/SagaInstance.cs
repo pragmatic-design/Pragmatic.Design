@@ -84,8 +84,8 @@ public sealed class SagaInstance : ITenantEntity
     /// <summary>
     ///     Optimistic-concurrency token. Bumped on every save and checked in the UPDATE's WHERE clause
     ///     so two messages racing on the same saga can't silently overwrite each other's transition —
-    ///     the loser gets a <see cref="Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException"/> and
-    ///     its message is redelivered against fresh state. Provider-agnostic (no native rowversion needed).
+    ///     the loser gets a <see cref="SagaConcurrencyException"/> and its message is redelivered against
+    ///     fresh state. Provider-agnostic (no native rowversion needed).
     /// </summary>
     public int Version { get; set; }
 
