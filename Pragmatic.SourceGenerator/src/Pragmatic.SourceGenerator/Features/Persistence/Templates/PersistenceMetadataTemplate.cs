@@ -174,6 +174,20 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                 builder.EndArray();
             }
 
+            // [Index] indexes (#524), for the same reason.
+            if (entity.Indexes.Length > 0)
+            {
+                builder.Property("indexes").StartArray();
+                foreach (var index in entity.Indexes)
+                {
+                    builder.StartObject();
+                    builder.Property("columns", string.Join(",", index.Columns));
+                    builder.EndObject();
+                }
+
+                builder.EndArray();
+            }
+
             // Manual trait flags
             if (entity.HasManualPersistenceId)
                 builder.Property("hasManualPersistenceId", true);

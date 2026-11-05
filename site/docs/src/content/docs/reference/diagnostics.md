@@ -265,7 +265,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0624` | Error | Some, but not all, of a trait's properties are declared by hand. The generator emits a trait's properties as a group, so it can only stand down on the group: declare them all, or remove the ones you wrote. |
 | `PRAG0625` | Error | The parts of a composite `[LogicKey]` ask for different uniqueness scopes. A composite key is one index and one index has one scope: say the same `Scope` on every part. |
 | `PRAG0626` | Warning | A tenant-scoped entity assigns its own `PersistenceId`. Two tenants that assign the same value collide on the primary key, which no tenant filter can separate. Let the generator assign it and keep the carried-over identifier as an ordinary property. |
-| `PRAG0627` | Error | `[Unique]` names a property the entity does not have. Use `nameof` so the compiler keeps the name honest when the property is renamed. |
+| `PRAG0627` | Error | `[Unique]` or `[Index]` names a property the entity does not have. Use `nameof` so the compiler keeps the name honest when the property is renamed. |
 | `PRAG0628` | Error | An assembly declares more than one `[Module]`. An assembly has one module, and every boundary in it belongs to that module. Split the second into its own project. |
 | `PRAG0629` | Error | No boundary owns this entity, so it has no `DbContext` and no migration creates its table. Add `[Owns<T>]` to the boundary whose context it belongs in. |
 | `PRAG0630` | Error | Two boundaries claim the same entity, which would run the transaction line through the middle of it. Keep `[Owns<T>]` on the boundary that writes it; the other reads it with `[ReadAccess<T>]`. |

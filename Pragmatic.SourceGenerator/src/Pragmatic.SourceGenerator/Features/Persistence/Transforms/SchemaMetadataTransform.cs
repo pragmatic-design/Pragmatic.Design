@@ -1236,6 +1236,16 @@ internal static partial class SchemaMetadataTransform
                 Filter: isOneToOne && entity.IsSoftDelete ? "\"IsDeleted\" = false" : null));
         }
 
+        // [Index] indexes (#524): not unique, no filter, the columns as written. Last, and only under a name not taken, as the Sql
+        // engine's schema adds them: one the generator already writes (the tenant's, a foreign key's) is not written twice.
+        foreach (var index in entity.Indexes)
+        {
+            var cols = index.Columns.AsImmutableArray();
+            var name = $"IX_{tableName}_{string.Join("_", cols)}";
+            if (!indexes.Any(i => i.Name == name))
+                indexes.Add(new IndexSchemaModel(name, cols));
+        }
+
         return indexes.ToImmutableArray();
     }
 

@@ -130,6 +130,28 @@ An identifier that comes from elsewhere (a code from a system being replaced, a 
 is an ordinary property with its own uniqueness (`[LogicKey]`, or `[Unique(nameof(LegacyCode))]`),
 where it can be queried and corrected without touching a foreign key.
 
+## Declared indexes
+
+An index is declared on the entity, so that every engine reads it: EF Core's configuration and schema,
+the Sql engine's schema and the documents engine's indexes. A host also reads the indexes of a
+referenced module's entities.
+
+```csharp
+[Entity]
+[Unique(nameof(Email))]                    // unique: led by TenantId on a tenant entity, live rows only when soft-deleted
+[Index(nameof(UserId), nameof(RoleName))]  // not unique: the columns as written, nothing added
+public partial class Member : IEntity { /* ... */ }
+```
+
+Name the columns with `nameof`, in the order the index should be searched by. A name that matches no
+property is `PRAG0627`.
+
+An index written only in an EF Core `IEntityTypeConfiguration` is seen by no other engine, and for a
+package's entities by nothing at all.
+
+⚠️ `[Index]` has the name of EF Core's own `Microsoft.EntityFrameworkCore.IndexAttribute`. In a file
+that imports both namespaces, qualify the one you mean.
+
 ## `PersistenceId` vs business identifiers
 
 Pragmatic separates two ideas:

@@ -78,6 +78,7 @@ public partial class Bed : IEntity
 [HasOwner]
 [VisibleWhen<PublishedReviews>]
 [HasComments(RequireApproval = true, SupportInternalNotes = true)]
+[Index(nameof(Stars))] // a declared non-unique index (#524): migrated on the five databases, the same on both branches
 public partial class Review : IEntity
 {
     public string Text { get; set; } = "";

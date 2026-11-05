@@ -25,6 +25,7 @@ public class DocSchemaTests(DocumentServers servers)
         var products = Collection("SchemaProducts");
         Assert.Equal("/TenantId", products.PartitionKeyPath);
         Assert.Contains(new DocIndex("IX_SchemaProducts_TenantId_Sku", ["TenantId", "Sku"], Unique: true), products.Indexes, IndexComparer.Instance);
+        Assert.Contains(new DocIndex("IX_SchemaProducts_Name_Rank", ["Name", "Rank"]), products.Indexes, IndexComparer.Instance); // [Index]: not unique, no tenant
         Assert.Equal([("/Name", false), ("/Rank", true)], Assert.Single(products.Composites));
     }
 

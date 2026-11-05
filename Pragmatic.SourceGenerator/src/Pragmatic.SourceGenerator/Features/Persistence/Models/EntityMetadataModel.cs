@@ -66,6 +66,9 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     /// </remarks>
     public EquatableArray<UniqueIndexModel> UniqueIndexes { get; init; } = EquatableArray<UniqueIndexModel>.Empty;
 
+    /// <summary>The non-unique indexes declared with <c>[Index]</c> (#524), the columns as written.</summary>
+    public EquatableArray<IndexModel> Indexes { get; init; } = EquatableArray<IndexModel>.Empty;
+
     /// <summary>
     ///     The first logic key property name, or null. Kept because most consumers address a
     ///     single-property key and read better for it; <see cref="LogicKeys"/> is the whole truth.
@@ -651,6 +654,7 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                LogicKeys.Equals(other.LogicKeys) &&
                LogicKeyDeclaredTwice == other.LogicKeyDeclaredTwice &&
                UniqueIndexes.Equals(other.UniqueIndexes) &&
+               Indexes.Equals(other.Indexes) &&
                BoundaryName == other.BoundaryName &&
                BoundaryTypeFullName == other.BoundaryTypeFullName &&
                NamedPersistenceEngine == other.NamedPersistenceEngine &&

@@ -273,6 +273,11 @@ internal static partial class SqlInterceptorGenerator
                 foreignKeys.Add(ForeignKey($"FK_{entity.Table}_{column}_{target.Table}", column, target.Table, target.KeyColumn, PragmaticRelations.OnDelete(entity.Type, reference.Navigation, reference.Target)));
             }
 
+            // [Index] (#524): not unique, no filter, the columns as written; last, as EF Core's branch adds them, so a name the generator
+            // already writes is not written twice.
+            foreach (var declared in EntityTransform.CollectIndexes(entity.Type))
+                Index([.. declared.Columns.Select(n => entity.Column(n)?.Column ?? n)]);
+
             var keyed = new HashSet<string>(indexes.SelectMany(i => i.Columns).Concat(entity.Keys.Select(k => k.Column)), StringComparer.Ordinal);
             var columns = new List<ColumnSchemaModel>();
             foreach (var column in entity.Columns)

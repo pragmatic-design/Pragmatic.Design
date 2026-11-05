@@ -150,6 +150,18 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
 
             if (_model.UniqueIndexes.Length > 0)
                 AppendLine();
+
+            // [Index] indexes (#524): not unique, the columns as written, no tenant added.
+            foreach (var index in _model.Indexes)
+            {
+                var columns = index.Columns.AsImmutableArray();
+                AppendLine(columns.Length == 1
+                    ? $"builder.HasIndex(e => e.{columns[0]});"
+                    : $"builder.HasIndex(e => new {{ {string.Join(", ", columns.Select(c => $"e.{c}"))} }});");
+            }
+
+            if (_model.Indexes.Length > 0)
+                AppendLine();
         }
 
         // Properties with private setters — and every ProtectedValue, whatever its setter.
