@@ -115,6 +115,7 @@ These work on every engine, from the same declarations:
 |---|---|---|
 | `IReadRepository<T>.Query()` | not served (an `IQueryable` is EF Core's surface): write the chain on `SqlSession.Query<T>()`, or declare the read | not served: write the chain on `DocSession.Query<T>()`, or a specification |
 | Extensions over `IQueryable` (hierarchy, temporal) | EF Core's only | EF Core's only |
+| An entity hierarchy (`[Inheritance(InheritanceStrategy.Tph)]`) | one table with the discriminator column, as EF Core's: the derived types' columns nullable, a read through the root builds each row's own type, a derived type's private setters written through accessors | not supported yet (#539): each derived type is a collection of its own, and the root does not read them |
 | A save | one batch in one transaction | one MongoDB transaction where the server runs them (a replica set); on a standalone server and on Cosmos DB the documents are written one by one, and a failure leaves the earlier ones written |
 | `[LoadEntity(Include = …)]` | compiled; a load the engine cannot compile is `PRAG3036` | not supported: `PRAG3111` |
 | A mutation that writes navigations | references one-to-one: `PRAG3037`; collections and `[LinkIds]` are tracked | `PRAG3112` |
