@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Pragmatic.Messaging.Saga;
 
-namespace Pragmatic.Messaging.Saga;
+namespace Pragmatic.Messaging.EFCore.Sagas;
 
 /// <summary>
 ///     EF Core configuration for SagaInstance + SagaStep tables.

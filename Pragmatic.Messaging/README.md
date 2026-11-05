@@ -117,9 +117,9 @@ Full walkthrough: [Getting Started](docs/getting-started.md).
 | `Pragmatic.Messaging` | Bridge to Events: outbox delivery service, event adapter; no dependency on EF Core |
 | `Pragmatic.Messaging.Core` | Interfaces, attributes, in-memory bus, middleware, routing, distributed request/reply; no dependency on Events or EF Core |
 | `Pragmatic.Messaging.Channels` / `.RabbitMQ` / `.Kafka` / `.AzureServiceBus` / `.Sql` | Transports (in-process / AMQP / streaming / cloud+emulator / PostgreSQL or SQL Server tables, no broker) |
-| `Pragmatic.Messaging.EFCore` | EF Core: outbox capture interceptor and source, idempotency, audit persistence |
+| `Pragmatic.Messaging.EFCore` | EF Core: outbox capture interceptor and source, idempotency, audit persistence, saga persistence |
 | `Pragmatic.Messaging.Engines` | The outbox and the saga store on the Sql and documents engines: the save phase that writes the rows, the source the delivery pump reads, and the saga repository a boundary's generated registration adds |
-| `Pragmatic.Messaging.Saga` | Saga orchestration over domain actions: compensation, timeouts, generated orchestrator |
+| `Pragmatic.Messaging.Saga` | Saga orchestration over domain actions: compensation, timeouts, generated orchestrator; no EF Core (its EF Core repository is `Pragmatic.Messaging.EFCore`'s) |
 | `Pragmatic.Messaging.Batch` | Scatter/gather with progress tracking and rate limiting |
 | `Pragmatic.Messaging.ClaimCheck` | Large payloads moved to Pragmatic.Storage; the message carries the reference |
 | `Pragmatic.Messaging.Jobs` | Scheduled (future) message delivery, via Pragmatic.Jobs |

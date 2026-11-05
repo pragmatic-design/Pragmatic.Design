@@ -414,7 +414,8 @@
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Pragmatic.Messaging": "[1.0.0, )",
           "Pragmatic.Messaging.Auditing": "[1.0.0, )",
-          "Pragmatic.Messaging.Core": "[1.0.0, )"
+          "Pragmatic.Messaging.Core": "[1.0.0, )",
+          "Pragmatic.Messaging.Saga": "[1.0.0, )"
         }
       },
       "pragmatic.messaging.rabbitmq": {
@@ -422,6 +423,12 @@
         "dependencies": {
           "Pragmatic.Messaging.Core": "[1.0.0, )",
           "RabbitMQ.Client": "[7.1.2, )"
+        }
+      },
+      "pragmatic.messaging.saga": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Messaging.Core": "[1.0.0, )"
         }
       },
       "pragmatic.migrations": {

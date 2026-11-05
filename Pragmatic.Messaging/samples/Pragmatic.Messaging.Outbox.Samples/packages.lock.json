@@ -399,6 +399,17 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
           "Pragmatic.Messaging": "[1.0.0, )",
           "Pragmatic.Messaging.Auditing": "[1.0.0, )",
+          "Pragmatic.Messaging.Core": "[1.0.0, )",
+          "Pragmatic.Messaging.Saga": "[1.0.0, )"
+        }
+      },
+      "pragmatic.messaging.saga": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
           "Pragmatic.Messaging.Core": "[1.0.0, )"
         }
       },

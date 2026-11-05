@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>Pragmatic.Messaging.EFCore</RootNamespace>
-    <Description>EF Core-backed stores for Pragmatic.Messaging: outbox source, idempotency, audit trail persistence.</Description>
-    <PackageTags>messaging;efcore;outbox;idempotency;auditing;persistence</PackageTags>
+    <Description>EF Core-backed stores for Pragmatic.Messaging: outbox source, idempotency, audit trail persistence, saga persistence.</Description>
+    <PackageTags>messaging;efcore;outbox;idempotency;auditing;persistence;saga</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +18,9 @@
          Pragmatic.Messaging.EFCore (the HasMessagingEFCore gate guarantees this reference). Acyclic:
          the bridge does not reference this assembly. -->
     <ProjectReference Include="..\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <!-- The sagas' EF Core repository and mapping (#546): the saga package is the engine-neutral half, which an application on the Sql or
+         documents engine references without EF Core. Acyclic: the saga package does not reference this assembly. -->
+    <ProjectReference Include="..\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
   </ItemGroup>
 
   <ItemGroup>

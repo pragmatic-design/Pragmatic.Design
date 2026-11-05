@@ -151,8 +151,10 @@ documents engine), with EF Core's columns and indexes. PRAG0832 names that packa
   advanced with the step record or the messages missing.
 - **Concurrency** is the same as on EF Core: the instance is updated only at the version its state was
   read with, and a save from a stale read throws `SagaConcurrencyException`.
-- `Pragmatic.Messaging.Saga` references EF Core Relational (for `EfCoreSagaRepository`), so an
-  application on the engines carries it too, unused.
+- **No EF Core.** `Pragmatic.Messaging.Saga` is the engine-neutral half: the contracts, the model and the
+  in-memory repository. The EF Core repository and mapping (`EfCoreSagaRepository`,
+  `SagaEntityTypeConfiguration`, in `Pragmatic.Messaging.EFCore.Sagas`) are `Pragmatic.Messaging.EFCore`'s,
+  so an application on the engines does not carry EF Core for its sagas.
 
 Saga persistence uses two tables:
 
