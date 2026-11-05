@@ -177,7 +177,10 @@ the document: one of its own, or a member of an embedded or owned field that is 
 so the related documents are read by the keys of the page's documents, one read per navigation through the
 session's filters, and a document whose related one is not found reads the property's default: null for a
 reference or a nullable, as EF Core's left join gives it. A path through a navigation no relation declares, or on
-past the related document's own field, is `PRAG3108`, naming it.
+past the related document's own field, is `PRAG3108`, naming it. A member the mapping converts is read as the
+generated mapping reads it: the source field, then its `[MapConverter<T>]`'s `Convert`, or
+`ToString(Format, CultureInfo.InvariantCulture)` for a `[MapProperty(Format = …)]` over a formattable value that is
+never null (one that may be null is `PRAG3108`). The Sql engine does not apply them yet (#542).
 
 A declared query's `[ComplexFilter]` is compiled by both engines: the filter object's members are composed as
 its `[FilterDto<T>]` composes them for EF Core, a member that is not set filtering nothing, the members of a

@@ -98,6 +98,23 @@ public class TimeOfDayTests(DocumentServers servers)
         Assert.Equal([new DateOnly(2026, 2, 28), new DateOnly(2026, 12, 31), new DateOnly(2027, 1, 2)], cards.Select(c => c.ArrivesOn));
     }
 
+    /// <summary>
+    ///     A declared projection with a formatted <c>[MapProperty]</c> and a <c>[MapConverter]</c> member (#537): the source fields read, the
+    ///     mapping's format and converter applied after the read, as the generated mapping applies them.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_declared_projection_formats_and_converts_its_members(Store store)
+    {
+        var (session, batch, stays) = await StaysAsync(servers, store);
+        IReadRepository<Stay> repository = new Stay.DocReadRepository(session);
+
+        var labels = (await repository.RunAsync(new StayLabelsQuery { Batch = batch })).OrderBy(l => l.Code, StringComparer.Ordinal).ToList();
+
+        Assert.Equal([("early", "31/12/2026", "26h"), ("late", "28/02/2026", "1.5h"), ("noon", "02/01/2027", "-1h")], labels.Select(l => (l.Code, l.ArrivesOn, l.Lasts)));
+        Assert.Equal(StayLabel.FromEntity(stays[0]).ArrivesOn, labels[0].ArrivesOn); // what the generated mapping writes for the same stay
+    }
+
     /// <summary>The stays' codes in name order: a filter's result, whatever order the server returns it in.</summary>
     private static List<string> Codes(List<Stay> stays) => stays.Select(s => s.Code).Order(StringComparer.Ordinal).ToList();
 }

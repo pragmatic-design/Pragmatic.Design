@@ -91,6 +91,16 @@ internal static partial class DocQueries
                 }
             }
 
+            // The mapping's own conversion of the field, applied after the read as the generated mapping applies it (#537): a [MapConverter], or a
+            // [MapProperty(Format = …)] over a formattable value.
+            if (field is not null && Converted(query, property, field, read) is { } converted)
+            {
+                if (converted.Length == 0)
+                    return null; // refused, with the reason
+                assignments.Add($"{property.Name} = {converted}");
+                continue;
+            }
+
             // The field as the shaped entity declares it (the model is read on the compilation with the shape): the same type, or its nullable.
             var source = field?.Property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
             var target = property.Type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString();
