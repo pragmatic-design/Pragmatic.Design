@@ -32,6 +32,16 @@ internal static partial class DocFamiliesEmitter
         string Field(string property) => model.Field(property)?.Name ?? property;
         string Path(string property) => DocCosmosText.Path(Field(property), "c");
 
+        // A derived type of a hierarchy (#539): the documents of the root's collection whose discriminator names it or a type below it.
+        if (model.Inheritance is { IsRoot: false } inheritance)
+        {
+            var names = inheritance.Accepted;
+            var field = DocTypeEmitter.Literal(inheritance.Discriminator);
+            var array = "new string[] { " + string.Join(", ", names.Select(DocTypeEmitter.Literal)) + " }";
+            var cosmos = $"{DocCosmosText.Path(inheritance.Discriminator, "c")} IN ({string.Join(", ", names.Select(n => "'" + n + "'"))})";
+            families.Add($"new {Runtime}.Filters.DocFamily({Slot("Type", null, null)}, static (w, f) => {{ w.StartDocument({field}); {Runtime}.Conversion.DocValues.WriteArray(w, \"$in\", {array}, {Runtime}.Conversion.DocValues.Write); w.EndDocument(); }}, {DocTypeEmitter.Literal(cosmos)}, null)");
+        }
+
         if (PragmaticShape.Has(entity, "SoftDeleteAttribute") && model.Field("IsDeleted") is not null)
             families.Add($"new {Runtime}.Filters.DocFamily({Slot("SoftDelete", "SoftDeleteFilter", "SoftDelete")}, static (w, f) => w.Write({DocTypeEmitter.Literal(Field("IsDeleted"))}, false), {DocTypeEmitter.Literal(Path("IsDeleted") + " = false")}, null)");
 

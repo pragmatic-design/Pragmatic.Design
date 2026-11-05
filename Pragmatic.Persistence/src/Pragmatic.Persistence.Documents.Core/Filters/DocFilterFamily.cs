@@ -22,4 +22,10 @@ public enum DocFilterFamily : byte
 
     /// <summary>A data scope rule computed at read time (<c>DataScopeRule</c>, Computed or Hybrid), OR-ed into the scopes: active for a caller holding its scope.</summary>
     ComputedScope,
+
+    /// <summary>
+    ///     A derived type of a hierarchy kept in its root's collection: the documents whose discriminator names it or a type below it. It is what
+    ///     the type is, not a filter on what the caller may see: no mode, lift or permission opens it (<see cref="DocFamilies" />).
+    /// </summary>
+    Type,
 }

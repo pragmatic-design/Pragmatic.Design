@@ -22,6 +22,10 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="PartitionKeyPathLiteral">A document's partition key path, as a C# string literal.</param>
 /// <param name="PartitionKeyWrite">The expression that writes a document's partition key value.</param>
 /// <param name="Families">A Pragmatic entity's filter families, as their initializers; empty otherwise.</param>
+/// <param name="Accessors">
+///     The <c>[UnsafeAccessor]</c> declarations of the setters the partial cannot call (a base type's private ones), each one's two lines.
+/// </param>
+/// <param name="Inheritance">A hierarchy's type: its discriminator and the types below it; null outside one.</param>
 internal sealed record DocumentTypeModel(
     string Hint,
     string? Namespace,
@@ -38,4 +42,6 @@ internal sealed record DocumentTypeModel(
     string? IdText,
     string? PartitionKeyPathLiteral,
     string? PartitionKeyWrite,
-    EquatableArray<string> Families);
+    EquatableArray<string> Families,
+    EquatableArray<string> Accessors = default,
+    DocumentInheritanceModel? Inheritance = null);

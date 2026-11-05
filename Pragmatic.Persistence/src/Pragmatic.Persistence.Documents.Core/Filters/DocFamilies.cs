@@ -143,5 +143,7 @@ public static partial class DocFamilies
         return applies;
     }
 
-    private static DocFilterState StateOf(DocFamily family, IDocFilters? filters) => filters?.StateOf(family.Slot) ?? DocFilterState.Active;
+    // A hierarchy's type is never the caller's to lift: a LateCharge read returns LateCharges, whatever the mode.
+    private static DocFilterState StateOf(DocFamily family, IDocFilters? filters)
+        => family.Slot.Family == DocFilterFamily.Type ? DocFilterState.Active : filters?.StateOf(family.Slot) ?? DocFilterState.Active;
 }

@@ -130,6 +130,9 @@ internal sealed class DocModel
 
     public bool IsEmbedded => Collection is null;
 
+    /// <summary>The hierarchy a Pragmatic entity is in (<c>[Inheritance]</c> on its root); null outside one.</summary>
+    public DocInheritanceTree? Inheritance { get; private init; }
+
     /// <summary>A Pragmatic <c>[Entity]</c>: its reads carry the caller's filter families.</summary>
     public bool IsPragmaticEntity => IsPragmatic(Type);
 
@@ -185,6 +188,10 @@ internal sealed class DocModel
         var collection = document is null
             ? pragmatic ? PragmaticNames.Pluralize(type.Name) : null
             : document.ConstructorArguments.FirstOrDefault().Value as string ?? (pragmatic ? PragmaticNames.Pluralize(type.Name) : type.Name);
+        // A hierarchy is one collection, its root's (#539).
+        var inheritance = pragmatic ? DocInheritanceTree.Of(type) : null;
+        if (inheritance is { IsRoot: false } && Read(inheritance.Root, []) is { Collection: { } rootCollection })
+            collection = rootCollection;
         var where = type.Locations.FirstOrDefault() ?? Location.None;
         var fields = new List<DocField>();
         var ok = true;
@@ -229,7 +236,7 @@ internal sealed class DocModel
             return null;
         }
 
-        return ok ? new DocModel(type, collection, fields, partitionKey) : null;
+        return ok ? new DocModel(type, collection, fields, partitionKey) { Inheritance = inheritance } : null;
     }
 
     /// <summary>

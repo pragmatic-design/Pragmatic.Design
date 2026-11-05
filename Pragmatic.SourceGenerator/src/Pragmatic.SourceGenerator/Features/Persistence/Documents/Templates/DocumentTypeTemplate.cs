@@ -37,11 +37,20 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
             AppendLine();
         }
 
-        // The fields in order, the key first: a document's _id is its first field.
+        foreach (var accessor in model.Accessors)
+            AppendLine("    " + accessor);
+        if (model.Accessors.Count > 0)
+            AppendLine();
+
+        // The fields in order, the key first: a document's _id is its first field. In a hierarchy a type below this one writes its own document,
+        // and this one's carries its discriminator.
         AppendLine($"    static void {contract}.WriteFields({Bson}.BsonWriter w, {name} e)");
         AppendLine("    {");
+        RenderWriteDispatch("WriteFields");
         foreach (var field in model.Fields.OrderBy(f => f.IsKey ? 0 : 1))
             AppendLine("        " + field.BsonWrite + ";");
+        if (model.Inheritance is { } inheritance)
+            AppendLine($"        {Runtime}.Conversion.DocValues.Write(w, {inheritance.FieldLiteral}, {inheritance.NameLiteral});");
         AppendLine("    }");
         AppendLine();
         RenderReadDocument(name, contract);
@@ -55,6 +64,12 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
     {
         AppendLine($"    static {name} {contract}.ReadDocument(global::System.ReadOnlySpan<byte> document)");
         AppendLine("    {");
+        if (RenderReadDispatch("document", $"{Runtime}.Conversion.DocInheritance.Discriminator(document, {model.Inheritance?.FieldLiteral}u8)", "ReadDocument"))
+        {
+            AppendLine("    }");
+            return;
+        }
+
         AppendLine($"        var r = new {Bson}.BsonReader(document);");
         AppendLine($"        var e = new {name}();");
         AppendLine("        while (r.ReadElement(out var type, out var name))");
@@ -69,7 +84,7 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
         foreach (var field in model.Fields)
         {
             AppendLine($"            {(first ? "if" : "else if")} (global::System.MemoryExtensions.SequenceEqual(name, {field.BsonNameLiteral}u8))");
-            AppendLine($"                e.{field.PropertyName} = {field.BsonRead};");
+            AppendLine($"                {field.Assign(field.BsonRead)}");
             first = false;
         }
 
@@ -128,6 +143,7 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
         {
             AppendLine($"    static void {contract}.WriteJson({Writer} w, {name} e)");
             AppendLine("    {");
+            RenderWriteDispatch("WriteJson");
             AppendLine("        w.WriteStartObject();");
             AppendLine($"        w.WriteString(\"id\", {model.IdText});");
             foreach (var field in model.Fields)
@@ -136,6 +152,8 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
                     AppendLine("        " + field.JsonWrite + ";");
             }
 
+            if (model.Inheritance is { } inheritance)
+                AppendLine($"        w.WriteString({inheritance.FieldLiteral}, {inheritance.NameLiteral});");
             AppendLine("        w.WriteEndObject();");
             AppendLine("    }");
             AppendLine();
@@ -149,6 +167,12 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
         AppendLine();
         AppendLine($"    static {name} {contract}.ReadJson({Element} document)");
         AppendLine("    {");
+        if (RenderReadDispatch("document", $"{Runtime}.Conversion.DocInheritance.Discriminator(document, {model.Inheritance?.FieldLiteral})", "ReadJson"))
+        {
+            AppendLine("    }");
+            return;
+        }
+
         AppendLine($"        var e = new {name}();");
         AppendLine("        foreach (var property in document.EnumerateObject())");
         AppendLine("        {");
@@ -160,7 +184,7 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
         foreach (var field in model.Fields)
         {
             AppendLine($"                case {field.JsonNameLiteral}:");
-            AppendLine($"                    e.{field.PropertyName} = {field.JsonRead};");
+            AppendLine($"                    {field.Assign(field.JsonRead)}");
             AppendLine("                    break;");
         }
 
@@ -169,5 +193,43 @@ internal sealed class DocumentTypeTemplate(DocumentTypeModel model) : CSharpTemp
         AppendLine();
         AppendLine("        return e;");
         AppendLine("    }");
+    }
+
+    /// <summary>A hierarchy's type with types below it: an entity of one of them is written by that type's own <paramref name="method" />.</summary>
+    private void RenderWriteDispatch(string method)
+    {
+        if (model.Inheritance is not { Below.Count: > 0 } inheritance)
+            return;
+        AppendLine("        switch (e)");
+        AppendLine("        {");
+        var i = 0;
+        foreach (var below in inheritance.Below)
+            AppendLine($"            case {below.FullName} x{i}: {Runtime}.Conversion.DocInheritance.{method}<{below.FullName}>(w, x{i++}); return;");
+        AppendLine("        }");
+        AppendLine();
+    }
+
+    /// <summary>
+    ///     A hierarchy's type with types below it: a document whose discriminator names one of them is read by that type's own
+    ///     <paramref name="method" />. True when nothing follows (an abstract type: a document is always one of the types below it).
+    /// </summary>
+    private bool RenderReadDispatch(string document, string discriminator, string method)
+    {
+        if (model.Inheritance is not { } inheritance || (inheritance.Below.Count == 0 && !inheritance.IsAbstract))
+            return false;
+        if (inheritance.Below.Count > 0)
+        {
+            AppendLine($"        switch ({discriminator})");
+            AppendLine("        {");
+            foreach (var below in inheritance.Below)
+                AppendLine($"            case {below.NameLiteral}: return {Runtime}.Conversion.DocInheritance.{method}<{below.FullName}>({document});");
+            AppendLine("        }");
+            AppendLine();
+        }
+
+        if (!inheritance.IsAbstract)
+            return false;
+        AppendLine($"        throw new global::System.InvalidOperationException(\"The document's discriminator names no type below the abstract {model.TypeName}.\");");
+        return true;
     }
 }

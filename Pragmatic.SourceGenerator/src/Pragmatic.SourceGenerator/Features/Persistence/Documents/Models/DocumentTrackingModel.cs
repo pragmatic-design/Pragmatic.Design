@@ -11,4 +11,5 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="TypeName">The entity's simple name.</param>
 /// <param name="FullName">The entity's fully qualified name.</param>
 /// <param name="Fields">The tracked fields, in the order of their bits.</param>
-internal sealed record DocumentTrackingModel(string Hint, string? Namespace, string TypeName, string FullName, EquatableArray<TrackedFieldModel> Fields);
+/// <param name="HidesBase">A hierarchy's derived type: its registration hides the base entity's (#539).</param>
+internal sealed record DocumentTrackingModel(string Hint, string? Namespace, string TypeName, string FullName, EquatableArray<TrackedFieldModel> Fields, bool HidesBase = false);
