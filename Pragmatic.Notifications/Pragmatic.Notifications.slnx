@@ -13,6 +13,7 @@
   <Project Path="src/Pragmatic.Notifications.Slack/Pragmatic.Notifications.Slack.csproj" />
   <Project Path="src/Pragmatic.Notifications.Sms/Pragmatic.Notifications.Sms.csproj" />
   <Project Path="src/Pragmatic.Notifications.EFCore/Pragmatic.Notifications.EFCore.csproj" />
+  <Project Path="src/Pragmatic.Notifications.Engines/Pragmatic.Notifications.Engines.csproj" />
   <Project Path="src/Pragmatic.Notifications.Testing/Pragmatic.Notifications.Testing.csproj" />
   <Project Path="tests/Pragmatic.Notifications.Tests/Pragmatic.Notifications.Tests.csproj" />
 </Solution>

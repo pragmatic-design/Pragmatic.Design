@@ -40,6 +40,12 @@ internal static class DialectSchemas
     private const string StaffImport = "namespace PragmaticEntities.Tests { [Pragmatic.Actions.Attributes.Boundary] public sealed partial class StaffBoundary; "
                                        + "[Pragmatic.Composition.Attributes.Module] [Pragmatic.Composition.Attributes.UsePackage<Pragmatic.Authorization.Management.AuthorizationManagementPackage, StaffBoundary>] public sealed class StaffModule; }";
 
+    /// <summary>
+    ///     A fourth boundary with [StoresNotifications], which claims no entity either: the notification records' table (<c>__Notifications</c>,
+    ///     Pragmatic.Notifications.Engines' row), which <see cref="NotificationStoreTests" /> writes and reads on each database.
+    /// </summary>
+    private const string NotificationsBoundary = "namespace PragmaticEntities.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Notifications.Attributes.StoresNotifications] public sealed partial class InboxBoundary; }";
+
     private static readonly ConcurrentDictionary<SqlDialect, SchemaVersion> Schemas = new();
 
     /// <summary>The database's schema on <paramref name="dialect" />.</summary>
@@ -49,7 +55,7 @@ internal static class DialectSchemas
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
-        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
+        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
@@ -63,7 +69,8 @@ internal static class DialectSchemas
                 typeof(global::Pragmatic.Cryptography.ProtectedValue), typeof(global::Pragmatic.Cryptography.Engines.Sql.SqlProtectedValue),
                 typeof(global::Pragmatic.Internationalization.Types.LocalizedString), typeof(global::Pragmatic.Internationalization.Engines.Sql.SqlLocalizedString),
                 typeof(global::Pragmatic.Composition.Attributes.ModuleAttribute), typeof(global::Pragmatic.Authorization.Management.AuthorizationManagementPackage),
-                typeof(global::Pragmatic.Authorization.Management.Engines.Sql.DynamicRoleRow)]),
+                typeof(global::Pragmatic.Authorization.Management.Engines.Sql.DynamicRoleRow),
+                typeof(global::Pragmatic.Notifications.Attributes.StoresNotificationsAttribute), typeof(global::Pragmatic.Notifications.Engines.Sql.NotificationRow)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new generator::Pragmatic.SourceGenerator.PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out _);

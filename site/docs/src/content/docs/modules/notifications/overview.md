@@ -55,6 +55,7 @@ dotnet add package Pragmatic.Notifications.Webhook   # optional: webhook channel
 dotnet add package Pragmatic.Notifications.Slack     # optional: Slack incoming webhooks
 dotnet add package Pragmatic.Notifications.Sms       # optional: SMS via Twilio
 dotnet add package Pragmatic.Notifications.EFCore    # optional: database-backed delivery tracking
+dotnet add package Pragmatic.Notifications.Engines   # optional: the same, on the Sql and documents engines
 dotnet add package Pragmatic.Notifications.Testing   # test projects: capture what was sent
 ```
 

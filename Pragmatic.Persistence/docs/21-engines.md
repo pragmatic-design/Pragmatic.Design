@@ -141,6 +141,7 @@ include the module's part:
 | Event outbox | `Pragmatic.Events.EFCore` | `Pragmatic.Events.Engines` | `[EnableEventOutbox]` on the boundary |
 | Messaging outbox | `Pragmatic.Messaging.EFCore` | `Pragmatic.Messaging.Engines` | `[EnableOutbox]` on the boundary |
 | Audit trail | `Pragmatic.Audit.EFCore` | `Pragmatic.Audit.Engines` | `[Audited]` on an entity |
+| Notification records (`__Notifications`) | `Pragmatic.Notifications.EFCore` | `Pragmatic.Notifications.Engines` | `[StoresNotifications]` on the boundary: its generated registration adds the store of its engine |
 | Subject registry | `Pragmatic.Privacy.EFCore` | `Pragmatic.Privacy.Engines` | `[DataSubject]` on an entity |
 | Per-subject keys (`__SubjectKeys`) | `Pragmatic.Cryptography.EFCore` | `Pragmatic.Cryptography.Engines` | `[DataSubject]` on an entity, beside the registry |
 | Roles, permissions and assignments | `Pragmatic.Authorization.Management.EFCore` | `Pragmatic.Authorization.Management.Engines` | `[UsePackage<AuthorizationManagementPackage, TBoundary>]` on a module: in that boundary's database |

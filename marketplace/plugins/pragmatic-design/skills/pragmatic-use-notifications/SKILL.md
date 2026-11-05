@@ -121,6 +121,11 @@ public partial class BookingBoundary;
 Point `UseEfCoreStore` at that boundary's database (the same connection string). The boundary project
 references `Pragmatic.Notifications.EFCore`; without it the attribute maps nothing, and the generator
 reports **PRAG2100** (Warning) on the boundary.
+
+On a boundary the Sql or documents engine persists, the package is `Pragmatic.Notifications.Engines`
+instead, and there is no `UseEfCoreStore`: the boundary's generated `Add{Boundary}Persistence`
+registers the store over its session, and the engine's schema holds `__Notifications` with EF Core's
+columns and indexes. PRAG2100 names that package when it is missing.
 Without the attribute, the first send fails with `relation "__Notifications" does not exist`.
 
 ## Addressing a user, role or tenant

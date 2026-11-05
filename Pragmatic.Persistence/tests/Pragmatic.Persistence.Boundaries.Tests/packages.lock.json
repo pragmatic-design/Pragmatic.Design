@@ -442,6 +442,18 @@
           "Pragmatic.Cryptography": "[1.0.0, )"
         }
       },
+      "pragmatic.email": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "System.Security.Cryptography.Pkcs": "[9.0.21, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
@@ -510,6 +522,25 @@
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
           "Pragmatic.Abstractions": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Email": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.notifications.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Notifications": "[1.0.0, )"
         }
       },
       "pragmatic.persistence": {
@@ -766,6 +797,12 @@
         "requested": "[10.0.10, )",
         "resolved": "10.0.10",
         "contentHash": "5wu/GrYVd8mG2DVUw3vFJzF+O336TyTGg/Kmcgw9bfwYhCoFiV5lR5QeEmKecJyrW4W54nMfD3p3589E8a7czQ=="
+      },
+      "System.Security.Cryptography.Pkcs": {
+        "type": "CentralTransitive",
+        "requested": "[9.0.21, )",
+        "resolved": "9.0.21",
+        "contentHash": "KD+oHoYIxwNCajjVe58WVwq9cRpum+Pg3tRveDRtkcaw6w3oc7sNBoMRtb5P5OehI3bgv1ucMpgjf8lpj5J96A=="
       }
     }
   }

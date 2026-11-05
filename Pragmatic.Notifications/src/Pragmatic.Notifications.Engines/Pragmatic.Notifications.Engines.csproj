@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The notification records (__Notifications) on Pragmatic's Sql and documents engines, beside Pragmatic.Notifications.EFCore: the store a [StoresNotifications] boundary's generated registration adds over the boundary's session.</Description>
+    <PackageTags>notifications;tracking;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The store's own chains are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <!-- The engines' bridges, private as in Pragmatic.Messaging.Engines: an application brings the bridge of the engine it uses. The Sql store's
+         types never touch the documents engine's and the other way round, so the bridge the application lacks is never loaded. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The row and the document are the engines' own types: the generator describes them in this assembly, which is the one that declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

@@ -698,6 +698,7 @@
   </Folder>
   <Folder Name="/Pragmatic.Notifications/">
     <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.EFCore/Pragmatic.Notifications.EFCore.csproj" />
+    <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Engines/Pragmatic.Notifications.Engines.csproj" />
     <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Slack/Pragmatic.Notifications.Slack.csproj" />
     <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Sms/Pragmatic.Notifications.Sms.csproj" />
     <Project Path="Pragmatic.Notifications/src/Pragmatic.Notifications.Testing/Pragmatic.Notifications.Testing.csproj" />
