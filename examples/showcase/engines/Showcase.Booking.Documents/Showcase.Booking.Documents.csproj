@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Showcase.Booking on the documents engine: the same source files as src/Showcase.Booking, linked, with the documents engine's bridge in place of
+       EF Core's and the engine projects of Catalog and Accounts in place of theirs. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <RootNamespace>Showcase.Booking</RootNamespace>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Showcase.Booking\**\*.cs" Exclude="..\..\src\Showcase.Booking\obj\**;..\..\src\Showcase.Booking\bin\**" LinkBase="Booking" />
+    <AdditionalFiles Include="..\..\src\Showcase.Booking\translations\*.json" LinkBase="translations" />
+    <EmbeddedResource Include="..\..\src\Showcase.Booking\templates\*.pdxemail" LinkBase="templates" />
+  </ItemGroup>
+
+  <!-- Refused by the documents engine by design (#479): a document keeps a relation as its key, so there is no navigation to load with
+       Include (PRAG3111). Reading a reservation loads its guest and room type with it. -->
+  <ItemGroup>
+    <Compile Remove="..\..\src\Showcase.Booking\Reservations\Actions\GetReservationAction.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Showcase.Catalog.Documents\Showcase.Catalog.Documents.csproj" />
+    <ProjectReference Include="..\Showcase.Accounts.Documents\Showcase.Accounts.Documents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal\Pragmatic.Temporal.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Temporal\src\Pragmatic.Temporal.Json\Pragmatic.Temporal.Json.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization.Engines\Pragmatic.Internationalization.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events\Pragmatic.Events.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Events\src\Pragmatic.Events.Engines\Pragmatic.Events.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging\Pragmatic.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <!-- The outbox on this engine, in place of Pragmatic.Messaging.EFCore. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Comments\src\Pragmatic.Comments\Pragmatic.Comments.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Tags\src\Pragmatic.Tags\Pragmatic.Tags.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notes\src\Pragmatic.Notes\Pragmatic.Notes.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Attachments\src\Pragmatic.Attachments\Pragmatic.Attachments.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <!-- The notification store on this engine, in place of Pragmatic.Notifications.EFCore (#528). -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Pragmatic.Notifications.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Markup\Pragmatic.Documents.Markup.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
+  </ItemGroup>
+
+</Project>
