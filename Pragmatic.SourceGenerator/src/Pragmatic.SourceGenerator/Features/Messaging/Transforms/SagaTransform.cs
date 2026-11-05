@@ -146,6 +146,8 @@ internal static class SagaTransform
             && i.TypeArguments.Length == 1
             && SymbolEqualityComparer.Default.Equals(i.TypeArguments[0], stateType));
 
+        var persistenceBoundary = ResolvePersistenceBoundary(symbol);
+
         return new SagaModel
         {
             Namespace = symbol.GetNamespaceOrEmpty(),
@@ -155,7 +157,11 @@ internal static class SagaTransform
             AssemblyName = symbol.ContainingAssembly?.Name ?? "",
             IsPartial = symbol.IsPartial(),
             ImplementsISaga = implementsISaga,
-            PersistenceDbContextFqn = ResolvePersistenceDbContext(symbol),
+            PersistenceDbContextFqn = persistenceBoundary is null ? null : DbContextOf(persistenceBoundary),
+            PersistenceBoundaryFqn = persistenceBoundary?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            NamedPersistenceEngine = persistenceBoundary is null ? null : Core.PersistenceEngineMarker.NamedOn(persistenceBoundary),
+            BoundaryHasOutbox = persistenceBoundary is not null && Persistence.Sql.Transforms.PragmaticRegistration.EnablesMessagingOutbox(persistenceBoundary),
+            HasEnginesSagaStore = context.SemanticModel.Compilation.GetTypeByMetadataName(Persistence.Sql.Transforms.PragmaticRegistration.EngineSagaStore) is not null,
             StateTypeFqn = stateTypeFqn,
             StateTypeShortName = stateTypeShortName,
             Steps = steps.ToImmutable(),
@@ -166,13 +172,23 @@ internal static class SagaTransform
     }
 
     /// <summary>
-    ///     Walks up the saga's namespaces to the nearest enclosing <c>[Boundary]</c> type. When that
-    ///     boundary is <c>[EnableSagaPersistence]</c>, returns the FQN of its generated DbContext by
-    ///     convention (<c>{boundaryNamespace}.Entities.{Boundary}DbContext</c>) so the saga is registered
-    ///     against an EF Core repository; otherwise null (in-memory). The boundary lives in the saga's
-    ///     own assembly, so this needs no cross-assembly scan.
+    ///     The FQN of the generated DbContext of an <c>[EnableSagaPersistence]</c> boundary, by convention
+    ///     (<c>{boundaryNamespace}.Entities.{Boundary}DbContext</c>), so a saga on EF Core is registered against an EF Core repository.
     /// </summary>
-    private static string? ResolvePersistenceDbContext(INamedTypeSymbol saga)
+    private static string DbContextOf(INamedTypeSymbol boundary)
+    {
+        var boundaryName = boundary.Name.EndsWith("Boundary", System.StringComparison.Ordinal)
+            ? boundary.Name.Substring(0, boundary.Name.Length - "Boundary".Length)
+            : boundary.Name;
+        return $"global::{boundary.ContainingNamespace.ToDisplayString()}.Entities.{boundaryName}DbContext";
+    }
+
+    /// <summary>
+    ///     Walks up the saga's namespaces to the nearest enclosing <c>[Boundary]</c> type, and returns it when it is
+    ///     <c>[EnableSagaPersistence]</c>; otherwise null (in-memory). The boundary lives in the saga's own assembly, so this needs no
+    ///     cross-assembly scan.
+    /// </summary>
+    private static INamedTypeSymbol? ResolvePersistenceBoundary(INamedTypeSymbol saga)
     {
         for (var ns = saga.ContainingNamespace; ns is { IsGlobalNamespace: false }; ns = ns.ContainingNamespace)
         {
@@ -188,14 +204,7 @@ internal static class SagaTransform
                 var optedIn = attrs.Any(a =>
                     a.AttributeClass is { Name: "EnableSagaPersistenceAttribute" } s
                     && s.ContainingNamespace?.ToDisplayString() == "Pragmatic.Messaging.Attributes");
-                if (!optedIn)
-                    return null;
-
-                var boundaryNs = ns.ToDisplayString();
-                var boundaryName = type.Name.EndsWith("Boundary", System.StringComparison.Ordinal)
-                    ? type.Name.Substring(0, type.Name.Length - "Boundary".Length)
-                    : type.Name;
-                return $"global::{boundaryNs}.Entities.{boundaryName}DbContext";
+                return optedIn ? type : null;
             }
         }
 

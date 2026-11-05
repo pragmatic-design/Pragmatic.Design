@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 using Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
@@ -95,6 +96,59 @@ internal static partial class SqlInterceptorGenerator
                 tableIn(row, new HashSet<string>(StringComparer.Ordinal) { database }, static table => table);
         }
     }
+
+    /// <summary>
+    ///     The saga instances' table with EF Core's three indexes (<c>SagaEntityTypeConfiguration</c>): at most one active saga per type,
+    ///     correlation and tenant, the active sagas of a type, and the timeout scan. The unique one holds the active rows only (<c>"Status" = 0</c>),
+    ///     a partial index MySQL and Oracle do not have: there it is left out, and the database does not refuse a second active saga
+    ///     (owner decision, 2026-11-05: filtered where the database can express it; <see cref="SagaUniquenessLeftOut" /> says so).
+    /// </summary>
+    /// <remarks>
+    ///     On Oracle, which stores the empty string as NULL, the tenant (empty in a single-tenant application) is a nullable column: a NOT NULL
+    ///     one would refuse every saga of an application without tenants. The unique index that reads it is left out there anyway.
+    /// </remarks>
+    private static TableSchemaModel WithSagaInstanceIndexes(TableSchemaModel table, SqlDialect dialect)
+    {
+        if (dialect == SqlDialect.Oracle)
+            table = table with { Columns = table.Columns.Select(c => c.Name == "TenantId" ? c with { Nullable = true } : c).ToEquatableArray() };
+        var indexes = table.Indexes.ToList();
+        if (!SagaUniquenessLeftOut(dialect))
+            indexes.Add(new IndexSchemaModel($"IX_{table.Name}_SagaType_CorrelationId_TenantId", ["SagaType", "CorrelationId", "TenantId"], true, "\"Status\" = 0"));
+        indexes.Add(new IndexSchemaModel($"IX_{table.Name}_Status_SagaType", ["Status", "SagaType"], false, null));
+        indexes.Add(new IndexSchemaModel($"IX_{table.Name}_Status_TimeoutAt", ["Status", "TimeoutAt"], false, null));
+        return table with { Indexes = indexes.ToEquatableArray() };
+    }
+
+    /// <summary>True on the dialects with no partial index, where the active sagas' unique index is left out.</summary>
+    internal static bool SagaUniquenessLeftOut(SqlDialect dialect) => dialect is SqlDialect.MySql or SqlDialect.Oracle;
+
+    /// <summary>
+    ///     <see cref="Diagnostics.SagaUniquenessLeftOut" /> for each <c>[EnableSagaPersistence]</c> boundary the Sql engine serves, in a host whose
+    ///     schema is typed for MySQL or Oracle: where the schema leaves the index out.
+    /// </summary>
+    internal static void ReportSagaUniquenessLeftOut(SourceProductionContext spc, Compilation compilation, DetectedFeatures features)
+    {
+        if (!UsesSql(compilation) || !features.IsHostMode || compilation.GetTypeByMetadataName(SchemaVersionType) is null
+            || compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSagaStore) is null
+            || SchemaDialect(compilation, features) is not { } dialect || !SagaUniquenessLeftOut(dialect))
+            return;
+
+        var engines = PragmaticEngines.Of(compilation);
+        var hasTopology = DatabaseTopologyReader.Read(compilation, spc.CancellationToken).HasTopology;
+        foreach (var boundary in SchemaCandidates(compilation, hasTopology)
+                     .Where(b => PragmaticRegistration.EnablesSagaPersistence(b) && engines.ServesBoundary(b, PragmaticEngine.Sql)))
+            spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.SagaUniquenessLeftOut, boundary.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
+                boundary.Name, dialect == SqlDialect.MySql ? "MySQL" : "Oracle"));
+    }
+
+    /// <summary>The executed steps' table with EF Core's foreign key to the instances (cascading) and its index.</summary>
+    private static TableSchemaModel WithSagaStepKeys(TableSchemaModel table)
+        => table with
+        {
+            Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_SagaInstanceId", ["SagaInstanceId"], false, null)).ToEquatableArray(),
+            ForeignKeys = table.ForeignKeys.Append(new ForeignKeySchemaModel($"FK_{table.Name}___SagaInstances_SagaInstanceId", "SagaInstanceId", "__SagaInstances", "Id", "Cascade"))
+                .ToEquatableArray(),
+        };
 
     /// <summary>
     ///     The notification records' table with EF Core's four indexes (<c>NotificationEntityTypeConfiguration</c>): the status, the creation

@@ -180,6 +180,10 @@ public partial class BookingBoundary;
 ```
 
   The boundary project must reference `Pragmatic.Messaging.EFCore`, else the attribute is inert → **PRAG0832**.
+  On a boundary the Sql or documents engine persists, the package is `Pragmatic.Messaging.Engines`: the
+  generated saga registration adds that engine's repository over the boundary's session. On MySQL and
+  Oracle the active sagas' unique index is left out (**PRAG3038**): the database does not refuse a second
+  active saga for one correlation.
 
 ### 5. Transport
 

@@ -45,6 +45,21 @@ internal sealed record SagaModel : GeneratorModel
     /// </summary>
     public string? PersistenceDbContextFqn { get; init; }
 
+    /// <summary>
+    ///     Fully-qualified (global::) name of that <c>[EnableSagaPersistence]</c> boundary, when there is one: the key of its session, which an
+    ///     engine's repository reads.
+    /// </summary>
+    public string? PersistenceBoundaryFqn { get; init; }
+
+    /// <summary>The engine that boundary names with <c>[PersistenceEngine]</c>, or null: the registration decides the engine against the features.</summary>
+    public string? NamedPersistenceEngine { get; init; }
+
+    /// <summary>True when that boundary is also <c>[EnableOutbox]</c>: an engine's repository writes a step's messages to the boundary's outbox.</summary>
+    public bool BoundaryHasOutbox { get; init; }
+
+    /// <summary>True when the compilation references Pragmatic.Messaging.Engines' saga store (its Sql instance row).</summary>
+    public bool HasEnginesSagaStore { get; init; }
+
     /// <summary>All handler methods (steps) in the saga.</summary>
     public required EquatableArray<SagaStepModel> Steps { get; init; }
 

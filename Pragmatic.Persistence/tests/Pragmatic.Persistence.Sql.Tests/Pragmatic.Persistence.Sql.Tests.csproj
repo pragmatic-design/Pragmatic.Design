@@ -52,6 +52,9 @@
     <!-- The notification store on the engine: its table in the schema of a [StoresNotifications] boundary (DialectSchemas), and its four
          operations on each database. -->
     <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Pragmatic.Notifications.Engines.csproj" />
+    <!-- The saga store on the engine (Pragmatic.Messaging.Engines, above): StaySaga, its boundary and their generated registration, run on
+         each database. In an assembly of their own: a boundary here would claim the suite's entities. -->
+    <ProjectReference Include="..\Fixtures\SagaFixture.Sql\SagaFixture.Sql.csproj" />
     <!-- The audit trail on the engine: its tables in the schema, the phase that writes an [Audited] entity's entries, and the trail's store. -->
     <ProjectReference Include="..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
     <!-- The subject registry on the engine: its tables in the schema of the database holding the [DataSubject], and its stores. -->

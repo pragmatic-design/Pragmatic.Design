@@ -41,6 +41,16 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
     /// <summary>The Messaging outbox on the engines (Pragmatic.Messaging.Engines), by the type the generator recognises it by: its Sql row.</summary>
     internal const string EngineMessagingOutbox = "Pragmatic.Messaging.Engines.Sql.OutboxMessageRow";
 
+    /// <summary>The saga store on the engines (Pragmatic.Messaging.Engines), by the type the generator recognises it by: its Sql instance row.</summary>
+    internal const string EngineSagaStore = "Pragmatic.Messaging.Engines.Sql.SagaInstanceRow";
+
+    /// <summary>The saga store's step row on the Sql engine, beside the instances.</summary>
+    internal const string EngineSagaStepRow = "Pragmatic.Messaging.Engines.Sql.SagaStepRow";
+
+    /// <summary>True when <paramref name="boundary" /> carries <c>[EnableSagaPersistence]</c> (Pragmatic.Messaging's): its sagas are kept in its database.</summary>
+    internal static bool EnablesSagaPersistence(INamedTypeSymbol boundary)
+        => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == AttributeNames.EnableSagaPersistence);
+
     /// <summary>The notification store on the engines (Pragmatic.Notifications.Engines), by the type the generator recognises it by: its Sql row.</summary>
     internal const string EngineNotificationStore = "Pragmatic.Notifications.Engines.Sql.NotificationRow";
 

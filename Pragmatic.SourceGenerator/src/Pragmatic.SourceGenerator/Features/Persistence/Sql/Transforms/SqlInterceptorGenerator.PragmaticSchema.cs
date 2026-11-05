@@ -108,6 +108,9 @@ internal static partial class SqlInterceptorGenerator
         ModuleTable(EventOutboxRowType, PragmaticRegistration.EnablesEventOutbox, WithClaimIndex); // [EnableEventOutbox]
         ModuleTable(MessagingOutboxRowType, PragmaticRegistration.EnablesMessagingOutbox, WithMessagingOutboxIndexes); // [EnableOutbox]
         ModuleTable(PragmaticRegistration.EngineNotificationStore, PragmaticRegistration.StoresNotifications, WithNotificationIndexes); // [StoresNotifications]
+        // [EnableSagaPersistence]: the instances, then their steps, which reference them.
+        ModuleTable(PragmaticRegistration.EngineSagaStore, PragmaticRegistration.EnablesSagaPersistence, table => WithSagaInstanceIndexes(table, dialect));
+        ModuleTable(PragmaticRegistration.EngineSagaStepRow, PragmaticRegistration.EnablesSagaPersistence, WithSagaStepKeys);
 
         // [Audited]: the trail's three tables in each database that holds an audited entity, as EF Core's schema puts them there.
         var auditedDatabases = new HashSet<string>(served.Where(PragmaticRegistration.IsAudited).Select(t => DatabaseOf(t)!), StringComparer.Ordinal);

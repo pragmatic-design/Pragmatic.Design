@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- StaySaga on the documents engine: the saga, its boundary ([EnableSagaPersistence], [EnableOutbox]) and the registration the generator
+       writes for them (AddPragmaticSagas), which the documents suite runs on MongoDB and Cosmos DB. An assembly of its own, and named as the
+       Sql one (SagaFixture.Sql) for the same reasons. A test fixture, not a package. -->
+  <PropertyGroup>
+    <RootNamespace>PragmaticSagas.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Test code, awaited by the tests only. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The saga itself, one source with the Sql fixture's (Saga/): the same saga on both engines. -->
+    <Compile Include="..\SagaFixture.Sql\Saga\*.cs" Link="Saga\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
