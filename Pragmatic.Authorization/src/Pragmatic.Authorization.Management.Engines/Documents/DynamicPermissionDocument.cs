@@ -9,7 +9,7 @@ namespace Pragmatic.Authorization.Management.Engines.Documents;
 public sealed partial class DynamicPermissionDocument
 {
     /// <summary>The collection in the importing boundary's <c>{Boundary}DocSchema</c>.</summary>
-    public static readonly DocCollectionSchema Schema = new("DynamicPermissions", "/id", [], []);
+    public static readonly DocCollectionSchema Schema = new("DynamicPermissions", "/id", [new DocIndex("IX_DynamicPermissions_Name_TenantId", ["Name", "TenantId"], Unique: true)], []); // the entity's [Unique] (#490)
 
     [Key]
     public Guid PersistenceId { get; set; }

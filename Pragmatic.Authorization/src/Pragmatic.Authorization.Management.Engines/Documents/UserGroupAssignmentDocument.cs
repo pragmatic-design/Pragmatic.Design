@@ -12,7 +12,8 @@ namespace Pragmatic.Authorization.Management.Engines.Documents;
 public sealed partial class UserGroupAssignmentDocument
 {
     /// <summary>The collection in the importing boundary's <c>{Boundary}DocSchema</c>.</summary>
-    public static readonly DocCollectionSchema Schema = new("UserGroupAssignments", "/id", [], []);
+    public static readonly DocCollectionSchema Schema = new("UserGroupAssignments", "/id",
+        [new DocIndex("IX_UserGroupAssignments_UserId_GroupName_TenantId", ["UserId", "GroupName", "TenantId"])], []); // the entity's [Index] (#490)
 
     [Key]
     public Guid PersistenceId { get; set; }

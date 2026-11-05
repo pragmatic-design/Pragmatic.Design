@@ -121,6 +121,17 @@ How do I inspect effective permissions for a user today?
 All entities are tenant-aware through `TenantId`. A row with no tenant holds in every tenant, so only a
 caller with no tenant may write one.
 
+The indexes are declared on the entities, so every engine's tables have them:
+- a unique index on `(Name, TenantId)` for roles and for permissions;
+- one on `(RoleName, PermissionName, TenantId)` for grants;
+- one on `(UserId, RoleName, TenantId)` for role assignments;
+- one on `(UserId, GroupName, TenantId)` for group assignments.
+
+A second role or permission of the same name in a tenant is refused by the database, not only by the
+operation's check before the insert. ⚠️ A global row's `TenantId` is NULL, and PostgreSQL, SQLite and
+MySQL hold NULLs distinct in a unique index: there, two global roles of one name are refused by the check
+alone. The grants and the assignments are not unique, because an ended one is kept.
+
 ## Enforcement
 
 `ManagedRolePermissionProvider` is an `IPermissionProvider` the package registers: on every permission

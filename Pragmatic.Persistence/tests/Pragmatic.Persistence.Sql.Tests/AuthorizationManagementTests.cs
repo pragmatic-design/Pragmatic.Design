@@ -16,17 +16,26 @@ public class AuthorizationManagementTests(PragmaticDatabases databases)
 {
     /// <summary>
     ///     EF Core's tables for the package's five entities, as Pragmatic's EF branch describes them on PostgreSQL (the Showcase's
-    ///     <c>ShowcaseAppDatabase</c> schema): the same names, types, nullability and keys, and no index, so a database holds one set of
-    ///     roles whichever engine writes it.
+    ///     <c>ShowcaseAppDatabase</c> schema): the same names, types, nullability and keys, so a database holds one set of roles whichever
+    ///     engine writes it. And the indexes the entities declare (#490): a role's and a permission's name unique in its tenant, unfiltered
+    ///     (the entities are not <c>[SoftDelete]</c> to the generator), and the lookups of the grants and the assignments.
     /// </summary>
     [Fact]
     public void The_packages_tables_in_the_schema_are_EF_Cores_column_for_column()
     {
         var tables = DialectSchemas.For(SqlDialect.PostgreSql).Tables;
+        var indexes = new Dictionary<string, string[]>
+        {
+            ["DynamicRoles"] = ["IX_DynamicRoles_Name_TenantId (Name, TenantId) unique"],
+            ["DynamicPermissions"] = ["IX_DynamicPermissions_Name_TenantId (Name, TenantId) unique"],
+            ["DynamicRolePermissions"] = ["IX_DynamicRolePermissions_RoleName_PermissionName_TenantId (RoleName, PermissionName, TenantId)"],
+            ["UserRoleAssignments"] = ["IX_UserRoleAssignments_UserId_RoleName_TenantId (UserId, RoleName, TenantId)"],
+            ["UserGroupAssignments"] = ["IX_UserGroupAssignments_UserId_GroupName_TenantId (UserId, GroupName, TenantId)"],
+        };
         (string, string, bool, bool)[] Columns(string table)
         {
             var schema = tables.Single(t => t.Name == table);
-            Assert.Empty(schema.Indexes);
+            Assert.Equal(indexes[table], schema.Indexes.Select(i => $"{i.Name} ({string.Join(", ", i.Columns)}){(i.IsUnique ? " unique" : "")}{(i.Filter is null ? "" : " where " + i.Filter)}"));
             return [.. schema.Columns.Select(c => (c.Name, c.SqlType, c.IsNullable, c.IsPrimaryKey))];
         }
 

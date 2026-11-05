@@ -8,8 +8,8 @@ namespace Pragmatic.Authorization.Management.Engines.Documents;
 [Document("DynamicRoles")]
 public sealed partial class DynamicRoleDocument
 {
-    /// <summary>The collection in the importing boundary's <c>{Boundary}DocSchema</c>.</summary>
-    public static readonly DocCollectionSchema Schema = new("DynamicRoles", "/id", [], []);
+    /// <summary>The collection in the importing boundary's <c>{Boundary}DocSchema</c>, with the entity's unique index (#490).</summary>
+    public static readonly DocCollectionSchema Schema = new("DynamicRoles", "/id", [new DocIndex("IX_DynamicRoles_Name_TenantId", ["Name", "TenantId"], Unique: true)], []);
 
     [Key]
     public Guid PersistenceId { get; set; }

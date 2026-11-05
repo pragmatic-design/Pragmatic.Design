@@ -7,6 +7,7 @@ namespace Pragmatic.Authorization.Management.Entities;
 ///     The role can be static (IRole) or dynamic (DynamicRole).
 /// </summary>
 [Entity]
+[Index(nameof(UserId), nameof(RoleName), nameof(TenantId))] // the lookup of a user's roles; not unique: an ended assignment is kept
 public partial class UserRoleAssignment : ITemporalRelation, IEntity
 {
     /// <summary>The user identifier.</summary>

@@ -93,6 +93,28 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
     }
 
     /// <summary>
+    ///     A role's name is unique in its tenant in the database, not only in <c>CreateRole</c>'s check, which two concurrent requests
+    ///     can both pass (#490): the second row, written past the operation, is refused by the unique index on (Name, TenantId).
+    /// </summary>
+    [Fact]
+    public async Task ASecondRoleOfTheSameNameInATenant_IsRefusedByTheDatabase()
+    {
+        var name = $"auditor-{Guid.NewGuid():N}"[..20];
+        var tenant = $"acme-{Guid.NewGuid():N}"[..17];
+
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(Showcase.Accounts.AccountsBoundary));
+        context.Set<DynamicRole>().Add(new DynamicRole { Name = name, TenantId = tenant });
+        await context.SaveChangesAsync();
+
+        context.Set<DynamicRole>().Add(new DynamicRole { Name = name, TenantId = tenant });
+        var refused = await Record.ExceptionAsync(() => context.SaveChangesAsync());
+
+        refused.Should().BeOfType<DbUpdateException>();
+        refused!.InnerException!.Message.Should().Contain("IX_DynamicRoles_Name_TenantId", "the database's unique index refused it");
+    }
+
+    /// <summary>
     ///     Puts an authenticated principal on the scope, so an in-process invocation of a permissioned
     ///     action is authorized the same way a request is.
     /// </summary>

@@ -3,6 +3,7 @@ using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Actions.Assignments;
 using Pragmatic.Authorization.Management.Actions.Permissions;
 using Pragmatic.Authorization.Management.Actions.Roles;
+using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Providers;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Result.Http;
@@ -39,6 +40,15 @@ internal static class AuthorizationManagementScenario
         Assert.True((await createRole.InvokeAsync(new CreateRole { Name = role, Description = "Reads the reports" })).IsSuccess);
         Assert.IsType<ConflictError>((await createRole.InvokeAsync(new CreateRole { Name = role })).Error);
         Assert.True((await createRole.InvokeAsync(new CreateRole { Name = role, TenantId = "acme-" + suffix })).IsSuccess);
+
+        // The database refuses a name taken twice in a tenant too, when the row is written past the operation's check (two requests that
+        // both passed it): the unique index on (Name, TenantId) (#490). In a tenant, because a NULL TenantId is distinct in an index on
+        // PostgreSQL, SQLite and MySQL.
+        AssertRefusedByTheUniqueIndex(await Assert.ThrowsAnyAsync<Exception>(async () =>
+            await store.AddRoleAsync(new DynamicRole { Name = role, TenantId = "acme-" + suffix })), "DynamicRoles");
+        await store.AddPermissionAsync(new DynamicPermission { Name = permission, TenantId = "acme-" + suffix });
+        AssertRefusedByTheUniqueIndex(await Assert.ThrowsAnyAsync<Exception>(async () =>
+            await store.AddPermissionAsync(new DynamicPermission { Name = permission, TenantId = "acme-" + suffix })), "DynamicPermissions");
 
         // Assign permissions to the role; nobody holds it yet, so nobody's cached permissions are evicted.
         var cache = new RecordingCache();
@@ -79,6 +89,17 @@ internal static class AuthorizationManagementScenario
         // The revoked assignment is kept, ended: the history of who held the role.
         var history = Assert.Single(await store.GetUserRolesAsync(user, null));
         Assert.NotNull(history.ValidTo);
+    }
+
+    /// <summary>
+    ///     The write was refused by the unique index on <paramref name="table" />'s (Name, TenantId): its name in the database's message, or,
+    ///     on SQLite, which names the columns instead, the two columns.
+    /// </summary>
+    private static void AssertRefusedByTheUniqueIndex(Exception refused, string table)
+    {
+        var text = refused.ToString();
+        Assert.True(text.Contains($"IX_{table}_Name_TenantId", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains($"{table}.Name, {table}.TenantId", StringComparison.Ordinal), text);
     }
 
     /// <summary>A permission cache that records whose permissions were evicted.</summary>

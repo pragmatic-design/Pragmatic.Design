@@ -9,6 +9,7 @@ namespace Pragmatic.Authorization.Management.Engines.Sql;
 /// </summary>
 [Entity]
 [Table("DynamicRolePermissions")]
+[Pragmatic.Persistence.Entity.Index(nameof(RoleName), nameof(PermissionName), nameof(TenantId))] // the entity's [Index] (#490)
 public sealed class DynamicRolePermissionRow
 {
     [Key]

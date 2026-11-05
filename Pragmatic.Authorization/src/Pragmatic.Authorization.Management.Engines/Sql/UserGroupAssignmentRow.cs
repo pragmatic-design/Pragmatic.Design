@@ -9,6 +9,7 @@ namespace Pragmatic.Authorization.Management.Engines.Sql;
 /// </summary>
 [Entity]
 [Table("UserGroupAssignments")]
+[Pragmatic.Persistence.Entity.Index(nameof(UserId), nameof(GroupName), nameof(TenantId))] // the entity's [Index] (#490)
 public sealed class UserGroupAssignmentRow
 {
     [Key]

@@ -743,7 +743,17 @@
           "renamedFrom": null
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "name": "IX_DynamicPermissions_Name_TenantId",
+          "columns": [
+            "Name",
+            "TenantId"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
       "foreignKeys": [],
       "checkConstraints": []
     },
@@ -800,7 +810,18 @@
           "renamedFrom": null
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "name": "IX_DynamicRolePermissions_RoleName_PermissionName_TenantId",
+          "columns": [
+            "RoleName",
+            "PermissionName",
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
       "foreignKeys": [],
       "checkConstraints": []
     },
@@ -897,7 +918,17 @@
           "renamedFrom": null
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "name": "IX_DynamicRoles_Name_TenantId",
+          "columns": [
+            "Name",
+            "TenantId"
+          ],
+          "isUnique": true,
+          "filter": null
+        }
+      ],
       "foreignKeys": [],
       "checkConstraints": []
     },
@@ -2889,7 +2920,18 @@
           "renamedFrom": null
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "name": "IX_UserGroupAssignments_UserId_GroupName_TenantId",
+          "columns": [
+            "UserId",
+            "GroupName",
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
       "foreignKeys": [],
       "checkConstraints": []
     },
@@ -2954,7 +2996,18 @@
           "renamedFrom": null
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "name": "IX_UserRoleAssignments_UserId_RoleName_TenantId",
+          "columns": [
+            "UserId",
+            "RoleName",
+            "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
       "foreignKeys": [],
       "checkConstraints": []
     },
@@ -3652,5 +3705,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "98a17af301b5"
+  "hash": "eacaf4e283b4"
 }
