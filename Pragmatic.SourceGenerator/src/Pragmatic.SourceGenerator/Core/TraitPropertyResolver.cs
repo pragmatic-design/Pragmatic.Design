@@ -295,15 +295,13 @@ internal static class TraitPropertyResolver
     /// </remarks>
     private static IReadOnlyList<INamedTypeSymbol> EntitiesOf(IAssemblySymbol assembly)
     {
-        if (EntityCache.TryGetValue(assembly, out var cached))
-            return cached;
-
-        var builder = ImmutableArray.CreateBuilder<INamedTypeSymbol>();
-        Collect(assembly.GlobalNamespace, builder);
-        var entities = builder.ToArray();
-
-        EntityCache.Add(assembly, entities);
-        return entities;
+        // GetValue and not TryGetValue then Add: two parallel transforms that missed the same assembly both added it (#566).
+        return EntityCache.GetValue(assembly, static a =>
+        {
+            var builder = ImmutableArray.CreateBuilder<INamedTypeSymbol>();
+            Collect(a.GlobalNamespace, builder);
+            return builder.ToArray();
+        });
 
         static void Collect(INamespaceSymbol ns, ImmutableArray<INamedTypeSymbol>.Builder into)
         {

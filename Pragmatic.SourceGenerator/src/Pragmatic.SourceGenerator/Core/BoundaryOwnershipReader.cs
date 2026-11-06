@@ -264,12 +264,9 @@ internal static class BoundaryOwnershipReader
         if (assembly is null)
             return null;
 
-        if (SingleBoundaryCache.TryGetValue(assembly, out var cached))
-            return cached.Value;
-
-        var answer = new Answer(FindSingleBoundary(assembly));
-        SingleBoundaryCache.Add(assembly, answer);
-        return answer.Value;
+        // GetValue and not TryGetValue then Add: the transforms run in parallel, and two that missed the same assembly both added it,
+        // which threw out of the generator and took its whole output with it (#566).
+        return SingleBoundaryCache.GetValue(assembly, static a => new Answer(FindSingleBoundary(a))).Value;
     }
 
     /// <summary>
@@ -305,9 +302,11 @@ internal static class BoundaryOwnershipReader
         if (assembly is null)
             return false;
 
-        if (AnyBoundaryCache.TryGetValue(assembly, out var cached))
-            return cached.Value is not null;
+        return AnyBoundaryCache.GetValue(assembly, static a => new Answer(FindAnyBoundary(a))).Value is not null; // atomic, as SingleBoundaryOf (#566)
+    }
 
+    private static string? FindAnyBoundary(IAssemblySymbol assembly)
+    {
         string? found = null;
         foreach (var type in EnumerateTypes(assembly.GlobalNamespace, CancellationToken.None))
         {
@@ -324,8 +323,7 @@ internal static class BoundaryOwnershipReader
                 break;
         }
 
-        AnyBoundaryCache.Add(assembly, new Answer(found));
-        return found is not null;
+        return found;
     }
 
     /// <summary>Memoised for the same reason as <see cref="SingleBoundaryCache" />.</summary>
@@ -356,9 +354,11 @@ internal static class BoundaryOwnershipReader
         if (assembly is null)
             return ImmutableArray<BoundaryName>.Empty;
 
-        if (ShortNamesCache.TryGetValue(assembly, out var cached))
-            return cached.Value;
+        return ShortNamesCache.GetValue(assembly, static a => new Names(FindBoundaryNames(a))).Value; // atomic, as SingleBoundaryOf (#566)
+    }
 
+    private static ImmutableArray<BoundaryName> FindBoundaryNames(IAssemblySymbol assembly)
+    {
         var names = ImmutableArray.CreateBuilder<BoundaryName>();
         INamedTypeSymbol? moduleType = null;
 
@@ -379,9 +379,7 @@ internal static class BoundaryOwnershipReader
             && DefaultBoundaryTransform.FromModule(moduleType) is { } derived)
             names.Add(new BoundaryName(StripBoundarySuffix(derived.TypeName), derived.Namespace));
 
-        var answer = new Names(names.ToImmutable());
-        ShortNamesCache.Add(assembly, answer);
-        return answer.Value;
+        return names.ToImmutable();
     }
 
     private static string NamespaceOf(ISymbol type)
