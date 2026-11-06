@@ -380,6 +380,7 @@ internal static partial class EntityMetadataReader
                 // The other end of the channel: without it the host's diff cannot tell a rename from
                 // a drop and an add.
                 RenamedFrom = GetJsonString(prop, "renamedFrom"),
+                ColumnName = GetJsonString(prop, "columnName"),
                 ValueObjectColumns = ParseValueObjectColumns(prop)
             });
         }

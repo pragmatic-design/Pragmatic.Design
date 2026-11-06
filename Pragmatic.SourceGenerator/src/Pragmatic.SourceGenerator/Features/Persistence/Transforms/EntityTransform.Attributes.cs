@@ -366,6 +366,13 @@ internal static partial class EntityTransform
         return attr?.ConstructorArguments.Length > 0 ? attr.ConstructorArguments[0].Value as string : null;
     }
 
+    /// <summary>The name a <c>[Column("…")]</c> gives the property's column, as the Sql engine's <c>EntityModel.TryColumn</c> reads it.</summary>
+    private static string? GetColumnName(IPropertySymbol prop)
+    {
+        var attr = prop.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "ColumnAttribute");
+        return attr?.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string name && name.Length > 0 && name != prop.Name ? name : null;
+    }
+
     /// <summary>
     ///     Reads [Table("name", Schema = "schema")] from System.ComponentModel.DataAnnotations.Schema.
     /// </summary>

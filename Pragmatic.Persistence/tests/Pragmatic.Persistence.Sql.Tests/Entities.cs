@@ -355,7 +355,8 @@ public partial class SupportCase : IEntity
 
 /// <summary>
 ///     A statement issued on a day for an amount, as Showcase.Billing's <c>Invoice</c>: the columns a projection formats and converts (#563), in a
-///     batch whose statements a query sorts by key (#564).
+///     batch whose statements a query sorts by key (#564). Its issue instant is stored under a column name of its own, which EF Core's
+///     schema and the Sql engine's both give it (#568).
 /// </summary>
 [Entity]
 public partial class Statement : IEntity
@@ -364,6 +365,7 @@ public partial class Statement : IEntity
 
     public string Batch { get; set; } = "";
 
+    [System.ComponentModel.DataAnnotations.Schema.Column("IssuedOn")]
     public DateTimeOffset IssuedAt { get; set; }
 
     public decimal Total { get; set; }
