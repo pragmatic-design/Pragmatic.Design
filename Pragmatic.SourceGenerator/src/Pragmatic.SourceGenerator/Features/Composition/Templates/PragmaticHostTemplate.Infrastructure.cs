@@ -439,7 +439,9 @@ internal sealed partial class PragmaticHostTemplate
 
     private void RenderRegisterAllDatabasesMethod()
     {
-        AddUsing("Microsoft.EntityFrameworkCore");
+        // The DbContext registrations' options: a host whose databases only the engines persist references no EF Core.
+        if (_model.DetectedFeatures.HasPersistenceEFCore)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Microsoft.Extensions.Configuration");
         AddUsing("Microsoft.Extensions.DependencyInjection");
 
@@ -553,46 +555,7 @@ internal sealed partial class PragmaticHostTemplate
             }
 
             RenderAuditTrailAmbiguity();
-
-            // The fluent QueryBuilder's AsNoTracking()/AsSplitQuery() are EF Core concepts, and the
-            // assembly that declares them does not reference EF Core. Installed here because this is
-            // the path every EF host takes: AddPragmaticPersistenceEFCore exists and nobody calls it.
-            Comment("Let the fluent builder's hints reach EF Core");
-            AppendLine("global::Pragmatic.Persistence.EFCore.Query.EfQueryHintApplier.Install();");
-            AppendLine();
-
-            // Auto-register EfCoreQueryExecutor with full filter pipeline
-            Comment("Auto-register EfCoreQueryExecutor (soft-delete, tenant, navigation filters, caching)");
-            AppendLine("services.AddScoped<global::Pragmatic.Persistence.Query.Executors.IQueryExecutor>(sp =>");
-            IncreaseIndent();
-            AppendLine("new global::Pragmatic.Persistence.EFCore.Query.EfCoreQueryExecutor(");
-            IncreaseIndent();
-            AppendLine("sp.GetService<global::Pragmatic.Persistence.Query.Filters.IQueryFilterProvider>(),");
-            AppendLine("sp.GetService<global::Pragmatic.Persistence.EFCore.Query.FilterMapComposer>(),");
-            AppendLine("sp.GetService<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle>(),");
-            AppendLine("sp.GetService<global::Pragmatic.Caching.ICacheStack>(),");
-            AppendLine("sp.GetService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.Persistence.EFCore.Query.EfCoreQueryExecutor>>(),");
-            AppendLine("sp.GetService<global::Pragmatic.MultiTenancy.ITenantContext>(),");
-            // Pass ICurrentUser so the query cache key includes the user discriminator
-            // (permission/ownership filters) — without it cached rows leak across users.
-            AppendLine("sp.GetService<global::Pragmatic.Identity.ICurrentUser>(),");
-            // The resolver routes a [Cacheable(Category = ...)] query to that category's stack.
-            // Without it the executor falls back to the default one and a category's key prefix
-            // and duration apply to nothing.
-            AppendLine("sp.GetService<global::Pragmatic.Caching.ICacheStackResolver>(),");
-            // The clock the FilterContext's Now comes from. Without it the executor falls back
-            // to the wall clock and a test that pins time cannot pin a temporal filter.
-            AppendLine("sp.GetService<global::System.TimeProvider>(),");
-            // Where a [Join<T>(ForeignKey = …)] gets its target set: the root boundary's own
-            // DbContext, through the keyed registration the boundary contexts already have.
-            // ⚠️ This construction exists TWICE — here and in DbContextRegistrationTemplate — and a
-            // host composed by PragmaticApp uses this one. Changing only the other copy leaves every
-            // joined query answering 500 with the executor's own refusal: "built without an
-            // IJoinSourceProvider".
-            AppendLine("new global::Pragmatic.Persistence.EFCore.Query.BoundaryJoinSources(sp)));");
-            DecreaseIndent();
-            DecreaseIndent();
-            AppendLine();
+            RenderEfCoreQueryExecutor();
 
             AppendLine("return services;");
         }, "IServiceCollection", parameters, AccessModifier.Internal, new MethodModifiers { IsStatic = true });

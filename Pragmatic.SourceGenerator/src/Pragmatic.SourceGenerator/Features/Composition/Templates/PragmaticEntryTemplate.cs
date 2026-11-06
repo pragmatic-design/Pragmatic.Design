@@ -890,7 +890,10 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
         if (databaseGroups.Count == 0)
             return;
 
-        AddUsing("Microsoft.EntityFrameworkCore");
+        // As in the web host's initialization: the EF Core fallback's DbContextOptionsBuilder, which a host whose databases another engine
+        // persists does not reference.
+        if (databaseGroups.Any(g => g.First().MigrationDbContextFqn is not null))
+            AddUsing("Microsoft.EntityFrameworkCore");
 
         // Point the shared DB-init blocks at the worker host (no WebApplication "app").
         _appServicesExpr = "host.Services";
