@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json.schemastore.org/sarif-1.0.0",
+  "version": "1.0.0",
+  "runs": [
+    {
+      "tool": {
+        "name": "Compilatore Microsoft (R) Visual C#",
+        "version": "5.6.0.0",
+        "fileVersion": "5.6.0-2.26377.103 (e730f1db756d11c93f246830ba7b94ee6fcf4b94)",
+        "semanticVersion": "5.6.0",
+        "language": "it-IT"
+      },
+      "results": [
+        {
+          "ruleId": "CS8785",
+          "level": "warning",
+          "message": "Il generatore 'Throwing' non è riuscito a generare l'origine. Non contribuirà quindi all'output ed è possibile che si verifichino errori di compilazione. Eccezione di tipo 'ArgumentException' con messaggio 'An item with the same key has already been added. Key: a'.\u000d\u000aSystem.ArgumentException: An item with the same key has already been added. Key: a\u000d\u000a   at System.Collections.Generic.Dictionary`2.Add(TKey key, TValue value)\u000d\u000a   at Throwing.ThrowsHere()\u000d\u000a   at Throwing.<>c.<Initialize>b__0_0(Compilation c, CancellationToken _)\u000d\u000a   at Microsoft.CodeAnalysis.TransformNode`2.<>c__DisplayClass6_0.<.ctor>b__0(TInput i, CancellationToken token)\u000d\u000a   at Microsoft.CodeAnalysis.TransformNode`2.UpdateStateTable(Builder builder, NodeStateTable`1 previousTable, CancellationToken cancellationToken)\u000d\u000a-----\u000d\u000a",
+          "properties": {
+            "warningLevel": 1
+          }
+        }
+      ]
+    }
+  ]
+}

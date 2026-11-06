@@ -69,6 +69,7 @@ import {
   COVERAGE_REASONS, PACKAGE_REASONS, reasonsWithMissingProofs,
 } from './lib/example-coverage-reasons.mjs';
 import { measureAttributeReaders } from './lib/attribute-readers.mjs';
+import { GENERATOR_FAILED, generatorCrashes } from './lib/generator-crashes.mjs';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 import { cpus } from 'node:os';
@@ -539,9 +540,14 @@ function buildOne(target, { clean }) {
     // goes green at random. The value is irrelevant here: the gate compiles and tests, it never packs,
     // and snapshot tests already scrub the version.
     '-p:MinVerVersionOverride=0.0.0-gate',
+    // The compiler's error log of each project: a generator's crash has its stack there and only its
+    // message on the console (#566). Emptied first, so a stack printed is this build's.
+    `-p:PragmaticErrorLogDirectory=${ERROR_LOGS}`,
     ...ARTIFACTS,
   ];
   if (clean) a.push('--no-incremental');
+  rmSync(ERROR_LOGS, { recursive: true, force: true });
+  mkdirSync(ERROR_LOGS, { recursive: true }); // the compiler writes the file, not the directory (CS0016)
   const { code, out, spawnError } = run('dotnet', a);
   if (spawnError) {
     console.log(bad(`COULD NOT RUN — ${spawnError}`));
@@ -551,6 +557,8 @@ function buildOne(target, { clean }) {
   if (code !== 0 || errors > 0) {
     console.log(bad(`FAIL (${errors} error markers, exit ${code}) building ${target}`));
     console.log(out.split('\n').filter((l) => /error /.test(l)).slice(0, 25).join('\n'));
+    if (out.includes(GENERATOR_FAILED))
+      printGeneratorCrashes();
     return { ok: false };
   }
   // Read MSBuild's own total rather than counting "warning XXNNNN" markers: each one appears twice in
@@ -562,6 +570,23 @@ function buildOne(target, { clean }) {
     : [...new Set(out.split('\n').filter((l) => /warning [A-Z]+\d+/.test(l)))].length;
   lastBuildOutput = out;
   return { ok: true, warnings };
+}
+
+/** Where the build's compiler error logs go, one per project and target framework. Absolute: MSBuild resolves a relative one per project. */
+const ERROR_LOGS = join(process.cwd(), 'artifacts', 'gate', 'errorlog');
+
+/** The stack of each generator crash the build's error logs hold, under the console's one-line CS8785. */
+function printGeneratorCrashes() {
+  const crashes = generatorCrashes(ERROR_LOGS);
+  if (crashes.length === 0) {
+    console.log(bad(`  ${GENERATOR_FAILED} on the console, and no error log in ${ERROR_LOGS} holds it`));
+    return;
+  }
+
+  for (const { log, message } of crashes.slice(0, 3)) {
+    console.log(bad(`  ${GENERATOR_FAILED} in ${log}:`));
+    console.log(message.split('\n').slice(0, 30).map((l) => `    ${l}`).join('\n'));
+  }
 }
 
 /**
@@ -2745,6 +2770,7 @@ function sourceChecks() {
     && nodeTestCases('scripts/ci-paths.test.mjs', 'only Markdown that nothing builds skips the build in CI')
     && nodeTestCases('scripts/check-root.test.mjs', 'the gate reads its own repository from any directory')
     && nodeTestCases('scripts/fuzz.test.mjs', 'the fuzz runner finds every harness and keeps its seeds apart')
+    && nodeTestCases('scripts/generator-crashes.test.mjs', 'a generator crash is read with the frame it threw from')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()
