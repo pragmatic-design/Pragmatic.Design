@@ -37,6 +37,9 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         AppendLine("    /// </summary>");
         AppendLine($"    public static {ServiceCollection} Add{name}Persistence(this {ServiceCollection} services, global::System.Func<global::System.IServiceProvider, {e.Filters}, {e.Session}> session)");
         AppendLine("    {");
+        // The toggle the filters below read, and the application's code switches filters off through (IgnoreFilter): on EF Core the boundary's
+        // query filter registration adds it, and a host whose boundaries an engine persists has none of that.
+        AppendLine("        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddScoped<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle, global::Pragmatic.Persistence.Query.Filters.QueryFilterToggle>(services);");
         AppendLine($"        {Services}.AddKeyedScoped<{e.Session}>(services, {key}, (sp, _) => session(sp, new {e.BridgeFilters}(");
         AppendLine("            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), Get<global::Pragmatic.Authorization.IUserScopeResolver>(sp),");
         AppendLine("            Get<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle>(sp), Get<global::Pragmatic.Persistence.Query.Filters.QueryFilterOptions>(sp), Get<global::System.TimeProvider>(sp),");
