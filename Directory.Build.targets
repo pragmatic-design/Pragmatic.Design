@@ -22,6 +22,19 @@
   </Target>
 
   <!-- ============================================
+       The gate's compiler error log
+       ============================================ -->
+
+  <!-- A source generator that throws in a pipeline step fails as CS8785, and the console shows its first line:
+       the exception's type and message, not where it was thrown (#566). The compiler writes the stack into its
+       SARIF error log, so the gate turns one on for each project and prints the stack of a CS8785 from there
+       (scripts/check.mjs). Off unless the gate passes the directory. Here and not in the .props: the name
+       carries the target framework, which a multi-targeted project's inner builds only know by now. -->
+  <PropertyGroup Condition="'$(PragmaticErrorLogDirectory)' != '' AND '$(ErrorLog)' == ''">
+    <ErrorLog>$([MSBuild]::EnsureTrailingSlash('$(PragmaticErrorLogDirectory)'))$(MSBuildProjectName).$(TargetFramework).sarif</ErrorLog>
+  </PropertyGroup>
+
+  <!-- ============================================
        Source Generator Packaging
        ============================================ -->
 
