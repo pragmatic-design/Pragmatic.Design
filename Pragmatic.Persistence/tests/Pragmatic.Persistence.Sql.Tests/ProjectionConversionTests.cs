@@ -24,6 +24,7 @@ public class ProjectionConversionTests(PragmaticDatabases databases)
         var statement = new Statement
         {
             Code = Guid.NewGuid().ToString("N"),
+            Batch = "summaries",
             IssuedAt = new DateTimeOffset(2026, 3, 14, 9, 30, 0, TimeSpan.Zero),
             Total = 1234.5m,
         };
