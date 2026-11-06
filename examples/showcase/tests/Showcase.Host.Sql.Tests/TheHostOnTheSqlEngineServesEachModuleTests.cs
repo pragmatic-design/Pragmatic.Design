@@ -46,6 +46,23 @@ public sealed class TheHostOnTheSqlEngineServesEachModuleTests(SqlHostFixture fi
     }
 
     /// <summary>
+    ///     The search a <c>[Resource]</c> scaffolds sorts by <c>Id</c> by default: on the Sql engine the key's column is <c>PersistenceId</c>, and
+    ///     a statement ordered by <c>t."Id"</c> answered 500 on every search (#564).
+    /// </summary>
+    [Fact]
+    public async Task Booking_TheGuestSearch_FindsTheGuestCreated()
+    {
+        var lastName = $"Search{Guid.NewGuid():N}"[..14];
+        var created = await Caller().PostAsJsonAsync("/api/guests", new { firstName = "Engine", lastName, email = $"{lastName}@test.com" });
+        created.IsSuccessStatusCode.Should().BeTrue("Got {0}: {1}", created.StatusCode, await created.Content.ReadAsStringAsync());
+
+        var search = await Caller().GetAsync(new Uri($"/api/booking/guests/search?lastName={lastName}", UriKind.Relative));
+        search.StatusCode.Should().Be(HttpStatusCode.OK, "the scaffolded search orders by the key's column. Body: {0}", await search.Content.ReadAsStringAsync());
+        var items = (await search.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items");
+        items.GetArrayLength().Should().Be(1, "the guest just created is the only one of that last name");
+    }
+
+    /// <summary>
     ///     A login checks the password against the account the registration stored: the wrong one is refused, so a login that succeeds read it
     ///     from the database.
     /// </summary>
