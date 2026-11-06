@@ -9,4 +9,5 @@ Copied from `examples/showcase/src`, which compiles in the repository and is exe
 | [`Showcase.Booking/Infrastructure/Notifications/ReservationConfirmedNotificationHandler.cs`](Showcase.Booking/Infrastructure/Notifications/ReservationConfirmedNotificationHandler.cs) | Enqueueing a notification from an event handler: the content from a `.pdxemail` template in the guest's language, addressed to a user |
 | [`Showcase.Booking/Infrastructure/Notifications/GuestRecipientResolver.cs`](Showcase.Booking/Infrastructure/Notifications/GuestRecipientResolver.cs) | `IRecipientResolver`: a user id becomes an address and a locale, without leaving the tenant |
 | [`Showcase.Booking/BookingBoundary.cs`](Showcase.Booking/BookingBoundary.cs) | `[StoresNotifications]` on the boundary that sends them, so the table is in its database |
-| [`Showcase.Host/Program.cs`](Showcase.Host/Program.cs) | `UseNotifications`: the recipient resolver, the SMTP channel, the EF Core store |
+| [`Showcase.Host/Program.cs`](Showcase.Host/Program.cs) | `UseNotifications`: the recipient resolver and the SMTP channel; the store is the engine's, below |
+| [`Showcase.Host/Engine/ShowcaseEngine.EfCore.cs`](Showcase.Host/Engine/ShowcaseEngine.EfCore.cs) | The EF Core store of the sent notifications, `UseEfCoreStore` on the database of the boundary that declares `[StoresNotifications]` |
