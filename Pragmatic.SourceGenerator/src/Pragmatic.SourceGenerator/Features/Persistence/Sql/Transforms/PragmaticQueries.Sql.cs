@@ -31,10 +31,12 @@ internal sealed partial class PragmaticQuery
     /// </summary>
     internal static string ColumnOf(INamedTypeSymbol entity, string path)
     {
-        if (path == "Id" && QueryTransform.IdIsTheGeneratedAlias(entity))
-            return "PersistenceId";
         var parts = path.Split('.');
         var property = Member(entity, parts[0]);
+        // The shape's Id is `Id => PersistenceId`: absent where the query is read without the shape, read-only where a shape file declares the
+        // query (a [Resource]'s search). A hand-declared key with a setter or [Key] is a column of its own.
+        if (path == "Id" && (property is null ? QueryTransform.IdIsTheGeneratedAlias(entity) : property.SetMethod is null && !property.GetAttributes().Any(a => a.AttributeClass?.Name == "KeyAttribute")))
+            return "PersistenceId";
         if (parts.Length == 1)
             return property is null ? path : Named(property);
         if (parts.Length == 2 && property?.Type is INamedTypeSymbol owned && !EntityModel.IsEntity(owned) && Member(owned, parts[1]) is { } member)
