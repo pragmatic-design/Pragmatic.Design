@@ -60,6 +60,10 @@ export const DOCKER_SHARDS = [
     'Showcase.Host.Distributed.Tests', //         8s
     'Showcase.Billing.Host.Tests', //             6s
     'Pragmatic.Configuration.Consul.Tests', //    6s
+    // The Showcase host on each engine (#534), one PostgreSQL and one standalone MongoDB, not yet measured on the runner: ~7s and ~5s on a
+    // developer machine (2026-11-06). Here because this shard was the lightest (12m 51s against 20m 34s and 15m 28s, PR #560's run).
+    'Showcase.Host.Sql.Tests',
+    'Showcase.Host.Documents.Tests',
   ],
 ];
 

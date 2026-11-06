@@ -1022,6 +1022,10 @@
     <Project Path="examples/showcase/engines/Showcase.Booking.Sql/Showcase.Booking.Sql.csproj" />
     <Project Path="examples/showcase/engines/Showcase.Catalog.Documents/Showcase.Catalog.Documents.csproj" />
     <Project Path="examples/showcase/engines/Showcase.Catalog.Sql/Showcase.Catalog.Sql.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Host.Documents/Showcase.Host.Documents.csproj" />
+    <Project Path="examples/showcase/engines/Showcase.Host.Sql/Showcase.Host.Sql.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Host.Documents.Tests/Showcase.Host.Documents.Tests.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Host.Sql.Tests/Showcase.Host.Sql.Tests.csproj" />
   </Folder>
   <Folder Name="/Examples/Showcase.Distributed/">
     <Project Path="examples/showcase/src/Showcase.Billing.Host/Showcase.Billing.Host.csproj" />

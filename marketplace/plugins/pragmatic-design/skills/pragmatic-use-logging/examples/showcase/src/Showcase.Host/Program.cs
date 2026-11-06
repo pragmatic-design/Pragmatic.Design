@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Pragmatic.Agent.Client;
+﻿using Pragmatic.Agent.Client;
 using Pragmatic.Authorization.Configuration;
 using Pragmatic.Composition.Hosting;
 using Pragmatic.Endpoints.Mcp;
@@ -24,17 +23,16 @@ using Showcase.Catalog;
 using Showcase.Catalog.Infrastructure.Authorization;
 using Pragmatic.Internationalization;
 using Pragmatic.Jobs;
-using Pragmatic.Migrations.Extensions;
 using Pragmatic.Notifications;
-using Pragmatic.Notifications.EFCore;
 using Pragmatic.Notifications.Email;
 using Showcase.Host;
 using Showcase.Host.Authorization;
 
-using Showcase.Accounts.Generated;
-
+// What differs per persistence engine is in ShowcaseEngine, one implementation per host: this file is the same source for all of them.
 await PragmaticApp.RunAsync(args, app =>
 {
+    ShowcaseEngine.UsePersistence(app);
+
     // Maintenance mode — 503 + admin panel during DB init, SSE progress streaming
     // Pragmatic Agent — coordination daemon for config push, deploy, health
     // In Development: auto-starts the Agent daemon as child process
@@ -58,9 +56,8 @@ await PragmaticApp.RunAsync(args, app =>
         o.ForwardedHeaders.Add("X-Tenant-Id");
     });
 
-    // Pragmatic Migrations — declarative schema diff, replaces EF Core migrations entirely
-    // Creates tables from scratch on empty DB, applies diff on existing DB
-    app.UsePragmaticMigrations();
+    // The schema, migrated or applied at start the way the engine keeps one.
+    ShowcaseEngine.UseSchema(app);
 
     // The compile-time OpenAPI document in every environment, not only in Development (the generated
     // host publishes it there, with Scalar over it, without being asked).
@@ -91,10 +88,8 @@ await PragmaticApp.RunAsync(args, app =>
         i18n.LocalizeProblemDetails();
     });
 
-    // The generated per-user culture provider, off unless asked for. It reads AppUser.PreferredCulture
-    // at priority 200 — above the tenant default, below an explicit ?culture= on the request — and
-    // registers the AppUserResolver it reads through.
-    app.UseUserCulture();
+    // The per-user culture, where the engine has a user resolver to read it through.
+    ShowcaseEngine.UseUserCulture(app);
 
     // Notifications — unified pipeline with SMTP email channel (delegates to Pragmatic.Email)
     app.UseNotifications(n =>
@@ -117,15 +112,8 @@ await PragmaticApp.RunAsync(args, app =>
                 transport.MaxConnections = 3;
             });
 
-        // What was sent, kept. ConnectionStrings:App is the key ShowcaseAppDatabase uses — the database
-        // the Booking boundary lives in, which is the boundary that declares [StoresNotifications], so
-        // the table is created and migrated with the application's own.
-        //
-        // ⚠️ Without that declaration this call would wire a store whose table does not exist: a composed
-        // host creates one context per declared database and nothing else.
-        n.UseEfCoreStore(db => db.UseNpgsql(
-            app.Configuration.GetConnectionString("App")
-            ?? throw new InvalidOperationException("ConnectionStrings:App is required.")));
+        // What was sent, kept: in the Booking boundary's database, which declares [StoresNotifications].
+        ShowcaseEngine.UseNotificationStore(n, app);
     });
 
     // Messaging — transport is config-driven: Azure Service Bus (real broker or local
@@ -154,7 +142,7 @@ await PragmaticApp.RunAsync(args, app =>
             });
         }
 
-        // Durable sagas: CheckInSaga state persists in BookingDbContext (__SagaInstances/__SagaSteps).
+        // Durable sagas: CheckInSaga state persists in the Booking boundary's database (__SagaInstances/__SagaSteps).
         // Opt-in is entirely the [EnableSagaPersistence] attribute on BookingBoundary — no host call needed.
 
         // Messaging is now a producer on the framework's one audit trail rather than the owner of a

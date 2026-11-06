@@ -1,0 +1,96 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Npgsql;
+using Pragmatic.Testing.Assertions;
+using Xunit;
+
+namespace Showcase.Host.Sql.Tests;
+
+/// <summary>
+///     The Showcase host on the Sql engine, started against PostgreSQL: one endpoint of each module answers from the database. What a module
+///     writes is read back through the host and found in PostgreSQL by a connection of the test's own, so neither an in-memory store nor a
+///     500 passes.
+/// </summary>
+[Collection(SqlHostCollection.Name)]
+public sealed class TheHostOnTheSqlEngineServesEachModuleTests(SqlHostFixture fixture)
+{
+    [Fact]
+    public async Task Catalog_APropertyCreated_IsReadBack_AndIsARowOfShowcaseApp()
+    {
+        var code = $"SQL-{Guid.NewGuid():N}"[..12];
+        var created = await Caller().PostAsJsonAsync("/api/properties", new { code, name = "Engine Hotel", city = "Rome", country = "IT", starRating = 3 });
+        created.IsSuccessStatusCode.Should().BeTrue("the create runs through the Catalog boundary's session. Got {0}: {1}", created.StatusCode, await created.Content.ReadAsStringAsync());
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var read = await Caller().GetAsync(new Uri($"/api/properties/{id}", UriKind.Relative));
+        read.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await read.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString().Should().Be(code);
+
+        (await Count(fixture.AppConnectionString, "SELECT COUNT(*) FROM \"Properties\" WHERE \"Code\" = @value", code)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Booking_AGuestCreated_IsReadBack_AndIsARowOfShowcaseApp()
+    {
+        var email = $"guest.{Guid.NewGuid():N}@test.com";
+        var created = await Caller().PostAsJsonAsync("/api/guests", new { firstName = "Engine", lastName = "Guest", email });
+        created.IsSuccessStatusCode.Should().BeTrue("the create runs through the Booking boundary's session. Got {0}: {1}", created.StatusCode, await created.Content.ReadAsStringAsync());
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var read = await Caller().GetAsync(new Uri($"/api/guests/{id}", UriKind.Relative));
+        read.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await read.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("email").GetString().Should().Be(email);
+
+        (await Count(fixture.AppConnectionString, "SELECT COUNT(*) FROM \"Guests\" WHERE \"Email\" = @value", email)).Should().Be(1);
+    }
+
+    /// <summary>
+    ///     A login checks the password against the account the registration stored: the wrong one is refused, so a login that succeeds read it
+    ///     from the database.
+    /// </summary>
+    [Fact]
+    public async Task Accounts_AUserRegistered_LogsInWithItsPassword_AndNotWithAnother()
+    {
+        var email = $"user.{Guid.NewGuid():N}@test.com";
+        var registered = await Caller().PostAsJsonAsync("/identity/local/register", new { email, password = "Engine@Pass1" });
+        registered.IsSuccessStatusCode.Should().BeTrue("the registration runs through the Accounts boundary's session. Got {0}: {1}", registered.StatusCode, await registered.Content.ReadAsStringAsync());
+
+        var login = await Caller().PostAsJsonAsync("/identity/local/login", new { email, password = "Engine@Pass1" });
+        login.IsSuccessStatusCode.Should().BeTrue("the account the registration stored is read back. Got {0}: {1}", login.StatusCode, await login.Content.ReadAsStringAsync());
+
+        var wrong = await Caller().PostAsJsonAsync("/identity/local/login", new { email, password = "Another@Pass1" });
+        wrong.IsSuccessStatusCode.Should().BeFalse("the control: a login that succeeded whatever the password would have read nothing");
+    }
+
+    /// <summary>Billing's search runs on showcase_financial, the database of its own, migrated at start.</summary>
+    [Fact]
+    public async Task Billing_TheInvoiceSearch_AnswersFromShowcaseFinancial()
+    {
+        var search = await Caller().GetAsync(new Uri("/api/invoices/search", UriKind.Relative));
+        search.StatusCode.Should().Be(HttpStatusCode.OK, "the search runs through the Billing boundary's session. Body: {0}", await search.Content.ReadAsStringAsync());
+
+        (await Count(fixture.FinancialConnectionString, "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = @value", "Invoices"))
+            .Should().Be(1, "the host migrated Billing's database to its schema at start");
+    }
+
+    /// <summary>A caller the host accepts: a tenant, an identity and every permission.</summary>
+    private HttpClient Caller()
+    {
+        var client = fixture.Host.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Tenant-Id", "engine-tenant");
+        client.DefaultRequestHeaders.Add("X-User-Id", "engine-user");
+        client.DefaultRequestHeaders.Add("X-User-Name", "Sql host test");
+        client.DefaultRequestHeaders.Add("X-User-Permissions", "*");
+        return client;
+    }
+
+    private static async Task<long> Count(string connectionString, string sql, string value)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("value", value);
+        return (long)(await command.ExecuteScalarAsync())!;
+    }
+}

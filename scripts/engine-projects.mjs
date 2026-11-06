@@ -1,6 +1,6 @@
 /**
- * The Showcase's module projects on each persistence engine (examples/showcase/engines/, #533): what keeps them the same application as
- * src/, on another engine.
+ * The Showcase's module and host projects on each persistence engine (examples/showcase/engines/, #533 and #534): what keeps them the same
+ * application as src/, on another engine.
  *
  * - None reaches EF Core: no project it references, at any depth, references an Entity Framework Core package or a Pragmatic .EFCore project.
  *   A module project that did would run its reads on EF Core with the engine beside it, and say nothing.
@@ -17,6 +17,7 @@ export const ENGINE_PROJECTS_DIR = 'examples/showcase/engines';
 
 const EF_ONLY = 'EF Core only (#363): it reads through an IQueryable';
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): a document keeps a relation as its key';
+const HOST_WIRING = 'the host\'s wiring on EF Core (#534), in place of which each engine host compiles its own ShowcaseEngine';
 
 /** The files a module project may leave out, the engines it may leave each out on, and why. Paths from the repository's root. */
 export const ALLOWED_EXCLUSIONS = {
@@ -28,6 +29,7 @@ export const ALLOWED_EXCLUSIONS = {
   'examples/showcase/src/Showcase.Catalog/RoomTypes/Mutations/UpdateRoomTypeMutation.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3112)' },
   'examples/showcase/src/Showcase.Booking/Reservations/Actions/GetReservationAction.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3111)' },
   'examples/showcase/src/Showcase.Billing/Invoices/Actions/DownloadInvoicePdfAction.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3111)' },
+  'examples/showcase/src/Showcase.Host/Engine/ShowcaseEngine.EfCore.cs': { engines: ['Sql', 'Documents'], reason: HOST_WIRING },
 };
 
 /** The engine a module project is for, from its name (Showcase.Booking.Sql, Showcase.Booking.Documents); null for any other. */

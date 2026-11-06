@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Host.Documents.Tests — starts the Showcase host on the documents engine against MongoDB (#534).
+
+       ⚠️ A project of its own, as Showcase.Billing.Host.Tests: a host's entry point is a `Program` in the GLOBAL namespace, and the engine
+       hosts share the assembly name Showcase.Host, so one test project cannot reference two of them.
+       ======================================== -->
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: not meaningful in test projects (no SynchronizationContext) -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\engines\Showcase.Host.Documents\Showcase.Host.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The MongoDB wait every suite that starts the server shares: a server that exits fails at once, with its log. -->
+    <Compile Include="..\..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Documents.Core.Tests\LoggedUnlessExited.cs" Link="Shared\LoggedUnlessExited.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+
+</Project>
