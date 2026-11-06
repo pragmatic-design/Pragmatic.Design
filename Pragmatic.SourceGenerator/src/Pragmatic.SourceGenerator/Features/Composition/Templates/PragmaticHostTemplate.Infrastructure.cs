@@ -22,12 +22,11 @@ internal sealed partial class PragmaticHostTemplate
 
         Method("RegisterAllRepositories", () =>
         {
+            // ⚠️ Only the repository lines depend on EF Core's repositories. A host whose modules run on the engines alone finds none
+            // (an engine registers its own in Add{Boundary}Persistence), and returning here skipped the persistence registrations below:
+            // no [GeneratedValue] binding, every number left empty, the second row of a unique number refused (#571).
             if (!HasDiscoveredRepositories)
-            {
-                Comment("No repositories discovered");
-                AppendLine("return services;");
-                return;
-            }
+                Comment("No EF Core repositories discovered");
 
             var grouped = _model.DiscoveredRepositories
                 .GroupBy(r => r.BoundaryName ?? "Other")

@@ -37,6 +37,15 @@ internal sealed partial class PragmaticHostTemplate : CSharpTemplate
     private bool HasDiscoveredRepositories =>
         !_model.DiscoveredRepositories.IsDefaultOrEmpty;
 
+    /// <summary>
+    ///     Whether <c>RegisterAllRepositories</c> has anything to register: EF Core's repositories, or the modules' persistence
+    ///     registrations (generated values, query filters) and lookup caches. An engine-only host has the second without the first (#571).
+    /// </summary>
+    private bool HasPersistenceRegistrations =>
+        HasDiscoveredRepositories
+        || HostedRegistrationMethodsFor(MetadataCategoryIds.Persistence).Count > 0
+        || !_model.DiscoveredLookupRegistrations.IsDefaultOrEmpty;
+
     private bool HasDiscoveredServices =>
         !_model.DiscoveredServices.IsDefaultOrEmpty || !_model.DiscoveredDecorators.IsDefaultOrEmpty;
 
@@ -255,8 +264,8 @@ internal sealed partial class PragmaticHostTemplate : CSharpTemplate
         RenderRegisterAllDomainActionsMethod();
         AppendLine();
 
-        // 2. RegisterAllRepositories (skip if no repositories discovered)
-        if (HasDiscoveredRepositories)
+        // 2. RegisterAllRepositories (skip if it would register nothing)
+        if (HasPersistenceRegistrations)
         {
             RenderRegisterAllRepositoriesMethod();
             AppendLine();
