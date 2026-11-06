@@ -25,16 +25,18 @@ internal static class ModuleAndHost
 
     /// <summary>
     ///     The host's compilation errors and its generated files keyed by hint name; <c>extraReferences</c> are what the module and the
-    ///     host get beyond the suite's set (an engine's bridge).
+    ///     host get beyond the suite's set (an engine's bridge), and <c>withoutReference</c> drops assemblies of the set by file name (EF Core,
+    ///     for a host the engines alone persist).
     /// </summary>
     public static (ImmutableArray<string> Errors, IReadOnlyDictionary<string, string> Generated) Generate(
         string moduleAssemblyName,
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
         string hostSource,
-        IEnumerable<MetadataReference>? extraReferences = null)
+        IEnumerable<MetadataReference>? extraReferences = null,
+        Func<string, bool>? withoutReference = null)
     {
-        var (errors, _, generated, _, _) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, extraReferences);
+        var (errors, _, generated, _, _) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, extraReferences, withoutReference);
         return (errors, generated);
     }
 
