@@ -889,7 +889,7 @@ internal static partial class SchemaMetadataTransform
             var isKeyColumn = keyColumnNames?.Contains(prop.Name) == true;
 
             columns.Add(new ColumnSchemaModel(
-                prop.Name,
+                prop.StoredName,
                 SqlTypeMapper.MapToSqlType(prop.TypeName, provider, prop.MaxLength, prop.Precision, prop.Scale, prop.IsEnum),
                 // A key column is never nullable, whatever the CLR annotation says.
                 isKeyColumn ? false : prop.IsNullable,
@@ -1139,7 +1139,7 @@ internal static partial class SchemaMetadataTransform
         // carries the order the parts asked for AND the leading TenantId a per-tenant key needs, and
         // this index has to be byte-for-byte the one EntityConfigurationTemplate emits. Assembling it
         // twice is how the model and the database come to disagree about what is unique.
-        var logicKeyColumns = entity.LogicKeyColumns;
+        var logicKeyColumns = Stored(entity, entity.LogicKeyColumns);
 
         if (logicKeyColumns.Length > 0)
         {
@@ -1175,7 +1175,7 @@ internal static partial class SchemaMetadataTransform
         // database, and any write that bypasses EF — or any write at all — still succeeds.
         foreach (var index in entity.UniqueIndexes)
         {
-            var cols = entity.UniqueIndexColumns(index);
+            var cols = Stored(entity, entity.UniqueIndexColumns(index));
             indexes.Add(new IndexSchemaModel(
                 $"IX_{tableName}_{string.Join("_", cols)}",
                 cols,
@@ -1186,7 +1186,7 @@ internal static partial class SchemaMetadataTransform
         // Composite unique constraint (the single-column case is [LogicKey] above)
         if (entity.UniqueColumns.Length > 0)
         {
-            var cols = entity.UniqueColumns.AsImmutableArray();
+            var cols = Stored(entity, entity.UniqueColumns.AsImmutableArray());
             indexes.Add(new IndexSchemaModel(
                 $"IX_{tableName}_{string.Join("_", cols)}",
                 cols,
@@ -1240,7 +1240,7 @@ internal static partial class SchemaMetadataTransform
         // engine's schema adds them: one the generator already writes (the tenant's, a foreign key's) is not written twice.
         foreach (var index in entity.Indexes)
         {
-            var cols = index.Columns.AsImmutableArray();
+            var cols = Stored(entity, index.Columns.AsImmutableArray());
             var name = $"IX_{tableName}_{string.Join("_", cols)}";
             if (!indexes.Any(i => i.Name == name))
                 indexes.Add(new IndexSchemaModel(name, cols));
@@ -1248,6 +1248,13 @@ internal static partial class SchemaMetadataTransform
 
         return indexes.ToImmutableArray();
     }
+
+    /// <summary>
+    ///     The columns an index names by property, as the table stores them: a <c>[Column]</c> property's own name (#568), as the Sql engine's
+    ///     schema maps them. A name no property has (a trait's column, the tenant's) is a column already.
+    /// </summary>
+    private static ImmutableArray<string> Stored(EntityMetadataModel entity, ImmutableArray<string> names)
+        => names.Select(n => entity.Properties.FirstOrDefault(p => p.Name == n)?.StoredName ?? n).ToImmutableArray();
 
     private static ImmutableArray<ForeignKeySchemaModel> BuildForeignKeys(EntityMetadataModel entity, string tableName)
     {

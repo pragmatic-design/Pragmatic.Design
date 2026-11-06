@@ -416,6 +416,9 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
             // in modules, which made the attribute work only where nobody keeps one.
             if (prop.RenamedFrom is not null)
                 builder.Property("renamedFrom", prop.RenamedFrom);
+            // The same channel for a [Column] name: the host's schema creates the column the module's entity is mapped to (#568).
+            if (prop.ColumnName is not null)
+                builder.Property("columnName", prop.ColumnName);
             if (!prop.ValueObjectColumns.IsDefaultOrEmpty)
             {
                 builder.Property("valueObjectColumns");

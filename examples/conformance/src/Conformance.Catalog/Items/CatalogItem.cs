@@ -35,4 +35,12 @@ public partial class CatalogItem : IEntity
     /// </remarks>
     [RenamedFrom("Price")]
     public decimal ListPrice { get; private set; }
+
+    /// <summary>A buyer's note, in a column of a name of its own: <c>TheNamedColumn</c> writes and reads it through EF Core.</summary>
+    /// <remarks>
+    ///     EF Core maps the property to <c>buyer_note</c> by its own convention. Until #568 the schema Pragmatic generates created
+    ///     <c>BuyerNote</c>, and the first write answered <c>42703</c>.
+    /// </remarks>
+    [System.ComponentModel.DataAnnotations.Schema.Column("buyer_note")]
+    public string? BuyerNote { get; private set; }
 }

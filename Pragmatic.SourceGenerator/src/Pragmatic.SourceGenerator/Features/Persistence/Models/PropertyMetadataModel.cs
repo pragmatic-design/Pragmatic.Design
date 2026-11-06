@@ -111,6 +111,15 @@ internal sealed record PropertyMetadataModel
     public string? RenamedFrom { get; init; }
 
     /// <summary>
+    ///     The column's name from <c>[Column("…")]</c>, when it is not the property's. EF Core's model maps the property to it by its own
+    ///     convention, and the Sql engine reads and writes it (#568): the schema has to create the same column.
+    /// </summary>
+    public string? ColumnName { get; init; }
+
+    /// <summary>The column the property is stored in: its <c>[Column]</c> name, or its own.</summary>
+    public string StoredName => ColumnName ?? Name;
+
+    /// <summary>
     ///     When this property's type is a <c>[ValueObject]</c>, the flattened complex-type columns
     ///     (<c>{Property}_{SubProperty}</c>). Empty for ordinary scalar properties. Drives both the EF
     ///     <c>ComplexProperty</c> mapping and the migration schema columns (kept in sync).
