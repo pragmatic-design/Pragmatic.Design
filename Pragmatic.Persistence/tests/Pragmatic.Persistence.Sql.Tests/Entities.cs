@@ -342,3 +342,13 @@ public partial class DamageCharge : Charge
 
     public void Damaged(string item) => Item = item;
 }
+
+/// <summary>A support case, numbered by a database sequence when it is saved (<c>[GeneratedValue]</c> with <c>{SEQ}</c>, #562).</summary>
+[Entity]
+public partial class SupportCase : IEntity
+{
+    [GeneratedValue("CASE-{SEQ:4}")]
+    public string Number { get; private set; } = "";
+
+    public string Subject { get; set; } = "";
+}

@@ -1,11 +1,68 @@
+using System.Data.Common;
 using System.Globalization;
+using Pragmatic.Persistence.Sql.Planning;
+using Pragmatic.Persistence.Sql.Writing;
 
 namespace Pragmatic.Persistence.Sql;
 
 /// <summary>The next values of a database sequence (see <see cref="SqlSequences" />), read through the session's connection and transaction, the command prepared once per sequence.</summary>
 public sealed partial class SqlSession
 {
-    /// <summary>The sequence's next value. The sequence exists (its DDL is <see cref="SqlSequences.CreateSql" />'s).</summary>
+    private const string SequenceSavepoint = "pragmatic_sequence";
+    private HashSet<string>? _ensuredSequences; // the sequences this session has seen there: asked once per session
+
+    /// <summary>
+    ///     Creates the sequence when it is not there, as EF Core's <c>SequenceValueProvider</c> does on a first use: what an <c>[GeneratedValue]</c>
+    ///     <c>{SEQ}</c> number reads on the engines, whose schema declares no sequence (#562).
+    /// </summary>
+    /// <remarks>
+    ///     <c>IF NOT EXISTS</c> is not free of races: two sessions on a first use both decide to create, and the loser fails on the catalogue. The
+    ///     post-condition is checked, not the error: a failed create is followed by asking whether the sequence is there now, and only when it is
+    ///     not does the failure stand. Inside the caller's transaction the create runs in a savepoint, so the failure does not abort it
+    ///     (PostgreSQL's 25P02). On SQLite and MySQL the sequence is a row of a counter table, created with <c>INSERT … IGNORE</c>: no race.
+    /// </remarks>
+    public async ValueTask EnsureSequenceAsync(string sequence, CancellationToken ct = default)
+    {
+        SqlSequences.Validate(sequence);
+        if (_ensuredSequences?.Contains(sequence) == true)
+            return;
+
+        if (SqlSequences.IsEmulated(Dialect))
+        {
+            foreach (var statement in SqlSequences.CreateSql(Dialect, sequence))
+                await RunAsync(FreshCommand(statement, []), "sequence " + sequence, ct).ConfigureAwait(false);
+        }
+        else if (!await SequenceExistsAsync(sequence, ct).ConfigureAwait(false))
+        {
+            var savepoint = Transaction is not null;
+            if (savepoint)
+                await SavepointAsync(SequenceSavepoint, ct).ConfigureAwait(false);
+            try
+            {
+                foreach (var statement in SqlSequences.CreateSql(Dialect, sequence))
+                    await RunAsync(FreshCommand(statement, []), "sequence " + sequence, ct).ConfigureAwait(false);
+            }
+            catch (DbException)
+            {
+                if (savepoint)
+                    await RollbackToSavepointAsync(SequenceSavepoint, CancellationToken.None).ConfigureAwait(false);
+                if (!await SequenceExistsAsync(sequence, ct).ConfigureAwait(false))
+                    throw; // not the race: a missing privilege, a server gone
+            }
+        }
+
+        (_ensuredSequences ??= new HashSet<string>(StringComparer.Ordinal)).Add(sequence);
+    }
+
+    private async Task<bool> SequenceExistsAsync(string sequence, CancellationToken ct)
+    {
+        var command = FreshCommand(SqlSequences.ExistsSql(Dialect), [SqlParamKind.String]);
+        command.Parameters[0].Value = SqlSequences.ExistsArgument(Dialect, sequence);
+        var found = await ScalarAsync(command, "sequence " + sequence, ct).ConfigureAwait(false);
+        return found is not null and not DBNull && Convert.ToInt64(found, CultureInfo.InvariantCulture) != 0;
+    }
+
+    /// <summary>The sequence's next value. The sequence exists (its DDL is <see cref="SqlSequences.CreateSql" />'s, or <see cref="EnsureSequenceAsync" />).</summary>
     public async ValueTask<long> NextValueAsync(string sequence, CancellationToken ct = default)
     {
         SqlSequences.Validate(sequence);

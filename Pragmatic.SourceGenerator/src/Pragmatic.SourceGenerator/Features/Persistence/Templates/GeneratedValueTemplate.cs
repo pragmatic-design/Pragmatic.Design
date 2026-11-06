@@ -45,8 +45,8 @@ internal sealed class GeneratedValueTemplate : CSharpTemplate
 
     private void RenderClassBody()
     {
-        // {SEQ:N} needs a DB round-trip, so inject the boundary-keyed DbContext and make GenerateAsync
-        // truly async. The other tokens are self-contained and stay synchronous.
+        // {SEQ:N} needs a DB round-trip, so inject the boundary-keyed session of the entity's engine and make
+        // GenerateAsync truly async. The other tokens are self-contained and stay synchronous.
         if (_model.HasSequence)
             RenderSequenceConstructor();
 
@@ -64,18 +64,54 @@ internal sealed class GeneratedValueTemplate : CSharpTemplate
             AppendLine();
             RenderRandomHelper();
         }
+
+        if (_model.HasSequence && _model.Engine == GeneratedValueEngine.Sql)
+        {
+            AppendLine();
+            RenderSqlSequenceHelper();
+        }
     }
 
+    /// <summary>The session the sequence is read through: the boundary's <c>DbContext</c>, <c>SqlSession</c> or <c>DocSession</c>, keyed by it.</summary>
     private void RenderSequenceConstructor()
     {
-        AppendLine("private readonly global::Microsoft.EntityFrameworkCore.DbContext _db;");
+        var session = _model.Engine switch
+        {
+            GeneratedValueEngine.Sql => "global::Pragmatic.Persistence.Sql.SqlSession",
+            GeneratedValueEngine.Documents => "global::Pragmatic.Persistence.Documents.DocSession",
+            _ => "global::Microsoft.EntityFrameworkCore.DbContext",
+        };
+        AppendLine($"private readonly {session} _db;");
         AppendLine();
         var dbParam = string.IsNullOrEmpty(_model.TargetBoundaryFullName)
-            ? "global::Microsoft.EntityFrameworkCore.DbContext db"
-            : $"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof({Qualify(_model.TargetBoundaryFullName!)}))] global::Microsoft.EntityFrameworkCore.DbContext db";
+            ? $"{session} db"
+            : $"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof({Qualify(_model.TargetBoundaryFullName!)}))] {session} db";
         AppendLine($"public {_model.GeneratorClassName}({dbParam})");
         Block(() => AppendLine("_db = db;"));
         AppendLine();
+    }
+
+    /// <summary>The expression reading the sequence's next value, as a <c>long</c>.</summary>
+    private string NextSequenceValue()
+    {
+        var name = Escape(_model.SequenceName!);
+        return _model.Engine switch
+        {
+            // The engines' schema declares no sequence: created on the first use, as EF Core's provider does.
+            GeneratedValueEngine.Sql => $"(await __NextAsync(\"{name}\", ct).ConfigureAwait(false))",
+            GeneratedValueEngine.Documents => $"(await _db.NextValueAsync(\"{name}\", ct).ConfigureAwait(false))",
+            _ => $"(await global::Pragmatic.Persistence.EFCore.Sequences.SequenceValueProvider.NextAsync(_db, \"{name}\", ct).ConfigureAwait(false))",
+        };
+    }
+
+    private void RenderSqlSequenceHelper()
+    {
+        AppendLine("private async global::System.Threading.Tasks.Task<long> __NextAsync(string sequence, global::System.Threading.CancellationToken ct)");
+        Block(() =>
+        {
+            AppendLine("await _db.EnsureSequenceAsync(sequence, ct).ConfigureAwait(false);");
+            AppendLine("return await _db.NextValueAsync(sequence, ct).ConfigureAwait(false);");
+        });
     }
 
     private static string Qualify(string fullTypeName)
@@ -112,9 +148,7 @@ internal sealed class GeneratedValueTemplate : CSharpTemplate
                     AppendLine($"__sb.Append(global::System.Guid.NewGuid().ToString(\"N\").Substring(0, {Math.Min(segment.Length, 32)}));");
                     break;
                 case GeneratedValueTokenKind.Sequence:
-                    AppendLine(
-                        $"__sb.Append((await global::Pragmatic.Persistence.EFCore.Sequences.SequenceValueProvider.NextAsync(_db, \"{Escape(_model.SequenceName!)}\", ct).ConfigureAwait(false))" +
-                        $".ToString(\"D{segment.Length}\", {Invariant}));");
+                    AppendLine($"__sb.Append({NextSequenceValue()}.ToString(\"D{segment.Length}\", {Invariant}));");
                     break;
             }
         }

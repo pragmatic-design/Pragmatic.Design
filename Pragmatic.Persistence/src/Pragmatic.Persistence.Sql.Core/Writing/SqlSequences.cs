@@ -87,6 +87,21 @@ public static class SqlSequences
         _ => ($"DECLARE @first sql_variant, @increment sql_variant; EXEC sp_sequence_get_range @sequence_name = N'[{name}]', @range_size = @p0, @range_first_value = @first OUTPUT, @sequence_increment = @increment OUTPUT; SELECT CAST(@first AS bigint), CAST(@increment AS bigint)", [SqlParamKind.Int32]),
     };
 
+    /// <summary>
+    ///     The statement answering 1 when the sequence is there and 0 when it is not, its one parameter the name as the catalogue holds it
+    ///     (<see cref="ExistsArgument" />). Not on the emulated dialects, whose creation is idempotent and race-free.
+    /// </summary>
+    internal static string ExistsSql(SqlDialect dialect) => dialect switch
+    {
+        // relkind 'S': pg_class is one namespace for every relation, and a table of the same name is not the sequence.
+        SqlDialect.PostgreSql => "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_class WHERE oid = to_regclass(@p0) AND relkind = 'S') THEN 1 ELSE 0 END",
+        SqlDialect.Oracle => "SELECT COUNT(*) FROM user_sequences WHERE sequence_name = @p0",
+        _ => "SELECT CASE WHEN EXISTS (SELECT 1 FROM sys.sequences WHERE name = @p0) THEN 1 ELSE 0 END",
+    };
+
+    /// <summary>The name <see cref="ExistsSql" /> looks up: quoted on PostgreSQL, where <c>to_regclass</c> folds an unquoted name to lower case.</summary>
+    internal static string ExistsArgument(SqlDialect dialect, string name) => dialect == SqlDialect.PostgreSql ? "\"" + name + "\"" : name;
+
     /// <summary>A sequence name is an identifier (letters, digits, underscore): it is written into the statement, never bound.</summary>
     internal static void Validate(string name)
     {

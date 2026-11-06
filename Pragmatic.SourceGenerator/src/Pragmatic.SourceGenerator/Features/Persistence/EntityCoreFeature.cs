@@ -135,11 +135,13 @@ internal static class EntityCoreFeature
             .Select(static (m, _) => m!)
             .Combine(features);
 
+        // On EF Core and on the engines alike (#562): on an engine the generator and its registration were never emitted, and the property
+        // reached the database empty with no error anywhere.
         context.RegisterSourceOutputSafe(alternateKeyProvider, static (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore)
+            if (GeneratedValueEngineOf(pair.Right) is not { } engine)
                 return;
-            GenerateValueGenerator(ctx, pair.Left);
+            GenerateValueGenerator(ctx, pair.Left with { Engine = engine });
         });
 
         // The registration is driven by the entity, not by a create mutation. Deriving it from the
@@ -150,7 +152,7 @@ internal static class EntityCoreFeature
 
         context.RegisterSourceOutputSafe(valueRegistrationProvider, static (ctx, pairs) =>
         {
-            if (pairs.Length == 0 || !pairs[0].Right.HasPersistenceEFCore)
+            if (pairs.Length == 0 || GeneratedValueEngineOf(pairs[0].Right) is null)
                 return;
 
             GenerateValueRegistration(ctx, pairs.Select(static p => p.Left).ToImmutableArray());
@@ -165,6 +167,16 @@ internal static class EntityCoreFeature
     /// </summary>
     private static bool CascadesOnEngines(DetectedFeatures features)
         => !features.HasPersistenceEFCore && (features.HasPersistenceSql || features.HasPersistenceDocuments);
+
+    /// <summary>
+    ///     The engine a compilation's generated values read their sequence from, or null when it persists nothing. ASSUMPTION: as for the cascade
+    ///     handlers, a compilation that references EF Core keeps EF Core's; a module that mixes engines is the porting's item 15.
+    /// </summary>
+    private static GeneratedValueEngine? GeneratedValueEngineOf(DetectedFeatures features)
+        => features.HasPersistenceEFCore ? GeneratedValueEngine.EfCore
+            : features.HasPersistenceSql ? GeneratedValueEngine.Sql
+            : features.HasPersistenceDocuments ? GeneratedValueEngine.Documents
+            : null;
 
     private static void GenerateValueRegistration(
         SourceProductionContext context,
