@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Audit\Pragmatic.Audit.csproj" />
-    <ProjectReference Include="..\Pragmatic.Audit.EFCore\Pragmatic.Audit.EFCore.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

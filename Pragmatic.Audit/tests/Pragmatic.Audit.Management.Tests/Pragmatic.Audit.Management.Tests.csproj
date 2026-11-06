@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pragmatic.Audit.Management on its own: the retention operation over whichever trail the host registers (#553). Hermetic. -->
+
+  <PropertyGroup>
+    <!-- CA2007 conflicts with xUnit1030 in test projects -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Audit.Management\Pragmatic.Audit.Management.csproj" />
+  </ItemGroup>
+
+</Project>

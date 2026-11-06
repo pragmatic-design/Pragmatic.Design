@@ -9,10 +9,12 @@
     <Project Path="src/Pragmatic.Audit.AdoNet/Pragmatic.Audit.AdoNet.csproj" />
     <Project Path="src/Pragmatic.Audit.EFCore/Pragmatic.Audit.EFCore.csproj" />
     <Project Path="src/Pragmatic.Audit.Engines/Pragmatic.Audit.Engines.csproj" />
+    <Project Path="src/Pragmatic.Audit.Management/Pragmatic.Audit.Management.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pragmatic.Audit.Tests/Pragmatic.Audit.Tests.csproj" />
     <Project Path="tests/Pragmatic.Audit.AdoNet.Tests/Pragmatic.Audit.AdoNet.Tests.csproj" />
     <Project Path="tests/Pragmatic.Audit.EFCore.Tests/Pragmatic.Audit.EFCore.Tests.csproj" />
+    <Project Path="tests/Pragmatic.Audit.Management.Tests/Pragmatic.Audit.Management.Tests.csproj" />
   </Folder>
 </Solution>

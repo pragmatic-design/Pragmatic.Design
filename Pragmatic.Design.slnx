@@ -872,6 +872,7 @@
     <Project Path="Pragmatic.Agent/tests/Pragmatic.Agent.Tests/Pragmatic.Agent.Tests.csproj" />
     <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.AdoNet.Tests/Pragmatic.Audit.AdoNet.Tests.csproj" />
     <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.EFCore.Tests/Pragmatic.Audit.EFCore.Tests.csproj" />
+    <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.Management.Tests/Pragmatic.Audit.Management.Tests.csproj" />
     <Project Path="Pragmatic.Audit/tests/Pragmatic.Audit.Tests/Pragmatic.Audit.Tests.csproj" />
     <Project Path="Pragmatic.Authorization/tests/Pragmatic.Authorization.Management.Tests/Pragmatic.Authorization.Management.Tests.csproj" />
     <Project Path="Pragmatic.Authorization/tests/Pragmatic.Authorization.Tests/Pragmatic.Authorization.Tests.csproj" />
