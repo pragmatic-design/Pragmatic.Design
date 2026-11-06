@@ -59,6 +59,17 @@ public sealed class MigrationProviderFactory(IServiceProvider serviceProvider)
             .Select(f => f.ProviderName)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        // None at all: a host that references no driver (one on the documents engine alone, #555), asked to migrate a SQL database. The
+        // refusal names the provider the schema uses and the driver package that serves it.
+        if (registered.Count == 0)
+        {
+            var schemaProvider = providerName ?? "(none named)";
+            throw new InvalidOperationException(
+                $"Migrations found no usable database provider for a schema of provider '{schemaProvider}'. Reference its driver package "
+                + $"({DriverPackageOf(providerName)}) together with the Pragmatic source generator, which registers its connection factory — "
+                + "or call UseProvider(...) to supply one explicitly.");
+        }
+
         if (registered.Count > 1)
         {
             var named = providerName is null ? "names no provider" : $"names provider '{providerName}', which is not registered,";
@@ -76,4 +87,15 @@ public sealed class MigrationProviderFactory(IServiceProvider serviceProvider)
             "Ensure the provider's NuGet package is referenced and registered (e.g. via UseProvider), " +
             "and that the provider name matches one of: PostgreSql, SqlServer, Sqlite, MySql, Oracle.");
     }
+
+    /// <summary>The driver package of a provider, or every one of them when the schema names none Migrations knows.</summary>
+    private static string DriverPackageOf(string? providerName) => providerName switch
+    {
+        _ when string.Equals(providerName, MigrationConstants.ProviderPostgreSql, StringComparison.OrdinalIgnoreCase) => "Npgsql",
+        _ when string.Equals(providerName, MigrationConstants.ProviderSqlServer, StringComparison.OrdinalIgnoreCase) => "Microsoft.Data.SqlClient",
+        _ when string.Equals(providerName, MigrationConstants.ProviderSqlite, StringComparison.OrdinalIgnoreCase) => "Microsoft.Data.Sqlite",
+        _ when string.Equals(providerName, MigrationConstants.ProviderMySql, StringComparison.OrdinalIgnoreCase) => "MySqlConnector",
+        _ when string.Equals(providerName, MigrationConstants.ProviderOracle, StringComparison.OrdinalIgnoreCase) => "Oracle.ManagedDataAccess.Core",
+        _ => "Npgsql, Microsoft.Data.SqlClient, Microsoft.Data.Sqlite, MySqlConnector or Oracle.ManagedDataAccess.Core",
+    };
 }

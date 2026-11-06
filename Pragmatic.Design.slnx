@@ -938,6 +938,7 @@
     <Project Path="Pragmatic.Messaging/tests/Pragmatic.Messaging.Tests/Pragmatic.Messaging.Tests.csproj" />
     <Project Path="Pragmatic.Migrations/tests/Pragmatic.Migrations.Core.Tests/Pragmatic.Migrations.Core.Tests.csproj" />
     <Project Path="Pragmatic.Migrations/tests/Pragmatic.Migrations.Tests/Pragmatic.Migrations.Tests.csproj" />
+    <Project Path="Pragmatic.Migrations/tests/Pragmatic.Migrations.WithoutDriver.Tests/Pragmatic.Migrations.WithoutDriver.Tests.csproj" />
     <Project Path="Pragmatic.MultiTenancy/tests/Pragmatic.MultiTenancy.Tests/Pragmatic.MultiTenancy.Tests.csproj" />
     <Project Path="Pragmatic.Notes/tests/Pragmatic.Notes.Tests/Pragmatic.Notes.Tests.csproj" />
     <Project Path="Pragmatic.Notifications/tests/Pragmatic.Notifications.Tests/Pragmatic.Notifications.Tests.csproj" />
