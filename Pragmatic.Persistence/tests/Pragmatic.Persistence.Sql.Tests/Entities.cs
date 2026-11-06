@@ -353,11 +353,16 @@ public partial class SupportCase : IEntity
     public string Subject { get; set; } = "";
 }
 
-/// <summary>A statement issued on a day for an amount, as Showcase.Billing's <c>Invoice</c>: the columns a projection formats and converts (#563).</summary>
+/// <summary>
+///     A statement issued on a day for an amount, as Showcase.Billing's <c>Invoice</c>: the columns a projection formats and converts (#563), in a
+///     batch whose statements a query sorts by key (#564).
+/// </summary>
 [Entity]
 public partial class Statement : IEntity
 {
     public string Code { get; set; } = "";
+
+    public string Batch { get; set; } = "";
 
     public DateTimeOffset IssuedAt { get; set; }
 

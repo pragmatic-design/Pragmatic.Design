@@ -12,5 +12,5 @@ internal sealed partial class PragmaticGrid
         => SourceText("Pragmatic.Persistence.Sql", "Sql engine", "SqlGrid",
             new GridLoadModel("global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.SqlSpecifications.ToPredicate", $"global::Pragmatic.Persistence.Engines.GridPage<{EntityName}>", CountsInLong: false),
             new GridOrderingModel($"global::Pragmatic.Persistence.Sql.Planning.SqlOrdering<{EntityName}>", "global::Pragmatic.Persistence.Sql.Planning.SqlOrderKey",
-                OrderKeyColumns().Select(c => new OrderKeyModel(c, PragmaticQuery.OrderKeyDialects(c).ToEquatableArray())).ToEquatableArray()));
+                OrderKeyColumns().Select(c => new OrderKeyModel(c, PragmaticQuery.OrderKeyDialects(PragmaticQuery.ColumnOf(Entity, c)).ToEquatableArray())).ToEquatableArray()));
 }
