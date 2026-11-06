@@ -55,4 +55,7 @@ internal sealed record GeneratedValueModel
     ///     the non-keyed DbContext).
     /// </summary>
     public string? TargetBoundaryFullName { get; init; }
+
+    /// <summary>The engine whose session reads the <c>{SEQ}</c> number; set from the compilation's features, EF Core when it is referenced.</summary>
+    public GeneratedValueEngine Engine { get; init; }
 }
