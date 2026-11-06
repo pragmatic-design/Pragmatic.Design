@@ -157,8 +157,17 @@ internal static partial class SqlInterceptorGenerator
                     return null;
                 }
 
+                // A member the mapping formats or converts: the column read with its own type, then what the mapping applies to it (#563).
+                string? convertedProblem = null;
+                var converted = source is not null ? Converted(property, map, source, out convertedProblem) : null;
+                if (converted == "")
+                {
+                    Report(property.Name, convertedProblem!);
+                    return null;
+                }
+
                 // A converted column is read with its own reader (the DTO's property has the model type); an optional owned type's member as nullable; any other with the property's type.
-                var reader = source is not null ? source.ProjectedReader(property.Type) : EntityModel.ReaderFor(property.Type);
+                var reader = converted ?? (source is not null ? source.ProjectedReader(property.Type) : EntityModel.ReaderFor(property.Type));
                 if (column is null || reader is null)
                 {
                     Report(property.Name, column is null
@@ -174,6 +183,9 @@ internal static partial class SqlInterceptorGenerator
                 columns.Add(column);
                 assignments.Add($"{property.Name} = {reader.Replace("{r}", "r").Replace("{i}", (columns.Count - 1).ToString()).Replace("{d}", "d")}");
                 named.Add((property.Name, LambdaTranslator.KindOf(source?.Store ?? property.Type)));
+                // The value is not the column's: a later Where or OrderBy on it cannot be written over the column, as with a computed member.
+                if (converted is not null)
+                    computedMember = true;
             }
 
             if (collections.Count > 0 && dto.IsValueType)
