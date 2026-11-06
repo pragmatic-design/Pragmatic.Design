@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pragmatic.Migrations in a host that references no SQL driver: a host whose databases the documents engine alone serves (#555).
+
+       ⚠️ A project of its own because of what it leaves out. MigrationDriverRegistry is filled by a module initializer the generator writes
+       for each driver a compilation references, and nothing empties it: Pragmatic.Migrations.Core.Tests references Npgsql, SQLite and
+       SqlClient with the generator, so no test there can stand for a host without a driver. Hermetic. -->
+
+  <PropertyGroup>
+    <!-- CA2007 conflicts with xUnit1030 in test projects -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+</Project>

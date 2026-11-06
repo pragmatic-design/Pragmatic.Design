@@ -208,18 +208,10 @@ public sealed class MigrationsBuilder
             new OracleMigrationGenerator(),
             new OracleSchemaIntrospector { ExcludedTables = excluded });
 
-        // Say it here rather than let DI fail later on a missing IConnectionFactory. The probe this
-        // replaced could not tell "no driver referenced" from "generator never ran"; naming both is
-        // the difference between a clear message at startup and a confusing one deep in the runner.
-        if (_registeredProviders.Count == 0)
-            throw new InvalidOperationException(
-                "Migrations found no usable database provider. Reference a driver package (Npgsql, "
-                + "Microsoft.Data.SqlClient, Microsoft.Data.Sqlite, MySqlConnector or Oracle.ManagedDataAccess.Core) "
-                + "together with the Pragmatic source generator, which registers its connection factory — or call "
-                + "UseProvider(...) to supply one explicitly.");
+        // No provider is not refused here: a host whose databases the documents engine alone serves references no SQL driver, and turns
+        // migrations on to have its documents schemas applied at start (#555). A SQL database such a host is asked to migrate is refused
+        // when it is, by MigrationProviderFactory, with the driver that would serve it.
     }
-
-    private readonly HashSet<string> _registeredProviders = new(StringComparer.OrdinalIgnoreCase);
 
     private void RegisterProviderIfAvailable(
         string providerName,
@@ -255,8 +247,6 @@ public sealed class MigrationsBuilder
         Func<string, DbConnection> connectionFactory,
         string? sessionSetup)
     {
-        _registeredProviders.Add(providerName);
-
         Services.AddKeyedSingleton<ISqlMigrationGenerator>(providerName, generator);
         Services.AddKeyedSingleton<ISchemaIntrospector>(providerName, introspector);
         Services.AddKeyedSingleton<IConnectionFactory>(providerName,
