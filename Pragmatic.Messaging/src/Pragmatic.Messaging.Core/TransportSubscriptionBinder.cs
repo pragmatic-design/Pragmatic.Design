@@ -33,6 +33,42 @@ public static partial class TransportSubscriptionBinder
         CancellationToken ct = default)
     {
         var handles = new List<IAsyncDisposable>();
+        try
+        {
+            await BindEachAsync(transport, router, scopeFactory, subscriptions, killSwitch, logger, busName, subscriberOverride, handles, ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            // A bind that does not return hands its caller no handle to close: what it had subscribed is closed here, or it stays
+            // subscribed on a host that stopped (#551).
+            await DisposeAllAsync(handles).ConfigureAwait(false);
+            throw;
+        }
+
+        return handles;
+    }
+
+    /// <summary>Closes the subscriptions a bind returned, in the order they were made.</summary>
+    public static async Task DisposeAllAsync(IReadOnlyList<IAsyncDisposable> handles)
+    {
+        Ensure.Ensure.ThrowIfNull(handles);
+        foreach (var handle in handles)
+            await handle.DisposeAsync().ConfigureAwait(false);
+    }
+
+    private static async Task BindEachAsync(
+        IMessageTransport transport,
+        IMessageRouter router,
+        IServiceScopeFactory scopeFactory,
+        IEnumerable<MessageSubscription> subscriptions,
+        KillSwitchOptions? killSwitch,
+        ILogger? logger,
+        string? busName,
+        string? subscriberOverride,
+        List<IAsyncDisposable> handles,
+        CancellationToken ct)
+    {
         var bound = new HashSet<Type>();
 
         foreach (var subscription in subscriptions)
@@ -175,8 +211,6 @@ public static partial class TransportSubscriptionBinder
 
             handles.Add(handle);
         }
-
-        return handles;
     }
 
     [LoggerMessage(Level = LogLevel.Warning,
