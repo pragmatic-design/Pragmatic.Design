@@ -24,7 +24,6 @@ public sealed partial class SqlConsumerService(
     ConnectRetry? retry = null)
     : BackgroundService
 {
-    private readonly List<IAsyncDisposable> _subscriptions = [];
     private readonly CancellationTokenSource _stopping = new();
     private Task _connecting = Task.CompletedTask;
 
@@ -50,27 +49,37 @@ public sealed partial class SqlConsumerService(
 
         LogStarted();
 
-        _subscriptions.AddRange(
-            await TransportSubscriptionBinder.BindAsync(transport, router, scopeFactory, subscriptions, killSwitch, logger, busName: null, messaging?.Value.SubscriberName, stoppingToken)
-                .ConfigureAwait(false));
-
-        // Distributed request/reply: bind the SG-generated request executors (responder side).
-        _subscriptions.AddRange(
-            await Pragmatic.Messaging.RequestReply.RequestReplyBinder.BindAsync(transport, scopeFactory, requestSubscriptions, logger, stoppingToken)
-                .ConfigureAwait(false));
-
-        if (_subscriptions.Count == 0)
-            LogNoSubscriptions();
-        else
-            LogSubscribed(_subscriptions.Count);
-
+        // The subscriptions are this method's, closed by it whenever its binds return: StopAsync returns when the stop's token fires, with
+        // a bind possibly still running, so closing them there missed the ones bound after it (#551).
+        var bound = new List<IAsyncDisposable>();
         try
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
+            bound.AddRange(
+                await TransportSubscriptionBinder.BindAsync(transport, router, scopeFactory, subscriptions, killSwitch, logger, busName: null, messaging?.Value.SubscriberName, stoppingToken)
+                    .ConfigureAwait(false));
+
+            // Distributed request/reply: bind the SG-generated request executors (responder side).
+            bound.AddRange(
+                await Pragmatic.Messaging.RequestReply.RequestReplyBinder.BindAsync(transport, scopeFactory, requestSubscriptions, logger, stoppingToken)
+                    .ConfigureAwait(false));
+
+            if (bound.Count == 0)
+                LogNoSubscriptions();
+            else
+                LogSubscribed(bound.Count);
+
+            try
+            {
+                await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal shutdown
+            }
         }
-        catch (OperationCanceledException)
+        finally
         {
-            // Normal shutdown
+            await TransportSubscriptionBinder.DisposeAllAsync(bound).ConfigureAwait(false);
         }
 
         await transport.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
@@ -81,11 +90,6 @@ public sealed partial class SqlConsumerService(
     {
         await _stopping.CancelAsync().ConfigureAwait(false);
         await base.StopAsync(cancellationToken).ConfigureAwait(false);
-
-        foreach (var sub in _subscriptions)
-            await sub.DisposeAsync().ConfigureAwait(false);
-
-        _subscriptions.Clear();
     }
 
     public override void Dispose()

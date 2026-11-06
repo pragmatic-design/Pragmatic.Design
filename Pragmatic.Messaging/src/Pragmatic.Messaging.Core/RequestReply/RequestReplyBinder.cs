@@ -21,7 +21,28 @@ public static partial class RequestReplyBinder
         CancellationToken ct = default)
     {
         var handles = new List<IAsyncDisposable>();
+        try
+        {
+            await BindEachAsync(transport, scopeFactory, requestSubscriptions, logger, handles, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // As TransportSubscriptionBinder: a bind that does not return hands its caller no handle to close (#551).
+            await TransportSubscriptionBinder.DisposeAllAsync(handles).ConfigureAwait(false);
+            throw;
+        }
 
+        return handles;
+    }
+
+    private static async Task BindEachAsync(
+        IMessageTransport transport,
+        IServiceScopeFactory scopeFactory,
+        IEnumerable<RequestSubscription> requestSubscriptions,
+        ILogger? logger,
+        List<IAsyncDisposable> handles,
+        CancellationToken ct)
+    {
         foreach (var subscription in requestSubscriptions)
         {
             var handle = await SubscribeQueueAsync(
@@ -74,8 +95,6 @@ public static partial class RequestReplyBinder
             if (logger is not null)
                 LogRequestBound(logger, subscription.RequestType.Name, subscription.Queue);
         }
-
-        return handles;
     }
 
     private static string? GetHeader(MessageContext context, string key)
