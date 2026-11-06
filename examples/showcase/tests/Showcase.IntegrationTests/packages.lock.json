@@ -658,8 +658,7 @@
         "type": "Project",
         "dependencies": {
           "Pragmatic.Actions": "[1.0.0, )",
-          "Pragmatic.Audit": "[1.0.0, )",
-          "Pragmatic.Audit.EFCore": "[1.0.0, )"
+          "Pragmatic.Audit": "[1.0.0, )"
         }
       },
       "pragmatic.authorization": {
