@@ -33,7 +33,7 @@ internal sealed partial class PragmaticHostTemplate
             // is how a host that serves only its contract registered nothing at all: the method returned
             // early and the document stayed in the process-wide static. Found by a generator test whose host carried a
             // manifest and no endpoint.
-            var hasAnything = HasDomainModules || HasDiscoveredRepositories || HasDiscoveredServices ||
+            var hasAnything = HasDomainModules || HasPersistenceRegistrations || HasDiscoveredServices ||
                               HasLocalServices || HasPipelineSteps || HasEndpoints || HasValidationMetadata ||
                               HasInfraModules || HasMessageHandlerMetadata || HasJobMetadata ||
                               HasSagaMetadata || HasTemporalBehaviorsMetadata || HasPrivacyAdapterMetadata ||
@@ -441,8 +441,8 @@ internal sealed partial class PragmaticHostTemplate
                 AppendLine();
             }
 
-            // Repositories
-            if (HasDiscoveredRepositories)
+            // Repositories, and the modules' persistence registrations
+            if (HasPersistenceRegistrations)
             {
                 Comment("Repositories");
                 AppendLine("services.RegisterAllRepositories();");

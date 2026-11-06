@@ -45,6 +45,48 @@ public sealed class TheHostOnTheDocumentsEngineServesEachModuleTests(DocumentsHo
     }
 
     /// <summary>
+    ///     A reservation created through the host carries the number its <c>[GeneratedValue("RES-{YYYY}{MM}-{SEQ:5}")]</c> declares, counted in
+    ///     MongoDB. The host registers the module's generated values although it finds no EF Core repository (#571): before, every number
+    ///     stayed "".
+    /// </summary>
+    [Fact]
+    public async Task Booking_AReservationCreated_IsNumberedByItsSequence()
+    {
+        var guest = await Caller().PostAsJsonAsync("/api/guests", new { firstName = "Engine", lastName = "Numbered", email = $"numbered.{Guid.NewGuid():N}@test.com" });
+        var guestId = (await guest.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var property = await Caller().PostAsJsonAsync("/api/properties", new { code = $"NUM-{Guid.NewGuid():N}"[..12], name = "Numbered Hotel", city = "Rome", country = "IT", starRating = 3 });
+        var propertyId = (await property.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var roomType = await Caller().PostAsJsonAsync("/api/room-types", new { propertyId, name = "Numbered Room", code = "NUM", baseRate = 100m, totalRooms = 10 });
+        roomType.IsSuccessStatusCode.Should().BeTrue("Got {0}: {1}", roomType.StatusCode, await roomType.Content.ReadAsStringAsync());
+        var roomTypeId = (await roomType.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var numberedBefore = await CountNumbered();
+
+        var created = await Caller().PostAsJsonAsync("/api/reservations?api-version=1.0", new
+        {
+            request = new { guestId, propertyId, roomTypeId, checkIn = DateTimeOffset.UtcNow.AddDays(7).ToString("O"), checkOut = DateTimeOffset.UtcNow.AddDays(10).ToString("O"), numberOfGuests = 2 },
+        });
+        created.StatusCode.Should().Be(HttpStatusCode.Created, "Body: {0}", await created.Content.ReadAsStringAsync());
+
+        (await CountNumbered()).Should().Be(numberedBefore + 1, "the reservation just created carries the declared format");
+    }
+
+    /// <summary>The reservations of showcase_app whose number has the declared format.</summary>
+    private async Task<long> CountNumbered()
+    {
+        var reply = await fixture.Client.RunCommandAsync("showcase_app", w =>
+        {
+            w.Write("count", "Reservations");
+            w.StartDocument("query");
+            w.StartDocument("ReservationNumber");
+            w.Write("$regex", @"^RES-\d{6}-\d{5}$");
+            w.EndDocument();
+            w.EndDocument();
+        });
+        reply.TryGetNumber("n", out var n).Should().BeTrue("the count command answers with n");
+        return (long)n;
+    }
+
+    /// <summary>
     ///     A login checks the password against the account the registration stored: the wrong one is refused, so a login that succeeds read it
     ///     from the database.
     /// </summary>
