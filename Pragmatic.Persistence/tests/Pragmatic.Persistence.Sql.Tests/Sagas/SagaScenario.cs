@@ -59,7 +59,8 @@ public sealed class SagaScenario(IServiceProvider provider, SagaBus bus, Func<Gu
         }
 
         Assert.Equal((SagaStatus.TimedOut, false), await instance(saga.Id));
-        Assert.Contains(bus.Published, m => m is CancelStay cancel && cancel.StayId == stay);
+        // Seeded from the saga's state: its stay, and the required Reason the saga does not have left at its default.
+        Assert.Contains(bus.Published, m => m is CancelStay { Reason: null } cancel && cancel.StayId == stay);
         Assert.DoesNotContain(await ActiveAsync(), s => s.Id == saga.Id);
     }
 

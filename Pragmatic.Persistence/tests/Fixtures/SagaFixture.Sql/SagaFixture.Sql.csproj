@@ -3,8 +3,7 @@
   <!-- StaySaga on the Sql engine: the saga, its boundary ([EnableSagaPersistence], [EnableOutbox]) and the registration the generator writes
        for them (AddPragmaticSagas), which the Sql bridge suite runs on five databases. An assembly of its own because a boundary in the suite
        would claim the suite's entities and change their generated code (the traits' children). A test fixture, not a package, and named
-       outside Pragmatic.*: the gate's trim ratchet counts the Pragmatic projects, which ship, and the saga's generated compensation still
-       reads JSON through a reflective resolver there (an issue of its own). -->
+       outside Pragmatic.*: the gate's trim ratchet counts the Pragmatic projects, which ship. -->
   <!-- The saga's source (Saga/) is compiled here and linked into SagaFixture.Documents: one saga on both engines. -->
   <PropertyGroup>
     <RootNamespace>PragmaticSagas.Tests</RootNamespace>

@@ -204,6 +204,13 @@ retry can succeed; compensating on every retry would re-publish the whole chain 
 `[CompensateWith<TAction>]` action is dispatched as a message, so compensating logic is asynchronous and
 independently retriable, and one compensator failing never aborts the rest of the chain.
 
+The action is built from the saga's state, member by name, ignoring case. The generator writes the
+construction out, so no reflection is involved. It chooses the constructor (`[JsonConstructor]`, else
+the public parameterless one, else the only public one), then fills its parameters and the action's
+public settable members from the saga's public properties of the same name. A required member the saga
+has no value for is left at its default. An action that cannot be built (abstract, or no constructor to
+choose) is skipped and logged.
+
 The chain is driven by the **steps that actually executed**, recorded per step in `__SagaSteps` (the
 step history) and committed in the same transaction as the state. The orchestrator compensates only
 those recorded steps that declare a compensator, in reverse declaration order, so a saga that branched
