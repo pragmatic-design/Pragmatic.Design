@@ -103,7 +103,7 @@ internal sealed class EntityCreateTemplate : CSharpTemplate
             Method("Create", () => RenderCreateBody([]),
                 $"global::{_model.FullTypeName}",
                 parameters, AccessModifier.Public,
-                new MethodModifiers { IsStatic = true });
+                new MethodModifiers { IsStatic = true, IsNew = HidesBase(CreateSignature.Parameterless(_model.IsAuditable)) });
         }
 
         // An auditable entity's parameterless call is Create(timeProvider: null), whose signature is
@@ -154,8 +154,14 @@ internal sealed class EntityCreateTemplate : CSharpTemplate
         Method("Create", () => RenderCreateBody(requiredProps),
             $"global::{_model.FullTypeName}",
             parameters, AccessModifier.Public,
-            new MethodModifiers { IsStatic = true });
+            new MethodModifiers { IsStatic = true, IsNew = HidesBase(CreateSignature.Full(requiredProps.Select(p => p.TypeName).ToList(), _model.IsAuditable)) });
     }
+
+    /// <summary>
+    ///     True when a base entity's factory has this parameter list (#540): the overload hides it, and says so. A hierarchy whose root is not
+    ///     <c>[Auditable]</c> gives the root and each derived type a parameterless <c>Create()</c>; without <c>new</c>, CS0108.
+    /// </summary>
+    private bool HidesBase(string signature) => _model.InheritedCreateSignatures.Contains(signature);
 
     private void RenderCreateBody(List<PropertyMetadataModel> requiredProps)
     {

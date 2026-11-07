@@ -470,6 +470,12 @@ internal abstract partial class CSharpTemplate(CodeWriterOptions? options = null
         public bool IsAbstract { get; init; }
         public bool IsSealed { get; init; }
         public bool IsAsync { get; init; }
+
+        /// <summary>
+        ///     Emits <c>new</c>: the method deliberately hides one with the same signature on a base type. Needed by a derived entity's
+        ///     <c>Create</c> overloads that have the parameters of its base entity's; without it, <c>CS0108</c>.
+        /// </summary>
+        public bool IsNew { get; init; }
     }
 
     protected struct ClassModifiers

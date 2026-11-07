@@ -41,4 +41,30 @@ public class EntityHierarchyTests(PragmaticDatabases databases)
         Assert.Equal([late.Id], (await session.Query<LateCharge>().ToListAsync()).Select(c => c.Id));
         Assert.Equal(2, (await session.Query<Charge>().ToListAsync()).Count);
     }
+
+    /// <summary>
+    ///     A hierarchy whose root is not auditable (#540): <see cref="Extra" />'s <c>Create()</c> and its derived types' have one signature, and
+    ///     each returns its own type. Without <c>new</c> on the derived ones the suite did not compile (CS0108).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task Each_type_of_a_hierarchy_whose_root_is_not_auditable_creates_its_own(SqlDialect dialect)
+    {
+        using var session = await databases.SessionAsync(dialect, null);
+        var unitOfWork = new SqlUnitOfWork(session, new FixedClock(UnitOfWorkTests.Now), new TestUser("anna"), new TenantScope());
+
+        Assert.Equal(typeof(Extra), Extra.Create().GetType());
+        Assert.Equal(typeof(MinibarExtra), MinibarExtra.Create().GetType());
+        Assert.Equal(typeof(LateArrivalExtra), LateArrivalExtra.Create().GetType());
+        var minibar = MinibarExtra.Create(bottles: 2);
+        var late = LateArrivalExtra.Create();
+        late.Gate = "B";
+        new MinibarExtra.SqlRepository(unitOfWork).Add(minibar);
+        new LateArrivalExtra.SqlRepository(unitOfWork).Add(late);
+        await unitOfWork.SaveChangesAsync();
+
+        IReadRepository<Extra> extras = new Extra.SqlReadRepository(session);
+        Assert.Equal(2, Assert.IsType<MinibarExtra>(await extras.GetByIdAsync(minibar.Id)).Bottles);
+        Assert.Equal("B", Assert.IsType<LateArrivalExtra>(await extras.GetByIdAsync(late.Id)).Gate);
+    }
 }
