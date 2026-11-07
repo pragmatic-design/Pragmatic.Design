@@ -125,13 +125,14 @@ public class FamilyFilterTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
-    public async Task On_a_navigations_join_the_target_is_filtered_too(SqlDialect dialect)
+    public async Task On_a_navigations_join_the_target_keeps_its_tenancy_not_its_owner_or_scopes(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
         using var session = await Seeded(dialect);
-        // anna's stays, at the properties she may see: MARE (another scope) and ALPE (another tenant) drop with their stays. On EF, a
-        // reference is not visited by the provider's filters (FilterScope.cs:20-21): ClosesEfGap.
-        Assert.Equal(["RIVA"], await session.Query<Reservation>().Select(r => r.Property.Name).ToListAsync());
+        // anna's stays with their properties' names: MARE, another scope's, is read (#580: the owner and scopes filter the root, not a reference,
+        // as on EF Core, where the provider's filters do not visit a reference, FilterScope.cs:20-21). ALPE, another tenant's, drops with its
+        // stay: the tenancy is a model filter on EF, and on the join here.
+        Assert.Equal(["MARE", "RIVA"], (await session.Query<Reservation>().Select(r => r.Property.Name).ToListAsync()).Order(StringComparer.Ordinal));
     }
 
     [Theory]

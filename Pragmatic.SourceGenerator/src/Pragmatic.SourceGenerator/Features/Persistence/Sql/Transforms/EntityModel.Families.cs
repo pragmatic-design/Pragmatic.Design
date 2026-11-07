@@ -23,10 +23,8 @@ internal sealed partial class EntityModel
             if (!IsPragmatic)
                 return null;
             var parts = new List<string>();
-            if (Type.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && Column("TenantId") is { } tenant)
-                parts.Add(Mark("Tenant", "TenantFilter", "Tenant", null, $"t.\"{tenant.Column}\" = {{ft}}"));
-            if (ParentTenant is { } parentTenant)
-                parts.Add(Mark("Tenant", null, "ParentTenant", null, parentTenant)); // a trait's child: its parent's tenancy, as EF's named "ParentTenant"
+            if (NavigationFamilyPredicate is { } tenancy)
+                parts.Add(tenancy); // the tenant, and a trait's child's parent tenancy, as EF's named "ParentTenant"
             var owner = PragmaticShape.Has(Type, "HasOwnerAttribute") ? Column("OwnerId") : null;
             var scopes = PragmaticShape.Has(Type, "HasAccessScopesAttribute") ? Column("AccessScopes") : null;
             var bypass = PragmaticPermissions.ViewAll(Type);
@@ -41,6 +39,28 @@ internal sealed partial class EntityModel
             // [TemporalRelation]: active at the caller's instant ({fn}), as TemporalFilter's ValidFrom <= now && (ValidTo == null || ValidTo > now).
             if (PragmaticFilters.IsTemporal(Type) && Column("ValidFrom") is { } from && Column("ValidTo") is { } to)
                 parts.Add(Mark("Temporal", "TemporalFilter", null, null, $"t.\"{from.Column}\" <= {{fn}} AND (t.\"{to.Column}\" IS NULL OR t.\"{to.Column}\" > {{fn}})"));
+            return parts.Count == 0 ? null : string.Join(" AND ", parts);
+        }
+    }
+
+    /// <summary>
+    ///     The families that apply where the entity is a to-one navigation's target: the tenant and a trait child's parent tenant, which EF Core
+    ///     declares as model query filters (<c>"Tenant"</c>, <c>"ParentTenant"</c>) and applies to a reference too. The owner, the scopes and the
+    ///     temporal window are Pragmatic's runtime filters, which do not visit a reference on EF Core (<c>FilterScope</c>: references are not
+    ///     visited), only the root and the collections (#580): a caller who reads a reservation reads its guest's name, whoever owns the guest.
+    ///     Null when the entity has neither.
+    /// </summary>
+    public string? NavigationFamilyPredicate
+    {
+        get
+        {
+            if (!IsPragmatic)
+                return null;
+            var parts = new List<string>();
+            if (Type.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && Column("TenantId") is { } tenant)
+                parts.Add(Mark("Tenant", "TenantFilter", "Tenant", null, $"t.\"{tenant.Column}\" = {{ft}}"));
+            if (ParentTenant is { } parentTenant)
+                parts.Add(Mark("Tenant", null, "ParentTenant", null, parentTenant));
             return parts.Count == 0 ? null : string.Join(" AND ", parts);
         }
     }
