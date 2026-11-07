@@ -16,9 +16,6 @@ namespace Pragmatic.SourceGenerator.Features.Messaging.Templates;
 /// </summary>
 internal sealed partial class SagaOrchestratorTemplate : LoggingTemplate
 {
-    /// <summary>The typed-metadata helper the compensation clone goes through — no reflection.</summary>
-    private const string Info = "global::Pragmatic.Serialization.PragmaticJsonTypeInfo.For";
-
     private readonly SagaModel _model;
 
     public SagaOrchestratorTemplate(SagaModel model) => _model = model;
@@ -508,98 +505,6 @@ internal sealed partial class SagaOrchestratorTemplate : LoggingTemplate
         }
 
         return chain;
-    }
-
-    private void RenderCompensationDispatchers(string sagaFqn)
-    {
-        // One private helper per step that declares [CompensateWith<T>]. The helper
-        // seeds the compensator from the saga state by mapping matching property names.
-        // Compensator types that declare `required` members (or records with required
-        // ctor parameters) would otherwise make a naive JSON round-trip throw because
-        // the saga-state JSON does not carry those members. We deserialize with a
-        // TypeInfoResolver modifier that clears `IsRequired`, so missing members are
-        // simply left at their defaults instead of throwing.
-        var emitted = new System.Collections.Generic.HashSet<string>();
-
-        var hasAnyCompensator = false;
-        foreach (var step in _model.Steps)
-        {
-            if (string.IsNullOrEmpty(step.CompensationActionFqn)) continue;
-            hasAnyCompensator = true;
-            break;
-        }
-
-        if (hasAnyCompensator)
-        {
-            AppendLine();
-            AppendLine("// JSON options that ignore `required` members so seeding a compensator from");
-            AppendLine("// partial saga state never throws for types with required props/ctor params.");
-            AppendLine("private static readonly global::System.Text.Json.JsonSerializerOptions _compensationJsonOptions = new()");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine("PropertyNameCaseInsensitive = true,");
-            AppendLine("TypeInfoResolver = new global::System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine("Modifiers =");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine("static typeInfo =>");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine("if (typeInfo.Kind != global::System.Text.Json.Serialization.Metadata.JsonTypeInfoKind.Object)");
-            AppendLine("    return;");
-            AppendLine("foreach (var property in typeInfo.Properties)");
-            AppendLine("    property.IsRequired = false;");
-            DecreaseIndent();
-            AppendLine("},");
-            DecreaseIndent();
-            AppendLine("},");
-            DecreaseIndent();
-            AppendLine("},");
-            DecreaseIndent();
-            AppendLine("};");
-        }
-
-        foreach (var step in _model.Steps)
-        {
-            if (string.IsNullOrEmpty(step.CompensationActionFqn)) continue;
-            if (!emitted.Add(step.MethodName)) continue;
-
-            AppendLine();
-            AppendLine($"/// <summary>Seeds <see cref=\"{step.CompensationActionFqn}\"/> from the saga state (JSON) and publishes it.</summary>");
-            AppendLine($"private async global::System.Threading.Tasks.Task DispatchCompensation_{step.MethodName}({sagaFqn} instance, CancellationToken ct)");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine($"var json = global::System.Text.Json.JsonSerializer.Serialize(instance, {Info}<{sagaFqn}>(_compensationJsonOptions));");
-            AppendLine($"{step.CompensationActionFqn}? compensator;");
-            AppendLine("try");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine($"compensator = global::System.Text.Json.JsonSerializer.Deserialize(json, {Info}<{step.CompensationActionFqn}>(_compensationJsonOptions));");
-            DecreaseIndent();
-            AppendLine("}");
-            AppendLine("catch (global::System.Text.Json.JsonException)");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine($"LogSagaCompensationSkipped(\"{_model.TypeName}\", \"{step.MethodName}\");");
-            AppendLine("return;");
-            DecreaseIndent();
-            AppendLine("}");
-            AppendLine("if (compensator is null)");
-            AppendLine("{");
-            IncreaseIndent();
-            AppendLine($"LogSagaCompensationSkipped(\"{_model.TypeName}\", \"{step.MethodName}\");");
-            AppendLine("return;");
-            DecreaseIndent();
-            AppendLine("}");
-            AppendLine("await _bus.PublishAsync(compensator, ct).ConfigureAwait(false);");
-            AppendLine($"LogSagaCompensated(\"{_model.TypeName}\", \"{step.MethodName}\");");
-            DecreaseIndent();
-            AppendLine("}");
-        }
-
-        AppendLine();
     }
 
     private void RenderIsValidTransition()

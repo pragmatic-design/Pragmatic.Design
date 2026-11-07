@@ -193,45 +193,13 @@ public partial class OrderSaga
         
         
         
-        // JSON options that ignore `required` members so seeding a compensator from
-        // partial saga state never throws for types with required props/ctor params.
-        private static readonly global::System.Text.Json.JsonSerializerOptions _compensationJsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            TypeInfoResolver = new global::System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver
-            {
-                Modifiers =
-                {
-                    static typeInfo =>
-                    {
-                        if (typeInfo.Kind != global::System.Text.Json.Serialization.Metadata.JsonTypeInfoKind.Object)
-                            return;
-                        foreach (var property in typeInfo.Properties)
-                            property.IsRequired = false;
-                    },
-                },
-            },
-        };
-        
-        /// <summary>Seeds <see cref="global::MyApp.Ordering.Actions.RefundPayment"/> from the saga state (JSON) and publishes it.</summary>
+        /// <summary>Seeds <see cref="global::MyApp.Ordering.Actions.RefundPayment"/> from the saga state, member by name, and publishes it.</summary>
         private async global::System.Threading.Tasks.Task DispatchCompensation_HandlePaymentReceived(global::MyApp.Ordering.OrderSaga instance, CancellationToken ct)
         {
-            var json = global::System.Text.Json.JsonSerializer.Serialize(instance, global::Pragmatic.Serialization.PragmaticJsonTypeInfo.For<global::MyApp.Ordering.OrderSaga>(_compensationJsonOptions));
-            global::MyApp.Ordering.Actions.RefundPayment? compensator;
-            try
+            var compensator = new global::MyApp.Ordering.Actions.RefundPayment(orderId: instance.OrderId)
             {
-                compensator = global::System.Text.Json.JsonSerializer.Deserialize(json, global::Pragmatic.Serialization.PragmaticJsonTypeInfo.For<global::MyApp.Ordering.Actions.RefundPayment>(_compensationJsonOptions));
-            }
-            catch (global::System.Text.Json.JsonException)
-            {
-                LogSagaCompensationSkipped("OrderSaga", "HandlePaymentReceived");
-                return;
-            }
-            if (compensator is null)
-            {
-                LogSagaCompensationSkipped("OrderSaga", "HandlePaymentReceived");
-                return;
-            }
+                Reason = default!,
+            };
             await _bus.PublishAsync(compensator, ct).ConfigureAwait(false);
             LogSagaCompensated("OrderSaga", "HandlePaymentReceived");
         }

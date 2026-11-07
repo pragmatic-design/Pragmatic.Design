@@ -102,6 +102,9 @@ internal sealed record SagaStepModel
     /// <summary>FQN of compensation action (from [CompensateWith&lt;T&gt;]).</summary>
     public string? CompensationActionFqn { get; init; }
 
+    /// <summary>How the compensation action is built from the saga's state; null without <c>[CompensateWith&lt;T&gt;]</c>.</summary>
+    public CompensationSeedModel? CompensationSeed { get; init; }
+
     /// <summary>Timeout duration string (from [SagaTimeout]).</summary>
     public string? TimeoutDuration { get; init; }
 

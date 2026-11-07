@@ -257,6 +257,12 @@ public class MessagingSnapshotTests
                     ValidStates = ImmutableArray.Create("PaymentPending"),
                     NextState = "Completed",
                     CompensationActionFqn = "global::MyApp.Ordering.Actions.RefundPayment",
+                    CompensationSeed = new CompensationSeedModel
+                    {
+                        CanConstruct = true,
+                        Arguments = ImmutableArray.Create("orderId: instance.OrderId"),
+                        Assignments = ImmutableArray.Create("Reason = default!"),
+                    },
                 }),
         };
 

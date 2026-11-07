@@ -64,6 +64,9 @@
          next to this suite; these three own attributes listed there and arrive through nothing above. -->
     <ProjectReference Include="..\..\..\Pragmatic.Configuration\src\Pragmatic.Configuration\Pragmatic.Configuration.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Core\Pragmatic.Messaging.Core.csproj" />
+    <!-- ASagaCompensationIsSeededWithoutReflectionTests compiles a generated saga orchestrator against the saga runtime, and reads what it
+         calls. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Saga\Pragmatic.Messaging.Saga.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Privacy\src\Pragmatic.Privacy.Abstractions\Pragmatic.Privacy.Abstractions.csproj" />
     <!-- SubjectRegistrySchemaMatchesEfModelTests reads the registry's EF configurations, to hold the
          migration schema the transform emits to the model PrivacyDbContext maps. -->

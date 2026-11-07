@@ -126,6 +126,9 @@ internal static class SagaTransform
                 ValidStates = validStates,
                 NextState = nextState,
                 CompensationActionFqn = compensationFqn,
+                CompensationSeed = compensationFqn is not null
+                    ? CompensationSeedTransform.Read(symbol, compensateAttr!.AttributeClass!.TypeArguments[0], context.SemanticModel.Compilation)
+                    : null,
                 TimeoutDuration = timeoutDuration,
                 ReturnTypeFqn = returnTypeFqn,
                 IsAsync = isAsync,
