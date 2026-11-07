@@ -150,6 +150,7 @@ internal static partial class EntityTransform
                 ComputedDefaultGeneratorFqn = computedDefaultFqn,
                 RenamedFrom = renamedFrom,
                 ColumnName = GetColumnName(prop),
+                MaxLength = ColumnLength.Of(prop),
                 WireName = Core.WireNameReader.Read(prop),
                 ValueObjectColumns = ComputeValueObjectColumns(prop)
             });

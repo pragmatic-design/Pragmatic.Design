@@ -14,7 +14,7 @@
         },
         {
           "name": "Code",
-          "sqlType": "text",
+          "sqlType": "varchar(40)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -325,7 +325,7 @@
         },
         {
           "name": "FullName",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -333,7 +333,7 @@
         },
         {
           "name": "WorkEmail",
-          "sqlType": "text",
+          "sqlType": "varchar(320)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -357,7 +357,7 @@
         },
         {
           "name": "PreferredCulture",
-          "sqlType": "text",
+          "sqlType": "varchar(10)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -679,7 +679,7 @@
         },
         {
           "name": "DecisionNote",
-          "sqlType": "text",
+          "sqlType": "varchar(500)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -869,7 +869,7 @@
         },
         {
           "name": "Name",
-          "sqlType": "text",
+          "sqlType": "varchar(100)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -1418,5 +1418,5 @@
   "databaseName": "AppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "09f73103efa1"
+  "hash": "710e7991393b"
 }

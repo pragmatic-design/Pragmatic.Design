@@ -14,7 +14,7 @@
         },
         {
           "name": "Sku",
-          "sqlType": "text",
+          "sqlType": "varchar(40)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -88,7 +88,7 @@
         },
         {
           "name": "CustomerReference",
-          "sqlType": "text",
+          "sqlType": "varchar(64)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -104,7 +104,7 @@
         },
         {
           "name": "CancellationReason",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -509,5 +509,5 @@
   "databaseName": "OrdersDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Orders",
-  "hash": "89fa147933d3"
+  "hash": "ed59bfb9374f"
 }

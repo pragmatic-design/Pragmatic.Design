@@ -71,6 +71,15 @@
           "Pragmatic.Ensure": "[1.0.0, )"
         }
       },
+      "pragmatic.validation": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
       "Microsoft.Extensions.Configuration.Abstractions": {
         "type": "CentralTransitive",
         "requested": "[10.0.10, )",
