@@ -74,6 +74,23 @@ test('an exclusion of a file that does not exist is reported: the list has gone 
   assert.match(engineProjectProblems([p], read, () => false)[0], /which does not exist/);
 });
 
+// The build properties the generator reads (#582): what turns a feature on in the source project turns it on on the engine too.
+const linked = '<ItemGroup><Compile Include="..\\..\\src\\Showcase.Booking\\**\\*.cs" LinkBase="Booking" /></ItemGroup>';
+const source = (property) => (path) => (path === 'examples/showcase/src/Showcase.Booking/Showcase.Booking.csproj'
+  ? `<Project><PropertyGroup>${property}</PropertyGroup></Project>` : read(path));
+
+test('an engine project that does not set a generator property its source project sets is reported', () => {
+  const p = project('Showcase.Booking.Sql', linked);
+  assert.deepEqual(engineProjectProblems([p], source('<PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>'), exists), [
+    `${p.path} sets PragmaticGenerateJsonContext to (unset) where examples/showcase/src/Showcase.Booking/Showcase.Booking.csproj sets it to true: the generator emits different code on the two`,
+  ]);
+});
+
+test('an engine project that sets what its source project sets: nothing to report', () => {
+  const p = project('Showcase.Booking.Sql', `<PropertyGroup><PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext></PropertyGroup>${linked}`);
+  assert.deepEqual(engineProjectProblems([p], source('<PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>'), exists), []);
+});
+
 test('the engine is the project name\'s suffix', () => {
   assert.equal(engineOf('a/Showcase.Booking.Sql.csproj'), 'Sql');
   assert.equal(engineOf('a\\Showcase.Booking.Documents.csproj'), 'Documents');

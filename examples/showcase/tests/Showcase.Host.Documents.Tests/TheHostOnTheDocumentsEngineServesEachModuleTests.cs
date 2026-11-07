@@ -87,6 +87,17 @@ public sealed class TheHostOnTheDocumentsEngineServesEachModuleTests(DocumentsHo
     }
 
     /// <summary>
+    ///     A body with a required field missing reaches the validators, which answer 422, as on EF Core (#582).
+    /// </summary>
+    [Fact]
+    public async Task Booking_AGuestWithoutAFirstName_IsRefusedByTheValidators()
+    {
+        var response = await Caller().PostAsJsonAsync("/api/guests", new { lastName = "Test", email = $"nofirst.{Guid.NewGuid():N}@test.com" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, "Body: {0}", await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
     ///     A login checks the password against the account the registration stored: the wrong one is refused, so a login that succeeds read it
     ///     from the database.
     /// </summary>

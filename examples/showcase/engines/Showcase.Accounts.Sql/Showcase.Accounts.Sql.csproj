@@ -6,6 +6,7 @@
   <PropertyGroup>
     <ExcludeSharedTesting>true</ExcludeSharedTesting>
     <RootNamespace>Showcase.Accounts</RootNamespace>
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
