@@ -102,14 +102,29 @@ public partial class StaffAssignment : IEntity, ITemporalRelation
 
 /// <summary>
 ///     Who holds the front desk of a property, two at a time: a <c>[TemporalRelation]</c> scoped to its property with <c>MaxActive = 2</c>,
-///     whose stretches may overlap. A mutation that opens a third stretch at a property is refused (#512). Not <c>MaxActive = 1</c>, as the
-///     Showcase's <c>StaffAssignment</c> is: that is also a partial unique index, which MySQL and Oracle, among this suite's databases, cannot
-///     migrate.
+///     whose stretches may overlap. A mutation that opens a third stretch at a property is refused (#512). <c>MaxActive = 1</c> is
+///     <see cref="KeyHolder" />.
 /// </summary>
 [Entity]
 [Relation.ManyToOne<Property>]
 [TemporalRelation<Property>(MaxActive = 2, AllowOverlap = true)]
 public partial class DeskDuty : IEntity, ITemporalRelation
+{
+    public string Person { get; set; } = "";
+
+    public DateTimeOffset ValidFrom { get; set; }
+
+    public DateTimeOffset? ValidTo { get; set; }
+}
+
+/// <summary>
+///     Who holds the master key of a property, one at a time: <c>[TemporalRelation&lt;Property&gt;(MaxActive = 1)]</c>, whose one open stretch
+///     per property is a partial unique index where the database has one (#523), and is left out on MySQL and Oracle (PRAG3039).
+/// </summary>
+[Entity]
+[Relation.ManyToOne<Property>]
+[TemporalRelation<Property>(MaxActive = 1)]
+public partial class KeyHolder : IEntity, ITemporalRelation
 {
     public string Person { get; set; } = "";
 

@@ -101,7 +101,7 @@ internal static partial class SqlInterceptorGenerator
     ///     The saga instances' table with EF Core's three indexes (<c>SagaEntityTypeConfiguration</c>): at most one active saga per type,
     ///     correlation and tenant, the active sagas of a type, and the timeout scan. The unique one holds the active rows only (<c>"Status" = 0</c>),
     ///     a partial index MySQL and Oracle do not have: there it is left out, and the database does not refuse a second active saga
-    ///     (owner decision, 2026-11-05: filtered where the database can express it; <see cref="SagaUniquenessLeftOut" /> says so).
+    ///     (owner decision, 2026-11-05: filtered where the database can express it; <see cref="Diagnostics.SagaUniquenessLeftOut" /> says so).
     /// </summary>
     /// <remarks>
     ///     On Oracle, which stores the empty string as NULL, the tenant (empty in a single-tenant application) is a nullable column: a NOT NULL
@@ -112,15 +112,18 @@ internal static partial class SqlInterceptorGenerator
         if (dialect == SqlDialect.Oracle)
             table = table with { Columns = table.Columns.Select(c => c.Name == "TenantId" ? c with { Nullable = true } : c).ToEquatableArray() };
         var indexes = table.Indexes.ToList();
-        if (!SagaUniquenessLeftOut(dialect))
+        if (!PartialIndexLeftOut(dialect))
             indexes.Add(new IndexSchemaModel($"IX_{table.Name}_SagaType_CorrelationId_TenantId", ["SagaType", "CorrelationId", "TenantId"], true, "\"Status\" = 0"));
         indexes.Add(new IndexSchemaModel($"IX_{table.Name}_Status_SagaType", ["Status", "SagaType"], false, null));
         indexes.Add(new IndexSchemaModel($"IX_{table.Name}_Status_TimeoutAt", ["Status", "TimeoutAt"], false, null));
         return table with { Indexes = indexes.ToEquatableArray() };
     }
 
-    /// <summary>True on the dialects with no partial index, where the active sagas' unique index is left out.</summary>
-    internal static bool SagaUniquenessLeftOut(SqlDialect dialect) => dialect is SqlDialect.MySql or SqlDialect.Oracle;
+    /// <summary>
+    ///     True on the dialects with no partial index, where a filtered unique index is left out of the schema: the active sagas' (PRAG3038) and a
+    ///     <c>MaxActive = 1</c> entity's one open stretch per parent (PRAG3039).
+    /// </summary>
+    internal static bool PartialIndexLeftOut(SqlDialect dialect) => dialect is SqlDialect.MySql or SqlDialect.Oracle;
 
     /// <summary>
     ///     <see cref="Diagnostics.SagaUniquenessLeftOut" /> for each <c>[EnableSagaPersistence]</c> boundary the Sql engine serves, in a host whose
@@ -130,7 +133,7 @@ internal static partial class SqlInterceptorGenerator
     {
         if (!UsesSql(compilation) || !features.IsHostMode || compilation.GetTypeByMetadataName(SchemaVersionType) is null
             || compilation.GetTypeByMetadataName(PragmaticRegistration.EngineSagaStore) is null
-            || SchemaDialect(compilation, features) is not { } dialect || !SagaUniquenessLeftOut(dialect))
+            || SchemaDialect(compilation, features) is not { } dialect || !PartialIndexLeftOut(dialect))
             return;
 
         var engines = PragmaticEngines.Of(compilation);
@@ -139,6 +142,28 @@ internal static partial class SqlInterceptorGenerator
                      .Where(b => PragmaticRegistration.EnablesSagaPersistence(b) && engines.ServesBoundary(b, PragmaticEngine.Sql)))
             spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.SagaUniquenessLeftOut, boundary.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
                 boundary.Name, dialect == SqlDialect.MySql ? "MySQL" : "Oracle"));
+    }
+
+    /// <summary>
+    ///     <see cref="Diagnostics.OpenStretchUniquenessLeftOut" /> for each <c>MaxActive = 1</c> entity the Sql engine serves, in a host whose
+    ///     schema is typed for MySQL or Oracle: where the schema leaves its one-open-stretch index out.
+    /// </summary>
+    internal static void ReportOpenStretchUniquenessLeftOut(SourceProductionContext spc, Compilation compilation, DetectedFeatures features)
+    {
+        if (!UsesSql(compilation) || !features.IsHostMode || compilation.GetTypeByMetadataName(SchemaVersionType) is null
+            || SchemaDialect(compilation, features) is not { } dialect || !PartialIndexLeftOut(dialect))
+            return;
+
+        var engines = PragmaticEngines.Of(compilation);
+        var hasTopology = DatabaseTopologyReader.Read(compilation, spc.CancellationToken).HasTopology;
+        foreach (var entity in SchemaCandidates(compilation, hasTopology).Where(t => PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql)))
+        {
+            if (EntityTransform.OneOpenStretchParentKey(entity) is null)
+                continue;
+            var parent = entity.GetAttributes().First(a => a.AttributeClass is { Name: "TemporalRelationAttribute", IsGenericType: true }).AttributeClass!.TypeArguments[0];
+            spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.OpenStretchUniquenessLeftOut, entity.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
+                entity.Name, parent.Name, dialect == SqlDialect.MySql ? "MySQL" : "Oracle"));
+        }
     }
 
     /// <summary>The executed steps' table with EF Core's foreign key to the instances (cascading) and its index.</summary>

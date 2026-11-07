@@ -52,4 +52,47 @@ public class TemporalConstraintTests(PragmaticDatabases databases)
             Assert.Equal(["carla"], await session.Query<DeskDuty>().Where((d, id) => d.PropertyId == id, mare.Id).Select(d => d.Person).ToListAsync());
         }
     }
+
+    /// <summary>
+    ///     <c>[TemporalRelation&lt;Property&gt;(MaxActive = 1)]</c> written through the session, past any mutation's check (#523): where the
+    ///     database has partial indexes, the schema's <c>IX_KeyHolders_PropertyId_Active</c> refuses a second open stretch at one property, and
+    ///     admits a closed one beside it and an open one at another property. MySQL and Oracle have no partial index: the schema leaves it out
+    ///     (PRAG3039), and the second open stretch is written.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_second_open_key_holder_written_past_the_mutation_is_refused_by_the_database(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        using var session = await databases.SessionAsync(dialect, new PragmaticSqlFilters(new TestUser("anna"), new TenantScope(), new TestScopes("desk-north"), _toggle, timeProvider: _clock));
+        using var raw = _toggle.UseMode(FilterMode.Raw);
+        var riva = new Property { Name = "RIVA", TenantId = "acme" };
+        var mare = new Property { Name = "MARE", TenantId = "acme" };
+        await session.InsertAsync(riva);
+        await session.InsertAsync(mare);
+
+        await session.InsertAsync(Holder(riva, "anna", T.AddHours(-3)));
+        await session.InsertAsync(Holder(riva, "bruno", T.AddHours(-5), T.AddHours(-4))); // closed
+        await session.InsertAsync(Holder(mare, "bruno", T.AddHours(-1))); // another property
+        var second = Holder(riva, "carla", T.AddHours(-1));
+
+        if (dialect is SqlDialect.MySql or SqlDialect.Oracle)
+        {
+            await session.InsertAsync(second);
+            Assert.Equal(2, await session.Query<KeyHolder>().Where((k, id) => k.PropertyId == id && k.ValidTo == null, riva.Id).CountAsync());
+            return;
+        }
+
+        var refused = await Assert.ThrowsAnyAsync<Exception>(async () => await session.InsertAsync(second));
+        var text = refused.ToString();
+        Assert.True(text.Contains("IX_KeyHolders_PropertyId_Active", StringComparison.OrdinalIgnoreCase) || text.Contains("KeyHolders.PropertyId", StringComparison.Ordinal), text);
+        Assert.Equal(["anna"], await session.Query<KeyHolder>().Where((k, id) => k.PropertyId == id && k.ValidTo == null, riva.Id).Select(k => k.Person).ToListAsync());
+    }
+
+    private static KeyHolder Holder(Property property, string person, DateTimeOffset from, DateTimeOffset? to = null)
+    {
+        var holder = new KeyHolder { Person = person, ValidFrom = from, ValidTo = to };
+        holder.SetPropertyId(property.Id);
+        return holder;
+    }
 }

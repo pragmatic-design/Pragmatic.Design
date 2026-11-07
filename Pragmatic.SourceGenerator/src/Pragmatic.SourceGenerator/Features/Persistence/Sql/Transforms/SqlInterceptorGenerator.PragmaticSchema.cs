@@ -256,6 +256,14 @@ internal static partial class SqlInterceptorGenerator
                 Index(tenant && !global ? names.Prepend("TenantId").ToArray() : names.ToArray(), true, softDelete ? live : null);
             }
 
+            // MaxActive = 1: one open stretch per parent, EF Core's partial unique index, so that a write past the mutation's check (the
+            // repository, the session) is refused by the database. Left out where there is no partial index, and reported there (PRAG3039).
+            if (EntityTransform.OneOpenStretchParentKey(entity.Type) is { } parentKey && !PartialIndexLeftOut(dialect))
+            {
+                var column = entity.Column(parentKey)?.Column ?? parentKey;
+                indexes.Add(($"IX_{entity.Table}_{column}_Active", [column], true, "\"ValidTo\" IS NULL"));
+            }
+
             if (softDelete)
                 Index(["IsDeleted"]);
             if (PragmaticShape.Has(entity.Type, "HasOwnerAttribute"))

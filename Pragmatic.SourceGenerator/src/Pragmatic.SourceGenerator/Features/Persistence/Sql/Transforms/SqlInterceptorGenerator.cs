@@ -122,6 +122,7 @@ internal static partial class SqlInterceptorGenerator
         context.RegisterSourceOutput(combined, static (spc, all) => { var (source, (shape, reads)) = all; Emit(spc, source.Left.Left.Left.Left.Left.Left.Left.Left!, source.Left.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Left.Right, source.Left.Left.Left.Left.Right, source.Left.Left.Left.Right, source.Left.Left.Right, source.Left.Right.FirstOrDefault(), source.Right, shape, reads); });
 
         context.RegisterSourceOutput(context.CompilationProvider.Combine(features), static (spc, pair) => ReportSagaUniquenessLeftOut(spc, pair.Left, pair.Right));
+        context.RegisterSourceOutput(context.CompilationProvider.Combine(features), static (spc, pair) => ReportOpenStretchUniquenessLeftOut(spc, pair.Left, pair.Right));
 
         return entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
             .Select(static (all, ct) => PragmaticSchemas(all.Left.Left.Right, all.Left.Left.Left, all.Left.Right, all.Right, ct));
