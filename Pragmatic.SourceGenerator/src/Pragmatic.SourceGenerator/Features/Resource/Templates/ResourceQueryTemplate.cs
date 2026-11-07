@@ -98,7 +98,13 @@ internal sealed class ResourceQueryTemplate : CSharpTemplate
         XmlSummary($"SG-generated: reads one <see cref=\"{entityName}\"/> by id.");
         RenderDecorationRemark(dto);
         AppendLine($"[Query<{entityName}, {dto.Qualified}>(Single = true)]");
-        Class(_queryTypeName, () => AppendLine($"public {idType} Id {{ get; init; }}"),
+        // The filter the QueryModel declares (BuildReadQueryModel), declared on the source too: an engine reads this text, and a
+        // non-nullable property with no [Filter] is an inert input there, so the read was unfiltered and answered the first row (#572).
+        Class(_queryTypeName, () =>
+            {
+                AppendLine("[Filter(Operator = FilterOperator.Equals, MapTo = \"PersistenceId\")]");
+                AppendLine($"public {idType} Id {{ get; init; }}");
+            },
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true });
     }
@@ -111,7 +117,12 @@ internal sealed class ResourceQueryTemplate : CSharpTemplate
         RenderDecorationRemark(dto);
         AppendLine($"[Query<{entityName}, {dto.Qualified}>(Single = true)]");
         Class(_queryTypeName,
-            () => AppendLine($"public {_model.LogicKeyType ?? "string"} {_model.LogicKeyName} {{ get; init; }} = default!;"),
+            () =>
+            {
+                // Equals, said: a [Filter] on a string defaults to Contains, and a logic key is matched whole (#572).
+                AppendLine("[Filter(Operator = FilterOperator.Equals)]");
+                AppendLine($"public {_model.LogicKeyType ?? "string"} {_model.LogicKeyName} {{ get; init; }} = default!;");
+            },
             accessModifier: AccessModifier.Public,
             modifiers: new ClassModifiers { Partial = true });
     }

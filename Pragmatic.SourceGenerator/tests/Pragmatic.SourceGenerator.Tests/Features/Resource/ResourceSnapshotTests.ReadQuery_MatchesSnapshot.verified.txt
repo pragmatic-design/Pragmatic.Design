@@ -21,6 +21,7 @@ namespace Showcase.Booking.Entities;
 [Query<Guest, global::Showcase.Booking.Entities.GuestReadDto>(Single = true)]
 public partial class ResourceReadGuestQuery
 {
+    [Filter(Operator = FilterOperator.Equals, MapTo = "PersistenceId")]
     public Guid Id { get; init; }
 }
 
