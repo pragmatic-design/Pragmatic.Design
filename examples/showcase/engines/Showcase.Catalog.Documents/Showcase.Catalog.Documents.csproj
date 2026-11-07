@@ -6,6 +6,7 @@
   <PropertyGroup>
     <ExcludeSharedTesting>true</ExcludeSharedTesting>
     <RootNamespace>Showcase.Catalog</RootNamespace>
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>

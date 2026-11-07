@@ -40,6 +40,23 @@ export function engineOf(path) {
 
 const toRepo = (path) => normalize(path).replaceAll('\\', '/');
 
+/**
+ * The build properties the generator reads, which an engine project sets as its source project does (#582): one left out makes the
+ * generator emit different code for the same module. `PragmaticGenerateJsonContext` left out of Showcase.Booking.Sql took away its JSON
+ * context, and a body with a missing field answered 400 there and 422 on EF Core.
+ */
+export const GENERATOR_PROPERTIES = ['PragmaticGenerateJsonContext', 'PublishAot'];
+
+const property = (text, name) => new RegExp(`<${name}>([^<]*)</${name}>`).exec(text)?.[1].trim() ?? null;
+
+/** The source project whose files an engine project links (Compile Include="..\..\src\Showcase.Booking\**\*.cs"), from the root; null without one. */
+function sourceProjectOf(path, text) {
+  const include = attribute(text, 'Compile', 'Include').map((i) => i.replaceAll('\\', '/')).find((i) => i.endsWith('/**/*.cs'));
+  if (!include) return null;
+  const folder = toRepo(join(dirname(path), include.slice(0, -'/**/*.cs'.length)));
+  return `${folder}/${folder.split('/').pop()}.csproj`;
+}
+
 const attribute = (text, element, name) => [...text.matchAll(new RegExp(`<${element}\\s+${name}="([^"]+)"`, 'g'))].map((m) => m[1]);
 
 /** A project's own reference to EF Core: an Entity Framework Core package, or a Pragmatic .EFCore project; null when it has none. */
@@ -82,6 +99,18 @@ export function engineProjectProblems(projects, read, exists) {
         seen.add(target);
         const targetText = read(target);
         if (targetText !== null) pending.push({ path: target, text: targetText, via: [...current.via, target.split('/').pop()] });
+      }
+    }
+
+    // The generator's build properties: as the source project sets them.
+    const source = sourceProjectOf(path, text);
+    const sourceText = source ? read(source) : null;
+    if (sourceText !== null) {
+      for (const name of GENERATOR_PROPERTIES) {
+        const mine = property(text, name);
+        const theirs = property(sourceText, name);
+        if (mine !== theirs)
+          problems.push(`${path} sets ${name} to ${mine ?? '(unset)'} where ${source} sets it to ${theirs ?? '(unset)'}: the generator emits different code on the two`);
       }
     }
 
