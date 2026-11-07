@@ -22,4 +22,12 @@ internal static partial class EntityTransform
             .Where(columns => columns.Length > 0)
             .Select(columns => new IndexModel { Columns = columns })
             .ToImmutableArray();
+
+    /// <summary>
+    ///     The parent key of a <c>[TemporalRelation&lt;TParent&gt;(MaxActive = 1)]</c> entity, read as EF Core's schema reads it: one open stretch
+    ///     per parent, a partial unique index on this key <c>WHERE "ValidTo" IS NULL</c>. Null for any other entity, or one without a declared
+    ///     relation to its parent.
+    /// </summary>
+    internal static string? OneOpenStretchParentKey(INamedTypeSymbol typeSymbol)
+        => GetTemporalRelationInfo(typeSymbol) is { IsTemporalRelation: true, MaxActive: 1, ParentFkProperty: { } parentKey } ? parentKey : null;
 }

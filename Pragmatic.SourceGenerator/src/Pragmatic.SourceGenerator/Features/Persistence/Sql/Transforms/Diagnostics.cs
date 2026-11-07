@@ -278,6 +278,20 @@ internal static class Diagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     A warning: on MySQL and Oracle, which have no partial index, a <c>[TemporalRelation&lt;TParent&gt;(MaxActive = 1)]</c> entity's unique
+    ///     index on its parent key <c>WHERE "ValidTo" IS NULL</c> is left out of the Sql engine's schema, so the database does not refuse a second
+    ///     open stretch written past the mutation's check. The rule of PRAG3038, the owner's decision of 2026-11-05: filtered where the database
+    ///     can express it, left out and reported where it cannot.
+    /// </summary>
+    public static readonly DiagnosticDescriptor OpenStretchUniquenessLeftOut = new(
+        "PRAG3039",
+        "One open stretch per parent is left out on a database without partial indexes",
+        "{0} allows one open stretch per {1} (MaxActive = 1) and is kept on {2}, which has no partial index: the unique index on {1}'s key where ValidTo is null is left out of the schema, so the database does not refuse a second open stretch written past the mutation (through the repository or the session)",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor InGeneratedSource = new(
         "PRAG3032",
         "A chain the Sql engine generated did not translate",

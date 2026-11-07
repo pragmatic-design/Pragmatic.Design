@@ -37,6 +37,11 @@ public partial class UserRole
 A create mutation calls `ValidateTemporalConstraintsAsync` before it persists, on every engine: it reads the existing records through the
 repository's specifications, inside the caller's filters, and a breach rejects the mutation.
 
+With `MaxActive = 1` the schema also holds the rule: a unique index on the parent key where `ValidTo` is null
+(`IX_{Table}_{ParentKey}_Active`), so the database refuses a second open stretch written past the mutation, through the
+repository or the session. On the Sql engine over MySQL or Oracle, which have no partial index, the index is left out
+and `PRAG3039` says so: there the mutation's check is the only guard.
+
 ### Example: Assigning a New Role
 
 ```csharp
