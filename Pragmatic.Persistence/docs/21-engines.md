@@ -93,7 +93,12 @@ These work on every engine, from the same declarations:
 
 - the repository's reads and writes, specifications, and the unit of work's save, with its stamps (created,
   modified, owner, tenant) and soft delete;
-- the query filters: soft delete, tenant, owner, data scopes, permission-based visibility;
+- the query filters: soft delete, tenant, owner, data scopes, permission-based visibility. They filter a read's root
+  and its collections. A to-one navigation the read reaches (a projected `Guest.FirstName`, an include of
+  `Reservation.Guest`) keeps the target's tenant, soft delete and `[VisibleWhen]` rules but not its owner, scopes or
+  temporal window, as on EF Core: a caller who reads a reservation reads its guest's name, whoever owns the guest,
+  and a required navigation never hides the row reading it for those. A declared `[Join<T>]` reads its side through
+  every filter;
 - declared queries (`[Query]`), the generated actions and endpoints, and `[LoadEntity]` loads;
 - a `[TemporalRelation]`'s constraints (`MaxActive`, no overlap), which a create mutation checks against the records already written,
   through the repository's specifications; with `MaxActive = 1` the schema's partial unique index on the parent key too, left out

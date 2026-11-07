@@ -108,8 +108,8 @@ internal sealed partial class PlanBuilder
         {
             if (target.SoftDeletePredicate is { } live)
                 parts.Add(live.Replace("t.\"", alias + ".\""));
-            if (target.FamilyPredicate is { } family)
-                parts.Add(family.Replace("t.\"", alias + ".\"")); // a Pragmatic entity's tenant, owner and scopes: on its join too, where EF's provider filters do not reach
+            if (target.NavigationFamilyPredicate is { } family)
+                parts.Add(family.Replace("t.\"", alias + ".\"")); // a Pragmatic entity's tenancy, as EF Core's model filters: its owner and scopes do not visit a reference (#580)
             foreach (var rule in target.Rules)
             {
                 if (_withoutRules.Contains(rule))

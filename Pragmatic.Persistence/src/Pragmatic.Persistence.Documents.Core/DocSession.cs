@@ -43,6 +43,21 @@ public sealed partial class DocSession
     /// </summary>
     public DocQuery<T> Query<T>() => new(this);
 
+    /// <summary>
+    ///     The same database and transaction, read as a navigation's target is: the caller's owner, scopes and temporal window lifted, the tenancy,
+    ///     soft delete and rules kept (<see cref="DocNavigationFilters" />). What the generated read of a projection's related documents starts from.
+    /// </summary>
+    public DocSession ForNavigationReads() => new(this, new DocNavigationFilters(Filters));
+
+    private DocSession(DocSession source, IDocFilters filters)
+    {
+        Mongo = source.Mongo;
+        Cosmos = source.Cosmos;
+        Database = source.Database;
+        Transaction = source.Transaction;
+        Filters = filters;
+    }
+
     public Task InsertAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T> => InsertManyAsync([entity], ct);
 
     /// <summary>New documents: on MongoDB in batches of 1000 per <c>insert</c> (ordered: a refused one stops its batch, <see cref="MongoWriteException" />); on Cosmos DB one request each (a taken id: <see cref="CosmosException" /> 409).</summary>

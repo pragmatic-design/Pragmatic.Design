@@ -175,7 +175,7 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
 
     /// <summary>
     ///     A projection that reads related documents (<see cref="DocLookupModel" />): the page's documents whole, then each navigation's related
-    ///     documents by the keys among them (one read per navigation, a compiled plan with the session's filters, as on Cosmos DB there is no join
+    ///     documents by the keys among them (one read per navigation, a compiled plan with a navigation's filters, as on Cosmos DB there is no join
     ///     across containers), then the result projected in .NET with each found by its key.
     /// </summary>
     private void RenderLookups(DocRunCaseModel query, string page)
@@ -191,7 +191,10 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
             AppendLine($"                    var __keys{lookup.Index} = {Linq}.ToList({Linq}.Distinct({keys}));");
             AppendLine($"                    var __related{lookup.Index} = __keys{lookup.Index}.Count == 0");
             AppendLine($"                        ? new global::System.Collections.Generic.Dictionary<{lookup.KeyType}, {lookup.RelatedType}>()");
-            AppendLine($"                        : {Linq}.ToDictionary(await session.Query<{lookup.RelatedType}>().Where((r, keys) => keys.Contains(r.{lookup.RelatedKey}), __keys{lookup.Index}).ToListAsync(ct), r => r.{lookup.RelatedKey});");
+            // A navigation's target is read as EF Core reads one: the tenancy, soft delete and rules applied, the caller's owner and scopes not
+            // (#580). A declared [Join<T>]'s side goes through all the caller's filters, as on the Sql engine.
+            var reads = lookup.Declared ? "session" : "session.ForNavigationReads()";
+            AppendLine($"                        : {Linq}.ToDictionary(await {reads}.Query<{lookup.RelatedType}>().Where((r, keys) => keys.Contains(r.{lookup.RelatedKey}), __keys{lookup.Index}).ToListAsync(ct), r => r.{lookup.RelatedKey});");
         }
 
         // An inner [Join<T>] (#508): the documents whose joined one is not found are dropped, as the join drops their rows. Not paged (refused).

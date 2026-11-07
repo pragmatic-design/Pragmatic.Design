@@ -2,15 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Sql;
-using Pragmatic.Result.Http;
 using Xunit;
 
 namespace PragmaticEntities.Tests;
 
 /// <summary>
 ///     <c>[LoadEntity(Include)]</c> of a required reference on the five databases (#496): the reservation read with its property through an INNER
-///     JOIN, into a navigation that is not nullable, as the Showcase's <c>RoomType.Property</c> is. A property the caller cannot see takes the row
-///     with it, as EF Core's INNER JOIN over a filtered target does.
+///     JOIN, into a navigation that is not nullable, as the Showcase's <c>RoomType.Property</c> is. A property of a scope the caller does not hold
+///     is read with the reservation: the owner and scopes filter the root, not a reference, as on EF Core (#580).
 /// </summary>
 [Collection("pragmatic databases")]
 public class RequiredIncludeTests(PragmaticDatabases databases)
@@ -19,7 +18,7 @@ public class RequiredIncludeTests(PragmaticDatabases databases)
 
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
-    public async Task A_required_reference_is_read_with_its_entity_and_a_hidden_one_hides_the_row(SqlDialect dialect)
+    public async Task A_required_reference_is_read_with_its_entity_whatever_its_owner_and_scopes(SqlDialect dialect)
     {
         using var tenant = TenantScope.BeginScope("acme");
         using var session = await databases.SessionAsync(dialect, new PragmaticSqlFilters(new TestUser("anna"), new TenantScope(), new TestScopes("desk-north"), _toggle));
@@ -36,6 +35,6 @@ public class RequiredIncludeTests(PragmaticDatabases databases)
         var invoker = new ReadReservationPropertyAction.Invoker(new Reservation.SqlReadRepository(session), new ServiceCollection().BuildServiceProvider());
 
         Assert.Equal("RIVA", (await invoker.InvokeAsync(new ReadReservationPropertyAction { Id = atRiva })).Value);
-        Assert.IsType<NotFoundError>((await invoker.InvokeAsync(new ReadReservationPropertyAction { Id = atMare })).Error);
+        Assert.Equal("MARE", (await invoker.InvokeAsync(new ReadReservationPropertyAction { Id = atMare })).Value);
     }
 }

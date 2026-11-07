@@ -86,10 +86,10 @@ internal static partial class DocQueries
             return null;
         }
 
-        var existing = lookups.FirstOrDefault(l => l.ForeignKey == foreignKey.Property.Name && l.RelatedType == "global::" + target.ToDisplayString() && l.Drops == query.JoinDrops);
+        var existing = lookups.FirstOrDefault(l => l.Declared && l.ForeignKey == foreignKey.Property.Name && l.RelatedType == "global::" + target.ToDisplayString() && l.Drops == query.JoinDrops);
         if (existing is not null)
             return existing;
-        var lookup = new DocLookupModel(lookups.Count, "global::" + target.ToDisplayString(), foreignKey.Property.Name, nullable, key.Property.Name, keyType) { Drops = query.JoinDrops };
+        var lookup = new DocLookupModel(lookups.Count, "global::" + target.ToDisplayString(), foreignKey.Property.Name, nullable, key.Property.Name, keyType) { Drops = query.JoinDrops, Declared = true };
         lookups.Add(lookup);
         return lookup;
     }

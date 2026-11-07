@@ -94,7 +94,7 @@ internal static partial class DocQueries
         }
 
         related = target;
-        var lookup = lookups.FirstOrDefault(l => l.ForeignKey == reference.ForeignKey);
+        var lookup = lookups.FirstOrDefault(l => !l.Declared && l.ForeignKey == reference.ForeignKey);
         if (lookup is not null)
             return lookup;
         lookup = new DocLookupModel(lookups.Count, "global::" + reference.Target.ToDisplayString(), reference.ForeignKey,
