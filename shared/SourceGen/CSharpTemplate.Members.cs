@@ -182,6 +182,8 @@ internal abstract partial class CSharpTemplate
         var sb = new StringBuilder();
         if (access != AccessModifier.NotApplicable)
             sb.Append($"{access.ToKeyword()} ");
+        if (mod.IsNew)
+            sb.Append("new ");
         if (mod.IsStatic)
             sb.Append("static ");
         if (mod.IsVirtual)

@@ -358,6 +358,33 @@ public partial class DamageCharge : Charge
     public void Damaged(string item) => Item = item;
 }
 
+/// <summary>
+///     A stay's extra, the root of a table-per-hierarchy that is not <c>[Auditable]</c> and has no required property (#540): its factory is
+///     <c>Create()</c>, the same signature as each derived type's parameterless one, which the generator declares <c>new</c>.
+/// </summary>
+[Entity]
+[Inheritance(InheritanceStrategy.Tph, DiscriminatorColumn = "ExtraType")]
+public partial class Extra : IEntity
+{
+    public string? Note { get; set; }
+}
+
+/// <summary>The minibar: a derived type with a required property, so <c>Create(bottles)</c> and <c>Create()</c>.</summary>
+[Entity]
+public partial class MinibarExtra : Extra
+{
+    public int Bottles { get; private set; }
+
+    public void Took(int bottles) => Bottles = bottles;
+}
+
+/// <summary>A late arrival: a derived type with none, so <c>Create()</c> only.</summary>
+[Entity]
+public partial class LateArrivalExtra : Extra
+{
+    public string? Gate { get; set; }
+}
+
 /// <summary>A support case, numbered by a database sequence when it is saved (<c>[GeneratedValue]</c> with <c>{SEQ}</c>, #562).</summary>
 [Entity]
 public partial class SupportCase : IEntity

@@ -216,6 +216,12 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     public bool IsAuditable { get; init; }
 
     /// <summary>
+    ///     The parameter lists of the <c>Create</c> overloads the entity's base entities are generated with (#540), each its parameter types
+    ///     joined by a comma: an overload of this entity with one of them hides the base's, and is declared <c>new</c>.
+    /// </summary>
+    public EquatableArray<string> InheritedCreateSignatures { get; init; } = EquatableArray<string>.Empty;
+
+    /// <summary>
     ///     Whether the entity has [Audited] — emits IAuditedEntity + an append-only audit log row per change.
     /// </summary>
     public bool IsAudited { get; init; }
@@ -662,6 +668,7 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                IsSoftDelete == other.IsSoftDelete &&
                IsSoftDeleteCascade == other.IsSoftDeleteCascade &&
                IsAuditable == other.IsAuditable &&
+               InheritedCreateSignatures.Equals(other.InheritedCreateSignatures) &&
                IsAudited == other.IsAudited &&
                IsDataSubject == other.IsDataSubject &&
                IsConcurrencyAware == other.IsConcurrencyAware &&
