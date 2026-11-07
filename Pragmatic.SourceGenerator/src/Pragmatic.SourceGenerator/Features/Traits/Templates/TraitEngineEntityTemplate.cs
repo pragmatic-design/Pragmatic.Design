@@ -69,7 +69,7 @@ internal sealed class TraitEngineEntityTemplate : CSharpTemplate
         {
             AppendLine();
             if (column.MaxLength is { } length)
-                AppendLine($"[global::System.ComponentModel.DataAnnotations.MaxLength({length})]");
+                AppendLine($"[global::Pragmatic.Validation.Attributes.MaxLength({length})]");
             AppendLine(column.Initializer is { } initializer
                 ? $"public {column.Type} {column.Name} {{ get; set; }} = {initializer};"
                 : $"public {column.Type} {column.Name} {{ get; set; }}");

@@ -14,7 +14,7 @@
         },
         {
           "name": "FileName",
-          "sqlType": "text",
+          "sqlType": "varchar(255)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -22,7 +22,7 @@
         },
         {
           "name": "ContentType",
-          "sqlType": "text",
+          "sqlType": "varchar(100)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -38,7 +38,7 @@
         },
         {
           "name": "Sha256",
-          "sqlType": "text",
+          "sqlType": "varchar(64)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -46,7 +46,7 @@
         },
         {
           "name": "StorageKey",
-          "sqlType": "text",
+          "sqlType": "varchar(400)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -112,7 +112,7 @@
         },
         {
           "name": "Number",
-          "sqlType": "text",
+          "sqlType": "varchar(20)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -120,7 +120,7 @@
         },
         {
           "name": "Subject",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -128,7 +128,7 @@
         },
         {
           "name": "Applicant",
-          "sqlType": "text",
+          "sqlType": "varchar(160)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -136,7 +136,7 @@
         },
         {
           "name": "ApplicantEmail",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -144,7 +144,7 @@
         },
         {
           "name": "ApplicantLanguage",
-          "sqlType": "text",
+          "sqlType": "varchar(20)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -243,7 +243,7 @@
         },
         {
           "name": "SenderAddress",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -251,7 +251,7 @@
         },
         {
           "name": "SenderName",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -325,7 +325,7 @@
         },
         {
           "name": "Piece",
-          "sqlType": "text",
+          "sqlType": "varchar(60)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -333,7 +333,7 @@
         },
         {
           "name": "StoredAt",
-          "sqlType": "text",
+          "sqlType": "varchar(500)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -416,7 +416,7 @@
         },
         {
           "name": "TenantKey",
-          "sqlType": "text",
+          "sqlType": "varchar(60)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -424,7 +424,7 @@
         },
         {
           "name": "Name",
-          "sqlType": "text",
+          "sqlType": "varchar(200)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -432,7 +432,7 @@
         },
         {
           "name": "DedicatedConnectionString",
-          "sqlType": "text",
+          "sqlType": "varchar(500)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -1436,5 +1436,5 @@
   "databaseName": "IntakeDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Intake",
-  "hash": "ef7848c284cb"
+  "hash": "ce0ddc8ed8d2"
 }

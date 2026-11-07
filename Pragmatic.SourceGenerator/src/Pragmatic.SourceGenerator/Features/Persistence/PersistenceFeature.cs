@@ -354,7 +354,8 @@ internal static class PersistenceFeature
                 IsNullable = prop.Type.NullableAnnotation == NullableAnnotation.Annotated ||
                              prop.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T,
                 IsEnum = prop.Type.TypeKind == TypeKind.Enum,
-                HasDefaultValue = prop.DeclaringSyntaxReferences.Length > 0
+                HasDefaultValue = prop.DeclaringSyntaxReferences.Length > 0,
+                MaxLength = Transforms.ColumnLength.Of(prop)
             });
         }
 

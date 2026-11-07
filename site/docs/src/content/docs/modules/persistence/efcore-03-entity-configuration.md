@@ -62,7 +62,7 @@ The SG applies these rules when generating property configuration:
 
 | C# Type | Generated Configuration | Notes |
 |---------|------------------------|-------|
-| `string` | `.IsRequired()` if not nullable | `.HasMaxLength(n)` if `[MaxLength(n)]` present |
+| `string`, `byte[]` | `.IsRequired()` if not nullable | `.HasMaxLength(n)` if Pragmatic.Validation's `[MaxLength(n)]` is present, whatever the setter. DataAnnotations' `[MaxLength]` and `[StringLength]` declare no length |
 | `decimal` | `.HasPrecision(18, 2)` | Default precision for monetary values |
 | `byte[]` (RowVersion) | `.IsRowVersion()` | Only for `[ConcurrencyAware]` entities |
 | `enum` | Stored as `int` | Default EF Core behavior |
