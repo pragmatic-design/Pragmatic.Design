@@ -88,9 +88,31 @@ public static class SqlValue
             case System.DateTime:
                 return Collect(list, static item => System.DateTime.SpecifyKind((System.DateTime)item!, DateTimeKind.Unspecified));
             default:
-                return list;
+                return list is System.Collections.IList ? list : AsArray(list);
         }
     }
+
+    /// <summary>
+    ///     A collection Npgsql does not map, as the array of its elements (#581): it maps a <c>T[]</c> and a <c>List&lt;T&gt;</c>, and refused a
+    ///     <c>HashSet&lt;T&gt;</c> or any other <c>IEnumerable&lt;T&gt;</c>. The element type is read from the collection's interface, so an
+    ///     empty set binds as the typed empty array its column compares with.
+    /// </summary>
+    private static object AsArray(System.Collections.IEnumerable list) => list switch
+    {
+        IEnumerable<Guid> items => items.ToArray(),
+        IEnumerable<string> items => items.ToArray(),
+        IEnumerable<int> items => items.ToArray(),
+        IEnumerable<long> items => items.ToArray(),
+        IEnumerable<short> items => items.ToArray(),
+        IEnumerable<decimal> items => items.ToArray(),
+        IEnumerable<double> items => items.ToArray(),
+        IEnumerable<bool> items => items.ToArray(),
+        IEnumerable<DateTimeOffset> items => items.ToArray(),
+        IEnumerable<DateOnly> items => items.ToArray(),
+        IEnumerable<TimeOnly> items => items.ToArray(),
+        _ => throw new NotSupportedException(
+            $"A list parameter of type {list.GetType().Name} cannot be bound on PostgreSQL: pass it as an array or a List<T>."),
+    };
 
     private static T[] Collect<T>(System.Collections.IEnumerable list, Func<object?, T> convert)
     {
