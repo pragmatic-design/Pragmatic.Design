@@ -60,9 +60,18 @@ export const SUITES = [
   },
 ];
 
+/**
+ * How long BenchmarkDotNet may take to build its copy of a suite, in seconds (#514).
+ *
+ * ⚠️ Its default is 120 s. It builds the whole graph again, the source generator included, in Release with `/m:1` and no shared
+ * compilation, and the Endpoints and Persistence suites go past that on the runner: the build is killed, BenchmarkDotNet exits 0, and ten
+ * classes measured nothing on every pull request that changed the generator. The `notRun` check (#183) is what reported it, and stays.
+ */
+export const BUILD_TIMEOUT_SECONDS = 900;
+
 /** A suite's arguments to BenchmarkDotNet, for every benchmark (`*`) or the filters of a selection. */
 export function suiteArgs(suite, filters = ['*']) {
-  return [...suite.command, '--filter', ...filters, '--exporters', 'json'];
+  return [...suite.command, '--filter', ...filters, '--exporters', 'json', '--buildTimeout', String(BUILD_TIMEOUT_SECONDS)];
 }
 
 export const BASELINE = 'benchmarks/allocation-baseline.json';
