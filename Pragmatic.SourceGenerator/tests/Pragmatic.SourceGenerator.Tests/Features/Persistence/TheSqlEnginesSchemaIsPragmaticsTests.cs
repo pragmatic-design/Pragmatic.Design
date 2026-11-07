@@ -336,7 +336,9 @@ public partial class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper outp
                 // Its Dossier holds a ProtectedValue: a binary column on both branches.
                 typeof(global::Pragmatic.Cryptography.ProtectedValue),
                 // Its Leaflet holds a LocalizedString: a text column on both branches.
-                typeof(global::Pragmatic.Internationalization.Types.LocalizedString)])),
+                typeof(global::Pragmatic.Internationalization.Types.LocalizedString),
+                // A column's length is Pragmatic.Validation's [MaxLength].
+                typeof(global::Pragmatic.Validation.Attributes.MaxLengthAttribute)])),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out var diagnostics);

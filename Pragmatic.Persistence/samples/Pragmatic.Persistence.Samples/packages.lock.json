@@ -52,7 +52,8 @@
           "Pragmatic.Ensure": "[1.0.0, )",
           "Pragmatic.Mapping": "[1.0.0, )",
           "Pragmatic.Result": "[1.0.0, )",
-          "Pragmatic.Specification": "[1.0.0, )"
+          "Pragmatic.Specification": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )"
         }
       },
       "pragmatic.result": {
@@ -67,6 +68,15 @@
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.validation": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Microsoft.Extensions.Options": "[10.0.10, )",
+          "Pragmatic.Ensure": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
         }
       },
       "Microsoft.Extensions.Configuration.Abstractions": {

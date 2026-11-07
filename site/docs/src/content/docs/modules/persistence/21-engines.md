@@ -83,8 +83,10 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
 
 - **Sql engine.** A database whose boundaries the engine serves gets the generated `{Database}Schema`, with the
   same tables EF Core's branch would describe. A host that references Pragmatic.Migrations migrates it at start, as
-  it migrates an EF Core database, and on demand. On SQL Server, MySQL and Oracle a binary with `[MaxLength(n)]`
-  is a binary of that length, so an index can hold it.
+  it migrates an EF Core database, and on demand. A column's length is Pragmatic.Validation's `[MaxLength(n)]` on a
+  string or binary property, read the same way by both engines and by EF Core's branch: the rule and the column are
+  one attribute, and DataAnnotations' `[MaxLength]`/`[StringLength]` bound nothing. On SQL Server, MySQL and Oracle
+  a binary with `[MaxLength(n)]` is a binary of that length, so an index can hold it.
 - **Documents engine.** A boundary gets the generated `{Boundary}DocSchema`: its collections, their indexes, their
   Cosmos DB partition keys and composite indexes. A Pragmatic host applies it at start through the boundary's
   session. What the backend cannot apply stops the start, and so does a boundary whose session nothing

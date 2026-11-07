@@ -14,7 +14,7 @@
         },
         {
           "name": "Sku",
-          "sqlType": "text",
+          "sqlType": "varchar(40)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -96,7 +96,7 @@
         },
         {
           "name": "Carrier",
-          "sqlType": "text",
+          "sqlType": "varchar(60)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -285,5 +285,5 @@
   "databaseName": "ShippingDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Shipping",
-  "hash": "d70d5ed0c100"
+  "hash": "521eafc91b6b"
 }

@@ -174,6 +174,11 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
         foreach (var prop in _model.Properties.Where(p => p.HasPrivateSetter || ProtectedValueType.Matches(p.TypeName)))
             RenderPropertyConfiguration(prop);
 
+        // A declared length bounds the column whatever the setter: EF Core's model is the one the generated schema describes, and the
+        // convention reads DataAnnotations' attribute, not Pragmatic.Validation's.
+        foreach (var prop in _model.Properties.Where(p => !p.HasPrivateSetter && !ProtectedValueType.Matches(p.TypeName) && p.MaxLength.HasValue))
+            AppendLine($"builder.Property(e => e.{prop.Name}).HasMaxLength({prop.MaxLength!.Value});");
+
         // Collections of primitives (List<string>, string[], …) — EF Core 8+ primitive collections
         // stored as a JSON column. Mapped explicitly so they are not skipped as navigations.
         foreach (var coll in _model.PrimitiveCollectionProperties)

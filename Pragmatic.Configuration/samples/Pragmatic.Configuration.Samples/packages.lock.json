@@ -369,7 +369,8 @@
           "Pragmatic.Ensure": "[1.0.0, )",
           "Pragmatic.Mapping": "[1.0.0, )",
           "Pragmatic.Result": "[1.0.0, )",
-          "Pragmatic.Specification": "[1.0.0, )"
+          "Pragmatic.Specification": "[1.0.0, )",
+          "Pragmatic.Validation": "[1.0.0, )"
         }
       },
       "pragmatic.redaction": {

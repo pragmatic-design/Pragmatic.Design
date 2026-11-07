@@ -150,9 +150,18 @@ internal static class SchemaTypes
         };
     }
 
-    /// <summary><c>[MaxLength(n)]</c> or <c>[StringLength(n)]</c> on the property, read by name; null without one.</summary>
+    /// <summary>
+    ///     The property's declared length: a Pragmatic entity's <see cref="Persistence.Transforms.ColumnLength" />, as EF Core's branch reads it,
+    ///     or the engine's own row model's <c>Pragmatic.Persistence.Sql.Attributes.MaxLength</c> (the framework's stores: sagas, notifications,
+    ///     outbox). Both by full name; null without one.
+    /// </summary>
+    /// <remarks>ASSUMPTION: the native row model keeps its attribute, as it keeps its own <c>[Table]</c> and <c>[Key]</c> (#526 decided the entities').</remarks>
     public static int? MaxLength(IPropertySymbol? property)
-        => property?.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name is "MaxLengthAttribute" or "StringLengthAttribute") is { ConstructorArguments.Length: > 0 } mark && mark.ConstructorArguments[0].Value is int length ? length : null;
+        => Persistence.Transforms.ColumnLength.Of(property)
+           ?? (property?.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NativeMaxLength) is { ConstructorArguments.Length: > 0 } mark
+               && mark.ConstructorArguments[0].Value is int length ? length : null);
+
+    private const string NativeMaxLength = "Pragmatic.Persistence.Sql.Attributes.MaxLengthAttribute";
 
     /// <summary><c>[Indexed(Unique = true)]</c> on the property.</summary>
     public static bool IsUnique(IPropertySymbol? property)
