@@ -15,6 +15,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  BUILD_TIMEOUT_SECONDS,
+  SUITES,
+  suiteArgs,
   TOLERANCE_BYTES,
   abReport,
   allocationReport,
@@ -256,4 +259,22 @@ test('the A/B report pairs a benchmark with itself across the two sides', () => 
 
   assert.match(report, /\| A\.B \| Log \| DefaultJob \| 200\.0 ns \| 150\.0 ns \| 0\.75 \|/);
   assert.match(report, /Geometric mean of the ratios over 1 benchmark\(s\): \*\*0\.750\*\*/);
+});
+
+/**
+ * ⚠️ BenchmarkDotNet builds its own copy of a suite, the whole graph and the generator included, and kills the build at 120 s by default.
+ * Endpoints and Persistence go past that on the runner: ten classes measured nothing on every pull request that changed the generator
+ * (#514). Every suite, on both sides of the A/B, gets the longer timeout, since the head's script builds the arguments for both.
+ */
+test('every suite builds with the long timeout, whatever it filters', () => {
+  for (const suite of SUITES) {
+    for (const filters of [['*'], ['*Grid*', '*Save*']]) {
+      const args = suiteArgs(suite, filters);
+      const at = args.indexOf('--buildTimeout');
+      assert.ok(at >= 0, `${suite.name} passes --buildTimeout`);
+      assert.equal(args[at + 1], String(BUILD_TIMEOUT_SECONDS), suite.name);
+    }
+  }
+
+  assert.equal(BUILD_TIMEOUT_SECONDS, 900, 'the owner\'s figure (#514): past 120 s, with room for the runner');
 });
