@@ -7,7 +7,8 @@
  *   no project removes, or a listed test that no longer exists.
  * - An exclusion that follows from a feature the module projects leave out names that file, and that file is on engine-projects.mjs's allowed
  *   list for the same engine. The others follow from an owner decision on test code (2026-11-06): the test's own code is bound to EF Core, or
- *   to the SQL database, not the feature it exercises.
+ *   to the SQL database, not the feature it exercises; or from an owner decision on what an engine guarantees (a per-entity limit under
+ *   concurrent writes on documents, 2026-10-26).
  * - A test left out is filtered from the run (`suiteFilter`, which the gate's runner passes to `dotnet test`), not deleted from the source.
  *
  *   node --test scripts/engine-suites.test.mjs
@@ -38,6 +39,8 @@ const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
 const TEST_ON_SQL = 'test code bound to the SQL database: the test reads or migrates PostgreSQL itself, and the documents host has none';
+const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
+  + 'with no serializable transaction, so concurrent adds can cross it';
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -146,6 +149,12 @@ export const ALLOWED_TEST_EXCLUSIONS = {
   // A room type updated: UpdateRoomTypeMutation, which the documents engine refuses (PRAG3112) and the Catalog project leaves out there.
   [test('Endpoints/AutoIncludeTests.cs', 'AnUpdate_WhoseResponseFlattensANavigation_LoadsIt')]: {
     file: s('Endpoints/AutoIncludeTests.cs'), engines: ['Documents'], reason: NO_NAVIGATION, follows: [catalog('RoomTypes/Mutations/UpdateRoomTypeMutation.cs')],
+  },
+
+  // Six racers for a guest's last tag slot: on the documents engine more than one can take it, as decided. The sequential limit and the
+  // idempotent re-add, in the same file, still run there.
+  [test('Endpoints/TagConcurrencyTests.cs', 'ConcurrentAdds_NeverExceedTheLimit')]: {
+    file: s('Endpoints/TagConcurrencyTests.cs'), engines: ['Documents'], reason: LIMIT_BEST_EFFORT,
   },
 };
 
