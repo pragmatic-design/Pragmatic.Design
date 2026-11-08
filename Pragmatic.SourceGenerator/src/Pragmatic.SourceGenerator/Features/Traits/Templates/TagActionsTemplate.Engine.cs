@@ -22,6 +22,7 @@ internal sealed partial class TagActionsTemplate
         {
             AppendLine("private ICurrentUser _currentUser = null!;");
             AppendLine("private IClock _clock = null!;");
+            AppendLine($"private {TraitParentCheck.RepositoryType(_model.ParentFullTypeName)} {TraitParentCheck.RepositoryField} = null!;");
         }
 
         // The policy is optional, so it is resolved on demand from the application service

@@ -34,7 +34,8 @@ public class TagActionsTests(DocumentServers servers)
         public IClock Clock { get; } = new TestInstant();
 
         public Task<Result<Guid, IError>> Add(Guid property, string value)
-            => new AddPropertyTagAction.Invoker(new PropertyTag.DocRepository(UnitOfWork), new PropertyTagLink.DocRepository(UnitOfWork), UnitOfWork, User, Clock, Services, Services)
+            => new AddPropertyTagAction.Invoker(new PropertyTag.DocRepository(UnitOfWork), new PropertyTagLink.DocRepository(UnitOfWork), UnitOfWork, User, Clock, Services,
+                    new Property.DocRepository(UnitOfWork), Services)
                 .InvokeAsync(new AddPropertyTagAction { PropertyId = property, TagValue = value });
 
         public Task<VoidResult<IError>> Remove(Guid property, Guid tag)

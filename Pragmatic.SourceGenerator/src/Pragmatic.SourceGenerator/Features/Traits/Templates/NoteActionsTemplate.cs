@@ -78,8 +78,10 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
     private void RenderBody()
     {
         AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.NoteTypeName}> _notes = null!;" : "private DbContext _db = null!;");
-        if (ReadsThroughRowFilters)
+        if (ReadsThroughRowFilters || (ChecksTheParent && !_engine && _model.ParentIsRowProtected))
             AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
+        if (ChecksTheParent && _engine)
+            AppendLine($"private {TraitParentCheck.RepositoryType(_model.ParentFullTypeName)} {TraitParentCheck.RepositoryField} = null!;");
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // Carries the application container in, so the optional IPermissionChecker can be resolved
@@ -107,6 +109,9 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
     /// <summary>A note on EF Core whose parent restricts rows: read with its parent's visibility (#598), as the engines read it.</summary>
     private bool ReadsThroughRowFilters => !_engine && _model.ParentIsRowProtected && _kind != NoteActionKind.Add;
 
+    /// <summary>The add, which reads no note: it asks for the parent the route names before writing (<see cref="TraitParentCheck" />).</summary>
+    private bool ChecksTheParent => _kind == NoteActionKind.Add;
+
     /// <summary>The note rows an EF Core read starts from: through the row filters when the parent restricts rows.</summary>
     private string NoteRows => ReadsThroughRowFilters
         ? $"{TraitRowFilters.HelperName}(_db.Set<{_model.NoteTypeName}>())"
@@ -126,6 +131,10 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
             AppendLine($"return Result<Guid, IError>.Failure(new BadRequestError {{ Reason = \"Content exceeds the maximum length of {_model.MaxLength} characters.\" }});");
             DecreaseIndent();
             AppendLine();
+
+            foreach (var line in TraitParentCheck.GuardLines(_engine, _model.ParentIsRowProtected, _model.ParentFullTypeName, $"{_model.ParentTypeName}Id",
+                         $"return Result<Guid, IError>.Failure(NotFoundError.For(\"{_model.ParentTypeName}\", {_model.ParentTypeName}Id.ToString()));"))
+                AppendLine(line);
 
             AppendLine($"var note = new {_model.NoteTypeName}");
             AppendLine("{");

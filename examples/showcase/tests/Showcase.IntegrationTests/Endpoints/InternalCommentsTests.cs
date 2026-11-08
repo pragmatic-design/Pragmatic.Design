@@ -72,7 +72,8 @@ public class InternalCommentsTests(PostgresFixture fixture) : IntegrationTestBas
     {
         var guestId = await CreateGuest();
 
-        var author = CreateClientWithPermissions(Create, Read);
+        // An author who sees the guest: one who does not is answered 404 before the visibility is asked.
+        var author = CreateClientWithPermissions(Create, Read, SeeTheGuest);
         var response = await author.PostAsJsonAsync(
             CommentsUrl(guestId), new { content = "I am staff, trust me.", visibility = "Internal" }, JsonOptions);
 
@@ -85,7 +86,8 @@ public class InternalCommentsTests(PostgresFixture fixture) : IntegrationTestBas
     {
         var guestId = await CreateGuest();
 
-        var author = CreateClientWithPermissions(Create, Read);
+        // Create and the guest in sight, nothing about internal notes.
+        var author = CreateClientWithPermissions(Create, Read, SeeTheGuest);
         var response = await author.PostAsJsonAsync(
             CommentsUrl(guestId), new { content = "Lovely stay." }, JsonOptions);
 

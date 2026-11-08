@@ -192,6 +192,9 @@ cannot see its comments. The list leaves them out, reading, editing, deleting or
 and the moderation queue is empty. 404 rather than 403, so the answer does not tell the caller the comment exists.
 Whoever holds the parent's `view-all` permission sees every parent, and so every comment, as the parent answers.
 
+Adding a comment asks for the parent first, whatever the parent restricts: one the caller does not see (another
+tenant's, a deleted one, one its row filters hide, or none at all) answers 404 and nothing is written.
+
 ## Generated Permissions
 
 ```csharp

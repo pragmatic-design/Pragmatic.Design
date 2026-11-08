@@ -38,6 +38,11 @@ public sealed partial class AddReservationCommentAction : DomainAction<Guid>
         if (Content.Length > 2000)
             return Result<Guid, IError>.Failure(new BadRequestError { Reason = "Content exceeds the maximum length of 2000 characters." });
         
+        // The parent the route names, as the caller sees it: the model's filters (tenant, soft delete) hold on the set.
+        global::System.Linq.IQueryable<global::Showcase.Booking.Entities.Reservation> __parents = _db.Set<global::Showcase.Booking.Entities.Reservation>();
+        if (!await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(__parents, p => p.PersistenceId == ReservationId, ct).ConfigureAwait(false))
+            return Result<Guid, IError>.Failure(NotFoundError.For("Reservation", ReservationId.ToString()));
+        
         var _policy = (ICommentPolicy<Guid>?)_services.GetService(typeof(ICommentPolicy<Guid>));
         if (_policy is not null)
         {

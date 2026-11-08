@@ -35,11 +35,11 @@ internal static class TraitActionModelBuilder
     ///     repository (<c>CommentActionsTemplate.Engine.cs</c> reads and writes through it), which each engine's boundary registers.
     /// </summary>
     public static ImmutableArray<ActionModel> BuildEngineCommentActions(CommentTraitModel model)
-        => OnRepository(BuildCommentActions(model), "_comments", model.CommentFullTypeName);
+        => OnRepository(BuildCommentActions(model), "_comments", model.CommentFullTypeName, model.ParentFullTypeName);
 
     /// <summary>The note actions of a note the Sql or documents engine persists, as <see cref="BuildEngineCommentActions" /> for comments.</summary>
     public static ImmutableArray<ActionModel> BuildEngineNoteActions(NoteTraitModel model)
-        => OnRepository(BuildNoteActions(model), "_notes", model.NoteFullTypeName);
+        => OnRepository(BuildNoteActions(model), "_notes", model.NoteFullTypeName, model.ParentFullTypeName);
 
     /// <summary>
     ///     The tag actions of tags the Sql or documents engine persists: their <c>DbContext</c> replaced by the tag's and the link's repositories and
@@ -55,7 +55,7 @@ internal static class TraitActionModelBuilder
                     new DependencyModel { FieldName = "_links", TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{model.JunctionFullTypeName}>", IsReadOnly = true },
                     EngineUnitOfWork(model.BoundaryFullTypeName),
                 }
-                : [d]).ToImmutableArray(),
+                : [d]).Concat(action.TypeName.StartsWith("Add", StringComparison.Ordinal) ? new[] { ParentRepository(model.ParentFullTypeName) } : new DependencyModel[0]).ToImmutableArray(),
         }).ToImmutableArray();
 
     /// <summary>
@@ -67,10 +67,21 @@ internal static class TraitActionModelBuilder
         {
             Dependencies = action.Dependencies.Where(d => d.FieldName != RowFilters.FieldName).SelectMany(d => d.FieldName == "_db"
                 ? action.TypeName.StartsWith("Upload", StringComparison.Ordinal)
-                    ? new[] { AttachmentRepository(model), EngineUnitOfWork(model.BoundaryFullTypeName) }
+                    ? new[] { AttachmentRepository(model), EngineUnitOfWork(model.BoundaryFullTypeName), ParentRepository(model.ParentFullTypeName) }
                     : new[] { AttachmentRepository(model) }
                 : [d]).ToImmutableArray(),
         }).ToImmutableArray();
+
+    /// <summary>
+    ///     The parent's read repository, the dependency of an engine's create action (add, upload), which asks for the parent the route names
+    ///     before writing (<c>TraitParentCheck</c>); in lockstep with the <c>_parents</c> field the action templates declare.
+    /// </summary>
+    private static DependencyModel ParentRepository(string parentFullTypeName) => new()
+    {
+        FieldName = "_parents",
+        TypeName = $"global::Pragmatic.Persistence.Repository.IReadRepository<global::{parentFullTypeName}>",
+        IsReadOnly = true,
+    };
 
     private static DependencyModel AttachmentRepository(AttachmentTraitModel model) => new()
     {
@@ -93,9 +104,9 @@ internal static class TraitActionModelBuilder
 
     /// <summary>
     ///     The actions with their <c>DbContext</c> replaced by the child's repository, under <paramref name="field" />. Without the row filters: the
-    ///     repository applies them on its own reads.
+    ///     repository applies them on its own reads. The add also gets the parent's read repository, to ask for the parent before writing.
     /// </summary>
-    private static ImmutableArray<ActionModel> OnRepository(ImmutableArray<ActionModel> actions, string field, string childFullTypeName)
+    private static ImmutableArray<ActionModel> OnRepository(ImmutableArray<ActionModel> actions, string field, string childFullTypeName, string parentFullTypeName)
         => actions.Select(action => action with
         {
             Dependencies = action.Dependencies.Where(d => d.FieldName != RowFilters.FieldName).Select(d => d.FieldName == "_db"
@@ -105,7 +116,7 @@ internal static class TraitActionModelBuilder
                     TypeName = $"global::Pragmatic.Persistence.Repository.IRepository<global::{childFullTypeName}>",
                     IsReadOnly = true,
                 }
-                : d).ToImmutableArray(),
+                : d).Concat(action.TypeName.StartsWith("Add", StringComparison.Ordinal) ? new[] { ParentRepository(parentFullTypeName) } : new DependencyModel[0]).ToImmutableArray(),
         }).ToImmutableArray();
 
     private static ActionModel BuildListPendingCommentsAction(CommentTraitModel model)
@@ -146,7 +157,7 @@ internal static class TraitActionModelBuilder
         // Same set as every other comment action — kept in one place so a new dependency cannot be
         // added to the template and forgotten here, which is exactly how _services first went missing
         // from SetDependencies while the field was already being emitted.
-        var deps = BuildCommentDeps(model, readsTheComment: false);
+        var deps = BuildCommentDeps(model);
 
         var inputProps = ImmutableArray.CreateBuilder<ActionPropertyModel>();
         inputProps.Add(new ActionPropertyModel
@@ -281,15 +292,15 @@ internal static class TraitActionModelBuilder
         };
     }
 
-    /// <param name="model">The comment trait.</param>
-    /// <param name="readsTheComment">
-    ///     False for the add, which reads no comment. Every other action reads one, and where the parent restricts rows it reads it through the
-    ///     row filters (<c>TraitRowFilters</c>, #598): the <c>_filters</c> field <c>CommentActionsTemplate</c> declares under the same condition.
-    /// </param>
-    private static ImmutableArray<DependencyModel> BuildCommentDeps(CommentTraitModel model, bool readsTheComment = true)
+    /// <summary>
+    ///     Where the parent restricts rows, every comment action reads through the row filters: the comment (<c>TraitRowFilters</c>, #598), or for
+    ///     the add the parent it is written on (<c>TraitParentCheck</c>). The <c>_filters</c> field <c>CommentActionsTemplate</c> declares under the
+    ///     same condition.
+    /// </summary>
+    private static ImmutableArray<DependencyModel> BuildCommentDeps(CommentTraitModel model)
     {
         var deps = BuildCommonCommentDeps(model);
-        return readsTheComment && model.ParentIsRowProtected ? deps.Add(RowFilters) : deps;
+        return model.ParentIsRowProtected ? deps.Add(RowFilters) : deps;
     }
 
     /// <summary>The row filters of a trait child, the dependency of an EF Core action that reads it with its parent's visibility (#598).</summary>
@@ -394,7 +405,8 @@ internal static class TraitActionModelBuilder
                     FieldName = "_services",
                     TypeName = "global::System.IServiceProvider",
                     IsReadOnly = true,
-                }),
+                // The add asks for the parent through its row filters (TagActionsTemplate, TraitParentCheck).
+                }).AddRange(model.ParentIsRowProtected ? new[] { RowFilters } : new DependencyModel[0]),
             InputProperties = ImmutableArray.Create(
                 new ActionPropertyModel
                 {
@@ -493,8 +505,8 @@ internal static class TraitActionModelBuilder
             new DependencyModel { FieldName = "_services", TypeName = "global::System.IServiceProvider", IsReadOnly = true },
             new DependencyModel { FieldName = "_currentUser", TypeName = "global::Pragmatic.Identity.ICurrentUser", IsReadOnly = true },
             new DependencyModel { FieldName = "_clock", TypeName = "global::Pragmatic.Temporal.Clock.IClock", IsReadOnly = true });
-        // Every note action but the add reads the note, and with a row-protected parent reads it through the row filters (NoteActionsTemplate).
-        if (kind is not "Add" && model.ParentIsRowProtected)
+        // With a row-protected parent every note action reads through the row filters (NoteActionsTemplate): the note, or for the add its parent.
+        if (model.ParentIsRowProtected)
             deps = deps.Add(RowFilters);
 
         var inputProps = ImmutableArray.CreateBuilder<ActionPropertyModel>();
@@ -578,8 +590,8 @@ internal static class TraitActionModelBuilder
         }
         if (kind is "Upload" or "Download" or "DownloadThumbnail")
             deps.Add(new DependencyModel { FieldName = "_storage", TypeName = "global::Pragmatic.Storage.IFileStorage", IsReadOnly = true });
-        // Every attachment action but the upload reads the attachment, and with a row-protected parent reads it through the row filters.
-        if (kind is not "Upload" && model.ParentIsRowProtected)
+        // With a row-protected parent every attachment action reads through the row filters: the attachment, or for the upload its parent.
+        if (model.ParentIsRowProtected)
             deps.Add(RowFilters);
 
         var inputProps = ImmutableArray.CreateBuilder<ActionPropertyModel>();
