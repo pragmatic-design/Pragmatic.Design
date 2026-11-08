@@ -42,6 +42,9 @@ export const DOCKER_SHARDS = [
     // The documents samples on a standalone MongoDB and the Cosmos DB emulator: 1m 09s on a developer machine (2026-10-24), not yet measured on
     // the runner. Here beside the documents suite, whose servers it starts the same way.
     'Pragmatic.Persistence.Documents.Samples.Tests',
+    // The Showcase's integration suite on the Sql host (#535), one PostgreSQL: 1m 36s of tests on a developer machine (2026-11-08), not yet
+    // measured on the runner. Here because this shard was the lightest (17m 05s against 20m 24s and 17m 37s, PR #606's run).
+    'Showcase.Sql.IntegrationTests',
   ],
   // ~407 s
   [
