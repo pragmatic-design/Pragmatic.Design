@@ -35,6 +35,19 @@ public partial class AssignRoleToUser : DomainAction<Guid>
         if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "assign-role") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
+        // A role gives what it carries, so the assigner must hold it, as AssignPermissionsToRole asks of a grantor:
+        // the assignment permission alone would otherwise give any role of the tenant, to anyone or to oneself.
+        // Every grant not yet expired counts, a future one too. An operator with no tenant is the platform.
+        if (_currentUser.TenantId is { Length: > 0 })
+        {
+            var grants = await _store.GetRolePermissionsAsync([RoleName], TenantId, ct).ConfigureAwait(false);
+            foreach (var permission in grants.Where(g => g.ValidTo is null || g.ValidTo > now).Select(g => g.PermissionName).Distinct())
+            {
+                if (!await _currentUser.Authorization.HasPermissionAsync(permission, ct).ConfigureAwait(false))
+                    return Result<Guid, IError>.Failure(ForbiddenError.ActionDenied("assign-role", $"permission:{permission}"));
+            }
+        }
+
         // Guard: prevent duplicate active assignment for the same user/role/tenant
         var assignments = await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false);
         if (assignments.Any(a => a.RoleName == RoleName && a.TenantId == TenantId && a.IsInForceAt(now)))

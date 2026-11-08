@@ -119,9 +119,10 @@ affected users from the permission cache, so the next request sees it. These add
 identity carries (claims, `IRolePermissionStore`); they do not replace them.
 
 **A tenant admin grants only what they hold.** `AssignPermissionsToRole` refuses (403) a permission the
-caller does not hold (a wildcard they hold covers what it names), so `authorization.roles.manage` and
-`authorization.assignments.manage` together cannot raise a tenant admin above their own permissions. A
-caller with no tenant, the platform operator, is not bound by this.
+caller does not hold (a wildcard they hold covers what it names), and `AssignRoleToUser` refuses (403) a role
+carrying one, so neither `authorization.roles.manage` nor `authorization.assignments.manage`, alone or
+together, can raise a tenant admin above their own permissions. A caller with no tenant, the platform
+operator, is not bound by this.
 
 **What was created at runtime is listed.** The package registers `ManagedDynamicRoleStore` and
 `ManagedDynamicPermissionStore`; `IPermissionCatalog` merges them with the compiled catalog, so `ListRoles` and
