@@ -871,7 +871,7 @@ Generated for the host project (the `.csproj` with `<OutputType>Exe</OutputType>
 | `Host.Topology.g.cs` | Topology report string (Debug only) | Debug builds |
 | `Host.EventHandlers.g.cs` | Event handler registrations | Has event handlers |
 | `Host.HttpInvoker.{Module}.g.cs` | HTTP action invokers per remote boundary | Has `[RemoteBoundary]` |
-| `Host.InvokeEndpoint.g.cs` | `/_pragmatic/invoke` dispatcher | Has local actions |
+| `Host.InvokeEndpoint.g.cs` | `/_pragmatic/invoke` dispatcher, mapped only with `Pragmatic:RemoteBoundaries:InvokeEndpoint:Enabled` | Has local actions |
 
 ### PragmaticHost Methods (Host.Services.g.cs)
 

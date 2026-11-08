@@ -41,7 +41,8 @@ answer, and it is inspectable.
 
 ⚠️ **No endpoint does not mean unreachable from another process.** The host generates a
 `/_pragmatic/invoke` dispatcher that routes by action type, so an exported operation with no route is
-still callable across a `[RemoteBoundary<T>]`.
+still callable across a `[RemoteBoundary<T>]`. The host another one calls maps it only with
+`Pragmatic:RemoteBoundaries:InvokeEndpoint:Enabled = true` (off by default): enable it there, and only there.
 
 ⚠️ **Writing your own `ITermExtraction`-style service instead is the mistake to avoid.** It duplicates
 a contract that already exists, it does not survive the boundary being split out, and (the part that

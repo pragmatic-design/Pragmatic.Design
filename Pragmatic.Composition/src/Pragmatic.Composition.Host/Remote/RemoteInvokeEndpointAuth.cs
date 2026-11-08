@@ -47,6 +47,7 @@ public static class RemoteInvokeEndpointAuth
 
         return new PragmaticRemoteInvokeOptions
         {
+            Enabled = string.Equals(config?[$"{section}:Enabled"], "true", StringComparison.OrdinalIgnoreCase),
             AllowAnonymous = string.Equals(
                 config?[$"{section}:AllowAnonymous"], "true", StringComparison.OrdinalIgnoreCase),
             AuthorizationPolicy = config?[$"{section}:AuthorizationPolicy"]
