@@ -47,6 +47,38 @@ internal static class PermissionCatalogBuilder
     }
 
     /// <summary>
+    ///     The permission names this compilation generates, for the runtime catalog (<c>IPermissionCatalog</c>): the catalog's values and the
+    ///     traits' (<c>TraitPermissionMembers</c>). Not a wildcard (<c>booking.*</c>), which grants a family and is no permission of its own, and
+    ///     not an entity's read entry (<see cref="PermissionNaming.EntityReadKey" />), which may be a referenced entity's and is the same value as
+    ///     its CRUD constant otherwise.
+    /// </summary>
+    /// <remarks>
+    ///     Without these the runtime catalog listed only the declared permissions: a role screen did not offer an entity's read or update, and
+    ///     <c>CreatePermission</c> could not tell that <c>booking.reservation.read</c> was taken.
+    /// </remarks>
+    public static ImmutableArray<string> RegistrableValues(
+        Pragmatic.SourceGen.EquatableArray<PermissionConstEntry> catalog, Pragmatic.SourceGen.EquatableArray<string> traitPermissions)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var builder = ImmutableArray.CreateBuilder<string>();
+        foreach (var entry in catalog)
+        {
+            if (entry.ConstPath.IndexOf('#') >= 0 || entry.Value.EndsWith("*", StringComparison.Ordinal))
+                continue;
+            if (seen.Add(entry.Value))
+                builder.Add(entry.Value);
+        }
+
+        foreach (var value in traitPermissions)
+        {
+            if (seen.Add(value))
+                builder.Add(value);
+        }
+
+        return builder.ToImmutable();
+    }
+
+    /// <summary>
     ///     Entity CRUD: the path comes from the type name as declared, the only place the word
     ///     boundaries still exist — <c>RoomType</c> cannot be recovered from <c>roomtype</c>.
     /// </summary>

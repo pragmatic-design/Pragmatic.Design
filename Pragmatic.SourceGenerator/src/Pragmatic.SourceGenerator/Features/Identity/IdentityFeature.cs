@@ -29,7 +29,8 @@ internal static class IdentityFeature
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<EquatableArray<Core.PermissionConstEntry>> permissionCatalog,
-        IncrementalValueProvider<EquatableArray<DeclaredPermissionModel>> declaredPermissions)
+        IncrementalValueProvider<EquatableArray<DeclaredPermissionModel>> declaredPermissions,
+        IncrementalValueProvider<EquatableArray<string>> generatedPermissions)
     {
         // The enum-to-role mapping of an access level: [SignsInAs<TRole>] on its members.
         SignsInAsFeature.Register(context);
@@ -74,16 +75,26 @@ internal static class IdentityFeature
         // silently drop every other assembly's catalog entries.
         var assemblyName = context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "");
 
+        // The generated names are registered through IServiceCollection: a compilation that cannot name it registers none of them.
+        var registrableGenerated = generatedPermissions.Combine(context.CompilationProvider.Select(static (c, _) =>
+                c.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.IServiceCollection") is not null))
+            .Select(static (pair, _) => pair.Right ? pair.Left : EquatableArray<string>.Empty);
+
         var combined = allRoles.Combine(features).Combine(assemblyName)
-            .Combine(permissionCatalog).Combine(declaredPermissions);
+            .Combine(permissionCatalog).Combine(declaredPermissions).Combine(registrableGenerated);
 
         context.RegisterSourceOutputSafe(combined, static (ctx, data) =>
         {
-            var (((((roles, roleClasses), featureFlags), assemblyName), catalog), declared) = data;
+            var ((((((roles, roleClasses), featureFlags), assemblyName), catalog), declared), generated) = data;
             if (!featureFlags.HasAuthorization)
                 return;
 
-            if (roles.IsDefaultOrEmpty && roleClasses.IsDefaultOrEmpty && declared.IsDefaultOrEmpty)
+            // The generated names reach the catalog through the host, which reads the registration's metadata: without Composition
+            // there is no host to read it, and an assembly that declares nothing would gain a registration nobody calls.
+            if (!featureFlags.HasComposition)
+                generated = EquatableArray<string>.Empty;
+
+            if (roles.IsDefaultOrEmpty && roleClasses.IsDefaultOrEmpty && declared.IsDefaultOrEmpty && generated.IsDefaultOrEmpty)
                 return;
 
             // A role names constants this compilation cannot bind, because the same run generates
@@ -113,15 +124,15 @@ internal static class IdentityFeature
             // The [Role] classes, flattened through the roles they include — the hand-written ones among
             // them — and the permission catalogue. The members written into each and its registry entry
             // carry the same list; a hand-written role spreading one of them takes that list too.
-            var generated = DeclaredRoleResolver.WithGeneratedMembers(ctx, roleClasses, roles, catalog).ToImmutableArray();
-            roles = WithSpreadRoles(roles, generated).AddRange(generated);
+            var generatedRoles = DeclaredRoleResolver.WithGeneratedMembers(ctx, roleClasses, roles, catalog).ToImmutableArray();
+            roles = WithSpreadRoles(roles, generatedRoles).AddRange(generatedRoles);
 
             var namespacePrefix = DeriveNamespacePrefix(roles);
 
-            // The declared permissions are the registry's permissions: a role screen lists them. Their
-            // constants are the permissions class's (PermissionsClassFeature), not written here — there is
-            // one {Boundary}Permissions.
-            var permissions = RegistryEntries(declared);
+            // The registry's permissions: the declared ones, then the entities' and the traits' this run generates, so the catalog lists every
+            // name the application checks — a role screen offers them, CreatePermission refuses them. Their constants are the permissions
+            // classes' (PermissionsClassFeature, the traits' templates), not written here.
+            var permissions = RegistryEntries(declared, generated);
 
             if (permissions.IsDefaultOrEmpty && roles.IsDefaultOrEmpty)
                 return;
@@ -141,10 +152,11 @@ internal static class IdentityFeature
         // host that declares its own permissions or roles never sees that attribute.
         var localRegistrations = combined.Select(static (data, _) =>
         {
-            var (((((roles, roleClasses), featureFlags), assemblyName), _), declared) = data;
+            var ((((((roles, roleClasses), featureFlags), assemblyName), _), declared), generated) = data;
+            // HasComposition is checked just above, the condition under which the output step keeps the generated names.
             if (!featureFlags.HasAuthorization || !featureFlags.HasComposition)
                 return EquatableArray<Composition.Models.MetadataEntry>.Empty;
-            if (roles.IsDefaultOrEmpty && roleClasses.IsDefaultOrEmpty && declared.IsDefaultOrEmpty)
+            if (roles.IsDefaultOrEmpty && roleClasses.IsDefaultOrEmpty && declared.IsDefaultOrEmpty && generated.IsDefaultOrEmpty)
                 return EquatableArray<Composition.Models.MetadataEntry>.Empty;
 
             // Only the fallback when the assembly is unnamed, so the [Role] classes' namespaces count here as
@@ -338,14 +350,41 @@ internal static class IdentityFeature
         }).ToImmutableArray();
     }
 
-    /// <summary>One registry entry per declared value — the first declaration of a value wins, a second is PRAG1001.</summary>
-    private static ImmutableArray<PermissionModel> RegistryEntries(EquatableArray<DeclaredPermissionModel> declared)
+    /// <summary>
+    ///     One registry entry per declared value — the first declaration of a value wins, a second is PRAG1001 — then one per generated value no
+    ///     declaration already gave, under the category of its first segment.
+    /// </summary>
+    private static ImmutableArray<PermissionModel> RegistryEntries(EquatableArray<DeclaredPermissionModel> declared, EquatableArray<string> generated)
     {
-        if (declared.IsDefaultOrEmpty)
-            return ImmutableArray<PermissionModel>.Empty;
-
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var builder = ImmutableArray.CreateBuilder<PermissionModel>();
+        AddDeclared(declared, names, builder);
+        foreach (var value in generated)
+        {
+            if (string.IsNullOrWhiteSpace(value) || !names.Add(value))
+                continue;
+
+            var dot = value.IndexOf('.');
+            builder.Add(new PermissionModel
+            {
+                TypeName = value,
+                Accessibility = "public",
+                TypeKind = "generated",
+                Name = value,
+                Category = dot > 0 ? value.Substring(0, dot) : null,
+                // No source type: an entity's or a trait's constant, generated in this run.
+                SourceTypeFqn = "",
+            });
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static void AddDeclared(EquatableArray<DeclaredPermissionModel> declared, HashSet<string> names, ImmutableArray<PermissionModel>.Builder builder)
+    {
+        if (declared.IsDefaultOrEmpty)
+            return;
+
         foreach (var d in declared)
         {
             // An empty value is PRAG1004, from the permissions class: no entry nobody could be granted.
@@ -363,8 +402,6 @@ internal static class IdentityFeature
                 SourceTypeFqn = d.Source
             });
         }
-
-        return builder.ToImmutable();
     }
 
     // =========================================================================

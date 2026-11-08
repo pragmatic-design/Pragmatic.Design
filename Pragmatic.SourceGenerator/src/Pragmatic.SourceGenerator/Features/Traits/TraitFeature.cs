@@ -705,6 +705,13 @@ internal static class TraitFeature
             EngineSources = allComments.Combine(allNotes).Combine(allTags).Combine(allAttachments).Combine(features)
                 .Select(static (pair, _) => TraitEngineChildren.Sources(pair.Left.Left.Left.Left, pair.Left.Left.Left.Right, pair.Left.Left.Right,
                     pair.Left.Right, pair.Right)),
+            Permissions = allComments.Combine(allNotes).Combine(allTags).Combine(allAttachments)
+                .Select(static (pair, _) => new Pragmatic.SourceGen.EquatableArray<string>(
+                    pair.Left.Left.Left.SelectMany(TraitPermissionMembers.Comment)
+                        .Concat(pair.Left.Left.Right.SelectMany(TraitPermissionMembers.Note))
+                        .Concat(pair.Left.Right.SelectMany(TraitPermissionMembers.Tag))
+                        .Concat(pair.Right.SelectMany(TraitPermissionMembers.Attachment))
+                        .Select(static m => m.Value).Distinct().ToImmutableArray())),
         };
     }
 

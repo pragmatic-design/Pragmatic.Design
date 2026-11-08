@@ -83,8 +83,12 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             .Select(static (pair, _) => new EquatableArray<PermissionConstEntry>(
                 PermissionCatalogBuilder.Build(pair.Left, pair.Right)));
 
+        // What the runtime catalog lists besides the declared permissions: the entities' and the traits'.
+        var generatedPermissions = permissionCatalog.Combine(traitOutput.Permissions)
+            .Select(static (pair, _) => new EquatableArray<string>(PermissionCatalogBuilder.RegistrableValues(pair.Left, pair.Right)));
+
         var (identityRegistrations, currentUsers) =
-            IdentityFeature.Register(context, features, permissionCatalog, customPermissions);
+            IdentityFeature.Register(context, features, permissionCatalog, customPermissions, generatedPermissions);
 
         // The one {Boundary}Permissions class per boundary: the CRUD constants and the declared ones.
         Features.Persistence.PermissionsClassFeature.Register(context, features, entityModels, customPermissions);

@@ -5768,6 +5768,10 @@ public static class ApiRoutes
 public static class PragmaticGlossary
     public const string Markdown
 
+## _Infra.Identity.AuthorizationRegistration.g.cs
+public static partial class AuthorizationRegistrationExtensions
+    public static IServiceCollection AddGeneratedAuthorizationCatalog(this IServiceCollection services)
+
 ## _Infra.Identity.EntityPermissions.g.cs
 public static partial class InventoryPermissions
     public const string Resource
@@ -6280,6 +6284,10 @@ public static partial class OtherPermissions
         public const string ViewAll
         public const string All
 
+## _Infra.Identity.PermissionRegistry.g.cs
+public static class PermissionRegistry
+    public static IReadOnlyList<PermissionInfo> All { get; }
+
 ## _Infra.Mutations.Registration.g.cs
 public static partial class InventoryMutationsRegistrationExtensions
     public static IServiceCollection AddInventoryMutations(this IServiceCollection services)
@@ -6342,6 +6350,9 @@ internal static class GeneratedUtf8ResponseWriters
 
 ## _Metadata.Actions.g.cs
     [assembly: PragmaticMetadata]
+
+## _Metadata.Authorization.g.cs
+    [assembly: global::Pragmatic.Composition.Attributes.PragmaticMetadataAttribute]
 
 ## _Metadata.Endpoints.g.cs
     [assembly: PragmaticMetadata]
