@@ -211,6 +211,13 @@
           "Pragmatic.Result": "[1.0.0, )"
         }
       },
+      "pragmatic.endpoints.aspnetcore": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Endpoints": "[1.0.0, )"
+        }
+      },
       "pragmatic.ensure": {
         "type": "Project"
       },
