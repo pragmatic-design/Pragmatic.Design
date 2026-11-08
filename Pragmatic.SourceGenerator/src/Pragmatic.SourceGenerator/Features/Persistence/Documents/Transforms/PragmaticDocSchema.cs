@@ -102,6 +102,15 @@ internal static class PragmaticDocSchema
                 indexes.Add((name, fields, unique, live));
         }
 
+        // The domain key's unique index (#607), read by the rule the Sql engine and EF Core read it with: its parts in order, the tenant leading
+        // unless a part is global, live documents only under soft delete. Without it a second write with the same key was accepted.
+        var logicKey = Persistence.Transforms.EntityTransform.CollectLogicKeys(entity);
+        if (logicKey.Count > 0)
+        {
+            var fields = logicKey.Select(p => model.Field(p.Name)?.Name ?? p.Name).ToArray();
+            Index(tenant && !logicKey.Any(p => p.IsGlobal) ? fields.Prepend("TenantId").ToArray() : fields, true, softDelete ? "IsDeleted" : null);
+        }
+
         foreach (var unique in entity.GetAttributes().Where(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.UniqueAttribute"))
         {
             var fields = unique.ConstructorArguments.SelectMany(a => a.Kind == TypedConstantKind.Array ? a.Values.Select(v => v.Value as string) : new[] { a.Value as string })
