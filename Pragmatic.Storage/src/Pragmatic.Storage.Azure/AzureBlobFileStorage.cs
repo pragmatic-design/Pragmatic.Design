@@ -78,8 +78,9 @@ public sealed partial class AzureBlobFileStorage(
     /// </remarks>
     public async Task<Stream?> GetAsync(Uri fileUri, CancellationToken ct = default)
     {
-        ValidateUriHost(fileUri);
-        var blobClient = new BlobClient(fileUri);
+        // The account's client, as SaveAsync wrote the blob with: a client built from the URI alone carries no credential, and a
+        // private blob — every blob SaveAsync writes — answers it 403.
+        var blobClient = GetBlobClientFor(fileUri);
         if (!await blobClient.ExistsAsync(ct).ConfigureAwait(false))
             return null;
 
@@ -97,8 +98,7 @@ public sealed partial class AzureBlobFileStorage(
     /// </remarks>
     public async Task<bool> ExistsAsync(Uri fileUri, CancellationToken ct = default)
     {
-        ValidateUriHost(fileUri);
-        var blobClient = new BlobClient(fileUri);
+        var blobClient = GetBlobClientFor(fileUri);
         var response = await blobClient.ExistsAsync(ct).ConfigureAwait(false);
         return response.Value;
     }
@@ -110,8 +110,7 @@ public sealed partial class AzureBlobFileStorage(
     /// </remarks>
     public async Task DeleteAsync(Uri fileUri, CancellationToken ct = default)
     {
-        ValidateUriHost(fileUri);
-        var blobClient = new BlobClient(fileUri);
+        var blobClient = GetBlobClientFor(fileUri);
         await blobClient.DeleteIfExistsAsync(cancellationToken: ct).ConfigureAwait(false);
         LogDeleted(fileUri);
     }
