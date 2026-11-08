@@ -21,9 +21,11 @@ public static class DataScopeServiceExtensions
         where TRule : DataScopeRule<T>
         where T : class, IScopedEntity
     {
-        // Register the rule itself (singleton — rules are stateless expression factories)
+        // Register the rule itself (singleton — rules are stateless expression factories), under both shapes and each from its own type.
+        // The untyped shape must not resolve the typed one: GetRequiredService<DataScopeRule<T>>() answers the last rule registered for T,
+        // so with two rules on one entity the engines, which read IEnumerable<DataScopeRule>, saw the second twice (#597).
         services.AddSingleton<DataScopeRule<T>, TRule>();
-        services.AddSingleton<DataScopeRule>(sp => sp.GetRequiredService<DataScopeRule<T>>());
+        services.AddSingleton<DataScopeRule, TRule>();
 
         // TryAddEnumerable, never TryAddScoped: IQueryFilter is resolved as a collection, and TryAdd
         // asks whether *any* IQueryFilter is registered — soft-delete or tenant always got there
