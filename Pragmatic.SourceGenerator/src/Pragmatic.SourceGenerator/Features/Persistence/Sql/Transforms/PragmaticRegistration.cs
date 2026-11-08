@@ -38,7 +38,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         "global::Pragmatic.Messaging.Engines.Documents.DocMessagingOutboxExtensions.AddDocMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Documents.DocAuditExtensions.AddDocAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Documents.DocNotificationStoreExtensions.AddDocNotificationStore",
-        "DocPersistence", "Pragmatic.Persistence.Documents"));
+        "DocPersistence", "Pragmatic.Persistence.Documents"), userLookup: "DocReadRepository");
 
     /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
     internal const string EngineEventOutbox = "Pragmatic.Events.Engines.IEngineEventOutboxDrainer`1";

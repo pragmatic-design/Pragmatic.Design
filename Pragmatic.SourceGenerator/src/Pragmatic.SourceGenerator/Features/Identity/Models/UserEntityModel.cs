@@ -50,10 +50,16 @@ internal sealed record UserEntityModel : GeneratorModel
     public bool LooksUpThroughSql { get; init; }
 
     /// <summary>
-    ///     Whether an <c>IUserLookup&lt;TUser&gt;</c> exists for the user: what the resolver reads through, so what decides whether the resolver, its
-    ///     registration, the culture provider and the current-user bindings are generated. The documents engine's lookup comes with #594.
+    ///     Whether the documents engine persists the user here (its bridge referenced): its generated read repository is the user's
+    ///     <c>IUserLookup&lt;TUser&gt;</c>, registered by the boundary's <c>Add{Boundary}Persistence</c> (#594).
     /// </summary>
-    public bool HasUserLookup => LooksUpThroughEfCore || LooksUpThroughSql;
+    public bool LooksUpThroughDocuments { get; init; }
+
+    /// <summary>
+    ///     Whether an <c>IUserLookup&lt;TUser&gt;</c> exists for the user: what the resolver reads through, so what decides whether the resolver, its
+    ///     registration, the culture provider and the current-user bindings are generated.
+    /// </summary>
+    public bool HasUserLookup => LooksUpThroughEfCore || LooksUpThroughSql || LooksUpThroughDocuments;
 
     /// <summary>
     ///     What a query may bind with <c>[FromCurrentUser(member)]</c>: the entity's readable members,

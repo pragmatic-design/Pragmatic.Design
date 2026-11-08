@@ -35,11 +35,21 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
         AppendLine($"partial class {model.EntityName}");
         AppendLine("{");
         AppendLine($"    /// <summary>Pragmatic's read repository for {model.EntityName} on the documents engine: every read a compiled plan, the session's filters applied.</summary>");
-        AppendLine($"    public {Hides}sealed class DocReadRepository(global::Pragmatic.Persistence.Documents.DocSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Autocompleting}<{type}>");
+        var lookup = model.UserMatch is null ? "" : $", global::Pragmatic.Identity.IUserLookup<{type}>";
+        AppendLine($"    public {Hides}sealed class DocReadRepository(global::Pragmatic.Persistence.Documents.DocSession session) : global::Pragmatic.Persistence.Repository.IReadRepository<{type}>, {Autocompleting}<{type}>{lookup}");
         AppendLine("    {");
         AppendLine($"        public async {Task}<{type}?> GetByIdAsync(global::System.Guid id, {Token})");
         AppendLine($"            => await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.PersistenceId == key, id, ct);");
         AppendLine();
+        if (model.UserMatch is { } match)
+        {
+            // The [PragmaticUser]'s lookup, which its generated resolver reads through: a chain this generator compiles like the others, the
+            // session's filters applied.
+            AppendLine($"        /// <summary>The {model.EntityName} whose <c>{match.Replace("!", "")}</c> is <paramref name=\"identityKey\" />, or null.</summary>");
+            AppendLine($"        public async {Task}<{type}?> FindByIdentityKeyAsync(string identityKey, {Token})");
+            AppendLine($"            => string.IsNullOrEmpty(identityKey) ? null : await session.Query<{type}>().FirstOrDefaultAsync((e, key) => e.{match} == key, identityKey, ct);");
+            AppendLine();
+        }
         RenderAutocomplete();
         AppendLine($"        public async {Task}<global::System.Collections.Generic.List<{type}>> FindAsync({Spec}<{type}> spec, {Token})");
         AppendLine($"            => await session.Query<{type}>().{matching}.ToListAsync(ct);");
