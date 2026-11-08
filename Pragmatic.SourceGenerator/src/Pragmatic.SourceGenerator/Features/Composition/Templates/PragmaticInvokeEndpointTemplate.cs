@@ -157,6 +157,12 @@ internal sealed class PragmaticInvokeEndpointTemplate : CSharpTemplate
 
     private void RenderMapBody()
     {
+        // Opt-in: a host maps the dispatcher only when it says another host calls it. It runs any of the host's actions by name,
+        // past every step that judges a request by its route, so mapped on a host nobody calls it is only a way around them.
+        AppendLine("if (!global::Pragmatic.Composition.Remote.RemoteInvokeEndpointAuth.Resolve(endpoints.ServiceProvider).Enabled)");
+        AppendLine("    return endpoints;");
+        AppendLine();
+
         // A RequestDelegate, not a handler Delegate: ASP.NET binds the latter through a
         // reflection-based factory that does not survive an AOT publish.
         AppendLine("var handler = async (");
@@ -180,7 +186,16 @@ internal sealed class PragmaticInvokeEndpointTemplate : CSharpTemplate
             AppendLine("}));");
         });
         AppendLine();
-        AppendLine("return await __dispatch(request.Payload, sp, ct);");
+        // A payload that does not deserialize into the action (a required member missing, a value of the wrong type) is the
+        // caller's error: 400, as the envelope's own JSON error below, not the 500 an unhandled exception becomes.
+        AppendLine("try");
+        AppendLine("{");
+        AppendLine("    return await __dispatch(request.Payload, sp, ct);");
+        AppendLine("}");
+        AppendLine("catch (global::System.Text.Json.JsonException)");
+        AppendLine("{");
+        AppendLine("    return await InvalidPayload(request.ActionType);");
+        AppendLine("}");
 
         DecreaseIndent();
         AppendLine("};");

@@ -15,6 +15,14 @@ public sealed class PragmaticRemoteInvokeOptions
     public const string ConfigurationSection = "Pragmatic:RemoteBoundaries:InvokeEndpoint";
 
     /// <summary>
+    ///     When <c>true</c>, the host maps the endpoint. Default <c>false</c>: a host maps it only when another host calls its
+    ///     operations remotely, and says so. The endpoint runs any of the host's DomainActions by its type name, so a host step or
+    ///     middleware that judges a request by its route never sees what is dispatched through it; mapped on every host with actions,
+    ///     it was a way around them on hosts nobody called.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
     ///     When <c>true</c>, the invoke endpoint is mapped with <c>AllowAnonymous</c> — an explicit
     ///     opt-out for trusted-network deployments. Default <c>false</c> (fail-closed).
     /// </summary>

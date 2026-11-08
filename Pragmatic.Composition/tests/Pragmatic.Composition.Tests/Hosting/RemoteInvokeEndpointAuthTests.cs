@@ -64,6 +64,7 @@ public class RemoteInvokeEndpointAuthTests
 
         options.AllowAnonymous.Should().BeFalse();
         options.AuthorizationPolicy.Should().BeNull();
+        options.Enabled.Should().BeFalse("a host maps the dispatcher only when it says another host calls it");
     }
 
     [Fact]
@@ -71,12 +72,14 @@ public class RemoteInvokeEndpointAuthTests
     {
         var services = BuildServicesWithConfig(new Dictionary<string, string?>
         {
+            ["Pragmatic:RemoteBoundaries:InvokeEndpoint:Enabled"] = "true",
             ["Pragmatic:RemoteBoundaries:InvokeEndpoint:AllowAnonymous"] = "true",
             ["Pragmatic:RemoteBoundaries:InvokeEndpoint:AuthorizationPolicy"] = "ServiceToService"
         });
 
         var options = RemoteInvokeEndpointAuth.Resolve(services);
 
+        options.Enabled.Should().BeTrue();
         options.AllowAnonymous.Should().BeTrue();
         options.AuthorizationPolicy.Should().Be("ServiceToService");
     }
