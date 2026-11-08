@@ -152,7 +152,7 @@ internal sealed partial class PragmaticQuery
         if (property.Name.Equals("Page", StringComparison.OrdinalIgnoreCase) || property.Name.Equals("PageSize", StringComparison.OrdinalIgnoreCase))
             return;
         var marks = property.GetAttributes().Select(a => a.AttributeClass?.Name).Where(n => n is not null).ToList();
-        foreach (var mark in new[] { "SearchAcrossAttribute", "FromCurrentUserAttribute", "FromClockAttribute", "BindSpecificationAttribute", "FilterGroupAttribute" })
+        foreach (var mark in new[] { "SearchAcrossAttribute", "FromClockAttribute", "BindSpecificationAttribute", "FilterGroupAttribute" })
         {
             if (marks.Contains(mark))
                 Unsupported ??= $"[{mark.Substring(0, mark.Length - "Attribute".Length)}] on {property.Name} is not compiled yet";
@@ -185,14 +185,17 @@ internal sealed partial class PragmaticQuery
 
         var filter = Mark(property, "FilterAttribute");
         var nullable = property.Type.NullableAnnotation == NullableAnnotation.Annotated || property.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
-        var required = property.IsRequired;
+        // A value the invoker binds from the caller is a filter always applied, as in EF Core's rules (QueryTransform): the invoker fills it
+        // before the query runs. Matched exactly: Contains on an id would read the rows of every caller whose id contains this one.
+        var boundFromTheCaller = FromCurrentUserReader.IsBound(property);
+        var required = property.IsRequired || boundFromTheCaller;
         if (filter is null && !required && !nullable)
             return; // an inert input: not a filter in Pragmatic's rules either
         var isString = Unwrap(property.Type).SpecialType == SpecialType.System_String;
         var collection = IsScalarCollection(property.Type);
         var explicitOperator = Named(filter, "Operator") is int op ? op : (int?)null;
         // FilterOperator: Equals 0, NotEquals 1, Contains 2, StartsWith 3, EndsWith 4, GreaterThan 5, GreaterOrEqual 6, LessThan 7, LessOrEqual 8, In 9, Between 10.
-        var operatorKind = explicitOperator ?? (collection ? 9 : filter is not null && isString ? 2 : 0);
+        var operatorKind = boundFromTheCaller ? 0 : explicitOperator ?? (collection ? 9 : filter is not null && isString ? 2 : 0);
         var path = Named(filter, "MapTo") as string ?? property.Name;
         var ignoreCase = Named(filter, "IgnoreCase") is true && isString;
         var value = $"this.{property.Name}";

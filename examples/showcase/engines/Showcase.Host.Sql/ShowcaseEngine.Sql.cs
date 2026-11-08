@@ -4,6 +4,7 @@ using Pragmatic.Migrations.Extensions;
 using Pragmatic.Notifications.Configuration;
 using Pragmatic.Persistence.Sql;
 using Showcase.Accounts;
+using Showcase.Accounts.Sql.Generated;
 using Showcase.Billing;
 using Showcase.Booking;
 using Showcase.Catalog;
@@ -43,10 +44,11 @@ internal static partial class ShowcaseEngine
     {
     }
 
-    /// <summary>Not on this engine: the generated user resolver reads through EF Core (#549).</summary>
-    public static partial void UseUserCulture(IPragmaticBuilder app)
-    {
-    }
+    /// <summary>
+    ///     The generated per-user culture provider, as on EF Core: it reads AppUser.PreferredCulture through the AppUserResolver, which reads
+    ///     through the Accounts boundary's read repository on this engine.
+    /// </summary>
+    public static partial void UseUserCulture(IPragmaticBuilder app) => app.UseUserCulture();
 
     private static NpgsqlDataSource DataSource(IServiceProvider services, string database)
         => NpgsqlDataSource.Create(services.GetRequiredService<IConfiguration>().GetConnectionString(database)
