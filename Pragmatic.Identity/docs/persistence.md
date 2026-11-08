@@ -181,9 +181,10 @@ Merged permission set (cached per request or cross-request via ICacheStack)
 
 ## The User Entity and its Resolver
 
-`[PragmaticUser]` marks the application's user entity. With `Pragmatic.Identity.Persistence`
-referenced, the generator writes a resolver beside it, `{User}Resolver`, which loads the entity of the
-signed-in caller:
+`[PragmaticUser]` marks the application's user entity. Wherever the user has a lookup,
+`IUserLookup<TUser>`, the generator writes a resolver beside it, `{User}Resolver`, which loads the entity of
+the signed-in caller. On EF Core (EF Core referenced) the lookup is generated too, `{User}EfUserLookup`, over
+the repository's `Query()`:
 
 ```csharp
 [Entity]
@@ -191,21 +192,22 @@ signed-in caller:
 public partial class Employee : IEntity { /* … */ }
 
 // Generated: TimeOff.Leave.Entities.EmployeeResolver
-public sealed class EmployeeResolver(IReadRepository<Employee> repository, ICurrentUser currentUser)
+public sealed class EmployeeResolver(IUserLookup<Employee> users, ICurrentUser currentUser)
 {
     public Task<Employee?> ResolveAsync(CancellationToken ct = default);  // null: not signed in, or no row
-    public Employee? Resolve();                                          // for synchronous contracts
     public Task<Employee?> FindByIdentityKeyAsync(string identityKey, CancellationToken ct = default);
     public Task<IUserProfile?> GetProfileAsync(CancellationToken ct = default);
 }
 ```
 
+The resolver is asynchronous only and names no persistence type: the lookup is the persistence branch's.
+
 - **The match.** `MatchProperty` names the entity member compared with the caller: by default
   `ExternalIdentityKey`, on the entity or on its `IdentityRecord` navigation. With `MatchClaim = "sub"`
   and the default key, the caller's side is `ICurrentUser.Authentication.ExternalIdentityKey`; any other
   claim is compared as it is.
-- **It reads through `IReadRepository<TUser>`**, not a `DbContext`: the resolver lives in the module, and
-  the boundary's context is generated in the host.
+- **It reads through `IUserLookup<TUser>`.** EF Core's lookup reads `IReadRepository<TUser>`, not a
+  `DbContext`: it lives in the module, and the boundary's context is generated in the host.
 - **By a given key.** `FindByIdentityKeyAsync(key)` is the same match for a key the caller holds rather
   than the current user's: what an `IUserClaimsContributor` does for the account being signed in, when
   nobody is authenticated yet.
@@ -219,15 +221,16 @@ public sealed class EmployeeResolver(IReadRepository<Employee> repository, ICurr
   var employee = await _currentEmployee.ResolveAsync(ct).ConfigureAwait(false);
   ```
 
-  That is the lookup; do not write a second one against `ExternalIdentityKey`. `UseUserCulture()` also
-  registers it, with `TryAdd`, for a container built without the module's registration.
+  That is the lookup; do not write a second one against `ExternalIdentityKey`. The EF Core lookup is
+  registered the same way, as `IUserLookup<TUser>`. `UseUserCulture()` also registers both, with `TryAdd`,
+  for a container built without the module's registration.
 
 **A query reads it with `[FromCurrentUser(member)]`.** `[FromCurrentUser(nameof(Employee.Id))]` on a
 `[Query]` property makes the query's generated invoker construct the resolver (the generator knows
-its constructor, so it does not ask DI for it), resolve the caller's entity after validation and the
+its constructor, so it asks DI for the lookup only), resolve the caller's entity after validation and the
 permission check, and write that member into the property before the read. No entity is 404, no
 caller is 401. The member form needs the `[PragmaticUser]` entity in the same compilation as the query,
-and this package referenced; otherwise `PRAG0731` says why. The whole form:
+and a lookup for it; otherwise `PRAG0731` says why. The whole form:
 [Filtering by the caller](../../Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 ## Setup

@@ -35,11 +35,11 @@ public class TheUserResolverIsAServiceTests
         }
         """;
 
-    /// <summary>Marks the compilation as referencing Identity.Persistence — the resolver's gate.</summary>
+    /// <summary>Marks the compilation as referencing EF Core — what gives the user its lookup, and so the resolver (#592).</summary>
     private const string PersistenceStub = """
-        namespace Pragmatic.Identity.Persistence.Entities
+        namespace Microsoft.EntityFrameworkCore
         {
-            public class RolePermission { }
+            public class DbContext { }
         }
         """;
 
@@ -96,26 +96,74 @@ public class TheUserResolverIsAServiceTests
     }
 
     [Fact]
-    public void TheResolver_FindsAUserByAGivenIdentityKey_WithTheSamePredicate()
+    public void TheResolver_FindsAUserByAGivenIdentityKey_ThroughTheLookup()
     {
-        var resolver = File(Generated(IdentityStubs + PersistenceStub + CompositionStub + User("public")),
-            "AppUser.Resolver");
+        var files = Generated(IdentityStubs + PersistenceStub + CompositionStub + User("public"));
 
-        resolver.Should().NotBeNull();
-        resolver!.Should().Contain("public async Task<AppUser?> FindByIdentityKeyAsync(string identityKey, CancellationToken ct = default)");
-        resolver.Should().Contain(".FirstOrDefaultAsync(u => u.UserKey == identityKey, ct)",
+        File(files, "AppUser.Resolver")!.Should()
+            .Contain("public Task<AppUser?> FindByIdentityKeyAsync(string identityKey, CancellationToken ct = default)")
+            .And.Contain("=> users.FindByIdentityKeyAsync(identityKey, ct);");
+        File(files, "AppUser.EfUserLookup")!.Should().Contain(".FirstOrDefaultAsync(u => u.UserKey == identityKey, ct)",
             "the sign-in finds the user by the key it is given, before anyone is authenticated — on the "
             + "same property the current-user lookup matches");
     }
 
-    /// <summary>The control: no Identity.Persistence, no resolver, and so nothing to register.</summary>
+    /// <summary>The module publishes the EF Core lookup as the user's <c>IUserLookup&lt;TUser&gt;</c>, which the resolver takes.</summary>
+    [Fact]
+    public void AUserEntity_ItsLookupIsPublishedAsTheUsersIUserLookup()
+    {
+        var metadata = File(Generated(IdentityStubs + PersistenceStub + CompositionStub + User("public")), "_Metadata.DI");
+
+        metadata!.Should().Contain("\"implementation\": \"global::App.AppUserEfUserLookup\"")
+            .And.Contain("\"interface\": \"global::Pragmatic.Identity.IUserLookup<global::App.AppUser>\"");
+    }
+
+    /// <summary>
+    ///     The generated resolver compiles with EF Core and Pragmatic.Persistence absent from the references, against the lookup contract only
+    ///     (#592): it read through <c>IReadRepository&lt;T&gt;.Query()</c> with EF Core's <c>FirstOrDefaultAsync</c>, so on an engine, which has
+    ///     neither, a [PragmaticUser] had no resolver.
+    /// </summary>
+    [Fact]
+    public void TheResolver_CompilesWithoutEfCore()
+    {
+        var files = Generated(IdentityStubs + PersistenceStub + CompositionStub + User("public"));
+        var user = """
+            namespace App
+            {
+                using Pragmatic.Identity;
+
+                [PragmaticUser(MatchClaim = "sub", MatchProperty = "UserKey")]
+                public partial class AppUser
+                {
+                    public int Id { get; set; }
+                    public string UserKey { get; set; } = "";
+                }
+            }
+            """;
+        var sources = new[] { user, "global using System; global using System.Threading; global using System.Threading.Tasks; global using System.Collections.Generic;",
+            File(files, "AppUser.Resolver")!, File(files, "AppUser.Profile")! };
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(System.IO.Path.PathSeparator)
+            .Where(p => System.IO.Path.GetFileName(p) is var name && (name.StartsWith("System.", StringComparison.Ordinal) || name is "netstandard.dll" or "mscorlib.dll"))
+            .Select(p => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p))
+            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(global::Pragmatic.Identity.IUserLookup<>).Assembly.Location));
+        var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("ResolverAlone",
+            sources.Select(s => Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(s)), references,
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: Microsoft.CodeAnalysis.NullableContextOptions.Enable));
+
+        compilation.GetDiagnostics().Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error).Select(d => d.ToString())
+            .Should().BeEmpty();
+        string.Join("\n", sources).Should().NotContain("EntityFrameworkCore", "the control: the resolver names no EF Core type");
+    }
+
+    /// <summary>The control: no EF Core, no lookup, so no resolver and nothing to register.</summary>
     /// <remarks>A registration naming a type this generator did not write would not compile.</remarks>
     [Fact]
-    public void WithoutIdentityPersistence_NothingNamesAResolver()
+    public void WithoutALookup_NothingNamesAResolver()
     {
         var files = Generated(IdentityStubs + CompositionStub + User("public"));
 
-        File(files, "AppUser.Resolver").Should().BeNull("the resolver needs the repository the package provides");
+        File(files, "AppUser.Resolver").Should().BeNull("the resolver reads through a lookup, and nothing here gives the user one");
         files.Values.Should().NotContain(source => source.Contains("AppUserResolver"));
     }
 

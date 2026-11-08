@@ -32,18 +32,18 @@ public class UserCultureProviderGeneratorTests
         """;
 
     /// <summary>
-    ///     Marks the compilation as referencing Identity.Persistence — the resolver's gate.
+    ///     Marks the compilation as referencing EF Core — what gives the user its lookup, and so the resolver (#592).
     /// </summary>
     /// <remarks>
-    ///     The marker is <c>RolePermission</c>.
+    ///     The marker is <c>DbContext</c>.
     ///     Non-generic deliberately: <c>GetTypeByMetadataName</c> needs backtick arity for a generic
     ///     type, and a marker that silently resolves to null turns the whole feature off with no
     ///     diagnostic — the failure then names the missing generated types, not the cause.
     /// </remarks>
     private const string PersistenceStub = """
-        namespace Pragmatic.Identity.Persistence.Entities
+        namespace Microsoft.EntityFrameworkCore
         {
-            public class RolePermission { }
+            public class DbContext { }
         }
         """;
 
@@ -124,16 +124,18 @@ public class UserCultureProviderGeneratorTests
     }
 
     [Fact]
-    public void TheProvider_ReadsThroughTheSynchronousResolver()
+    public void TheProvider_LoadsAsynchronously_ThroughTheResolver()
     {
-        // GetConfiguration() is synchronous. Blocking on the async resolver would be the sync-over-async
-        // this codebase refuses; a real synchronous EF query is not the same thing.
+        // The culture path is asynchronous (#591): the provider loads through the resolver's asynchronous lookup, and the
+        // synchronous path answers from the cache. The resolver keeps no synchronous read, which the engines do not have (#592).
         var files = Generated(Stubs + UserWithCulture);
 
-        File(files, "AppUserCultureConfigProvider")!.Should().Contain("_users.GetProfile()");
+        File(files, "AppUserCultureConfigProvider")!.Should()
+            .Contain("protected override bool LoadsAsynchronously => true;")
+            .And.Contain("await _users.GetProfileAsync(ct)");
         File(files, "AppUser.Resolver")!.Should()
-            .Contain("public AppUser? Resolve()")
-            .And.Contain("public IUserProfile? GetProfile()")
+            .NotContain("public AppUser? Resolve()")
+            .And.NotContain("GetProfile()")
             .And.NotContain("GetAwaiter().GetResult()");
     }
 
@@ -158,7 +160,7 @@ public class UserCultureProviderGeneratorTests
     }
 
     [Fact]
-    public void WithoutIdentityPersistence_NothingIsGenerated()
+    public void WithoutALookup_NothingIsGenerated()
     {
         // No resolver to read through: the provider would have no way to reach the user.
         var withoutPersistence = IdentityStubs + I18nStub + CompositionStub;

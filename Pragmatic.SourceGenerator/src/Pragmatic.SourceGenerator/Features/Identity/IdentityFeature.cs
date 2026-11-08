@@ -178,14 +178,16 @@ internal static class IdentityFeature
                 var ((model, featureFlags), assemblyName) = data;
                 if (model is null) return;
 
-                // Enrich model with persistence flag
-                var enriched = model with { HasIdentityPersistence = featureFlags.HasIdentityPersistence };
+                // Which lookup the user has: EF Core's here, the engines' with #593/#594.
+                var enriched = WithLookup(model, featureFlags);
 
                 // Always generate the profile adapter
                 GenerateUserProfile(ctx, enriched);
 
-                // Generate resolver only if Identity.Persistence is referenced
-                if (enriched.HasIdentityPersistence)
+                // The lookup, then the resolver that reads through it: one wherever the other is.
+                if (enriched.LooksUpThroughEfCore)
+                    SourceOutput.AddSource(ctx, new EfUserLookupTemplate(enriched).RenderOutput());
+                if (enriched.HasUserLookup)
                     GenerateUserResolver(ctx, enriched);
 
                 GenerateUserCultureProvider(ctx, enriched, featureFlags, assemblyName);
@@ -234,10 +236,26 @@ internal static class IdentityFeature
             .Collect()
             .Combine(features)
             .Select(static (pair, _) => new EquatableArray<UserEntityModel>(pair.Left
-                .Select(m => m with { HasIdentityPersistence = pair.Right.HasIdentityPersistence })
+                .Select(m => WithLookup(m, pair.Right))
                 .ToImmutableArray()));
 
         return (localRegistrations, users);
+    }
+
+    /// <summary>
+    ///     The user with the lookup this compilation gives it: EF Core's when EF Core is referenced (#592). Not on
+    ///     <c>Pragmatic.Identity.Persistence</c> any more: that package is EF Core's stores, and the resolver no longer reads through it.
+    /// </summary>
+    private static UserEntityModel WithLookup(UserEntityModel model, DetectedFeatures features)
+        => model with { LooksUpThroughEfCore = features.HasEfCore };
+
+    /// <summary>The user's lookup this compilation generates, as its service type and implementation, or null when it generates none.</summary>
+    internal static (string Service, string Implementation)? LookupService(UserEntityModel user)
+    {
+        if (!user.LooksUpThroughEfCore)
+            return null;
+        var prefix = string.IsNullOrEmpty(user.Namespace) ? "global::" : $"global::{user.Namespace}.";
+        return ($"global::Pragmatic.Identity.IUserLookup<{prefix}{user.TypeName}>", prefix + EfUserLookupTemplate.LookupNameFor(user));
     }
 
     /// <summary>
@@ -523,11 +541,34 @@ internal static class IdentityFeature
 
         foreach (var user in users)
         {
-            if (!user.HasIdentityPersistence || string.IsNullOrEmpty(user.TypeName) || user.Accessibility != "public")
+            if (!user.HasUserLookup || string.IsNullOrEmpty(user.TypeName) || user.Accessibility != "public")
                 continue;
 
             var prefix = string.IsNullOrEmpty(user.Namespace) ? "global::" : $"global::{user.Namespace}.";
             var resolver = $"{prefix}{UserResolverTemplate.ResolverNameFor(user)}";
+            var lookupService = $"global::Pragmatic.Identity.IUserLookup<{prefix}{user.TypeName}>";
+
+            // The lookup this compilation writes: the repository it reads is the host's. A dependency built from names has no symbol to
+            // read [ProvidedByHost] from, so the description says so.
+            if (LookupService(user) is { } lookup)
+                services.Add(new Composition.Models.ServiceModel
+                {
+                    Namespace = user.Namespace,
+                    TypeName = EfUserLookupTemplate.LookupNameFor(user),
+                    FullTypeName = lookup.Implementation,
+                    ServiceTypeName = lookup.Service,
+                    Lifetime = "Scoped",
+                    AsSelf = false,
+                    Dependencies = ImmutableArray.Create(
+                        new Composition.Models.DependencyModel
+                        {
+                            TypeName = "IReadRepository",
+                            FullTypeName = $"global::Pragmatic.Persistence.Repository.IReadRepository<{prefix}{user.TypeName}>",
+                            IsOptional = false,
+                            IsProvidedByHost = true,
+                            ProvidedByHostLifetime = "Scoped"
+                        })
+                });
 
             services.Add(new Composition.Models.ServiceModel
             {
@@ -537,16 +578,12 @@ internal static class IdentityFeature
                 ServiceTypeName = resolver,
                 Lifetime = "Scoped",
                 AsSelf = true,
-                // Both are registered by the host, and this description has to say so: a dependency
-                // built from names has no symbol to read [ProvidedByHost] from.
                 Dependencies = ImmutableArray.Create(
                     new Composition.Models.DependencyModel
                     {
-                        TypeName = "IReadRepository",
-                        FullTypeName = $"global::Pragmatic.Persistence.Repository.IReadRepository<{prefix}{user.TypeName}>",
-                        IsOptional = false,
-                        IsProvidedByHost = true,
-                        ProvidedByHostLifetime = "Scoped"
+                        TypeName = "IUserLookup",
+                        FullTypeName = lookupService,
+                        IsOptional = false
                     },
                     new Composition.Models.DependencyModel
                     {
@@ -574,7 +611,7 @@ internal static class IdentityFeature
     {
         // Needs the i18n contracts to implement, the resolver to read through, and the Composition
         // builder the opt-in hangs off.
-        if (!features.HasI18n || !features.HasIdentityPersistence || !features.HasComposition)
+        if (!features.HasI18n || !model.HasUserLookup || !features.HasComposition)
             return;
 
         // The same condition the provider template validates on. Asked here as well because a template
@@ -588,6 +625,7 @@ internal static class IdentityFeature
         SourceOutput.AddSource(ctx, new UserCultureRegistrationTemplate(
             UserCultureConfigProviderTemplate.FqnFor(model),
             $"{model.Namespace}.{UserResolverTemplate.ResolverNameFor(model)}",
+            LookupService(model),
             GeneratedRegistrationNames.InGeneratedNamespace(assemblyName)).RenderOutput());
     }
 

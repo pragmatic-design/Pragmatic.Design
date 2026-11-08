@@ -91,50 +91,52 @@ public sealed class GeneratedUserCultureTests : IAsyncLifetime
         return services.BuildServiceProvider(validateScopes: true);
     }
 
-    private CultureCode? ResolveCulture(string subject, bool useUserCulture)
+    // Through ResolveAsync, as a request's middleware resolves it: the provider loads asynchronously, and the synchronous path answers
+    // from the cache only (#591, #592).
+    private async Task<CultureCode?> ResolveCulture(string subject, bool useUserCulture)
     {
         using var app = BuildApp(subject, useUserCulture);
         using var scope = app.CreateScope();
 
-        return scope.ServiceProvider.GetRequiredService<I18NConfigResolver>().Resolve().DefaultUICulture;
+        return (await scope.ServiceProvider.GetRequiredService<I18NConfigResolver>().ResolveAsync().ConfigureAwait(false)).DefaultUICulture;
     }
 
     [Fact]
-    public void TwoUsersWithDifferentPreferences_ResolveTwoDifferentCultures()
+    public async Task TwoUsersWithDifferentPreferences_ResolveTwoDifferentCultures()
     {
-        ResolveCulture("user-italian", useUserCulture: true)
+        (await ResolveCulture("user-italian", useUserCulture: true))
             .Should().Be(CultureCode.FromString("it-IT"));
 
-        ResolveCulture("user-french", useUserCulture: true)
+        (await ResolveCulture("user-french", useUserCulture: true))
             .Should().Be(CultureCode.FromString("fr-FR"));
     }
 
     [Fact]
-    public void WithTheProviderOff_BothUsersGetTheSystemCulture()
+    public async Task WithTheProviderOff_BothUsersGetTheSystemCulture()
     {
         // The same two users, the same database, the one call missing. Off is the default.
-        ResolveCulture("user-italian", useUserCulture: false).Should().Be(CultureCode.EnglishUS);
-        ResolveCulture("user-french", useUserCulture: false).Should().Be(CultureCode.EnglishUS);
+        (await ResolveCulture("user-italian", useUserCulture: false)).Should().Be(CultureCode.EnglishUS);
+        (await ResolveCulture("user-french", useUserCulture: false)).Should().Be(CultureCode.EnglishUS);
     }
 
     [Fact]
-    public void UserWithNoPreference_DefersToTheSystemCulture()
+    public async Task UserWithNoPreference_DefersToTheSystemCulture()
     {
         // Null means "I have not asked for anything", not "override with nothing".
-        ResolveCulture("user-undecided", useUserCulture: true).Should().Be(CultureCode.EnglishUS);
+        (await ResolveCulture("user-undecided", useUserCulture: true)).Should().Be(CultureCode.EnglishUS);
     }
 
     [Fact]
-    public void StoredValueThatNoLongerParses_DefersInsteadOfFailingTheRequest()
+    public async Task StoredValueThatNoLongerParses_DefersInsteadOfFailingTheRequest()
     {
         // Throwing here would lock the user out of the page where they could correct the value.
-        ResolveCulture("user-nonsense", useUserCulture: true).Should().Be(CultureCode.EnglishUS);
+        (await ResolveCulture("user-nonsense", useUserCulture: true)).Should().Be(CultureCode.EnglishUS);
     }
 
     [Fact]
-    public void UnknownUser_DefersToTheSystemCulture()
+    public async Task UnknownUser_DefersToTheSystemCulture()
     {
-        ResolveCulture("nobody-by-that-name", useUserCulture: true).Should().Be(CultureCode.EnglishUS);
+        (await ResolveCulture("nobody-by-that-name", useUserCulture: true)).Should().Be(CultureCode.EnglishUS);
     }
 
     [Fact]

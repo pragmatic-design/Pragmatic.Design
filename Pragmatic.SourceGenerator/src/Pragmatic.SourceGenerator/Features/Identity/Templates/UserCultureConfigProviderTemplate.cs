@@ -16,10 +16,11 @@ namespace Pragmatic.SourceGenerator.Features.Identity.Templates;
 ///         it is what reads the <c>IUserProfile.PreferredCulture</c> the generator fills.
 ///     </para>
 ///     <para>
-///         <b>Why <c>CachedConfigProvider</c>.</b> <c>GetConfiguration()</c> is synchronous, so every
-///         request would otherwise be a database round-trip on the culture path — including requests
-///         that never render a label. The base class keys a shared cache per provider type and the
-///         derived type supplies the key, which here is the user: one read per user per five minutes.
+///         <b>Why <c>CachedConfigProvider</c>.</b> Every request would otherwise be a database round-trip
+///         on the culture path — including requests that never render a label. The base class keys a
+///         shared cache per provider type and the derived type supplies the key, which here is the user:
+///         one read per user per five minutes. The read is asynchronous (<c>LoadsAsynchronously</c>), as
+///         the user's lookup is on every persistence branch.
 ///     </para>
 ///     <para>
 ///         <b>Only the UI culture.</b> The data culture is what serialization and storage format
@@ -56,10 +57,10 @@ internal sealed class UserCultureConfigProviderTemplate : CSharpTemplate
 
     /// <summary>
     ///     Nothing to resolve without the property, and nothing to resolve it with without the
-    ///     resolver, which only exists when Identity.Persistence is referenced.
+    ///     resolver, which exists only where the user has a lookup.
     /// </summary>
     protected override bool Validate()
-        => _model.HasIdentityPersistence && DeclaresPreferredCulture(_model);
+        => _model.HasUserLookup && DeclaresPreferredCulture(_model);
 
     /// <summary>True when the entity declares <c>PreferredCulture</c> as a profile property.</summary>
     public static bool DeclaresPreferredCulture(UserEntityModel model)
@@ -129,8 +130,19 @@ internal sealed class UserCultureConfigProviderTemplate : CSharpTemplate
         DecreaseIndent();
         AppendLine();
 
+        XmlSummary(
+            "The user is read asynchronously, through the resolver's lookup: the synchronous path answers from the cache the request " +
+            "filled, and defers on a miss.");
+        AppendLine("protected override bool LoadsAsynchronously => true;");
+        AppendLine();
+
         XmlInheritDoc();
-        AppendLine("protected override I18NConfig? LoadConfiguration()");
+        Comment("Never called: LoadsAsynchronously keeps the synchronous path to the cache.");
+        AppendLine("protected override I18NConfig? LoadConfiguration() => null;");
+        AppendLine();
+
+        XmlInheritDoc();
+        AppendLine("protected override async global::System.Threading.Tasks.ValueTask<I18NConfig?> LoadConfigurationAsync(global::System.Threading.CancellationToken ct)");
         Block(RenderLoad);
     }
 
@@ -141,7 +153,7 @@ internal sealed class UserCultureConfigProviderTemplate : CSharpTemplate
         AppendLine("if (!_currentUser.IsAuthenticated) return null;");
         AppendLine();
 
-        AppendLine("var profile = _users.GetProfile();");
+        AppendLine("var profile = await _users.GetProfileAsync(ct).ConfigureAwait(false);");
         AppendLine();
         Comment("Null defers to the tenant and system providers rather than overriding them with " +
                 "nothing — a user who has expressed no preference has not asked for the default to change.");

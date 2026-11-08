@@ -99,10 +99,10 @@ internal static class CurrentUserBindingTransform
                 Problem = $"nameof names a member of '{Display(qualifier)}', and the user entity is '{user.TypeName}'"
             };
 
-        if (!user.HasIdentityPersistence)
+        if (!user.HasUserLookup)
             return binding with
             {
-                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only when Pragmatic.Identity.Persistence is referenced"
+                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only where the user has a lookup (EF Core referenced)"
             };
 
         var member = user.Members.FirstOrDefault(m => m.Name == binding.Member);
