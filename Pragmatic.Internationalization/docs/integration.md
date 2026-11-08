@@ -150,6 +150,27 @@ public sealed class TenantConfigProvider(ITenantContext tenant) : CachedConfigPr
 i18n.AddConfigProvider<TenantConfigProvider>();
 ```
 
+When the source can only be read asynchronously, override `LoadConfigurationAsync` and set
+`LoadsAsynchronously`. The request's middleware awaits `I18NConfigResolver.ResolveAsync`, which
+reads every provider through `GetConfigurationAsync`. The synchronous path (`ConfiguredCultures`
+and the startup check, outside a request) then answers from the cache, or defers on a miss:
+
+```csharp
+public sealed class UserConfigProvider(IUserStore users, ICurrentUser user) : CachedConfigProvider
+{
+    public override int Priority => 200;
+    protected override bool LoadsAsynchronously => true;
+    protected override string? GetCacheKey() => user.Id;
+    protected override I18NConfig? LoadConfiguration() => null;   // never called: loads asynchronously
+    protected override async ValueTask<I18NConfig?> LoadConfigurationAsync(CancellationToken ct) =>
+        new() { DefaultUICulture = await users.CultureOfAsync(user.Id, ct) };
+}
+```
+
+Both paths share one cache: a key is loaded once within the duration, whichever path asks first.
+A provider that does not derive from `CachedConfigProvider` overrides
+`II18NConfigProvider.GetConfigurationAsync`, which defaults to the synchronous answer.
+
 ### What you get
 
 `I18NConfigResolver` merges all providers highest-priority-first; each `null` property in an

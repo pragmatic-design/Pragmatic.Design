@@ -55,8 +55,9 @@ public partial class I18NContextMiddleware
     {
         using var activity = I18NDiagnostics.ActivitySource.StartActivity("I18N.Context.Resolve");
 
-        // Resolve configuration from all providers (may throw if not configured)
-        var config = resolver.Resolve();
+        // Resolve configuration from all providers (may throw if not configured), through their asynchronous path: a provider that reads a
+        // database the request's thread need not block on takes part.
+        var config = await resolver.ResolveAsync(context.RequestAborted).ConfigureAwait(false);
 
         // Check for request-level override (query string)
         var requestCulture = GetRequestCultureOverride(context, resolver, options.Value.QueryStringKey);

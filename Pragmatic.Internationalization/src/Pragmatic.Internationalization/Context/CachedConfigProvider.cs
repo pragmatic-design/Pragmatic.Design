@@ -90,6 +90,21 @@ public abstract class CachedConfigProvider : II18NConfigProvider
     /// <returns>The configuration, or null to defer.</returns>
     protected abstract I18NConfig? LoadConfiguration();
 
+    /// <summary>
+    ///     Loads the configuration from the external source asynchronously, on the request's path (<see cref="GetConfigurationAsync" />).
+    /// </summary>
+    /// <remarks>By default the synchronous load. Override it, with <see cref="LoadsAsynchronously" />, for a source read only asynchronously.</remarks>
+    /// <param name="ct">Cancels the read.</param>
+    /// <returns>The configuration, or null to defer.</returns>
+    protected virtual ValueTask<I18NConfig?> LoadConfigurationAsync(CancellationToken ct) => new(LoadConfiguration());
+
+    /// <summary>
+    ///     True when the provider loads only asynchronously (<see cref="LoadConfigurationAsync" />). Then the synchronous path, which
+    ///     <c>ConfiguredCultures</c> and the startup check take outside a request, answers from the cache and, on a miss, defers: it neither
+    ///     loads nor stores, so it never caches a null that hides what the asynchronous load would find.
+    /// </summary>
+    protected virtual bool LoadsAsynchronously => false;
+
     /// <inheritdoc />
     public I18NConfig? GetConfiguration()
     {
@@ -97,17 +112,37 @@ public abstract class CachedConfigProvider : II18NConfigProvider
 
         // Skip caching if no key (e.g., no tenant context)
         if (string.IsNullOrEmpty(cacheKey))
-            return LoadConfiguration();
+            return LoadsAsynchronously ? null : LoadConfiguration();
 
         // Try to get a non-expired entry from cache
         if (_cache.TryGetValue(cacheKey, out var cached) && !cached.IsExpired)
             return cached.Config;
 
+        if (LoadsAsynchronously)
+            return null;
+
         // Load configuration and atomically store it.
         // Concurrent first-requests may both call LoadConfiguration(), but only one
         // entry survives in the dictionary; the cost is bounded (each call loads once)
         // and is safe because LoadConfiguration() is idempotent.
-        var config = LoadConfiguration();
+        return Store(cacheKey, cached, LoadConfiguration());
+    }
+
+    /// <summary>The same cache as <see cref="GetConfiguration" />, the same key and duration, loaded through <see cref="LoadConfigurationAsync" />.</summary>
+    public async ValueTask<I18NConfig?> GetConfigurationAsync(CancellationToken ct = default)
+    {
+        var cacheKey = GetCacheKey();
+        if (string.IsNullOrEmpty(cacheKey))
+            return await LoadConfigurationAsync(ct).ConfigureAwait(false);
+
+        if (_cache.TryGetValue(cacheKey, out var cached) && !cached.IsExpired)
+            return cached.Config;
+
+        return Store(cacheKey, cached, await LoadConfigurationAsync(ct).ConfigureAwait(false));
+    }
+
+    private I18NConfig? Store(string cacheKey, CacheEntry? cached, I18NConfig? config)
+    {
         var expiration = DateTime.UtcNow.Add(_cacheDuration);
         var entry = new CacheEntry(config, expiration);
 
