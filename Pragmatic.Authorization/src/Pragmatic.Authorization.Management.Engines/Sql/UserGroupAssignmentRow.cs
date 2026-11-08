@@ -15,12 +15,16 @@ public sealed class UserGroupAssignmentRow
     [Key]
     public Guid PersistenceId { get; set; }
 
+    [MaxLength(256)]
     public string UserId { get; set; } = "";
 
+    [MaxLength(256)]
     public string GroupName { get; set; } = "";
 
+    [MaxLength(128)]
     public string? TenantId { get; set; }
 
+    [MaxLength(256)]
     public string? AssignedBy { get; set; }
 
     public DateTimeOffset ValidFrom { get; set; }

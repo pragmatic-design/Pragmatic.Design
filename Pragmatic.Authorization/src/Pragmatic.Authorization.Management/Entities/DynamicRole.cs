@@ -26,12 +26,15 @@ public partial class DynamicRole : IAuditable, ISoftDelete, IEntity
     public string? DeletedBy { get; set; }
 
     /// <summary>Role name (e.g., "custom-reviewer"). Must be unique.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public required string Name { get; init; }
 
     /// <summary>Human-readable description.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(500)]
     public string? Description { get; set; }
 
     /// <summary>Tenant scope. Null = global (platform-level).</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(128)]
     public string? TenantId { get; set; }
 
     /// <inheritdoc />

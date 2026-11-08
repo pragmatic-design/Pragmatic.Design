@@ -680,7 +680,7 @@
         },
         {
           "name": "Name",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -688,7 +688,7 @@
         },
         {
           "name": "Description",
-          "sqlType": "text",
+          "sqlType": "varchar(500)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -696,7 +696,7 @@
         },
         {
           "name": "Category",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -704,7 +704,7 @@
         },
         {
           "name": "TenantId",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -771,7 +771,7 @@
         },
         {
           "name": "RoleName",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -779,7 +779,7 @@
         },
         {
           "name": "PermissionName",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -787,7 +787,7 @@
         },
         {
           "name": "TenantId",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -863,7 +863,7 @@
         },
         {
           "name": "Name",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -871,7 +871,7 @@
         },
         {
           "name": "Description",
-          "sqlType": "text",
+          "sqlType": "varchar(500)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -879,7 +879,7 @@
         },
         {
           "name": "TenantId",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2873,7 +2873,7 @@
         },
         {
           "name": "UserId",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2881,7 +2881,7 @@
         },
         {
           "name": "GroupName",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2889,7 +2889,7 @@
         },
         {
           "name": "TenantId",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2897,7 +2897,7 @@
         },
         {
           "name": "AssignedBy",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2949,7 +2949,7 @@
         },
         {
           "name": "UserId",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2957,7 +2957,7 @@
         },
         {
           "name": "RoleName",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": false,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2965,7 +2965,7 @@
         },
         {
           "name": "TenantId",
-          "sqlType": "text",
+          "sqlType": "varchar(128)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -2973,7 +2973,7 @@
         },
         {
           "name": "AssignedBy",
-          "sqlType": "text",
+          "sqlType": "varchar(256)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -3705,5 +3705,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "eacaf4e283b4"
+  "hash": "4e1ec4915940"
 }

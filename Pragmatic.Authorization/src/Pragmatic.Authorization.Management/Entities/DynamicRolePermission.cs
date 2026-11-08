@@ -15,12 +15,15 @@ namespace Pragmatic.Authorization.Management.Entities;
 public partial class DynamicRolePermission : ITemporalRelation, IEntity
 {
     /// <summary>The role name.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public required string RoleName { get; init; }
 
     /// <summary>The permission name.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public required string PermissionName { get; init; }
 
     /// <summary>Tenant scope. Null = global.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(128)]
     public string? TenantId { get; set; }
 
     /// <inheritdoc />

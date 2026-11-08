@@ -22,10 +22,13 @@ public sealed class DynamicRoleRow
 
     public string? DeletedBy { get; set; }
 
+    [MaxLength(256)]
     public string Name { get; set; } = "";
 
+    [MaxLength(500)]
     public string? Description { get; set; }
 
+    [MaxLength(128)]
     public string? TenantId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
