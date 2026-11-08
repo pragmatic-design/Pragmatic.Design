@@ -28,7 +28,8 @@ internal sealed partial class CommentActionsTemplate
     ///     The "Moderation" query filter that keeps a pending comment from readers kept it from the
     ///     moderator too, so the approve route existed and nothing listed what to approve. Only that one
     ///     named filter is lifted — tenant and soft delete stay — and the internal-visibility rule is
-    ///     applied here, because a DbSet read does not pass through the repository's row filters.
+    ///     applied here, because a DbSet read does not pass through the repository's row filters. With a
+    ///     row-protected parent the read goes through them too (#598), the parent's visibility among them.
     /// </remarks>
     private void RenderListPendingBody()
     {
@@ -59,7 +60,7 @@ internal sealed partial class CommentActionsTemplate
             }
 
             AppendLine("var page = Page < 1 ? 1 : Page;");
-            AppendLine($"{listType} pending = await _db.Set<{_model.CommentTypeName}>()");
+            AppendLine($"{listType} pending = await {CommentRows}");
             AppendLine("    .IgnoreQueryFilters([\"Moderation\"])");
             AppendLine($"    .Where(e => e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted && e.Status == CommentStatus.PendingApproval{visibility})");
             AppendLine("    .OrderBy(e => e.CreatedAt)");

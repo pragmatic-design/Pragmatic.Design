@@ -136,6 +136,10 @@ Both `Update` and `Delete` require the caller to be the author **or** to hold
 `{boundary}.{entity}.notes.moderate`. Without the moderate permission, holding `notes.update` or
 `notes.delete` alone is not enough to touch someone else's note.
 
+**The parent's visibility**: when the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), a note
+is read with the parent's visibility, on EF Core and on the Sql and documents engines alike. A caller who cannot
+see the parent gets 404 for its notes, whatever permission they hold, unless they hold the parent's `view-all`.
+
 ## Relationship to Pragmatic.Comments
 
 - `Pragmatic.Comments` is for public or customer-facing discussion

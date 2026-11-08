@@ -204,6 +204,12 @@ refused at upload.
 identifier must be one the package ships. Declared without it, nothing is generated and the build
 reports **PRAG2651**.
 
+## The Parent's Visibility
+
+When the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), an attachment is read with the
+parent's visibility, on EF Core and on the Sql and documents engines alike: a caller who cannot see the parent
+gets 404 for its attachments' metadata, content, thumbnail and deletion, unless they hold the parent's `view-all`.
+
 ## How the SG Wiring Works
 
 - **Trigger / detection.** `[HasAttachments]` is detected by FQN `Pragmatic.Attachments.HasAttachmentsAttribute` (`shared/SourceGen/AttributeNames.cs`). The unified generator's `TraitDetector` records `HasAttachments` + the attribute options into a `TraitSet`; the dedicated `[HasAttachments]` pipeline in `TraitFeature` uses `ForAttributeWithMetadataName` + `AttachmentTraitTransform` to build the model.

@@ -102,6 +102,8 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
             RenderEngineFields();
         else
             AppendLine("private DbContext _db = null!;");
+        if (ReadsThroughRowFilters)
+            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
         if (_kind is AttachmentActionKind.Upload or AttachmentActionKind.Delete)
         {
             AppendLine("private ICurrentUser _currentUser = null!;");
@@ -120,7 +122,24 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
             case AttachmentActionKind.DownloadThumbnail: RenderDownloadThumbnailBody(); break;
             case AttachmentActionKind.Delete: RenderDeleteBody(); break;
         }
+
+        if (ReadsThroughRowFilters)
+        {
+            foreach (var line in TraitRowFilters.HelperLines(_model.AttachmentTypeName))
+                AppendLine(line);
+        }
     }
+
+    /// <summary>
+    ///     An attachment on EF Core whose parent restricts rows: read with its parent's visibility (#598), as the engines read it. Not the upload,
+    ///     which reads no attachment of the caller's choosing.
+    /// </summary>
+    private bool ReadsThroughRowFilters => !_engine && _model.ParentIsRowProtected && _kind != AttachmentActionKind.Upload;
+
+    /// <summary>The attachment rows an EF Core read starts from: through the row filters when the parent restricts rows.</summary>
+    private string AttachmentRows => ReadsThroughRowFilters
+        ? $"{TraitRowFilters.HelperName}(_db.Set<{_model.AttachmentTypeName}>())"
+        : $"_db.Set<{_model.AttachmentTypeName}>()";
 
     /// <summary>
     ///     Whether this upload derives a thumbnail: the attribute asked for one <em>and</em> the
@@ -514,7 +533,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
 
         Block(() =>
         {
-            AppendLine($"var attachment = await _db.Set<{_model.AttachmentTypeName}>()");
+            AppendLine($"var attachment = await {AttachmentRows}");
             AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
             AppendLine($"    .Select({dtoName}.Projection)");
             AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
@@ -551,7 +570,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
                 RenderEngineFind("file", "Result<FileResponse, IError>");
             else
             {
-                AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"var file = await {AttachmentRows}");
                 AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
                 AppendLine("    .Select(e => new { e.ThumbnailUri, e.FileName, e.UploadedAt, e.Id })");
                 AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
@@ -597,7 +616,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
                 RenderEngineFind("file", "Result<FileResponse, IError>");
             else
             {
-                AppendLine($"var file = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"var file = await {AttachmentRows}");
                 AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
                 AppendLine("    .Select(e => new { e.StorageUri, e.FileName, e.ContentType, e.UploadedAt, e.Id })");
                 AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
@@ -647,7 +666,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
                 RenderEngineFind("attachment", "VoidResult<IError>");
             else
             {
-                AppendLine($"var attachment = await _db.Set<{_model.AttachmentTypeName}>()");
+                AppendLine($"var attachment = await {AttachmentRows}");
                 AppendLine($"    .Where(e => e.Id == AttachmentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
                 AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
                 AppendLine("if (attachment is null)");

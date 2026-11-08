@@ -178,6 +178,14 @@ With `SupportInternalNotes = true` the POST body accepts a `visibility` field (`
 filters them out for everyone else, reading one by id answers 404, and adding one without the permission
 answers 403.
 
+### The parent's visibility
+
+When the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), a comment is read with the parent's
+visibility, on EF Core and on the Sql and documents engines alike: a caller who cannot see the reservation
+cannot see its comments. The list leaves them out, reading, editing, deleting or moderating one answers 404,
+and the moderation queue is empty. 404 rather than 403, so the answer does not tell the caller the comment exists.
+Whoever holds the parent's `view-all` permission sees every parent, and so every comment, as the parent answers.
+
 ## Generated Permissions
 
 ```csharp
