@@ -64,6 +64,13 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"            sp => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Pragmatic.Persistence.Repository.IRepository<{type}>>(sp));");
         }
 
+        // A [PragmaticUser]'s lookup, which its generated resolver reads through: the read repository over the boundary's session.
+        foreach (var user in model.UserLookups)
+        {
+            AppendLine($"        {Services}.AddScoped<global::Pragmatic.Identity.IUserLookup<{user}>>(services,");
+            AppendLine($"            sp => new {user}.{model.UserLookupRepository}({Keyed}.GetRequiredKeyedService<{e.Session}>(sp, {key})));");
+        }
+
         if (model.EventOutbox)
         {
             AppendLine($"        // [EnableEventOutbox]: the save's events go to {name}'s outbox (its phase, keyed by the boundary), delivered by its drainer.");

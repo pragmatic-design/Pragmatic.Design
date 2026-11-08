@@ -28,41 +28,13 @@ internal static class UserEntityTransform
         var attribute = context.Attributes[0];
 
         var matchClaim = attribute.GetNamedArgument<string>("MatchClaim") ?? "sub";
-        var matchProperty = attribute.GetNamedArgument<string>("MatchProperty");
 
         // The key type, from [Entity] or a declared Id
         var keyType = ResolveKeyType(symbol);
         if (keyType is null)
             return null;
 
-        // Resolve match property: direct on entity or on a navigation to IdentityRecord
-        var matchPropertyIsNavigation = false;
-        if (string.IsNullOrEmpty(matchProperty))
-        {
-            // Check if entity has ExternalIdentityKey directly
-            var directProp = symbol.GetMembers()
-                .OfType<IPropertySymbol>()
-                .FirstOrDefault(p => p.Name == "ExternalIdentityKey" && p is { IsStatic: false, Type.SpecialType: SpecialType.System_String });
-
-            if (directProp is not null)
-            {
-                matchProperty = "ExternalIdentityKey";
-            }
-            else
-            {
-                // Look for a navigation property whose type inherits from IdentityRecord
-                var identityNav = FindIdentityRecordNavigation(symbol);
-                if (identityNav is not null)
-                {
-                    matchProperty = $"{identityNav}!.ExternalIdentityKey";
-                    matchPropertyIsNavigation = true;
-                }
-                else
-                {
-                    matchProperty = "ExternalIdentityKey";
-                }
-            }
-        }
+        var (matchProperty, matchPropertyIsNavigation) = MatchOf(symbol, attribute.GetNamedArgument<string>("MatchProperty"));
 
         // Collect [ProfileProperty] properties
         var profileProperties = symbol.GetMembers()
@@ -79,7 +51,7 @@ internal static class UserEntityTransform
             TypeKind = symbol.GetTypeKindKeyword(),
             KeyTypeName = keyType,
             MatchClaim = matchClaim,
-            MatchProperty = matchProperty!,
+            MatchProperty = matchProperty,
             MatchPropertyIsNavigation = matchPropertyIsNavigation,
             ProfileProperties = profileProperties,
             Members = ReadableMembers(symbol)
@@ -96,6 +68,33 @@ internal static class UserEntityTransform
     ///     while this runs — and it is the member a query binds most often. <c>[Entity]</c> is what will
     ///     make it exist, and its type is always <see cref="Guid" />.
     /// </remarks>
+    /// <summary>
+    ///     The member path a <c>[PragmaticUser]</c>'s lookup compares with the key, or null when <paramref name="symbol" /> carries no
+    ///     <c>[PragmaticUser]</c>: what an engine's read repository matches on (#593), the same one the resolver's model holds.
+    /// </summary>
+    internal static string? MatchPropertyOf(INamedTypeSymbol symbol)
+        => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == AttributeNames.PragmaticUser) is { } attribute
+            ? MatchOf(symbol, attribute.GetNamedArgument<string>("MatchProperty")).Property
+            : null;
+
+    /// <summary>The declared match property, or the default: <c>ExternalIdentityKey</c> on the entity, or on its navigation to an <c>IdentityRecord</c>.</summary>
+    private static (string Property, bool IsNavigation) MatchOf(INamedTypeSymbol symbol, string? declared)
+    {
+        if (!string.IsNullOrEmpty(declared))
+            return (declared!, false);
+
+        var direct = symbol.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Any(p => p.Name == "ExternalIdentityKey" && p is { IsStatic: false, Type.SpecialType: SpecialType.System_String });
+        if (direct)
+            return ("ExternalIdentityKey", false);
+
+        // A navigation property whose type inherits from IdentityRecord
+        return FindIdentityRecordNavigation(symbol) is { } identityNav
+            ? ($"{identityNav}!.ExternalIdentityKey", true)
+            : ("ExternalIdentityKey", false);
+    }
+
     private static ImmutableArray<UserMemberModel> ReadableMembers(INamedTypeSymbol symbol)
     {
         var members = ImmutableArray.CreateBuilder<UserMemberModel>();

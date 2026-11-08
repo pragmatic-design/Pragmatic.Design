@@ -15,7 +15,12 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 ///     connection, its database); the filters are built here from the services Pragmatic registers, and handed to it. One method per boundary,
 ///     <c>Add{Boundary}Persistence</c>: two boundaries on two engines in one host are two calls. Ported, this is the engine's branch of the template.
 /// </summary>
-internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
+/// <param name="engine">The engine's types and registrations.</param>
+/// <param name="userLookup">
+///     The nested read repository that is a <c>[PragmaticUser]</c>'s <c>IUserLookup&lt;TUser&gt;</c> on this engine, registered as it over the
+///     boundary's session; null when the engine's read repository is not one yet.
+/// </param>
+internal sealed class PragmaticRegistration(EngineRegistrationModel engine, string? userLookup = null)
 {
     public static readonly PragmaticRegistration Sql = new(new(
         "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Filters.ISqlFilters", "global::Pragmatic.Persistence.Sql.PragmaticSqlFilters",
@@ -24,7 +29,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
         "global::Pragmatic.Messaging.Engines.Sql.SqlMessagingOutboxExtensions.AddSqlMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Sql.SqlAuditExtensions.AddSqlAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Sql.SqlNotificationStoreExtensions.AddSqlNotificationStore",
-        "SqlPersistence", "Pragmatic.Persistence.Sql"));
+        "SqlPersistence", "Pragmatic.Persistence.Sql"), userLookup: "SqlReadRepository");
 
     public static readonly PragmaticRegistration Documents = new(new(
         "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Filters.IDocFilters", "global::Pragmatic.Persistence.Documents.PragmaticDocFilters",
@@ -110,7 +115,14 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine)
                 messagingOutbox && EnablesMessagingOutbox(boundary),
                 auditTrail && group.Any(p => IsAudited(p.Entity)),
                 notificationStore && StoresNotifications(boundary),
-                multiTenancy);
+                multiTenancy)
+            {
+                UserLookups = userLookup is null
+                    ? EquatableArray<string>.Empty
+                    : group.Select(p => p.Entity).Where(e => Identity.Transforms.UserEntityTransform.MatchPropertyOf(e) is not null)
+                        .Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).OrderBy(t => t, System.StringComparer.Ordinal).ToEquatableArray(),
+                UserLookupRepository = userLookup,
+            };
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
 
