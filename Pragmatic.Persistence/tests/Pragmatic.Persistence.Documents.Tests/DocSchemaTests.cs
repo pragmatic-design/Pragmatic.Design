@@ -43,6 +43,30 @@ public class DocSchemaTests(DocumentServers servers)
         Assert.Equal(created.NotApplied.Select(c => (c.Collection, c.Element)), again.NotApplied.Select(c => (c.Collection, c.Element))); // reported every time, not once
     }
 
+    /// <summary>
+    ///     A <c>[LogicKey]</c> is a unique index, read by the rule the Sql engine and EF Core read it with (#607): the tenant leading, then the
+    ///     key's parts.
+    /// </summary>
+    [Fact]
+    public void A_logic_key_is_declared_unique_within_the_tenant()
+        => Assert.Contains(new DocIndex("IX_SchemaBrands_TenantId_Code", ["TenantId", "Code"], Unique: true), Collection("SchemaBrands").Indexes, IndexComparer.Instance);
+
+    /// <summary>A second brand with the same code in the same tenant is refused; the control, another code, is written.</summary>
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task A_duplicate_logic_key_is_refused(Store store)
+    {
+        var session = servers.Session(store);
+        await DefaultDocSchema.EnsureAsync(session);
+        var code = "B-" + Guid.NewGuid().ToString("N")[..8];
+        await session.InsertAsync(new SchemaBrand { Code = code, TenantId = "acme" });
+
+        var duplicate = await Record.ExceptionAsync(() => session.InsertAsync(new SchemaBrand { Code = code, TenantId = "acme" }));
+
+        Assert.True(duplicate is MongoWriteException { IsDuplicateKey: true } or CosmosException { Status: HttpStatusCode.Conflict }, duplicate?.ToString() ?? "no exception");
+        await session.InsertAsync(new SchemaBrand { Code = code + "-other", TenantId = "acme" });
+    }
+
     [Fact]
     public async Task On_MongoDB_a_live_duplicate_is_refused_and_a_deleted_one_frees_its_code()
     {
