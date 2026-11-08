@@ -36,6 +36,35 @@ public class DataScopeServiceExtensionsTests
         public override Expression<Func<Invoice, bool>> ToExpression() => _ => true;
     }
 
+    private sealed class RegionScopeRule : DataScopeRule<Invoice>
+    {
+        public override string ScopeName => "region";
+
+        public override Expression<Func<Invoice, bool>> ToExpression() => _ => false;
+    }
+
+    /// <summary>
+    ///     Two rules on one entity are both found under the untyped shape, each once (#597).
+    /// </summary>
+    /// <remarks>
+    ///     The untyped shape was a factory over <c>GetRequiredService&lt;DataScopeRule&lt;T&gt;&gt;()</c>, which answers the last registration: the
+    ///     engines, which read <c>IEnumerable&lt;DataScopeRule&gt;</c>, saw the second rule twice and never ran the first. EF Core's materializer
+    ///     reads the typed shape, which is the control.
+    /// </remarks>
+    [Fact]
+    public void AddDataScopeRule_OfTwoRulesOnOneEntity_ResolvesEachOnceUnderBothShapes()
+    {
+        var services = new ServiceCollection();
+        services.AddDataScopeRule<OfficeScopeRule, Invoice>();
+        services.AddDataScopeRule<RegionScopeRule, Invoice>();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetServices<DataScopeRule>().Select(r => r.GetType().Name).Order(StringComparer.Ordinal).ToList()
+            .Should().Equal(nameof(OfficeScopeRule), nameof(RegionScopeRule));
+        provider.GetServices<DataScopeRule<Invoice>>().Select(r => r.GetType().Name).Order(StringComparer.Ordinal).ToList()
+            .Should().Equal(nameof(OfficeScopeRule), nameof(RegionScopeRule));
+    }
+
     /// <remarks>
     ///     A filter that is already there, standing in for soft-delete or tenant — the ones that in a
     ///     real application are registered long before any scope rule.
