@@ -32,7 +32,8 @@ internal static class AuthorizationManagementScenario
         var user = "ada-" + suffix;
 
         // Create a permission and a role; the same name again in the same tenant is a conflict, in another tenant it is not.
-        var createPermission = new CreatePermission.Invoker(store, admin, services);
+        // An empty catalog: the scenario measures the engine's store, and a name the catalog holds is the Showcase's to prove.
+        var createPermission = new CreatePermission.Invoker(store, new Pragmatic.Authorization.Catalog.DefaultPermissionCatalog(), admin, services);
         Assert.True((await createPermission.InvokeAsync(new CreatePermission { Name = permission, Category = "reports" })).IsSuccess);
         Assert.IsType<ConflictError>((await createPermission.InvokeAsync(new CreatePermission { Name = permission })).Error);
 

@@ -41,4 +41,10 @@ internal sealed record TraitOutput
     ///     this generator's output, which no generator sees.
     /// </summary>
     public required IncrementalValueProvider<Pragmatic.SourceGen.EquatableArray<ShapeSourceModel>> EngineSources { get; init; }
+
+    /// <summary>
+    ///     The permission values the traits generate (<see cref="TraitPermissionMembers" />), for the permission catalog: a trait's constants are
+    ///     this generator's output, so the catalog learns them from here, not from the compilation.
+    /// </summary>
+    public required IncrementalValueProvider<Pragmatic.SourceGen.EquatableArray<string>> Permissions { get; init; }
 }

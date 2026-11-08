@@ -112,6 +112,9 @@ A caller with a tenant gives only what they hold: `AssignPermissionsToRole` refu
 not hold, and `AssignRoleToUser` refuses a role carrying one (every grant of the role not yet expired). Both answer
 `403`. A caller with no tenant is the platform, and is not bound by what they hold.
 
+`CreatePermission` refuses (`409`) a name the permission catalog already holds, compared ignoring case: a
+generated permission, or a dynamic one of the caller's tenant or global. A dynamic permission is a new name.
+
 ## Persisted Model
 
 | Entity | Purpose | Notes |

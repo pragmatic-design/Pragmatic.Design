@@ -19,15 +19,11 @@ internal sealed class AttachmentPermissionsTemplate : CSharpTemplate
     {
         AppendNamespace(_model.ParentNamespace);
         AppendLine();
-        string Slug(string operation)
-            => TraitPermissions.Slug(_model.BoundaryName, _model.ParentTypeName, TraitPermissions.AttachmentsGroup, operation);
-
         XmlSummary($"SG-generated permission constants for attachments on <see cref=\"{_model.ParentTypeName}\"/>.");
         Class($"{_model.ParentTypeName}AttachmentPermissions", () =>
         {
-            AppendLine($"public const string Upload = \"{Slug(TraitPermissions.Upload)}\";");
-            AppendLine($"public const string Read = \"{Slug(TraitPermissions.Read)}\";");
-            AppendLine($"public const string Delete = \"{Slug(TraitPermissions.Delete)}\";");
+            foreach (var (member, value) in TraitPermissionMembers.Attachment(_model))
+                AppendLine($"public const string {member} = \"{value}\";");
         },
         accessModifier: AccessModifier.Public,
         modifiers: new ClassModifiers { IsStatic = true });

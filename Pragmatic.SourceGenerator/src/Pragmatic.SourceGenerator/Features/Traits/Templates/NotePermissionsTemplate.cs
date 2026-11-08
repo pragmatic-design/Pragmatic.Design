@@ -20,23 +20,11 @@ internal sealed class NotePermissionsTemplate : CSharpTemplate
         AppendNamespace(_model.ParentNamespace);
         AppendLine();
 
-        string Slug(string operation)
-            => TraitPermissions.Slug(_model.BoundaryName, _model.ParentTypeName, TraitPermissions.NotesGroup, operation);
-
         XmlSummary($"SG-generated permission constants for notes on <see cref=\"{_model.ParentTypeName}\"/>.");
         Class($"{_model.ParentTypeName}NotePermissions", () =>
         {
-            AppendLine($"public const string Create = \"{Slug(TraitPermissions.Create)}\";");
-            AppendLine($"public const string Read = \"{Slug(TraitPermissions.Read)}\";");
-
-            // No Update action/endpoint is generated when editing is off — emitting the constant
-            // would advertise a grantable permission that gates nothing.
-            if (_model.AllowEditing)
-                AppendLine($"public const string Update = \"{Slug(TraitPermissions.Update)}\";");
-
-            AppendLine($"public const string Delete = \"{Slug(TraitPermissions.Delete)}\";");
-            // Lets a moderator edit or delete a note they did not write.
-            AppendLine($"public const string Moderate = \"{Slug(TraitPermissions.Moderate)}\";");
+            foreach (var (member, value) in TraitPermissionMembers.Note(_model))
+                AppendLine($"public const string {member} = \"{value}\";");
         },
         accessModifier: AccessModifier.Public,
         modifiers: new ClassModifiers { IsStatic = true });

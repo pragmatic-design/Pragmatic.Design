@@ -7,6 +7,7 @@ using Pragmatic.Authorization;
 using Pragmatic.Authorization.Management.Actions.Permissions;
 using Pragmatic.Authorization.Management.Actions.Roles;
 using Pragmatic.Identity;
+using Pragmatic.Result.Http;
 using Pragmatic.Testing.Assertions;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -64,6 +65,40 @@ public class ARoleCreatedAtRuntimeIsCatalogedTests(PostgresFixture fixture) : In
 
         listed.IsSuccess.Should().BeTrue();
         listed.Value.Should().Contain(p => p.Name == permission);
+    }
+
+    /// <summary>
+    ///     The catalog lists every permission the application checks: an entity's (the generated <c>BookingPermissions</c>) and a trait's (the
+    ///     generated <c>GuestNotePermissions</c>), not only the declared ones. Before, a role screen built on it offered neither.
+    /// </summary>
+    [Fact]
+    public async Task TheCatalog_ListsTheEntitiesAndTheTraitsPermissions()
+    {
+        using var reader = As(Tenant, "authorization.view");
+        var listed = await reader.ServiceProvider
+            .GetRequiredService<IDomainActionInvoker<ListPermissions, IReadOnlyList<PermissionInfo>>>()
+            .InvokeAsync(new ListPermissions());
+
+        listed.IsSuccess.Should().BeTrue();
+        listed.Value.Should().Contain(p => p.Name == "booking.reservation.read");
+        listed.Value.Should().Contain(p => p.Name == "booking.guest.notes.create");
+        listed.Value.Should().NotContain(p => p.Name == "booking.*", "a wildcard grants a family and is no permission of its own");
+    }
+
+    /// <summary>
+    ///     A permission cannot be created under a name the catalog already holds: a generated permission, or a platform one, would otherwise get a
+    ///     dynamic twin a tenant's administrator controls. A new name is created (<see cref="ACreatedPermission_IsListed" />, the control).
+    /// </summary>
+    [Fact]
+    public async Task APermissionNamedLikeAGeneratedOne_IsRefused()
+    {
+        using var scope = As(Tenant, "authorization.permissions.manage");
+
+        var created = await scope.ServiceProvider.GetRequiredService<IDomainActionInvoker<CreatePermission, Guid>>()
+            .InvokeAsync(new CreatePermission { Name = "booking.reservation.read", Category = "booking", TenantId = Tenant });
+
+        created.IsFailure.Should().BeTrue();
+        created.Error.Should().BeOfType<ConflictError>();
     }
 
     /// <summary>The control: another tenant's catalog does not list the role.</summary>

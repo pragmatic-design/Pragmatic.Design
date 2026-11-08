@@ -32,11 +32,7 @@ internal sealed class TagPermissionsTemplate : CSharpTemplate
 
     private void RenderBody()
     {
-        string Slug(string operation)
-            => TraitPermissions.Slug(_model.BoundaryName, _model.ParentTypeName, TraitPermissions.TagsGroup, operation);
-
-        AppendLine($"public const string Add = \"{Slug(TraitPermissions.Add)}\";");
-        AppendLine($"public const string Remove = \"{Slug(TraitPermissions.Remove)}\";");
-        AppendLine($"public const string Read = \"{Slug(TraitPermissions.Read)}\";");
+        foreach (var (member, value) in TraitPermissionMembers.Tag(_model))
+            AppendLine($"public const string {member} = \"{value}\";");
     }
 }
