@@ -1,0 +1,111 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ========================================
+       Showcase.Documents.IntegrationTests — the Showcase's integration suite on the Showcase host on the documents engine (#535): the same
+       test files as Showcase.IntegrationTests, linked, against Showcase.Host.Documents over MongoDB.
+
+       Every file left out is on scripts/engine-suites.mjs's list with the exclusion it follows from, and the gate fails on one that is not
+       ("the Showcase suite on each engine"). Single tests left out are filtered from the run by name (ALLOWED_TEST_EXCLUSIONS there). A
+       project of its own per engine: the engine hosts share the assembly name Showcase.Host and a global Program, so one test project cannot
+       reference two of them.
+       ======================================== -->
+
+  <PropertyGroup>
+    <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
+    <RequiresDocker>true</RequiresDocker>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: not meaningful in test projects (no SynchronizationContext) -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <RootNamespace>Showcase.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Showcase.IntegrationTests\**\*.cs" Exclude="..\Showcase.IntegrationTests\obj\**;..\Showcase.IntegrationTests\bin\**" LinkBase="Suite" />
+    <Compile Include="..\..\..\shared\Testing\*.cs" LinkBase="Shared\Testing" />
+    <!-- The engine hosts' factory, one file for both. -->
+    <Compile Include="..\Showcase.Sql.IntegrationTests\ShowcaseWebFactory.cs" Link="ShowcaseWebFactory.cs" />
+    <!-- The MongoDB wait every suite that starts the server shares: a server that exits fails at once, with its log. -->
+    <Compile Include="..\..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Documents.Core.Tests\LoggedUnlessExited.cs" Link="Shared\LoggedUnlessExited.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Replaced, not left out: the factory, as on the Sql host, and the database fixture, over MongoDB under the name every test takes
+         (PostgresFixture.cs beside this project). -->
+    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\ShowcaseWebFactory.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\PostgresFixture.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EF Core only (#363): the grids read through an IQueryable, and the module projects leave their endpoints out on the engines. -->
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\GridSearchTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheGridInItsOwnFormatTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test code bound to PostgreSQL: the test reads or migrates the SQL database itself, through Npgsql or Pragmatic Migrations' SQL
+         runner. This host keeps its rows in MongoDB, so there is no such database to read. -->
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\OneToOneUniquenessTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Migrations\MigrationPipelineTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Migrations\MigrationRunnerE2ETests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through a DbContext, EF Core's
+         nested repositories or Jobs.EFCore, or references a project built over the EF Core modules (the Blazor client, its routes). The
+         feature it exercises runs on the engine; the test's own code does not. -->
+    <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\CachingIntegrationTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\CascadeWiringTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\InfrastructureTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LookupCacheTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\SagaFlowTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\TheRotaShowsWhoIsOnItTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\UserCultureTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\WhatTheApplicationSentIsKeptTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\CommitCountTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\GuestPreferencesAreSetAndThenChangedTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\ApiVersioningTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AttachmentEndpointTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\GeneratedClientTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceAsAPdfTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TypedClientTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\AuditedE2ETests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\CrudLifecycleTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\GeneratedValueTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\InheritanceTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\PrimitiveCollectionTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\SoftDeleteTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalRelationTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TheTimelineOfARoleTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\ValueObjectE2ETests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobExecutionEndToEndTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobLeaseIntegrationTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobsDbContext.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Jobs\WhatRunsAfterTheJobFinishesTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Validation\WhenTheExpensiveRuleRunsTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\engines\Showcase.Host.Documents\Showcase.Host.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Email\src\Pragmatic.Email.Testing\Pragmatic.Email.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Testing\Pragmatic.Notifications.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.SourceGenerator\Pragmatic.Testing.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.ServiceBus" />
+    <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+
+</Project>

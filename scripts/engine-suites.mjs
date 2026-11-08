@@ -7,7 +7,8 @@
  *   no project removes, or a listed test that no longer exists.
  * - An exclusion that follows from a feature the module projects leave out names that file, and that file is on engine-projects.mjs's allowed
  *   list for the same engine. The others follow from an owner decision on test code (2026-11-06): the test's own code is bound to EF Core, or
- *   to the SQL database, not the feature it exercises.
+ *   to the SQL database, not the feature it exercises; or from an owner decision on what an engine guarantees (a per-entity limit under
+ *   concurrent writes on documents, 2026-10-26).
  * - A test left out is filtered from the run (`suiteFilter`, which the gate's runner passes to `dotnet test`), not deleted from the source.
  *
  *   node --test scripts/engine-suites.test.mjs
@@ -24,6 +25,7 @@ export const SUITE_DIR = 'examples/showcase/tests/Showcase.IntegrationTests';
  */
 export const ENGINE_SUITES = [
   'examples/showcase/tests/Showcase.Sql.IntegrationTests/Showcase.Sql.IntegrationTests.csproj',
+  'examples/showcase/tests/Showcase.Documents.IntegrationTests/Showcase.Documents.IntegrationTests.csproj',
 ];
 
 /** The engine an engine suite runs on, from its name (Showcase.Sql.IntegrationTests); null for any other. */
@@ -37,6 +39,8 @@ const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
 const TEST_ON_SQL = 'test code bound to the SQL database: the test reads or migrates PostgreSQL itself, and the documents host has none';
+const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
+  + 'with no serializable transaction, so concurrent adds can cross it';
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -103,7 +107,73 @@ export const ALLOWED_FILE_EXCLUSIONS = {
  * The single tests an engine suite may leave out of the run, by their full name (namespace, class, method), with the file that declares them,
  * the engines, why, and the module file they follow from. For a file whose other tests run there.
  */
-export const ALLOWED_TEST_EXCLUSIONS = {};
+export const ALLOWED_TEST_EXCLUSIONS = {
+  // Every read of a reservation by id: GET /api/reservations/{id} is GetReservationAction, which the documents engine refuses (PRAG3111: a
+  // [LoadEntity] with an Include, a document keeps a relation as its key) and the Booking project leaves out there, so the route answers 405.
+  ...readsAReservationById({
+    'Authorization/PermissionEnforcementTests.cs': ['GetReservation_WithExactPermission_Returns200'],
+    'CrossCutting/ANavigationsOwnerDoesNotHideTheRootTests.cs': ['AReservation_IsReadWithItsGuest_ByACallerWhoCannotReadTheGuest'],
+    'CrossCutting/AuthorizationTests.cs': ['GetReservation_DifferentUser_FilteredByRowLevelSecurity', 'GetReservation_SameUser_CanSeeOwn'],
+    'CrossCutting/DataOwnershipTests.cs': [
+      'OwnedEntity_AdminWithBypassPermission_SeesAll', 'OwnedEntity_DifferentUser_CannotSeeOtherReservation', 'OwnedEntity_SameUser_CanSeeOwnReservation',
+      'Restore_OfTheCallersOwnRetiredReservation_BringsTheRowBack',
+    ],
+    'CrossCutting/DomainEventTests.cs': ['StateMachine_ConfirmReservation_StatusChangesToConfirmed', 'StateMachine_FullLifecycle_PendingToConfirmedToCheckedIn'],
+    'CrossCutting/MessagingDeliveryTests.cs': ['FullPaymentFlow_Booking_Billing_Booking_RoundTrip'],
+    'CrossCutting/MessagingPipelineTests.cs': ['MessagingPipeline_InvoicePaid_ReservationTransitionsToPaymentReceived'],
+    'CrossCutting/NegativePathTests.cs': ['GetReservation_NonExistentId_Returns404'],
+    'CrossCutting/TheZoneAMomentIsWrittenInTests.cs': [
+      'AWallClockTheFrontDeskTyped_IsReadAgainstTheHotelsZone', 'AWallClockTheGuestTyped_IsReadAgainstTheGuestsZone',
+      'ThePropertyThatFollowsTheReader_AndTheOneThatDoesNot_DisagreeInOnePayload', 'TheSameWallClockFromAnotherZone_IsAnotherInstant',
+    ],
+    'DomainActions/CompositeActionTests.cs': ['CreateReservation_CompositeAction_CreatesReservationAndAssignsRoom'],
+    'DomainActions/NestedMutationEventsTests.cs': ['ClosingAProperty_CancelsEveryReservationInOneTransaction'],
+    'Endpoints/EndpointFeatureTests.cs': ['GetReservation_ById_ReturnsEntity'],
+    'EntityPersistence/AdvancedEntityTests.cs': ['MapIgnore_ReservationDto_StatusLabelComputed', 'MapProperty_ReservationDto_FlattensNavigationProperties'],
+    'EntityPersistence/StateMachineTests.cs': [
+      'Reservation_CancelAfterConfirm_ValidTransition', 'Reservation_Cancel_FromPending_ValidTransition', 'Reservation_ConfirmedToCheckedIn_ValidTransition',
+      'Reservation_ConfirmedToPaymentReceived_ValidTransition', 'Reservation_PendingToConfirmed_ValidTransition',
+    ],
+  }),
+
+  // A property deleted (and restored): DeletePropertyMutation and RestorePropertyMutation, which the documents engine refuses (PRAG3112: a
+  // write that cascades through a navigation) and the Catalog project leaves out there.
+  [test('Queries/VisibilityRuleTests.cs', 'TheAdminRead_StillDoesNotSeeDeletedRows')]: deletesAProperty('Queries/VisibilityRuleTests.cs'),
+  [test('EntityPersistence/AdvancedEntityTests.cs', 'SoftDeleteCascade_DeleteProperty_CancellationPolicyExcluded')]: deletesAProperty('EntityPersistence/AdvancedEntityTests.cs'),
+  [test('EntityPersistence/AdvancedEntityTests.cs', 'SoftDeleteCascade_DeleteProperty_RoomTypesExcludedFromSearch')]: deletesAProperty('EntityPersistence/AdvancedEntityTests.cs'),
+  [test('CrossCutting/TenantMutationIsolationTests.cs', 'RestoreProperty_CrossTenant_CannotRestoreAnotherTenantsSoftDeletedRow')]: {
+    ...deletesAProperty('CrossCutting/TenantMutationIsolationTests.cs'),
+    follows: [catalog('Properties/Mutations/DeletePropertyMutation.cs'), catalog('Properties/Mutations/RestorePropertyMutation.cs')],
+  },
+
+  // A room type updated: UpdateRoomTypeMutation, which the documents engine refuses (PRAG3112) and the Catalog project leaves out there.
+  [test('Endpoints/AutoIncludeTests.cs', 'AnUpdate_WhoseResponseFlattensANavigation_LoadsIt')]: {
+    file: s('Endpoints/AutoIncludeTests.cs'), engines: ['Documents'], reason: NO_NAVIGATION, follows: [catalog('RoomTypes/Mutations/UpdateRoomTypeMutation.cs')],
+  },
+
+  // Six racers for a guest's last tag slot: on the documents engine more than one can take it, as decided. The sequential limit and the
+  // idempotent re-add, in the same file, still run there.
+  [test('Endpoints/TagConcurrencyTests.cs', 'ConcurrentAdds_NeverExceedTheLimit')]: {
+    file: s('Endpoints/TagConcurrencyTests.cs'), engines: ['Documents'], reason: LIMIT_BEST_EFFORT,
+  },
+};
+
+/** A test's full name, from its file under the suite (the namespace follows the folder) and its method. */
+function test(path, method) {
+  const folder = path.split('/').slice(0, -1).join('.');
+  const type = path.split('/').pop().replace(/\.cs$/, '');
+  return `Showcase.IntegrationTests.${folder ? folder + '.' : ''}${type}.${method}`;
+}
+
+function readsAReservationById(byFile) {
+  return Object.fromEntries(Object.entries(byFile).flatMap(([path, methods]) => methods.map((method) => [test(path, method), {
+    file: s(path), engines: ['Documents'], reason: NO_NAVIGATION, follows: ['examples/showcase/src/Showcase.Booking/Reservations/Actions/GetReservationAction.cs'],
+  }])));
+}
+
+function deletesAProperty(path) {
+  return { file: s(path), engines: ['Documents'], reason: NO_NAVIGATION, follows: [catalog('Properties/Mutations/DeletePropertyMutation.cs')] };
+}
 
 const toRepo = (path) => normalize(path).replaceAll('\\', '/');
 const attribute = (text, element, name) => [...text.matchAll(new RegExp(`<${element}\\s+${name}="([^"]+)"`, 'g'))];
