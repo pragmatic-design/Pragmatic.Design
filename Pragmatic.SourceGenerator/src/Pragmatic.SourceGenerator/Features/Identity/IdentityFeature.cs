@@ -178,7 +178,7 @@ internal static class IdentityFeature
                 var ((model, featureFlags), assemblyName) = data;
                 if (model is null) return;
 
-                // Which lookup the user has: EF Core's here, the engines' with #593/#594.
+                // Which lookup the user has: an engine's read repository, or EF Core's.
                 var enriched = WithLookup(model, featureFlags);
 
                 // Always generate the profile adapter
@@ -243,7 +243,7 @@ internal static class IdentityFeature
     }
 
     /// <summary>
-    ///     The user with the lookup this compilation gives it: the Sql engine's read repository when its bridge is referenced (#593), EF Core's
+    ///     The user with the lookup this compilation gives it: an engine's read repository when its bridge is referenced (#593, #594), EF Core's
     ///     when EF Core is and no engine is (#592). A module on an engine reads its user with that engine. Not on
     ///     <c>Pragmatic.Identity.Persistence</c> any more: that package is EF Core's stores, and the resolver no longer reads through it.
     /// </summary>
@@ -251,6 +251,7 @@ internal static class IdentityFeature
         => model with
         {
             LooksUpThroughSql = features.HasPersistenceSql,
+            LooksUpThroughDocuments = features.HasPersistenceDocuments,
             LooksUpThroughEfCore = features.HasEfCore && !features.HasPersistenceSql && !features.HasPersistenceDocuments,
         };
 

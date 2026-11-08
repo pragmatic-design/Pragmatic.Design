@@ -12,6 +12,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="SoftDelete">A <c>[SoftDelete]</c> entity: its bulk delete marks the documents.</param>
 /// <param name="Autocompletes">The entity's <c>[Autocomplete]</c> properties, a read each.</param>
 /// <param name="HidesBase">A hierarchy's derived type: its repositories hide the base entity's (#539).</param>
+/// <param name="UserMatch">A <c>[PragmaticUser]</c>: the read repository is its <c>IUserLookup&lt;TUser&gt;</c>, matching this member path (#594).</param>
 internal sealed record DocReadRepositoryModel(
     string Hint,
     string? Namespace,
@@ -21,4 +22,5 @@ internal sealed record DocReadRepositoryModel(
     EquatableArray<DocRunCaseModel> PagedQueries,
     bool SoftDelete,
     EquatableArray<string> Autocompletes,
-    bool HidesBase = false);
+    bool HidesBase = false,
+    string? UserMatch = null);
