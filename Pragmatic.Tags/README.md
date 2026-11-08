@@ -146,6 +146,9 @@ When the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), its ta
 parent's visibility, on EF Core and on the Sql and documents engines alike: the list leaves out the links of a
 parent the caller cannot see, and removing one answers 404, unless the caller holds the parent's `view-all`.
 
+Adding a tag asks for the parent first, whatever the parent restricts: one the caller does not see (another
+tenant's, a deleted one, one its row filters hide, or none at all) answers 404 and nothing is written.
+
 ## Status
 
 **Functional** within 1.0.0-alpha: the `[HasTags]` trait with its entity, actions and endpoints, tested

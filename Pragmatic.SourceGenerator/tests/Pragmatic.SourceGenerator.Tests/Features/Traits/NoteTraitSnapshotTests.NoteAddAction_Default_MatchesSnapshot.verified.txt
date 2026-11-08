@@ -36,6 +36,11 @@ public sealed partial class AddGuestNoteAction : DomainAction<Guid>
         if (Content.Length > 4000)
             return Result<Guid, IError>.Failure(new BadRequestError { Reason = "Content exceeds the maximum length of 4000 characters." });
         
+        // The parent the route names, as the caller sees it: the model's filters (tenant, soft delete) hold on the set.
+        global::System.Linq.IQueryable<global::Showcase.Booking.Entities.Guest> __parents = _db.Set<global::Showcase.Booking.Entities.Guest>();
+        if (!await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(__parents, p => p.PersistenceId == GuestId, ct).ConfigureAwait(false))
+            return Result<Guid, IError>.Failure(NotFoundError.For("Guest", GuestId.ToString()));
+        
         var note = new GuestNote
         {
             GuestId = GuestId,

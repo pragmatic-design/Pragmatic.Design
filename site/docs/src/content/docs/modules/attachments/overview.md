@@ -216,6 +216,10 @@ When the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), an att
 parent's visibility, on EF Core and on the Sql and documents engines alike: a caller who cannot see the parent
 gets 404 for its attachments' metadata, content, thumbnail and deletion, unless they hold the parent's `view-all`.
 
+An upload asks for the parent first, whatever the parent restricts, before the file is stored: one the caller
+does not see (another tenant's, a deleted one, one its row filters hide, or none at all) answers 404 and nothing
+is written, to the table or to the storage.
+
 ## How the SG Wiring Works
 
 - **Trigger / detection.** `[HasAttachments]` is detected by FQN `Pragmatic.Attachments.HasAttachmentsAttribute` (`shared/SourceGen/AttributeNames.cs`). The unified generator's `TraitDetector` records `HasAttachments` + the attribute options into a `TraitSet`; the dedicated `[HasAttachments]` pipeline in `TraitFeature` uses `ForAttributeWithMetadataName` + `AttachmentTraitTransform` to build the model.

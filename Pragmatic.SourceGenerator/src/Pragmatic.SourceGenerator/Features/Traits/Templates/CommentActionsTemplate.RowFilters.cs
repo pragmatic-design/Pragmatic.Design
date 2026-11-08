@@ -3,7 +3,8 @@ namespace Pragmatic.SourceGenerator.Features.Traits.Templates;
 /// <summary>
 ///     How a comment on EF Core is read with its parent's visibility (#598): through the row filters the module registers for it, as the engines
 ///     read it through the child's repository. A raw <c>DbSet</c> applies the model's filters only, and a caller who cannot see the parent learned
-///     that its comment exists (403 where the engines answer 404).
+///     that its comment exists (403 where the engines answer 404). The add reads no comment, and asks for the parent instead
+///     (<see cref="TraitParentCheck" />).
 /// </summary>
 internal sealed partial class CommentActionsTemplate
 {
@@ -14,6 +15,23 @@ internal sealed partial class CommentActionsTemplate
     private string CommentRows => ReadsThroughRowFilters
         ? $"{TraitRowFilters.HelperName}(_db.Set<{_model.CommentTypeName}>())"
         : $"_db.Set<{_model.CommentTypeName}>()";
+
+    /// <summary>The fields the parent's visibility is read through, in lockstep with <c>TraitActionModelBuilder.BuildCommentDeps</c>.</summary>
+    private void RenderParentVisibilityFields()
+    {
+        if (!_engine && _model.ParentIsRowProtected)
+            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
+        if (_engine && _kind == CommentActionKind.Add)
+            AppendLine($"private {TraitParentCheck.RepositoryType(_model.ParentFullTypeName)} {TraitParentCheck.RepositoryField} = null!;");
+    }
+
+    /// <summary>The add's refusal of a parent the caller does not see, before anything is written.</summary>
+    private void RenderParentCheck()
+    {
+        foreach (var line in TraitParentCheck.GuardLines(_engine, _model.ParentIsRowProtected, _model.ParentFullTypeName, $"{_model.ParentTypeName}Id",
+                     $"return Result<Guid, IError>.Failure(NotFoundError.For(\"{_model.ParentTypeName}\", {_model.ParentTypeName}Id.ToString()));"))
+            AppendLine(line);
+    }
 
     private void RenderRowFiltersHelper()
     {

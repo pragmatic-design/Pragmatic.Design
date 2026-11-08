@@ -98,7 +98,8 @@ internal sealed partial class TagActionsTemplate : CSharpTemplate
         // The policy is optional, so it is resolved on demand from the application service
         // provider — injecting it directly would make it a required constructor dependency.
         AppendLine("private global::System.IServiceProvider _services = null!;");
-        if (ReadsThroughRowFilters)
+        // The removal reads the link through the parent's row filters, the add asks for the parent through them (TraitParentCheck).
+        if (_model.ParentIsRowProtected)
             AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
         AppendLine();
 
@@ -126,9 +127,15 @@ internal sealed partial class TagActionsTemplate : CSharpTemplate
     /// <summary>The tag's scope as a literal: the trait's override, else the parent's name.</summary>
     private string ScopeLiteral => _model.ScopeOverride is not null ? $"\"{_model.ScopeOverride}\"" : $"\"{_model.ParentTypeName}\"";
 
-    /// <summary>The policy resolved, a disallowed value refused, and <c>normalizedValue</c> and <c>displayValue</c> declared: the add's opening on every engine.</summary>
+    /// <summary>
+    ///     A parent the caller does not see refused, the policy resolved, a disallowed value refused, and <c>normalizedValue</c> and
+    ///     <c>displayValue</c> declared: the add's opening on every engine.
+    /// </summary>
     private void RenderPolicyGateAndNormalize()
     {
+        foreach (var line in TraitParentCheck.GuardLines(_engine, _model.ParentIsRowProtected, _model.ParentFullTypeName, _model.ParentFkPropertyName,
+                     $"return Result<Guid, IError>.Failure(NotFoundError.For(\"{_model.ParentTypeName}\", {_model.ParentFkPropertyName}.ToString()));"))
+            AppendLine(line);
         RenderPolicyResolve();
 
         // Validation gate — reject disallowed tag values (ITagPolicy.IsAllowedAsync).

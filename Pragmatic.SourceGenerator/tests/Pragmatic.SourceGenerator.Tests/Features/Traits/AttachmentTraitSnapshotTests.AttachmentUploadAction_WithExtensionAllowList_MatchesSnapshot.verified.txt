@@ -38,6 +38,11 @@ public sealed partial class UploadReservationAttachmentAction : DomainAction<Gui
     
     public override async Task<Result<Guid, IError>> Execute(CancellationToken ct = default)
     {
+        // The parent the route names, as the caller sees it: the model's filters (tenant, soft delete) hold on the set.
+        global::System.Linq.IQueryable<global::Showcase.Booking.Entities.Reservation> __parents = _db.Set<global::Showcase.Booking.Entities.Reservation>();
+        if (!await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(__parents, p => p.PersistenceId == ReservationId, ct).ConfigureAwait(false))
+            return Result<Guid, IError>.Failure(NotFoundError.For("Reservation", ReservationId.ToString()));
+        
         var currentCount = await _db.Set<ReservationAttachment>()
             .CountAsync(a => a.ReservationId == ReservationId, ct).ConfigureAwait(false);
         if (currentCount >= 5)

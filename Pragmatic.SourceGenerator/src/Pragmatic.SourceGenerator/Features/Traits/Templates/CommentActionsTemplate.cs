@@ -101,8 +101,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
     private void RenderBody()
     {
         AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.CommentTypeName}> _comments = null!;" : "private DbContext _db = null!;");
-        if (ReadsThroughRowFilters)
-            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
+        RenderParentVisibilityFields();
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // The policy is optional, so it is resolved on demand from the application service
@@ -145,6 +144,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
             AppendLine($"return Result<Guid, IError>.Failure(new BadRequestError {{ Reason = \"Content exceeds the maximum length of {_model.MaxLength} characters.\" }});");
             DecreaseIndent();
             AppendLine();
+            RenderParentCheck();
 
             // Marking a comment Internal is writing to the staff's channel: without this anyone who
             // could comment could put a note there, and the readers of that channel would trust it.

@@ -140,6 +140,9 @@ Both `Update` and `Delete` require the caller to be the author **or** to hold
 is read with the parent's visibility, on EF Core and on the Sql and documents engines alike. A caller who cannot
 see the parent gets 404 for its notes, whatever permission they hold, unless they hold the parent's `view-all`.
 
+Adding a note asks for the parent first, whatever the parent restricts: one the caller does not see (another
+tenant's, a deleted one, one its row filters hide, or none at all) answers 404 and nothing is written.
+
 ## Relationship to Pragmatic.Comments
 
 - `Pragmatic.Comments` is for public or customer-facing discussion

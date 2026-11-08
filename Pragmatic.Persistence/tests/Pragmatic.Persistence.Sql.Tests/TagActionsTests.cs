@@ -33,7 +33,8 @@ public class TagActionsTests(PragmaticDatabases databases)
         public IClock Clock { get; } = new TestInstant();
 
         public Task<Result<Guid, IError>> Add(Guid property, string value)
-            => new AddPropertyTagAction.Invoker(new PropertyTag.SqlRepository(UnitOfWork), new PropertyTagLink.SqlRepository(UnitOfWork), UnitOfWork, User, Clock, Services, Services)
+            => new AddPropertyTagAction.Invoker(new PropertyTag.SqlRepository(UnitOfWork), new PropertyTagLink.SqlRepository(UnitOfWork), UnitOfWork, User, Clock, Services,
+                    new Property.SqlRepository(UnitOfWork), Services)
                 .InvokeAsync(new AddPropertyTagAction { PropertyId = property, TagValue = value });
 
         public Task<VoidResult<IError>> Remove(Guid property, Guid tag)

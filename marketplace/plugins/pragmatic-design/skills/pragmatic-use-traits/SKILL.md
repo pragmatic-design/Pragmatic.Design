@@ -134,8 +134,9 @@ stay) and hides a pending `Internal` note from a moderator without `view-interna
 caller does not see comments marked `Internal` in the list (a generated row filter), gets `404` reading one
 by id, and gets `403` adding one. Grant it to staff; `comments.read` alone is the public thread. ⚠️ A
 caller must also be able to see the **parent** (a thread of a row one cannot see is empty whatever the
-visibility), so test the internal case with a reader who sees the parent, or the test passes on the
-parent's filter instead.
+visibility, and adding a note, comment, tag or attachment to it is a `404` with nothing written), so test
+the internal case with a reader and an author who see the parent, or the test passes on the parent's
+filter instead.
 
 ⚠️ **A curated taxonomy has no endpoint to create it.** With `AllowCustom = false` the tags are seeded
 by the application (the generated `Tag` entity, through the DbContext or a seeding step), and unlinking

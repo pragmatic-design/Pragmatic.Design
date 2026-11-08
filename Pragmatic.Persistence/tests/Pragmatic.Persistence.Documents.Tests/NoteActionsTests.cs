@@ -60,7 +60,7 @@ public class NoteActionsTests(DocumentServers servers)
 
     private static async Task<Result<Guid, IError>> Add(Caller caller, Guid property, string content)
     {
-        var added = await new AddPropertyNoteAction.Invoker(caller.Notes, caller.Services, caller.User, caller.Clock, caller.Services)
+        var added = await new AddPropertyNoteAction.Invoker(caller.Notes, caller.Services, caller.User, caller.Clock, new Property.DocRepository(caller.UnitOfWork), caller.Services)
             .InvokeAsync(new AddPropertyNoteAction { PropertyId = property, Content = content });
         await caller.UnitOfWork.SaveChangesAsync();
         return added;
@@ -119,6 +119,8 @@ public class NoteActionsTests(DocumentServers servers)
 
         using var tenant = TenantScope.BeginScope("acme");
         var caller = new Caller(session, _toggle, new TestUser("anna"));
+        // Nor can one be written onto it: the add asks for the property through the engine's filters first.
+        Assert.IsType<NotFoundError>((await Add(caller, alpe, "written across tenants")).Error);
         Assert.IsType<NotFoundError>((await Get(caller, alpe, id)).Error);
         Assert.IsType<NotFoundError>((await new DeletePropertyNoteAction.Invoker(caller.Notes, caller.Services, caller.User, caller.Clock, caller.Services)
             .InvokeAsync(new DeletePropertyNoteAction { PropertyId = alpe, NoteId = id })).Error);

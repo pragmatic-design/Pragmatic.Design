@@ -102,8 +102,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
             RenderEngineFields();
         else
             AppendLine("private DbContext _db = null!;");
-        if (ReadsThroughRowFilters)
-            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
+        RenderParentVisibilityFields();
         if (_kind is AttachmentActionKind.Upload or AttachmentActionKind.Delete)
         {
             AppendLine("private ICurrentUser _currentUser = null!;");
@@ -305,6 +304,7 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
         AppendLine("public override async Task<Result<Guid, IError>> Execute(CancellationToken ct = default)");
         Block(() =>
         {
+            RenderParentCheck();
             // A refusal before the upload, so a caller already at the limit does not send the file for
             // nothing. It is not the guarantee — two uploads can both pass it — the count inside the
             // serializable transaction below is.

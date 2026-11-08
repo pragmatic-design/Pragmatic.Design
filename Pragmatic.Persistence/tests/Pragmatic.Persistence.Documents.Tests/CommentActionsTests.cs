@@ -58,7 +58,7 @@ public class CommentActionsTests(DocumentServers servers)
 
     private static async Task<Result<Guid, IError>> Add(Caller caller, Guid review, string content, CommentVisibility visibility = CommentVisibility.Public)
     {
-        var added = await new AddReviewCommentAction.Invoker(caller.Comments, caller.User, caller.Clock, caller.Services, caller.Services)
+        var added = await new AddReviewCommentAction.Invoker(caller.Comments, caller.User, caller.Clock, caller.Services, new Review.DocRepository(caller.UnitOfWork), caller.Services)
             .InvokeAsync(new AddReviewCommentAction { ReviewId = review, Content = content, Visibility = visibility });
         await caller.UnitOfWork.SaveChangesAsync();
         return added;

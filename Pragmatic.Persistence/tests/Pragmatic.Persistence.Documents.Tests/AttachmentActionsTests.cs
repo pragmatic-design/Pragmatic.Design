@@ -42,7 +42,7 @@ public class AttachmentActionsTests(DocumentServers servers)
         public IClock Clock { get; } = new TestInstant(UnitOfWorkTests.Now);
 
         public Task<Result<Guid, IError>> Upload(Guid property, string fileName)
-            => new UploadPropertyAttachmentAction.Invoker(Attachments, UnitOfWork, user, Clock, storage, Services)
+            => new UploadPropertyAttachmentAction.Invoker(Attachments, UnitOfWork, new Property.DocRepository(UnitOfWork), user, Clock, storage, Services)
                 .InvokeAsync(new UploadPropertyAttachmentAction
                 {
                     PropertyId = property, FileContent = new MemoryStream("%PDF-1.7"u8.ToArray()), FileName = fileName, FileSize = 8, ContentType = "application/pdf",
