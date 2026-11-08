@@ -243,11 +243,16 @@ internal static class IdentityFeature
     }
 
     /// <summary>
-    ///     The user with the lookup this compilation gives it: EF Core's when EF Core is referenced (#592). Not on
+    ///     The user with the lookup this compilation gives it: the Sql engine's read repository when its bridge is referenced (#593), EF Core's
+    ///     when EF Core is and no engine is (#592). A module on an engine reads its user with that engine. Not on
     ///     <c>Pragmatic.Identity.Persistence</c> any more: that package is EF Core's stores, and the resolver no longer reads through it.
     /// </summary>
     private static UserEntityModel WithLookup(UserEntityModel model, DetectedFeatures features)
-        => model with { LooksUpThroughEfCore = features.HasEfCore };
+        => model with
+        {
+            LooksUpThroughSql = features.HasPersistenceSql,
+            LooksUpThroughEfCore = features.HasEfCore && !features.HasPersistenceSql && !features.HasPersistenceDocuments,
+        };
 
     /// <summary>The user's lookup this compilation generates, as its service type and implementation, or null when it generates none.</summary>
     internal static (string Service, string Implementation)? LookupService(UserEntityModel user)
@@ -579,12 +584,22 @@ internal static class IdentityFeature
                 Lifetime = "Scoped",
                 AsSelf = true,
                 Dependencies = ImmutableArray.Create(
-                    new Composition.Models.DependencyModel
-                    {
-                        TypeName = "IUserLookup",
-                        FullTypeName = lookupService,
-                        IsOptional = false
-                    },
+                    // EF Core's lookup is published above; an engine's is registered by the boundary's Add{Boundary}Persistence, which the host calls.
+                    LookupService(user) is null
+                        ? new Composition.Models.DependencyModel
+                        {
+                            TypeName = "IUserLookup",
+                            FullTypeName = lookupService,
+                            IsOptional = false,
+                            IsProvidedByHost = true,
+                            ProvidedByHostLifetime = "Scoped"
+                        }
+                        : new Composition.Models.DependencyModel
+                        {
+                            TypeName = "IUserLookup",
+                            FullTypeName = lookupService,
+                            IsOptional = false
+                        },
                     new Composition.Models.DependencyModel
                     {
                         TypeName = "ICurrentUser",

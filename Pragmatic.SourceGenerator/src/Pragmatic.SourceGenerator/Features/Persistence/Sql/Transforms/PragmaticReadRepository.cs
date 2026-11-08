@@ -52,7 +52,8 @@ internal static class PragmaticReadRepository
                 .Select(p => new LinkNavigationModel(p.Name, ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
                 .ToEquatableArray(),
             AutocompleteReads.Of(entity),
-            DerivesFromAnEntity(entity));
+            DerivesFromAnEntity(entity),
+            Identity.Transforms.UserEntityTransform.MatchPropertyOf(entity));
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
 

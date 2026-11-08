@@ -12,4 +12,11 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 ///     Pragmatic.MultiTenancy is referenced (<paramref name="MultiTenancy" />).
 /// </summary>
 internal sealed record BoundaryPersistenceModel(string Hint, string? Namespace, string BoundaryName, string BoundaryType, EngineRegistrationModel Engine, EquatableArray<string> EntityTypes,
-    bool EventOutbox, bool MessagingOutbox, bool AuditedEntities, bool NotificationStore, bool MultiTenancy);
+    bool EventOutbox, bool MessagingOutbox, bool AuditedEntities, bool NotificationStore, bool MultiTenancy)
+{
+    /// <summary>The boundary's <c>[PragmaticUser]</c> entities, each registered as its <c>IUserLookup&lt;TUser&gt;</c> (#593).</summary>
+    public EquatableArray<string> UserLookups { get; init; } = EquatableArray<string>.Empty;
+
+    /// <summary>The nested read repository that is the lookup (<c>SqlReadRepository</c>), built over the boundary's session.</summary>
+    public string? UserLookupRepository { get; init; }
+}
