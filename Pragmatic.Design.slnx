@@ -1027,6 +1027,7 @@
     <Project Path="examples/showcase/tests/Showcase.Host.Documents.Tests/Showcase.Host.Documents.Tests.csproj" />
     <Project Path="examples/showcase/tests/Showcase.Host.Sql.Tests/Showcase.Host.Sql.Tests.csproj" />
     <Project Path="examples/showcase/tests/Showcase.Sql.IntegrationTests/Showcase.Sql.IntegrationTests.csproj" />
+    <Project Path="examples/showcase/tests/Showcase.Documents.IntegrationTests/Showcase.Documents.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Examples/Showcase.Distributed/">
     <Project Path="examples/showcase/src/Showcase.Billing.Host/Showcase.Billing.Host.csproj" />

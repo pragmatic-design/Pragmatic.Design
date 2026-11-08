@@ -67,6 +67,10 @@ export const DOCKER_SHARDS = [
     // developer machine (2026-11-06). Here because this shard was the lightest (12m 51s against 20m 34s and 15m 28s, PR #560's run).
     'Showcase.Host.Sql.Tests',
     'Showcase.Host.Documents.Tests',
+    // The Showcase's integration suite on the documents host (#535), one standalone MongoDB: ~1m of tests on a developer machine
+    // (2026-11-08), not yet measured on the runner. Here because this shard was the lightest after the Sql copy went to shard 2 (14m 00s
+    // against 19m 13s and 21m 04s, PR #609's run).
+    'Showcase.Documents.IntegrationTests',
   ],
 ];
 

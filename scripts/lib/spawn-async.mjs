@@ -23,7 +23,9 @@ import { spawn } from 'node:child_process';
  */
 function quoteForShell(value, shell) {
   if (!shell || typeof value !== 'string') return value;
-  return /\s/.test(value) && !value.startsWith('"') ? `"${value}"` : value;
+  // And cmd.exe's command separators and redirections: unquoted, `&` ended the command, so a `dotnet test --filter "A!=x&A!=y"` ran with
+  // its filter cut at the first test and the rest of the line as a command of its own (#535). Inside quotes cmd.exe takes them as text.
+  return /[\s&|<>^]/.test(value) && !value.startsWith('"') ? `"${value}"` : value;
 }
 
 /**

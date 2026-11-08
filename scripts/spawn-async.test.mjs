@@ -67,6 +67,7 @@ before(() => {
   writeFileSync(script('both-streams.js'),
     'console.log("out"); console.error("err");', 'utf-8');
   writeFileSync(script('exit3.js'), 'process.exit(3);', 'utf-8');
+  writeFileSync(script('echo-arg.js'), 'process.stdout.write("[" + process.argv[2] + "]");', 'utf-8');
   writeFileSync(script('loud.js'),
     'process.stdout.write("x".repeat(2 * 1024 * 1024));', 'utf-8');
 });
@@ -125,6 +126,15 @@ test('through a shell, a missing command is an exit code and not a spawn error',
 
   assert.notEqual(r.code, 0);
   assert.equal(r.spawnError, null);
+});
+
+test('through a shell, an argument with a command separator reaches the child whole', async () => {
+  // A `dotnet test --filter "A!=x&A!=y"` (an engine copy of the Showcase suite, #535): cmd.exe read the `&` as the end of the command,
+  // the filter was cut at the first test, and the rest of the line ran as a second command nobody saw fail.
+  const r = await runAsync(process.execPath, [script('echo-arg.js'), 'A!=x&A!=y|z'], { shell: true });
+
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /\[A!=x&A!=y\|z\]/);
 });
 
 test('runAsync survives a child that writes more than a megabyte', async () => {
