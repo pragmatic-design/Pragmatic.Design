@@ -173,15 +173,35 @@ public class CommentEndpointTests(PostgresFixture fixture) : IntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    /// <summary>
+    ///     A comment is read with its parent's visibility (#598): a caller who cannot see the reservation cannot see its comments,
+    ///     so the delete answers 404, as the engines do. A 403 would tell them the comment exists.
+    /// </summary>
     [Fact]
-    public async Task DeleteComment_ByAnotherUser_Returns403()
+    public async Task DeleteComment_OnAReservationTheCallerCannotSee_Returns404()
     {
         var reservationId = await CreateReservation();
         var commentId = await AddComment(reservationId, "Written by the default test user");
 
-        // A different user, holding the delete permission but neither the authorship nor moderate.
+        // A different user, holding the delete permission, who neither owns the reservation nor views every one.
         var other = CreateClientWithPermissions(
             "booking.reservation.comments.read", "booking.reservation.comments.delete");
+
+        var response = await other.DeleteAsync(CommentUrl(reservationId, commentId));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound,
+            "the comment of a reservation the caller cannot see is not there for them");
+    }
+
+    /// <summary>The author rule still holds for a caller who can see the reservation: someone else's comment is not theirs to delete.</summary>
+    [Fact]
+    public async Task DeleteComment_ByAnotherUserWhoSeesTheReservation_Returns403()
+    {
+        var reservationId = await CreateReservation();
+        var commentId = await AddComment(reservationId, "Written by the default test user");
+
+        var other = CreateClientWithPermissions(
+            "booking.reservation.comments.read", "booking.reservation.comments.delete", "booking.reservation.view-all");
 
         var response = await other.DeleteAsync(CommentUrl(reservationId, commentId));
 

@@ -147,9 +147,8 @@ public class CommentModerationTests(PostgresFixture fixture) : IntegrationTestBa
     }
 
     /// <summary>
-    ///     The queue reads the table directly, past the repository's row filters, so the internal-visibility
-    ///     rule is applied in the action: a moderator without <c>view-internal</c> does not see a pending
-    ///     internal note, one with it does.
+    ///     A moderator without <c>view-internal</c> does not see a pending internal note, one with it does. Both see the guest
+    ///     (<c>view-all</c>): the queue is read with the parent's visibility (#598), which the next test pins.
     /// </summary>
     [Fact]
     public async Task APendingInternalNote_IsQueuedOnlyForWhoCanViewInternal()
@@ -158,15 +157,35 @@ public class CommentModerationTests(PostgresFixture fixture) : IntegrationTestBa
         var response = await PostAsync(CommentsUrl(guestId), new { content = "Staff only.", visibility = "Internal" });
         response.EnsureSuccessStatusCode();
 
-        var moderator = CreateClientWithPermissions("booking.guest.comments.moderate");
+        var moderator = CreateClientWithPermissions("booking.guest.comments.moderate", "booking.guest.view-all");
         var staff = CreateClientWithPermissions(
-            "booking.guest.comments.moderate", "booking.guest.comments.view-internal");
+            "booking.guest.comments.moderate", "booking.guest.comments.view-internal", "booking.guest.view-all");
 
         var forModerator = await moderator.GetFromJsonAsync<JsonElement>(PendingUrl(guestId), JsonOptions);
         var forStaff = await staff.GetFromJsonAsync<JsonElement>(PendingUrl(guestId), JsonOptions);
 
         forModerator.GetArrayLength().Should().Be(0);
         forStaff.GetArrayLength().Should().Be(1);
+    }
+
+    /// <summary>
+    ///     The queue is read with the parent's visibility (#598), as on the engines: a moderator who cannot see the guest finds
+    ///     nothing of theirs pending, even holding every comment permission.
+    /// </summary>
+    [Fact]
+    public async Task APendingComment_IsNotQueuedForAModeratorWhoCannotSeeTheGuest()
+    {
+        var guestId = await CreateGuest();
+        var response = await PostAsync(CommentsUrl(guestId), new { content = "Awaiting approval." });
+        response.EnsureSuccessStatusCode();
+
+        var blind = CreateClientWithPermissions("booking.guest.comments.moderate", "booking.guest.comments.view-internal");
+        var seeing = CreateClientWithPermissions(
+            "booking.guest.comments.moderate", "booking.guest.comments.view-internal", "booking.guest.view-all");
+
+        (await blind.GetFromJsonAsync<JsonElement>(PendingUrl(guestId), JsonOptions)).GetArrayLength().Should().Be(0);
+        (await seeing.GetFromJsonAsync<JsonElement>(PendingUrl(guestId), JsonOptions)).GetArrayLength().Should().Be(1,
+            "the control: the comment is pending, and a moderator who sees the guest finds it");
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────

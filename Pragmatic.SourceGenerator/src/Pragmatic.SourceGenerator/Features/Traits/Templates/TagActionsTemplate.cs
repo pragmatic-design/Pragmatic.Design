@@ -98,6 +98,8 @@ internal sealed partial class TagActionsTemplate : CSharpTemplate
         // The policy is optional, so it is resolved on demand from the application service
         // provider — injecting it directly would make it a required constructor dependency.
         AppendLine("private global::System.IServiceProvider _services = null!;");
+        if (ReadsThroughRowFilters)
+            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
         AppendLine();
 
         switch (_kind)
@@ -108,7 +110,18 @@ internal sealed partial class TagActionsTemplate : CSharpTemplate
 
         if (_kind == TagActionKind.Add && _model.MaxPerEntity > 0)
             RenderSerializationConflictDetector();
+        if (ReadsThroughRowFilters)
+        {
+            foreach (var line in TraitRowFilters.HelperLines(_model.JunctionTypeName))
+                AppendLine(line);
+        }
     }
+
+    /// <summary>
+    ///     The removal on EF Core with a row-protected parent: it reads the link with its parent's visibility (#598), as the engines read it. Not
+    ///     the add, which reads the caller's own input, nor the bookkeeping reads across every parent (the usage count, the orphan check).
+    /// </summary>
+    private bool ReadsThroughRowFilters => _model.ParentIsRowProtected && _kind == TagActionKind.Remove;
 
     /// <summary>The tag's scope as a literal: the trait's override, else the parent's name.</summary>
     private string ScopeLiteral => _model.ScopeOverride is not null ? $"\"{_model.ScopeOverride}\"" : $"\"{_model.ParentTypeName}\"";
@@ -290,7 +303,9 @@ internal sealed partial class TagActionsTemplate : CSharpTemplate
         {
             RenderPolicyResolveVoid();
 
-            AppendLine($"var junction = await _db.Set<{_model.JunctionTypeName}>()");
+            AppendLine(ReadsThroughRowFilters
+                ? $"var junction = await {TraitRowFilters.HelperName}(_db.Set<{_model.JunctionTypeName}>())"
+                : $"var junction = await _db.Set<{_model.JunctionTypeName}>()");
             AppendLine($"    .FirstOrDefaultAsync(j => j.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && j.TagId == TagId, ct).ConfigureAwait(false);");
             AppendLine();
             AppendLine("if (junction is null)");

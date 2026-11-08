@@ -101,6 +101,8 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
     private void RenderBody()
     {
         AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.CommentTypeName}> _comments = null!;" : "private DbContext _db = null!;");
+        if (ReadsThroughRowFilters)
+            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // The policy is optional, so it is resolved on demand from the application service
@@ -120,6 +122,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
 
         if (_kind is CommentActionKind.Update or CommentActionKind.Delete)
             RenderCanModerate();
+        RenderRowFiltersHelper();
     }
 
     private void RenderAddBody()
@@ -219,7 +222,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
                 visibility = " && (canViewInternal || e.Visibility != CommentVisibility.Internal)";
             }
 
-            AppendLine($"var comment = await _db.Set<{_model.CommentTypeName}>()");
+            AppendLine($"var comment = await {CommentRows}");
             AppendLine($"    .Where(e => e.Id == CommentId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted{visibility})");
             AppendLine($"    .Select({dtoName}.Projection)");
             AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
@@ -360,7 +363,7 @@ internal sealed partial class CommentActionsTemplate : CSharpTemplate
         }
 
         // Object-level auth: scope the lookup to the parent in the route, not just the child id.
-        AppendLine($"var comment = await _db.Set<{_model.CommentTypeName}>()");
+        AppendLine($"var comment = await {CommentRows}");
         if (ignoreQueryFilters)
         {
             // A moderator must reach exactly the comments the filter hides — a pending one to approve,

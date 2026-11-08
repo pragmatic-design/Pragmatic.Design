@@ -78,6 +78,8 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
     private void RenderBody()
     {
         AppendLine(_engine ? $"private global::Pragmatic.Persistence.Repository.IRepository<{_model.NoteTypeName}> _notes = null!;" : "private DbContext _db = null!;");
+        if (ReadsThroughRowFilters)
+            AppendLine($"private {TraitRowFilters.ProviderType} _filters = null!;");
         AppendLine("private ICurrentUser _currentUser = null!;");
         AppendLine("private IClock _clock = null!;");
         // Carries the application container in, so the optional IPermissionChecker can be resolved
@@ -95,7 +97,20 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
 
         if (_kind is NoteActionKind.Update or NoteActionKind.Delete)
             RenderCanModerate();
+        if (ReadsThroughRowFilters)
+        {
+            foreach (var line in TraitRowFilters.HelperLines(_model.NoteTypeName))
+                AppendLine(line);
+        }
     }
+
+    /// <summary>A note on EF Core whose parent restricts rows: read with its parent's visibility (#598), as the engines read it.</summary>
+    private bool ReadsThroughRowFilters => !_engine && _model.ParentIsRowProtected && _kind != NoteActionKind.Add;
+
+    /// <summary>The note rows an EF Core read starts from: through the row filters when the parent restricts rows.</summary>
+    private string NoteRows => ReadsThroughRowFilters
+        ? $"{TraitRowFilters.HelperName}(_db.Set<{_model.NoteTypeName}>())"
+        : $"_db.Set<{_model.NoteTypeName}>()";
 
     private void RenderAddBody()
     {
@@ -159,7 +174,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
 
         Block(() =>
         {
-            AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
+            AppendLine($"var note = await {NoteRows}");
             AppendLine($"    .Where(e => e.Id == NoteId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName} && !e.IsDeleted)");
             AppendLine($"    .Select({dtoName}.Projection)");
             AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
@@ -258,7 +273,7 @@ internal sealed class NoteActionsTemplate : CSharpTemplate
             return;
         }
 
-        AppendLine($"var note = await _db.Set<{_model.NoteTypeName}>()");
+        AppendLine($"var note = await {NoteRows}");
         AppendLine($"    .Where(e => e.Id == NoteId && e.{_model.ParentFkPropertyName} == {_model.ParentFkPropertyName})");
         AppendLine("    .FirstOrDefaultAsync(ct).ConfigureAwait(false);");
         AppendLine("if (note is null)");

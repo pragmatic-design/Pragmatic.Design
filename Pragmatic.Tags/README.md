@@ -140,6 +140,12 @@ public sealed class ArticleTagPolicy : ITagPolicy<Guid>
 services.AddScoped<ITagPolicy<Guid>, ArticleTagPolicy>();
 ```
 
+## The Parent's Visibility
+
+When the parent restricts its rows (`[OwnedEntity]` or `[ScopedEntity]`), its tag links are read with the
+parent's visibility, on EF Core and on the Sql and documents engines alike: the list leaves out the links of a
+parent the caller cannot see, and removing one answers 404, unless the caller holds the parent's `view-all`.
+
 ## Status
 
 **Functional** within 1.0.0-alpha: the `[HasTags]` trait with its entity, actions and endpoints, tested
