@@ -48,6 +48,31 @@ public sealed class I18NConfigResolver
     }
 
     /// <summary>
+    ///     Resolves the merged configuration through each provider's asynchronous path (<see cref="II18NConfigProvider.GetConfigurationAsync" />):
+    ///     what a request's middleware awaits, so a provider that reads only asynchronously takes part.
+    /// </summary>
+    /// <remarks>
+    ///     The merge is the one <see cref="Resolve" /> does, kept for this resolver: <see cref="IsCultureSupported" /> and
+    ///     <see cref="FindBestMatch" /> then read it instead of merging again through the synchronous path.
+    /// </remarks>
+    /// <param name="ct">Cancels the providers' reads.</param>
+    /// <returns>The merged configuration.</returns>
+    /// <exception cref="I18NConfigurationException">Thrown if required configuration values are missing.</exception>
+    public async ValueTask<I18NConfig> ResolveAsync(CancellationToken ct = default)
+    {
+        if (_resolvedAsync is null)
+        {
+            var result = new I18NConfig();
+            foreach (var provider in _providers)
+                result = Merge(result, await provider.GetConfigurationAsync(ct).ConfigureAwait(false));
+            _resolvedAsync = result;
+        }
+
+        ValidateConfiguration(_resolvedAsync);
+        return _resolvedAsync;
+    }
+
+    /// <summary>
     ///     Checks if a culture is supported based on the current configuration.
     /// </summary>
     /// <param name="culture">The culture to check.</param>
@@ -102,20 +127,26 @@ public sealed class I18NConfigResolver
     // runs exactly once even under concurrent first-calls.
     private readonly Lazy<I18NConfig> _cachedMergedConfig;
 
-    private I18NConfig GetMergedConfig() => _cachedMergedConfig.Value;
+    // What ResolveAsync merged, once per resolver (a scoped service: once per request).
+    private I18NConfig? _resolvedAsync;
+
+    private I18NConfig GetMergedConfig() => _resolvedAsync ?? _cachedMergedConfig.Value;
 
     private I18NConfig MergeAllProviders()
     {
         var result = new I18NConfig();
 
         foreach (var provider in _providers)
-        {
-            var config = provider.GetConfiguration();
-            if (config is null)
-                continue;
+            result = Merge(result, provider.GetConfiguration());
 
-            // Merge: non-null values override
-            result = result with
+        return result;
+    }
+
+    /// <summary>One provider's configuration over what the lower-priority ones set: its non-null values override.</summary>
+    private static I18NConfig Merge(I18NConfig result, I18NConfig? config)
+        => config is null
+            ? result
+            : result with
             {
                 DefaultUICulture = config.DefaultUICulture ?? result.DefaultUICulture,
                 DefaultDataCulture = config.DefaultDataCulture ?? result.DefaultDataCulture,
@@ -124,10 +155,6 @@ public sealed class I18NConfigResolver
                 PreferredCurrency = config.PreferredCurrency ?? result.PreferredCurrency,
                 CustomScopes = MergeCustomScopes(result.CustomScopes, config.CustomScopes)
             };
-        }
-
-        return result;
-    }
 
     private static IReadOnlyDictionary<string, CultureCode>? MergeCustomScopes(
         IReadOnlyDictionary<string, CultureCode>? existing,

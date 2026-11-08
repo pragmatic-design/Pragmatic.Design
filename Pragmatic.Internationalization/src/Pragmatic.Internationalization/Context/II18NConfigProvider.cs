@@ -49,4 +49,15 @@ public interface II18NConfigProvider
     ///     Returning null defers entirely to lower-priority providers.
     /// </returns>
     I18NConfig? GetConfiguration();
+
+    /// <summary>
+    ///     Gets the configuration from this provider asynchronously: what the request's middleware asks (<see cref="I18NConfigResolver.ResolveAsync" />).
+    /// </summary>
+    /// <remarks>
+    ///     By default the synchronous answer. A provider that reads a source only asynchronously (a database an engine reads with no
+    ///     synchronous path) overrides this one; <see cref="CachedConfigProvider" /> does it through <c>LoadConfigurationAsync</c>.
+    /// </remarks>
+    /// <param name="ct">Cancels the read.</param>
+    /// <returns>The configuration, or null to defer to lower-priority providers.</returns>
+    ValueTask<I18NConfig?> GetConfigurationAsync(CancellationToken ct = default) => new(GetConfiguration());
 }
