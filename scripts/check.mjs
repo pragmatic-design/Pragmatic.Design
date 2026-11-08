@@ -81,6 +81,7 @@ import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
 import { ENGINE_PROJECTS_DIR, engineProjectProblems } from './engine-projects.mjs';
+import { ENGINE_SUITES, SUITE_DIR, engineSuiteProblems, suiteCount, suiteFilter } from './engine-suites.mjs';
 import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 
 // The gate owns its processes and leaves none behind.
@@ -1317,6 +1318,8 @@ async function runSuites(projects, { parallel, containerTier = false, poolSize =
     const { out } = await runAsync('dotnet',
       ['test', proj, '--nologo', '-v', 'q', '--logger', 'console;verbosity=detailed',
         '--no-build', ...ARTIFACTS,
+        // An engine copy of the Showcase suite leaves its listed tests out of the run (engine-suites.mjs); nothing for any other suite.
+        ...suiteFilter(proj),
         '--blame-hang-timeout', HANG_TIMEOUT, '--blame-hang-dump-type', 'none',
         '--results-directory', 'artifacts/test-results']);
     return { proj, ...parseTestOutput(out), out };
@@ -1938,6 +1941,36 @@ function engineProjectsHold() {
   console.log(bad('FAIL'));
   for (const p of problems) console.log(`    ${p}`);
   console.log(dim('    scripts/engine-projects.mjs: the allowed exclusions and why'));
+  return false;
+}
+
+/**
+ * The Showcase's integration suite on each engine host leaves out only the listed files and tests, each with the exclusion it follows from
+ * (engine-suites.mjs), and reports how much of the EF Core suite it runs.
+ */
+function engineSuitesHold() {
+  process.stdout.write('  the Showcase suite on each engine: only the listed exclusions … ');
+  const read = (path) => (existsSync(path) ? readFileSync(path, 'utf-8') : null);
+  const suites = ENGINE_SUITES.filter((path) => existsSync(path)).map((path) => ({ path, text: readFileSync(path, 'utf-8') }));
+  const problems = [
+    ...ENGINE_SUITES.filter((path) => !existsSync(path)).map((path) => `${path} is listed as an engine suite and does not exist`),
+    ...engineSuiteProblems(suites, read),
+  ];
+
+  if (problems.length === 0) {
+    const sources = readdirSync(SUITE_DIR, { recursive: true }).map((f) => `${SUITE_DIR}/${String(f).replaceAll('\\', '/')}`)
+      .filter((f) => f.endsWith('.cs') && !/\/(bin|obj)\//.test(f));
+    const counts = suites.map(({ path }) => {
+      const c = suiteCount(path, sources, read);
+      return `${basename(path, '.csproj')} ${c.runs} of ${c.all} test methods (${c.files} files, ${c.filtered} tests left out)`;
+    });
+    console.log(`${ok('ok')} ${dim(`(${counts.join('; ')})`)}`);
+    return true;
+  }
+
+  console.log(bad('FAIL'));
+  for (const p of problems) console.log(`    ${p}`);
+  console.log(dim('    scripts/engine-suites.mjs: the allowed exclusions and why'));
   return false;
 }
 
@@ -2746,6 +2779,8 @@ function sourceChecks() {
     && nodeTestCases('scripts/docker-shards.test.mjs', 'the shard check refuses a suite in no shard')
     && engineProjectsHold()
     && nodeTestCases('scripts/engine-projects.test.mjs', 'the engine-projects check refuses EF Core and an exclusion not allowed')
+    && engineSuitesHold()
+    && nodeTestCases('scripts/engine-suites.test.mjs', 'the engine-suites check refuses an exclusion not listed')
     && everyRestoreIsLocked()
     && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
     && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet()

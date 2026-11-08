@@ -12,7 +12,7 @@ namespace Showcase.IntegrationTests.Jobs;
 /// <remarks>
 ///     The Showcase runs jobs on the in-memory stores, so these cover the store contract as the
 ///     host resolves it. The EF Core implementations — and the SQL the lease protocol depends on —
-///     are covered against real PostgreSQL in <see cref="JobLeaseIntegrationTests"/>.
+///     are covered against real PostgreSQL in <c>JobLeaseIntegrationTests</c>, which the engine suites leave out (it is bound to EF Core).
 /// </remarks>
 public class JobStoreIntegrationTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
