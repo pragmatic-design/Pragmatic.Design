@@ -142,6 +142,26 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
     }
 
     /// <summary>
+    ///     The package's entities declare their column lengths (#590), and EF Core's model of the importing boundary bounds the columns with them.
+    ///     The package's EF Core configurations declared them once and were never applied, then removed (#527): every column was unbounded.
+    /// </summary>
+    [Fact]
+    public void ThePackagesColumns_AreBoundedByTheLengthsTheEntitiesDeclare()
+    {
+        using var scope = Services.CreateScope();
+        var model = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(Showcase.Accounts.AccountsBoundary)).Model;
+        int? Length<T>(string property) => model.FindEntityType(typeof(T))!.FindProperty(property)!.GetMaxLength();
+
+        Length<DynamicRole>(nameof(DynamicRole.Name)).Should().Be(256);
+        Length<DynamicRole>(nameof(DynamicRole.Description)).Should().Be(500);
+        Length<DynamicPermission>(nameof(DynamicPermission.Category)).Should().Be(128);
+        Length<DynamicRolePermission>(nameof(DynamicRolePermission.PermissionName)).Should().Be(256);
+        Length<UserRoleAssignment>(nameof(UserRoleAssignment.AssignedBy)).Should().Be(256);
+        Length<UserGroupAssignment>(nameof(UserGroupAssignment.TenantId)).Should().Be(128);
+        Length<DynamicRole>(nameof(DynamicRole.CreatedBy)).Should().BeNull("the control: an attribution was never bounded");
+    }
+
+    /// <summary>
     ///     The control: the entity is in the model, which is what makes the row readable at all.
     /// </summary>
     /// <remarks>

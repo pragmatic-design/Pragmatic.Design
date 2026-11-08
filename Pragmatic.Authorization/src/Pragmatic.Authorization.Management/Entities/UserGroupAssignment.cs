@@ -10,15 +10,19 @@ namespace Pragmatic.Authorization.Management.Entities;
 public partial class UserGroupAssignment : ITemporalRelation, IEntity
 {
     /// <summary>The user identifier.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public required string UserId { get; init; }
 
     /// <summary>The group name.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public required string GroupName { get; init; }
 
     /// <summary>Tenant scope. Null = global.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(128)]
     public string? TenantId { get; set; }
 
     /// <summary>Who assigned this group.</summary>
+    [Pragmatic.Validation.Attributes.MaxLength(256)]
     public string? AssignedBy { get; set; }
 
     /// <inheritdoc />

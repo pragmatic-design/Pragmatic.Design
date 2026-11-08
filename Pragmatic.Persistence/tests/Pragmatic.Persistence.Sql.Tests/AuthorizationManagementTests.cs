@@ -39,25 +39,27 @@ public class AuthorizationManagementTests(PragmaticDatabases databases)
             return [.. schema.Columns.Select(c => (c.Name, c.SqlType, c.IsNullable, c.IsPrimaryKey))];
         }
 
+        // The lengths are the ones the package's EF Core configurations declared before #527 removed them (#590): a name 256, a description
+        // 500, a category and a tenant 128, an assigner 256. The audit and soft-delete attributions were never bounded.
         (string, string, bool, bool)[] audited =
         [
             ("PersistenceId", "uuid", false, true), ("IsDeleted", "boolean", false, false), ("DeletedAt", "timestamptz", true, false),
-            ("DeletedBy", "text", true, false), ("Name", "text", false, false), ("Description", "text", true, false),
+            ("DeletedBy", "text", true, false), ("Name", "varchar(256)", false, false), ("Description", "varchar(500)", true, false),
         ];
         (string, string, bool, bool)[] stamps =
         [
-            ("TenantId", "text", true, false), ("CreatedAt", "timestamptz", false, false), ("CreatedBy", "text", true, false),
+            ("TenantId", "varchar(128)", true, false), ("CreatedAt", "timestamptz", false, false), ("CreatedBy", "text", true, false),
             ("UpdatedAt", "timestamptz", true, false), ("UpdatedBy", "text", true, false),
         ];
         Assert.Equal([.. audited, .. stamps], Columns("DynamicRoles"));
-        Assert.Equal([.. audited, ("Category", "text", true, false), .. stamps], Columns("DynamicPermissions"));
-        Assert.Equal([("PersistenceId", "uuid", false, true), ("RoleName", "text", false, false), ("PermissionName", "text", false, false),
-            ("TenantId", "text", true, false), ("ValidFrom", "timestamptz", false, false), ("ValidTo", "timestamptz", true, false)], Columns("DynamicRolePermissions"));
-        Assert.Equal([("PersistenceId", "uuid", false, true), ("UserId", "text", false, false), ("RoleName", "text", false, false),
-            ("TenantId", "text", true, false), ("AssignedBy", "text", true, false), ("ValidFrom", "timestamptz", false, false),
+        Assert.Equal([.. audited, ("Category", "varchar(128)", true, false), .. stamps], Columns("DynamicPermissions"));
+        Assert.Equal([("PersistenceId", "uuid", false, true), ("RoleName", "varchar(256)", false, false), ("PermissionName", "varchar(256)", false, false),
+            ("TenantId", "varchar(128)", true, false), ("ValidFrom", "timestamptz", false, false), ("ValidTo", "timestamptz", true, false)], Columns("DynamicRolePermissions"));
+        Assert.Equal([("PersistenceId", "uuid", false, true), ("UserId", "varchar(256)", false, false), ("RoleName", "varchar(256)", false, false),
+            ("TenantId", "varchar(128)", true, false), ("AssignedBy", "varchar(256)", true, false), ("ValidFrom", "timestamptz", false, false),
             ("ValidTo", "timestamptz", true, false)], Columns("UserRoleAssignments"));
-        Assert.Equal([("PersistenceId", "uuid", false, true), ("UserId", "text", false, false), ("GroupName", "text", false, false),
-            ("TenantId", "text", true, false), ("AssignedBy", "text", true, false), ("ValidFrom", "timestamptz", false, false),
+        Assert.Equal([("PersistenceId", "uuid", false, true), ("UserId", "varchar(256)", false, false), ("GroupName", "varchar(256)", false, false),
+            ("TenantId", "varchar(128)", true, false), ("AssignedBy", "varchar(256)", true, false), ("ValidFrom", "timestamptz", false, false),
             ("ValidTo", "timestamptz", true, false)], Columns("UserGroupAssignments"));
     }
 

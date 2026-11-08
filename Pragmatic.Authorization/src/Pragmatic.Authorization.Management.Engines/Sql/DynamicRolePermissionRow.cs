@@ -15,10 +15,13 @@ public sealed class DynamicRolePermissionRow
     [Key]
     public Guid PersistenceId { get; set; }
 
+    [MaxLength(256)]
     public string RoleName { get; set; } = "";
 
+    [MaxLength(256)]
     public string PermissionName { get; set; } = "";
 
+    [MaxLength(128)]
     public string? TenantId { get; set; }
 
     public DateTimeOffset ValidFrom { get; set; }
