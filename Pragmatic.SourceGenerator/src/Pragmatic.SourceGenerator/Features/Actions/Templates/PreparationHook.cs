@@ -61,7 +61,7 @@ internal readonly struct PreparationHook(
         yield return "    " + Refuse("global::Pragmatic.Result.Http.UnauthorizedError.Create()");
         yield return $"var __signedInUser = await new {load.ResolverTypeFullName}(";
         yield return "    global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions"
-                     + ".GetRequiredService<global::Pragmatic.Persistence.Repository.IReadRepository<"
+                     + ".GetRequiredService<global::Pragmatic.Identity.IUserLookup<"
                      + $"{load.UserTypeFullName}>>({services}),";
         yield return "    __signedIn)";
         yield return "    .ResolveAsync(ct).ConfigureAwait(false);";

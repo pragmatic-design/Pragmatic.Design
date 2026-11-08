@@ -79,10 +79,10 @@ internal static class InvokerBindingsTransform
             };
 
         var user = users[0];
-        if (!user.HasIdentityPersistence)
+        if (!user.HasUserLookup)
             return load with
             {
-                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only when Pragmatic.Identity.Persistence is referenced"
+                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only where the user has a lookup (EF Core referenced)"
             };
 
         var prefix = string.IsNullOrEmpty(user.Namespace) ? "global::" : $"global::{user.Namespace}.";

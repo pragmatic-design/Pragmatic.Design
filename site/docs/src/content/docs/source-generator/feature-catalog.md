@@ -76,7 +76,7 @@ public partial class UserDto { public string Name { get; set; } }
 **Generates:** strongly-typed options binding + registration for a configuration section, with validation diagnostics (`PRAG2000`, `PRAG2001`, `PRAG2050`).
 
 ### Identity
-**Trigger:** `[PragmaticUser]` / `[ProfileProperty]` (`Pragmatic.Identity.*`); persistence variant via `HasIdentityPersistence`.
+**Trigger:** `[PragmaticUser]` / `[ProfileProperty]` (`Pragmatic.Identity.*`); the resolver and the culture provider wherever the user has an `IUserLookup<TUser>` (EF Core referenced: `{User}EfUserLookup` is generated too).
 **Generates:** `ToProfile()` + profile record, claim→entity user resolvers, and the permission registry from `[assembly: Permission]` and `IRole`. The constants themselves are the one `{Boundary}Permissions` class, beside the entity CRUD.
 
 ### Messaging

@@ -37,8 +37,17 @@ internal sealed record UserEntityModel : GeneratorModel
     /// <summary>Properties marked with [ProfileProperty].</summary>
     public EquatableArray<ProfilePropertyModel> ProfileProperties { get; init; } = EquatableArray<ProfilePropertyModel>.Empty;
 
-    /// <summary>Whether Identity.Persistence is referenced (enables resolver generation).</summary>
-    public bool HasIdentityPersistence { get; init; }
+    /// <summary>
+    ///     Whether EF Core persists the user here (<c>Microsoft.EntityFrameworkCore</c> referenced): the generator writes the
+    ///     <c>IUserLookup&lt;TUser&gt;</c> over the repository's <c>Query()</c>.
+    /// </summary>
+    public bool LooksUpThroughEfCore { get; init; }
+
+    /// <summary>
+    ///     Whether an <c>IUserLookup&lt;TUser&gt;</c> exists for the user: what the resolver reads through, so what decides whether the resolver, its
+    ///     registration, the culture provider and the current-user bindings are generated. The engines' lookups come with #593 and #594.
+    /// </summary>
+    public bool HasUserLookup => LooksUpThroughEfCore;
 
     /// <summary>
     ///     What a query may bind with <c>[FromCurrentUser(member)]</c>: the entity's readable members,

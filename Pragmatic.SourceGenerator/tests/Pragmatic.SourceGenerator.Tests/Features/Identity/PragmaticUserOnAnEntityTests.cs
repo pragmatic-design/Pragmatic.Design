@@ -65,18 +65,18 @@ public class PragmaticUserOnAnEntityTests
         """;
 
     /// <summary>
-    ///     Marks the compilation as referencing Identity.Persistence — the resolver's gate.
+    ///     Marks the compilation as referencing EF Core — what gives the user its lookup, and so the resolver (#592).
     /// </summary>
     /// <remarks>
-    ///     The marker is <c>RolePermission</c>.
+    ///     The marker is <c>DbContext</c>.
     ///     Non-generic deliberately: <c>GetTypeByMetadataName</c> needs backtick arity for a generic
     ///     type, and a marker that silently resolves to null turns the whole feature off with no
     ///     diagnostic — the failure then names the missing generated types, not the cause.
     /// </remarks>
     private const string PersistenceStub = """
-        namespace Pragmatic.Identity.Persistence.Entities
+        namespace Microsoft.EntityFrameworkCore
         {
-            public class RolePermission { }
+            public class DbContext { }
         }
         """;
 
@@ -115,12 +115,12 @@ public class PragmaticUserOnAnEntityTests
     }
 
     [Fact]
-    public void UserEntityWithNoDeclaredId_GetsItsResolverWhenIdentityPersistenceIsReferenced()
+    public void UserEntityWithNoDeclaredId_GetsItsResolverWhenItHasALookup()
     {
         var files = Generated(Stubs + PersistenceStub + AppUser);
 
         files.Keys.Should().Contain("App.AppUser.Resolver.g.cs",
-            "the resolver is gated on Identity.Persistence only, not on how the key was resolved");
+            "the resolver is gated on the user's lookup only, not on how the key was resolved");
     }
 
     /// <summary>

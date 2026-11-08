@@ -32,12 +32,18 @@ internal sealed class UserCultureRegistrationTemplate : CSharpTemplate
 
     private readonly string _providerFqn;
     private readonly string _resolverFqn;
+    private readonly (string Service, string Implementation)? _lookup;
     private readonly string _namespace;
 
-    public UserCultureRegistrationTemplate(string providerFqn, string resolverFqn, string @namespace)
+    /// <param name="providerFqn">The culture provider.</param>
+    /// <param name="resolverFqn">The resolver it reads through.</param>
+    /// <param name="lookup">The user's lookup this compilation generates (its service and implementation), when it does.</param>
+    /// <param name="namespace">Where the registration is written.</param>
+    public UserCultureRegistrationTemplate(string providerFqn, string resolverFqn, (string Service, string Implementation)? lookup, string @namespace)
     {
         _providerFqn = providerFqn;
         _resolverFqn = resolverFqn;
+        _lookup = lookup;
         _namespace = @namespace;
     }
 
@@ -78,6 +84,11 @@ internal sealed class UserCultureRegistrationTemplate : CSharpTemplate
             AppendLine(
                 "global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions" +
                 $".TryAddScoped<global::{_resolverFqn}>(builder.Services);");
+            // And the lookup the resolver reads through, for the same reason.
+            if (_lookup is { } lookup)
+                AppendLine(
+                    "global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions" +
+                    $".TryAddScoped<{lookup.Service}, {lookup.Implementation}>(builder.Services);");
             AppendLine(
                 "builder.Services.AddScoped<global::Pragmatic.Internationalization.Context.II18NConfigProvider, " +
                 $"global::{_providerFqn}>();");

@@ -5,15 +5,18 @@ using Pragmatic.SourceGenerator.Features.Identity.Models;
 namespace Pragmatic.SourceGenerator.Features.Identity.Templates;
 
 /// <summary>
-///     Generates a user resolver service that loads the user entity from the database
-///     using <c>ICurrentUser</c> claims. Only generated when Identity.Persistence is referenced.
+///     Generates a user resolver service that loads the user entity using <c>ICurrentUser</c> claims, through the user's
+///     <c>IUserLookup&lt;TUser&gt;</c>. Generated wherever such a lookup exists.
 /// </summary>
 /// <remarks>
-///     Both an asynchronous and a synchronous pair are emitted. The synchronous one is not a
-///     convenience: <c>II18NConfigProvider.GetConfiguration()</c> is synchronous, so a caller on that
-///     path has only two ways to reach the database — a real synchronous query, or blocking on an
-///     asynchronous one. The second is the sync-over-async this codebase refuses; the first is what EF
-///     Core has always supported, and it is behind a five-minute cache.
+///     <para>
+///         The lookup is the persistence branch's: over EF Core's <c>Query()</c>, or the engines' generated reads. The resolver names none of
+///         them, so it compiles without EF Core (#592).
+///     </para>
+///     <para>
+///         Asynchronous only. The synchronous pair existed for <c>II18NConfigProvider.GetConfiguration()</c>; the culture provider now loads
+///         through <c>LoadConfigurationAsync</c> (#591), and a synchronous read is what the engines do not have.
+///     </para>
 /// </remarks>
 internal sealed class UserResolverTemplate : CSharpTemplate
 {
@@ -35,14 +38,11 @@ internal sealed class UserResolverTemplate : CSharpTemplate
         ToSourceText());
 
     protected override bool Validate() =>
-        !string.IsNullOrEmpty(_model.TypeName) && _model.HasIdentityPersistence;
+        !string.IsNullOrEmpty(_model.TypeName) && _model.HasUserLookup;
 
     public override void RenderFile()
     {
-        AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Pragmatic.Identity");
-        AddUsing("Pragmatic.Persistence.Repository");
-        AddUsing("System.Linq");   // the synchronous Resolve's FirstOrDefault: declared, not implicit (#202)
 
         if (!string.IsNullOrEmpty(_model.Namespace))
             AppendNamespace(_model.Namespace);
@@ -51,16 +51,10 @@ internal sealed class UserResolverTemplate : CSharpTemplate
 
         var resolverName = ResolverNameFor(_model);
 
-        XmlSummary($"Resolves the current <see cref=\"{_model.TypeName}\"/> from the database using <see cref=\"ICurrentUser\"/> claims.");
+        XmlSummary($"Resolves the current <see cref=\"{_model.TypeName}\"/> using <see cref=\"ICurrentUser\"/> claims.");
         AppendLine($"{_model.Accessibility} sealed class {resolverName}(");
         IncreaseIndent();
-        // The repository, not a DbContext. A generated resolver lives in the module assembly, and
-        // the boundary's context is generated in the HOST — it cannot be named from here. The base
-        // Microsoft.EntityFrameworkCore.DbContext can, but a Pragmatic application never registers
-        // it: there is one context per boundary, so asking for it would stop the host booting at
-        // ValidateOnBuild. IReadRepository<TEntity> is registered by the framework
-        // and reaches across the assembly boundary, which is what this needs.
-        AppendLine($"IReadRepository<{_model.TypeName}> repository,");
+        AppendLine($"IUserLookup<{_model.TypeName}> users,");
         AppendLine("ICurrentUser currentUser)");
         DecreaseIndent();
         AppendLine("{");
@@ -68,13 +62,9 @@ internal sealed class UserResolverTemplate : CSharpTemplate
 
         RenderResolveMethod();
         AppendLine();
-        RenderResolveSyncMethod();
-        AppendLine();
         RenderFindByIdentityKeyMethod();
         AppendLine();
         RenderGetProfileMethod();
-        AppendLine();
-        RenderGetProfileSyncMethod();
 
         DecreaseIndent();
         AppendLine("}");
@@ -87,38 +77,8 @@ internal sealed class UserResolverTemplate : CSharpTemplate
         AppendLine("{");
         IncreaseIndent();
 
-        var predicate = RenderMatchPreamble("null");
-        // Query(), whose own remark reserves it for infrastructure that cannot use a specification:
-        // this needs a synchronous path, because II18NConfigProvider.GetConfiguration() is synchronous.
-        AppendLine("return await repository.Query()");
-        AppendLine($"    .FirstOrDefaultAsync(u => {predicate}, ct)");
-        AppendLine("    .ConfigureAwait(false);");
-
-        DecreaseIndent();
-        AppendLine("}");
-    }
-
-    /// <summary>
-    ///     The same lookup, synchronously, for the callers that have no asynchronous seam to use.
-    /// </summary>
-    /// <remarks>
-    ///     A genuine synchronous EF Core query, not <c>.GetAwaiter().GetResult()</c> over the
-    ///     asynchronous one: blocking a thread on a query the provider issues is a cost, blocking it on
-    ///     a task scheduled to the same pool is a way to run out of threads.
-    /// </remarks>
-    private void RenderResolveSyncMethod()
-    {
-        XmlSummary(
-            "Resolves the user entity synchronously, for callers on a synchronous contract " +
-            "(<see cref=\"global::Pragmatic.Internationalization.Context.II18NConfigProvider\"/> is one). " +
-            "Prefer ResolveAsync everywhere else.");
-        AppendLine($"public {_model.TypeName}? Resolve()");
-        AppendLine("{");
-        IncreaseIndent();
-
-        var predicate = RenderMatchPreamble("null");
-        AppendLine("return repository.Query()");
-        AppendLine($"    .FirstOrDefault(u => {predicate});");
+        var value = RenderMatchPreamble("null");
+        AppendLine($"return await users.FindByIdentityKeyAsync({value}, ct).ConfigureAwait(false);");
 
         DecreaseIndent();
         AppendLine("}");
@@ -138,32 +98,23 @@ internal sealed class UserResolverTemplate : CSharpTemplate
         XmlSummary(
             $"Finds the user whose <c>{_model.MatchProperty}</c> is <paramref name=\"identityKey\"/>, " +
             "whoever is calling — the lookup a sign-in does before anyone is authenticated.");
-        AppendLine($"public async Task<{_model.TypeName}?> FindByIdentityKeyAsync(string identityKey, CancellationToken ct = default)");
-        AppendLine("{");
-        IncreaseIndent();
-        AppendLine("if (string.IsNullOrEmpty(identityKey)) return null;");
-        AppendLine();
-        AppendLine("return await repository.Query()");
-        AppendLine($"    .FirstOrDefaultAsync(u => u.{_model.MatchProperty} == identityKey, ct)");
-        AppendLine("    .ConfigureAwait(false);");
-        DecreaseIndent();
-        AppendLine("}");
+        AppendLine($"public Task<{_model.TypeName}?> FindByIdentityKeyAsync(string identityKey, CancellationToken ct = default)");
+        AppendLine("    => users.FindByIdentityKeyAsync(identityKey, ct);");
     }
 
     /// <summary>
-    ///     Emits the guards that turn <c>ICurrentUser</c> into the value the query matches on, and
-    ///     returns the predicate body.
+    ///     Emits the guards that turn <c>ICurrentUser</c> into the value the lookup matches on, and
+    ///     returns the expression holding it.
     /// </summary>
     /// <remarks>
-    ///     Shared by both overloads on purpose. Two copies of "which claim identifies the user" is the
-    ///     shape where one of them keeps working and the other silently matches nobody.
+    ///     One place for "which claim identifies the user". Two copies is the shape where one of them keeps working and the other silently
+    ///     matches nobody.
     /// </remarks>
     private string RenderMatchPreamble(string noMatchResult)
     {
         AppendLine($"if (!currentUser.IsAuthenticated) return {noMatchResult};");
         AppendLine();
 
-        var matchExpr = $"u.{_model.MatchProperty}";
         var isExternalKey = _model.MatchProperty.EndsWith("ExternalIdentityKey");
 
         if (_model.MatchClaim == "sub" && isExternalKey)
@@ -177,15 +128,14 @@ internal sealed class UserResolverTemplate : CSharpTemplate
             AppendLine($"if (string.IsNullOrEmpty(key)) return {noMatchResult};");
             AppendLine();
 
-            return $"{matchExpr} == key";
+            return "key";
         }
 
         AppendLine($"var claimValues = currentUser.Claims.GetValueOrDefault(\"{_model.MatchClaim}\");");
         AppendLine($"if (claimValues is null || claimValues.Count == 0) return {noMatchResult};");
-        AppendLine("var claimValue = claimValues[0];");
         AppendLine();
 
-        return $"{matchExpr} == claimValue";
+        return "claimValues[0]";
     }
 
     private void RenderGetProfileMethod()
@@ -195,18 +145,6 @@ internal sealed class UserResolverTemplate : CSharpTemplate
         AppendLine("{");
         IncreaseIndent();
         AppendLine("var user = await ResolveAsync(ct).ConfigureAwait(false);");
-        AppendLine("return user?.ToProfile();");
-        DecreaseIndent();
-        AppendLine("}");
-    }
-
-    private void RenderGetProfileSyncMethod()
-    {
-        XmlSummary("Resolves the user and returns their profile synchronously, or null if not found.");
-        AppendLine("public IUserProfile? GetProfile()");
-        AppendLine("{");
-        IncreaseIndent();
-        AppendLine("var user = Resolve();");
         AppendLine("return user?.ToProfile();");
         DecreaseIndent();
         AppendLine("}");

@@ -67,7 +67,7 @@ internal static class InvokerBindingEmitter
             {
                 yield return $"var __user = await new {user.ResolverTypeFullName}(";
                 yield return "    global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions"
-                             + ".GetRequiredService<global::Pragmatic.Persistence.Repository.IReadRepository<"
+                             + ".GetRequiredService<global::Pragmatic.Identity.IUserLookup<"
                              + $"{user.UserTypeFullName}>>({services}),";
                 yield return "    __currentUser)";
                 yield return $"    .ResolveAsync({cancellation}).ConfigureAwait(false);";
