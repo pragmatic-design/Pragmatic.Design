@@ -108,6 +108,10 @@ How do I inspect effective permissions for a user today?
 | `RevokeRoleFromUser` | `authorization.assignments.manage` |
 | `GetEffectivePermissions` | `authorization.view` |
 
+A caller with a tenant gives only what they hold: `AssignPermissionsToRole` refuses a permission the caller does
+not hold, and `AssignRoleToUser` refuses a role carrying one (every grant of the role not yet expired). Both answer
+`403`. A caller with no tenant is the platform, and is not bound by what they hold.
+
 ## Persisted Model
 
 | Entity | Purpose | Notes |

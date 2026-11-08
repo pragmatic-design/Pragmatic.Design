@@ -104,6 +104,47 @@ public class AnAssignedRoleIsEnforcedTests(PostgresFixture fixture) : Integratio
         result.IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>
+    ///     A tenant administrator cannot give a role carrying a permission they do not hold: with the assignment
+    ///     permission alone they would otherwise give themselves, or anyone, every role of the tenant.
+    /// </summary>
+    [Fact]
+    public async Task ARoleCarryingAPermissionTheAssignerDoesNotHold_IsRefused()
+    {
+        var role = NewId("front-desk");
+        await GrantAsync(role, ProbePermission);
+
+        var result = await TryAssignAsync(Tenant, holding: ["authorization.assignments.manage"], NewId("managed-user"), role);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().BeOfType<ForbiddenError>();
+    }
+
+    /// <summary>The control: the same assignment by an administrator who holds what the role carries.</summary>
+    [Fact]
+    public async Task ARoleWhosePermissionsTheAssignerHolds_IsAssigned()
+    {
+        var role = NewId("front-desk");
+        await GrantAsync(role, ProbePermission);
+
+        var result = await TryAssignAsync(
+            Tenant, holding: ["authorization.assignments.manage", "booking.*"], NewId("managed-user"), role);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    /// <summary>An operator with no tenant is the platform, and is not bound by what they hold.</summary>
+    [Fact]
+    public async Task AnOperatorWithNoTenant_AssignsFreely()
+    {
+        var role = NewId("front-desk");
+        await GrantAsync(role, ProbePermission);
+
+        var result = await TryAssignAsync(tenant: null, holding: ["authorization.assignments.manage"], NewId("managed-user"), role, Tenant);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}"[..(prefix.Length + 13)];
@@ -123,13 +164,20 @@ public class AnAssignedRoleIsEnforcedTests(PostgresFixture fixture) : Integratio
             .InvokeAsync(new AssignPermissionsToRole { RoleName = role, Permissions = permissions, TenantId = tenant });
     }
 
+    // The administrator holds what the roles of these tests carry: an assigner who does not is refused.
     private async Task AssignAsync(string userId, string role)
     {
-        using var scope = AsAdministrator("authorization.assignments.manage");
-        var result = await scope.ServiceProvider
-            .GetRequiredService<IDomainActionInvoker<AssignRoleToUser, Guid>>()
-            .InvokeAsync(new AssignRoleToUser { UserId = userId, RoleName = role, TenantId = Tenant });
+        var result = await TryAssignAsync(Tenant, ["authorization.assignments.manage", ProbePermission], userId, role);
         result.IsSuccess.Should().BeTrue();
+    }
+
+    private async Task<Result<Guid, IError>> TryAssignAsync(
+        string? tenant, string[] holding, string userId, string role, string? assignmentTenant = null)
+    {
+        using var scope = AsAdministrator(tenant, holding);
+        return await scope.ServiceProvider
+            .GetRequiredService<IDomainActionInvoker<AssignRoleToUser, Guid>>()
+            .InvokeAsync(new AssignRoleToUser { UserId = userId, RoleName = role, TenantId = assignmentTenant ?? tenant });
     }
 
     private async Task RevokeAsync(string userId, string role)
