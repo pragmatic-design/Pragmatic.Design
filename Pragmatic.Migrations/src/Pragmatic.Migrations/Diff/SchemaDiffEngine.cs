@@ -329,16 +329,66 @@ public sealed class SchemaDiffEngine : ISchemaDiffEngine
     ///     pair is only removed when the opening paren's match is the final character, so an
     ///     expression like "(a)+(b)" is left intact.
     /// </summary>
+    /// <remarks>
+    ///     And a trailing PostgreSQL cast: <c>information_schema</c> reports a text default as <c>'IT'::character varying</c> and an
+    ///     array or JSON one as <c>'{}'::text[]</c>, where the desired schema writes <c>'IT'</c>. Compared with the cast the two never
+    ///     matched, an <c>ALTER DEFAULT</c> ran at every start, and a follower waiting for the leader was refused as behind. Only a cast
+    ///     at the end and outside quotes and parentheses is dropped: <c>nextval('seq'::regclass)</c> and <c>'a::b'</c> are left whole.
+    /// </remarks>
     internal static string? NormalizeDefault(string? value)
     {
         if (value is null) return null;
 
         var v = value.Trim();
-        while (v.Length >= 2 && v[0] == '(' && v[^1] == ')' && IsWrappingPair(v))
-            v = v[1..^1].Trim();
+        while (true)
+        {
+            while (v.Length >= 2 && v[0] == '(' && v[^1] == ')' && IsWrappingPair(v))
+                v = v[1..^1].Trim();
+
+            var cast = TrailingCastStart(v);
+            if (cast < 0)
+                break;
+            v = v[..cast].Trim();
+        }
 
         return v.ToLowerInvariant();
     }
+
+    /// <summary>
+    ///     The index of a trailing <c>::type</c> cast at depth zero and outside quotes, or -1: the type a name, optionally with a
+    ///     length or precision and an array suffix (<c>character varying(64)</c>, <c>numeric(10,2)</c>, <c>text[]</c>).
+    /// </summary>
+    private static int TrailingCastStart(string value)
+    {
+        var depth = 0;
+        var inQuote = false;
+        var last = -1;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c == '\'')
+                inQuote = !inQuote;
+            else if (inQuote)
+                continue;
+            else if (c == '(')
+                depth++;
+            else if (c == ')')
+                depth--;
+            else if (c == ':' && depth == 0 && i + 1 < value.Length && value[i + 1] == ':')
+            {
+                last = i;
+                i++;
+            }
+        }
+
+        if (last <= 0 || inQuote)
+            return -1;
+        return TrailingCastType.IsMatch(value[(last + 2)..]) ? last : -1;
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex TrailingCastType = new(
+        @"^\s*""?[A-Za-z_][A-Za-z0-9_ ""\.]*(\(\s*\d+\s*(,\s*\d+\s*)?\))?(\[\])*\s*$",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     private static bool IsWrappingPair(string value)
     {
