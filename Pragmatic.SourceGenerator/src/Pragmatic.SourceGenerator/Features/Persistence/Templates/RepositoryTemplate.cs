@@ -625,6 +625,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         {
             if (_model.IsSoftDelete)
             {
+                RenderEraseWhenSuspended("_db.Remove(entity);");
                 Comment("Soft delete - mark as deleted instead of removing");
                 AppendLine("entity.IsDeleted = true;");
                 AppendLine("entity.DeletedAt = _timeProvider.GetUtcNow();");
@@ -635,6 +636,20 @@ internal sealed class RepositoryTemplate : CSharpTemplate
                 AppendLine("_db.Remove(entity);");
             }
         }, "void", parameters);
+    }
+
+    /// <summary>
+    ///     Inside <c>SoftDeleteScope.Suspend()</c> a removal is an erasure, which the interceptor lets through as a delete. Flagging the
+    ///     row there, as the soft path does, never asked for one: a purge past its retention window re-flagged its rows and left them.
+    /// </summary>
+    private void RenderEraseWhenSuspended(string erase)
+    {
+        AppendLine("if (global::Pragmatic.Persistence.Entity.SoftDeleteScope.IsSuspended)");
+        Block(() =>
+        {
+            AppendLine(erase);
+            AppendLine("return;");
+        });
     }
 
     private void RenderRemoveRange(string entityType)
@@ -651,6 +666,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         {
             if (_model.IsSoftDelete)
             {
+                RenderEraseWhenSuspended("_db.RemoveRange(entities);");
                 Comment("Soft delete - mark as deleted instead of removing");
                 AppendLine("foreach (var entity in entities)");
                 Block(() =>
@@ -1059,14 +1075,22 @@ internal sealed class RepositoryTemplate : CSharpTemplate
                 AppendLine("if (__tracked.Count == 0) return 0;");
                 if (_model.IsSoftDelete)
                 {
-                    AppendLine("var __deletedBy = _currentUser?.IdOrNull();");
-                    AppendLine("var __now = _timeProvider.GetUtcNow();");
-                    AppendLine("foreach (var __e in __tracked)");
+                    AppendLine("if (global::Pragmatic.Persistence.Entity.SoftDeleteScope.IsSuspended)");
+                    IncreaseIndent();
+                    AppendLine("_db.RemoveRange(__tracked);");
+                    DecreaseIndent();
+                    AppendLine("else");
                     Block(() =>
                     {
-                        AppendLine("__e.IsDeleted = true;");
-                        AppendLine("__e.DeletedAt = __now;");
-                        AppendLine("__e.DeletedBy = __deletedBy;");
+                        AppendLine("var __deletedBy = _currentUser?.IdOrNull();");
+                        AppendLine("var __now = _timeProvider.GetUtcNow();");
+                        AppendLine("foreach (var __e in __tracked)");
+                        Block(() =>
+                        {
+                            AppendLine("__e.IsDeleted = true;");
+                            AppendLine("__e.DeletedAt = __now;");
+                            AppendLine("__e.DeletedBy = __deletedBy;");
+                        });
                     });
                 }
                 else
@@ -1082,17 +1106,27 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             // Fast path (no roll-up): SQL ExecuteUpdate/Delete, plus a synthetic aggregate audit row when [Audited].
             if (_model.IsSoftDelete)
             {
-                Comment("Soft delete - mark as deleted instead of physically removing");
-                AppendLine("var deletedBy = _currentUser?.IdOrNull();");
-                AppendLine("var now = _timeProvider.GetUtcNow();");
-                AppendLine("var __affected = await ApplyRootFilters(Set).Where(filter.ToExpression()).ExecuteUpdateAsync(s =>");
-                AppendLine("{");
+                // Inside SoftDeleteScope.Suspend() the delete is an erasure, as the Sql engine's bulk runs it.
+                AppendLine("int __affected;");
+                AppendLine("if (global::Pragmatic.Persistence.Entity.SoftDeleteScope.IsSuspended)");
                 IncreaseIndent();
-                AppendLine("s.SetProperty(e => e.IsDeleted, true);");
-                AppendLine("s.SetProperty(e => e.DeletedAt, now);");
-                AppendLine("s.SetProperty(e => e.DeletedBy, deletedBy);");
+                AppendLine("__affected = await ApplyRootFilters(Set).Where(filter.ToExpression()).ExecuteDeleteAsync(ct).ConfigureAwait(false);");
                 DecreaseIndent();
-                AppendLine("}, ct).ConfigureAwait(false);");
+                AppendLine("else");
+                Block(() =>
+                {
+                    Comment("Soft delete - mark as deleted instead of physically removing");
+                    AppendLine("var deletedBy = _currentUser?.IdOrNull();");
+                    AppendLine("var now = _timeProvider.GetUtcNow();");
+                    AppendLine("__affected = await ApplyRootFilters(Set).Where(filter.ToExpression()).ExecuteUpdateAsync(s =>");
+                    AppendLine("{");
+                    IncreaseIndent();
+                    AppendLine("s.SetProperty(e => e.IsDeleted, true);");
+                    AppendLine("s.SetProperty(e => e.DeletedAt, now);");
+                    AppendLine("s.SetProperty(e => e.DeletedBy, deletedBy);");
+                    DecreaseIndent();
+                    AppendLine("}, ct).ConfigureAwait(false);");
+                });
             }
             else
             {
