@@ -78,6 +78,18 @@ the markup cannot express (styling, page-number fields, hyperlinks); see
 [Templating](docs/templating.md), [Markup](docs/markup-parser.md) and
 [Getting Started](docs/getting-started.md).
 
+**PDF platforms and fonts.** `Pragmatic.Documents.Pdf` ships its native engine for win-x64, linux-x64
+and osx-arm64 (`PdfRenderer.IsSupported` answers whether it loads). The engine uses the fonts installed
+on the machine that renders. On Linux it sees them only through fontconfig, so a container image needs
+both packages, or every render fails with "No fonts found on this machine":
+
+```dockerfile
+RUN apt-get update && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core
+```
+
+See [Platform support](docs/pdf-rendering.md#platform-support) and
+[Styles and fonts](docs/pdf-rendering.md#styles-and-fonts).
+
 ## Status
 
 **Functional** within 1.0.0-alpha: PDF, DOCX, HTML email, CSV, and XLSX rendering. Parsing is currently
