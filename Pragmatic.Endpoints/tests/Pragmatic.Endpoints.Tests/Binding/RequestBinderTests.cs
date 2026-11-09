@@ -78,6 +78,34 @@ public class RequestBinderTests
         RequestBinder.TryBindEnum<Shade>("chartreuse", out _).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("99")]
+    [InlineData("-1")]
+    public void AnUnknownEnumNumber_Fails(string raw)
+    {
+        RequestBinder.TryBindEnum<Shade>(raw, out _).Should().BeFalse("a number no member names is as malformed as a name");
+        RequestBinder.TryBindEnumOptional<Shade>(raw, fallback: null, out _).Should().BeFalse();
+    }
+
+    [Flags]
+    public enum Access { None = 0, Read = 1, Write = 2 }
+
+    [Theory]
+    [InlineData("3", Access.Read | Access.Write)]
+    [InlineData("Read, Write", Access.Read | Access.Write)]
+    [InlineData("0", Access.None)]
+    public void AFlagsEnum_BindsACombinationOfItsFlags(string raw, Access expected)
+    {
+        RequestBinder.TryBindEnum<Access>(raw, out var value).Should().BeTrue();
+        value.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AFlagsEnum_RefusesABitItDoesNotDefine()
+    {
+        RequestBinder.TryBindEnum<Access>("5", out _).Should().BeFalse("4 is no flag of Access, combined or not");
+    }
+
     [Fact]
     public void AnOptionalEnum_FallsBackWhenAbsent()
     {

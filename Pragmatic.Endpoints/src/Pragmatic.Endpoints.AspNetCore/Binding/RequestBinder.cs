@@ -57,7 +57,11 @@ public static class RequestBinder
         return false;
     }
 
-    /// <summary>Binds a required enum, by name or by numeric value, case-insensitively.</summary>
+    /// <summary>
+    ///     Binds a required enum, by name or by numeric value, case-insensitively — a value the enum defines, or
+    ///     for a <c>[Flags]</c> enum a combination of the flags it defines.
+    /// </summary>
+    /// <returns><c>false</c> when the value is absent, malformed, or a number the enum does not define.</returns>
     public static bool TryBindEnum<T>(string? raw, out T value)
         where T : struct, Enum
     {
@@ -67,7 +71,7 @@ public static class RequestBinder
             return false;
         }
 
-        return Enum.TryParse(raw, ignoreCase: true, out value);
+        return Enum.TryParse(raw, ignoreCase: true, out value) && IsDefinedValue(value);
     }
 
     /// <summary>Binds an optional enum. An absent value yields <paramref name="fallback" />.</summary>
@@ -80,7 +84,7 @@ public static class RequestBinder
             return true;
         }
 
-        if (Enum.TryParse<T>(raw, ignoreCase: true, out var parsed))
+        if (Enum.TryParse<T>(raw, ignoreCase: true, out var parsed) && IsDefinedValue(parsed))
         {
             value = parsed;
             return true;
@@ -88,6 +92,27 @@ public static class RequestBinder
 
         value = default;
         return false;
+    }
+
+    /// <summary>Whether <paramref name="value" /> is one the enum names: a member, or a combination of a <c>[Flags]</c> enum's.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         ⚠️ <c>Enum.TryParse</c> alone accepts any integer, so <c>?status=99</c> reached the endpoint as a value no
+    ///         member names, while an unknown name was refused: the same mistake, answered two ways.
+    ///     </para>
+    ///     <para>
+    ///         Read through <c>ToString</c> rather than <c>Enum.IsDefined</c>, which knows nothing of <c>[Flags]</c> and
+    ///         would refuse <c>Read | Write</c>. <c>ToString</c> honours the attribute itself — a defined value, or a
+    ///         combination of defined flags, becomes names, and anything else becomes the number — and a C# member name
+    ///         cannot start with a digit or a minus. So the one rule holds for both kinds of enum, without this code
+    ///         reading the attribute.
+    ///     </para>
+    /// </remarks>
+    private static bool IsDefinedValue<T>(T value)
+        where T : struct, Enum
+    {
+        var text = value.ToString();
+        return text.Length > 0 && !char.IsAsciiDigit(text[0]) && text[0] != '-';
     }
 
     /// <summary>Binds a required string. Present-but-empty counts as present.</summary>
