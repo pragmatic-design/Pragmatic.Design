@@ -507,16 +507,17 @@ Pragmatic implements CLDR-compliant plural rules for 40+ languages. The rules ar
 
 **Germanic** (en, de, nl, sv, da, no, fi): Simple one/other split. Count 1 is `One`, everything else is `Other`.
 
-**Romance** (fr, it, es, pt, ca): Both 0 and 1 are `One`. Count 2+ is `Other`.
+**Romance**: French and Portuguese (fr, pt) put both 0 and 1 in `One`; Italian, Spanish, Catalan and European Portuguese (it, es, ca, pt-PT) put only 1 there, so 0 is `Other`. In all five a whole number of millions is `Many` ("un milione di"); a message without a `many` form falls back to `other`.
 
 **East Slavic** (ru, uk, be): One/few/many based on last digits. `1` (not 11) is `One`. `2-4` (not 12-14) is `Few`. Everything else is `Many`.
 
-**East Asian** (ja, zh, ko, vi, th) and **Turkish-family** (tr, az): No plural forms, always `Other`.
+**No plural forms** (ja, zh, ko, th, id, ms): always `Other`. Vietnamese is not among them: 0 and 1 are `One`, as in Hindi. Turkish, Azerbaijani, Georgian, Kazakh, Kyrgyz and Uzbek have `One` for 1.
 
 ```csharp
 PluralRules.GetCategory("en", 1);   // One
 PluralRules.GetCategory("en", 5);   // Other
-PluralRules.GetCategory("fr", 0);   // One (Romance: 0 is singular)
+PluralRules.GetCategory("fr", 0);   // One (French: 0 is singular)
+PluralRules.GetCategory("it", 0);   // Other (Italian: only 1 is singular)
 PluralRules.GetCategory("ru", 2);   // Few
 PluralRules.GetCategory("ru", 5);   // Many
 PluralRules.GetCategory("ar", 2);   // Two (Arabic uses all 6 categories)

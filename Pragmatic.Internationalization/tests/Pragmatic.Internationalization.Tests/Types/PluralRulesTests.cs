@@ -34,7 +34,7 @@ public class PluralRulesTests
     [InlineData("fr", 0, PluralCategory.One)]
     [InlineData("fr", 1, PluralCategory.One)]
     [InlineData("fr", 2, PluralCategory.Other)]
-    [InlineData("it", 0, PluralCategory.One)]
+    [InlineData("it", 0, PluralCategory.Other)]
     [InlineData("it", 1, PluralCategory.One)]
     [InlineData("it-IT", 5, PluralCategory.Other)]
     public void Romance_ReturnsCorrectCategory(string culture, int count, PluralCategory expected)

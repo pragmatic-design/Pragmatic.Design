@@ -21,16 +21,21 @@ public static partial class PluralRules
     /// </summary>
     public static PluralCategory GetCategory(string culture, int count)
     {
+        // European Portuguese is the one region with a rule of its own in CLDR (pt_PT): Italian's, not Brazil's.
+        if (string.Equals(culture, "pt-PT", StringComparison.OrdinalIgnoreCase))
+            return GetItalianCategory(count);
+
         // Normalize culture to base language code
         var lang = GetLanguageCode(culture);
 
         return lang switch
         {
-            // East Asian languages: no plurals (Japanese, Chinese, Korean, Vietnamese, etc.)
-            "ja" or "zh" or "ko" or "vi" or "th" or "id" or "ms" => PluralCategory.Other,
+            // No plurals (Japanese, Chinese, Korean, Thai, Indonesian, Malay)
+            "ja" or "zh" or "ko" or "th" or "id" or "ms" => PluralCategory.Other,
 
-            // Romance languages: singular/plural (French, Italian, Spanish, Portuguese, etc.)
-            "fr" or "it" or "es" or "pt" or "ca" => GetRomanceCategory(count),
+            // Romance languages: French and Portuguese put 0 in the singular, Italian, Spanish and Catalan do not
+            "fr" or "pt" => GetFrenchCategory(count),
+            "it" or "es" or "ca" => GetItalianCategory(count),
 
             // Germanic languages: singular/plural (English, German, Dutch, Swedish, etc.)
             "en" or "de" or "nl" or "sv" or "da" or "no" or "nb" or "nn" => GetGermanicCategory(count),
@@ -65,8 +70,8 @@ public static partial class PluralRules
             // Hebrew
             "he" or "iw" => GetHebrewCategory(count),
 
-            // Turkish and similar: only 'other'
-            "tr" or "az" or "ka" or "ky" or "kk" or "uz" => PluralCategory.Other,
+            // Turkish, Azerbaijani, Georgian, Kyrgyz, Kazakh, Uzbek: one (1), other
+            "tr" or "az" or "ka" or "ky" or "kk" or "uz" => GetGermanicCategory(count),
 
             // Finnish, Estonian
             "fi" or "et" => GetGermanicCategory(count),
@@ -77,8 +82,11 @@ public static partial class PluralRules
             // Greek
             "el" => GetGermanicCategory(count),
 
-            // Hindi and related
-            "hi" or "bn" or "gu" or "kn" or "ml" or "mr" or "pa" or "ta" or "te" => GetIndicCategory(count),
+            // Hindi, Bengali, Gujarati, Kannada, Punjabi and Vietnamese: one (0, 1), other
+            "hi" or "bn" or "gu" or "kn" or "pa" or "vi" => GetIndicCategory(count),
+
+            // Malayalam, Marathi, Tamil, Telugu: one (1), other
+            "ml" or "mr" or "ta" or "te" => GetGermanicCategory(count),
 
             // Default: use English-style singular/plural
             _ => GetGermanicCategory(count)
