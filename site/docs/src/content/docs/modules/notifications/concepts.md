@@ -64,7 +64,12 @@ Before routing, preferences are checked:
 - If `Preferences.Enabled` is `false`, returns `NotificationChannel.None` (skip)
 - If the `Category` is in `Preferences.MutedCategories`, returns `NotificationChannel.None`
 
-The `ChannelOverride` property on `NotificationRequest` bypasses routing entirely.
+The `ChannelOverride` property on `NotificationRequest` bypasses routing entirely. It pins channels, not
+addresses: each resolved recipient carries the channel its address belongs to (an e-mail address
+`Email`, a phone number `Sms`, a URL `Webhook`), and receives only the overridden channels it shares.
+An override of `Email | Sms` sent to an e-mail address and a phone number delivers one e-mail and one
+SMS. A recipient with no address for any overridden channel is skipped and logged; when no recipient
+has one, the result fails and says so.
 
 ### 4. Deliver
 

@@ -56,6 +56,7 @@ internal sealed partial class NotificationPipeline(
         var deliveryIds = new List<Guid>();
         var errors = new List<string>();
         var suppressedByPreferences = false;
+        var noAddressForOverride = false;
 
         // 3-4. Route + Deliver per recipient
         foreach (var recipient in resolved)
@@ -70,10 +71,24 @@ internal sealed partial class NotificationPipeline(
                 continue;
             }
 
-            var channels = request.ChannelOverride ?? router.Route(recipient, request.Priority, request.Category);
+            // An override pins the channels, not the addresses: each resolved recipient carries the channel its
+            // address belongs to, and only the pinned channels it shares are delivered. Handing every pinned
+            // channel to every recipient sent an e-mail address to the SMS provider and a phone number to SMTP.
+            var channels = request.ChannelOverride is { } pinned
+                ? pinned & recipient.Channel
+                : router.Route(recipient, request.Priority, request.Category);
             if (channels == NotificationChannel.None)
             {
-                suppressedByPreferences = true;
+                if (request.ChannelOverride is { } overridden)
+                {
+                    noAddressForOverride = true;
+                    LogNoAddressForOverride(recipient.Address, recipient.Channel, overridden);
+                }
+                else
+                {
+                    suppressedByPreferences = true;
+                }
+
                 continue;
             }
 
@@ -161,11 +176,13 @@ internal sealed partial class NotificationPipeline(
         {
             // Nothing was even attempted. Reporting success here would tell the caller the
             // notification went out while it silently evaporated — the typical symptom of an app
-            // that forgot to register a channel. Fail, and say which of the two causes it was.
+            // that forgot to register a channel. Fail, and say which of the causes it was.
             var reason = suppressedByPreferences
                 ? "No notification was sent: every channel was suppressed by the recipient's preferences."
-                : "No notification was sent: no delivery channel is registered for this application. "
-                  + "Register one (for example AddSmtp or AddWebhook) when configuring notifications.";
+                : noAddressForOverride
+                    ? $"No notification was sent: no resolved recipient has an address for the overridden channels ({request.ChannelOverride})."
+                    : "No notification was sent: no delivery channel is registered for this application. "
+                      + "Register one (for example AddSmtp or AddWebhook) when configuring notifications.";
 
             LogNothingDelivered(reason);
             NotificationsDiagnostics.NotificationsFailed.Add(1);
@@ -248,6 +265,9 @@ internal sealed partial class NotificationPipeline(
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Notification suppressed by recipient preferences for {Address}")]
     private partial void LogSuppressedByPreferences(string address);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recipient {Address} resolved for {Channel} has no address for the overridden channels {Override} — skipping")]
+    private partial void LogNoAddressForOverride(string address, NotificationChannel channel, NotificationChannel @override);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Channel {Channel} is not registered — skipping")]
     private partial void LogChannelNotRegistered(NotificationChannel channel);
