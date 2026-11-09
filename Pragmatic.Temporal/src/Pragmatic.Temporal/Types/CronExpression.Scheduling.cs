@@ -9,7 +9,10 @@ public sealed partial class CronExpression
     /// </summary>
     /// <param name="from">Start time.</param>
     /// <param name="zone">Optional timezone for evaluation (for DST handling). Defaults to UTC.</param>
-    /// <returns>Next occurrence, or null if no valid occurrence (e.g., DST gap).</returns>
+    /// <returns>
+    ///     Next occurrence, or null if there is none: an expression that names a day that never comes (<c>0 6 31 2 *</c>), or one whose
+    ///     next occurrence would fall on the last day of the calendar or past it.
+    /// </returns>
     public DateTimeOffset? GetNextOccurrence(DateTimeOffset from, TimeZoneInfo? zone = null)
     {
         zone ??= TimeZoneInfo.Utc;
@@ -33,6 +36,12 @@ public sealed partial class CronExpression
     {
         // Convert to local time in the specified zone
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(fromUtc.UtcDateTime, zone);
+        if (localTime >= SearchEnd)
+            return null;
+
+        // Dates and days of the week repeat every 400 years, so an expression that does not fire within one cycle of the start never
+        // fires. A count of steps is not a bound in time: a day that never comes costs about forty steps a year.
+        var horizon = localTime.Year > SearchEnd.Year - GregorianCycleYears ? SearchEnd : localTime.AddYears(GregorianCycleYears);
 
         // Start from the next second/minute
         localTime = HasSeconds
@@ -43,9 +52,7 @@ public sealed partial class CronExpression
         localTime = new DateTime(localTime.Year, localTime.Month, localTime.Day,
             localTime.Hour, localTime.Minute, HasSeconds ? localTime.Second : 0);
 
-        // Search for next matching time (max 4 years to avoid infinite loop)
-        var maxIterations = 366 * 24 * 60 * 4; // ~4 years of minutes
-        for (var i = 0; i < maxIterations; i++)
+        while (localTime < horizon)
         {
             if (!_month.Contains(localTime.Month))
             {
@@ -263,8 +270,20 @@ public sealed partial class CronExpression
         return domMatches || dowMatches;
     }
 
+    /// <summary>The length of the Gregorian calendar's cycle: dates fall on the same days of the week every 400 years.</summary>
+    private const int GregorianCycleYears = 400;
+
+    /// <summary>
+    ///     Where the search stops at the latest: the start of the last day <see cref="DateTime" /> holds, so that no step taken before it
+    ///     (a day, an hour, a minute, a second) can go past the end of the calendar.
+    /// </summary>
+    private static readonly DateTime SearchEnd = DateTime.MaxValue.Date;
+
     private static DateTime NextMonth(DateTime dt)
     {
+        if (dt.Year == SearchEnd.Year && dt.Month == 12)
+            return SearchEnd;
+
         return new DateTime(dt.Month == 12 ? dt.Year + 1 : dt.Year, dt.Month == 12 ? 1 : dt.Month + 1, 1);
     }
 
