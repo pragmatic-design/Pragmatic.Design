@@ -18,7 +18,7 @@ public static class ModelBuilderExtensions
     ///     This method configures:
     ///     <list type="bullet">
     ///         <item>CurrencyCode properties to use varchar(3)</item>
-    ///         <item>LocalizedString properties to use a JSON column conversion</item>
+    ///         <item>LocalizedString properties to use a JSON column conversion, compared by value so a change in place is saved</item>
     ///     </list>
     /// </remarks>
     /// <example>
@@ -52,6 +52,7 @@ public static class ModelBuilderExtensions
                 else if (property.ClrType == typeof(LocalizedString))
                 {
                     property.SetValueConverter(new LocalizedStringValueConverter());
+                    property.SetValueComparer(new LocalizedStringValueComparer());
                 }
 
         return modelBuilder;
@@ -88,6 +89,6 @@ public static class ModelBuilderExtensions
         // Configure LocalizedString type globally (JSON column). Reference type → covers nullable too.
         configurationBuilder
             .Properties<LocalizedString>()
-            .HaveConversion<LocalizedStringValueConverter>();
+            .HaveConversion<LocalizedStringValueConverter, LocalizedStringValueComparer>();
     }
 }

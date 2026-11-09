@@ -311,13 +311,19 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
         // Always UsePropertyAccessMode for private setters
         config.Add(".UsePropertyAccessMode(PropertyAccessMode.Field)");
 
-        // LocalizedString → JSON string value converter (works with both InMemory and relational providers)
+        // LocalizedString → JSON string value converter (works with both InMemory and relational providers).
+        // The comparer is what saves a change made in place: Set, Remove and Clear mutate the instance, and
+        // with the instance itself as EF Core's snapshot the current value and the snapshot always agree.
         if (LocalizedStringType.Matches(prop.TypeName))
         {
             config.Add(
                 ".HasConversion(" +
                 "ls => global::System.Text.Json.JsonSerializer.Serialize(new global::System.Collections.Generic.Dictionary<string, string>(ls), global::Pragmatic.Serialization.PragmaticCommonJsonContext.Default.DictionaryStringString), " +
-                "json => string.IsNullOrEmpty(json) ? new global::Pragmatic.Internationalization.Types.LocalizedString() : global::Pragmatic.Internationalization.Types.LocalizedString.From(global::System.Text.Json.JsonSerializer.Deserialize(json, global::Pragmatic.Serialization.PragmaticCommonJsonContext.Default.DictionaryStringString)!)" +
+                "json => string.IsNullOrEmpty(json) ? new global::Pragmatic.Internationalization.Types.LocalizedString() : global::Pragmatic.Internationalization.Types.LocalizedString.From(global::System.Text.Json.JsonSerializer.Deserialize(json, global::Pragmatic.Serialization.PragmaticCommonJsonContext.Default.DictionaryStringString)!), " +
+                "new global::Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<global::Pragmatic.Internationalization.Types.LocalizedString>(" +
+                "(left, right) => left == right, " +
+                "value => value == null ? 0 : value.GetHashCode(), " +
+                "value => value == null ? null! : global::Pragmatic.Internationalization.Types.LocalizedString.From(new global::System.Collections.Generic.Dictionary<string, string>(value)))" +
                 ")");
         }
 

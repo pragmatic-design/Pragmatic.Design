@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
 using Showcase.Catalog;
 using Showcase.Catalog.Dtos;
 using Showcase.Catalog.Entities;
@@ -155,5 +156,34 @@ public class LocalizedFieldTests(PostgresFixture fixture) : IntegrationTestBase(
         dto.Descriptions.Should().NotBeNull("the projection reads the JSON column through its converter");
         dto.Descriptions!.GetExact("en").Should().Be("By the sea");
         dto.Descriptions.GetExact("it").Should().Be("Sul mare");
+    }
+
+    /// <summary>
+    ///     A translation added in place to a loaded entity is saved (#623).
+    /// </summary>
+    /// <remarks>
+    ///     <c>LocalizedString.Set</c> changes the instance it is called on. EF Core finds a change by comparing the value with the snapshot
+    ///     it took at load, and without a comparer that snapshot is the same instance, so the two always agree and the save writes nothing.
+    ///     The column here is configured by the generated entity configuration alone: the Showcase does not reference
+    ///     <c>Pragmatic.Internationalization.EFCore</c>, so the comparer has to come from the generator.
+    /// </remarks>
+    [Fact]
+    public async Task ATranslationAddedInPlace_IsSaved()
+    {
+        var id = await APropertyDescribedAsync(new { en = "On the hill" });
+
+        // The tenant the HTTP client created the row under: outside a request the write has none.
+        using (TenantScope.BeginScope("test-tenant"))
+        using (var scope = Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
+            var property = await db.Set<Property>().IgnoreQueryFilters().SingleAsync(p => p.PersistenceId == id);
+
+            property.Description.Set("it", "Sulla collina");
+            await db.SaveChangesAsync();
+        }
+
+        (await DescriptionInAsync(id, "it")).Should().Be("Sulla collina");
+        (await DescriptionInAsync(id, "en")).Should().Be("On the hill");
     }
 }
