@@ -73,7 +73,10 @@ internal sealed partial class ValidatableTemplate
         // Emit a NORMAL (non-verbatim) literal with FULL escaping. A verbatim @"..." would double
         // every backslash in the pattern (\d -> \\d) and let a embedded " break out of the string.
         var pattern = StringHelper.CSharpLiteral(attr.Pattern);
-        If($"!Regex.IsMatch({prop.PropertyName} ?? \"\", \"{pattern}\", RegexOptions.None, TimeSpan.FromMilliseconds(250))",
+        // A null or empty text passes, as RegexAttribute.IsValid has it: refusing it is [Required]'s job. Matching
+        // `value ?? ""` against the pattern refused an optional field sent empty, where the attribute accepted it.
+        // TimeSpan is qualified because the generated file cannot count on the consumer's implicit usings.
+        If($"!string.IsNullOrEmpty({prop.PropertyName}) && !Regex.IsMatch({prop.PropertyName}, \"{pattern}\", RegexOptions.None, global::System.TimeSpan.FromMilliseconds(250))",
             () => RenderWithFor(prop, attr, $"(\"pattern\", \"{pattern}\")"));
     }
 
