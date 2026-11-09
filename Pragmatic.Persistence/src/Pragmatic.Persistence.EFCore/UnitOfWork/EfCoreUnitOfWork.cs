@@ -295,8 +295,20 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     Inside a transaction already open on the context, joins it with a savepoint (<see cref="EfCoreSavepointTransaction" />)
+    ///     instead of opening a second one, which EF Core refuses: a <c>[Transactional]</c> action invoked by another commits
+    ///     with the outer one and rolls back only its own part.
+    /// </remarks>
     public async Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default)
     {
+        if (_db.Database.CurrentTransaction is { } outer)
+        {
+            var savepoint = $"pragmatic_{Guid.NewGuid():N}";
+            await outer.CreateSavepointAsync(savepoint, ct).ConfigureAwait(false);
+            return new EfCoreSavepointTransaction(outer, savepoint);
+        }
+
         LogBeginTransactionStarting();
         var transaction = await _db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
         LogTransactionStarted(transaction.TransactionId);
