@@ -81,6 +81,8 @@ The `InMemoryEventDispatcher` uses a continue-on-failure strategy. Handler excep
 3. Recorded as an exception on the current OTel `Activity`.
 4. **Not propagated** to the caller.
 
+**With the outbox it is not swallowed.** A handler that throws while the outbox delivers its event fails that delivery: the row stays pending, `Attempts` counts it, `LastError` keeps the exception, and the event is delivered again on the next pass until `MaxAttempts`. Look at the `__EventOutbox` rows with `ProcessedAt` empty and `LastError` set.
+
 ### How to Detect Failures
 
 - **Logs:** Look for `Error`-level messages: `"Handler {HandlerName} failed for event {EventName}"`.

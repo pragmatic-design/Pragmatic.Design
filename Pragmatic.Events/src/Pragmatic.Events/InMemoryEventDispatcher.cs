@@ -133,6 +133,9 @@ public sealed partial class InMemoryEventDispatcher : IDomainEventDispatcher
 
                 LogHandlerFailed(eventName, handlerName, ex);
                 activity?.RecordException(ex);
+
+                // Inside an outbox delivery the failure is also the entry's: it is retried, not delivered.
+                Outbox.OutboxHandlerFailures.Record(ex);
             }
         }
 
