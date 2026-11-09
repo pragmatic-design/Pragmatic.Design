@@ -188,6 +188,8 @@ var request = new NotificationRequest
 
 `ChannelOverride` bypasses the router but not the channel factory. If the overridden channel has no registered `INotificationChannel`, the pipeline logs a warning and skips delivery. Only override to channels you know are registered.
 
+Nor does it bypass the recipient's address. An override delivers a channel only to the recipients resolved for it, so the request above sends nothing even with Slack registered: `dev@company.com` is an e-mail address, and the result fails saying no recipient has an address for the overridden channels.
+
 ## 10. Setting Category Without Preference Integration
 
 ```csharp

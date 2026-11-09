@@ -113,6 +113,57 @@ public sealed class NotificationPipelineTests
     }
 
     [Fact]
+    public async Task Execute_WithAnOverrideOfTwoChannels_DeliversEachToTheAddressOfItsOwnChannel()
+    {
+        var request = CreateRequest() with { ChannelOverride = NotificationChannel.Email | NotificationChannel.Sms };
+        var mail = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
+        var phone = new ResolvedRecipient("+390000000000", NotificationChannel.Sms, null, null, null);
+        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([mail, phone]));
+
+        var emailChannel = new NotificationChannelMock();
+        emailChannel.Channel.Returns(NotificationChannel.Email);
+        emailChannel.DeliverAsync.Returns(Task.FromResult(DeliveryResult.Succeeded()));
+        var smsChannel = new NotificationChannelMock();
+        smsChannel.Channel.Returns(NotificationChannel.Sms);
+        smsChannel.DeliverAsync.Returns(Task.FromResult(DeliveryResult.Succeeded()));
+        _channelFactory.GetChannel.When(NotificationChannel.Email, Arg.Any<string?>()).Returns(emailChannel);
+        _channelFactory.GetChannel.When(NotificationChannel.Sms, Arg.Any<string?>()).Returns(smsChannel);
+
+        var result = await _pipeline.ExecuteAsync(request);
+
+        result.Success.Should().BeTrue();
+        result.DeliveryIds.Should().NotBeNull();
+        var deliveries = new List<(NotificationChannel, string)>();
+        foreach (var id in result.DeliveryIds!)
+        {
+            var record = await _store.GetByIdAsync(id);
+            deliveries.Add((record!.Channel, record.RecipientAddress));
+        }
+
+        deliveries.Should().BeEquivalentTo(
+            [(NotificationChannel.Email, "user@example.com"), (NotificationChannel.Sms, "+390000000000")]);
+    }
+
+    [Fact]
+    public async Task Execute_WithAnOverrideNoRecipientHasAnAddressFor_FailsAndSaysWhy()
+    {
+        var request = CreateRequest() with { ChannelOverride = NotificationChannel.Sms };
+        var mail = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
+        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([mail]));
+
+        var smsChannel = new NotificationChannelMock();
+        smsChannel.Channel.Returns(NotificationChannel.Sms);
+        smsChannel.DeliverAsync.Returns(Task.FromResult(DeliveryResult.Succeeded()));
+        _channelFactory.GetChannel.When(NotificationChannel.Sms, Arg.Any<string?>()).Returns(smsChannel);
+
+        var result = await _pipeline.ExecuteAsync(request);
+
+        result.Success.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("no resolved recipient has an address"));
+        smsChannel.DeliverAsync.DidNotReceive();
+    }
+
+    [Fact]
     public async Task Execute_WithDeliveryFailure_TracksFailedStatus()
     {
         var request = CreateRequest();
