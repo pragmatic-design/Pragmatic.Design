@@ -29,7 +29,8 @@ public static class EventOutboxDelivery
 
     /// <summary>
     ///     Delivers one captured event: null when it was dispatched, the reason when it cannot be (its type is not allowlisted, its payload is
-    ///     not an event). A handler's failure propagates, for the store to record against the row.
+    ///     not an event). A handler's failure propagates, for the store to record against the row — including one the in-memory
+    ///     dispatcher isolated and logged, which otherwise let the row be marked delivered.
     /// </summary>
     public static async Task<string?> DeliverAsync(string eventType, string payload, string? tenantId, string? traceParent,
         IEventOutboxTypeResolver types, JsonSerializerOptions options, IDomainEventDispatcher dispatcher, CancellationToken ct)
@@ -65,8 +66,13 @@ public static class EventOutboxDelivery
         // The registered ITenantContext is AmbientTenantContext: it prefers the request tenant
         // and falls back to this ambient one, and outside a request there is no request tenant.
         using (tenantId is { Length: > 0 } ? TenantScope.BeginScope(tenantId) : null)
+        using (var failures = OutboxHandlerFailures.Begin())
         {
             await dispatcher.DispatchAsync([domainEvent], ct).ConfigureAwait(false);
+
+            // A handler the dispatcher isolated still failed this delivery: the store counts the attempt and
+            // redelivers the event, every handler with it (delivery is at-least-once).
+            failures.ThrowIfAnyHandlerFailed();
         }
 
         return null;

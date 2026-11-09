@@ -47,6 +47,11 @@ public interface IDomainEventHandler<in TEvent>
     ///         keep its own side effects idempotent/compensatable. Use the outbox/transactional
     ///         dispatch path when at-least-once delivery across a transaction boundary is required.
     ///     </para>
+    ///     <para>
+    ///         Under the event outbox a throw is the delivery's failed attempt: the remaining handlers
+    ///         still run, then the entry stays pending and the event is delivered again — every handler
+    ///         with it — until the outbox's <c>MaxAttempts</c>.
+    ///     </para>
     /// </remarks>
     Task HandleAsync(TEvent @event, CancellationToken ct = default);
 }

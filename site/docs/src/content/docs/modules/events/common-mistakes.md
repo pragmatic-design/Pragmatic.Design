@@ -144,7 +144,7 @@ public sealed class ReservationConfirmedHandler(
 }
 ```
 
-**Runtime result:** The exception is caught by the dispatcher's continue-on-failure policy, logged at `Error` level, counted as a handler failure, and **swallowed**. The next handler still runs. The caller of `SaveChangesAsync()` is not notified. The failing handler silently produces nothing.
+**Runtime result:** The exception is caught by the dispatcher's continue-on-failure policy, logged at `Error` level, counted as a handler failure, and **swallowed**. The next handler still runs. The caller of `SaveChangesAsync()` is not notified. The failing handler silently produces nothing. With the event outbox it is worse: the throw fails the delivery, so the event is delivered again, every handler with it, until `MaxAttempts` — a business rule retried as though it were an outage.
 
 **Right:**
 
