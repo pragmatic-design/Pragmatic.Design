@@ -8,9 +8,10 @@ namespace Pragmatic.Actions.Mutation;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         ⚠️ It is a refusal on the <b>mutation path</b>. A <c>[DomainAction]</c> that loads the same
-///         aggregate and changes it writes the same rows with none of those methods run, and so does a
-///         repository <c>Add</c>/<c>Remove</c>.
+///         ⚠️ It is a refusal of the <b>generated operations</b>: a mutation, and a <c>[DomainAction]</c> for the
+///         rows it loaded (each row of a <c>[LoadEntities]</c> list, named by <see cref="EntityType" /> and
+///         <see cref="EntityId" />). A repository <c>Add</c>/<c>Remove</c> called by hand writes with none of
+///         those methods run.
 ///     </para>
 ///     <para>
 ///         It derives from <see cref="Error" /> so its message can be translated. The localization
@@ -43,4 +44,20 @@ public sealed record InvariantViolationError(string Invariant, string Message, s
 
     /// <inheritdoc />
     public override string MessageKey => DeclaredMessageKey ?? base.MessageKey;
+
+    /// <summary>
+    ///     The entity whose row broke the rule, when the operation changed several rows of it — a <c>[LoadEntities]</c> list — and the
+    ///     caller has to be told which one; <see langword="null" /> otherwise.
+    /// </summary>
+    public string? EntityType { get; init; }
+
+    /// <summary>The key of the row that broke the rule, with <see cref="EntityType" />; <see langword="null" /> otherwise.</summary>
+    public string? EntityId { get; init; }
+
+    /// <inheritdoc />
+    public override void WriteExtensions(IDictionary<string, object?> extensions)
+    {
+        if (EntityType is not null) extensions["entityType"] = EntityType;
+        if (EntityId is not null) extensions["entityId"] = EntityId;
+    }
 }
