@@ -19,7 +19,7 @@ namespace Pragmatic.Testing.SourceGenerator.Tests;
 ///         null. A declared state machine looked covered while nothing existed for it.
 ///     </para>
 /// </summary>
-public class StateTransitionGenerationTests
+public partial class StateTransitionGenerationTests
 {
     private const string Preamble = """
         namespace Pragmatic.Endpoints.Attributes
@@ -444,7 +444,7 @@ public class StateTransitionGenerationTests
     ///     Runs the generator the way the SDK lays a solution out: the attributes in their own assembly, the
     ///     domain referencing it, and the test project seeing the domain as a <b>reference assembly</b>.
     /// </summary>
-    private static string AcrossAssemblies(string domainSource)
+    private static string AcrossAssemblies(string domainSource, string fileNamePart = "Billing.Transitions")
     {
         var framework = CSharpCompilation.Create("Pragmatic.Endpoints",
             [CSharpSyntaxTree.ParseText(Preamble, new CSharpParseOptions(LanguageVersion.Latest))],
@@ -465,7 +465,7 @@ public class StateTransitionGenerationTests
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new ContractTestGenerator());
         return driver.RunGenerators(consumer).GetRunResult().GeneratedTrees
-            .FirstOrDefault(t => t.FilePath.Contains("Billing.Transitions"))?.GetText().ToString() ?? "";
+            .FirstOrDefault(t => t.FilePath.Contains(fileNamePart))?.GetText().ToString() ?? "";
     }
 
     /// <summary>Emits <paramref name="compilation"/> the way the SDK does: metadata only, private members stripped.</summary>

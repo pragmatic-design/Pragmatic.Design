@@ -18,6 +18,7 @@ internal static class StateTransitionExtractor
     private const string TransitionsToAttributeName = "TransitionsToAttribute";
     private const string InitialStateAttributeName = "InitialStateAttribute";
     private const string TransitionFromAttributeName = "TransitionFromAttribute";
+    private const string LoadEntityAttributeName = "LoadEntityAttribute";
 
     public static StateTransitionModel? Extract(
         INamedTypeSymbol endpointType,
@@ -37,7 +38,12 @@ internal static class StateTransitionExtractor
         if (targetState is null)
             return null;
 
-        var entity = CrudCreateExtractor.RepositoryEntity(endpointType)
+        // What the operation declares comes first: a base type and an attribute survive into a reference
+        // assembly, where the private repository field does not. The scan is for an operation that declares
+        // neither, and there a query row carrying the same state was taken for the entity.
+        var entity = CrudCreateExtractor.MutationEntity(endpointType)
+                     ?? LoadedEntity(endpointType, stateEnum)
+                     ?? CrudCreateExtractor.RepositoryEntity(endpointType)
                      ?? EntityOwningState(endpointType.ContainingAssembly, stateEnum);
         if (entity is null)
             return null;
@@ -85,6 +91,27 @@ internal static class StateTransitionExtractor
     }
 
     /// <summary>
+    ///     The entity the operation loads with <c>[LoadEntity&lt;T&gt;]</c>: of several, the one carrying the state;
+    ///     a single load is that entity even when its state property is not visible here.
+    /// </summary>
+    private static INamedTypeSymbol? LoadedEntity(INamedTypeSymbol endpointType, INamedTypeSymbol stateEnum)
+    {
+        var loaded = endpointType.GetAttributes()
+            .Where(a => a.AttributeClass is { Name: LoadEntityAttributeName, TypeArguments.Length: 1 })
+            .Select(a => a.AttributeClass!.TypeArguments[0])
+            .OfType<INamedTypeSymbol>()
+            .ToList();
+
+        return loaded.FirstOrDefault(entity => HasStateProperty(entity, stateEnum))
+               ?? (loaded.Count == 1 ? loaded[0] : null);
+    }
+
+    private static bool HasStateProperty(INamedTypeSymbol type, INamedTypeSymbol stateEnum) =>
+        type.GetMembers().OfType<IPropertySymbol>().Any(p =>
+            p.DeclaredAccessibility == Accessibility.Public &&
+            SymbolEqualityComparer.Default.Equals(p.Type, stateEnum));
+
+    /// <summary>
     ///     Finds the entity that owns <paramref name="stateEnum"/>: the type in the endpoint's own assembly
     ///     carrying a public property of that enum type.
     ///     <para>
@@ -103,9 +130,7 @@ internal static class StateTransitionExtractor
         {
             if (type.TypeKind != TypeKind.Class)
                 continue;
-            if (!type.GetMembers().OfType<IPropertySymbol>().Any(p =>
-                    p.DeclaredAccessibility == Accessibility.Public &&
-                    SymbolEqualityComparer.Default.Equals(p.Type, stateEnum)))
+            if (!HasStateProperty(type, stateEnum))
                 continue;
 
             // A DTO carries the same state property as the entity it projects, and is usually found first.

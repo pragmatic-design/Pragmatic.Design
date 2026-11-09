@@ -227,7 +227,7 @@ internal static class CrudCreateExtractor
     }
 
     /// <summary>The entity behind a <c>Mutation&lt;TEntity&gt;</c> base type, if any.</summary>
-    private static INamedTypeSymbol? MutationEntity(INamedTypeSymbol endpointType)
+    internal static INamedTypeSymbol? MutationEntity(INamedTypeSymbol endpointType)
     {
         for (var t = endpointType.BaseType; t is not null; t = t.BaseType)
         {
