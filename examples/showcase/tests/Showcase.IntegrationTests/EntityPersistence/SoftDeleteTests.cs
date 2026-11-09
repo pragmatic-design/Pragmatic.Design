@@ -3,6 +3,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Repository;
+using Pragmatic.Specification;
 using Pragmatic.Testing.Assertions;
 using Showcase.Catalog;
 using Showcase.Catalog.Entities;
@@ -105,9 +109,92 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         ContainsId(searchResult, id).Should().BeFalse("Deleted amenity should be excluded by query filter");
     }
 
+    /// <remarks>
+    ///     A purge past a retention window is an erasure, and <c>SoftDeleteScope.Suspend()</c> is how it says so.
+    ///     The generated repository's <c>Remove</c> raised the flag and restamped it inside the scope as well, so
+    ///     the row stayed: the interceptor let the delete through, but the repository never asked for one.
+    /// </remarks>
+    [Fact]
+    public async Task RemoveThroughTheRepository_InsideASuspendedScope_DeletesTheRow()
+    {
+        var id = (await CreatePropertyAsync()).GetProperty("id").GetGuid();
+
+        await RemoveThroughTheRepositoryAsync(id, suspended: true);
+
+        (await StoredPropertyAsync(id)).Should().BeNull("the erasure said what it meant");
+    }
+
+    [Fact]
+    public async Task RemoveThroughTheRepository_OutsideTheScope_FlagsTheRow()
+    {
+        var id = (await CreatePropertyAsync()).GetProperty("id").GetGuid();
+
+        await RemoveThroughTheRepositoryAsync(id, suspended: false);
+
+        var stored = await StoredPropertyAsync(id);
+        stored.Should().NotBeNull("outside the scope [SoftDelete] keeps the row");
+        stored!.IsDeleted.Should().BeTrue();
+        stored.DeletedAt.Should().NotBeNull();
+    }
+
+    /// <remarks>
+    ///     The bulk path, which a purge reaches for when it selects by age: inside the scope it ran the same flagging
+    ///     <c>ExecuteUpdate</c> as outside, where the Sql engine's bulk already erased.
+    /// </remarks>
+    [Fact]
+    public async Task BulkDeleteThroughTheRepository_InsideASuspendedScope_DeletesTheRow()
+    {
+        var id = (await CreatePropertyAsync()).GetProperty("id").GetGuid();
+
+        using (TenantScope.BeginScope("test-tenant"))
+        using (var scope = Services.CreateScope())
+        using (SoftDeleteScope.Suspend())
+        {
+            // The generated repository implements IBulkRepository<T>; DI registers it as IRepository<T>.
+            var bulk = (IBulkRepository<Property>)scope.ServiceProvider.GetRequiredService<IRepository<Property>>();
+            var deleted = await bulk.BulkDeleteAsync(Spec<Property>.Where(p => p.PersistenceId == id));
+            deleted.Should().Be(1);
+        }
+
+        (await StoredPropertyAsync(id)).Should().BeNull("the erasure said what it meant");
+    }
+
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    private async Task RemoveThroughTheRepositoryAsync(Guid id, bool suspended)
+    {
+        // The tenant the HTTP client created the row under: a job's scope opens it, as a purge job would.
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var db = services.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
+        var property = await db.Set<Property>().IgnoreQueryFilters().SingleAsync(p => p.PersistenceId == id);
+        var repository = services.GetRequiredService<IRepository<Property>>();
+        var unitOfWork = services.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary));
+
+        if (suspended)
+        {
+            using (SoftDeleteScope.Suspend())
+            {
+                repository.Remove(property);
+                await unitOfWork.SaveChangesAsync();
+            }
+        }
+        else
+        {
+            repository.Remove(property);
+            await unitOfWork.SaveChangesAsync();
+        }
+    }
+
+    private async Task<Property?> StoredPropertyAsync(Guid id)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
+        return await db.Set<Property>().AsNoTracking().IgnoreQueryFilters().SingleOrDefaultAsync(p => p.PersistenceId == id);
+    }
 
     private async Task<JsonElement> CreatePropertyAsync(string? name = null)
     {
