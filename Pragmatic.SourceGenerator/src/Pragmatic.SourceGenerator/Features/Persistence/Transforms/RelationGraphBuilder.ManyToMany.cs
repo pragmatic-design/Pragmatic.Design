@@ -39,7 +39,12 @@ internal static partial class RelationGraphBuilder
         var inverseCollectionName = counterpart is not null
             ? RelationNavigationNaming.Collection(counterpart.NavigationName, owner.TypeName)
             : rel.InverseProperty ?? StringHelper.Pluralize(owner.TypeName);
-        var inverseExists = targetEntity is not null && !isCrossBoundary;
+        // ⚠️ Not `!isCrossBoundary`, which is false for a crossing the owner reads with [ReadAccess<T>]:
+        // that read gives the owner its navigation, never the target a member. The target is generated
+        // in its own module, which cannot see this relation, so on the host an inverse named here was a
+        // `.WithMany(e => e.Orders)` for a property no compilation writes.
+        var crossesTheBoundary = IsCrossBoundary(owner.BoundaryTypeFullName, rel.TargetBoundaryTypeFullName);
+        var inverseExists = targetEntity is not null && !crossesTheBoundary;
 
         // Owner gets: collection
         AddNavigation(navsPerEntity, owner.FullTypeName, new NavigationMetadataModel
@@ -73,7 +78,7 @@ internal static partial class RelationGraphBuilder
         // relationship produces its inverse depend on whether the target declares some OTHER,
         // unrelated relation, and adding an unrelated [Relation.*] to an entity would make a
         // collection appear on it as a side effect.
-        if (targetEntity is not null && !isCrossBoundary)
+        if (targetEntity is not null && inverseExists)
         {
             // Only add if the target doesn't already declare its own ManyToMany back
             var targetAlreadyDeclares = targetEntity.RelationAttributes
