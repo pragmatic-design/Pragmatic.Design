@@ -14,9 +14,17 @@ public static class PdfRenderer
 
     /// <summary>
     /// Whether native PDF rendering is available on the current platform (the native library can be
-    /// loaded). Currently true only on win-x64. Probe this to degrade gracefully instead of catching
-    /// exceptions from a render call. The result is cached after the first check.
+    /// loaded). The package ships the library for win-x64, linux-x64 and osx-arm64. Probe this to degrade
+    /// gracefully instead of catching exceptions from a render call. The result is cached after the first
+    /// check.
     /// </summary>
+    /// <remarks>
+    /// <see langword="true" /> says the library loads, not that a render will find a font. The engine takes
+    /// its fonts from the machine, and on Linux only from the folders fontconfig's configuration lists: an
+    /// image without the <c>fontconfig</c> package and a font package (for example <c>fonts-dejavu-core</c>)
+    /// fails every render with a <see cref="PdfRenderException" /> that starts "No fonts found on this
+    /// machine".
+    /// </remarks>
     public static bool IsSupported =>
         _isSupported ??= NativeLibrary.TryLoad(NativePdfImports.LibName, typeof(PdfRenderer).Assembly, null, out _);
 
