@@ -421,7 +421,7 @@ public class RepositoryTemplateTests
         // Assert
         var source = artifact.Text;
 
-        // BulkDeleteAsync should use ExecuteUpdateAsync (not ExecuteDeleteAsync) for soft-delete entities
+        // BulkDeleteAsync flags a soft-delete entity with ExecuteUpdateAsync, outside a suspended scope
         source.Should().Contain("BulkDeleteAsync(");
         source.Should().Contain("Soft delete - mark as deleted");
         source.Should().Contain("SetProperty(e => e.IsDeleted, true)");
@@ -429,8 +429,20 @@ public class RepositoryTemplateTests
         source.Should().Contain("var now = _timeProvider.GetUtcNow();");
         source.Should().Contain("SetProperty(e => e.DeletedAt, now)");
 
-        // Should NOT contain physical delete
-        source.Should().NotContain("ExecuteDeleteAsync");
+        ShouldEraseOnlyInsideASuspendedScope(source);
+    }
+
+    /// <remarks>
+    ///     A soft entity is deleted physically in one place only: the branch <c>SoftDeleteScope.Suspend()</c> opens,
+    ///     where the delete is an erasure (a purge past retention). Everywhere else it is flagged.
+    /// </remarks>
+    private static void ShouldEraseOnlyInsideASuspendedScope(string source)
+    {
+        source.Should().MatchRegex(
+            @"SoftDeleteScope\.IsSuspended\)\s*__affected = await ApplyRootFilters\(Set\)\.Where\(filter\.ToExpression\(\)\)\.ExecuteDeleteAsync\(ct\)",
+            "the physical delete is the suspended branch's body");
+        source.Should().NotMatchRegex(@"ExecuteDeleteAsync[\s\S]*ExecuteDeleteAsync",
+            "outside that branch a soft entity is never deleted physically");
     }
 
     [Fact]
@@ -539,7 +551,7 @@ public class RepositoryTemplateTests
         // BulkDeleteAsync should use soft-delete pattern
         source.Should().Contain("SetProperty(e => e.IsDeleted, true)");
         source.Should().Contain("SetProperty(e => e.DeletedAt");
-        source.Should().NotContain("ExecuteDeleteAsync");
+        ShouldEraseOnlyInsideASuspendedScope(source);
     }
 
     #region BulkDescriptor
