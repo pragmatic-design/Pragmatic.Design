@@ -208,7 +208,14 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
             // The target's table belongs to another boundary: nothing to configure here, readable or
             // not. A [ReadAccess<T>] crossing has a member, and EF maps it by convention over the
             // generated {Nav}Id — the DbSet the attribute adds to this context is what makes the join.
-            if (nav.IsCrossBoundary(_model.BoundaryTypeFullName))
+            //
+            // ⚠️ Except a many-to-many to a type this boundary reads. There is no {Nav}Id for the
+            // convention to find: the join table is this boundary's, and the migration creates it. With
+            // no inverse on the other side, EF read the collection as a one-to-many and looked for a
+            // shadow {Entity}PersistenceId on the other boundary's table — a column nothing creates, and
+            // every query touching the target failed with 42703, not only the ones naming the navigation.
+            if (nav.IsCrossBoundary(_model.BoundaryTypeFullName)
+                && !(nav.NavigationType == "ManyToMany" && !nav.IsUnreadableCrossing(_model)))
                 continue;
             RenderNavigationConfiguration(nav);
         }

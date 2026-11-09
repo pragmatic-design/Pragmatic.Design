@@ -36,6 +36,10 @@ namespace Conformance.Sales.Entities;
 ///         commit what it holds read-only (<c>TheBoundaryAsAWall</c>,
 ///         <c>ReadAccessAcrossTheBoundary</c>).
 ///     </para>
+///     <para>
+///         <c>Suggestions</c> is the same crossing as a many-to-many: the join table is Sales', the items are
+///         Catalog's, read. <c>AManyToManyAcrossTheBoundary</c> writes and reads it.
+///     </para>
 /// </remarks>
 /// <remarks>
 ///     <para>
@@ -55,6 +59,7 @@ namespace Conformance.Sales.Entities;
 [Relation.ManyToOne<CatalogItem>.WithNavigation("Item")]
 [Relation.ManyToOne<DeliveryAddress>.WithNavigation("DeliveryAddress", Required = false)]
 [Relation.ManyToMany<Label>.WithNavigation("Labels")]
+[Relation.ManyToMany<CatalogItem>.WithNavigation("Suggestions")]
 public partial class Order : IEntity
 {
     /// <summary>A scalar field, to show that the write reaches the root too.</summary>
