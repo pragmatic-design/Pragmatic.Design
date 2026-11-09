@@ -39,10 +39,14 @@ internal sealed partial class InvokerTemplate
         {
             foreach (var load in _model.LoadEntities.Where(l => l.CheckableInvariants.Count > 0))
             {
-                // A collection load is a list, and a rule of the entity is about one row: asking it of
-                // a list would not compile. Only the single-row loads carry rules here.
-                if (load.IsMany || load.ExistsOnly)
+                if (load.ExistsOnly)
                     continue;
+
+                if (load.IsMany)
+                {
+                    RenderRowByRow(load);
+                    continue;
+                }
 
                 Comment($"{load.EntityTypeShortName}, loaded by this operation.");
 
@@ -59,6 +63,28 @@ internal sealed partial class InvokerTemplate
 
             AppendLine("return null;");
         });
+    }
+
+    /// <summary>
+    ///     The rules of a <c>[LoadEntities]</c> list, asked of each row in the order the rows were loaded: the first row that breaks one
+    ///     refuses the operation, and the refusal names the row, since the caller sent several keys and cannot tell which one otherwise.
+    /// </summary>
+    private void RenderRowByRow(Models.LoadEntityModel load)
+    {
+        Comment($"Every {load.EntityTypeShortName} of the list this operation loaded, row by row.");
+        AppendLine($"foreach (var __row in action.{load.FieldName})");
+        Block(() =>
+        {
+            foreach (var invariant in load.CheckableInvariants)
+            {
+                AppendLine($"if (!__row.{invariant.MethodName}())");
+                IncreaseIndent();
+                AppendLine(Refusal(invariant.MethodName, invariant).TrimEnd(';')
+                           + $" {{ EntityType = \"{load.EntityTypeShortName}\", EntityId = __row.PersistenceId.ToString() }};");
+                DecreaseIndent();
+            }
+        });
+        AppendLine();
     }
 
     /// <summary>The refusal one broken rule returns — the mutation path's, so the two cannot differ.</summary>
