@@ -27,4 +27,13 @@ internal sealed record PatchModel
     ///     to protect, and the patch goes on offering a field the endpoint will refuse.
     /// </remarks>
     public EquatableArray<string> UnmatchedIgnores { get; init; } = EquatableArray<string>.Empty;
+
+    /// <summary>
+    ///     The entity's properties <c>[PatchIgnore]</c> keeps out, which a body naming them is refused for.
+    /// </summary>
+    /// <remarks>
+    ///     Not left to the converter's handling of unknown members, which ignores them: a body asking to correct what the domain
+    ///     forbids correcting would apply the rest of itself and drop that request without a word.
+    /// </remarks>
+    public EquatableArray<string> RefusedProperties { get; init; } = EquatableArray<string>.Empty;
 }
