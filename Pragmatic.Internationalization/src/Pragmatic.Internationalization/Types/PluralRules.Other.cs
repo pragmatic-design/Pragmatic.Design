@@ -52,14 +52,14 @@ public static partial class PluralRules
     }
 
     /// <summary>
-    ///     Latvian: zero, one (ends in 1 but not 11), other
+    ///     Latvian: zero (ends in 0, or in 11–19: 0, 10, 11, 20, 100), one (ends in 1 but not 11), other
     /// </summary>
     private static PluralCategory GetLatvianCategory(int n)
     {
         var mod10 = n % 10;
         var mod100 = n % 100;
 
-        if (n == 0)
+        if (mod10 == 0 || mod100 is >= 11 and <= 19)
             return PluralCategory.Zero;
         if (mod10 == 1 && mod100 != 11)
             return PluralCategory.One;
@@ -95,7 +95,8 @@ public static partial class PluralRules
     }
 
     /// <summary>
-    ///     Indic languages (Hindi, Bengali, etc.): one (0-1), other
+    ///     CLDR's <c>i = 0 or n = 1</c> (Hindi, Bengali, Gujarati, Kannada, Vietnamese) and <c>n = 0..1</c> (Punjabi), which agree on
+    ///     whole numbers: one (0, 1), other
     /// </summary>
     private static PluralCategory GetIndicCategory(int n)
     {
