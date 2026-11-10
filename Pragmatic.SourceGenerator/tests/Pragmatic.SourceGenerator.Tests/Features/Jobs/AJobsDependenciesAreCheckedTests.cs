@@ -62,6 +62,21 @@ public class AJobsDependenciesAreCheckedTests
     public void AJobThatAsksForAContractTheHostProvides_IsNotReported()
         => IdsOf(Run(Source("global::Pragmatic.Storage.IFileStorage"))).Should().NotContain(NotRegistered);
 
+    /// <summary>
+    ///     The recurring-job contracts <c>AddPragmaticJobs()</c> registers, which a job in a library may take to manage its own
+    ///     schedule (#633).
+    /// </summary>
+    /// <remarks>
+    ///     Only <c>IJobScheduler</c> said it was provided by the host, so a job taking either of these was reported as depending on
+    ///     something nobody registers, and the application read them from the container at run time to get past it.
+    /// </remarks>
+    [Theory]
+    [InlineData("global::Pragmatic.Jobs.IRecurringJobStore")]
+    [InlineData("global::Pragmatic.Jobs.IRecurringJobRegistrar")]
+    public void AJobThatAsksForARecurringJobContract_IsNotReported(string contract)
+        => IdsOf(Run(Source(contract))).Should().NotContain(NotRegistered,
+            "AddPragmaticJobs() registers it in every host that runs jobs");
+
     /// <summary>The second control: a job that asks for nothing is refused nothing.</summary>
     [Fact]
     public void AJobWithNoDependencies_IsNotReported()

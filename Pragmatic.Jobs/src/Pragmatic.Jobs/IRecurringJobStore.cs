@@ -4,6 +4,12 @@ namespace Pragmatic.Jobs;
 ///     Persistence for recurring job definitions.
 ///     The SG-generated registration upserts definitions at startup.
 /// </summary>
+/// <remarks>
+///     Declared scoped although the in-memory store is a singleton: the EF Core store
+///     (<c>UseEfCorePersistence()</c>) is scoped, and a singleton holding it would keep the first
+///     scope's <c>DbContext</c>. The stricter lifetime is the one a dependant must respect.
+/// </remarks>
+[global::Pragmatic.Composition.Attributes.ProvidedByHost(global::Pragmatic.Composition.Attributes.Lifetime.Scoped)]
 public interface IRecurringJobStore
 {
     /// <summary>Inserts or updates a recurring job definition.</summary>

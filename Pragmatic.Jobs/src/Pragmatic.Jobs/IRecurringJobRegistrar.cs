@@ -10,6 +10,7 @@ namespace Pragmatic.Jobs;
 ///     bootstrapping. A definition persisted without <c>NextExecutionAt</c> is never due, so this
 ///     step is what makes a <c>[RecurringJob]</c> fire at all.
 /// </remarks>
+[global::Pragmatic.Composition.Attributes.ProvidedByHost(global::Pragmatic.Composition.Attributes.Lifetime.Scoped)]
 public interface IRecurringJobRegistrar
 {
     /// <summary>
