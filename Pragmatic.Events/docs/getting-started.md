@@ -163,6 +163,9 @@ handler-side or entity-side code beyond the attribute. (A soft delete is treated
 - **PRAG2753**: `[Raises<T>]` on an **entity's method**, where nothing generates that raise. Declare it on
   the entity class, use `[RaisesEvent<T>]` on the state machine's target member, or call
   `RaiseEvent(...)` in the body.
+- **PRAG2754**: `[RaisesEvent<T>]` on a state machine's state, on an entity that does not derive from
+  `DomainEventSource` (warning). The transition is generated without the raise, so the entity must
+  derive from `DomainEventSource` for the event to go out.
 
 For events that carry data not present on the entity, keep raising them explicitly with `RaiseEvent()`
 (Step 2) or from a domain method.

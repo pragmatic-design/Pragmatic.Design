@@ -213,6 +213,7 @@ Requires the boundary project to reference `Pragmatic.Events.EFCore`, or `Pragma
 | **PRAG2750** | Error | `[Raises<T>]` on an entity that is not a `DomainEventSource` | Inherit `DomainEventSource` |
 | **PRAG2751** | Warning | An event constructor parameter matches no entity member (passed `default`) | Rename to match, or set it in a domain method instead |
 | **PRAG2753** | Error | `[Raises<T>]` on an **entity's method**: nothing generates that raise | Declare it on the entity class (a lifecycle transition), use `[RaisesEvent<T>]` on the state machine's target member, or `RaiseEvent(...)` in the body |
+| **PRAG2754** | Warning | `[RaisesEvent<T>]` on a state machine's state, on an entity that is not a `DomainEventSource`: the transition raises nothing | Inherit `DomainEventSource` |
 
 ## Troubleshooting
 
