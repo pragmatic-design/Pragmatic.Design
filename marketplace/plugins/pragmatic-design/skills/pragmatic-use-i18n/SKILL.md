@@ -89,7 +89,8 @@ there is no single-column converter, because one column loses either precision o
 The `T` class is for the application's own strings. Text **users** write in several languages (a
 product name, a category description) is a `LocalizedString` on the entity, stored as one JSON column
 (`{"en":"…","it":"…"}`) and read in the current culture with `.Value` (or `name["it"]`), falling back
-along the culture chain. With `Pragmatic.Internationalization.EFCore` referenced the generated DbContext
+along the culture chain: the culture, its language, the application's fallback chain (its default
+culture, or `I18NOptions.FallbackChain`), then `en`. With `Pragmatic.Internationalization.EFCore` referenced the generated DbContext
 applies the mapping (`ApplyPragmaticInternationalization()`); on the wire it travels as the same map.
 
 ## Plurals

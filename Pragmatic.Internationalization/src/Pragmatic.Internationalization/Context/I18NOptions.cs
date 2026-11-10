@@ -118,6 +118,8 @@ public sealed class I18NOptions
     /// <remarks>
     ///     Given a culture code, returns the ordered list of fallback cultures.
     ///     If not set, uses the default chain: requested → language-only → default.
+    ///     The culture middleware puts the chain on the request's <see cref="I18NContext" />, where
+    ///     <see cref="LocalizedString" /> follows it.
     /// </remarks>
     public Func<CultureCode, IReadOnlyList<CultureCode>>? FallbackChain { get; set; }
 
@@ -139,13 +141,24 @@ public sealed class I18NOptions
     /// </summary>
     public IReadOnlyList<CultureCode> GetFallbacks(CultureCode culture)
     {
+        return GetFallbacks(culture, DefaultUICulture);
+    }
+
+    /// <summary>
+    ///     Gets the fallback cultures for the specified culture, with <paramref name="defaultCulture" /> as the
+    ///     default chain's last step: the default culture a request resolved (a tenant's, a user's, the
+    ///     declared translations'), which need not be <see cref="DefaultUICulture" />.
+    /// </summary>
+    /// <remarks><see cref="FallbackChain" />, when set, answers instead.</remarks>
+    public IReadOnlyList<CultureCode> GetFallbacks(CultureCode culture, CultureCode? defaultCulture)
+    {
         if (FallbackChain is not null)
             return FallbackChain(culture);
 
-        return GetDefaultFallbacks(culture);
+        return GetDefaultFallbacks(culture, defaultCulture);
     }
 
-    private IReadOnlyList<CultureCode> GetDefaultFallbacks(CultureCode culture)
+    private static List<CultureCode> GetDefaultFallbacks(CultureCode culture, CultureCode? defaultCulture)
     {
         var fallbacks = new List<CultureCode>();
 
@@ -153,13 +166,13 @@ public sealed class I18NOptions
         if (culture.Country.HasValue)
         {
             var languageOnly = new CultureCode(culture.Language);
-            if (!languageOnly.Equals(DefaultUICulture))
+            if (!languageOnly.Equals(defaultCulture))
                 fallbacks.Add(languageOnly);
         }
 
         // Add default culture if not already the requested culture
-        if (DefaultUICulture.HasValue && !culture.Equals(DefaultUICulture.Value))
-            fallbacks.Add(DefaultUICulture.Value);
+        if (defaultCulture.HasValue && !culture.Equals(defaultCulture.Value))
+            fallbacks.Add(defaultCulture.Value);
 
         return fallbacks;
     }

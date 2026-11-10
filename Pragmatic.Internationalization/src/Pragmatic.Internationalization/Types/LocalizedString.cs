@@ -183,28 +183,30 @@ public sealed partial class LocalizedString : IReadOnlyDictionary<string, string
         return _values.GetEnumerator();
     }
 
-    // Ultimate fallback culture for translations when no match is found
+    // The last culture tried by name, after the application's fallback chain
     private const string DefaultFallbackCulture = "en";
 
     /// <summary>
     ///     Gets translation with fallback chain.
     /// </summary>
+    /// <remarks>
+    ///     Tries the culture, then its language ("it-IT" → "it"), then each culture of
+    ///     <see cref="I18NContext.FallbackChain" /> (and its language) when the current context carries one,
+    ///     then <c>"en"</c>. Last, the value of the ordinal-smallest culture.
+    /// </remarks>
     public string Get(string culture)
     {
-        // Direct match
-        if (_values.TryGetValue(culture, out var value))
+        if (TryGetCultureOrLanguage(culture, out var value))
             return value;
 
-        // Parent culture fallback (e.g., "it-IT" → "it")
-        var dashIndex = culture.IndexOf('-');
-        if (dashIndex > 0)
+        if (I18NContext.Current.FallbackChain is { } fallbackChain
+            && CultureCode.TryFromString(culture, out var requested))
         {
-            var parent = culture[..dashIndex];
-            if (_values.TryGetValue(parent, out value))
-                return value;
+            foreach (var fallback in fallbackChain(requested))
+                if (TryGetCultureOrLanguage(fallback.Code, out value))
+                    return value;
         }
 
-        // Ultimate fallback: default culture
         if (_values.TryGetValue(DefaultFallbackCulture, out value))
             return value;
 
@@ -215,6 +217,15 @@ public sealed partial class LocalizedString : IReadOnlyDictionary<string, string
 
         var fallbackKey = _values.Keys.OrderBy(static k => k, StringComparer.Ordinal).First();
         return _values[fallbackKey];
+    }
+
+    private bool TryGetCultureOrLanguage(string culture, [MaybeNullWhen(false)] out string value)
+    {
+        if (_values.TryGetValue(culture, out value))
+            return true;
+
+        var dashIndex = culture.IndexOf('-');
+        return dashIndex > 0 && _values.TryGetValue(culture[..dashIndex], out value);
     }
 
     /// <summary>

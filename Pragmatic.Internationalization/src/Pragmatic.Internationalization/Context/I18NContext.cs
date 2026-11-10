@@ -22,7 +22,7 @@ namespace Pragmatic.Internationalization.Context;
 ///     <para>
 ///         In ASP.NET Core, the context is typically set by middleware based on request headers
 ///         or user preferences. In other scenarios (console apps, tests), use <see cref="SetCulture(CultureCode)"/>
-///         or configure via <see cref="SetFromConfig"/>.
+///         or configure via <see cref="SetFromConfig(I18NConfig)"/>.
 ///     </para>
 /// </remarks>
 public sealed partial class I18NContext : IGlobalizationContext
@@ -36,13 +36,15 @@ public sealed partial class I18NContext : IGlobalizationContext
         CultureCode dataCulture,
         CurrencyCode? preferredCurrency,
         bool syncScopes,
-        FrozenDictionary<string, CultureCode>? customScopes)
+        FrozenDictionary<string, CultureCode>? customScopes,
+        Func<CultureCode, IReadOnlyList<CultureCode>>? fallbackChain)
     {
         UICulture = uiCulture;
         DataCulture = dataCulture;
         PreferredCurrency = preferredCurrency;
         SyncScopes = syncScopes;
         _customScopes = customScopes ?? FrozenDictionary<string, CultureCode>.Empty;
+        FallbackChain = fallbackChain;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -108,6 +110,17 @@ public sealed partial class I18NContext : IGlobalizationContext
             : TScope.DefaultCulture;
     }
 
+    /// <summary>
+    ///     Gets the application's fallback chain: given a culture, the cultures to try, in order, when a
+    ///     value is missing in it. <see langword="null" /> when the context carries none.
+    /// </summary>
+    /// <remarks>
+    ///     The ASP.NET Core culture middleware sets it from <see cref="I18NOptions.FallbackChain" />, or the
+    ///     default chain ending in the default culture the request resolved. <see cref="LocalizedString" />
+    ///     follows it after the culture and its language, before <c>"en"</c>.
+    /// </remarks>
+    public Func<CultureCode, IReadOnlyList<CultureCode>>? FallbackChain { get; }
+
     // ══════════════════════════════════════════════════════════════
     // Backward Compatibility Aliases
     // ══════════════════════════════════════════════════════════════
@@ -153,6 +166,16 @@ public sealed partial class I18NContext : IGlobalizationContext
     /// </summary>
     public static I18NContext FromConfig(I18NConfig config)
     {
+        return FromConfig(config, fallbackChain: null);
+    }
+
+    /// <summary>
+    ///     Creates a new context from a resolved configuration and the application's fallback chain.
+    /// </summary>
+    /// <param name="config">The resolved configuration.</param>
+    /// <param name="fallbackChain">The cultures to try when a value is missing; see <see cref="FallbackChain" />.</param>
+    public static I18NContext FromConfig(I18NConfig config, Func<CultureCode, IReadOnlyList<CultureCode>>? fallbackChain)
+    {
         ThrowIfNull(config);
 
         var uiCulture = config.DefaultUICulture
@@ -166,7 +189,8 @@ public sealed partial class I18NContext : IGlobalizationContext
             dataCulture: syncScopes ? uiCulture : dataCulture,
             preferredCurrency: config.PreferredCurrency,
             syncScopes: syncScopes,
-            customScopes: config.CustomScopes?.ToFrozenDictionary());
+            customScopes: config.CustomScopes?.ToFrozenDictionary(),
+            fallbackChain: fallbackChain);
     }
 
     /// <summary>
@@ -179,7 +203,8 @@ public sealed partial class I18NContext : IGlobalizationContext
             dataCulture: culture,
             preferredCurrency: null,
             syncScopes: true,
-            customScopes: null);
+            customScopes: null,
+            fallbackChain: null);
     }
 
     /// <summary>
