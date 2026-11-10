@@ -40,7 +40,7 @@ The middleware runs early in the pipeline (before routing) so that the tenant co
 After resolution, the middleware enforces a **fail-closed claim guard** (`MultiTenancyOptions.EnforceTenantClaim`, default `true`):
 
 - If the request is **authenticated** AND the user carries a tenant claim (`MultiTenancyOptions.TenantClaimType`, default `tenant_id`), the tenant resolved by **any** strategy MUST equal the claim value.
-- On **mismatch**, the request is rejected with **HTTP 403**: neither the client-supplied value nor the claim is silently used (no fail-open).
+- On **mismatch**, the request is rejected with **HTTP 403** (`code` `TENANT_MISMATCH`): neither the client-supplied value nor the claim is silently used (no fail-open).
 - When **no tenant claim is present** (anonymous / pre-auth), the resolved value is kept as-is.
 
 This makes the authenticated user's tenant claim **authoritative**: an authenticated user from tenant A cannot send `X-Tenant-Id: B` (or hit `/b/...`, or `b.app.com`) to read or write tenant B's data. The claim resolver trivially satisfies the guard. Set `EnforceTenantClaim = false` only if your identity tokens deliberately omit a tenant claim and you accept client-supplied tenants for authenticated requests.
@@ -52,7 +52,9 @@ A resolved tenant is only served if it is `Active` (`MultiTenancyOptions.Enforce
 
 - The check runs only when an `ITenantStore` is registered **and** it knows the tenant. The store is
   the authority on state; where there is no store there is no state to read.
-- A tenant in `Suspended`, `Deactivated`, `Provisioning` or `Migrating` is rejected with **HTTP 403**.
+- A tenant in `Suspended`, `Deactivated`, `Provisioning` or `Migrating` is rejected with **HTTP 403**:
+  `code` `TENANT_SUSPENDED` for a suspended one, `TENANT_NOT_ACTIVE` for the others, and the state in
+  `tenantState`.
 - A tenant the store does not know is passed through: this guard is about state, and absent is not a
   state.
 
@@ -68,8 +70,12 @@ works either way.
 ### Unknown Tenant Guard
 
 `MultiTenancyOptions.RequireKnownTenant` rejects a resolved tenant the store does not contain, with
-**HTTP 404**: an unknown tenant is not a forbidden one, and answering `403` would confirm that the
-id names something.
+**HTTP 404** (`code` `TENANT_UNKNOWN`): an unknown tenant is not a forbidden one, and answering `403`
+would confirm that the id names something.
+
+Every refusal of the middleware is a ProblemDetails (`application/problem+json`) whose `code` is one of
+`TenantRefusalCodes`. The `code` is what a client branches on; the title and detail come from the
+host's `IErrorMessageResolver` for that code, as any other error's do, and fall back to English.
 
 **It is off by default, unlike every other guard here, and the reason is a fact about the framework
 rather than a preference.** When multi-tenancy is detected the generated host registers an *empty*

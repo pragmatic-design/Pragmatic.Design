@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pragmatic.Result;
 
 namespace Pragmatic.MultiTenancy;
 
@@ -24,7 +25,7 @@ public sealed partial class TenantResolutionMiddleware(
     ///     the scoped <see cref="MutableTenantContext" />.
     ///     When <see cref="MultiTenancyOptions.RequireTenant" /> is <c>true</c> and no tenant is
     ///     resolved, the request is short-circuited with HTTP 400 and a ProblemDetails whose <c>code</c> is
-    ///     <see cref="TenantRequiredCode" /> — unless the matched endpoint carries <see cref="TenantAgnosticEndpoint" />,
+    ///     <see cref="TenantRefusalCodes.Required" /> — unless the matched endpoint carries <see cref="TenantAgnosticEndpoint" />,
     ///     which is how the routes that belong to no tenant (a liveness probe, the published contract) stay reachable
     ///     to callers that have none, or the caller is not authenticated on a route authorization will refuse it,
     ///     which then answers 401.
@@ -64,7 +65,8 @@ public sealed partial class TenantResolutionMiddleware(
                 !string.Equals(claimTenant, tenantId, StringComparison.Ordinal))
             {
                 LogTenantClaimMismatch(tenantId, claimTenant, context.Request.Path);
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await RefuseAsync(context, StatusCodes.Status403Forbidden, TenantRefusalCodes.Mismatch,
+                    "The tenant of the request is not the caller's.").ConfigureAwait(false);
                 return;
             }
         }
@@ -84,7 +86,11 @@ public sealed partial class TenantResolutionMiddleware(
             if (tenant is not null && options.Value.EnforceTenantState && tenant.State != TenantState.Active)
             {
                 LogTenantNotActive(tenantId, tenant.State.ToString(), context.Request.Path);
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                var suspended = tenant.State == TenantState.Suspended;
+                await RefuseAsync(context, StatusCodes.Status403Forbidden,
+                    suspended ? TenantRefusalCodes.Suspended : TenantRefusalCodes.NotActive,
+                    suspended ? "The tenant is suspended." : "The tenant is not active.",
+                    tenant.State.ToString()).ConfigureAwait(false);
                 return;
             }
 
@@ -94,7 +100,8 @@ public sealed partial class TenantResolutionMiddleware(
             if (tenant is null && options.Value.RequireKnownTenant)
             {
                 LogTenantUnknown(tenantId, context.Request.Path);
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                await RefuseAsync(context, StatusCodes.Status404NotFound, TenantRefusalCodes.Unknown,
+                    "No such tenant.").ConfigureAwait(false);
                 return;
             }
         }
@@ -123,12 +130,8 @@ public sealed partial class TenantResolutionMiddleware(
                     return;
                 }
 
-                await TypedResults.Problem(
-                        detail: "The request does not say which tenant it is for.",
-                        statusCode: StatusCodes.Status400BadRequest,
-                        extensions: new Dictionary<string, object?> { ["code"] = TenantRequiredCode })
-                    .ExecuteAsync(context)
-                    .ConfigureAwait(false);
+                await RefuseAsync(context, StatusCodes.Status400BadRequest, TenantRefusalCodes.Required,
+                    "The request does not say which tenant it is for.").ConfigureAwait(false);
                 return;
             }
         }
@@ -136,8 +139,24 @@ public sealed partial class TenantResolutionMiddleware(
         await next(context).ConfigureAwait(false);
     }
 
-    /// <summary>The <c>code</c> of the 400 an authenticated request with no tenant is answered.</summary>
-    public const string TenantRequiredCode = "TENANT_REQUIRED";
+    /// <summary>
+    ///     Writes a refusal as a ProblemDetails carrying its <paramref name="code" />, with the title and detail the host's
+    ///     <see cref="IErrorMessageResolver" /> gives for that code, or the defaults when it gives none.
+    /// </summary>
+    private static Task RefuseAsync(HttpContext context, int status, string code, string detail, string? tenantState = null)
+    {
+        var messages = context.RequestServices?.GetService<IErrorMessageResolver>();
+        var extensions = new Dictionary<string, object?> { ["code"] = code };
+        if (tenantState is not null)
+            extensions["tenantState"] = tenantState;
+
+        return TypedResults.Problem(
+                detail: messages?.Resolve(code) ?? detail,
+                statusCode: status,
+                title: messages?.ResolveTitle(code),
+                extensions: extensions)
+            .ExecuteAsync(context);
+    }
 
     /// <summary>
     ///     Whether the authorization middleware will refuse an anonymous caller on this endpoint: it declares an

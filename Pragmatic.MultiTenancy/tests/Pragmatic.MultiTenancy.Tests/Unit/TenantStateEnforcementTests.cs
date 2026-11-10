@@ -1,5 +1,6 @@
 using Pragmatic.Testing.Assertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -47,7 +48,8 @@ public class TenantStateEnforcementTests
             NullLogger<TenantResolutionMiddleware>.Instance,
             options);
 
-        var context = new DefaultHttpContext();
+        // A request always has its services; a refusal is a ProblemDetails, written through them.
+        var context = new DefaultHttpContext { RequestServices = new ServiceCollection().AddLogging().BuildServiceProvider() };
         await middleware.InvokeAsync(context, new StubResolver("acme"), new MutableTenantContext(), store)
             .ConfigureAwait(false);
 
