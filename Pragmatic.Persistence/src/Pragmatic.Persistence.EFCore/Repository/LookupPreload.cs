@@ -20,6 +20,8 @@ namespace Pragmatic.Persistence.EFCore.Repository;
 ///     </para>
 ///     <para>
 ///         So the tenants come from <see cref="ITenantStore" />, and the preload runs once per tenant.
+///         The store is resolved in a scope of its own: the preload is handed the root provider, and a
+///         store that reads the database is scoped.
 ///         ⚠️ "A store is registered" is not "the store knows the tenants": the default
 ///         <c>InMemoryTenantStore</c> starts empty unless the application seeds it, so a preload that
 ///         loops over it would run zero times — the same empty cache by another route. That case is said out
@@ -44,7 +46,13 @@ public static partial class LookupPreload
         var logger = (ILogger?)serviceProvider.GetService<ILogger<LookupPreloadHostedService>>()
                      ?? NullLogger.Instance;
 
-        var store = serviceProvider.GetService<ITenantStore>();
+        // The preload runs at startup from the root provider, and a store that reads the database is
+        // scoped: resolved from the root it fails scope validation, and without validation it would be
+        // captured for the process. The store is read in a scope of its own, closed after the read.
+        var scope = serviceProvider.CreateAsyncScope();
+        await using var _ = scope.ConfigureAwait(false);
+
+        var store = scope.ServiceProvider.GetService<ITenantStore>();
         if (store is null)
         {
             // Loud, because the alternative is loading nothing and calling it a preload. A
