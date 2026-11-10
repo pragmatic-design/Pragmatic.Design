@@ -40,4 +40,14 @@ internal static class LifecycleEventsDiagnostics
         "[Raises<T>] on an entity's method generates nothing",
         "[Raises<{1}>] on '{0}' generates nothing: only the entity's class-level declaration is wired, and a source generator cannot add a raise to a method body you wrote. Declare it with [RaisesEvent<{1}>] on the state machine's target member, or call RaiseEvent(new {1}(...)) in the method.",
         "Move the declaration to the entity class (a lifecycle transition), to the state machine's target member via [RaisesEvent<T>], or raise the event by hand in the method body.");
+
+    // PRAG2754: [RaisesEvent<T>] on a state of a machine whose entity cannot raise events. The generated
+    // TransitionTo writes the raise only on a DomainEventSource, so on any other entity the attribute
+    // is accepted and the transition raises nothing (#635). PRAG2750 is the class-level [Raises<T>]
+    // twin; this one is a warning because the state machine itself still works.
+    public static readonly DiagnosticDescriptor RaisesEventWithoutDomainEventSource = DiagnosticFactory.Warning(
+        "PRAG2754",
+        "[RaisesEvent<T>] on an entity that cannot raise events",
+        "State '{0}' declares [RaisesEvent<{1}>] but entity '{2}' does not derive from DomainEventSource, so the transition to it raises nothing. Make '{2}' derive from DomainEventSource.",
+        "Make the entity derive from DomainEventSource (it gains RaiseEvent and event tracking), or remove [RaisesEvent<T>] from the state.");
 }

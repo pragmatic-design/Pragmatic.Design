@@ -1126,7 +1126,7 @@ public class GeneratedSurfaceInventoryTests
 
         // ── state machine with events ─────────────────────────────────────────────────────────────
 
-        public sealed record FlowApproved(Guid Id);
+        public sealed record FlowApproved(Guid Id, DateTimeOffset OccurredAt) : Pragmatic.Events.IDomainEvent;
 
         public enum EventfulState
         {
@@ -1138,11 +1138,14 @@ public class GeneratedSurfaceInventoryTests
             Approved
         }
 
-        /// <summary>With [RaisesEvent]: the transition raises a domain event.</summary>
+        /// <summary>
+        ///     With [RaisesEvent]: the transition raises a domain event. Only on a DomainEventSource — on any
+        ///     other entity the raise is not written, and PRAG2754 says so.
+        /// </summary>
         [Entity]
         [BelongsTo<InventoryBoundary>]
         [StateMachine<EventfulState>]
-        public partial class WithEventfulStateMachine : IEntity
+        public partial class WithEventfulStateMachine : Pragmatic.Events.DomainEventSource, IEntity
         {
             public EventfulState Status { get; private set; }
         }

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGenerator.Features.Lifecycle.Diagnostics;
 using Pragmatic.SourceGenerator.Features.Persistence.Diagnostics;
 using Pragmatic.SourceGenerator.Features.Persistence.Models;
 
@@ -63,6 +64,23 @@ internal static class StateMachineValidator
                         fromState,
                         state.Name,
                         model.EnumFullTypeName));
+                }
+            }
+        }
+
+        // PRAG2754: a raise the template will not write, because the entity has nowhere to raise it.
+        if (!model.HasDomainEvents)
+        {
+            foreach (var state in model.States)
+            {
+                foreach (var raised in state.RaisedEvents)
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        LifecycleEventsDiagnostics.RaisesEventWithoutDomainEventSource,
+                        location,
+                        state.Name,
+                        raised.TypeName,
+                        model.EntityTypeName));
                 }
             }
         }

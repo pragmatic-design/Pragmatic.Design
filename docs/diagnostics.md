@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **478** |
-| Distinct IDs | **478** |
+| Declared descriptors | **479** |
+| Distinct IDs | **479** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -635,7 +635,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2702`.
 
-### Lifecycle: 4 in use · range `PRAG2750`–`PRAG2799`
+### Lifecycle: 5 in use · range `PRAG2750`–`PRAG2799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -643,8 +643,9 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG2751` | `UnmatchedConstructorParameter` | Warning | Lifecycle event constructor parameter is unmatched |
 | `PRAG2752` | `EnableEventOutboxWithoutEFCore` | Warning | [EnableEventOutbox] requires the outbox package of the boundary's engine |
 | `PRAG2753` | `RaisesOnAnEntityMethodGeneratesNothing` | Error | [Raises<T>] on an entity's method generates nothing |
+| `PRAG2754` | `RaisesEventWithoutDomainEventSource` | Warning | [RaisesEvent<T>] on an entity that cannot raise events |
 
-*First free after the last used:* `PRAG2754`.
+*First free after the last used:* `PRAG2755`.
 
 ### Serialization / AOT: 1 in use · range `PRAG2800`–`PRAG2899`
 

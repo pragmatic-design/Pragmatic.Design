@@ -5710,6 +5710,10 @@ internal sealed class GeneratedPermissionRequirementRegistry : IPermissionRequir
 internal sealed class GeneratedPolicyRegistry : IPolicyRegistry
     public ResourcePolicy? GetPolicy(Type actionType)
 
+## _Infra.AsyncApi.Generated.g.cs
+public static class PragmaticAsyncApi
+    public const string Json
+
 ## _Infra.Endpoints.EndpointContracts.g.cs
     [assembly: PragmaticEndpointContract]
 

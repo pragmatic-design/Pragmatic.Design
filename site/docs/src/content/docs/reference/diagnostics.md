@@ -597,7 +597,7 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 | `PRAG2700` | Warning | A `[ValueObject]` type is not `partial`, so `Create`/`CreateUnsafe` cannot be generated. |
 | `PRAG2701` | Warning | A `[ValueObject]` type declares no `private static` `Validate` method, so `Create` cannot be generated. |
 
-### Entity lifecycle events: `PRAG2750-2753`
+### Entity lifecycle events: `PRAG2750-2754`
 
 | ID | Severity | Meaning and fix |
 |----|----------|-----------------|
@@ -605,6 +605,7 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 | `PRAG2751` | Warning | An event constructor parameter matched no entity member by name and is passed `default`. Rename it to match, or raise the event from a domain method. |
 | `PRAG2752` | Warning | `[EnableEventOutbox]` without a reference to the outbox package of the boundary's engine (`Pragmatic.Events.EFCore` on EF Core, `Pragmatic.Events.Engines` on the Sql and documents engines): the outbox is not wired, so the attribute is a no-op. |
 | `PRAG2753` | Error | `[Raises<T>]` on an **entity's method**: nothing generates that raise, while the class-level form on the same entity is wired. Declare it on the class, use `[RaisesEvent<T>]` on the state machine's target member, or call `RaiseEvent(...)` in the body. |
+| `PRAG2754` | Warning | `[RaisesEvent<T>]` on a state of an entity that does not derive from `DomainEventSource`: the generated transition writes no raise, so the event is never raised. Derive the entity from `DomainEventSource`, or remove the attribute. |
 
 ### Serialization / AOT: `PRAG2800`
 
