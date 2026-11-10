@@ -97,7 +97,11 @@ internal static class PatchTransform
             EntityFullName = entityType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             EntityName = entityType.Name,
             Properties = properties,
-            UnmatchedIgnores = unmatched
+            UnmatchedIgnores = unmatched,
+            RefusedProperties = excluded
+                .Where(name => !unmatched.Contains(name))
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToImmutableArray()
         };
     }
 

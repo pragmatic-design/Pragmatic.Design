@@ -110,9 +110,18 @@ internal sealed class PatchConverterTemplate : CSharpTemplate
                     }
                 }
 
+                foreach (var refused in _model.RefusedProperties)
+                {
+                    Case($"\"{refused}\"", () => RenderRefusal(refused));
+
+                    var camelCase = ToCamelCase(refused);
+                    if (camelCase != refused)
+                        Case($"\"{camelCase}\"", () => RenderRefusal(refused));
+                }
+
                 Default(() =>
                 {
-                    AppendLine("reader.Skip();");
+                    If(UnknownJsonMember.CouldNotSkip, () => AppendLine(UnknownJsonMember.Refusal));
                     Break();
                 });
             });
@@ -131,6 +140,19 @@ internal sealed class PatchConverterTemplate : CSharpTemplate
         }
         DecreaseIndent();
         AppendLine("};");
+    }
+
+    /// <remarks>
+    ///     A property <c>[PatchIgnore]</c> keeps out is refused, not passed over like a member the entity does not have: the domain
+    ///     forbids correcting it, and ignoring the request would answer the rest of the body as though it had been carried out.
+    /// </remarks>
+    private void RenderRefusal(string property)
+    {
+        AppendLine("throw new global::System.Text.Json.JsonException(");
+        IncreaseIndent();
+        AppendLine("\"'\" + propertyName + \"' cannot be patched: \" +");
+        AppendLine($"\"{_model.EntityName}.{property} is excluded by [PatchIgnore].\");");
+        DecreaseIndent();
     }
 
     private void RenderReadOptionalInline(PatchPropertyModel prop)

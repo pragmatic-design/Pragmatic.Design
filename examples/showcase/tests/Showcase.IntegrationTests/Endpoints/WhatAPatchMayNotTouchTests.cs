@@ -20,12 +20,18 @@ namespace Showcase.IntegrationTests.Endpoints;
 ///         decision that goes through the full update, not a field corrected in passing.
 ///     </para>
 ///     <para>
-///         ⚠️ <b>The field is refused, not ignored</b> — measured, and the opposite of what the
-///         attribute's name suggests. The declaration removes the property from the generated patch
-///         <em>and</em> from its JSON converter, so a body carrying it does not bind and the caller
-///         gets <b>400</b>. That is the better of the two contracts, and the one the attribute's own
-///         motivation asks for: the published shape and the refusal now agree, where before an
-///         endpoint refused a field its contract went on advertising.
+///         ⚠️ <b>The field is refused, not ignored</b> — the opposite of what the attribute's name
+///         suggests. The declaration removes the property from the generated patch, and its JSON
+///         converter refuses a body naming it, by name, so the caller gets <b>400</b>. That is the
+///         better of the two contracts, and the one the attribute's own motivation asks for: the
+///         published shape and the refusal agree, where before an endpoint refused a field its
+///         contract went on advertising.
+///     </para>
+///     <para>
+///         The refusal is written for the excluded property, not inherited from the handling of
+///         members the patch does not declare. Those are ignored (#631), and for a long time this test
+///         was green only because they were not: the converter crashed on every unknown member read
+///         from a request body, and the 400 here was that crash.
 ///     </para>
 /// </remarks>
 public class WhatAPatchMayNotTouchTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
