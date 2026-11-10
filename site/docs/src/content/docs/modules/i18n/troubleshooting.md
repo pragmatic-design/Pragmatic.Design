@@ -153,9 +153,9 @@ Consolidate the duplicate key into a single file. If you use the folder-per-cult
 
 1. **Is `I18NContext` set?** The `Value` property reads `I18NContext.Current.CultureCode`. If no context is set, it falls back to `CultureInfo.CurrentCulture`.
 
-2. **Does the `LocalizedString` contain the requested culture?** Check `product.Name.Cultures` to see which cultures are stored. The fallback chain is: exact match (`de-AT`) -> base language (`de`) -> default culture (`en`).
+2. **Does the `LocalizedString` contain the requested culture?** Check `product.Name.Cultures` to see which cultures are stored. The fallback chain is: exact match (`de-AT`) -> base language (`de`) -> the application's fallback chain, each step with its base language -> `en` -> the ordinal-smallest stored culture. The chain is `I18NOptions.FallbackChain` if you set one, otherwise the default culture the request resolved (`UseI18N`'s, a tenant's or a user's provider, or the language the translations are written from); the culture middleware puts it on the request's `I18NContext`. Outside a request (a context set with `SetCulture` or `WithCulture`) there is no chain, and `en` follows the base language.
 
-3. **Is the culture code format correct?** `LocalizedString` uses the culture code string for lookup. If you stored `"de"` but the context is `"de-DE"`, the fallback chain will try `"de-DE"` first (miss), then `"de"` (match). This is correct behavior. But if you stored `"de-DE"` and the context is `"de"`, the exact match fails and it falls to `"en"`.
+3. **Is the culture code format correct?** `LocalizedString` uses the culture code string for lookup. If you stored `"de"` but the context is `"de-DE"`, the fallback chain will try `"de-DE"` first (miss), then `"de"` (match). This is correct behavior. But if you stored `"de-DE"` and the context is `"de"`, the exact match fails and it falls to the next step of the chain.
 
 4. **For Data vs UI culture:** Use `.UIValue` for display and `.DataValue` for storage/API output:
 
@@ -248,7 +248,7 @@ Database migration or query errors related to `CurrencyCode` or `Money` columns.
 
 ### What happens when a translation key is missing?
 
-`LocalizedString.Value` uses a fallback chain: exact culture (`de-AT`) -> base language (`de`) -> default culture (typically `en`). If no translation exists in any fallback, it returns an empty string.
+`LocalizedString.Value` uses a fallback chain: exact culture (`de-AT`) -> base language (`de`) -> the application's fallback chain (see above) -> `en`. If no culture of the chain is stored, it returns the value of the ordinal-smallest stored culture, and an empty string only when the value holds no translation at all.
 
 For `T` class keys, missing translations are caught at build time by PRAG1802. At runtime, the key always has the embedded values from all cultures present at compile time.
 

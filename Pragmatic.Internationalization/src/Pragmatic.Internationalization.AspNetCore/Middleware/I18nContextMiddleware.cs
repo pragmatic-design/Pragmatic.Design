@@ -59,6 +59,10 @@ public partial class I18NContextMiddleware
         // database the request's thread need not block on takes part.
         var config = await resolver.ResolveAsync(context.RequestAborted).ConfigureAwait(false);
 
+        // The default the providers resolved (the application's, a tenant's, a user's), before the
+        // request's own culture replaces it: the last step of the default fallback chain.
+        var resolvedDefault = config.DefaultUICulture;
+
         // Check for request-level override (query string)
         var requestCulture = GetRequestCultureOverride(context, resolver, options.Value.QueryStringKey);
         if (requestCulture.HasValue)
@@ -96,8 +100,12 @@ public partial class I18NContextMiddleware
         // leave the pooled thread's CurrentUICulture/CurrentCulture mutated and leak into the
         // next request on the same thread. Snapshot is taken only after resolve succeeds, so a
         // failing resolver never clobbers a valid parent context.
+        // A LocalizedString read in a culture it does not hold follows this chain before "en".
+        var i18n = options.Value;
+        IReadOnlyList<CultureCode> FallbackChain(CultureCode culture) => i18n.GetFallbacks(culture, resolvedDefault);
+
         var snapshot = I18NContext.Capture();
-        I18NContext.SetFromConfig(config);
+        I18NContext.SetFromConfig(config, FallbackChain);
         try
         {
             await _next(context).ConfigureAwait(false);

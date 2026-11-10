@@ -16,7 +16,17 @@ public sealed partial class I18NContext
     /// </summary>
     public static void SetFromConfig(I18NConfig config)
     {
-        Current = FromConfig(config);
+        SetFromConfig(config, fallbackChain: null);
+    }
+
+    /// <summary>
+    ///     Sets the current context from a resolved configuration and the application's fallback chain.
+    /// </summary>
+    /// <param name="config">The resolved configuration.</param>
+    /// <param name="fallbackChain">The cultures to try when a value is missing; see <see cref="FallbackChain" />.</param>
+    public static void SetFromConfig(I18NConfig config, Func<CultureCode, IReadOnlyList<CultureCode>>? fallbackChain)
+    {
+        Current = FromConfig(config, fallbackChain);
         SyncThreadCulture();
     }
 
@@ -37,7 +47,8 @@ public sealed partial class I18NContext
             dataCulture: dataCulture,
             preferredCurrency: current.PreferredCurrency,
             syncScopes: current.SyncScopes,
-            customScopes: current._customScopes);
+            customScopes: current._customScopes,
+            fallbackChain: current.FallbackChain);
 
         SyncThreadCulture();
     }
@@ -79,7 +90,8 @@ public sealed partial class I18NContext
             dataCulture: culture,
             preferredCurrency: current.PreferredCurrency,
             syncScopes: current.SyncScopes,
-            customScopes: current._customScopes);
+            customScopes: current._customScopes,
+            fallbackChain: current.FallbackChain);
 
         SyncThreadCulture();
     }
@@ -96,7 +108,8 @@ public sealed partial class I18NContext
             dataCulture: current.DataCulture,
             preferredCurrency: currency,
             syncScopes: current.SyncScopes,
-            customScopes: current._customScopes);
+            customScopes: current._customScopes,
+            fallbackChain: current.FallbackChain);
     }
 
     /// <summary>
@@ -115,7 +128,8 @@ public sealed partial class I18NContext
             dataCulture: current.DataCulture,
             preferredCurrency: current.PreferredCurrency,
             syncScopes: current.SyncScopes,
-            customScopes: scopes.ToFrozenDictionary());
+            customScopes: scopes.ToFrozenDictionary(),
+            fallbackChain: current.FallbackChain);
     }
 
     /// <summary>
