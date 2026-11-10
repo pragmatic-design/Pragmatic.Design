@@ -165,7 +165,7 @@ internal static partial class EntityMetadataReader
         };
     }
 
-    private static IEnumerable<INamedTypeSymbol> GetAllNamedTypes(INamespaceSymbol ns, CancellationToken ct)
+    internal static IEnumerable<INamedTypeSymbol> GetAllNamedTypes(INamespaceSymbol ns, CancellationToken ct)
     {
         foreach (var type in ns.GetTypeMembers())
         {
@@ -183,7 +183,7 @@ internal static partial class EntityMetadataReader
         }
     }
 
-    private static bool IsFrameworkAssembly(string name) =>
+    internal static bool IsFrameworkAssembly(string name) =>
         name.StartsWith("System", StringComparison.OrdinalIgnoreCase) ||
         name.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) ||
         name.StartsWith("mscorlib", StringComparison.OrdinalIgnoreCase) ||

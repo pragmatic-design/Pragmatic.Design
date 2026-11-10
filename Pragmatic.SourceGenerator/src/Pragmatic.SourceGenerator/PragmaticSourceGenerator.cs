@@ -87,7 +87,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var generatedPermissions = permissionCatalog.Combine(traitOutput.Permissions)
             .Select(static (pair, _) => new EquatableArray<string>(PermissionCatalogBuilder.RegistrableValues(pair.Left, pair.Right)));
 
-        var (identityRegistrations, currentUsers) =
+        var (identityRegistrations, currentUsers, bindableUsers) =
             IdentityFeature.Register(context, features, permissionCatalog, customPermissions, generatedPermissions);
 
         // The one {Boundary}Permissions class per boundary: the CRUD constants and the declared ones.
@@ -97,7 +97,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // Single queries for the reads, so its operations reach the pipelines a hand-written one does.
         var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation, invokerSources, engineReads) = ActionsFeature.Register(
             context, features, traitActions: traitOutput.Actions, permissionCatalog: permissionCatalog,
-            programmaticMutations: resourceMutations, queries: queryModels, currentUsers: currentUsers);
+            programmaticMutations: resourceMutations, queries: queryModels, currentUsers: bindableUsers);
         var patchManifestTypes = PatchFeature.Register(context, features);
 
 
@@ -142,7 +142,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // The user entities too: [FromCurrentUser] binds a member of one, and the invoker fills it.
         // The entities too: a query of an entity the Sql or documents engine persists reads through its repository, not EF Core's executor.
         Features.Persistence.QueryFeature.RegisterInvokers(
-            context, queryModels, permissionCatalog, features, permissionDerivation, currentUsers, entityModels);
+            context, queryModels, permissionCatalog, features, permissionDerivation, bindableUsers, entityModels);
 
         // The catalog of every name the posture produced — actions, mutations and queries — so a role
         // can grant them. Here and not inside Actions, because the queries are derived by Endpoints,
@@ -176,7 +176,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var (privacyRegistrations, privacySources) =
             Features.Privacy.PrivacyFeature.Register(context, features, endpoints: endpointModels
                 // The signed-in user's entity, for the operations that load it: Identity's to say which.
-                .Combine(currentUsers)
+                .Combine(bindableUsers)
                 .Select(static (pair, _) => Features.Privacy.Transforms.SignedInUserReach.Resolve(pair.Left, pair.Right)));
 
         // Manifest generation is handled inline in EndpointsFeature (pipeline compatibility)

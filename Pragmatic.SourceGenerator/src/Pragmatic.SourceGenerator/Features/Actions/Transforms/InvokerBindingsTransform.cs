@@ -70,20 +70,17 @@ internal static class InvokerBindingsTransform
     private static CurrentUserLoadModel Resolve(CurrentUserLoadModel load, EquatableArray<UserEntityModel> users)
     {
         if (users.Count == 0)
-            return load with { Problem = "there is no [PragmaticUser] entity in this compilation to load" };
+            return load with { Problem = "there is no [PragmaticUser] entity in this compilation or the modules it references to load" };
 
         if (users.Count > 1)
             return load with
             {
-                Problem = $"there are {users.Count} [PragmaticUser] entities in this compilation, and the load cannot tell which one is the user"
+                Problem = $"there are {users.Count} [PragmaticUser] entities {CurrentUserBindingTransform.Where(users)}, and the load cannot tell which one is the user"
             };
 
         var user = users[0];
         if (!user.HasUserLookup)
-            return load with
-            {
-                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only where the user has a lookup (EF Core referenced)"
-            };
+            return load with { Problem = CurrentUserBindingTransform.NoResolver(user) };
 
         var prefix = string.IsNullOrEmpty(user.Namespace) ? "global::" : $"global::{user.Namespace}.";
         return load with

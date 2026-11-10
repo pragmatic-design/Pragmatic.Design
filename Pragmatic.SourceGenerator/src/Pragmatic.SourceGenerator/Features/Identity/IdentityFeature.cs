@@ -21,11 +21,13 @@ internal static class IdentityFeature
 
     /// <summary>
     ///     Returns the catalog registration this compilation generates, for a host that declares its
-    ///     permissions itself; and the <c>[PragmaticUser]</c> entities, for the query invokers that bind a
-    ///     member of one with <c>[FromCurrentUser]</c>.
+    ///     permissions itself; the <c>[PragmaticUser]</c> entities this compilation declares, whose resolvers it writes; and the user
+    ///     the invokers bind a member of with <c>[FromCurrentUser]</c> or load with <c>[LoadCurrentUser]</c> — this compilation's, or
+    ///     when it has none, the one a referenced module declares (#636).
     /// </summary>
     public static (IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> LocalRegistrations,
-        IncrementalValueProvider<EquatableArray<UserEntityModel>> Users) Register(
+        IncrementalValueProvider<EquatableArray<UserEntityModel>> Users,
+        IncrementalValueProvider<EquatableArray<UserEntityModel>> BindableUsers) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
         IncrementalValueProvider<EquatableArray<Core.PermissionConstEntry>> permissionCatalog,
@@ -251,8 +253,28 @@ internal static class IdentityFeature
                 .Select(m => WithLookup(m, pair.Right))
                 .ToImmutableArray()));
 
-        return (localRegistrations, users);
+        // The user a binding reads: this compilation's, else a referenced module's. Read off the references only where something here
+        // binds the user and nothing here declares one, because finding it visits every type of every module referenced.
+        var bindsTheUser = context.SyntaxProvider
+            .ForAttributeWithMetadataName(AttributeNames.FromCurrentUser, static (node, _) => node is PropertyDeclarationSyntax,
+                static (_, _) => true)
+            .Collect()
+            .Combine(context.SyntaxProvider
+                .ForAttributeWithMetadataName(LoadCurrentUserAttribute, GeneratorHelpers.IsClass, static (_, _) => true)
+                .Collect())
+            .Select(static (pair, _) => !pair.Left.IsEmpty || !pair.Right.IsEmpty);
+
+        var bindableUsers = users.Combine(bindsTheUser).Combine(context.CompilationProvider)
+            .Select(static (data, ct) =>
+            {
+                var ((local, binds), compilation) = data;
+                return local.Count > 0 || !binds ? local : ReferencedUserReader.Read(compilation, ct);
+            });
+
+        return (localRegistrations, users, bindableUsers);
     }
+
+    private const string LoadCurrentUserAttribute = "Pragmatic.Actions.Attributes.LoadCurrentUserAttribute";
 
     /// <summary>
     ///     The user with the lookup this compilation gives it: an engine's read repository when its bridge is referenced (#593, #594), EF Core's

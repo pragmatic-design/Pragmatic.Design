@@ -234,8 +234,10 @@ The resolver is asynchronous only and names no persistence type: the lookup is t
 `[Query]` property makes the query's generated invoker construct the resolver (the generator knows
 its constructor, so it asks DI for the lookup only), resolve the caller's entity after validation and the
 permission check, and write that member into the property before the read. No entity is 404, no
-caller is 401. The member form needs the `[PragmaticUser]` entity in the same compilation as the query,
-and a lookup for it; otherwise `PRAG0731` says why. The whole form:
+caller is 401. The member form needs the `[PragmaticUser]` entity and a lookup for it, in the same
+compilation as the query or in a module it references ("my tasks" in a tasks module, the user in
+accounts): the invoker then builds the resolver that module wrote. Otherwise `PRAG0731` says why. The
+whole form:
 [Filtering by the caller](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Persistence/docs/09-query-system.md#filtering-by-the-caller-fromcurrentuser).
 
 ## Setup
