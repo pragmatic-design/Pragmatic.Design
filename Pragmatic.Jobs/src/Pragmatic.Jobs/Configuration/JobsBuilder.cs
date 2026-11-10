@@ -92,6 +92,30 @@ public sealed class JobsBuilder
     }
 
     /// <summary>
+    ///     Makes this host schedule jobs without running them: <see cref="IJobScheduler" /> stays, the processor and the
+    ///     recurring scheduler are not registered.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         For a host that enqueues while another runs the jobs — a web host and a worker host over one durable store. The
+    ///         composition registers the processing services in every host that sees a module declaring a job, and without this a
+    ///         web host ran the jobs too.
+    ///     </para>
+    ///     <para>
+    ///         Removes the two services if they are already registered — the Composition host registers module defaults before the
+    ///         application's <c>UseJobs</c> callback — and <c>AddJobProcessingServices()</c> called afterwards registers nothing, so
+    ///         the order of the two calls does not matter. The recurring definitions are seeded by whichever host runs the
+    ///         scheduler.
+    ///     </para>
+    /// </remarks>
+    public JobsBuilder EnqueueOnly()
+    {
+        Options.EnqueueOnly = true;
+        Extensions.JobsServiceExtensions.RemoveJobProcessingServices(Services);
+        return this;
+    }
+
+    /// <summary>
     ///     Switches job persistence away from the in-memory stores, which lose every queued job on
     ///     restart and cannot coordinate workers across hosts.
     /// </summary>

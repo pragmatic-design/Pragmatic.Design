@@ -498,6 +498,26 @@ builder.Services.AddJobProcessingServices();
 | `WithMisfireThreshold(TimeSpan)` | How late a recurring occurrence may be before it counts as a misfire |
 | `WithWorkerId(string)` | Explicit worker ID used for lease fencing |
 | `UseEfCore()` | Switches away from the in-memory stores |
+| `EnqueueOnly()` | This host schedules jobs and runs none: `IJobScheduler` stays, the processor and the recurring scheduler are not registered |
+
+### A host that only enqueues
+
+A web host that schedules work for a worker host to run, over one durable store, says so:
+
+```csharp
+// The web host: schedules, runs nothing
+app.UseJobs(jobs =>
+{
+    jobs.UseEfCore();
+    jobs.UseEfCorePersistence();
+    jobs.EnqueueOnly();
+});
+```
+
+The worker host configures the same store without `EnqueueOnly()`. The composition registers the processor and the
+recurring scheduler in every host that sees a module declaring a job, and `EnqueueOnly()` takes them out again whichever
+order the calls come in. The recurring definitions are seeded by the host that runs the scheduler. With the in-memory
+stores an enqueue-only host keeps jobs that nobody runs: the store is the only thing the two hosts share.
 
 ### Configuration Options
 
@@ -512,6 +532,7 @@ builder.Services.AddJobProcessingServices();
 | `PurgeBatchSize` | 1000 | Maximum rows deleted per purge pass |
 | `MisfireThreshold` | 1 minute | How far past its scheduled time a recurring occurrence may be before it counts as a misfire |
 | `WorkerId` | auto-generated | Worker ID for lease acquisition |
+| `EnqueueOnly` | false | Whether this host only schedules jobs, leaving another host to run them |
 | `UseEfCore` | false | Enable EF Core persistence |
 
 ---
