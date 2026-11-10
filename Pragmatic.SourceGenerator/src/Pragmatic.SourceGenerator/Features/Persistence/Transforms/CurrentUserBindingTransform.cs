@@ -79,13 +79,13 @@ internal static class CurrentUserBindingTransform
         if (users.Count == 0)
             return binding with
             {
-                Problem = $"there is no [PragmaticUser] entity in this compilation to read '{binding.Member}' from"
+                Problem = $"there is no [PragmaticUser] entity in this compilation or the modules it references to read '{binding.Member}' from"
             };
 
         if (users.Count > 1)
             return binding with
             {
-                Problem = $"there are {users.Count} [PragmaticUser] entities in this compilation, and the binding cannot tell which one is the user"
+                Problem = $"there are {users.Count} [PragmaticUser] entities {Where(users)}, and the binding cannot tell which one is the user"
             };
 
         var user = users[0];
@@ -100,10 +100,7 @@ internal static class CurrentUserBindingTransform
             };
 
         if (!user.HasUserLookup)
-            return binding with
-            {
-                Problem = $"'{user.TypeName}' is read through its generated resolver, which exists only where the user has a lookup (EF Core referenced)"
-            };
+            return binding with { Problem = NoResolver(user) };
 
         var member = user.Members.FirstOrDefault(m => m.Name == binding.Member);
         if (member is null)
@@ -127,6 +124,18 @@ internal static class CurrentUserBindingTransform
                 : $"global::{user.Namespace}.{UserResolverTemplate.ResolverNameFor(user)}"
         };
     }
+
+    /// <summary>Where the users came from, for a message about them: this compilation's own, or the modules it references.</summary>
+    internal static string Where(EquatableArray<UserEntityModel> users)
+        => users.Any(u => u.DeclaringAssembly is not null)
+            ? "in the modules this compilation references"
+            : "in this compilation";
+
+    /// <summary>Why a user cannot be read: there is no resolver the invoker can build.</summary>
+    internal static string NoResolver(UserEntityModel user)
+        => user.DeclaringAssembly is { } module
+            ? $"'{user.TypeName}' is declared in '{module}', which has no public resolver for it: a module writes one where its user is public and has a lookup (EF Core referenced)"
+            : $"'{user.TypeName}' is read through its generated resolver, which exists only where the user has a lookup (EF Core referenced)";
 
     private static string Display(string fullyQualified)
         => fullyQualified.StartsWith("global::", System.StringComparison.Ordinal)

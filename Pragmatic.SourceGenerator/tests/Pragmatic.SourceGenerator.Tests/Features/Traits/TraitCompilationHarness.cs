@@ -43,8 +43,16 @@ internal static class TraitCompilationHarness
     /// generator's own diagnostics.
     /// </summary>
     public static (Dictionary<string, string> Sources, List<Diagnostic> GeneratorDiagnostics) Generate(string entitySource)
+        => Generate(entitySource, []);
+
+    /// <summary>
+    /// Runs the generator over a module that references <paramref name="modules"/> besides the usual closure: other modules
+    /// of the application, already built.
+    /// </summary>
+    public static (Dictionary<string, string> Sources, List<Diagnostic> GeneratorDiagnostics) Generate(
+        string entitySource, IEnumerable<MetadataReference> modules)
     {
-        var compilation = CreateCompilation(entitySource);
+        var compilation = CreateCompilation(entitySource, "TraitE2ETestAssembly", modules);
         var driver = CSharpGeneratorDriver.Create(new PragmaticSourceGenerator());
         var result = driver.RunGenerators(compilation).GetRunResult();
 
@@ -62,8 +70,13 @@ internal static class TraitCompilationHarness
     /// </summary>
     public static (List<Diagnostic> Trait, List<Diagnostic> Other) CompileAndSplitErrors(
         string entitySource, Func<string, bool> isTraitFile)
+        => CompileAndSplitErrors(entitySource, isTraitFile, []);
+
+    /// <summary>The same split, over a module that references other modules of the application, already built.</summary>
+    public static (List<Diagnostic> Trait, List<Diagnostic> Other) CompileAndSplitErrors(
+        string entitySource, Func<string, bool> isTraitFile, IEnumerable<MetadataReference> modules)
     {
-        var compilation = CreateCompilation(entitySource);
+        var compilation = CreateCompilation(entitySource, "TraitE2ETestAssembly", modules);
         var driver = CSharpGeneratorDriver.Create(new PragmaticSourceGenerator());
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
 
@@ -84,7 +97,7 @@ internal static class TraitCompilationHarness
     /// </summary>
     /// <remarks>
     /// For what an application builds with warnings as errors: a nullable warning in a generated file
-    /// stops it as surely as an error, and <see cref="CompileAndSplitErrors"/> does not see it.
+    /// stops it as surely as an error, and <see cref="CompileAndSplitErrors(string, Func{string, bool})"/> does not see it.
     /// </remarks>
     public static List<Diagnostic> CompileAndCollectWarnings(string entitySource, Func<string, bool> isFile)
     {
@@ -108,7 +121,29 @@ internal static class TraitCompilationHarness
                 return $"  {d.Id} {d.GetMessage()}  @ {f} {d.Location.GetLineSpan().Span}";
             }));
 
+    /// <summary>
+    /// A module as the build hands it to the modules that reference it: generated, compiled and emitted to a DLL, so its
+    /// symbols — the generated ones included — have no syntax behind them.
+    /// </summary>
+    /// <returns>The reference, or null with the compilation's errors when it does not build.</returns>
+    public static (MetadataReference? Reference, List<Diagnostic> Errors) Build(string moduleSource, string assemblyName)
+    {
+        var compilation = CreateCompilation(moduleSource, assemblyName, []);
+        CSharpGeneratorDriver.Create(new PragmaticSourceGenerator())
+            .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
+
+        using var image = new MemoryStream();
+        var emitted = outputCompilation.Emit(image);
+        return emitted.Success
+            ? (MetadataReference.CreateFromImage(image.ToArray()), [])
+            : (null, emitted.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList());
+    }
+
     private static CSharpCompilation CreateCompilation(string entitySource)
+        => CreateCompilation(entitySource, "TraitE2ETestAssembly", []);
+
+    private static CSharpCompilation CreateCompilation(
+        string entitySource, string assemblyName, IEnumerable<MetadataReference> modules)
     {
         var trees = new[]
         {
@@ -119,9 +154,9 @@ internal static class TraitCompilationHarness
         };
 
         return CSharpCompilation.Create(
-            "TraitE2ETestAssembly",
+            assemblyName,
             trees,
-            References,
+            References.Concat(modules),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithNullableContextOptions(NullableContextOptions.Enable));
     }

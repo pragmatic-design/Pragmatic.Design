@@ -22,11 +22,12 @@ internal static class UserEntityTransform
     {
         ct.ThrowIfCancellationRequested();
 
-        if (context.TargetSymbol is not INamedTypeSymbol symbol)
-            return null;
+        return context.TargetSymbol is INamedTypeSymbol symbol ? FromSymbol(symbol, context.Attributes[0]) : null;
+    }
 
-        var attribute = context.Attributes[0];
-
+    /// <summary>The model of <paramref name="symbol" />, declared in this compilation or read off a referenced module.</summary>
+    internal static UserEntityModel? FromSymbol(INamedTypeSymbol symbol, AttributeData attribute)
+    {
         var matchClaim = attribute.GetNamedArgument<string>("MatchClaim") ?? "sub";
 
         // The key type, from [Entity] or a declared Id

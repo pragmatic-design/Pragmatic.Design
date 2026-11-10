@@ -59,7 +59,19 @@ internal sealed record UserEntityModel : GeneratorModel
     ///     Whether an <c>IUserLookup&lt;TUser&gt;</c> exists for the user: what the resolver reads through, so what decides whether the resolver, its
     ///     registration, the culture provider and the current-user bindings are generated.
     /// </summary>
-    public bool HasUserLookup => LooksUpThroughEfCore || LooksUpThroughSql || LooksUpThroughDocuments;
+    public bool HasUserLookup => LooksUpThroughEfCore || LooksUpThroughSql || LooksUpThroughDocuments || HasReferencedResolver;
+
+    /// <summary>
+    ///     The module the user is declared in, when it is not this compilation: a query or an operation of another module binds it
+    ///     (#636). Null for this compilation's own user, the only one this feature generates anything for.
+    /// </summary>
+    public string? DeclaringAssembly { get; init; }
+
+    /// <summary>
+    ///     Whether <see cref="DeclaringAssembly" /> carries the user's resolver, public: that module wrote it because its user has a
+    ///     lookup there, and the referencing module's invokers build it as the user's own module does.
+    /// </summary>
+    public bool HasReferencedResolver { get; init; }
 
     /// <summary>
     ///     What a query may bind with <c>[FromCurrentUser(member)]</c>: the entity's readable members,

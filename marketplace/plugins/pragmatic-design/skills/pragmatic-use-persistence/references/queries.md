@@ -93,8 +93,9 @@ public partial class GetMyBalancesQuery
 ```
 
 - `[FromCurrentUser]` binds `ICurrentUser.Id` to a `string`; `[FromCurrentUser(nameof(Employee.Id))]`
-  binds that member of the `[PragmaticUser]` entity (same compilation, `Pragmatic.Identity.Persistence`
-  referenced), read through its generated `{User}Resolver`, which the invoker constructs itself.
+  binds that member of the `[PragmaticUser]` entity, read through its generated `{User}Resolver`, which
+  the invoker constructs itself. The user may be in the query's module or in a module it references
+  (a "my tasks" query beside the tasks, the user in accounts): the resolver is then that module's, public.
 - The invoker writes it **after validation and the permission check, before the read**: not signed in
   → 401, no user entity → 404.
 - `{ get; private set; }` (**PRAG0730** otherwise). It is never a query-string, route or body

@@ -297,10 +297,12 @@ Two forms:
   still names another column), it is never skipped at its default, and a `string` is compared with `==`
   (a `Contains` on an id would read the rows of every caller whose id contains yours). `[BindSpecification]`
   hands it to a specification instead, as for any other input.
-- **The invoker constructs the resolver.** The generator writes `{User}Resolver` in the same compilation
-  and knows its constructor (`IReadRepository<TUser>`, `ICurrentUser`), so nothing depends on it being
-  registered. The member form therefore needs the `[PragmaticUser]` entity in the same compilation as
-  the query, and `Pragmatic.Identity.Persistence` referenced, which is what generates the resolver.
+- **The invoker constructs the resolver.** The generator writes `{User}Resolver` beside the user, where
+  the user has a lookup, and knows its constructor (`IUserLookup<TUser>`, `ICurrentUser`), so nothing
+  depends on it being registered. The `[PragmaticUser]` entity may be in the query's compilation or, when
+  that declares none, in a module it references: "my tasks" in a tasks module reads the user of the
+  accounts module through the resolver that module wrote, which has to be public. The lookup it reads
+  through is the host's, registered by the user's module.
 - **Scope: `[Query]`.** An action composes and can inject `ICurrentUser`; a mutation's target id is
   generated, and binding it is a separate design.
 
@@ -309,7 +311,7 @@ Two diagnostics hold the form:
 | Id | When |
 |---|---|
 | `PRAG0730` | the property can be set by its caller: a `public`, `internal` or `init` setter. The invoker overwrites it, so it reads as an input and is not one |
-| `PRAG0731` | the binding cannot be generated: the member does not exist on the user entity, its type differs from the property's, `nameof` names a member of another type, there is no `[PragmaticUser]` entity (or its resolver is not generated) in this compilation, or the member-less form is on a property that is not a `string` |
+| `PRAG0731` | the binding cannot be generated: the member does not exist on the user entity, its type differs from the property's, `nameof` names a member of another type, there is no `[PragmaticUser]` entity in this compilation or the modules it references (or its resolver is not generated, or not public in the module that declares it), or the member-less form is on a property that is not a `string` |
 
 ⚠️ **Why not inject `ICurrentUser` into the query.** A query's answer must be a function of its
 properties: `[Cacheable]` builds the key from them, the remote boundary serializes them, and the
