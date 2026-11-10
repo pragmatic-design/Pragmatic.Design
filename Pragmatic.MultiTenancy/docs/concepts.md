@@ -570,7 +570,7 @@ All options are in `MultiTenancyOptions`:
 | `TenantHeaderName` | `string` | `"X-Tenant-Id"` | HTTP header name for header-based resolution |
 | `TenantClaimType` | `string` | `"tenant_id"` | JWT claim type for claim-based resolution |
 | `TenantRouteParameter` | `string` | `"tenantId"` | Route parameter name for route-based resolution |
-| `RequireTenant` | `bool` | `true` | An unresolved tenant is refused: with `400` before any endpoint runs, and with `TenantNotResolvedException` when an `ITenantEntity` would be written. Endpoints marked `TenantAgnosticEndpoint` are exempt |
+| `RequireTenant` | `bool` | `true` | An unresolved tenant is refused: with `400` (`code` `TENANT_REQUIRED`) before any endpoint runs, and with `TenantNotResolvedException` when an `ITenantEntity` would be written. Endpoints marked `TenantAgnosticEndpoint` are exempt, and an unauthenticated caller on a route authorization will refuse is answered `401` there instead |
 
 Configuration via options pattern:
 
