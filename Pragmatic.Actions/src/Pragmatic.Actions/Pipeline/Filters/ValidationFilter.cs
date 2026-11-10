@@ -100,10 +100,25 @@ internal sealed partial class ValidationFilter : IActionFilter
     public int Order => FilterOrder.Validation;
 
     /// <inheritdoc />
-    public async Task<VoidResult<IError>> BeforeExecuteAsync<TAction, TReturn>(
+    public Task<VoidResult<IError>> BeforeExecuteAsync<TAction, TReturn>(
         TAction action,
         CancellationToken ct)
         where TAction : DomainAction<TReturn>
+        => ValidateAsync(action, ct);
+
+    /// <inheritdoc />
+    /// <remarks>
+    ///     The same validation as a typed action's. Left to <see cref="IActionFilter" />'s default, a void action's generated
+    ///     validator existed and nobody asked it: its inputs reached the body whatever their rules said.
+    /// </remarks>
+    public Task<VoidResult<IError>> BeforeExecuteVoidAsync<TAction>(
+        TAction action,
+        CancellationToken ct)
+        where TAction : VoidDomainAction
+        => ValidateAsync(action, ct);
+
+    private async Task<VoidResult<IError>> ValidateAsync<TAction>(TAction action, CancellationToken ct)
+        where TAction : class
     {
         // Use SG-generated metadata when available, otherwise fall back to defaults.
         // Default: sync validation only, no nested validators, no async.
