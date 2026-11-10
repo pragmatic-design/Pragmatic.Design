@@ -112,7 +112,7 @@ internal sealed class PatchConverterTemplate : CSharpTemplate
 
                 Default(() =>
                 {
-                    AppendLine("reader.Skip();");
+                    If(UnknownJsonMember.CouldNotSkip, () => AppendLine(UnknownJsonMember.Refusal));
                     Break();
                 });
             });

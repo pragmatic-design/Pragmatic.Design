@@ -147,7 +147,7 @@ internal sealed class PatchJsonConverterTemplate : CSharpTemplate
 
                 Default(() =>
                 {
-                    AppendLine("reader.Skip();");
+                    If(Patch.Templates.UnknownJsonMember.CouldNotSkip, () => AppendLine(Patch.Templates.UnknownJsonMember.Refusal));
                     Break();
                 });
             });
