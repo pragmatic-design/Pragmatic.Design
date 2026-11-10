@@ -97,7 +97,7 @@ Beyond the boolean flags, `FeatureDetector` resolves an `EfCoreProvider` enum so
 | Probe (marker type) | Result |
 |---------------------|--------|
 | `Microsoft.EntityFrameworkCore.NpgsqlDbContextOptionsBuilderExtensions` | `PostgreSql` |
-| `Microsoft.EntityFrameworkCore.SqlServerDbContextOptionsBuilderExtensions` | `SqlServer` |
+| `Microsoft.EntityFrameworkCore.SqlServerDbContextOptionsExtensions` | `SqlServer` |
 | `Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions` | `Sqlite` |
 | *(none of the above)* | `Generic` |
 

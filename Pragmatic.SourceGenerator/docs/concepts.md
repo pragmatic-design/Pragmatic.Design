@@ -400,7 +400,7 @@ The generator detects the EF Core database provider to generate provider-specifi
 | Provider | Detection Type | Generated Behavior |
 |----------|---------------|-------------------|
 | PostgreSQL | `NpgsqlDbContextOptionsBuilderExtensions` | `xmin` system column for concurrency |
-| SQL Server | `SqlServerDbContextOptionsBuilderExtensions` | `rowversion` timestamp type |
+| SQL Server | `SqlServerDbContextOptionsExtensions` | `rowversion` timestamp type |
 | SQLite | `SqliteDbContextOptionsBuilderExtensions` | `uint` + `IsConcurrencyToken()` with manual increment |
 | Generic | (fallback) | Portable `IsConcurrencyToken()` |
 
