@@ -163,6 +163,17 @@ internal sealed record DiscoveredModuleInfo
     public string? DocumentSchemaTypeName { get; init; }
 
     /// <summary>
+    ///     Whether the boundary's assembly declares <c>{Module}BoundaryExtensions</c> beside the boundary: the registration of
+    ///     <c>I{Module}Actions</c>, which the module's generator writes when the boundary has operations of any kind.
+    /// </summary>
+    /// <remarks>
+    ///     Read off the referenced assembly rather than inferred from the operations the host can list. The host lists actions and
+    ///     mutations from the module's metadata and nothing about queries, so a module whose operations were all queries had the
+    ///     registration generated and never called (#634). The type is the fact the call depends on, and it is already there.
+    /// </remarks>
+    public bool HasBoundaryRegistration { get; init; }
+
+    /// <summary>
     ///     Assembly names of packages imported via [UsePackage&lt;T&gt;] on this module.
     ///     The host SG fuses package metadata (actions, services) into the module's registration.
     /// </summary>

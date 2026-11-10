@@ -76,6 +76,17 @@ internal sealed partial class PragmaticHostTemplate
                     ? null
                     : new HashSet<string>(_model.IncludedAssemblyNames.AsImmutableArray(), StringComparer.Ordinal);
 
+                // ⚠️ And queries, which no metadata the host reads lists: a module whose operations were all
+                // queries had I{Module}Actions and its registration generated, and never called (#634). So
+                // the fact is read off the referenced assembly — its {Module}BoundaryExtensions exists —
+                // rather than inferred from one more list of operations. Through the same filter as the
+                // packages below: DomainModules is every boundary the host references, included or not.
+                if (!_model.DomainModules.IsDefaultOrEmpty)
+                    foreach (var module in _model.DomainModules)
+                        if (module.HasBoundaryRegistration && !string.IsNullOrEmpty(module.AssemblyName)
+                            && (included is null || included.Contains(module.AssemblyName)))
+                            assembliesWithActions.Add(module.AssemblyName);
+
                 if (!_model.DiscoveredModules.IsDefaultOrEmpty)
                     foreach (var module in _model.DiscoveredModules)
                         if (!module.PackageAssemblyNames.IsDefaultOrEmpty && !string.IsNullOrEmpty(module.AssemblyName)
