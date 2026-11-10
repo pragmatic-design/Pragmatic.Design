@@ -71,6 +71,7 @@ internal static partial class MetadataReader
     {
         string? boundaryTypeName = null;
         string? documentSchemaTypeName = null;
+        INamedTypeSymbol? boundarySymbol = null;
         var readAccessTypes = ImmutableArray<string>.Empty;
 
         foreach (var namedArg in attribute.NamedArguments)
@@ -81,6 +82,7 @@ internal static partial class MetadataReader
                     {
                         boundaryTypeName = boundaryType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         documentSchemaTypeName = DocumentSchemaOf(boundaryType);
+                        boundarySymbol = boundaryType;
                     }
                     break;
 
@@ -102,7 +104,22 @@ internal static partial class MetadataReader
         if (string.IsNullOrEmpty(boundaryTypeName))
             return null;
 
-        return CreateDomainModule(assemblyName, boundaryTypeName, readAccessTypes) with { DocumentSchemaTypeName = documentSchemaTypeName };
+        var module = CreateDomainModule(assemblyName, boundaryTypeName, readAccessTypes);
+        return module with
+        {
+            DocumentSchemaTypeName = documentSchemaTypeName,
+            HasBoundaryRegistration = boundarySymbol is not null && BoundaryRegistrationOf(boundarySymbol, module.Name) is not null
+        };
+    }
+
+    /// <summary>
+    ///     The <c>{Module}BoundaryExtensions</c> the boundary's assembly declares in the boundary's namespace, which holds
+    ///     <c>Add{Module}Boundary</c>: the name the host's call is built from (<c>PragmaticHostTemplate.DomainActions</c>).
+    /// </summary>
+    private static INamedTypeSymbol? BoundaryRegistrationOf(INamedTypeSymbol boundary, string moduleName)
+    {
+        var ns = boundary.ContainingNamespace.IsGlobalNamespace ? "" : boundary.ContainingNamespace.ToDisplayString() + ".";
+        return boundary.ContainingAssembly.GetTypeByMetadataName(ns + moduleName + "BoundaryExtensions");
     }
 
     /// <summary>
