@@ -68,11 +68,45 @@ public static class JobsServiceExtensions
         ///     Registers the background processing services (JobProcessorService + RecurringJobSchedulerService).
         ///     Call this after all job registrations are complete (SG-generated or manual).
         /// </summary>
+        /// <remarks>
+        ///     Registers nothing in a host configured with <see cref="JobsBuilder.EnqueueOnly" />: the configuration that
+        ///     applies is the last one <c>AddPragmaticJobs</c> registered, as for every other option.
+        /// </remarks>
         public IServiceCollection AddJobProcessingServices()
         {
+            if (EffectiveOptions(services) is { EnqueueOnly: true })
+                return services;
+
             services.AddHostedService<JobProcessorService>();
             services.AddHostedService<RecurringJobSchedulerService>();
             return services;
         }
+    }
+
+    /// <summary>Takes out the processor and the recurring scheduler, for a host that only enqueues.</summary>
+    internal static void RemoveJobProcessingServices(IServiceCollection services)
+    {
+        for (var i = services.Count - 1; i >= 0; i--)
+        {
+            var descriptor = services[i];
+            if (descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)
+                && (descriptor.ImplementationType == typeof(JobProcessorService)
+                    || descriptor.ImplementationType == typeof(RecurringJobSchedulerService)))
+            {
+                services.RemoveAt(i);
+            }
+        }
+    }
+
+    /// <summary>The options the provider will resolve: the last instance registered.</summary>
+    private static JobsOptions? EffectiveOptions(IServiceCollection services)
+    {
+        for (var i = services.Count - 1; i >= 0; i--)
+        {
+            if (services[i].ServiceType == typeof(JobsOptions) && services[i].ImplementationInstance is JobsOptions options)
+                return options;
+        }
+
+        return null;
     }
 }

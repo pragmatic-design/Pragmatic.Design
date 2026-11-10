@@ -56,6 +56,11 @@ public sealed class JobsOptions
     /// </summary>
     public TimeSpan MisfireThreshold { get; set; } = TimeSpan.FromMinutes(1);
 
+    /// <summary>
+    ///     Whether this host only enqueues jobs, leaving another host to run them. Default: false — the host runs what it enqueues.
+    /// </summary>
+    public bool EnqueueOnly { get; set; }
+
     /// <summary>Whether to use EF Core persistence. Default: false (InMemory).</summary>
     public bool UseEfCore { get; set; }
 }
