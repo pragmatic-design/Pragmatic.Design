@@ -267,7 +267,13 @@ In Pragmatic.Design applications using `PragmaticApp.RunAsync`, the middleware i
 ## Routes That Belong to No Tenant
 
 With `RequireTenant` (the default), a request that resolves no tenant is refused with `400` before
-any endpoint runs. That is right for the domain surface and wrong for what sits underneath it: a
+any endpoint runs, with a ProblemDetails body whose `code` is `TENANT_REQUIRED`. One exception: a
+caller that is not authenticated, on a route authorization will refuse it (one that requires
+authorization, or any route when the host has a fallback policy, and not `[AllowAnonymous]`), is let
+through and answered `401` there. When the tenant comes from the token, no token is no tenant, and a
+`400` would stand in front of the "sign in" a client needs to hear.
+
+That refusal is right for the domain surface and wrong for what sits underneath it: a
 liveness probe sends no tenant header and has nowhere to get one, and the published OpenAPI document
 is what a caller fetches *before* being anyone.
 

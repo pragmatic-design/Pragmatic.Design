@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -21,9 +23,11 @@ public sealed partial class TenantResolutionMiddleware(
     ///     Resolves the tenant using the registered <see cref="ITenantResolver" /> and populates
     ///     the scoped <see cref="MutableTenantContext" />.
     ///     When <see cref="MultiTenancyOptions.RequireTenant" /> is <c>true</c> and no tenant is
-    ///     resolved, the request is short-circuited with HTTP 400 — unless the matched endpoint
-    ///     carries <see cref="TenantAgnosticEndpoint" />, which is how the routes that belong to no
-    ///     tenant (a liveness probe, the published contract) stay reachable to callers that have none.
+    ///     resolved, the request is short-circuited with HTTP 400 and a ProblemDetails whose <c>code</c> is
+    ///     <see cref="TenantRequiredCode" /> — unless the matched endpoint carries <see cref="TenantAgnosticEndpoint" />,
+    ///     which is how the routes that belong to no tenant (a liveness probe, the published contract) stay reachable
+    ///     to callers that have none, or the caller is not authenticated on a route authorization will refuse it,
+    ///     which then answers 401.
     /// </summary>
     /// <param name="context">The current HTTP request.</param>
     /// <param name="resolver">The registered resolution strategy.</param>
@@ -108,7 +112,23 @@ public sealed partial class TenantResolutionMiddleware(
 
             if (options.Value.RequireTenant && !isTenantAgnostic)
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                // A caller who has not signed in, on a route that requires it, is told to sign in: when the tenant comes
+                // from the token, no token is no tenant, and a 400 here would stand in front of the 401 authorization
+                // answers. Let through only where authorization will refuse it, so no route runs without a tenant.
+                if (context.User.Identity?.IsAuthenticated != true
+                    && await AuthorizationWillChallengeAsync(context).ConfigureAwait(false))
+                {
+                    LogUnauthenticatedWithoutTenant(context.Request.Path);
+                    await next(context).ConfigureAwait(false);
+                    return;
+                }
+
+                await TypedResults.Problem(
+                        detail: "The request does not say which tenant it is for.",
+                        statusCode: StatusCodes.Status400BadRequest,
+                        extensions: new Dictionary<string, object?> { ["code"] = TenantRequiredCode })
+                    .ExecuteAsync(context)
+                    .ConfigureAwait(false);
                 return;
             }
         }
@@ -116,9 +136,33 @@ public sealed partial class TenantResolutionMiddleware(
         await next(context).ConfigureAwait(false);
     }
 
+    /// <summary>The <c>code</c> of the 400 an authenticated request with no tenant is answered.</summary>
+    public const string TenantRequiredCode = "TENANT_REQUIRED";
+
+    /// <summary>
+    ///     Whether the authorization middleware will refuse an anonymous caller on this endpoint: it declares an
+    ///     authorization requirement, or the host has a fallback policy, and it does not allow anonymous callers.
+    /// </summary>
+    private static async Task<bool> AuthorizationWillChallengeAsync(HttpContext context)
+    {
+        var metadata = context.GetEndpoint()?.Metadata;
+        if (metadata?.GetMetadata<IAllowAnonymous>() is not null)
+            return false;
+
+        if (metadata?.GetMetadata<IAuthorizeData>() is not null)
+            return true;
+
+        var policies = context.RequestServices?.GetService<IAuthorizationPolicyProvider>();
+        return policies is not null && await policies.GetFallbackPolicyAsync().ConfigureAwait(false) is not null;
+    }
+
     // =========================================================================
     // Logging
     // =========================================================================
+
+    [LoggerMessage(Level = LogLevel.Debug,
+        Message = "No tenant resolved for the unauthenticated request {RequestPath}; passed on, for authorization to challenge it")]
+    private partial void LogUnauthenticatedWithoutTenant(PathString requestPath);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Tenant '{TenantId}' resolved for {RequestPath}")]
     private partial void LogTenantResolved(string tenantId, PathString requestPath);

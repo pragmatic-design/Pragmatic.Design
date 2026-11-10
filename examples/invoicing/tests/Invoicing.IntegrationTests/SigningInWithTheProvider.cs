@@ -83,16 +83,16 @@ public sealed class SigningInWithTheProvider(PostgresFixture database) : Invoici
         [.. Operations.Where(o => o.Route.StartsWith("api/organizations", StringComparison.Ordinal))];
 
     /// <summary>
-    ///     On a tenant-bound route an anonymous caller is refused with **400**, not 401: tenant resolution
-    ///     runs at order 92 and authorization at 93, and a request with no token resolves no tenant. The
-    ///     401 is asserted below, where it can be — on the routes that need no tenant.
+    ///     On a tenant-bound route an anonymous caller is refused with **401**, as on any other: a request with
+    ///     no token resolves no tenant, and the tenant middleware lets it through to authorization, which tells
+    ///     it to sign in (#629). It answered 400 before, and a client could not tell "sign in" from "bad request".
     /// </summary>
     [Fact]
-    public async Task AnAnonymousRequest_ToATenantRoute_IsRefusedByTheTenantFirst()
+    public async Task AnAnonymousRequest_ToATenantRoute_IsRefusedWith401()
     {
         var response = await Client.GetAsync("api/me");
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -145,10 +145,9 @@ public sealed class SigningInWithTheProvider(PostgresFixture database) : Invoici
     ///     minted for another client of the same provider.
     /// </summary>
     /// <remarks>
-    ///     Asked of a tenant-agnostic route on purpose. A rejected token leaves the caller anonymous, and an
-    ///     anonymous caller resolves no tenant — so on any other route the 401 would be hidden behind the
-    ///     tenant middleware's 400, and the test would pass for a reason that has nothing to do with the
-    ///     audience.
+    ///     Asked of a tenant-agnostic route. A rejected token leaves the caller anonymous, and an anonymous
+    ///     caller resolves no tenant; on a tenant-bound route the answer is 401 too, since the tenant middleware
+    ///     lets an unauthenticated request through to authorization.
     /// </remarks>
     [Fact]
     public async Task ATokenMintedForAnotherAudience_IsRefused()

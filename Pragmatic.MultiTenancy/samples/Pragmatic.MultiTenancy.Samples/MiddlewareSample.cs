@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Pragmatic.MultiTenancy;
@@ -33,8 +34,9 @@ public static class MiddlewareSample
             resolved: null,
             requireTenant: false);
 
-        // 6.3 No tenant, RequireTenant=true → 400, pipeline short-circuited.
-        Console.WriteLine("  6.3 No tenant, RequireTenant=true → HTTP 400, next() NOT invoked");
+        // 6.3 No tenant, RequireTenant=true → 400 with a TENANT_REQUIRED ProblemDetails, pipeline short-circuited.
+        // (An unauthenticated caller on a route that requires authorization is let through instead, and answered 401.)
+        Console.WriteLine("  6.3 No tenant, RequireTenant=true → HTTP 400 (TENANT_REQUIRED), next() NOT invoked");
         Console.WriteLine("  ----------------------------------------------------------------");
         await InvokeAsync(
             resolved: null,
@@ -43,7 +45,8 @@ public static class MiddlewareSample
 
     private static async Task InvokeAsync(string? resolved, bool requireTenant)
     {
-        var context = new DefaultHttpContext();
+        // A request always has its services: the 400 is a ProblemDetails, written through them.
+        var context = new DefaultHttpContext { RequestServices = new ServiceCollection().AddLogging().BuildServiceProvider() };
         context.Request.Path = "/api/orders";
 
         var nextInvoked = false;
