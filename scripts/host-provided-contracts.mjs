@@ -52,7 +52,7 @@ import { pathToFileURL } from "node:url";
  * Undeclared contracts at the last measure, once the contracts an application actually injects were
  * declared. The rest are mostly internal seams no application would take in a constructor.
  */
-export const BUDGET = 100;
+export const BUDGET = 98;
 
 /** The repository root, overridable so the test can run against a throwaway tree. */
 function repositoryRoot() {
