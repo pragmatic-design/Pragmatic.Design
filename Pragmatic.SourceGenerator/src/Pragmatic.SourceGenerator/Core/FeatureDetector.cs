@@ -133,8 +133,9 @@ internal static class FeatureDetector
         if (TypeExists(compilation, "Microsoft.EntityFrameworkCore.NpgsqlDbContextOptionsBuilderExtensions"))
             return EfCoreProvider.PostgreSql;
 
-        // Microsoft.EntityFrameworkCore.SqlServer
-        if (TypeExists(compilation, "Microsoft.EntityFrameworkCore.SqlServerDbContextOptionsBuilderExtensions"))
+        // Microsoft.EntityFrameworkCore.SqlServer: unlike the other two, its UseSqlServer lives on
+        // SqlServerDbContextOptionsExtensions, with no "Builder" in the name.
+        if (TypeExists(compilation, "Microsoft.EntityFrameworkCore.SqlServerDbContextOptionsExtensions"))
             return EfCoreProvider.SqlServer;
 
         // Microsoft.EntityFrameworkCore.Sqlite

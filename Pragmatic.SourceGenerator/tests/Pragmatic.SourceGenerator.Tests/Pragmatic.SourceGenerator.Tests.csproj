@@ -19,6 +19,9 @@
          GPL-2.0 with the Universal FOSS exception; this project is a test and is never packed. -->
     <PackageReference Include="MySql.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- The real SQL Server provider, not a type of the name the generator probes: TheSqlEnginesSchemaIsPragmaticsTests.Provider
+         holds the probe to the assembly EF Core ships. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
   <ItemGroup>

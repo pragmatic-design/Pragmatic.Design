@@ -260,7 +260,7 @@ public partial class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper outp
     private static string ProviderProbe(string provider) => provider switch
     {
         "PostgreSql" => "namespace Microsoft.EntityFrameworkCore { public static class NpgsqlDbContextOptionsBuilderExtensions { } }",
-        "SqlServer" => "namespace Microsoft.EntityFrameworkCore { public static class SqlServerDbContextOptionsBuilderExtensions { } }",
+        "SqlServer" => "namespace Microsoft.EntityFrameworkCore { public static class SqlServerDbContextOptionsExtensions { } }",
         _ => "namespace Microsoft.EntityFrameworkCore { public static class SqliteDbContextOptionsBuilderExtensions { } }",
     };
 
