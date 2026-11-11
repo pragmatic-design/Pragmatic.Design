@@ -15,7 +15,7 @@ namespace Pragmatic.Migrations.Tests.Provider;
 ///     One container for the class (<see cref="SqlServerContainerFixture" />) and one database per
 ///     test: the scenarios diff a desired schema against the real database, so they cannot share one.
 /// </remarks>
-public class SqlServerScenarioTests(SqlServerContainerFixture fixture)
+public partial class SqlServerScenarioTests(SqlServerContainerFixture fixture)
     : SchemaScenarioTestBase, IClassFixture<SqlServerContainerFixture>
 {
     /// <summary>This test's own database. A class instance is a test, so a name here is a name per test.</summary>
