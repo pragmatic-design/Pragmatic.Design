@@ -124,8 +124,10 @@ internal sealed partial class MutationHandlerTemplate : CSharpTemplate
             if (!_model.PreProcessors.IsDefaultOrEmpty)
                 foreach (var processor in _model.PreProcessors.OrderBy(p => p.Order))
                 {
+                    // Typed as the interface: a typed processor implements this overload only as the
+                    // interface's default, so on its class the call binds to the typed one (CS1503).
                     AppendLine(
-                        $"var preProcessor{processor.Order} = httpContext.RequestServices.GetRequiredService<{processor.TypeName}>();");
+                        $"global::Pragmatic.Endpoints.Processors.IEndpointPreProcessor preProcessor{processor.Order} = httpContext.RequestServices.GetRequiredService<{processor.TypeName}>();");
                     AppendLine(
                         $"var preResult{processor.Order} = await preProcessor{processor.Order}.ProcessAsync(endpointContext, ct);");
                     AppendLine($"if (!preResult{processor.Order}.ShouldContinue)");
@@ -151,8 +153,9 @@ internal sealed partial class MutationHandlerTemplate : CSharpTemplate
             {
                 foreach (var processor in _model.PostProcessors.OrderBy(p => p.Order))
                 {
+                    // Typed as the interface, for the same reason as the pre-processors.
                     AppendLine(
-                        $"var postProcessor{processor.Order} = httpContext.RequestServices.GetRequiredService<{processor.TypeName}>();");
+                        $"global::Pragmatic.Endpoints.Processors.IEndpointPostProcessor postProcessor{processor.Order} = httpContext.RequestServices.GetRequiredService<{processor.TypeName}>();");
                     AppendLine($"await postProcessor{processor.Order}.ProcessAsync(endpointContext, result, ct);");
                 }
 
