@@ -8,6 +8,9 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 /// </summary>
 internal static class SqlTypeMapper
 {
+    private const int SqlServerMaxNVarCharLength = 4000;
+    private const int SqlServerMaxVarBinaryLength = 8000;
+
     public static string MapToSqlType(
         string clrTypeName,
         EfCoreProvider provider,
@@ -40,18 +43,19 @@ internal static class SqlTypeMapper
 
         var normalized = NormalizeClrType(clrTypeName);
 
-        // String with MaxLength
+        // String with MaxLength. SQL Server refuses an nvarchar longer than 4000 (and a varbinary longer
+        // than 8000): above that the column is max, which is also what EF Core's model says for it.
         if (normalized == "string" && maxLength.HasValue)
             return provider switch
             {
                 EfCoreProvider.PostgreSql => $"varchar({maxLength.Value})",
-                EfCoreProvider.SqlServer => $"nvarchar({maxLength.Value})",
+                EfCoreProvider.SqlServer => maxLength.Value > SqlServerMaxNVarCharLength ? "nvarchar(max)" : $"nvarchar({maxLength.Value})",
                 _ => "TEXT"
             };
 
         // Binary with MaxLength: what SQL Server can index (varbinary(max) is no index key there); PostgreSQL's and SQLite's binary has no length
         if (normalized == "byte[]" && maxLength.HasValue && provider == EfCoreProvider.SqlServer)
-            return $"varbinary({maxLength.Value})";
+            return maxLength.Value > SqlServerMaxVarBinaryLength ? "varbinary(max)" : $"varbinary({maxLength.Value})";
 
         // Decimal with precision/scale
         if (normalized == "decimal" && precision.HasValue)

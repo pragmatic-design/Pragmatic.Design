@@ -27,7 +27,7 @@ public abstract partial class SchemaScenarioTestBase
     protected abstract ISchemaIntrospector CreateIntrospector();
     protected abstract Task<DbConnection> CreateConnectionAsync();
 
-    private readonly ISchemaDiffEngine _diffEngine = new SchemaDiffEngine();
+    private protected readonly ISchemaDiffEngine _diffEngine = new SchemaDiffEngine();
 
     /// <summary>
     ///     Applies the desired schema through the REAL <see cref="MigrationRunner" /> against a real
@@ -36,7 +36,7 @@ public abstract partial class SchemaScenarioTestBase
     ///     migrations that report success without changing anything. Anything the runner cannot do,
     ///     these tests must not be able to do either.
     /// </summary>
-    private async Task<MigrationResult> ApplySchemaAsync(DbConnection conn, SchemaVersion desired, bool force = false)
+    private protected async Task<MigrationResult> ApplySchemaAsync(DbConnection conn, SchemaVersion desired, bool force = false)
     {
         var generator = CreateGenerator();
 
@@ -62,7 +62,7 @@ public abstract partial class SchemaScenarioTestBase
         }
     }
 
-    private SchemaVersion MakeSchema(params TableSchema[] tables)
+    private protected SchemaVersion MakeSchema(params TableSchema[] tables)
         => new(ImmutableArray.Create(tables));
 
     /// <summary>
