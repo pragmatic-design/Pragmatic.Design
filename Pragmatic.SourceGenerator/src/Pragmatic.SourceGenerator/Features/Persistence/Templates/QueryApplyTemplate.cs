@@ -470,7 +470,9 @@ internal sealed partial class QueryApplyTemplate : CSharpTemplate
 
     private void RenderSortingLogic()
     {
-        var sortProps = _model.SortProperties.ToList();
+        // A sort with a default orders after the ones that have none, so a default declared first does not
+        // take the place of the caller's sort; Priority orders within each group (stable OrderBy).
+        var sortProps = _model.SortProperties.OrderBy(p => p.DefaultSortDirection.HasValue).ToList();
         if (sortProps.Count == 0)
             return;
 

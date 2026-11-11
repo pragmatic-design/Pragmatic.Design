@@ -372,7 +372,8 @@ public partial class GetMyBalancesQuery
 ## `[Sort(MapTo, DefaultDirection, Priority)]`
 
 - `DefaultDirection`: `SortDirection?`, meaning `Ascending`, `Descending`, or unset for no default.
-- `Priority`: multi-sort order (lower = first).
+- `Priority`: multi-sort order (lower = first), within the sorts with a default or within those without.
+- A sort with a `DefaultDirection` orders after every sort without one, whatever the declaration order: the caller's sort comes first and the default breaks its ties.
 
 ## `[GridFilter<TEntity>]`
 

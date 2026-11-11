@@ -46,8 +46,9 @@ public sealed class SortAttribute : Attribute
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         When set, this sort is always applied even if the property value is null. Combine with
-    ///         <see cref="Priority" /> for multi-sort ordering.
+    ///         When set, this sort is always applied even if the property value is null, and it orders after
+    ///         every sort without a default, whatever the declaration order: the caller's sort comes first and
+    ///         the default breaks its ties. <see cref="Priority" /> orders the sorts within each of the two groups.
     ///     </para>
     ///     <para>
     ///         ⚠️ A <c>SortDirection</c>, not an <c>int</c>: as an <c>int</c>, the example above — the
@@ -69,9 +70,9 @@ public sealed class SortAttribute : Attribute
     internal const int NoDefault = -1;
 
     /// <summary>
-    ///     The sort priority (lower = higher priority, applied first).
-    ///     Used when multiple sort properties are defined.
-    ///     Default is 0.
+    ///     The sort priority (lower = higher priority, applied first) among the sorts with a
+    ///     <see cref="DefaultDirection" />, or among those without one: a sort with a default always orders after
+    ///     a sort without. Default is 0.
     /// </summary>
     public int Priority { get; set; }
 }

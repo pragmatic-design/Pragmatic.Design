@@ -654,7 +654,9 @@ public SortDirection? DateSort { get; init; }
 |----------|------|---------|-------------|
 | `MapTo` | `string?` | Derived from property name (removes "Sort" suffix) | Target entity property |
 | `DefaultDirection` | `SortDirection?` | unset (no default) | `SortDirection.Ascending` / `SortDirection.Descending`; unset means the sort applies only when the property carries a value |
-| `Priority` | `int` | `0` | Sort order when multiple sorts are active (lower = first) |
+| `Priority` | `int` | `0` | Sort order when multiple sorts are active (lower = first), within the sorts with a default or within those without |
+
+A sort with a `DefaultDirection` orders after every sort without one, whatever the declaration order: the caller's sort comes first and the default breaks its ties.
 
 The SG derives the entity property name from the query property name by removing the "Sort" suffix: `CustomerNameSort` maps to `CustomerName`, `CreatedAtSort` maps to `CreatedAt`. Use `MapTo` to override this convention.
 
