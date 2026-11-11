@@ -267,6 +267,13 @@ jobs:
         if: steps.change.outputs.scope != 'docs'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
+      # The Sql suites' fixture builds this image through Testcontainers, which reports only "has not been
+      # created" when the build fails and drops Docker's output (#698). Built here, a failure prints why, and
+      # the fixture finds the tag it asks for.
+      - name: SQL Server image with full-text
+        if: steps.change.outputs.scope != 'docs'
+        run: docker build --progress=plain -t pragmatic-spike/mssql-fts:2025 Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts
+
       - name: Container suites
         if: steps.change.outputs.scope != 'docs'
         run: node scripts/check.mjs --tier docker --shard ${{ matrix.shard }}/3 --keep-going
