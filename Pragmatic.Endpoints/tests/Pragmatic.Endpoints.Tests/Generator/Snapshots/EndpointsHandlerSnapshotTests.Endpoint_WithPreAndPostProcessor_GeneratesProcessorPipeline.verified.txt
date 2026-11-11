@@ -444,7 +444,7 @@ public partial class CreateOrderWithProcessorsEndpoint
             var endpointContext = new global::Pragmatic.Endpoints.Context.EndpointContext(httpContext, "Create Order", endpoint);
             
             var __sp = httpContext.RequestServices;
-            var preProcessor0 = __sp.GetRequiredService<global::TestApp.Orders.ValidateOrderProcessor>();
+            global::Pragmatic.Endpoints.Processors.IEndpointPreProcessor preProcessor0 = __sp.GetRequiredService<global::TestApp.Orders.ValidateOrderProcessor>();
             var preResult0 = await preProcessor0.ProcessAsync(endpointContext, ct);
             if (!preResult0.ShouldContinue)
             {
@@ -458,7 +458,7 @@ public partial class CreateOrderWithProcessorsEndpoint
             
             var result = await endpoint.HandleAsync(ct);
             
-            var postProcessor0 = __sp.GetRequiredService<global::TestApp.Orders.AuditLogProcessor>();
+            global::Pragmatic.Endpoints.Processors.IEndpointPostProcessor postProcessor0 = __sp.GetRequiredService<global::TestApp.Orders.AuditLogProcessor>();
             await postProcessor0.ProcessAsync(endpointContext, result, ct);
             
             return result.Match(
