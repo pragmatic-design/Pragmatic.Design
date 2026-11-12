@@ -203,6 +203,8 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
                 if (transaction is not null)
                     await transaction.CommitAsync(ct).ConfigureAwait(false); // commit — a failure here IS a real failure and propagates
 
+                var ownerBatch = BatchOfTheCommitOwner(commitOwnership.CommitsHere, UnitOfWork);
+
                 // 3b. Post-commit side effects — isolated so a failure can't flip the committed success
                 //     into a thrown failure (double-run risk). Log at Error and carry on.
                 try
@@ -211,7 +213,7 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
                     // of work is its own operation once the commit has happened.
                     using var outsideTheCommit = global::Pragmatic.Actions.Commit.CommitScope.Suspend();
 
-                    await DispatchRaisedEventsAsync(CollectRaisedEvents(action), ct).ConfigureAwait(false);
+                    await DispatchOrDeferRaisedEventsAsync(ownerBatch, () => CollectRaisedEvents(action), ct).ConfigureAwait(false);
 
                     // What the nested invocations could not dispatch themselves, now that their writes
                     // are committed. Without it a mutation invoked from here succeeds silently and its

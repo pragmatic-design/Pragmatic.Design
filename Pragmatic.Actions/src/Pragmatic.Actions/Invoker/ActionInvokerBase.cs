@@ -99,6 +99,51 @@ public abstract partial class ActionInvokerBase
     }
 
     /// <summary>
+    ///     The batch an invocation that does not own its commit hands its raised events to, or <c>null</c> when it owns it.
+    /// </summary>
+    /// <remarks>
+    ///     Read before <c>CommitScope.Suspend</c>: the post-commit block runs outside every claim, where this lookup finds
+    ///     nothing.
+    /// </remarks>
+    /// <param name="commitsHere">Whether this invocation performs the commit for its unit of work.</param>
+    /// <param name="unitOfWork">The invocation's unit of work.</param>
+    protected static Pragmatic.Persistence.Lifecycle.BatchContext? BatchOfTheCommitOwner(
+        bool commitsHere, Pragmatic.Persistence.Repository.IUnitOfWork? unitOfWork)
+        => commitsHere
+            ? null
+            : Pragmatic.Actions.Commit.CommitScope.BatchFor(unitOfWork) ?? Pragmatic.Actions.Commit.CommitScope.CoveringBatch(unitOfWork);
+
+    /// <summary>
+    ///     Dispatches the events an action raised, or, when another invocation owns the commit, leaves them in its batch.
+    /// </summary>
+    /// <remarks>
+    ///     An action nested in another that holds the same unit of work has not committed when it returns: the owner has,
+    ///     or rolls back. Dispatched here, a handler would act on writes the owner's rollback then undoes. In the owner's
+    ///     batch, <c>DeferredEventFlush</c> dispatches them after its commit, and nothing dispatches them when it fails —
+    ///     what a nested mutation already did. Where the owner holds the save back too, the events are built at the flush,
+    ///     after the save fills what it generates.
+    /// </remarks>
+    /// <param name="ownerBatch">From <see cref="BatchOfTheCommitOwner" />; <c>null</c> dispatches now.</param>
+    /// <param name="collect">Builds the events the action declared.</param>
+    /// <param name="ct">Cancellation token.</param>
+    protected Task DispatchOrDeferRaisedEventsAsync(
+        Pragmatic.Persistence.Lifecycle.BatchContext? ownerBatch,
+        Func<IReadOnlyList<Pragmatic.Events.IDomainEvent>> collect,
+        CancellationToken ct)
+    {
+        if (ownerBatch is null)
+            return DispatchRaisedEventsAsync(collect(), ct);
+
+        if (ownerBatch.DefersSave)
+            ownerBatch.DeferEventConstruction(collect);
+        else
+            foreach (var raised in collect())
+                ownerBatch.DeferEvent(raised);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     ///     Creates sorted list of global filters.
     /// </summary>
     protected List<IActionFilter> GetSortedGlobalFilters()
