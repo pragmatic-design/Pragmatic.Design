@@ -28,6 +28,7 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     private readonly IReadOnlyList<ISqlSavePhase> _phases;
     private readonly global::Pragmatic.Persistence.Scopes.DataScopeRule[] _scopeRules;
     private TransactionState _state;
+    private int _nestedSavepoints;
 
     /// <param name="session">The session the unit of work reads and writes through; its filters are the caller's.</param>
     /// <param name="timeProvider">The clock of the stamps and the lifecycle context.</param>
@@ -189,11 +190,23 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     public TransactionState State => _state;
 
     /// <inheritdoc />
-    public Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default)
+    /// <remarks>
+    ///     Inside a transaction already open on the session, joins it with a savepoint (<see cref="SqlSavepointTransaction" />) instead of
+    ///     opening a second one, which the session refuses: a <c>[Transactional]</c> action invoked by another commits with the outer one and
+    ///     rolls back only its own part. The savepoint's name is numbered, short enough for SQL Server's 32 characters.
+    /// </remarks>
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default)
     {
+        if (Session.Transaction is not null)
+        {
+            var savepoint = $"pragmatic_nested_{++_nestedSavepoints}";
+            await Session.SavepointAsync(savepoint, ct).ConfigureAwait(false);
+            return new SqlSavepointTransaction(Session, savepoint);
+        }
+
         var transaction = Session.BeginTransaction();
         _state = TransactionState.Active;
-        return Task.FromResult<ITransaction>(new SqlUnitOfWorkTransaction(transaction, committed => _state = committed ? TransactionState.Committed : TransactionState.RolledBack));
+        return new SqlUnitOfWorkTransaction(transaction, committed => _state = committed ? TransactionState.Committed : TransactionState.RolledBack);
     }
 
     /// <inheritdoc />

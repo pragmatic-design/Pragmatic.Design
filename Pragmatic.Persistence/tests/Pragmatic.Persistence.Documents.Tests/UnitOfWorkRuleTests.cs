@@ -109,6 +109,9 @@ public class UnitOfWorkRuleTests(DocumentServers servers)
             new Amenity.DocRepository(unitOfWork).Add(new Amenity { Name = "Bar" });
             await unitOfWork.SaveChangesAsync();
             Assert.Equal(Pragmatic.Persistence.Repository.TransactionState.Active, unitOfWork.State);
+            // A transaction inside this one is refused, naming the nesting: there is no savepoint to join it with.
+            var nested = await Assert.ThrowsAsync<NotSupportedException>(() => unitOfWork.BeginTransactionAsync());
+            Assert.Contains("cannot nest", nested.Message, StringComparison.Ordinal);
             await transaction.RollbackAsync();
         }
 
