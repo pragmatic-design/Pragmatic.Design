@@ -96,8 +96,12 @@ public sealed partial class DocOutboxSource(DocSession session, string boundaryN
         var count = (int)await session.Query<OutboxMessageDocument>().Where(d => d.ProcessedAt == null).CountAsync(ct).ConfigureAwait(false);
         if (count == 0)
             return (0, null);
-        var oldest = await session.Query<OutboxMessageDocument>().Where(d => d.ProcessedAt == null).MinAsync(d => d.CreatedAt, ct).ConfigureAwait(false);
-        return (count, OutboxMessageRecords.Instant(oldest));
+        // The pump may mark the last pending document processed between the two reads. A minimum over no documents throws (its selector is
+        // not nullable, and the engine translates no cast in it), so the oldest is read as the first by creation, which over none is none:
+        // then nothing is pending, whatever the count said.
+        var oldest = await session.Query<OutboxMessageDocument>().Where(d => d.ProcessedAt == null).OrderBy(d => d.CreatedAt).Take(1)
+            .Select(d => d.CreatedAt).ToListAsync(ct).ConfigureAwait(false);
+        return oldest.Count == 0 ? (0, null) : (count, OutboxMessageRecords.Instant(oldest[0]));
     }
 
     /// <inheritdoc />
