@@ -201,6 +201,9 @@ public sealed partial class DocUnitOfWork : IUnitOfWork
             throw new NotSupportedException("Cosmos DB has no transaction across documents (a transactional batch in one partition is not translated by this version): each document is written on its own.");
         if (!await Session.SupportsTransactionsAsync(ct).ConfigureAwait(false))
             throw new NotSupportedException("This MongoDB server is standalone: it runs no transactions (a replica set does).");
+        // On the Sql engine and EF Core a transaction begun inside another joins it with a savepoint; MongoDB's transactions have none.
+        if (Session.Transaction is not null)
+            throw new NotSupportedException("A transaction is open on this session already, and the documents engine cannot nest one: MongoDB's transactions have no savepoints. A [Transactional] action invoked inside another is not supported on this engine.");
         var transaction = Session.BeginTransaction();
         _state = TransactionState.Active;
         return new DocUnitOfWorkTransaction(transaction, committed => _state = committed ? TransactionState.Committed : TransactionState.RolledBack);
