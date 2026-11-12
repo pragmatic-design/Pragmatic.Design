@@ -38,6 +38,10 @@ The `DomainActionInvoker<TAction, TReturn>` orchestrates this sequence:
 4. ExecuteActionAsync(action, ct)
    - Calls action.Execute(ct)
    - Or dispatches to ExecuteV2/V3 for versioned actions
+   - If it succeeded, before anything is written, the rules of what was loaded, in the mutation's order:
+     the field rules ([Required], [MaxLength], …) of each loaded entity the boundary's unit of work
+     reports changed (IUnitOfWork.IsModified; an action with no boundary validates every one), then the
+     [Invariant] rules the operation can answer. The first failure is the operation's result
 
 5. AfterExecute filters (descending order by Order)
    - Cannot modify the result

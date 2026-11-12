@@ -51,6 +51,32 @@ public class UnitOfWorkTests(DocumentServers servers)
             return await session.Query<Amenity>().ToListAsync();
     }
 
+    /// <summary>
+    ///     <c>IsModified</c>, the save's own rule: what an action's invoker asks of each entity it loaded, to validate the ones it changed (#628).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
+    public async Task IsModified_answers_what_the_next_save_writes(Store store)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        var session = await AnnaAsync(servers, store, _toggle);
+        var riva = (await PropertiesAsync(session, _toggle)).Single(p => p.Name == "RIVA");
+        var unitOfWork = UnitOfWork(session);
+        IUnitOfWork asked = unitOfWork;
+        IRepository<Property> properties = new Property.DocRepository(unitOfWork);
+
+        var loaded = (await properties.GetByIdAsync(riva.Id))!;
+        Assert.False(asked.IsModified(loaded)); // read and left alone
+        Assert.False(asked.IsModified(riva)); // a document this unit of work does not track
+
+        loaded.Name = "RIVA nuova";
+        Assert.True(asked.IsModified(loaded)); // a field set, nothing told
+
+        var neve = new Property { Name = "NEVE" };
+        properties.Add(neve);
+        Assert.True(asked.IsModified(neve));
+    }
+
     [Theory]
     [MemberData(nameof(DocumentServers.Stores), MemberType = typeof(DocumentServers))]
     public async Task A_loaded_entity_saves_its_changes_with_the_audit_stamps(Store store)

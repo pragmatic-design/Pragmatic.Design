@@ -151,6 +151,15 @@ public sealed partial class DocUnitOfWork : IUnitOfWork
     }
 
     /// <inheritdoc />
+    /// <remarks>The save's own rule: an unchanged entry whose fields differ from its snapshot is modified.</remarks>
+    public bool IsModified(object entity) => EntryOf(entity) is { } entry && entry.State switch
+    {
+        DocEntryState.Added or DocEntryState.Modified => true,
+        DocEntryState.Unchanged => entry.ChangedFields() != 0,
+        _ => false
+    };
+
+    /// <inheritdoc />
     public void DiscardChanges()
     {
         _entries.Clear();

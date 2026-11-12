@@ -108,6 +108,12 @@ internal sealed record LoadEntityModel
     /// </remarks>
     public EquatableArray<InvariantModel> CheckableInvariants { get; init; } =
         EquatableArray<InvariantModel>.Empty;
+
+    /// <summary>
+    ///     Whether the loaded entity validates its own fields (<c>ISyncValidator</c>) once generation has run, predicted as the validation
+    ///     generator decides it (<c>ValidatablePredictor</c>): the invoker validates it after the body when the action changed it.
+    /// </summary>
+    public bool HasSyncValidator { get; init; }
     public required string FieldName { get; init; }
     public required string RepositoryFieldName { get; init; }
     public required string RepositoryTypeFullName { get; init; }

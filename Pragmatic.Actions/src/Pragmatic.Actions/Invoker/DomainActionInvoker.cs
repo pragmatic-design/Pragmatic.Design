@@ -218,6 +218,15 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                 // ⚠️ Only the rules this operation can answer: the generated override leaves out any
                 // rule whose body reads a navigation the action did not Include, because evaluating one
                 // against an empty collection is a refusal of a legitimate write, not a safeguard.
+                //
+                // The field rules of what the body changed come first, as the mutation pipeline validates
+                // the entity before its invariants.
+                if (ValidateLoadedEntities(action) is { } validationError)
+                {
+                    LogPreparationFailed("Action", actionName, validationError.Code);
+                    return Result<TReturn, IError>.Failure(validationError);
+                }
+
                 if (CheckLoadedInvariants(action) is { } invariantError)
                 {
                     LogPreparationFailed("Action", actionName, invariantError.Code);

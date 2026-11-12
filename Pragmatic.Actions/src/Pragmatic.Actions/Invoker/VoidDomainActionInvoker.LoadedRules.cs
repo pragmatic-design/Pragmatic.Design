@@ -14,4 +14,12 @@ public abstract partial class VoidDomainActionInvoker<TAction>
     /// </remarks>
     /// <param name="action">The operation, holding the entities its preload assigned.</param>
     protected virtual IError? CheckLoadedInvariants(TAction action) => null;
+
+    /// <summary>
+    ///     Validates the field rules of each entity this operation loaded and changed, and returns the first failure. Overridden by the
+    ///     generated invoker; null means there is nothing to validate.
+    /// </summary>
+    /// <remarks>The same member as the typed invoker's, asked at the same place: after the body, before the invariants and the write.</remarks>
+    /// <param name="action">The operation, holding the entities its preload assigned.</param>
+    protected virtual IError? ValidateLoadedEntities(TAction action) => null;
 }
