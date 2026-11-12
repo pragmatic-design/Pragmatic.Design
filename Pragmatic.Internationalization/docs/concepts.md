@@ -760,6 +760,10 @@ Value converters applied automatically:
 - `CurrencyCode` maps to `varchar(3)`
 - `LocalizedString` maps to a JSON column
 
+A `LocalizedString` property needs no configuration of its own. `ApplyPragmaticInternationalization()` maps the
+properties of the entity types already in the model (the `DbSet`s, `modelBuilder.Entity<T>()` before the call);
+the conventions map every one wherever it is.
+
 `Money` has **no automatic converter** -- map it manually as two columns (amount + currency);
 `MoneyConfiguration` provides the recommended precision/scale constants. See [Integration](integration.md#ef-core).
 

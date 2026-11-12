@@ -380,7 +380,8 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 ```
 
 Value converters applied automatically: `CurrencyCode` maps to `varchar(3)`, `LocalizedString`
-maps to a JSON column. `Money` has **no automatic mapping**: map it as two columns
+maps to a JSON column. A `LocalizedString` property needs no configuration of its own; its entity type
+does have to be in the model before the call (a `DbSet`, or `modelBuilder.Entity<T>()` above it). `Money` has **no automatic mapping**: map it as two columns
 (`Amount` decimal + `Currency` varchar(3)); the `MoneyConfiguration` class provides the
 recommended precision/scale constants (19, 4). See [Integration](integration.md#ef-core).
 
