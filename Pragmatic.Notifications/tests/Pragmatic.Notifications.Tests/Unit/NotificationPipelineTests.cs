@@ -211,14 +211,18 @@ public sealed class NotificationPipelineTests
     }
 
     [Fact]
-    public async Task Execute_WithCriticalPriority_AndMultipleChannels_DeliversToAll()
+    public async Task Execute_WithCriticalPriority_AndMultipleChannels_DeliversToTheChannelsTheAddressBelongsTo()
     {
+        // The default router, with Email and Webhook registered: a Critical notification to an e-mail address is one e-mail.
+        // Handing the address to the webhook too was the defect; a second channel is reached through a second address.
+        _channelFactory.GetRegisteredChannels.Returns(new List<NotificationChannel> { NotificationChannel.Email, NotificationChannel.Webhook });
+        var pipeline = new NotificationPipeline(
+            _resolver, new DefaultNotificationRouter(_channelFactory), _channelFactory, _store,
+            NullLogger<NotificationPipeline>.Instance);
         var request = CreateRequest() with { Priority = NotificationPriority.Critical };
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
         _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
-
-        _router.Route.Returns(NotificationChannel.Email | NotificationChannel.Webhook);
 
         var emailChannel = new NotificationChannelMock();
         emailChannel.Channel.Returns(NotificationChannel.Email);
@@ -231,10 +235,12 @@ public sealed class NotificationPipelineTests
         _channelFactory.GetChannel.When(NotificationChannel.Email, Arg.Any<string?>()).Returns(emailChannel);
         _channelFactory.GetChannel.When(NotificationChannel.Webhook, Arg.Any<string?>()).Returns(webhookChannel);
 
-        var result = await _pipeline.ExecuteAsync(request);
+        var result = await pipeline.ExecuteAsync(request);
 
         result.Success.Should().BeTrue();
-        result.DeliveryIds.Should().HaveCount(2);
+        result.DeliveryIds.Should().HaveCount(1);
+        emailChannel.DeliverAsync.Received(1);
+        webhookChannel.DeliverAsync.DidNotReceive();
     }
 
     [Fact]

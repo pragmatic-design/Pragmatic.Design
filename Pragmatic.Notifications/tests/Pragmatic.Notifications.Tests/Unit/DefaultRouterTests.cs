@@ -29,23 +29,44 @@ public sealed class DefaultRouterTests
         => new("test@example.com", channel, null, null, prefs);
 
     [Fact]
-    public void Route_CriticalPriority_ReturnsAllChannels()
+    public void Route_CriticalPriority_ReturnsEveryRegisteredChannelTheAddressReaches()
     {
-        var result = _router.Route(CreateRecipient(), NotificationPriority.Critical, null);
+        var result = _router.Route(CreateRecipient(NotificationChannel.Email | NotificationChannel.Push | NotificationChannel.Sms), NotificationPriority.Critical, null);
 
-        result.HasFlag(NotificationChannel.Email).Should().BeTrue();
-        result.HasFlag(NotificationChannel.Webhook).Should().BeTrue();
-        result.HasFlag(NotificationChannel.Push).Should().BeTrue();
+        // Sms is not registered here.
+        result.Should().Be(NotificationChannel.Email | NotificationChannel.Push);
     }
 
     [Fact]
-    public void Route_HighPriority_ReturnsEmailAndPush()
+    public void Route_CriticalPriority_ToAnEmailAddress_IsEmailOnly()
     {
-        var result = _router.Route(CreateRecipient(), NotificationPriority.High, null);
+        var result = _router.Route(CreateRecipient(), NotificationPriority.Critical, null);
 
-        result.HasFlag(NotificationChannel.Email).Should().BeTrue();
-        result.HasFlag(NotificationChannel.Push).Should().BeTrue();
-        result.HasFlag(NotificationChannel.Webhook).Should().BeFalse();
+        result.Should().Be(NotificationChannel.Email);
+    }
+
+    [Fact]
+    public void Route_HighPriority_ReturnsEmailAndPush_AmongTheChannelsTheAddressReaches()
+    {
+        var result = _router.Route(CreateRecipient(NotificationChannel.Email | NotificationChannel.Push | NotificationChannel.Webhook), NotificationPriority.High, null);
+
+        result.Should().Be(NotificationChannel.Email | NotificationChannel.Push);
+    }
+
+    [Fact]
+    public void Route_HighPriority_ToAWebhook_IsTheWebhook()
+    {
+        var result = _router.Route(CreateRecipient(NotificationChannel.Webhook), NotificationPriority.High, null);
+
+        result.Should().Be(NotificationChannel.Webhook);
+    }
+
+    [Fact]
+    public void Route_ToAnAddressNoRegisteredChannelReaches_ReturnsNone()
+    {
+        var result = _router.Route(CreateRecipient(NotificationChannel.Sms), NotificationPriority.Normal, null);
+
+        result.Should().Be(NotificationChannel.None);
     }
 
     [Fact]

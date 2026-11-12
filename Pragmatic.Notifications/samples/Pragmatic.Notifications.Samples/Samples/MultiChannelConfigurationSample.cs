@@ -7,9 +7,9 @@ namespace Pragmatic.Notifications.Samples.Samples;
 
 /// <summary>
 ///     NotificationsBuilder composes multiple channels in one registration. Priority then
-///     drives fan-out: Critical reaches every registered channel, Normal uses the recipient's
-///     resolved channel (or email fallback). This sample registers three channels and shows
-///     how a single Critical send fans out across all of them via the real routing pipeline.
+///     drives fan-out among the channels each address belongs to: Critical uses every one of them,
+///     and a channel no address belongs to gets nothing. This sample registers three channels and
+///     shows a Critical send to an e-mail address and a phone number: one e-mail, one SMS, no push.
 /// </summary>
 public static class MultiChannelConfigurationSample
 {
@@ -36,11 +36,12 @@ public static class MultiChannelConfigurationSample
 
         Console.WriteLine($"  registered channels : {string.Join(", ", factory.GetRegisteredChannels())}");
 
-        // Critical priority → router combines ALL registered channels.
+        // Critical priority → every registered channel each address belongs to: the e-mail address
+        // by e-mail, the phone number by SMS. Push has no address here, so it gets nothing.
         await notifications.SendAsync(new NotificationRequest
         {
             Audience = NotificationAudience.Admin,
-            Recipient = new NotificationRecipient { EmailAddress = "oncall@example.com" },
+            Recipient = new NotificationRecipient { EmailAddress = "oncall@example.com", PhoneNumber = "+390000000000" },
             Content = new NotificationContent { Subject = "Datastore unreachable", Body = "Failover triggered." },
             Priority = NotificationPriority.Critical,
             Category = "ops-alert",
