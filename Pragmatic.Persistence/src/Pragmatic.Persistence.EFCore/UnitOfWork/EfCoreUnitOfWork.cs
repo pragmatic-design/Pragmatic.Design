@@ -269,6 +269,20 @@ public sealed partial class EfCoreUnitOfWork : IUnitOfWork
     public void Detach(object entity) => _db.Entry(entity).State = EntityState.Detached;
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     The entity's changes are detected first, this entity's alone and whatever the context's automatic detection, so a property set
+    ///     without telling the tracker is seen.
+    /// </remarks>
+    public bool IsModified(object entity)
+    {
+        var entry = _db.Entry(entity);
+        if (entry.State == EntityState.Detached)
+            return false;
+        entry.DetectChanges();
+        return entry.State is EntityState.Added or EntityState.Modified;
+    }
+
+    /// <inheritdoc />
     public void DiscardChanges() => _db.ChangeTracker.Clear();
 
     /// <inheritdoc />

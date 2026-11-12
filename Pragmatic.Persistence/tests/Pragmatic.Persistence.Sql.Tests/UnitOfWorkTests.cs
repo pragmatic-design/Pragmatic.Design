@@ -69,6 +69,31 @@ public class UnitOfWorkTests(PragmaticDatabases databases)
         Assert.Equal(["desk-north", "desk-east"], stored.AccessScopes);
     }
 
+    /// <summary>
+    ///     <c>IsModified</c>, the save's own rule: what an action's invoker asks of each entity it loaded, to validate the ones it changed (#628).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task IsModified_answers_what_the_next_save_writes(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        using var session = await SeededAsync(databases, dialect, _toggle);
+        var riva = (await RawAsync<Property>(session, _toggle)).Single(p => p.Name == "RIVA");
+        IUnitOfWork unitOfWork = new SqlUnitOfWork(session, new FixedClock(Now), new TestUser("anna"), new TenantScope());
+        IRepository<Property> properties = new Property.SqlRepository((SqlUnitOfWork)unitOfWork);
+
+        var loaded = (await properties.GetByIdAsync(riva.Id))!;
+        Assert.False(unitOfWork.IsModified(loaded)); // read and left alone
+        Assert.False(unitOfWork.IsModified(riva)); // a row this unit of work does not track
+
+        loaded.Name = "RIVA nuova";
+        Assert.True(unitOfWork.IsModified(loaded)); // a column set, nothing told
+
+        var neve = new Property { Name = "NEVE" };
+        properties.Add(neve);
+        Assert.True(unitOfWork.IsModified(neve));
+    }
+
     [Theory]
     [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
     public async Task An_added_entity_takes_the_callers_tenant_owner_scope_and_stamps(SqlDialect dialect)

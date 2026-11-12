@@ -170,6 +170,12 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
             {
                 // The loaded aggregate's rules, after the body and before the write — the same place the
                 // typed invoker checks them. The generator emits the override for this shape too.
+                if (ValidateLoadedEntities(action) is { } validationError)
+                {
+                    LogPreparationFailed("VoidAction", actionName, validationError.Code);
+                    return VoidResult<IError>.Failure(validationError);
+                }
+
                 if (CheckLoadedInvariants(action) is { } invariantError)
                 {
                     LogPreparationFailed("VoidAction", actionName, invariantError.Code);

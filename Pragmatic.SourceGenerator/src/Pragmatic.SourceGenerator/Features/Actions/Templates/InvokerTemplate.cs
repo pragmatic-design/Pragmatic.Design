@@ -160,8 +160,14 @@ internal sealed partial class InvokerTemplate : CSharpTemplate
             RenderPrepareActionAsync();
         }
 
-        // The rules of what it loaded, and only the ones it can answer. Omitted entirely
-        // when there are none, so an operation that loads nothing carries no empty override.
+        // The field rules of what it loaded and changed, then the invariants it can answer. Each
+        // omitted entirely when there are none, so an operation that loads nothing carries no empty override.
+        if (ValidatesLoadedEntities)
+        {
+            AppendLine();
+            RenderValidateLoadedEntities();
+        }
+
         if (_model.LoadEntities.Any(load => load.CheckableInvariants.Count > 0))
         {
             AppendLine();

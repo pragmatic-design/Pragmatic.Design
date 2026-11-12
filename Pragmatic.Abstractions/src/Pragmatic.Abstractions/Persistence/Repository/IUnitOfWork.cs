@@ -60,6 +60,27 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    ///     Whether the next save would write <paramref name="entity" />'s values: it is added, or tracked with a change the store does not hold
+    ///     yet. One marked for deletion is not.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Asked by a generated action invoker, after the action's body and before the save, of each entity the action loaded: the one it
+    ///         changed has its field rules validated, as a mutation validates the entity it writes. One it did not change is not, so a row
+    ///         whose stored value already breaks a rule (an older row, a rule added later) does not refuse an action that did not write it.
+    ///     </para>
+    ///     <para>
+    ///         An entity this unit of work does not track is not one its save writes: false.
+    ///     </para>
+    ///     <para>
+    ///         The default answers <see langword="true" />: a unit of work that cannot tell has every loaded entity validated, which refuses
+    ///         too much rather than writing what no rule was asked of.
+    ///     </para>
+    /// </remarks>
+    /// <param name="entity">The entity, as the caller holds it.</param>
+    bool IsModified(object entity) => true;
+
+    /// <summary>
     ///     Stops tracking everything, so an operation run again starts from what the store holds.
     /// </summary>
     /// <remarks>

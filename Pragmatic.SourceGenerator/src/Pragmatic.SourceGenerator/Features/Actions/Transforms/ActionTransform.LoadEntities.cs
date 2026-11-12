@@ -84,6 +84,7 @@ internal static partial class ActionTransform
                 Includes = includes,
                 EntityNamedEngine = entityType is INamedTypeSymbol namedEntity ? PersistenceEngineMarker.NamedFor(namedEntity) : null,
                 CheckableInvariants = RulesTheOperationCanAnswer(entityType, includes, symbol, compilation),
+                HasSyncValidator = Validation.Analysis.ValidatablePredictor.WillHaveSyncValidator(entityType, compilation),
                 EntityTypeFullName = entityTypeFullName,
                 EntityTypeShortName = entityTypeShortName,
                 IdPropertyName = "",

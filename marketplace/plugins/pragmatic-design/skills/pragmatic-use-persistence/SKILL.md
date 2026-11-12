@@ -411,8 +411,8 @@ the caller's language), `[Audited]`, `[GenerateHierarchy]`, `[Published]`, `[Sea
 (**PRAG0703**) and `[ComplexFilter]`: what each generates, and where it does not reach, is in
 **[references/entity-declarations.md](references/entity-declarations.md)**.
 
-⚠️ An `[Invariant]` is not checked on every write: a repository `Add` from a job, or an action that
-changed the aggregate without loading it through `[LoadEntity]`, runs none.
+⚠️ An `[Invariant]`, or a field rule (`[MaxLength]`, …), is not checked on every write: a repository
+`Add` from a job, or an action that changed an entity not loaded through `[LoadEntity]`, runs none.
 
 ## Identifiers
 

@@ -142,6 +142,15 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     }
 
     /// <inheritdoc />
+    /// <remarks>The save's own rule: an unchanged entry whose columns differ from its snapshot is modified.</remarks>
+    public bool IsModified(object entity) => EntryOf(entity) is { } entry && entry.State switch
+    {
+        SqlEntryState.Added or SqlEntryState.Modified => true,
+        SqlEntryState.Unchanged => entry.ChangedColumns(Session.Dialect) != 0,
+        _ => false
+    };
+
+    /// <inheritdoc />
     public void DiscardChanges()
     {
         _entries.Clear();
