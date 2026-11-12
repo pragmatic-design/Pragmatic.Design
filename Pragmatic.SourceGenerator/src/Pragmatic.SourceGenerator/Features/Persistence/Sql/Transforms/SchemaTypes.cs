@@ -8,11 +8,14 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 ///     A column's SQL type on the providers Pragmatic.Migrations has (PostgreSQL, SQL Server, SQLite, MySQL, Oracle), as the repository's
 ///     <c>SqlTypeMapper</c> writes them, so the diff compares like with like: the store type (a converter's), an enum as an integer, an array
 ///     column as PostgreSQL's native array and JSON text elsewhere, a vector as the vector type, a PostgreSQL cast (<c>jsonb</c>) as the type.
-///     A string with <c>[MaxLength(n)]</c> is <c>varchar(n)</c>/<c>nvarchar(n)</c>; one that is a key or indexed without it is
+///     A string with <c>[MaxLength(n)]</c> is <c>varchar(n)</c>/<c>nvarchar(n)</c>, <c>nvarchar(max)</c> past SQL Server's 4000; one that is a key or indexed without it is
 ///     <c>nvarchar(450)</c> on SQL Server, which indexes no <c>nvarchar(max)</c> (EF Core's convention).
 /// </summary>
 internal static class SchemaTypes
 {
+    private const int SqlServerMaxNVarCharLength = 4000;
+    private const int SqlServerMaxVarBinaryLength = 8000;
+
     /// <summary>
     ///     <paramref name="type" />, the key of an <c>[Identity]</c> entity, as the dialect declares a key the database assigns: SQLite's
     ///     <c>INTEGER</c> key is the rowid already; elsewhere the identity is a column property, which Pragmatic.Migrations reads back as the
@@ -47,8 +50,15 @@ internal static class SchemaTypes
             return dialect switch { SqlDialect.PostgreSql => "integer", SqlDialect.SqlServer => "int", _ => "INTEGER" };
         if (type.SpecialType == SpecialType.System_String)
         {
+            // SQL Server refuses an nvarchar longer than 4000 (and a varbinary longer than 8000): above that the column is max, as EF Core's
+            // branch writes it (SqlTypeMapper).
             if (maxLength is { } length)
-                return dialect switch { SqlDialect.PostgreSql => $"varchar({length})", SqlDialect.SqlServer => $"nvarchar({length})", _ => "TEXT" };
+                return dialect switch
+                {
+                    SqlDialect.PostgreSql => $"varchar({length})",
+                    SqlDialect.SqlServer => length > SqlServerMaxNVarCharLength ? "nvarchar(max)" : $"nvarchar({length})",
+                    _ => "TEXT",
+                };
             return dialect switch { SqlDialect.PostgreSql => "text", SqlDialect.SqlServer => keyed ? "nvarchar(450)" : "nvarchar(max)", _ => "TEXT" };
         }
 
@@ -56,7 +66,7 @@ internal static class SchemaTypes
         // A binary with [MaxLength(n)] is one an index can hold on SQL Server, as EF Core's branch writes it (SqlTypeMapper); PostgreSQL's and
         // SQLite's binary has no length.
         if (name == "byte[]" && maxLength is { } binaryLength && dialect == SqlDialect.SqlServer)
-            return $"varbinary({binaryLength})";
+            return binaryLength > SqlServerMaxVarBinaryLength ? "varbinary(max)" : $"varbinary({binaryLength})";
         return (name, dialect) switch
         {
             ("int", SqlDialect.PostgreSql) => "integer",
