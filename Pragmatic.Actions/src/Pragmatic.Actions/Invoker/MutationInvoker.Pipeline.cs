@@ -86,6 +86,8 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             else
                 foreach (var evt in CollectRaisedEvents(mutation, entity))
                     batchContext.DeferEvent(evt);
+
+            DeferInvalidation(batchContext, mutation);
         }
         else
         {
@@ -183,6 +185,8 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             else
                 foreach (var evt in CollectRaisedEvents(mutation, entity))
                     batchContext.DeferEvent(evt);
+
+            DeferInvalidation(batchContext, mutation);
         }
         else
         {
@@ -349,6 +353,8 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             else
                 foreach (var evt in CollectRaisedEvents(mutation, entity))
                     batchContext.DeferEvent(evt);
+
+            DeferInvalidation(batchContext, mutation);
         }
         else
         {

@@ -274,11 +274,13 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                     // handler never runs. The batch is the one captured before suspending.
                     await global::Pragmatic.Actions.Commit.DeferredEventFlush
                         .FlushAsync(commitOwnership.Batch, ServiceProvider, ct).ConfigureAwait(false);
+                    await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush
+                        .RunAsync(commitOwnership.Batch, ct).ConfigureAwait(false);
 
                     // Last, and only on success: the rows this action wrote are committed, so the
                     // [Cacheable] reads of them are the ones now stale. Before this the generated
-                    // ICacheInvalidator existed and nobody called it.
-                    await InvalidateCacheAsync(action, "Action", actionName, ct).ConfigureAwait(false);
+                    // ICacheInvalidator existed and nobody called it. Nested, the owner runs it after its commit.
+                    await InvalidateOrDeferCacheAsync(ownerBatch, action, "Action", actionName, ct).ConfigureAwait(false);
 
                     // Kept only now: a success, committed. A failure is this call's answer and never
                     // anyone else's — a transient one would otherwise last the whole duration.

@@ -75,6 +75,30 @@ public abstract partial class ActionInvokerBase
             ct);
 
     /// <summary>
+    ///     Runs the action's invalidation, or, when another invocation owns the commit, leaves it in its batch.
+    /// </summary>
+    /// <remarks>
+    ///     Run here by an action that does not own its commit, it is before the owner saves: a read in between puts the old state
+    ///     back in the entry, and when the owner fails the invalidation was for nothing. <c>DeferredInvalidationFlush</c> runs it
+    ///     after the owner's commit, and nothing runs it when the owner fails (#707).
+    /// </remarks>
+    /// <param name="ownerBatch">From <see cref="BatchOfTheCommitOwner" />; <c>null</c> invalidates now.</param>
+    /// <param name="action">The action that has just succeeded.</param>
+    /// <param name="kind">"Action" or "VoidAction", for the log.</param>
+    /// <param name="actionName">The action's type name, for the log.</param>
+    /// <param name="ct">Cancellation token.</param>
+    protected Task InvalidateOrDeferCacheAsync(
+        Pragmatic.Persistence.Lifecycle.BatchContext? ownerBatch, object action, string kind, string actionName, CancellationToken ct)
+    {
+        if (ownerBatch is null)
+            return InvalidateCacheAsync(action, kind, actionName, ct);
+
+        if (action is Pragmatic.Caching.ICacheInvalidator)
+            ownerBatch.DeferInvalidation(flushCt => InvalidateCacheAsync(action, kind, actionName, flushCt));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     ///     Dispatches the domain events an operation declared via <c>[Raises&lt;T&gt;]</c> after a successful
     ///     commit. The generated invoker builds the event instances (ctor filled by name from the operation's
     ///     inputs); this central path resolves the dispatcher and flushes them — so the entity needs no behavior.
