@@ -23,7 +23,9 @@ public class TemporalTests(TestDatabases databases)
         using var session = databases.Session(dialect);
         var price = new Price { Id = Guid.NewGuid(), Sku = "TEMPORAL-" + Guid.NewGuid().ToString("N")[..6], Amount = 10m };
         await session.InsertAsync(price);
-        // The instant between the two versions must come after the insert's commit. SQL Server's period resolution is well under 100 ms.
+        // The instant between the two versions must come after the insert's commit, on the clock that stamps the versions: the server's.
+        // A container's clock can run ahead of the host's by more than the waits (about 250 ms measured under Docker Desktop), and an
+        // instant from the host then falls before the row existed. SQL Server's period resolution is well under 100 ms.
         // Oracle's Flashback turns the instant into an SCN through its time-to-SCN mapping, recorded every few seconds and sparse just
         // after the server starts: the instant is the server's own, taken once the mapping places it at or after the insert's SCN.
         DateTime between;
@@ -32,7 +34,7 @@ public class TemporalTests(TestDatabases databases)
         else
         {
             await Task.Delay(100);
-            between = DateTime.UtcNow;
+            between = await ServerInstantAsync(session, dialect);
             await Task.Delay(100);
         }
         price.Amount = 20m;
@@ -62,6 +64,24 @@ public class TemporalTests(TestDatabases databases)
             Assert.Equal([10m], (await session.Query<Price>().AsOf(between).Where((p, id) => p.Id == id, price.Id).ToListAsync()).Select(p => p.Amount));
             Assert.Empty(await session.Query<Price>().AsOf(DateTime.UtcNow.AddSeconds(5)).Where((p, id) => p.Id == id, price.Id).ToListAsync());
         }
+    }
+
+    /// <summary>
+    ///     The server's current UTC instant, read with the expression the history's triggers (or SQL Server's system versioning) stamp a
+    ///     version with: <c>now()</c> on PostgreSQL, <c>SYSUTCDATETIME()</c>, <c>UTC_TIMESTAMP(6)</c>, and SQLite's <c>strftime</c>.
+    /// </summary>
+    private static async Task<DateTime> ServerInstantAsync(SqlSession session, SqlDialect dialect)
+    {
+        using var now = session.Connection.CreateCommand();
+        now.CommandText = dialect switch
+        {
+            SqlDialect.PostgreSql => "SELECT now() AT TIME ZONE 'UTC'",
+            SqlDialect.SqlServer => "SELECT SYSUTCDATETIME()",
+            SqlDialect.MySql => "SELECT UTC_TIMESTAMP(6)",
+            _ => "SELECT strftime('%Y-%m-%d %H:%M:%f', 'now')",
+        };
+        var instant = Convert.ToDateTime(await now.ExecuteScalarAsync(), System.Globalization.CultureInfo.InvariantCulture);
+        return DateTime.SpecifyKind(instant, DateTimeKind.Utc);
     }
 
     /// <summary>
