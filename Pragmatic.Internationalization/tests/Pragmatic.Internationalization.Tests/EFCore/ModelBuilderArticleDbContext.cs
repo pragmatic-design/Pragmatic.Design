@@ -6,8 +6,7 @@ namespace Pragmatic.Internationalization.Tests.EFCore;
 /// <summary>Configured through <see cref="ModelBuilderExtensions.ApplyPragmaticInternationalization" />.</summary>
 /// <remarks>
 ///     The property is declared, as the generated entity configuration declares it before the generated context calls
-///     <c>ApplyPragmaticInternationalization</c>: that method configures the scalar properties it finds, and an undeclared
-///     <c>LocalizedString</c> is not one.
+///     <c>ApplyPragmaticInternationalization</c>. The undeclared case is <see cref="UndeclaredArticleDbContext" />.
 /// </remarks>
 public sealed class ModelBuilderArticleDbContext(DbContextOptions<ModelBuilderArticleDbContext> options) : DbContext(options)
 {
