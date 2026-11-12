@@ -110,6 +110,19 @@ public static class PragmaticContractHost
     /// </remarks>
     public static Func<string, object?>? BodyFor { get; set; }
 
+    /// <summary>The tenant the generated isolation test creates as. <c>"tenant-a"</c> unless the fixture sets one.</summary>
+    /// <remarks>
+    ///     ⚠️ Under <c>RequireKnownTenant</c> it must be a tenant the application's store knows, and an application whose tenant is its record's
+    ///     key (a Guid) cannot have one named <c>"tenant-a"</c>: the fixture sets the id of a tenant it created.
+    /// </remarks>
+    public static string TenantA { get; set; } = DefaultTenantA;
+
+    /// <summary>The tenant the generated isolation test reads as, and must not see <see cref="TenantA" />'s row. <c>"tenant-b"</c> unless the fixture sets one.</summary>
+    public static string TenantB { get; set; } = DefaultTenantB;
+
+    private const string DefaultTenantA = "tenant-a";
+    private const string DefaultTenantB = "tenant-b";
+
     /// <summary>
     ///     The application's last word on a contract request, after the generated identity is written.
     /// </summary>
@@ -199,6 +212,8 @@ public static class PragmaticContractHost
         BodyFor = null;
         PrepareRequest = null;
         ArrangeFor = null;
+        TenantA = DefaultTenantA;
+        TenantB = DefaultTenantB;
 
         lock (PerBoundaryGate)
             PerBoundary.Clear();

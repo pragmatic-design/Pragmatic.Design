@@ -206,6 +206,11 @@ Answer it in the fixture, where a row the body needs can be seeded first. ⚠️
 that emits one test where it could emit three looks exactly like a suite that passes, and `BodyFor`
 could not rescue tests that are missing, because it is read *inside* them.
 
+**The tenant-isolation test creates as one tenant and reads as another**: `PragmaticContractHost.TenantA`
+and `TenantB`, `"tenant-a"` and `"tenant-b"` unless the fixture sets them. ⚠️ Under `RequireKnownTenant`
+both must be tenants the application's store knows, so an application whose tenant is a record's key (a
+Guid) creates two in the fixture and sets their ids.
+
 ## State-transition contracts
 
 **When you get them.** For endpoints marked `[TransitionsTo]`, correlated with the create endpoint of
