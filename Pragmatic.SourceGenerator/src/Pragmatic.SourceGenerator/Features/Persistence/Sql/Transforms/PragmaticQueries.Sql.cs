@@ -17,7 +17,7 @@ internal sealed partial class PragmaticQuery
     private QueryOrderingModel SqlOrdering()
         => new(
             "ToSqlOrdering", $"global::Pragmatic.Persistence.Sql.Planning.SqlOrdering<{EntityName}>", "global::Pragmatic.Persistence.Sql.Planning.SqlOrderKey",
-            Sorts.OrderBy(s => s.Priority).Select(s => new QuerySortModel(s.Name, s.Column.Replace('.', '_'), s.Direction)).ToEquatableArray(),
+            AppliedSorts.Select(s => new QuerySortModel(s.Name, s.Column.Replace('.', '_'), s.Direction)).ToEquatableArray(),
             Sorts.Select(s => s.Column).Append("PersistenceId").Distinct().Select(c => new OrderKeyModel(c.Replace('.', '_'), OrderKeyDialects(ColumnOf(Entity, c)).ToEquatableArray())).ToEquatableArray());
 
     /// <summary>The texts of an order key on the column <paramref name="column" /> of alias t, one per dialect.</summary>

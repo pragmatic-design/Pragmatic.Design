@@ -98,6 +98,13 @@ internal sealed partial class PragmaticQuery
     internal IReadOnlyList<(string Name, string Column, int Direction, int Priority)> Sorts => _sorts;
 
     /// <summary>
+    ///     The sorts in the order an engine applies them, as EF Core's <c>Apply</c> does (#642): those without a default first, then those with
+    ///     one, <c>Priority</c> within each group (a stable order). A default declared first would otherwise take the place of the caller's sort.
+    /// </summary>
+    internal IEnumerable<(string Name, string Column, int Direction, int Priority)> AppliedSorts
+        => _sorts.OrderBy(s => s.Direction >= 0).ThenBy(s => s.Priority);
+
+    /// <summary>
     ///     The declared queries of the compilation on the Pragmatic entities <paramref name="engine" /> serves. <paramref name="shaped" /> is the
     ///     compilation with the entities' shape, where a join's keys are looked up (a relation's foreign key is a member of the shape only).
     /// </summary>
