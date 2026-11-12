@@ -96,8 +96,10 @@ public sealed partial class SqlOutboxSource(SqlSession session, string boundaryN
         var count = await session.Query<OutboxMessageRow>().Where(r => r.ProcessedAt == null).CountAsync(ct).ConfigureAwait(false);
         if (count == 0)
             return (0, null);
-        var oldest = await session.Query<OutboxMessageRow>().Where(r => r.ProcessedAt == null).MinAsync(r => r.CreatedAt, ct).ConfigureAwait(false);
-        return (count, OutboxMessageRecords.Instant(oldest));
+        // The pump may mark the last pending row processed between the two reads: MIN over no rows is NULL, which a non-nullable minimum
+        // read as 0 ticks (an oldest message from year 1). Nullable, and nothing is pending whatever the count said.
+        var oldest = await session.Query<OutboxMessageRow>().Where(r => r.ProcessedAt == null).MinAsync(r => (long?)r.CreatedAt, ct).ConfigureAwait(false);
+        return oldest is { } ticks ? (count, OutboxMessageRecords.Instant(ticks)) : (0, null);
     }
 
     /// <inheritdoc />
