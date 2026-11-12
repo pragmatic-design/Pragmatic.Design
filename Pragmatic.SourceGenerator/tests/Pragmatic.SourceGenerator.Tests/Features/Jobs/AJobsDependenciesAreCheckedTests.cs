@@ -64,15 +64,16 @@ public class AJobsDependenciesAreCheckedTests
 
     /// <summary>
     ///     The recurring-job contracts <c>AddPragmaticJobs()</c> registers, which a job in a library may take to manage its own
-    ///     schedule (#633).
+    ///     schedule (#633), and the job store it registers too, which one may take to read a job's state back (#686).
     /// </summary>
     /// <remarks>
-    ///     Only <c>IJobScheduler</c> said it was provided by the host, so a job taking either of these was reported as depending on
+    ///     Only <c>IJobScheduler</c> said it was provided by the host, so a job taking any of these was reported as depending on
     ///     something nobody registers, and the application read them from the container at run time to get past it.
     /// </remarks>
     [Theory]
     [InlineData("global::Pragmatic.Jobs.IRecurringJobStore")]
     [InlineData("global::Pragmatic.Jobs.IRecurringJobRegistrar")]
+    [InlineData("global::Pragmatic.Jobs.IJobStore")]
     public void AJobThatAsksForARecurringJobContract_IsNotReported(string contract)
         => IdsOf(Run(Source(contract))).Should().NotContain(NotRegistered,
             "AddPragmaticJobs() registers it in every host that runs jobs");
