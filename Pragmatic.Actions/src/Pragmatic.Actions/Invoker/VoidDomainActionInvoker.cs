@@ -220,9 +220,11 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
                     // handler never runs. The batch is the one captured before suspending.
                     await global::Pragmatic.Actions.Commit.DeferredEventFlush
                         .FlushAsync(commitOwnership.Batch, ServiceProvider, ct).ConfigureAwait(false);
+                    await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush
+                        .RunAsync(commitOwnership.Batch, ct).ConfigureAwait(false);
 
                     // Last, and only on success: see DomainActionInvoker.
-                    await InvalidateCacheAsync(action, "VoidAction", actionName, ct).ConfigureAwait(false);
+                    await InvalidateOrDeferCacheAsync(ownerBatch, action, "VoidAction", actionName, ct).ConfigureAwait(false);
                 }
                 catch (Exception postCommitEx)
                 {

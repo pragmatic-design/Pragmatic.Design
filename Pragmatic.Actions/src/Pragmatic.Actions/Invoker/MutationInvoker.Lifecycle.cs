@@ -99,6 +99,19 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             ct);
 
     /// <summary>
+    ///     Leaves the mutation's invalidation in the owner's batch, for the owner to run after its commit.
+    /// </summary>
+    /// <remarks>
+    ///     The batch branch said the invalidation was deferred and recorded nothing, so a mutation used as a step never invalidated
+    ///     its entries (#707). <c>DeferredInvalidationFlush</c> runs it once the owner has committed.
+    /// </remarks>
+    private void DeferInvalidation(BatchContext batch, TMutation mutation)
+    {
+        if (mutation is ICacheInvalidator)
+            batch.DeferInvalidation(ct => InvalidateCacheAsync(mutation, ct));
+    }
+
+    /// <summary>
     ///     Runs the post-commit side effects (entity domain-event dispatch, <c>[Raises&lt;T&gt;]</c>
     ///     dispatch, cache invalidation) after a successful commit. Isolated: the commit already
     ///     happened, so a failure here must NOT surface to the caller as a thrown failure — that would
@@ -128,6 +141,7 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             await global::Pragmatic.Actions.Commit.DeferredEventFlush
                 .FlushAsync(batch, _serviceProvider, ct)
                 .ConfigureAwait(false);
+            await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(batch, ct).ConfigureAwait(false);
 
             if (mutation is ICacheInvalidator)
                 LogInvalidatingCache(mutationType);

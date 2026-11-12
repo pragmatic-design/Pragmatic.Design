@@ -317,12 +317,12 @@ internal sealed class CompositeActionInvokerTemplate : LogCallSiteTemplateBase
 
     /// <summary>
     ///     Post-commit side effects: the steps ran in batch mode, so SaveChanges/event-dispatch/cache
-    ///     were deferred. Dispatch the batch's events once (after the single commit) and invalidate the
-    ///     cache for any step mutation that is an <c>ICacheInvalidator</c>. Mirrors MutationInvoker.Lifecycle.
+    ///     were deferred. Dispatch the batch's events once (after the single commit), then run the
+    ///     invalidations the steps deferred into the batch, as every owner does (#707).
     /// </summary>
     private void RenderPostCommitFlush()
     {
-        Comment("Post-commit: dispatch deferred domain events once, then invalidate caches.");
+        Comment("Post-commit: dispatch deferred domain events once, then the steps' deferred cache invalidations.");
         AppendLine(
             "var __dispatcher = _serviceProvider.GetService<global::Pragmatic.Events.IDomainEventDispatcher>();");
         AppendLine("var __batch = __commitOwnership.Batch;");
@@ -330,21 +330,7 @@ internal sealed class CompositeActionInvokerTemplate : LogCallSiteTemplateBase
         AppendLine(
             "    await __dispatcher.DispatchAsync(global::System.Linq.Enumerable.Cast<global::Pragmatic.Events.IDomainEvent>(__batch.DeferredEvents), ct).ConfigureAwait(false);");
         AppendLine();
-
-        AppendLine(
-            "var __cacheStack = _serviceProvider.GetService<global::Pragmatic.Caching.ICacheStack>();");
-        AppendLine("if (__cacheStack is not null)");
-        Block(() =>
-        {
-            for (var i = 0; i < _model.Steps.Length; i++)
-            {
-                var step = _model.Steps[i];
-                AppendLine(
-                    $"if (action.{step.PropertyName} is global::Pragmatic.Caching.ICacheInvalidator __inv{i})");
-                AppendLine(
-                    $"    await __inv{i}.InvalidateAsync(__cacheStack, ct).ConfigureAwait(false);");
-            }
-        });
+        AppendLine("await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(__batch, ct).ConfigureAwait(false);");
         AppendLine();
     }
 

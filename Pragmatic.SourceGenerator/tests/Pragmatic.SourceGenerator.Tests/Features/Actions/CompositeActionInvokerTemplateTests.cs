@@ -77,7 +77,8 @@ public class CompositeActionInvokerTemplateTests
         source.Should().Contain("CommitScope.Claim");
         source.Should().Contain("global::Pragmatic.Events.IDomainEventDispatcher");
         source.Should().Contain("__batch.DeferredEvents");
-        source.Should().Contain("global::Pragmatic.Caching.ICacheInvalidator");
+        // The steps' invalidations, which each step deferred into the same batch (#707).
+        source.Should().Contain("global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(__batch, ct)");
     }
 
     [Fact]

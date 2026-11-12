@@ -30,6 +30,7 @@ public sealed class BatchContext : IDisposable
     private readonly List<object> _deferredEvents = [];
     private readonly List<Func<IEnumerable<object>>> _pendingConstructions = [];
     private readonly List<object> _accumulatedEntities = [];
+    private readonly List<Func<CancellationToken, Task>> _deferredInvalidations = [];
     private readonly object _lock = new();
     private readonly BatchContext? _previous;
     private bool _disposed;
@@ -203,6 +204,31 @@ public sealed class BatchContext : IDisposable
 
         lock (_lock)
             _deferredEvents.AddRange(built);
+    }
+
+    /// <summary>
+    ///     Defers a nested operation's cache invalidation until the owner has committed.
+    /// </summary>
+    /// <remarks>
+    ///     Run before the commit, a read in between puts the pre-commit state back in the entry, and it outlives the commit; run by
+    ///     nobody, the operation's entries stay stale for the whole cache duration. The owner runs these after its commit, and
+    ///     nothing runs them when it fails, since the batch is dropped with what it held.
+    /// </remarks>
+    /// <param name="invalidate">Runs the operation's invalidation.</param>
+    public void DeferInvalidation(Func<CancellationToken, Task> invalidate)
+    {
+        lock (_lock)
+            _deferredInvalidations.Add(invalidate);
+    }
+
+    /// <summary>The cache invalidations deferred during this batch, in the order they were deferred.</summary>
+    public IReadOnlyList<Func<CancellationToken, Task>> DeferredInvalidations
+    {
+        get
+        {
+            lock (_lock)
+                return [.._deferredInvalidations];
+        }
     }
 
     /// <summary>
