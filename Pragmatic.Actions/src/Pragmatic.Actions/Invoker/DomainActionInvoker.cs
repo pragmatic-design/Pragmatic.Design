@@ -254,6 +254,8 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                 if (transaction is not null)
                     await transaction.CommitAsync(ct).ConfigureAwait(false); // commit — a failure here IS a real failure and propagates
 
+                var ownerBatch = BatchOfTheCommitOwner(commitOwnership.CommitsHere, UnitOfWork);
+
                 // 3b. Post-commit side effects. The commit already happened, so a failure here must NOT
                 //     turn the committed success into a thrown failure — that would make callers retry and
                 //     double-run the operation. Log at Error and carry on.
@@ -264,7 +266,8 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                     // and staged writes that nobody would save. See CommitScope.Suspend.
                     using var outsideTheCommit = global::Pragmatic.Actions.Commit.CommitScope.Suspend();
 
-                    await DispatchRaisedEventsAsync(CollectRaisedEvents(action, result.Value), ct).ConfigureAwait(false);
+                    var value = result.Value;
+                    await DispatchOrDeferRaisedEventsAsync(ownerBatch, () => CollectRaisedEvents(action, value), ct).ConfigureAwait(false);
 
                     // What the nested invocations could not dispatch themselves, now that their writes
                     // are committed. Without it a mutation invoked from here succeeds silently and its
