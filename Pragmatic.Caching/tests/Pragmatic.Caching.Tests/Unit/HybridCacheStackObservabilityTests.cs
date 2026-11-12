@@ -137,6 +137,30 @@ public sealed class HybridCacheStackObservabilityTests : IDisposable
     }
 
     /// <summary>
+    ///     The collector sees this test's activities only: an invalidation started elsewhere while it listens is not read as this
+    ///     test's (#711).
+    /// </summary>
+    /// <remarks>
+    ///     The listener is process-wide, and another class invalidating a tag in parallel (<c>HybridCacheStackTests</c>, <c>"some-tag"</c>)
+    ///     was taken for this test's activity in CI. Here the other invalidation runs on a flow that does not carry this test's trace,
+    ///     before this test's own, so the window is open on every run.
+    /// </remarks>
+    [Fact]
+    public async Task InvalidateByTagAsync_StartsActivityWithTagTag_WhileAnotherInvalidationRuns()
+    {
+        using var activities = new ActivityCollector();
+
+        Task elsewhere;
+        using (ExecutionContext.SuppressFlow())
+            elsewhere = Task.Run(() => _sut.InvalidateByTagAsync("some-tag").AsTask());
+        await elsewhere.ConfigureAwait(true);
+        await _sut.InvalidateByTagAsync("obs-activity-tag");
+
+        activities.Started.Where(a => a.DisplayName == "Cache.InvalidateByTag")
+            .Select(a => a.GetTagItem("pragmatic.cache.tags")).Should().Equal(["obs-activity-tag"]);
+    }
+
+    /// <summary>
     ///     Collects values for Pragmatic.Caching meter instruments during the test.
     /// </summary>
     private sealed class CounterCollector : IDisposable
@@ -177,22 +201,31 @@ public sealed class HybridCacheStackObservabilityTests : IDisposable
     }
 
     /// <summary>
-    ///     Collects activities started on the Pragmatic.Caching ActivitySource during the test.
+    ///     Collects the activities started on the Pragmatic.Caching ActivitySource by the test: those under the trace the collector
+    ///     opens, which flows through the test's awaited calls.
     /// </summary>
+    /// <remarks>
+    ///     The listener is process-wide, so it hears every test running in parallel; the trace is what tells this test's activities
+    ///     from theirs (#711).
+    /// </remarks>
     private sealed class ActivityCollector : IDisposable
     {
         private readonly ActivityListener _listener;
+        private readonly Activity _test = new Activity(nameof(HybridCacheStackObservabilityTests)).Start();
         private readonly List<Activity> _started = new();
         private readonly object _gate = new();
 
         public ActivityCollector()
         {
+            var trace = _test.TraceId;
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == CachingDiagnostics.SourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStarted = activity =>
                 {
+                    if (activity.TraceId != trace)
+                        return;
                     lock (_gate)
                     {
                         _started.Add(activity);
@@ -215,6 +248,10 @@ public sealed class HybridCacheStackObservabilityTests : IDisposable
 
         public IEnumerable<string> Names => Started.Select(a => a.DisplayName);
 
-        public void Dispose() => _listener.Dispose();
+        public void Dispose()
+        {
+            _listener.Dispose();
+            _test.Stop();
+        }
     }
 }
