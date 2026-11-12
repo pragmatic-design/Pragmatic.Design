@@ -135,7 +135,7 @@ public class ContractTestGeneratorTests
 
         source.Should().Contain("CreateInvoice_IsNotVisibleToAnotherTenant");
         source.Should().Contain(
-            "AsUser(readRequest, \"contract-billing.invoice.create\", \"tenant-b\", null, "
+            "AsUser(readRequest, \"contract-billing.invoice.create\", global::Pragmatic.Testing.PragmaticContractHost.TenantB, null, "
             + "permissions: [\"billing.invoice.create\", \"billing.invoice.read\"]);");
     }
 }

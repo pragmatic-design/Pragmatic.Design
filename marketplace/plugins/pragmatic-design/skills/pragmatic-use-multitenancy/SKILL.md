@@ -187,7 +187,9 @@ verified without it.
 a required member it cannot invent (a foreign key, or a nested collection of another mutation, which
 is how an aggregate that carries its children is written) leaves it with none. The test is emitted
 anyway and fails with a message naming the create: answer it from `PragmaticContractHost.BodyFor` in
-the collection's fixture, where the row it needs can be seeded first.
+the collection's fixture, where the row it needs can be seeded first. Its two tenants are
+`PragmaticContractHost.TenantA`/`TenantB` (`"tenant-a"`/`"tenant-b"` by default): under
+`RequireKnownTenant`, set them to two tenants the fixture created.
 
 ⚠️ **And the isolation test reads the `Location` the create answers.** A create that declares
 `[CreatedAt]` and has no single read behind that route answers 405 there, and the isolation proof

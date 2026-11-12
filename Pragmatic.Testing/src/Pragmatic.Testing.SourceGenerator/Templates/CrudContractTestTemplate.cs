@@ -172,7 +172,7 @@ internal sealed class CrudContractTestTemplate : CSharpTemplate
         RenderBody(create);
 
         AppendLine($"using var createRequest = new {Request}({Verb}.Post, \"{create.Route}\");");
-        AppendLine($"{Identity}.AsUser(createRequest, \"contract-{create.Permission ?? "noperm"}\", \"tenant-a\", null{permission});");
+        AppendLine($"{Identity}.AsUser(createRequest, \"contract-{create.Permission ?? "noperm"}\", {HOST}.TenantA, null{permission});");
         AppendLine($"{HOST}.Prepare(createRequest, \"{create.OperationName}\", Boundary);");
         AppendLine($"createRequest.Content = {Json}.Create({HOST}.Body(\"{create.OperationName}\", body));");
         AppendLine("var createResponse = await Client.SendAsync(createRequest);");
@@ -191,7 +191,7 @@ internal sealed class CrudContractTestTemplate : CSharpTemplate
         var readerPermission = readerPermissions.Count == 0 ? "" : $", permissions: [{string.Join(", ", readerPermissions)}]";
 
         AppendLine($"using var readRequest = new {Request}({Verb}.Get, location);");
-        AppendLine($"{Identity}.AsUser(readRequest, \"contract-{create.Permission ?? "noperm"}\", \"tenant-b\", null{readerPermission});");
+        AppendLine($"{Identity}.AsUser(readRequest, \"contract-{create.Permission ?? "noperm"}\", {HOST}.TenantB, null{readerPermission});");
         AppendLine($"{HOST}.Prepare(readRequest, \"{create.OperationName}\", Boundary);");
         AppendLine("var readResponse = await Client.SendAsync(readRequest);");
         AppendLine($"{Assert}.ShouldBeNotFound(readResponse);");

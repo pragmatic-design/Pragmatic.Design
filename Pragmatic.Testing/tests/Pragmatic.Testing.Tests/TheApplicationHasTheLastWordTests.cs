@@ -30,6 +30,24 @@ public sealed class TheApplicationHasTheLastWordTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    ///     The isolation test's two tenants are the application's when it sets them, the generator's names otherwise, and a reset forgets
+    ///     what a fixture set (#646).
+    /// </summary>
+    [Fact]
+    public void TheTenantsOfTheIsolationTest_AreTheApplicationsWhenItSetsThem()
+    {
+        (PragmaticContractHost.TenantA, PragmaticContractHost.TenantB).Should().Be(("tenant-a", "tenant-b"));
+
+        PragmaticContractHost.TenantA = "0b3e5c1a-0000-4000-8000-000000000001";
+        PragmaticContractHost.TenantB = "0b3e5c1a-0000-4000-8000-000000000002";
+        (PragmaticContractHost.TenantA, PragmaticContractHost.TenantB)
+            .Should().Be(("0b3e5c1a-0000-4000-8000-000000000001", "0b3e5c1a-0000-4000-8000-000000000002"));
+
+        PragmaticContractHost.Reset();
+        (PragmaticContractHost.TenantA, PragmaticContractHost.TenantB).Should().Be(("tenant-a", "tenant-b"));
+    }
+
     /// <summary>A body the application supplies replaces the synthesised one.</summary>
     [Fact]
     public void ABodyTheApplicationSupplies_ReplacesTheSynthesisedOne()

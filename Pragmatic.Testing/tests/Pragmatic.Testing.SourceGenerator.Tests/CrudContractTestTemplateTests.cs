@@ -112,12 +112,26 @@ public class CrudContractTestTemplateTests
         var source = Render(CreateInvoice with { IsTenantScoped = true });
 
         source.Should().Contain("CreateRaiseInvoice_IsNotVisibleToAnotherTenant");
-        source.Should().Contain("AsUser(createRequest, \"contract-billing.invoice.create\", \"tenant-a\"");
+        source.Should().Contain(
+            "AsUser(createRequest, \"contract-billing.invoice.create\", global::Pragmatic.Testing.PragmaticContractHost.TenantA");
         source.Should().Contain("var location = createResponse.Headers.Location?.ToString();");
         source.Should().Contain(
-            "AsUser(readRequest, \"contract-billing.invoice.create\", \"tenant-b\", null, "
+            "AsUser(readRequest, \"contract-billing.invoice.create\", global::Pragmatic.Testing.PragmaticContractHost.TenantB, null, "
             + "permissions: [\"billing.invoice.create\"]);");
         source.Should().Contain("global::Pragmatic.Testing.PragmaticHttpAssertions.ShouldBeNotFound(readResponse);");
+    }
+
+    /// <summary>
+    ///     The two tenants are the application's, read from the contract host when the test runs (#646): an application whose tenant is
+    ///     its record's key cannot have tenants named "tenant-a" and "tenant-b", and under <c>RequireKnownTenant</c> they must exist.
+    /// </summary>
+    [Fact]
+    public void TenantIsolation_TakesItsTenantsFromTheHost_NotFromLiterals()
+    {
+        var source = Render(CreateInvoice with { IsTenantScoped = true });
+
+        source.Should().NotContain("\"tenant-a\"");
+        source.Should().NotContain("\"tenant-b\"");
     }
 
     /// <summary>
@@ -136,7 +150,7 @@ public class CrudContractTestTemplateTests
         var source = Render(CreateInvoice with { IsTenantScoped = true, ReadPermission = "billing.invoice.read" });
 
         source.Should().Contain(
-            "AsUser(readRequest, \"contract-billing.invoice.create\", \"tenant-b\", null, "
+            "AsUser(readRequest, \"contract-billing.invoice.create\", global::Pragmatic.Testing.PragmaticContractHost.TenantB, null, "
             + "permissions: [\"billing.invoice.create\", \"billing.invoice.read\"]);");
     }
 
