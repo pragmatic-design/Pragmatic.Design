@@ -4,7 +4,8 @@ using Pragmatic.Notifications.Preferences;
 namespace Pragmatic.Notifications.Pipeline;
 
 /// <summary>
-///     Default routing strategy: maps priority to channels based on preferences and registered channels.
+///     Default routing strategy: maps priority to channels based on preferences and registered channels, among the channels
+///     the recipient's address belongs to.
 /// </summary>
 internal sealed class DefaultNotificationRouter(INotificationChannelFactory channelFactory) : INotificationRouter
 {
@@ -23,30 +24,29 @@ internal sealed class DefaultNotificationRouter(INotificationChannelFactory chan
         if (NotificationPreferenceRules.IsSuppressed(recipient.Preferences, priority, category))
             return NotificationChannel.None;
 
+        // Priority chooses among the channels this address can be delivered on, never beyond them: the resolver says which
+        // channels an address belongs to (an e-mail address Email, a phone number Sms; a flags value when one address serves
+        // several, Push included), as ChannelOverride already does. Handing every registered channel to every recipient sent
+        // an e-mail address to the SMS provider and the webhook. A notification reaches several channels through several
+        // addresses, one resolved recipient each.
+        var reachable = recipient.Channel & CombineAll(registered);
+        if (reachable == NotificationChannel.None)
+            return NotificationChannel.None;
+
+        var preferred = recipient.Preferences?.PreferredChannel ?? NotificationChannel.None;
         return priority switch
         {
-            // Critical: all registered channels
-            NotificationPriority.Critical => CombineAll(registered),
+            // Critical: every channel the address reaches.
+            NotificationPriority.Critical => reachable,
 
-            // High: user's preferred channel + email + push (if registered)
-            NotificationPriority.High => CombinePreferred(registered,
-                recipient.Preferences?.PreferredChannel ?? NotificationChannel.None,
-                NotificationChannel.Email,
-                NotificationChannel.Push),
+            // High: the user's preferred channel + email + push, where the address reaches them; otherwise every one it reaches.
+            NotificationPriority.High => Narrow(reachable, preferred | NotificationChannel.Email | NotificationChannel.Push),
 
-            // Normal: recipient's resolved channel, or email fallback
-            NotificationPriority.Normal => ResolvePreferred(recipient, registered),
+            // Low: the user's preferred channel, else email (digest candidate), else the first the address reaches.
+            NotificationPriority.Low => FirstOf(reachable, preferred, NotificationChannel.Email),
 
-            // Low: user's preferred channel if registered, otherwise email (digest candidate)
-            NotificationPriority.Low => recipient.Preferences?.PreferredChannel is { } pref
-                && pref != NotificationChannel.None
-                && registered.Contains(pref)
-                    ? pref
-                    : registered.Contains(NotificationChannel.Email)
-                        ? NotificationChannel.Email
-                        : registered[0],
-
-            _ => registered[0],
+            // Normal: the channels the address reaches.
+            _ => reachable,
         };
     }
 
@@ -58,32 +58,22 @@ internal sealed class DefaultNotificationRouter(INotificationChannelFactory chan
         return result;
     }
 
-    private static NotificationChannel CombinePreferred(
-        IReadOnlyList<NotificationChannel> registered,
-        params NotificationChannel[] preferred)
+    /// <summary>The wanted channels the address reaches, or every one it reaches when it reaches none of them.</summary>
+    private static NotificationChannel Narrow(NotificationChannel reachable, NotificationChannel wanted)
+        => (reachable & wanted) is var narrowed and not NotificationChannel.None ? narrowed : reachable;
+
+    /// <summary>The first single channel of <paramref name="candidates" /> the address reaches, else the lowest one it reaches.</summary>
+    private static NotificationChannel FirstOf(NotificationChannel reachable, params NotificationChannel[] candidates)
     {
-        var result = NotificationChannel.None;
-        foreach (var p in preferred)
+        foreach (var candidate in candidates)
         {
-            if (registered.Contains(p))
-                result |= p;
+            var single = Lowest(reachable & candidate);
+            if (single != NotificationChannel.None)
+                return single;
         }
 
-        // Fallback to first registered if none of the preferred are available
-        return result == NotificationChannel.None ? registered[0] : result;
+        return Lowest(reachable);
     }
 
-    private static NotificationChannel ResolvePreferred(
-        ResolvedRecipient recipient,
-        IReadOnlyList<NotificationChannel> registered)
-    {
-        // Use the channel from resolution if it's registered
-        if (registered.Contains(recipient.Channel))
-            return recipient.Channel;
-
-        // Prefer email, then first registered
-        return registered.Contains(NotificationChannel.Email)
-            ? NotificationChannel.Email
-            : registered[0];
-    }
+    private static NotificationChannel Lowest(NotificationChannel flags) => flags & (NotificationChannel)(-(int)flags);
 }

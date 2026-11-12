@@ -186,6 +186,12 @@ public sealed class PushChannel(IHttpClientFactory http) : INotificationChannel
 app.UseNotifications(n => n.AddChannel<PushChannel>());
 ```
 
+⚠️ **An address goes only to the channels it belongs to**, whatever the priority: the router chooses among
+the registered channels in the recipient's `ResolvedRecipient.Channel`. A `Critical` notification to an
+e-mail address is one e-mail, even with SMS registered; to reach the phone too, resolve the phone number as
+a second recipient. A push channel that finds the user by e-mail address needs the resolver to say so:
+resolve that address for `NotificationChannel.Email | NotificationChannel.Push`.
+
 ## Preferences
 
 `INotificationPreferenceProvider` returns per-recipient `NotificationPreferences`: `Enabled`,

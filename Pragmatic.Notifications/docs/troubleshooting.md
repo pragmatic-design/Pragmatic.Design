@@ -102,14 +102,19 @@ If your application already has a `NotificationDbContext` registered via another
 
 ### Multiple channels fire for Normal priority
 
-The `DefaultNotificationRouter` selects a single channel for `Normal` priority: the recipient's resolved channel, or email as fallback. Multiple channels fire only for:
+The `DefaultNotificationRouter` delivers an address only on the registered channels it belongs to (its
+`ResolvedRecipient.Channel`), whatever the priority. One address fires several channels only when the resolver resolved
+it for several (a flags value such as `Email | Push`); otherwise several deliveries mean several resolved recipients.
 
-- `High` priority: Email + Push
-- `Critical` priority: All registered channels
+If you see multiple deliveries for one address, check:
+- the resolver does not return a combined `Channel` for it
+- a custom `INotificationRouter` is not registered
 
-If you see multiple deliveries for `Normal`, check:
-- `ChannelOverride` is not set to a combined flags value
-- A custom `INotificationRouter` is not registered
+### A Critical notification reaches one channel only
+
+That is the rule: a `Critical` notification to an e-mail address is one e-mail, even with SMS and webhooks registered. To
+reach the phone too, give the recipient a `PhoneNumber` (or resolve it from your custom `IRecipientResolver`): each
+address is one resolved recipient, and `Critical` uses every registered channel each one belongs to.
 
 ### Test harness shows 0 sent notifications
 

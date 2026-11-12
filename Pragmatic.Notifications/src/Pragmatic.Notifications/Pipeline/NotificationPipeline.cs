@@ -57,6 +57,7 @@ internal sealed partial class NotificationPipeline(
         var errors = new List<string>();
         var suppressedByPreferences = false;
         var noAddressForOverride = false;
+        var noChannelForAddress = false;
 
         // 3-4. Route + Deliver per recipient
         foreach (var recipient in resolved)
@@ -86,7 +87,9 @@ internal sealed partial class NotificationPipeline(
                 }
                 else
                 {
-                    suppressedByPreferences = true;
+                    // Preferences were checked above: the router found no registered channel this address belongs to.
+                    noChannelForAddress = true;
+                    LogNoChannelForAddress(recipient.Address, recipient.Channel);
                 }
 
                 continue;
@@ -181,8 +184,12 @@ internal sealed partial class NotificationPipeline(
                 ? "No notification was sent: every channel was suppressed by the recipient's preferences."
                 : noAddressForOverride
                     ? $"No notification was sent: no resolved recipient has an address for the overridden channels ({request.ChannelOverride})."
-                    : "No notification was sent: no delivery channel is registered for this application. "
-                      + "Register one (for example AddSmtp or AddWebhook) when configuring notifications.";
+                    : noChannelForAddress && channelFactory.GetRegisteredChannels().Count > 0
+                        ? "No notification was sent: no registered channel reaches the resolved recipients' addresses "
+                          + $"(registered: {string.Join(", ", channelFactory.GetRegisteredChannels())}). An address is delivered only "
+                          + "on the channels its ResolvedRecipient.Channel names."
+                        : "No notification was sent: no delivery channel is registered for this application. "
+                          + "Register one (for example AddSmtp or AddWebhook) when configuring notifications.";
 
             LogNothingDelivered(reason);
             NotificationsDiagnostics.NotificationsFailed.Add(1);
@@ -268,6 +275,9 @@ internal sealed partial class NotificationPipeline(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Recipient {Address} resolved for {Channel} has no address for the overridden channels {Override} — skipping")]
     private partial void LogNoAddressForOverride(string address, NotificationChannel channel, NotificationChannel @override);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recipient {Address} resolved for {Channel} has no registered channel to be delivered on — skipping")]
+    private partial void LogNoChannelForAddress(string address, NotificationChannel channel);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Channel {Channel} is not registered — skipping")]
     private partial void LogChannelNotRegistered(NotificationChannel channel);

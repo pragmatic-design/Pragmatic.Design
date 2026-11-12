@@ -46,14 +46,23 @@ The `DefaultRecipientResolver` handles direct addresses (email, phone, webhook).
 
 ### 3. Route
 
-`INotificationRouter.Route` determines which channels to use for each resolved recipient. The `DefaultNotificationRouter` applies priority-based logic:
+`INotificationRouter.Route` determines which channels to use for each resolved recipient. The `DefaultNotificationRouter`
+chooses only among the channels the recipient's address belongs to: its `ResolvedRecipient.Channel`, narrowed to the
+registered ones. Priority decides how many of those it uses:
 
-| Priority | Strategy |
+| Priority | Strategy, among the registered channels the address belongs to |
 |----------|----------|
-| `Critical` | Combine all registered channels (OR all flags) |
-| `High` | Email + Push (if registered), fallback to first registered |
-| `Normal` | Recipient's resolved channel, or email fallback |
-| `Low` | Email only (digest candidate), or first registered |
+| `Critical` | All of them |
+| `High` | The preferred channel, Email and Push among them; all of them when none of those is |
+| `Normal` | All of them |
+| `Low` | One: the preferred channel, else Email (digest candidate), else the first |
+
+An address is never handed to a channel it does not belong to: a `Critical` notification to an e-mail address is one
+e-mail, even with SMS and webhooks registered. A notification reaches several channels through several addresses, one
+resolved recipient each (`EmailAddress` and `PhoneNumber` on the same `NotificationRecipient` resolve to two). The rule is
+the same for every channel, `Push` and `InApp` included: a resolver whose push channel looks the user up by e-mail address
+says so, by resolving that address for `Email | Push` (the channel is a flags value). A recipient no registered channel
+reaches is skipped and logged; when none is reached, the result fails and says so.
 
 Before routing, preferences are checked:
 - If `Preferences.Enabled` is `false`, returns `NotificationChannel.None` (skip)
