@@ -32,14 +32,14 @@ using Pragmatic.Persistence.Entity;
 
 [Entity]
 [Resource("reservations")]
-[HasNotes<Reservation>]
+[HasNotes]
 public partial class Reservation : IEntity
 {
     public string GuestName { get; set; } = "";
 }
 ```
 
-`HasNotesAttribute<TParent>` is generic (arity 1): pass the parent entity type, e.g. `[HasNotes<Reservation>]`. `[Resource(...)]` is required for endpoints; without it the generator reports `PRAG2601` and skips endpoint generation.
+`[HasNotes]` goes on the parent entity itself and takes no type argument: the entity it sits on is the parent. `[Resource(...)]` is required for endpoints; without it the generator reports `PRAG2601` and skips endpoint generation.
 
 The generator creates:
 
@@ -65,7 +65,7 @@ Typical consumers also reference:
 ```csharp
 [Entity]
 [Resource("reservations")]
-[HasNotes<Reservation>(MaxLength = 4000, EditWindowMinutes = 60)]
+[HasNotes(MaxLength = 4000, EditWindowMinutes = 60)]
 public partial class Reservation : IEntity
 {
     public string GuestName { get; set; } = "";
@@ -103,15 +103,18 @@ Unlike comments, notes are always internal and always require an author.
 
 ## Generated Endpoints
 
-For `[HasNotes<Reservation>]` on `Reservation` (`[Resource("reservations")]`), endpoints are generated under `/api/{boundary}/reservations/{reservationId}/notes` (OpenAPI tag `Notes`). `{boundary}` is the lowercased boundary name from `[BelongsTo<TBoundary>]`, or `v1` if none. Generation requires `HasPersistenceEFCore` + `HasActions`; end-to-end compilation tests confirm `[HasNotes]` produces working code.
+For `[HasNotes]` on `Reservation` (`[Resource("reservations")]`), endpoints are generated under `/api/{boundary}/reservations/{reservationId}/notes` (OpenAPI tag `Notes`). `{boundary}` is the lowercased boundary name from `[BelongsTo<TBoundary>]`, or `v1` if none. Generation requires `HasPersistenceEFCore` + `HasActions`; end-to-end compilation tests confirm `[HasNotes]` produces working code.
 
 | Verb | Route | Maps to | Request body | Response |
 |------|-------|---------|--------------|----------|
-| `POST` | `/notes` | `AddReservationNoteAction` | `{ "content": string }` | `201`, new note `Guid` |
+| `POST` | `/notes` | `AddReservationNoteAction` | the content, as a JSON string: `"Allergic to peanuts"` | `201`, new note `Guid` |
 | `GET` | `/notes` | `ListReservationNotesQuery` (paged) |none| `ReservationNoteDto[]` (paged; `Page`/`PageSize`) |
 | `GET` | `/notes/{noteId}` | `GetReservationNoteAction` |none| `ReservationNoteDto` |
-| `PUT` | `/notes/{noteId}` | `UpdateReservationNoteAction` | `{ "content": string }` | `204` |
+| `PUT` | `/notes/{noteId}` | `UpdateReservationNoteAction` | the new content, as a JSON string | `204` |
 | `DELETE` | `/notes/{noteId}` | `DeleteReservationNoteAction` |none| `204` (soft-delete) |
+
+The body is the content itself, a JSON string, not an object around it: `NoteEndpointTests` in the
+Showcase adds and updates a note that way.
 
 `ReservationNoteDto` shape: `Id`, `ReservationId`, `Content`, `AuthorId`, `AuthorName`, `IsEdited`, `CreatedAt`, `UpdatedAt?`. The route parameter `{reservationId}` binds to the action/query `ReservationId` property; `{noteId}` binds to `NoteId`.
 
@@ -152,7 +155,7 @@ Use one or both depending on the domain.
 
 ## Status
 
-**Functional** within 1.0.0-alpha: the `[HasNotes<TParent>]` trait with its entity, actions and
+**Functional** within 1.0.0-alpha: the `[HasNotes]` trait with its entity, actions and
 endpoints, tested end to end in the Showcase. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 ## Documentation
