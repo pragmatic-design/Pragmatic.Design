@@ -9,8 +9,9 @@ the ones two reference applications build and run on every gate,
 `examples/invoicing/tests/Invoicing.IntegrationTests/Infrastructure/`, with their names replaced by the
 placeholders and the container's image passed to its constructor (those suites pin Testcontainers
 4.2.0, this template 4.15.0). The contract-test files and the translation file were built and run as
-written here against the `1.0.0-alpha.3` packages. The rest is the structure those two applications
-have.
+written here against the `1.0.0-alpha.3` packages, and so was the host's `Program.cs`, with a module
+holding a tenant entity and a `[RequirePermission]` create (403 without the permission, 201 with it).
+The rest is the structure those two applications have.
 
 Placeholders: `{{App}}` (e.g. `Contoso`), `{{Boundary}}` (e.g. `Students`), a boundary's module is
 `{{App}}.{{Boundary}}`. Repeat the boundary library per bounded context.
@@ -135,6 +136,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <PackageVersion Include="Pragmatic.Migrations" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.Internationalization.AspNetCore" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.Identity.AspNetCore" Version="$(PragmaticVersion)" />
+    <PackageVersion Include="Pragmatic.MultiTenancy.AspNetCore" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.Endpoints.OpenApi" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.SourceGenerator" Version="$(PragmaticVersion)" />
     <PackageVersion Include="Pragmatic.Testing" Version="$(PragmaticVersion)" />
@@ -318,6 +320,9 @@ files, `Support(…)` and the default culture. With `en.json` alone every reques
     <!-- Who calls: users → this package; deliberately none → drop it and put [AnonymousHost] on
          HostModule. With neither, the build stops on PRAG1695. -->
     <PackageReference Include="Pragmatic.Identity.AspNetCore" />
+    <!-- Only when a module has a tenant entity (ITenantEntity): UseMultiTenancy. Without it that host
+         does not start ("Unable to resolve service for type 'Pragmatic.MultiTenancy.ITenantContext'"). -->
+    <PackageReference Include="Pragmatic.MultiTenancy.AspNetCore" />
     <PackageReference Include="Pragmatic.Endpoints.OpenApi" />               <!-- /openapi/v1.json -->
     <PackageReference Include="Pragmatic.SourceGenerator">
       <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
@@ -336,10 +341,12 @@ the host; see *Optional feature packages* below for what each one adds.
 ## Host: Program.cs
 
 ```csharp
+using Pragmatic.Authorization;
 using Pragmatic.Composition.Hosting;
 using Pragmatic.Identity;
 using Pragmatic.Internationalization;
 using Pragmatic.Migrations.Extensions;
+using Pragmatic.MultiTenancy;
 
 await PragmaticApp.RunAsync(args, app =>
 {
@@ -355,6 +362,24 @@ await PragmaticApp.RunAsync(args, app =>
     // [AnonymousHost] drops this line and the package.
     if (app.Environment.IsDevelopment())
         app.UseDevelopmentIdentity();
+
+    // Who may do what. Without this line the first [RequirePermission] answers 500 ("No service for
+    // type 'Pragmatic.Authorization.IUserAuthorization' has been registered"), not 403. ⚠️ Trusting the
+    // "permission" claims is for Development only, where they come from the X-User-Permissions header
+    // anyone can send. With a real scheme, map each role to its permissions instead
+    // (authz.MapRole<…>(), pragmatic-use-authorization), so a token cannot grant itself one.
+    app.UseAuthorization(authz => authz.TrustPermissionClaims = app.Environment.IsDevelopment());
+
+    // Only when a module has a tenant entity (ITenantEntity); drop it and the package otherwise. The
+    // header is for Development and the tests: anyone can send it, so a real scheme reads the tenant
+    // from the token (pragmatic-use-multitenancy has the guards that go with it).
+    app.UseMultiTenancy(tenancy =>
+    {
+        if (app.Environment.IsDevelopment())
+            tenancy.UseHeader();
+        else
+            tenancy.UseClaim();
+    });
 }).ConfigureAwait(false);
 ```
 
@@ -566,8 +591,12 @@ public sealed class ContractAppFixture : IAsyncLifetime
         _factory = new {{App}}WebFactory(_database);
 
         // Each generated test sets the caller on its own request (the development identity headers),
-        // so the client carries none.
-        PragmaticContractHost.Client = _factory.CreateClient();
+        // so the client carries none. A tenant it does not set, except in the isolation test, whose
+        // own header wins over this one: with a tenant entity and no tenant here, the generated
+        // create and permission tests fail. Drop the line when no module has one.
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Tenant-Id", "contract-tenant");
+        PragmaticContractHost.Client = client;
     }
 
     public async Task DisposeAsync()
@@ -644,8 +673,8 @@ the host.
 | `messaging` (bus / outbox / saga) | `Pragmatic.Messaging` | `Pragmatic.Messaging` + `.Channels` or `.RabbitMQ` (+ `.EFCore` for outbox) |
 | `jobs` (background / recurring) | `Pragmatic.Jobs` | `Pragmatic.Jobs` (+ `.EFCore` for distributed) |
 | `caching` (`[Cacheable]`/`[InvalidatesCache]`) | `Pragmatic.Caching` | none (wired from the module's declaration) |
-| `multiTenancy` | n/a | `Pragmatic.MultiTenancy.AspNetCore` (tenant resolution middleware) |
-| roles and permissions | `Pragmatic.Authorization` (already there through `Pragmatic.Actions`) | `Pragmatic.Identity.AspNetCore` (already there, unless `[AnonymousHost]`) + a real scheme |
+| `multiTenancy` | n/a | `Pragmatic.MultiTenancy.AspNetCore`, already in the host above with `UseMultiTenancy` for a module with tenant entities |
+| roles and permissions | `Pragmatic.Authorization` (already there through `Pragmatic.Actions`) | `Pragmatic.Identity.AspNetCore` (already there, unless `[AnonymousHost]`) + `UseAuthorization` (above) + a real scheme |
 
 ## Build & run
 
