@@ -63,7 +63,7 @@ The SG applies these rules when generating property configuration:
 | C# Type | Generated Configuration | Notes |
 |---------|------------------------|-------|
 | `string`, `byte[]` | `.IsRequired()` if not nullable | `.HasMaxLength(n)` if Pragmatic.Validation's `[MaxLength(n)]` is present, whatever the setter. DataAnnotations' `[MaxLength]` and `[StringLength]` declare no length |
-| `decimal` | `.HasPrecision(18, 2)` | Default precision for monetary values |
+| `decimal` | `.HasPrecision(p, s)` if `[Precision(p, s)]` (`Pragmatic.Persistence.Entity`) is present, whatever the setter | Without it the migrated column is `numeric(18,2)` / `decimal(18,2)`. EF Core's own `[Precision]` declares nothing to the generator |
 | `byte[]` (RowVersion) | `.IsRowVersion()` | Only for `[ConcurrencyAware]` entities |
 | `enum` | Stored as `int` | Default EF Core behavior |
 | `DateTimeOffset` | `.IsRequired()` if not nullable | Audit fields: `CreatedAt` is required, `UpdatedAt` is optional |

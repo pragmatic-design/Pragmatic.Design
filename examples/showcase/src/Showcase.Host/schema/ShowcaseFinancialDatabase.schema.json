@@ -175,7 +175,7 @@
         },
         {
           "name": "PenaltyRate",
-          "sqlType": "numeric(18,2)",
+          "sqlType": "numeric(18,4)",
           "isNullable": true,
           "isPrimaryKey": false,
           "defaultValue": null,
@@ -677,5 +677,5 @@
   "databaseName": "ShowcaseFinancialDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Financial",
-  "hash": "1fcee16a9cbe"
+  "hash": "d1da6af6d012"
 }

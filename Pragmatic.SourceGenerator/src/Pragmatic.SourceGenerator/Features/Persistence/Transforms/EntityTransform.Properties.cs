@@ -131,6 +131,7 @@ internal static partial class EntityTransform
                 isRequiredForCreate = false;
 
             var renamedFrom = GetRenamedFrom(prop);
+            var precision = ColumnPrecision.Of(prop);
 
             builder.Add(new PropertyMetadataModel
             {
@@ -151,6 +152,8 @@ internal static partial class EntityTransform
                 RenamedFrom = renamedFrom,
                 ColumnName = GetColumnName(prop),
                 MaxLength = ColumnLength.Of(prop),
+                Precision = precision?.Precision,
+                Scale = precision?.Scale,
                 WireName = Core.WireNameReader.Read(prop),
                 ValueObjectColumns = ComputeValueObjectColumns(prop)
             });

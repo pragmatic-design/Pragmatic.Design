@@ -5,7 +5,7 @@ namespace Pragmatic.Persistence.Sql.Planning;
 
 /// <summary>
 ///     Widens a string parameter whose value is longer than the size it was typed with, before a write runs, so the value reaches the
-///     database whole (#717).
+///     database whole (#717); and a decimal one whose value has more decimals than its scale (#731).
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -27,11 +27,48 @@ internal static class SqlParameterFit
     {
         foreach (DbParameter parameter in parameters)
         {
+            if (FitDecimal(parameter))
+                continue;
             if (parameter.DbType != DbType.String || parameter.Size <= 0 || parameter.Value is not string text || text.Length <= parameter.Size)
                 continue;
             parameter.Size = dialect == SqlDialect.Oracle ? text.Length : -1;
         }
     }
+
+    /// <summary>
+    ///     A decimal parameter carries the scale of its value when it has more decimals than the parameter was typed with, and goes back to
+    ///     the typed (18,2) when a later value fits it (#731). True when <paramref name="parameter" /> is a decimal one.
+    /// </summary>
+    /// <remarks>
+    ///     A scale is also what SqlClient rounds a value to before sending it: a rate of 1.2345 written to a <c>decimal(18,4)</c> column
+    ///     arrived as 1.23, and a filter on it compared 7.06 for 7.0625. The precision widens to the most a decimal column has, so the integer
+    ///     digits the narrower type held still fit beside the extra decimals; the column itself rounds to what it declares, as it would
+    ///     for any statement.
+    /// </remarks>
+    private static bool FitDecimal(DbParameter parameter)
+    {
+        if (parameter.DbType != DbType.Decimal)
+            return false;
+        if (parameter.Value is decimal value && value.Scale > TypedDecimalScale)
+        {
+            parameter.Precision = WidenedDecimalPrecision;
+            parameter.Scale = (byte)value.Scale;
+        }
+        else if (parameter.Scale != TypedDecimalScale)
+        {
+            parameter.Precision = TypedDecimalPrecision;
+            parameter.Scale = TypedDecimalScale;
+        }
+
+        return true;
+    }
+
+    /// <summary>The precision and scale <see cref="SqlValue.Configure" /> types a decimal parameter with.</summary>
+    private const byte TypedDecimalPrecision = 18;
+
+    private const byte TypedDecimalScale = 2;
+
+    private const byte WidenedDecimalPrecision = 38;
 
     /// <summary>
     ///     Fits each string parameter of a plan's command, which the session keeps and reuses, to the value bound this call: widened when the
@@ -46,6 +83,8 @@ internal static class SqlParameterFit
     {
         foreach (DbParameter parameter in parameters)
         {
+            if (FitDecimal(parameter))
+                continue;
             if (parameter.DbType != DbType.String || parameter.Value is not string text)
                 continue;
             if (text.Length > TypedStringSize)

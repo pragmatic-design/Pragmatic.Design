@@ -41,8 +41,16 @@ internal static class SchemaTypes
         _ => type,
     };
 
-    public static string Of(ColumnModel column, SqlDialect dialect, int? maxLength, bool keyed)
+    /// <summary>The column's type; a decimal with a declared <paramref name="precision" /> is that precision and scale (#731), (18,2) without.</summary>
+    public static string Of(ColumnModel column, SqlDialect dialect, int? maxLength, bool keyed, (int Precision, int Scale)? precision = null)
     {
+        if (precision is { } declared && dialect != SqlDialect.Sqlite && IsDecimal(column))
+            return dialect switch
+            {
+                SqlDialect.PostgreSql => $"numeric({declared.Precision},{declared.Scale})",
+                SqlDialect.Oracle => $"NUMBER({declared.Precision},{declared.Scale})",
+                _ => $"decimal({declared.Precision},{declared.Scale})",
+            };
         if (dialect is SqlDialect.MySql or SqlDialect.Oracle)
             return OfMySqlOrOracle(column, dialect == SqlDialect.MySql, maxLength, keyed);
         if (column.VectorDimensions is { } dimensions)
@@ -192,6 +200,10 @@ internal static class SchemaTypes
                && mark.ConstructorArguments[0].Value is int length ? length : null);
 
     private const string NativeMaxLength = "Pragmatic.Persistence.Sql.Attributes.MaxLengthAttribute";
+
+    /// <summary>A decimal column, read through its store type as every other branch of <see cref="Of" /> is: a converter's store decides.</summary>
+    private static bool IsDecimal(ColumnModel column)
+        => EntityModel.ArrayReader(column.Store, out _) is null && EntityModel.Unwrap(column.Store).SpecialType == SpecialType.System_Decimal;
 
     /// <summary><c>[Indexed(Unique = true)]</c> on the property.</summary>
     public static bool IsUnique(IPropertySymbol? property)

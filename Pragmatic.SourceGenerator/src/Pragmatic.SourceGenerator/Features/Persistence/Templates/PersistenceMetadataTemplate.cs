@@ -403,7 +403,8 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                 builder.Property("maxLength", prop.MaxLength.Value);
             if (prop.Precision is > 0)
                 builder.Property("precision", prop.Precision.Value);
-            if (prop.Scale is > 0)
+            // A scale of 0 is a declared one (an integer amount), not the absence of one: dropped, the host read the default 2.
+            if (prop.Precision is > 0 && prop.Scale is >= 0)
                 builder.Property("scale", prop.Scale.Value);
             if (prop.DefaultValueExpression is not null)
                 builder.Property("defaultValueExpression", prop.DefaultValueExpression);

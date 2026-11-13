@@ -106,6 +106,40 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
         typedFee.OriginalAmount.Should().Be(300.00m);
     }
 
+    /// <summary>
+    ///     A rate declared <c>[Precision(18, 4)]</c> keeps its four decimals through EF Core and the migrated column (#731): every
+    ///     decimal was <c>numeric(18,2)</c>, and 0.1275 came back 0.13.
+    /// </summary>
+    [Fact]
+    public async Task Inheritance_CancellationFee_KeepsTheFourDecimalsOfItsRate()
+    {
+        var invoiceId = await CreateInvoiceViaReservationAsync();
+
+        using (var scope = Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+            var fee = new CancellationFee();
+            db.Set<Fee>().Add(fee);
+            var entry = db.Entry(fee);
+            entry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
+            entry.Property(nameof(Fee.Amount)).CurrentValue = 38.25m;
+            entry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
+            entry.Property(nameof(Fee.Reason)).CurrentValue = "Partial cancellation";
+            entry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.1275m;
+            entry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 300.00m;
+            await db.SaveChangesAsync();
+        }
+
+        // A fresh context: the value read is the column's, not the one the change tracker kept.
+        using var readScope = Services.CreateScope();
+        var reader = readScope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        var stored = await reader.Set<CancellationFee>()
+            .IgnoreQueryFilters()
+            .SingleAsync(f => f.InvoiceId == invoiceId && f.Reason == "Partial cancellation");
+
+        stored.PenaltyRate.Should().Be(0.1275m);
+    }
+
     // =========================================================================
     // TPH: Polymorphic query returns both derived types
     // =========================================================================
