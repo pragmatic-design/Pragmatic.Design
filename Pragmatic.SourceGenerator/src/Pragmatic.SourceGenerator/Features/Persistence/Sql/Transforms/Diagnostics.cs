@@ -292,6 +292,20 @@ internal static class Diagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     A warning: on MySQL a table's <c>varchar</c> and <c>varbinary</c> columns add up past the 65,535 bytes a row holds, so the database
+    ///     refuses to create it ("Row size too large"). Measured on MySQL 8.4 (#712): two <c>varchar(10000)</c> in utf8mb4 are refused. Each
+    ///     column is within its own limit, so no column type changes: the owner's decision (2026-11-13) is to report the row, naming the
+    ///     columns, rather than move a column to <c>longtext</c> because of its neighbours.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MySqlRowTooWide = new(
+        "PRAG3040",
+        "A table's row is wider than MySQL allows",
+        "On MySQL the row of {0} would take at least {1} bytes in its char, varchar and varbinary columns ({2}), past the 65,535 a row holds, and the database refuses to create the table: shorten a [MaxLength], or lengthen one past the column limit so it becomes longtext or longblob, which the row does not hold",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor InGeneratedSource = new(
         "PRAG3032",
         "A chain the Sql engine generated did not translate",

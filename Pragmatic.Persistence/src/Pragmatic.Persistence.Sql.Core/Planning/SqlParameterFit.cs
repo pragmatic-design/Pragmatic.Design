@@ -33,6 +33,31 @@ internal static class SqlParameterFit
         }
     }
 
+    /// <summary>
+    ///     Fits each string parameter of a plan's command, which the session keeps and reuses, to the value bound this call: widened when the
+    ///     value is longer than the size it was typed with, and back to that size when a later value fits it (#712).
+    /// </summary>
+    /// <remarks>
+    ///     A plan's reads bound a value past 4000 characters at the typed size and compared its prefix, so a filter on a long text found
+    ///     nothing on SQL Server, PostgreSQL and SQLite. Widening alone would leave the kept command unbounded for every later call, and SQL
+    ///     Server's <c>CONTAINS</c> refuses an <c>nvarchar(max)</c> argument: so the size goes back as soon as the value fits.
+    /// </remarks>
+    public static void FitReused(DbParameterCollection parameters, SqlDialect dialect)
+    {
+        foreach (DbParameter parameter in parameters)
+        {
+            if (parameter.DbType != DbType.String || parameter.Value is not string text)
+                continue;
+            if (text.Length > TypedStringSize)
+                parameter.Size = dialect == SqlDialect.Oracle ? text.Length : -1;
+            else if (parameter.Size is -1 or > TypedStringSize)
+                parameter.Size = TypedStringSize;
+        }
+    }
+
+    /// <summary>The size <see cref="SqlValue.Configure" /> types a string parameter with.</summary>
+    private const int TypedStringSize = 4000;
+
     /// <summary>The same for every command of a provider batch.</summary>
     public static void Widen(DbBatch batch, SqlDialect dialect)
     {

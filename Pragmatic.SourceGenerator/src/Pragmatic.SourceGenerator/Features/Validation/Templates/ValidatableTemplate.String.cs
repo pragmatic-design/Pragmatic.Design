@@ -94,8 +94,12 @@ internal sealed partial class ValidatableTemplate
     /// <remarks>
     ///     ⚠️ The three length rules apply to "a string or collection", as their documentation says,
     ///     so <c>.Length</c> cannot be emitted unconditionally: on a <c>List&lt;T&gt;</c> that is a
-    ///     <c>CS1061</c> from inside a generated file.
+    ///     <c>CS1061</c> from inside a generated file. An array is a collection with a <c>Length</c>:
+    ///     its <c>Count</c> is LINQ's method, and <c>Scan.Count &gt; 3000</c> was a <c>CS0019</c> for
+    ///     every <c>[MaxLength]</c> on a <c>byte[]</c> (#712).
     /// </remarks>
     private static string SizeOf(PropertyValidationModel prop)
-        => prop.IsCollection ? $"{prop.PropertyName}.Count" : $"{prop.PropertyName}.Length";
+        => prop.IsCollection && !prop.PropertyType.TrimEnd('?').EndsWith("[]", System.StringComparison.Ordinal)
+            ? $"{prop.PropertyName}.Count"
+            : $"{prop.PropertyName}.Length";
 }

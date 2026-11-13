@@ -124,8 +124,13 @@ internal static partial class SqlInterceptorGenerator
         context.RegisterSourceOutput(context.CompilationProvider.Combine(features), static (spc, pair) => ReportSagaUniquenessLeftOut(spc, pair.Left, pair.Right));
         context.RegisterSourceOutput(context.CompilationProvider.Combine(features), static (spc, pair) => ReportOpenStretchUniquenessLeftOut(spc, pair.Left, pair.Right));
 
-        return entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
+        var engineSchemas = entities.Collect().Combine(context.CompilationProvider).Combine(shapeSources).Combine(features)
             .Select(static (all, ct) => PragmaticSchemas(all.Left.Left.Right, all.Left.Left.Left, all.Left.Right, all.Right, ct));
+
+        // MySQL's row limit, on the schema exactly as it is written for it (PRAG3040).
+        context.RegisterSourceOutput(engineSchemas, static (spc, schemas) => ReportMySqlRowTooWide(spc, schemas));
+
+        return engineSchemas;
     }
 
     /// <summary>One operator of a chain, in the order the chain applies them.</summary>

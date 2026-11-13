@@ -86,7 +86,12 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
   it migrates an EF Core database, and on demand. A column's length is Pragmatic.Validation's `[MaxLength(n)]` on a
   string or binary property, read the same way by both engines and by EF Core's branch: the rule and the column are
   one attribute, and DataAnnotations' `[MaxLength]`/`[StringLength]` bound nothing. On SQL Server, MySQL and Oracle
-  a binary with `[MaxLength(n)]` is a binary of that length, so an index can hold it.
+  a binary with `[MaxLength(n)]` is a binary of that length, so an index can hold it. A length past what the
+  database creates is its large type: past 4,000 characters `nvarchar(max)` on SQL Server and `CLOB` on Oracle,
+  past 16,383 `longtext` on MySQL; a binary past 8,000 bytes `varbinary(max)`, past 2,000 `BLOB` on Oracle, past
+  65,535 `longblob` on MySQL. ⚠️ On Oracle a `CLOB` compares with no `=` and is no index key, so a filter by
+  equality on such a column is refused there. On MySQL a row holds 65,535 bytes across its sized columns, and a
+  table past it is reported (**PRAG3040**).
 - **Documents engine.** A boundary gets the generated `{Boundary}DocSchema`: its collections, their indexes, their
   Cosmos DB partition keys and composite indexes. A Pragmatic host applies it at start through the boundary's
   session. What the backend cannot apply stops the start, and so does a boundary whose session nothing

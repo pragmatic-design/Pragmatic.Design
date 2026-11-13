@@ -316,6 +316,8 @@ public partial class TheSqlEnginesSchemaIsPragmaticsTests(ITestOutputHelper outp
     {
         "PostgreSql" => "namespace Npgsql { public sealed class NpgsqlConnection { } }",
         "SqlServer" => "namespace Microsoft.Data.SqlClient { public sealed class SqlConnection { } }",
+        "MySql" => "namespace MySqlConnector { public sealed class MySqlConnection { } }",
+        "Oracle" => "namespace Oracle.ManagedDataAccess.Client { public sealed class OracleConnection { } }",
         _ => "namespace Microsoft.Data.Sqlite { public sealed class SqliteConnection { } }",
     };
 
