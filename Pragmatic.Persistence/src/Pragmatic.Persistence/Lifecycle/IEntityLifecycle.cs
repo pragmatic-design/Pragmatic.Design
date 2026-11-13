@@ -14,8 +14,12 @@ public interface IEntityLifecycle<in T> where T : class
     void OnCreating(T entity, LifecycleContext context) { }
 
     /// <summary>
-    ///     Called before saving — last chance to modify the entity.
-    ///     Runs after validation.
+    ///     Called at the save, for every added or modified entity of the type — last chance to modify it.
     /// </summary>
+    /// <remarks>
+    ///     Whatever wrote the entity (a mutation, a domain action, a job, a seed) and on every engine: the save runs it, once,
+    ///     after the audit, owner, scope and tenant stamps and before the lifecycle events. Inside a mutation that is after
+    ///     its validation.
+    /// </remarks>
     void OnSaving(T entity, LifecycleContext context) { }
 }

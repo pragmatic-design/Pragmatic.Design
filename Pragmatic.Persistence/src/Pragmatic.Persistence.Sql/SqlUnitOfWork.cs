@@ -27,6 +27,7 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     private readonly IDomainEventDispatcher? _dispatcher;
     private readonly IReadOnlyList<ISqlSavePhase> _phases;
     private readonly global::Pragmatic.Persistence.Scopes.DataScopeRule[] _scopeRules;
+    private readonly EntitySavingHooksRunner? _savingHooks;
     private TransactionState _state;
     private int _nestedSavepoints;
 
@@ -39,10 +40,12 @@ public sealed partial class SqlUnitOfWork : IUnitOfWork
     /// <param name="dispatcher">Dispatches the domain events of a save no invoker orchestrates; without one they stay on the entities.</param>
     /// <param name="phases">The modules' phases (the audit log, the outboxes), after the unit of work's own.</param>
     /// <param name="scopeRules">The data scope rules registered (<c>AddDataScopeRule</c>): the Materialized and Hybrid ones are written on the saved rows.</param>
+    /// <param name="savingHooks">The entities' <c>OnSaving</c> hooks, run on the added and modified rows after the stamps.</param>
     public SqlUnitOfWork(SqlSession session, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, ITenantContext? tenant = null, bool requireTenant = false,
         IEnumerable<IGeneratedValueBinding>? generatedValues = null, IDomainEventDispatcher? dispatcher = null, IEnumerable<ISqlSavePhase>? phases = null,
-        IEnumerable<global::Pragmatic.Persistence.Scopes.DataScopeRule>? scopeRules = null)
+        IEnumerable<global::Pragmatic.Persistence.Scopes.DataScopeRule>? scopeRules = null, EntitySavingHooksRunner? savingHooks = null)
     {
+        _savingHooks = savingHooks;
         _scopeRules = scopeRules?.ToArray() ?? [];
         Session = session;
         _timeProvider = timeProvider ?? TimeProvider.System;

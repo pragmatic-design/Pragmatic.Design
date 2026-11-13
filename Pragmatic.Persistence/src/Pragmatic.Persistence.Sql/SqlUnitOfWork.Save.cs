@@ -34,7 +34,7 @@ public sealed partial class SqlUnitOfWork
         if (written.Count == 0 && links.Count == 0)
             return 0;
         var added = written.Where(e => e.State == SqlEntryState.Added).ToList();
-        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
+        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
 
         // The rows staged without a read are checked in the save's transaction: the caller may write only a row it may see.
         var checks = written.Where(e => e.Visible is not null).ToList();
@@ -179,7 +179,7 @@ public sealed partial class SqlUnitOfWork
         var userId = _currentUser?.IdOrNull();
         var entries = rows.Select(row => new SqlEntry(row, SqlEntryState.Added, Session.Dialect)).ToList();
         await SaveSteps.FillGeneratedValuesAsync(entries, _generatedValues, now, userId, ct).ConfigureAwait(false);
-        SavePhases.Apply(entries, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
+        SavePhases.Apply(entries, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
         return entries;
     }
 

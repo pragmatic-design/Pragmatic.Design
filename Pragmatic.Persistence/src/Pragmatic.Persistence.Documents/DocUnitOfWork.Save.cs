@@ -35,7 +35,7 @@ public sealed partial class DocUnitOfWork
         var written = _entries.Where(e => e.State != DocEntryState.Unchanged).ToList();
         if (written.Count == 0)
             return 0;
-        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
+        SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
 
         var own = Session.Transaction is null && await Session.SupportsTransactionsAsync(ct).ConfigureAwait(false) ? Session.BeginTransaction() : null;
         try

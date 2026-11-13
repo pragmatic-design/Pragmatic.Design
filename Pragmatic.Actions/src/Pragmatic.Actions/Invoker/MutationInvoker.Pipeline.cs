@@ -293,9 +293,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             }
         }
 
-        // 5c. IEntityLifecycle<TEntity>.OnSaving — last chance to modify the entity, after all validation
-        // and before persistence. Runs for both create and update.
-        InvokeOnSavingHooks(entity, BuildLifecycleContext());
+        // IEntityLifecycle<TEntity>.OnSaving is not called here: it runs at the save, on every engine, for every
+        // added or modified entity (EntitySavingHooksInterceptor, the engines' save phases). Called here as well,
+        // a mutation would run it twice; called only here, every other write path skipped it (#644).
 
         // 6. Persist
         LogPersistingEntity(mutationType);

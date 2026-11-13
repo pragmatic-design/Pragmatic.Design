@@ -49,8 +49,9 @@ HTTP POST /api/v1/invoices
 │     │ 5.  L2 entity validation, change-aware │   │
 │     │ 5b. [Invariant] methods                │   │
 │     │ 5c. Temporal constraints (on create)   │   │
-│     │ 5d. IEntityLifecycle.OnSaving          │   │
 │     │ 6.  Persist, and on create, presets     │   │
+│     │     (the save runs IEntityLifecycle    │   │
+│     │      .OnSaving, on every write path)   │   │
 │     │ 7+8 Events + cache, after the commit    │   │
 │     └────────────────────────────────────────┘   │
 └───────────────────┬──────────────────────────────┘

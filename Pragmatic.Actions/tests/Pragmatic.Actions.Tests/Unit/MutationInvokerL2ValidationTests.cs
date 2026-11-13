@@ -323,10 +323,12 @@ public class MutationInvokerL2ValidationTests
     }
 
     [Fact]
-    public async Task Create_InvokesEntityLifecycleHooks_OnCreatingThenOnSaving()
+    public async Task Create_InvokesOnCreating_AndLeavesOnSavingToTheSave()
     {
-        // IEntityLifecycle<T>.OnCreating/OnSaving are documented as framework-invoked; without a
-        // pipeline call site, implementing the interface would do nothing. Prove both fire, in order.
+        // IEntityLifecycle<T>.OnCreating is documented as framework-invoked, before validation, and this is its
+        // call site. OnSaving is not: it runs at the save, on every engine and every write path (#644), so the
+        // invoker calling it too would run it twice. This unit of work is a fake and saves nothing, so OnSaving
+        // must not appear; the engines' tests measure it at the save.
         var lifecycle = new RecordingLifecycle();
         using var provider = BuildProvider(s => s.AddSingleton<IEntityLifecycle<ValidatableProduct>>(lifecycle));
 
@@ -334,7 +336,7 @@ public class MutationInvokerL2ValidationTests
         var result = await invoker.InvokeAsync(new CreateProductMutation { Name = "Widget", Price = 5m });
 
         result.IsSuccess.Should().BeTrue();
-        lifecycle.Calls.Should().Equal("OnCreating", "OnSaving");
+        lifecycle.Calls.Should().Equal("OnCreating");
     }
 
     [Fact]

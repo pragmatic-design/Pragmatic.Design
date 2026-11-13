@@ -59,7 +59,7 @@ public sealed partial class DocUnitOfWork
         var userId = _currentUser?.IdOrNull();
         var entries = documents.Select(document => new DocEntry(document, DocEntryState.Added)).ToList();
         await SaveSteps.FillGeneratedValuesAsync(entries, _generatedValues, now, userId, ct).ConfigureAwait(false);
-        SavePhases.Apply(entries, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules);
+        SavePhases.Apply(entries, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
     }
 
     /// <summary>The writes in a transaction of their own where the server runs them and the session has none; the store's refusals as Pragmatic's.</summary>

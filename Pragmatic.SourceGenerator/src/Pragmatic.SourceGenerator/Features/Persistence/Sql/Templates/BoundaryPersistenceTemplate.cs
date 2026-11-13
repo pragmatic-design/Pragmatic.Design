@@ -53,7 +53,8 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         AppendLine($"        {Services}.AddKeyedScoped<{e.UnitOfWork}>(services, {key}, (sp, k) => new {e.UnitOfWork}(");
         AppendLine($"            {Keyed}.GetRequiredKeyedService<{e.Session}>(sp, k), Get<global::System.TimeProvider>(sp),");
         AppendLine($"            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), {requireTenant}, All<global::Pragmatic.Persistence.Lifecycle.IGeneratedValueBinding>(sp),");
-        AppendLine($"            Get<global::Pragmatic.Events.IDomainEventDispatcher>(sp), Phases<{e.Phase}>(sp, k), All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp)));");
+        AppendLine($"            Get<global::Pragmatic.Events.IDomainEventDispatcher>(sp), Phases<{e.Phase}>(sp, k), All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp),");
+        AppendLine("            new global::Pragmatic.Persistence.Lifecycle.EntitySavingHooksRunner(sp, All<global::Pragmatic.Persistence.Lifecycle.IEntitySavingHooks>(sp))));");
         AppendLine($"        {Services}.AddKeyedScoped<global::Pragmatic.Persistence.Repository.IUnitOfWork>(services, {key},");
         AppendLine($"            (sp, k) => {Keyed}.GetRequiredKeyedService<{e.UnitOfWork}>(sp, k));");
         foreach (var type in model.EntityTypes)
@@ -62,6 +63,9 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"            sp => new {type}.{e.Repository}({Keyed}.GetRequiredKeyedService<{e.UnitOfWork}>(sp, {key})));");
             AppendLine($"        {Services}.AddScoped<global::Pragmatic.Persistence.Repository.IReadRepository<{type}>>(services,");
             AppendLine($"            sp => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Pragmatic.Persistence.Repository.IRepository<{type}>>(sp));");
+            // Its OnSaving hooks, run by the unit of work at the save (#644): one typed adapter per entity, so the save finds them by type.
+            AppendLine("        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services,");
+            AppendLine($"            global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Lifecycle.IEntitySavingHooks, global::Pragmatic.Persistence.Lifecycle.EntitySavingHooks<{type}>>());");
         }
 
         // A [PragmaticUser]'s lookup, which its generated resolver reads through: the read repository over the boundary's session.
