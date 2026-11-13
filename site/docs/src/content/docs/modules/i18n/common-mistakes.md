@@ -71,7 +71,16 @@ var grandTotal = orderTotal + shippingFee; // $115.00
 // Option B: Convert first (use your exchange rate service)
 var convertedFee = exchangeService.Convert(shippingFee, CurrencyCode.USD);
 var grandTotal = orderTotal + convertedFee;
+
+// Option C: the amounts come from a request, so the currencies may differ. Add through the Result-returning
+// member (Pragmatic.Result.Monetary), which answers a mismatch as 422 CURRENCY_MISMATCH instead of a 500
+Result<Money, CurrencyMismatchError> total = orderTotal.Add(shippingFee);
 ```
+
+The operators throw because a mismatch there is a programmer error. An amount the caller sent is not
+yours to vouch for, and an exception thrown from an endpoint answers 500: use `Add`, `Subtract` and
+`Compare` from `Pragmatic.Result.Monetary` (in the `Pragmatic.Result` package) for those, and return the
+result.
 
 **Why:** Currency conversion is a business decision with rate sources, rounding rules, and audit trails. The `Money` type deliberately does not support implicit conversion. If you need cross-currency arithmetic, convert explicitly through your exchange rate service first, then add the results in the same currency.
 
