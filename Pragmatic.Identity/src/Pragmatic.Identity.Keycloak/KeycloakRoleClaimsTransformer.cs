@@ -26,6 +26,10 @@ public sealed class KeycloakRoleClaimsTransformer(
         if (principal.Identity is not ClaimsIdentity identity)
             return Task.FromResult(principal);
 
+        var opts = keycloakOptions.Value;
+        if (!opts.MapRealmRoles)
+            return Task.FromResult(principal);
+
         var realmAccess = principal.FindFirst(RealmAccessClaim);
         if (realmAccess is null)
             return Task.FromResult(principal);
@@ -33,7 +37,6 @@ public sealed class KeycloakRoleClaimsTransformer(
         // Write to the configured role claim type rather than ClaimTypes.Role — the rest of the
         // pipeline (NormalizeClaimType / CachedPermissionResolver) keys off IdentityOptions.RoleClaimType.
         var roleClaimType = identityOptions.Value.RoleClaimType;
-        var opts = keycloakOptions.Value;
 
         foreach (var role in ExtractRealmRoles(realmAccess.Value))
             if (IsRoleAllowed(role, opts) && !identity.HasClaim(roleClaimType, role))

@@ -40,6 +40,15 @@ public sealed class KeycloakOptions
     /// </summary>
     public string? RolePrefix { get; set; }
 
+    /// <summary>
+    ///     Whether the realm's roles (<c>realm_access</c>) are mapped into the internal role claim at all.
+    ///     Default <see langword="true" />, filtered by <see cref="AllowedRoles" /> and <see cref="RolePrefix" />.
+    ///     <see langword="false" /> maps none of them, for an application whose roles come from somewhere else
+    ///     (Authorization.Management, for one): the two filters cannot say that, since left empty they mean
+    ///     every role. The roles the identity already carries are left as they are.
+    /// </summary>
+    public bool MapRealmRoles { get; set; } = true;
+
     /// <summary>The OIDC authority for this realm.</summary>
     public string Authority => $"{BaseUrl.TrimEnd('/')}/realms/{Realm}";
 }
