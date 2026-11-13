@@ -36,6 +36,12 @@ internal sealed record NavigationMetadataModel
     public string OnDelete { get; init; } = "NoAction";
 
     /// <summary>
+    ///     What a soft delete of the target does to this entity, when the relation declares it
+    ///     (Restrict, NoAction, SetNull, ClientSetNull, Cascade). Carried on the dependent's navigation only.
+    /// </summary>
+    public string? OnSoftDelete { get; init; }
+
+    /// <summary>
     ///     Whether this relationship is required.
     /// </summary>
     public bool IsRequired { get; init; }

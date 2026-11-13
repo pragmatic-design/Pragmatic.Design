@@ -42,6 +42,7 @@ internal static class RelationTransform
                 InverseProperty = info.InverseProperty,
                 ForeignKeyProperty = fkName,
                 OnDelete = info.OnDelete,
+                OnSoftDelete = info.OnSoftDelete,
                 IsRequired = info.IsRequired,
                 IsPrincipal = info.IsPrincipal,
                 JoinTable = info.JoinTable,

@@ -62,6 +62,11 @@ names a *missing* row is still `DB_CONSTRAINT` (400): there the request is wrong
 DELETE /api/absence-kinds/{id}  →  409 {"code":"ENTITY_IN_USE","entityType":"AbsenceKind","usedBy":"Allowance"}
 ```
 
+A **soft** delete never reaches the constraint, so `OnDelete` does not refuse it: retiring a
+`[SoftDelete]` row its referrers still point at succeeds, and keeps their history. To refuse it, declare
+`OnSoftDelete = DeleteBehavior.Restrict` on the relation: the same 409 `ENTITY_IN_USE`, from the EF Core
+engine's save, while a live referrer exists.
+
 A Delete mutation exposed with `[Endpoint]` answers **204 and no body** unless it declares
 `[ReturnsDto<T>]` (or a key `ReturnType`): the removed row is not an answer, and serialised it is every
 public property the entity has.

@@ -145,7 +145,8 @@ public partial class Order { /* ... */ }
 | the constructor argument | all | The navigation property's name. Without it, the target type's name (pluralised for collections) |
 | `Inverse` | all | The navigation on the other entity that is the other end of *this* relationship |
 | `ForeignKey` | `ManyToOne`, `OneToOne` | The FK property's name. Defaults to `{NavigationName}Id` |
-| `OnDelete` | `ManyToOne`, `OneToOne`, `OneToMany` | See [Delete Behavior](#delete-behavior) |
+| `OnDelete` | `ManyToOne`, `OneToOne`, `OneToMany` | What a **physical** delete does. See [Delete Behavior](#delete-behavior) |
+| `OnSoftDelete` | `ManyToOne`, `OneToOne`, `OneToMany` | What a **soft** delete does, when declared. See [Soft delete and the referrers](#soft-delete-and-the-referrers) |
 | `Required` | `ManyToOne` | Defaults to `true`. `false` makes the FK nullable and the join a `LEFT JOIN` |
 | `IsPrincipal` | `OneToOne` | Which side owns the relationship |
 | `JoinTable` | `ManyToMany` | Names the auto-generated join table |
@@ -258,6 +259,39 @@ that exists on its own, so the default protects the parent instead.
 
 The consequence to keep in mind: the two directions of *the same* relationship are not interchangeable
 in this one respect. Which side you write it on changes what a delete does.
+
+## Soft delete and the referrers
+
+A soft delete is an update: the row stays, flagged, and the database's foreign key never sees it. So
+`OnDelete` does not govern it. `OnDelete = Restrict` on an `[SoftDelete]` employee refuses the
+*erasure*, and still lets the employee be retired while their leave requests point at them, which is what
+keeping a history means. By default a soft delete leaves the referrers exactly as they are.
+
+When the referrers matter, say what the soft delete does to them with `OnSoftDelete`:
+
+```csharp
+[Entity]
+[SoftDelete]
+[Relation.OneToMany<Book>.WithNavigation("Books", OnSoftDelete = DeleteBehavior.Restrict)]
+[Relation.OneToMany<Label>.WithNavigation("Labels", OnSoftDelete = DeleteBehavior.SetNull)]
+public partial class Shelf : IEntity { }
+```
+
+| `OnSoftDelete` | What the soft delete does |
+|---|---|
+| not declared | Nothing to the referrers |
+| `Restrict`, `NoAction` | Refused while a **live** referrer exists: 409 `ENTITY_IN_USE` (`DbInUseError`), and nothing is written. A referrer already soft-deleted does not count |
+| `SetNull`, `ClientSetNull` | Empties the referrers' key in the same save. The key must be optional (`Required = false` on the child), or **PRAG0640** |
+| `Cascade` | Soft-deletes the referrers with the principal's `DeletedAt`, and applies their own `OnSoftDelete` in turn. The referrer must be `[SoftDelete]`, or **PRAG0641** |
+
+It applies on every path that soft-deletes: a generated delete mutation, a repository's `Remove`, a
+hand-written `context.Remove`. It is read like `OnDelete`: from the parent's collection when it declares
+one, from the child otherwise.
+
+⚠️ **EF Core only, for now.** The Sql and documents engines do not apply `OnSoftDelete` yet.
+
+`[SoftDelete(Cascade = true)]` is the older, coarser switch: it soft-deletes the children along every
+navigation whose `OnDelete` is `Cascade`, and no longer reaches a child the relation restricts.
 
 ## Related guides
 

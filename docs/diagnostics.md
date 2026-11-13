@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **479** |
-| Distinct IDs | **479** |
+| Declared descriptors | **481** |
+| Distinct IDs | **481** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -222,7 +222,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0556`.
 
-### Persistence.EFCore: 44 in use · range `PRAG0600`–`PRAG0699`
+### Persistence.EFCore: 46 in use · range `PRAG0600`–`PRAG0699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -258,6 +258,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0637` | `LogicKeyDeclaredTwice` | Error | The domain key is declared in two places |
 | `PRAG0638` | `StateMachineMultipleInitialStates` | Error | State machine has more than one initial state |
 | `PRAG0639` | `ReadNavigationTargetIsNotRead` | Warning | The read entity navigates to a type this boundary does not have |
+| `PRAG0640` | `SoftDeleteSetNullOnRequiredKey` | Error | OnSoftDelete = SetNull needs an optional key |
+| `PRAG0641` | `SoftDeleteCascadeToHardEntity` | Error | OnSoftDelete = Cascade needs a soft-deletable referrer |
 | `PRAG0651` | `PropertyTypeMayNeedConverter` | Warning | Property may need value converter |
 | `PRAG0652` | `ProtectedValueNeedsCryptographyEFCore` | Error | A protected value needs Pragmatic.Cryptography.EFCore |
 | `PRAG0680` | `PreferEntityCreate` | Warning | Use Entity.Create() factory instead of new |
@@ -271,7 +273,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0688` | `BulkUpdateSkipsInterceptors` | Warning | Bulk update skips the interceptors the entity declares |
 | `PRAG0690` | `InstantsAreNotNormalisedToUtc` | Warning | Stored instants are not normalised to UTC |
 
-*Free inside the used span:* `PRAG0601`, `PRAG0603`, `PRAG0604`, `PRAG0605`, `PRAG0606`, `PRAG0607`, `PRAG0608`, `PRAG0609`, `PRAG0640`, `PRAG0641`, `PRAG0642`, `PRAG0643`, `PRAG0644`, `PRAG0645`, `PRAG0646`, `PRAG0647`, `PRAG0648`, `PRAG0649`, `PRAG0650`, `PRAG0653`, `PRAG0654`, `PRAG0655`, `PRAG0656`, `PRAG0657`, `PRAG0658`, `PRAG0659`, `PRAG0660`, `PRAG0661`, `PRAG0662`, `PRAG0663`, `PRAG0664`, `PRAG0665`, `PRAG0666`, `PRAG0667`, `PRAG0668`, `PRAG0669`, `PRAG0670`, `PRAG0671`, `PRAG0672`, `PRAG0673`, `PRAG0674`, `PRAG0675`, `PRAG0676`, `PRAG0677`, `PRAG0678`, `PRAG0679`, `PRAG0689`.
+*Free inside the used span:* `PRAG0601`, `PRAG0603`, `PRAG0604`, `PRAG0605`, `PRAG0606`, `PRAG0607`, `PRAG0608`, `PRAG0609`, `PRAG0642`, `PRAG0643`, `PRAG0644`, `PRAG0645`, `PRAG0646`, `PRAG0647`, `PRAG0648`, `PRAG0649`, `PRAG0650`, `PRAG0653`, `PRAG0654`, `PRAG0655`, `PRAG0656`, `PRAG0657`, `PRAG0658`, `PRAG0659`, `PRAG0660`, `PRAG0661`, `PRAG0662`, `PRAG0663`, `PRAG0664`, `PRAG0665`, `PRAG0666`, `PRAG0667`, `PRAG0668`, `PRAG0669`, `PRAG0670`, `PRAG0671`, `PRAG0672`, `PRAG0673`, `PRAG0674`, `PRAG0675`, `PRAG0676`, `PRAG0677`, `PRAG0678`, `PRAG0679`, `PRAG0689`.
 
 *First free after the last used:* `PRAG0691`.
 

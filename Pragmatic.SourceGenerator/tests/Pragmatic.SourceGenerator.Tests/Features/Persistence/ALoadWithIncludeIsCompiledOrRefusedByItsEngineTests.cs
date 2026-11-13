@@ -294,7 +294,9 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         {
             [Entity]
             [SoftDelete(Cascade = true)]
-            [Relation.OneToOne<Plaque>.WithNavigation("Plaque")]
+            // OnDelete = Cascade: a cascade follows only a relation that cascades (#617), and a one-to-one
+            // restricts by default.
+            [Relation.OneToOne<Plaque>.WithNavigation("Plaque", OnDelete = DeleteBehavior.Cascade)]
             public partial class Room : IEntity { public string Code { get; set; } = ""; }
 
             [Entity]

@@ -278,6 +278,8 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0637` | Error | `[LogicKey]` is declared both on the class and on properties. One entity has one domain key, declared in one place: keep the class form when a part is a generated key, otherwise mark the properties. |
 | `PRAG0638` | Error | A state machine marks more than one value with `[InitialState]`. An entity has one entry state: leave it on exactly one enum value. |
 | `PRAG0639` | Warning | An entity read here navigates to a type this boundary neither owns nor reads, so that type is ignored in the generated model and any query naming the navigation fails at run time. Declare `[ReadAccess<T>]`, or stop reading through it. |
+| `PRAG0640` | Error | A relation says `OnSoftDelete = SetNull`, but the referrer's key is required, so the soft delete would have to write null into a column that cannot hold it. Declare `Required = false` on the referrer's `ManyToOne`, or choose `Restrict` or `Cascade`. |
+| `PRAG0641` | Error | A relation says `OnSoftDelete = Cascade` towards an entity that is not `[SoftDelete]`, so there is no flag to raise on the referrers. Mark the referrer `[SoftDelete]`, or choose `Restrict` or `SetNull`. |
 | `PRAG0651` | Warning | A property type may need an EF Core value converter. Register a `ValueConverter`, or use a supported primitive. | Generator |
 | `PRAG0652` | Error | A `ProtectedValue` property, and `Pragmatic.Cryptography.EFCore` is not referenced: the generated configuration stores one through `ProtectedValueConverter`, which lives there. Add the reference, or store something else. | Generator |
 | `PRAG0680` | Warning | An entity is created with `new` instead of the generated `Entity.Create()` factory. | Analyzer |

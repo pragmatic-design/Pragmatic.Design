@@ -93,7 +93,8 @@ internal static class RelationPairing
             childNavigation,
             RelationForeignKeyNaming.Name(manyToOne?.ForeignKeyProperty, childNavigation, parentTypeName),
             manyToOne?.IsRequired ?? true,
-            oneToMany?.OnDelete ?? manyToOne?.OnDelete ?? "NoAction");
+            oneToMany?.OnDelete ?? manyToOne?.OnDelete ?? "NoAction",
+            oneToMany?.OnSoftDelete ?? manyToOne?.OnSoftDelete);
     }
 
     /// <summary>
@@ -156,7 +157,8 @@ internal static class RelationPairing
                 PrincipalTypeName(owner, mine, principal)),
             dependentDeclaration?.IsRequired ?? true,
             principalDeclaration?.OnDelete ?? dependentDeclaration?.OnDelete ?? "NoAction",
-            ambiguous);
+            ambiguous,
+            principalDeclaration?.OnSoftDelete ?? dependentDeclaration?.OnSoftDelete);
     }
 
     /// <summary>

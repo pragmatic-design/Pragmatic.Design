@@ -59,9 +59,29 @@ public static class Relation
             public string? ForeignKey { get; set; }
 
             /// <summary>
-            ///     The delete behavior for this relationship.
+            ///     What a physical delete of the principal does to the dependent.
             /// </summary>
+            /// <remarks>
+            ///     A soft delete of a <c>[SoftDelete]</c> principal is an update, and this does not govern it:
+            ///     declare <see cref="OnSoftDelete" /> for that.
+            /// </remarks>
             public DeleteBehavior OnDelete { get; set; } = DeleteBehavior.Restrict;
+
+            /// <summary>
+            ///     What a soft delete of the principal does to the dependent, when declared.
+            /// </summary>
+            /// <remarks>
+            ///     <para>
+            ///         <c>Restrict</c>/<c>NoAction</c> refuse the soft delete while a live dependent exists
+            ///         (409 <c>ENTITY_IN_USE</c>); <c>SetNull</c>/<c>ClientSetNull</c> empty the dependents'
+            ///         key in the same save; <c>Cascade</c> soft-deletes them with the principal.
+            ///     </para>
+            ///     <para>
+            ///         Not declared, a soft delete leaves the dependents as they are: only an argument
+            ///         written here changes it. Applied by the EF Core engine.
+            ///     </para>
+            /// </remarks>
+            public DeleteBehavior OnSoftDelete { get; set; }
 
             /// <summary>
             ///     Whether this side is the principal (owns the relationship).
@@ -105,9 +125,29 @@ public static class Relation
             public string? Inverse { get; set; }
 
             /// <summary>
-            ///     The delete behavior for this relationship.
+            ///     What a physical delete of this entity does to the children.
             /// </summary>
+            /// <remarks>
+            ///     A soft delete of a <c>[SoftDelete]</c> entity is an update, and this does not govern it:
+            ///     declare <see cref="OnSoftDelete" /> for that.
+            /// </remarks>
             public DeleteBehavior OnDelete { get; set; } = DeleteBehavior.Cascade;
+
+            /// <summary>
+            ///     What a soft delete of this entity does to the children, when declared.
+            /// </summary>
+            /// <remarks>
+            ///     <para>
+            ///         <c>Restrict</c>/<c>NoAction</c> refuse the soft delete while a live child exists
+            ///         (409 <c>ENTITY_IN_USE</c>); <c>SetNull</c>/<c>ClientSetNull</c> empty the children's
+            ///         key in the same save; <c>Cascade</c> soft-deletes them with this entity.
+            ///     </para>
+            ///     <para>
+            ///         Not declared, a soft delete leaves the children as they are: only an argument
+            ///         written here changes it. Applied by the EF Core engine.
+            ///     </para>
+            /// </remarks>
+            public DeleteBehavior OnSoftDelete { get; set; }
         }
     }
 
@@ -156,9 +196,30 @@ public static class Relation
             public bool Required { get; set; } = true;
 
             /// <summary>
-            ///     The delete behavior for this relationship.
+            ///     What a physical delete of the target does to this entity.
             /// </summary>
+            /// <remarks>
+            ///     A soft delete of a <c>[SoftDelete]</c> target is an update, and this does not govern it:
+            ///     declare <see cref="OnSoftDelete" /> for that.
+            /// </remarks>
             public DeleteBehavior OnDelete { get; set; } = DeleteBehavior.Restrict;
+
+            /// <summary>
+            ///     What a soft delete of the target does to this entity, when declared.
+            /// </summary>
+            /// <remarks>
+            ///     <para>
+            ///         <c>Restrict</c>/<c>NoAction</c> refuse the soft delete while a live entity of this type
+            ///         points at the target (409 <c>ENTITY_IN_USE</c>); <c>SetNull</c>/<c>ClientSetNull</c>
+            ///         empty the key in the same save, which needs <c>Required = false</c>; <c>Cascade</c>
+            ///         soft-deletes these entities with the target.
+            ///     </para>
+            ///     <para>
+            ///         Not declared, a soft delete leaves these entities as they are: only an argument
+            ///         written here changes it. Applied by the EF Core engine.
+            ///     </para>
+            /// </remarks>
+            public DeleteBehavior OnSoftDelete { get; set; }
         }
     }
 

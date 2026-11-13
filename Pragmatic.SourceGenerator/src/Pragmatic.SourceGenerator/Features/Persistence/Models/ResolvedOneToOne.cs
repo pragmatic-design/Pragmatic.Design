@@ -22,4 +22,5 @@ internal sealed record ResolvedOneToOne(
     string ForeignKeyName,
     bool IsRequired,
     string OnDelete,
-    bool IsAmbiguous);
+    bool IsAmbiguous,
+    string? OnSoftDelete = null);

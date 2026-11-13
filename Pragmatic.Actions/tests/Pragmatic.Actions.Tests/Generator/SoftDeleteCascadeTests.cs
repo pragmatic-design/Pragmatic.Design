@@ -223,6 +223,42 @@ public class SoftDeleteCascadeTests : ActionsGeneratorTestBase
     }
 
     /// <summary>
+    ///     A cascade does not reach a child the relation restricts (#617).
+    /// </summary>
+    /// <remarks>
+    ///     The cascade read the relation's kind and never its <c>OnDelete</c>, so a parent with
+    ///     <c>Cascade = true</c> flagged a child whose declaration said it should hold the parent, before
+    ///     anything could refuse.
+    /// </remarks>
+    [Fact]
+    public void ACascadeDoesNotReachAChildTheRelationRestricts()
+    {
+        var restricted = Source.Replace(
+            "[Relation.OneToMany<Mention>]",
+            """[Relation.OneToMany<Mention>.WithNavigation("Mentions", OnDelete = DeleteBehavior.Restrict)]""");
+
+        restricted.Should().NotBe(Source, "the fixture must have been rewritten for the case to measure anything");
+
+        var invoker = GetGeneratedSource(RunGeneratorWithEntities(restricted), "MutationInvoker");
+
+        invoker.Should().NotContain("item.IsDeleted = true",
+            "a child the relation restricts is not deleted with its parent, softly or otherwise");
+    }
+
+    /// <summary>The control on the case above: the same named form, cascading, still reaches the child.</summary>
+    [Fact]
+    public void ACascadeStillReachesAChildTheRelationCascadesTo()
+    {
+        var cascading = Source.Replace(
+            "[Relation.OneToMany<Mention>]",
+            """[Relation.OneToMany<Mention>.WithNavigation("Mentions", OnDelete = DeleteBehavior.Cascade)]""");
+
+        var invoker = GetGeneratedSource(RunGeneratorWithEntities(cascading), "MutationInvoker");
+
+        invoker.Should().Contain("item.IsDeleted = true");
+    }
+
+    /// <summary>
     ///     A control: without <c>Cascade = true</c> the child is left alone.
     /// </summary>
     /// <remarks>
