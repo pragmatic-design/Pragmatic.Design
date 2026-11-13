@@ -513,9 +513,13 @@ services.AddScoped<IEntityLifecycle<Order>, OrderLifecycle>();
 | Hook | When | Use Case |
 |------|------|----------|
 | `OnCreating` | After construction, before validation | Set computed defaults, normalize data |
-| `OnSaving` | After validation, before `SaveChanges` | Final computed fields, cross-field consistency |
+| `OnSaving` | At the save, for every added or modified entity, after the audit and tenant stamps | Final computed fields, cross-field consistency |
 
 Both have a default empty implementation, so implement only the one you need.
+
+`OnSaving` runs at the save, whatever wrote the entity: a mutation, a domain action, a job or a seed, on the EF
+Core, Sql and documents engines alike, and once per save. A value derived there is never stale on a path that
+skipped it. `OnCreating` belongs to the mutation that constructs the entity, and runs before its validation.
 
 Both hooks receive a `LifecycleContext` with:
 - `Now`: current UTC time (uses `TimeProvider` for testability)

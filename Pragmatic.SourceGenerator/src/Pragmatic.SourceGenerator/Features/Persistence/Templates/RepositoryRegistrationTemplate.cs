@@ -63,7 +63,13 @@ internal sealed class RepositoryRegistrationTemplate : CSharpTemplate
             AppendLine($"        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<{repoFqn}>(services);");
             AppendLine($"        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::Pragmatic.Persistence.Repository.IRepository<{entityFqn}>>(services, sp => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{repoFqn}>(sp));");
             AppendLine($"        global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::Pragmatic.Persistence.Repository.IReadRepository<{entityFqn}>>(services, sp => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{repoFqn}>(sp));");
+            // Its OnSaving hooks (#644), found by type at the save by EntitySavingHooksInterceptor.
+            AppendLine($"        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Lifecycle.IEntitySavingHooks, global::Pragmatic.Persistence.Lifecycle.EntitySavingHooks<{entityFqn}>>());");
         }
+
+        // The interceptor that runs them, among the DI interceptors a library-mode context takes; once, whichever
+        // module's registration comes first.
+        AppendLine("        global::Pragmatic.Persistence.EFCore.Interceptors.EntitySavingHooksRegistration.AddEntitySavingHooksInterceptor(services);");
 
         AppendLine();
         AppendLine("        // Roll-up rules (#2) — implemented by the RollUp feature when [RollUp] is present; otherwise a no-op.");

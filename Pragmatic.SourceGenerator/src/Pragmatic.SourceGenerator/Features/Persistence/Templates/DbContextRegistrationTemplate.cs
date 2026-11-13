@@ -232,6 +232,17 @@ internal sealed class DbContextRegistrationTemplate : CSharpTemplate
                 DecreaseIndent();
             }
 
+            // The entities' OnSaving hooks (#644), after every stamp above so a hook reads them, and before the
+            // roll-ups and the lifecycle events, which read what the hook left. Here rather than in the mutation
+            // invoker: a domain action, a job or a seed saves past the invoker, and the hook ran only there.
+            AppendLine("new global::Pragmatic.Persistence.EFCore.Interceptors.EntitySavingHooksInterceptor(");
+            IncreaseIndent();
+            AppendLine("new global::Pragmatic.Persistence.Lifecycle.EntitySavingHooksRunner(sp, sp.GetServices<global::Pragmatic.Persistence.Lifecycle.IEntitySavingHooks>()),");
+            AppendLine("sp.GetService<global::System.TimeProvider>() ?? global::System.TimeProvider.System,");
+            AppendLine("sp.GetService<global::Pragmatic.Identity.ICurrentUser>(),");
+            AppendLine("sp.GetService<global::Pragmatic.MultiTenancy.ITenantContext>()),");
+            DecreaseIndent();
+
             // Roll-up (#2) sits BEFORE DomainEvents:
             // its owned transaction (relational aggregate increments) commits in SavedChanges before
             // the domain-event dispatch runs, so handlers in fresh scopes read committed data.
@@ -288,6 +299,20 @@ internal sealed class DbContextRegistrationTemplate : CSharpTemplate
 
             AppendLine("});");
             AppendLine();
+
+            // One typed adapter per entity, which the interceptor above finds by the saved entity's type:
+            // resolving IEntityLifecycle<T> for a runtime type would take reflection.
+            if (boundary.Entities.Length > 0)
+            {
+                Comment("OnSaving hooks: one adapter per entity, run by EntitySavingHooksInterceptor at the save");
+                foreach (var entity in boundary.Entities)
+                {
+                    var entityType = "global::" + entity.FullTypeName.Replace("global::", "");
+                    AppendLine("global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services,");
+                    AppendLine($"    global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Lifecycle.IEntitySavingHooks, global::Pragmatic.Persistence.Lifecycle.EntitySavingHooks<{entityType}>>());");
+                }
+                AppendLine();
+            }
 
             // [EnableEventOutbox]: register the delivery background service, options and capture interceptor.
             if (boundary.HasEventOutbox)

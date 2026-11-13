@@ -38,16 +38,6 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
     }
 
     /// <summary>
-    ///     Invokes every registered <see cref="IEntityLifecycle{T}.OnSaving"/> hook — the last chance to
-    ///     modify the entity, after validation and before persistence. No-op when none registered.
-    /// </summary>
-    private void InvokeOnSavingHooks(TEntity entity, LifecycleContext context)
-    {
-        foreach (var hook in _serviceProvider.GetServices<IEntityLifecycle<TEntity>>())
-            hook.OnSaving(entity, context);
-    }
-
-    /// <summary>
     ///     Builds a lifecycle context from available services (clock, user, tenant).
     /// </summary>
     private LifecycleContext BuildLifecycleContext()

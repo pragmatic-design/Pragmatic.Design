@@ -2,6 +2,7 @@ using Pragmatic.Authorization;
 using Pragmatic.Events;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Lifecycle;
 using Pragmatic.Persistence.Scopes;
 
 namespace Pragmatic.Persistence.Engines;
@@ -16,7 +17,7 @@ namespace Pragmatic.Persistence.Engines;
 /// </summary>
 internal static class SavePhases
 {
-    public static void Apply(IReadOnlyList<ISaveEntry> entries, DateTimeOffset now, string? userId, ITenantContext? tenant, bool requireTenant, CompiledScopeRuleRegistry compiledRules, IReadOnlyList<DataScopeRule>? scopeRules = null)
+    public static void Apply(IReadOnlyList<ISaveEntry> entries, DateTimeOffset now, string? userId, ITenantContext? tenant, bool requireTenant, CompiledScopeRuleRegistry compiledRules, IReadOnlyList<DataScopeRule>? scopeRules = null, EntitySavingHooksRunner? savingHooks = null)
     {
         Audit(entries, now, userId);
         SoftDelete(entries, now, userId);
@@ -24,7 +25,24 @@ internal static class SavePhases
         Scope(entries, userId);
         MaterializeScopes(entries, compiledRules, scopeRules ?? []);
         Tenant(entries, tenant, requireTenant);
+        RunSavingHooks(entries, savingHooks, now, userId, tenant);
         RaiseLifecycleEvents(entries);
+    }
+
+    /// <summary>
+    ///     The <c>OnSaving</c> hooks of the added and modified entities (<c>EntitySavingHooksInterceptor</c> on EF Core): after the stamps, so a
+    ///     hook reads them, and before the lifecycle events and the modules' phases, so they read what the hook left.
+    /// </summary>
+    private static void RunSavingHooks(IReadOnlyList<ISaveEntry> entries, EntitySavingHooksRunner? savingHooks, DateTimeOffset now, string? userId, ITenantContext? tenant)
+    {
+        if (savingHooks is null || savingHooks.IsEmpty)
+            return;
+        var context = new LifecycleContext { Now = now, UserId = userId, TenantId = tenant?.TenantId };
+        foreach (var entry in entries)
+        {
+            if (entry.IsAdded || entry.IsModified)
+                savingHooks.Run(entry.Entity, context);
+        }
     }
 
     /// <summary>
