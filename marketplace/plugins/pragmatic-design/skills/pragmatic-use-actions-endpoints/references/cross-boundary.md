@@ -50,8 +50,39 @@ bites) a hand-written service has no invoker, so it loses the permission check, 
 of work and the audit entry that the generated path applies. The symptom is a service full of
 `entity.SetXxx(…)` doing by hand what a mutation maps by name.
 
-A hand-written interface is still right for **data** another boundary needs to read (`ISupplierDirectory`
-returning contacts). The generated ones are for **operations**.
+**Reading another boundary's data is not a hand-written interface either.** `[Published]` beside the
+owner's `[Query<,>]` makes the generator write the boundary's read contract, `I{Boundary}Reads` (the
+interface, an implementation that runs the query, and its registration, in the owner's `.Contracts`
+namespace). The caller injects that contract, never the owner's entities and never a service of its
+own:
+
+```csharp
+// In Invoicing.Registry, the owner: what another boundary may read.
+[Query<Customer, CustomerBillingDetailsDto>(Single = true)]
+[Published]                                   // → IRegistryReads.GetCustomerBillingDetails(...)
+public partial class GetCustomerBillingDetailsQuery
+{
+    [Filter(MapTo = "PersistenceId")]
+    public Guid CustomerId { get; init; }
+}
+
+// In Invoicing.Billing, the caller (examples/Invoices/Mutations/CreateDraftInvoiceMutation.cs):
+// private IRegistryReads _registry = null!;   injected, as a mutation's dependency is
+var customer = await _registry
+    .GetCustomerBillingDetails(new GetCustomerBillingDetailsQuery { CustomerId = CustomerId }, ct)
+    .ConfigureAwait(false);
+
+if (customer.Count == 0)
+    return new CustomerNotFoundError();
+```
+
+It is a query, so it reads through the query's filters: the tenant filter still applies, and a customer
+of another company is simply not there to be read. `ContractName` and `MethodName` on
+`[Published]` rename the interface and the method.
+
+A hand-written interface is left for a read no query can declare: a computation over several of the
+owner's rows that is not a projection, or a source that is not a table. The generated contracts are
+`I{Boundary}Actions` for **operations** and `I{Boundary}Reads` for **declared reads**.
 
 The generated facade carries `[BoundaryActions<TBoundary>]`. You never write it: it is the marker that
 makes a cross-boundary call recognisable to the analyzer instead of matching an `I{X}Actions` name the
