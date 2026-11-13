@@ -412,3 +412,17 @@ public partial class Statement : IEntity
 
     public decimal Total { get; set; }
 }
+
+/// <summary>
+///     A long text and a long binary, past MySQL's and Oracle's column limits (#712): longtext and varbinary(3000) on MySQL, CLOB and BLOB on Oracle,
+///     written and read back whole by <see cref="ALongColumnPastTheLimitRoundTripsTests" />.
+/// </summary>
+[Entity]
+public partial class Archive : IEntity
+{
+    [Pragmatic.Validation.Attributes.MaxLength(20000)]
+    public string Body { get; set; } = "";
+
+    [Pragmatic.Validation.Attributes.MaxLength(3000)]
+    public byte[] Scan { get; set; } = [];
+}

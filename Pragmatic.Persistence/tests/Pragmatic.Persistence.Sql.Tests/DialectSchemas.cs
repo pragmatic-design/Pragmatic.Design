@@ -63,6 +63,7 @@ internal static class DialectSchemas
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
         var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
+                typeof(global::Pragmatic.Validation.Attributes.MaxLengthAttribute),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
                 typeof(global::Pragmatic.Actions.Attributes.BoundaryAttribute), typeof(global::Pragmatic.Events.Attributes.EnableEventOutboxAttribute),
                 typeof(global::Pragmatic.Events.Engines.Sql.EventOutboxRow),

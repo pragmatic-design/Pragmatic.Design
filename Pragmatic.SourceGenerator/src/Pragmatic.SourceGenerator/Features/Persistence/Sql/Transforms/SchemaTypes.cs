@@ -16,6 +16,18 @@ internal static class SchemaTypes
     private const int SqlServerMaxNVarCharLength = 4000;
     private const int SqlServerMaxVarBinaryLength = 8000;
 
+    /// <summary>MySQL's longest <c>varchar</c> in utf8mb4, in characters: measured on MySQL 8.4 (#712); a longer one is refused.</summary>
+    internal const int MySqlMaxVarCharLength = 16383;
+
+    /// <summary>MySQL's longest <c>varbinary</c>, in bytes: the vendor's documented column maximum, not measured (#712).</summary>
+    internal const int MySqlMaxVarBinaryLength = 65535;
+
+    /// <summary>Oracle's longest <c>VARCHAR2(n CHAR)</c> with <c>MAX_STRING_SIZE = STANDARD</c>: measured on Oracle 23 Free (#712).</summary>
+    internal const int OracleMaxVarChar2Length = 4000;
+
+    /// <summary>Oracle's longest <c>RAW</c> with <c>MAX_STRING_SIZE = STANDARD</c>: measured on Oracle 23 Free (#712).</summary>
+    internal const int OracleMaxRawLength = 2000;
+
     /// <summary>
     ///     <paramref name="type" />, the key of an <c>[Identity]</c> entity, as the dialect declares a key the database assigns: SQLite's
     ///     <c>INTEGER</c> key is the rowid already; elsewhere the identity is a column property, which Pragmatic.Migrations reads back as the
@@ -119,15 +131,23 @@ internal static class SchemaTypes
             return mySql ? "int" : "NUMBER(10)";
         if (type.SpecialType == SpecialType.System_String)
         {
+            // Past the longest the database creates, the large type (#712): MySQL refuses a longer varchar ("Column length too big") and
+            // Oracle a longer VARCHAR2 (ORA-00910). ⚠️ A CLOB compares with no = and is no index key, so a column declared past the limit
+            // cannot be filtered by equality on Oracle.
             if (maxLength is { } length)
-                return mySql ? $"varchar({length})" : $"VARCHAR2({length} CHAR)";
+                return mySql
+                    ? length > MySqlMaxVarCharLength ? "longtext" : $"varchar({length})"
+                    : length > OracleMaxVarChar2Length ? "CLOB" : $"VARCHAR2({length} CHAR)";
             return mySql ? keyed ? "varchar(255)" : "longtext" : keyed ? "VARCHAR2(450 CHAR)" : "VARCHAR2(4000 CHAR)";
         }
 
         var name = type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_Byte } ? "byte[]" : type.ToDisplayString();
-        // A binary with [MaxLength(n)] is one an index can hold: a BLOB is no index key on either (Pragmatic.Migrations' scenario 27).
+        // A binary with [MaxLength(n)] is one an index can hold: a BLOB is no index key on either (Pragmatic.Migrations' scenario 27). Past the
+        // longest the database creates, the large type (#712).
         if (name == "byte[]" && maxLength is { } binaryLength)
-            return mySql ? $"varbinary({binaryLength})" : $"RAW({binaryLength})";
+            return mySql
+                ? binaryLength > MySqlMaxVarBinaryLength ? "longblob" : $"varbinary({binaryLength})"
+                : binaryLength > OracleMaxRawLength ? "BLOB" : $"RAW({binaryLength})";
         return (name, mySql) switch
         {
             ("int", true) => "int",

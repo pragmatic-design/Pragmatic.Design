@@ -224,8 +224,19 @@ public sealed partial class SqlPlan<T> : ISqlPlan
         return command;
     }
 
-    /// <summary>The prepared command of this plan in the session, values bound; a plan with IN lists builds one per call where the list expands.</summary>
+    /// <summary>
+    ///     The prepared command of this plan in the session, values bound and each string parameter fitted to its value: a long one is not
+    ///     compared by its prefix (<see cref="SqlParameterFit.FitReused" />).
+    /// </summary>
     private DbCommand Command(in SqlQuery<T> query)
+    {
+        var command = Bound(query);
+        SqlParameterFit.FitReused(command.Parameters, query.Session.Dialect);
+        return command;
+    }
+
+    /// <summary>The prepared command of this plan in the session, values bound; a plan with IN lists builds one per call where the list expands.</summary>
+    private DbCommand Bound(in SqlQuery<T> query)
     {
         var session = query.Session;
         if (Dynamic)
