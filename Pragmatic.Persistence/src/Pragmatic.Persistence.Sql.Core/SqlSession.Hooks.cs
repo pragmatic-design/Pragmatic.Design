@@ -11,6 +11,7 @@ public sealed partial class SqlSession
 {
     internal async Task<int> RunAsync(DbCommand command, string origin, CancellationToken ct)
     {
+        Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
         if (Hooks is null)
             return await NonQueryAsync(command, ct).ConfigureAwait(false);
         var started = Begin(command, origin);
@@ -29,6 +30,7 @@ public sealed partial class SqlSession
 
     internal async Task<object?> ScalarAsync(DbCommand command, string origin, CancellationToken ct)
     {
+        Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
         if (Hooks is null)
             return await command.ExecuteScalarAsync(ct).ConfigureAwait(false);
         var started = Begin(command, origin);
@@ -48,6 +50,7 @@ public sealed partial class SqlSession
     /// <summary>The reader of a command; the hooks' time is the command's start (the rows are the caller's to read).</summary>
     internal async Task<DbDataReader> ReadAsync(DbCommand command, string origin, CancellationToken ct)
     {
+        Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
         if (Hooks is null)
             return await command.ExecuteReaderAsync(ct).ConfigureAwait(false);
         var started = Begin(command, origin);
@@ -67,6 +70,7 @@ public sealed partial class SqlSession
     /// <summary>The reader of a provider batch (pipelining): the hooks see no command.</summary>
     internal async Task<DbDataReader> ReadAsync(DbBatch batch, string origin, CancellationToken ct)
     {
+        Planning.SqlParameterFit.Widen(batch, Dialect);
         if (Hooks is null)
             return await batch.ExecuteReaderAsync(ct).ConfigureAwait(false);
         var started = Begin(null, origin);
