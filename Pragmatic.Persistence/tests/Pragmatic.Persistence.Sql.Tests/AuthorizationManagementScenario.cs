@@ -72,6 +72,12 @@ internal static class AuthorizationManagementScenario
         var provider = new ManagedRolePermissionProvider(store);
         Assert.Equal([permission, "reports.read", "reports.sign"], (await provider.ResolvePermissionsAsync(new TestUser(user))).Order(StringComparer.Ordinal));
 
+        // And its name is among the caller's roles, so a role check agrees with the permissions (#723): through the resolver the host
+        // registers, with the package's role provider.
+        CachedPermissionResolver Resolver() => new([provider], new TestUser(user), roleProviders: [new ManagedRoleProvider(store)]);
+        Assert.Contains(role, Resolver().Roles);
+        Assert.True(Resolver().IsInRole(role));
+
         // List: the package's stores answer what was created, globally (the caller has no tenant, so not acme's role).
         var roles = await new ManagedDynamicRoleStore(store, admin).GetAllAsync();
         var listed = Assert.Single(roles, r => r.Name == role);
@@ -84,6 +90,7 @@ internal static class AuthorizationManagementScenario
         var revoke = new RevokeRoleFromUser.Invoker(store, admin, cache, services);
         Assert.True((await revoke.InvokeAsync(new RevokeRoleFromUser { UserId = user, RoleName = role })).IsSuccess);
         Assert.Empty(await provider.ResolvePermissionsAsync(new TestUser(user)));
+        Assert.DoesNotContain(role, Resolver().Roles); // the control: a revoked role is no longer the caller's
         Assert.IsType<NotFoundError>((await revoke.InvokeAsync(new RevokeRoleFromUser { UserId = user, RoleName = role })).Error);
         Assert.Equal([user, user, user], cache.Evicted);
 
