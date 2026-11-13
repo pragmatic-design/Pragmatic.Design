@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Pragmatic.Identity;
+using Pragmatic.Persistence.EFCore.SoftDelete;
 using Pragmatic.Persistence.Entity;
 
 namespace Pragmatic.Persistence.EFCore.Interceptors;
@@ -31,6 +33,12 @@ namespace Pragmatic.Persistence.EFCore.Interceptors;
 ///     <para>
 ///         Erasure steps that must really delete say so with <see cref="SoftDeleteScope.Suspend" />.
 ///     </para>
+///     <para>
+///         <b>The referrers.</b> A relation that declares <c>OnSoftDelete</c> carries a
+///         <see cref="SoftDeleteReferrerRule" /> on its foreign key, and every entity this save soft-deletes
+///         has those rules applied (<see cref="SoftDeleteReferrers" />): refused, its referrers' key emptied,
+///         or the referrers soft-deleted with it. A relation that declares none is left alone.
+///     </para>
 /// </remarks>
 public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUser? currentUser = null)
     : SaveChangesInterceptor
@@ -40,24 +48,35 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        Convert(eventData);
+        var deleting = Convert(eventData);
+        if (deleting.Count > 0)
+            SoftDeleteReferrers.Apply(eventData.Context!, deleting);
+
         return base.SavingChanges(eventData, result);
     }
 
     /// <inheritdoc />
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        Convert(eventData);
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        var deleting = Convert(eventData);
+        if (deleting.Count > 0)
+            await SoftDeleteReferrers.ApplyAsync(eventData.Context!, deleting, cancellationToken).ConfigureAwait(false);
+
+        return await base.SavingChangesAsync(eventData, result, cancellationToken).ConfigureAwait(false);
     }
 
-    private void Convert(DbContextEventData eventData)
+    /// <summary>
+    ///     Turns deletes into flags, and returns every entity this save soft-deletes — the principals whose
+    ///     relations' <c>OnSoftDelete</c> applies.
+    /// </summary>
+    private List<EntityEntry> Convert(DbContextEventData eventData)
     {
+        var deleting = new List<EntityEntry>();
         if (eventData.Context is null || SoftDeleteScope.IsSuspended)
-            return;
+            return deleting;
 
         foreach (var entry in SaveEntries.All(eventData))
         {
@@ -67,6 +86,7 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
             if (entry.State == EntityState.Deleted)
             {
                 entry.State = EntityState.Modified;
+                deleting.Add(entry);
 
                 // Already flagged means the repository ran, with the shared instant a cascade depends on.
                 if (soft.IsDeleted)
@@ -75,6 +95,9 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
                 Stamp(soft);
                 continue;
             }
+
+            if (entry.State == EntityState.Modified && soft.IsDeleted && FlagRaisedInThisSave(entry))
+                deleting.Add(entry);
 
             // Flagged without an instant: a caller raised the flag itself rather than deleting, and
             // the instant is this interceptor's business on every path. ⚠️ The path that needed it:
@@ -87,7 +110,17 @@ public sealed class SoftDeleteInterceptor(TimeProvider timeProvider, ICurrentUse
             if (entry.State == EntityState.Modified && soft is { IsDeleted: true, DeletedAt: null })
                 Stamp(soft);
         }
+
+        return deleting;
     }
+
+    /// <summary>
+    ///     Whether the flag went from clear to raised in this save — the mutation's and the repository's
+    ///     own soft delete, which arrive as an update.
+    /// </summary>
+    private static bool FlagRaisedInThisSave(EntityEntry entry)
+        => entry.Metadata.FindProperty(nameof(ISoftDelete.IsDeleted)) is { } flag
+           && entry.Property(flag).OriginalValue is false;
 
     private void Stamp(ISoftDelete soft)
     {

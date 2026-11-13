@@ -23,4 +23,5 @@ internal sealed record ResolvedRelation(
     string ChildNavigationName,
     string ForeignKeyName,
     bool IsRequired,
-    string OnDelete);
+    string OnDelete,
+    string? OnSoftDelete = null);

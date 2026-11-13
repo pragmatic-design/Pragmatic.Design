@@ -9,7 +9,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 /// <summary>
 ///     Template for generating EF Core EntityConfiguration based on entity metadata.
 /// </summary>
-internal sealed class EntityConfigurationTemplate : CSharpTemplate
+internal sealed partial class EntityConfigurationTemplate : CSharpTemplate
 {
     private readonly EntityMetadataModel _model;
 
@@ -447,6 +447,7 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
         if (nav.IsRequired)
             AppendLine(".IsRequired()");
 
+        RenderSoftDeleteRule(nav);
         AppendLine($".OnDelete(global::Microsoft.EntityFrameworkCore.DeleteBehavior.{nav.OnDelete});");
         DecreaseIndent();
     }
@@ -468,6 +469,7 @@ internal sealed class EntityConfigurationTemplate : CSharpTemplate
         if (!string.IsNullOrEmpty(nav.ForeignKeyProperty))
             AppendLine($".HasForeignKey<{_model.TypeName}>(e => e.{nav.ForeignKeyProperty})");
 
+        RenderSoftDeleteRule(nav);
         AppendLine($".OnDelete(global::Microsoft.EntityFrameworkCore.DeleteBehavior.{nav.OnDelete});");
         DecreaseIndent();
     }

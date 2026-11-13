@@ -49,5 +49,11 @@ internal enum RelationDiagnosticKind
     DuplicateNavigationName,
 
     /// <summary>PRAG0616 — a join entity whose foreign keys the declaration does not name.</summary>
-    JoinEntityKeysNotNamed
+    JoinEntityKeysNotNamed,
+
+    /// <summary>PRAG0640 — <c>OnSoftDelete = SetNull</c> on a required key.</summary>
+    SoftDeleteSetNullOnRequiredKey,
+
+    /// <summary>PRAG0641 — <c>OnSoftDelete = Cascade</c> towards an entity that is not soft-deletable.</summary>
+    SoftDeleteCascadeToHardEntity
 }

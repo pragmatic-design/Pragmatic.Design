@@ -50,6 +50,7 @@ internal static partial class RelationValidator
         ValidateOneToOnePrincipal(entity, relations, diagnostics);
         ValidateInverses(entity, relations, diagnostics);
         ValidateJoinEntityKeys(entity, relations, diagnostics);
+        ValidateOnSoftDelete(entity, relations, diagnostics);
 
         return diagnostics.ToImmutable();
     }

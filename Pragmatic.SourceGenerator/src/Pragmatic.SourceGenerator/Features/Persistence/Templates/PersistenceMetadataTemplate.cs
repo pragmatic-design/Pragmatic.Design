@@ -461,6 +461,8 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                 builder.Property("foreignKeyProperty", nav.ForeignKeyProperty);
             if (nav.OnDelete != "NoAction")
                 builder.Property("onDelete", nav.OnDelete);
+            if (nav.OnSoftDelete is not null)
+                builder.Property("onSoftDelete", nav.OnSoftDelete);
             if (nav.IsRequired)
                 builder.Property("isRequired", true);
             if (nav.TargetFullTypeName is not null)
@@ -519,6 +521,8 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                 builder.Property("foreignKeyProperty", rel.ForeignKeyProperty);
             if (rel.OnDelete != "NoAction")
                 builder.Property("onDelete", rel.OnDelete);
+            if (rel.OnSoftDelete is not null)
+                builder.Property("onSoftDelete", rel.OnSoftDelete);
             if (!rel.IsRequired)
                 builder.Property("isRequired", false);
             if (rel.IsPrincipal)

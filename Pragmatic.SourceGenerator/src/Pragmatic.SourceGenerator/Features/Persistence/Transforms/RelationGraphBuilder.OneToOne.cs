@@ -110,6 +110,7 @@ internal static partial class RelationGraphBuilder
             InverseProperty = principalNavExists ? principalNavName : null,
             ForeignKeyProperty = fkName,
             OnDelete = resolved.OnDelete,
+            OnSoftDelete = resolved.OnSoftDelete,
             IsRequired = resolved.IsRequired,
             IsPrincipal = false,
             TargetBoundaryTypeFullName = rel.TargetBoundaryTypeFullName,

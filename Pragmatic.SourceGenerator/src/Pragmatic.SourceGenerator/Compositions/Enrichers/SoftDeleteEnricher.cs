@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Pragmatic.SourceGen;
 using Pragmatic.SourceGenerator.Compositions.Models;
 using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Actions.Models;
@@ -169,6 +170,13 @@ internal static class SoftDeleteEnricher
             // A [Lookup] is never a part of anything, and its reference member is [NotMapped] —
             // including it by name is an EF error at runtime, not a no-op.
             if (IsLookup(targetType))
+                continue;
+
+            // The cascade follows the relation's own delete behaviour: a child the relation says to
+            // Restrict (or to set null) is not deleted with its parent, softly or otherwise. Reaching it
+            // anyway flagged a row its declaration said should hold the parent, before anything could
+            // refuse (#617). What a soft delete does beyond the cascade is OnSoftDelete's business.
+            if (RelationDetection.ClassifyRelationAttribute(attr) is not { OnDelete: "Cascade" })
                 continue;
 
             string? navName = null;

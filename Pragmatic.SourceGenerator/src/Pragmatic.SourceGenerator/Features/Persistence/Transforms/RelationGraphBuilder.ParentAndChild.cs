@@ -96,6 +96,7 @@ internal static partial class RelationGraphBuilder
                     InverseProperty = collectionName,
                     ForeignKeyProperty = childFkName,
                     OnDelete = resolved.OnDelete,
+                    OnSoftDelete = resolved.OnSoftDelete,
                     IsRequired = resolved.IsRequired,
                     TargetBoundaryTypeFullName = owner.BoundaryTypeFullName,
                     IsFromRelationAttribute = true
@@ -175,6 +176,7 @@ internal static partial class RelationGraphBuilder
                 InverseProperty = rel.InverseProperty,
                 ForeignKeyProperty = fkName,
                 OnDelete = onDelete,
+                OnSoftDelete = resolved.OnSoftDelete,
                 IsRequired = resolved.IsRequired,
                 TargetBoundaryTypeFullName = rel.TargetBoundaryTypeFullName,
                 IsFromRelationAttribute = true,

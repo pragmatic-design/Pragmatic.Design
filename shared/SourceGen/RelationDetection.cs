@@ -123,6 +123,8 @@ internal static class RelationDetection
         string? inverse = null;
         string? foreignKey = null;
         string onDelete = GetDefaultOnDelete(relationType);
+        // No default: a soft delete leaves the referrers alone unless the relation says otherwise.
+        string? onSoftDelete = null;
         var isRequired = true;
         var isPrincipal = false;
         string? joinTable = null;
@@ -147,6 +149,9 @@ internal static class RelationDetection
                         break;
                     case "OnDelete":
                         onDelete = ResolveDeleteBehavior(kvp.Value);
+                        break;
+                    case "OnSoftDelete":
+                        onSoftDelete = ResolveDeleteBehavior(kvp.Value);
                         break;
                     case "Required":
                         if (kvp.Value.Value is bool reqVal)
@@ -182,7 +187,8 @@ internal static class RelationDetection
             IsPrincipal: isPrincipal,
             JoinTable: joinTable,
             LeftKey: leftKey,
-            RightKey: rightKey);
+            RightKey: rightKey,
+            OnSoftDelete: onSoftDelete);
     }
 
     /// <summary>
@@ -272,4 +278,5 @@ internal sealed record RelationInfo(
     bool IsPrincipal,
     string? JoinTable,
     string? LeftKey = null,
-    string? RightKey = null);
+    string? RightKey = null,
+    string? OnSoftDelete = null);

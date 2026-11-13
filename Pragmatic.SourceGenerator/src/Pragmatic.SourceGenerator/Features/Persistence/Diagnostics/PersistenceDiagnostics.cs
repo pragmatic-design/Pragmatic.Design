@@ -8,7 +8,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Diagnostics;
 ///     Diagnostic descriptors for Pragmatic.Persistence.EFCore source generator.
 ///     Range: PRAG0600-PRAG0699
 /// </summary>
-internal static class PersistenceDiagnostics
+internal static partial class PersistenceDiagnostics
 {
     // =========================================================================
     // Errors (PRAG0600-0649)
@@ -325,6 +325,8 @@ internal static class PersistenceDiagnostics
         RelationDiagnosticKind.InversePropertyNotFound => InversePropertyNotFound,
         RelationDiagnosticKind.InversePropertyTypeMismatch => InversePropertyTypeMismatch,
         RelationDiagnosticKind.JoinEntityKeysNotNamed => JoinEntityKeysNotNamed,
+        RelationDiagnosticKind.SoftDeleteSetNullOnRequiredKey => SoftDeleteSetNullOnRequiredKey,
+        RelationDiagnosticKind.SoftDeleteCascadeToHardEntity => SoftDeleteCascadeToHardEntity,
         _ => DuplicateNavigationName
     };
 

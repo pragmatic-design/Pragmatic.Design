@@ -42,6 +42,12 @@ internal sealed record RelationAttributeModel
     public string OnDelete { get; init; } = "NoAction";
 
     /// <summary>
+    ///     What a soft delete of the principal does to the dependents, when the declaration says;
+    ///     <c>null</c> leaves them as they are.
+    /// </summary>
+    public string? OnSoftDelete { get; init; }
+
+    /// <summary>
     ///     Whether this relationship is required.
     /// </summary>
     public bool IsRequired { get; init; } = true;
