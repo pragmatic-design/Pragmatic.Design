@@ -58,6 +58,11 @@ var price = Money.From(99.99m, CurrencyCode.EUR);
 price.Format();   // "99,99 €" (it-IT) / "€99.99" (en-US); same-currency arithmetic enforced
 ```
 
+**Amounts from a request: `Add`, not `+`.** The operators throw on two currencies, and an exception from
+an endpoint answers 500. `price.Add(other)` / `Subtract` / `Compare` (`using Pragmatic.Result.Monetary;`)
+return `Result<…, CurrencyMismatchError>`: return it, and a mismatch answers 422 `CURRENCY_MISMATCH` with
+`left` and `right`.
+
 **On the wire, an amount needs its converter, and you get it by putting the amount there.**
 `Money` travels as `{ "amount": 99.99, "currency": "EUR" }` through `MoneyJsonConverter` and its
 siblings, which `AddPragmaticInternationalization` installs into the HTTP JSON options. A host that
