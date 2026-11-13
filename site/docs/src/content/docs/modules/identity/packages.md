@@ -340,7 +340,7 @@ Three more packages sit on top of the five above:
 | Package | Entry point | What it adds |
 |---------|-------------|--------------|
 | `Pragmatic.Identity.Oidc` | `UseOidcAuthentication()` | Bearer tokens from any OpenID Connect provider, validated through its discovery document; its role claims feed the authorization pipeline |
-| `Pragmatic.Identity.Keycloak` | `UseKeycloakAuthentication()` | Keycloak on top of Oidc: `realm_access` roles, and an admin client for user provisioning and role synchronisation |
+| `Pragmatic.Identity.Keycloak` | `UseKeycloakAuthentication()` | Keycloak on top of Oidc: `realm_access` roles (narrowed by `AllowedRoles`/`RolePrefix`, or none with `MapRealmRoles = false`), and an admin client for user provisioning and role synchronisation |
 | `Pragmatic.Identity.Auditing` | `AddIdentitySecurityAuditing()` | Failed logins and lockouts recorded on the `Pragmatic.Audit` trail, pseudonymised: a failure against an unknown identity carries no subject reference |
 
 ## Package Selection Guide

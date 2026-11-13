@@ -101,6 +101,33 @@ public class KeycloakRoleClaimsTransformerTests
     }
 
     [Fact]
+    public async Task MapRealmRolesOff_MapsNoRealmRole()
+    {
+        var principal = PrincipalWith(new Claim("realm_access", """{"roles":["admin","billing"]}"""));
+        var options = new KeycloakOptions { MapRealmRoles = false };
+
+        var result = await Transformer(options).TransformAsync(principal);
+
+        Roles(result).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task MapRealmRolesOff_KeepsTheRolesTheIdentityAlreadyCarries()
+    {
+        var principal = PrincipalWith(
+            new Claim(ClaimTypes.Role, "managed"),
+            new Claim("realm_access", """{"roles":["admin"]}"""));
+        var options = new KeycloakOptions { MapRealmRoles = false };
+
+        var result = await Transformer(options).TransformAsync(principal);
+
+        Roles(result).Should().BeEquivalentTo("managed");
+    }
+
+    [Fact]
+    public void MapRealmRoles_IsOnByDefault() => new KeycloakOptions().MapRealmRoles.Should().BeTrue();
+
+    [Fact]
     public async Task NullFilters_PassEveryRole()
     {
         var principal = PrincipalWith(new Claim("realm_access", """{"roles":["a","b","c"]}"""));

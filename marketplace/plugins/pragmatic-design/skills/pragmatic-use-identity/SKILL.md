@@ -160,7 +160,9 @@ app.UseKeycloakAuthentication(k =>
 ```
 
 Keycloak maps `realm_access` roles and `preferred_username`; with a confidential client it registers
-`IKeycloakAdminClient` for provisioning users and synchronising roles. There is no just-in-time
+`IKeycloakAdminClient` for provisioning users and synchronising roles. `AllowedRoles` and `RolePrefix`
+narrow the realm roles mapped (left empty they mean every one); `MapRealmRoles = false` maps none, for an
+application whose roles come from Authorization.Management or another store. There is no just-in-time
 provisioning of a local user on first external sign-in: map the token's subject to your entity with
 `[PragmaticUser(MatchClaim = "sub")]`, or create the row in your own first-use operation.
 
