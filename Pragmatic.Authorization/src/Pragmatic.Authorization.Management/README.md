@@ -147,6 +147,10 @@ the active `DynamicRolePermission`s of those roles. An assigned role grants on t
 one stops granting, because the assign, revoke and assign-permissions actions evict the affected users
 from the permission cache when one is configured.
 
+`ManagedRoleProvider` is the package's `IRoleProvider`: it puts the names of the same assignments among the
+caller's roles, beside the identity's own `role` claims, so `ICurrentUser.Authorization.Roles` and
+`IsInRole` agree with what the roles grant.
+
 A caller bound to a tenant can put into a role only permissions they hold themselves (a wildcard they
 hold covers what it names), and is refused with 403 otherwise, so the role and assignment permissions
 together do not let a tenant admin grant themselves more than they have. A caller with no tenant, the

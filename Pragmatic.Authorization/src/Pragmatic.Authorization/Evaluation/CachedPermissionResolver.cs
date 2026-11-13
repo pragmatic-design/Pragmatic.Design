@@ -14,7 +14,7 @@ namespace Pragmatic.Authorization.Evaluation;
 ///     Optionally uses <see cref="ICacheStack"/> for cross-request caching.
 ///     Implements <see cref="IUserAuthorization"/> — this is the runtime bridge.
 /// </summary>
-public sealed class CachedPermissionResolver : IUserAuthorization
+public sealed partial class CachedPermissionResolver : IUserAuthorization
 {
     private readonly IReadOnlyList<IPermissionProvider> _providers;
     private readonly ICurrentUser _currentUser;
@@ -48,12 +48,19 @@ public sealed class CachedPermissionResolver : IUserAuthorization
     // read it past the filter pipeline (IQueryFilterToggle) and apply the tenant itself.
     private bool _resolving;
 
+    /// <param name="providers">The permission providers, joined in their order.</param>
+    /// <param name="currentUser">The caller.</param>
+    /// <param name="options">The caching and claim-trust options.</param>
+    /// <param name="cache">The cross-request cache of the permission set, when configured.</param>
+    /// <param name="tenantContext">The tenant the request is served for, which partitions the cache.</param>
+    /// <param name="roleProviders">The roles held beyond the identity's own (<see cref="IRoleProvider" />), joined to them in <see cref="Roles" />.</param>
     public CachedPermissionResolver(
         IEnumerable<IPermissionProvider> providers,
         ICurrentUser currentUser,
         IOptions<AuthorizationOptions>? options = null,
         ICacheStack? cache = null,
-        ITenantContext? tenantContext = null)
+        ITenantContext? tenantContext = null,
+        IEnumerable<IRoleProvider>? roleProviders = null)
     {
         _providers = providers.OrderBy(p => p.Order).ToList();
         _currentUser = currentUser;
@@ -61,12 +68,8 @@ public sealed class CachedPermissionResolver : IUserAuthorization
         _trustsClaims = options?.Value.TrustPermissionClaims ?? false;
         _cache = cache;
         _tenantContext = tenantContext;
+        _roleProviders = roleProviders?.ToList() ?? [];
     }
-
-    /// <inheritdoc />
-    public IReadOnlyCollection<string> Roles => _currentUser.Claims.TryGetValue("role", out var roles)
-        ? (IReadOnlyCollection<string>)roles
-        : Array.Empty<string>();
 
     /// <inheritdoc />
     public IReadOnlySet<string> Permissions => ResolvePermissions();

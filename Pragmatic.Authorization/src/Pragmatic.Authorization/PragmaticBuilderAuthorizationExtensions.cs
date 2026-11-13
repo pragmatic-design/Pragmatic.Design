@@ -104,7 +104,9 @@ public static class PragmaticBuilderAuthorizationExtensions
             // ITenantContext, and the resolver falls back to the tenant claim. ⚠️ Passing it is what
             // partitions the permission cache by the tenant the request is served for — leaving it
             // out gave every workspace one shared entry per person.
-            sp.GetService<MultiTenancy.ITenantContext>()));
+            sp.GetService<MultiTenancy.ITenantContext>(),
+            // The roles held beyond the identity's own, such as Pragmatic.Authorization.Management's assignments (#723).
+            sp.GetServices<IRoleProvider>()));
 
         // Delegation: compose subject and actor authority. A decorator rather than a change to the
         // resolver, so every [RequirePermission], permission-based filter and ResourcePolicy inherits
