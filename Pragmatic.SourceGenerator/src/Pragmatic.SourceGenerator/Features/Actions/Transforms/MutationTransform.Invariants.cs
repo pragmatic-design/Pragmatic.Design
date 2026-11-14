@@ -66,12 +66,20 @@ internal static partial class MutationTransform
                 var readable = compilation is not null
                                && method.DeclaringSyntaxReferences.Any(r => compilation.ContainsSyntaxTree(r.SyntaxTree));
 
+                var member = NamedString(attr, "Member");
+
                 builder.Add(new InvariantModel
                 {
                     MethodName = method.Name,
                     Message = message,
-                    MessageKey = attr.NamedArguments
-                        .FirstOrDefault(n => n.Key == "MessageKey").Value.Value as string,
+                    MessageKey = NamedString(attr, "MessageKey"),
+                    ErrorCode = NamedString(attr, "ErrorCode"),
+                    Member = member is not null && WhyItCannotBeRead(entityType, member, consumer, read: false) is null
+                        ? member
+                        : null,
+                    ParameterMembers = NamedStrings(attr, "Parameters")
+                        .Where(p => WhyItCannotBeRead(entityType, p, consumer, read: true) is null)
+                        .ToImmutableArray(),
                     Navigations = readable
                         ? Core.ProjectableBody.NavigationsOf(method, compilation!).ToImmutableArray()
                         : ImmutableArray<string>.Empty,
@@ -175,6 +183,101 @@ internal static partial class MutationTransform
             return "a rule of this entity with the same name is already enforced, and only the first is called";
 
         return null;
+    }
+
+    /// <summary>
+    ///     The names an <c>[Invariant]</c> of <paramref name="entityType" /> gives as its <c>Member</c> or
+    ///     <c>Parameters</c> that do not name a member the refusal can report — PRAG0471.
+    /// </summary>
+    /// <remarks>
+    ///     ⚠️ A string, even one written with <c>nameof</c>, is checked by nobody else: <c>nameof</c> accepts
+    ///     a private property the generated invoker cannot read, and a literal accepts a name that does not
+    ///     exist. <see cref="ParseInvariants" /> leaves those out of what it generates, so without this the
+    ///     message's placeholder would stay unfilled, or the field go unmarked, in silence.
+    /// </remarks>
+    internal static ImmutableArray<UnreadableInvariantMemberModel> UnreadableInvariantMembers(INamedTypeSymbol entityType)
+    {
+        var builder = ImmutableArray.CreateBuilder<UnreadableInvariantMemberModel>();
+
+        for (var current = entityType; current is not null; current = current.BaseType)
+        {
+            foreach (var method in current.GetMembers().OfType<IMethodSymbol>())
+            {
+                var attr = method.GetAttributes().FirstOrDefault(a =>
+                    a.AttributeClass?.Name == InvariantAttributeName &&
+                    a.AttributeClass.ContainingNamespace?.ToDisplayString() == InvariantAttributeNamespace);
+                if (attr is null)
+                    continue;
+
+                var named = NamedString(attr, "Member") is { } member
+                    ? new[] { (Name: member, Read: false) }
+                    : [];
+
+                foreach (var (name, read) in named.Concat(NamedStrings(attr, "Parameters").Select(p => (p, true))))
+                {
+                    if (WhyItCannotBeRead(entityType, name, consumer: null, read) is not { } reason)
+                        continue;
+
+                    builder.Add(new UnreadableInvariantMemberModel
+                    {
+                        MethodName = method.Name,
+                        MemberName = name,
+                        Reason = reason,
+                        Location = Core.LocationInfo.From(method.Locations.Length > 0 ? method.Locations[0] : null),
+                    });
+                }
+            }
+        }
+
+        return builder.ToImmutable();
+    }
+
+    /// <summary>
+    ///     Why <paramref name="name" /> cannot be what an invariant reports, or null when it can: it must be
+    ///     an instance property or field of the entity, and — when <paramref name="read" />, because its
+    ///     value goes into the message — one the generated invoker can read.
+    /// </summary>
+    private static string? WhyItCannotBeRead(INamedTypeSymbol entityType, string name, IAssemblySymbol? consumer, bool read)
+    {
+        for (var current = entityType; current is not null; current = current.BaseType)
+        {
+            var symbol = current.GetMembers(name).FirstOrDefault(m => m is IPropertySymbol or IFieldSymbol);
+            if (symbol is null)
+                continue;
+
+            if (symbol.IsStatic)
+                return "it is static, and the rule is about a row";
+
+            if (!read)
+                return null;
+
+            var accessibility = symbol is IPropertySymbol property
+                ? property.GetMethod?.DeclaredAccessibility ?? Accessibility.NotApplicable
+                : symbol.DeclaredAccessibility;
+
+            if (accessibility is not (Accessibility.Public or Accessibility.Internal))
+                return "the invoker is another class and cannot read it: it needs a getter at least internal";
+
+            if (accessibility == Accessibility.Internal
+                && consumer is not null
+                && !SymbolEqualityComparer.Default.Equals(symbol.ContainingAssembly, consumer))
+                return "it is internal to another assembly than the invoker's";
+
+            return null;
+        }
+
+        return "the entity has no property or field of that name";
+    }
+
+    private static string? NamedString(AttributeData attr, string name)
+        => attr.NamedArguments.FirstOrDefault(n => n.Key == name).Value.Value as string;
+
+    private static System.Collections.Generic.IEnumerable<string> NamedStrings(AttributeData attr, string name)
+    {
+        var argument = attr.NamedArguments.FirstOrDefault(n => n.Key == name).Value;
+        return argument.Kind == TypedConstantKind.Array
+            ? argument.Values.Select(v => v.Value as string).Where(v => !string.IsNullOrEmpty(v)).Select(v => v!)
+            : [];
     }
 
     private const string TemporalRelationAttributeName = "TemporalRelationAttribute";

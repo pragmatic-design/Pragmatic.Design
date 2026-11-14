@@ -263,7 +263,7 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
             {
                 AppendLine($"if (!entity.{invariant.MethodName}())");
                 IncreaseIndent();
-                AppendLine(Refusal(invariant.MethodName, invariant));
+                AppendLine(InvariantRefusal.Line(invariant.MethodName, invariant, "entity"));
                 DecreaseIndent();
             }
 
@@ -317,29 +317,9 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
             IncreaseIndent();
             // Named with the child, because the aggregate and its parts may both carry a rule of that
             // name and the refusal has to say which one refused.
-            AppendLine(Refusal($"{child.ChildTypeName}.{invariant.MethodName}", invariant));
+            AppendLine(InvariantRefusal.Line($"{child.ChildTypeName}.{invariant.MethodName}", invariant, instance));
             DecreaseIndent();
         }
-    }
-
-    /// <summary>
-    ///     The refusal of one rule: which rule, its sentence, and — when the rule names one — the
-    ///     translation key the sentence lives under.
-    /// </summary>
-    /// <remarks>
-    ///     The key is what makes the refusal readable in the caller's language: without it the error
-    ///     reports <c>error.invariant.violation</c>, which every invariant in the application shares.
-    ///     A rule that names none is rendered exactly as before, with two arguments.
-    /// </remarks>
-    private static string Refusal(string name, Models.InvariantModel invariant)
-    {
-        var message = StringHelper.CSharpLiteral(invariant.Message ?? "");
-        var key = invariant.MessageKey is { Length: > 0 } declared
-            ? $", \"{StringHelper.CSharpLiteral(declared)}\""
-            : "";
-
-        return "return new global::Pragmatic.Actions.Mutation.InvariantViolationError("
-               + $"\"{name}\", \"{message}\"{key});";
     }
 
     /// <summary>Generates the CheckTemporalConstraints override enforcing [TemporalRelation] MaxActive/overlap.</summary>

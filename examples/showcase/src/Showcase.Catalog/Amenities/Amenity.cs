@@ -34,9 +34,11 @@ public partial class Amenity : IEntity
     /// <summary>
     /// Aggregate invariant: an amenity may carry at most 20 search keywords. Enforced by the generated
     /// mutation invoker after apply and before persist — a violating mutation is rejected (422), so the
-    /// invalid state never reaches the database. Exercises the SG [Invariant] feature end-to-end.
+    /// invalid state never reaches the database. Exercises the SG [Invariant] feature end-to-end, with the
+    /// code a client switches on, the field a form marks and the amenity's name in the sentence.
     /// </summary>
-    [Invariant("An amenity cannot have more than 20 keywords")]
+    [Invariant("The amenity {Name} cannot have more than 20 keywords",
+        ErrorCode = "AMENITY_TOO_MANY_KEYWORDS", Member = nameof(Keywords), Parameters = [nameof(Name)])]
     public bool KeywordsWithinLimit() => Keywords.Count <= 20;
 
 }

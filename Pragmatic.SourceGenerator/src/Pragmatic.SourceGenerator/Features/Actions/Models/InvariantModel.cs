@@ -40,4 +40,20 @@ internal sealed record InvariantModel
     ///     constant: in that class a base is a nested type, whose members are those two suffixes.
     /// </remarks>
     public string? MessageKey { get; init; }
+
+    /// <summary>The code from <c>[Invariant(ErrorCode = …)]</c>; null reports the shared <c>INVARIANT_VIOLATION</c>.</summary>
+    public string? ErrorCode { get; init; }
+
+    /// <summary>The member from <c>[Invariant(Member = …)]</c>, when the invoker can read it; null otherwise.</summary>
+    public string? Member { get; init; }
+
+    /// <summary>
+    ///     The members from <c>[Invariant(Parameters = …)]</c> the invoker can read, in declaration order:
+    ///     each is read off the row that broke the rule into the error's parameters, under its own name.
+    /// </summary>
+    /// <remarks>
+    ///     A name the invoker cannot read is left out here and reported as <c>PRAG0471</c>, so the
+    ///     generated file never names a member that does not compile.
+    /// </remarks>
+    public EquatableArray<string> ParameterMembers { get; init; } = EquatableArray<string>.Empty;
 }

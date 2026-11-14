@@ -31,16 +31,37 @@ namespace Pragmatic.Actions.Mutation;
 public sealed record InvariantViolationError(string Invariant, string Message, string? DeclaredMessageKey = null)
     : Error
 {
+    /// <summary>The code every invariant reports when its rule declares none.</summary>
+    public const string DefaultCode = "INVARIANT_VIOLATION";
+
     /// <inheritdoc />
-    public override string Code => "INVARIANT_VIOLATION";
+    /// <remarks>
+    ///     <c>[Invariant(ErrorCode = …)]</c> when the rule declares one, so a client can tell two rules
+    ///     apart without reading their sentences; <see cref="DefaultCode" /> otherwise.
+    /// </remarks>
+    public override string Code => DeclaredCode ?? DefaultCode;
+
+    /// <summary>The code <c>[Invariant(ErrorCode = …)]</c> declares, or <see langword="null" /> for the shared one.</summary>
+    public string? DeclaredCode { get; init; }
+
+    /// <summary>
+    ///     The entity member the rule is about, by its C# name (<c>[Invariant(Member = nameof(…))]</c>), or
+    ///     <see langword="null" /> when it names none.
+    /// </summary>
+    public string? Member { get; init; }
 
     /// <inheritdoc />
     public override int StatusCode => 422;
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     The message with each <c>{Name}</c> replaced by that parameter's value, the substitution a
+    ///     translation of <see cref="MessageKey" /> gets from the localizer, so the untranslated sentence
+    ///     says the same as a translated one.
+    /// </remarks>
     public override string Title => string.IsNullOrEmpty(Message)
         ? $"Invariant '{Invariant}' was violated."
-        : Message;
+        : Format(Message, Parameters);
 
     /// <inheritdoc />
     public override string MessageKey => DeclaredMessageKey ?? base.MessageKey;
@@ -55,9 +76,38 @@ public sealed record InvariantViolationError(string Invariant, string Message, s
     public string? EntityId { get; init; }
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     With a <see cref="Member" />, the refusal also carries <c>member</c> and an <c>errors</c> map
+    ///     keyed by it — <c>{"total": ["error.order_over_limit"]}</c> — the shape a property rule's failure
+    ///     has, so a client that marks fields from <c>errors</c> marks this one without knowing it came
+    ///     from an invariant. The name is camel-cased as the payload's names are.
+    /// </remarks>
     public override void WriteExtensions(IDictionary<string, object?> extensions)
     {
         if (EntityType is not null) extensions["entityType"] = EntityType;
         if (EntityId is not null) extensions["entityId"] = EntityId;
+
+        if (string.IsNullOrEmpty(Member))
+            return;
+
+        var wire = char.ToLowerInvariant(Member![0]) + Member[1..];
+        extensions["member"] = wire;
+        extensions["errors"] = new Dictionary<string, string[]>(StringComparer.Ordinal) { [wire] = [MessageKey] };
+    }
+
+    private static string Format(string message, IReadOnlyDictionary<string, object>? parameters)
+    {
+        if (parameters is not { Count: > 0 })
+            return message;
+
+        foreach (var (name, value) in parameters)
+        {
+            message = message.Replace(
+                "{" + name + "}",
+                Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "",
+                StringComparison.Ordinal);
+        }
+
+        return message;
     }
 }
