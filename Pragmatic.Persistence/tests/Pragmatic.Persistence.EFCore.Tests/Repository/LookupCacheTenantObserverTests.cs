@@ -209,6 +209,11 @@ public sealed class LookupCacheTenantObserverTests : IDisposable
             LoadedFor.Add(tenantId);
             return Task.CompletedTask;
         }
+
+        public Type EntityType => typeof(Status);
+
+        public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct)
+            => Task.CompletedTask;
     }
 
     private sealed class ThrowingLoader : ILookupCacheLoader
@@ -217,6 +222,11 @@ public sealed class LookupCacheTenantObserverTests : IDisposable
             => Task.CompletedTask;
 
         public Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct)
+            => throw new InvalidOperationException("no database here");
+
+        public Type EntityType => typeof(Status);
+
+        public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct)
             => throw new InvalidOperationException("no database here");
     }
 }

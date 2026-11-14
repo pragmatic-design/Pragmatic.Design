@@ -85,7 +85,40 @@ internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
         modifiers: new MethodModifiers { IsAsync = true });
 
         RenderLoadForTenant();
+        RenderReload(entityType);
         RenderLoadOne(entityType, idType, cacheType, cacheInterfaceType);
+    }
+
+    /// <summary>
+    ///     The entity this loader is for, and the reload a committed write asks for (#734): the written tenant's cache when the lookup is
+    ///     tenant-scoped, the process's one cache when it is not. Which of the two is known here, as for <see cref="RenderLoadForTenant" />.
+    /// </summary>
+    private void RenderReload(string entityType)
+    {
+        XmlSummary("The [Lookup] entity this loader fills the cache of.");
+        AppendLine($"public global::System.Type EntityType => typeof({entityType});");
+        AppendLine();
+
+        XmlSummary("Reloads the cache a committed write reached.");
+        Method("ReloadAsync", () =>
+        {
+            if (_model.IsTenantEntity)
+            {
+                // A tenant-scoped row written with no tenant reached no tenant's cache that can be named: every tenant's is reloaded.
+                AppendLine("return tenantId is null ? LoadAsync(serviceProvider, ct) : LoadOneAsync(serviceProvider, tenantId, ct);");
+            }
+            else
+            {
+                Comment("Not tenant-scoped: the one cache of the process, whatever tenant wrote");
+                AppendLine("return LoadOneAsync(serviceProvider, null, ct);");
+            }
+        },
+        "global::System.Threading.Tasks.Task",
+        [
+            new("global::System.IServiceProvider", "serviceProvider"),
+            new("string?", "tenantId"),
+            new("global::System.Threading.CancellationToken", "ct")
+        ]);
     }
 
     /// <summary>

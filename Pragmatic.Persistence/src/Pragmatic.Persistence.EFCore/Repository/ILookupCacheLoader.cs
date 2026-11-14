@@ -25,4 +25,16 @@ public interface ILookupCacheLoader
     ///     </para>
     /// </remarks>
     Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct);
+
+    /// <summary>The <c>[Lookup]</c> entity this loader fills the cache of.</summary>
+    /// <remarks>How <see cref="LookupCacheReloadInterceptor" /> finds the loader of an entity a save wrote (#734).</remarks>
+    Type EntityType { get; }
+
+    /// <summary>
+    ///     Reloads the cache a committed write reached: the tenant's, when the lookup is tenant-scoped, or the one cache of the process.
+    /// </summary>
+    /// <param name="serviceProvider">The provider the caches and the context are resolved from.</param>
+    /// <param name="tenantId">The tenant of the written rows; ignored by a lookup that is not tenant-scoped.</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct);
 }

@@ -84,6 +84,11 @@ public class AScopedTenantStoreAtStartupTests
 
         public Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct)
             => Task.CompletedTask;
+
+        public Type EntityType => typeof(object);
+
+        public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct)
+            => Task.CompletedTask;
     }
 
     private sealed class StubTenantStore(params string[] active) : ITenantStore, IDisposable

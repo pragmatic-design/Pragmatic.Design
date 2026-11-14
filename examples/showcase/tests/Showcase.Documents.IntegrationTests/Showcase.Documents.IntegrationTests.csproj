@@ -55,6 +55,7 @@
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ALookupWriteReloadsTheCacheTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\CachingIntegrationTests.cs" />

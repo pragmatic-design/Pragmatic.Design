@@ -120,6 +120,37 @@ public sealed class TenantCreatedWhileRunningTests : IAsyncLifetime
             LookupResolver.TryGet<Region, int>(1, out _).Should().BeFalse();
     }
 
+    /// <summary>
+    ///     A row a tenant writes reaches that tenant's cache once the save commits, and no other tenant's (#734).
+    /// </summary>
+    /// <remarks>
+    ///     The context is the only one built with <see cref="LookupCacheReloadInterceptor" />: on the container's, the seed above would
+    ///     load the caches before the cases that measure a cache without the signal.
+    /// </remarks>
+    [Fact]
+    public async Task ARowATenantWrites_ReachesThatTenantsCacheOnly()
+    {
+        var store = _services.GetRequiredService<ITenantStore>();
+        await store.CreateAsync(Tenant("tenant-a")).ConfigureAwait(true);
+        await store.CreateAsync(Tenant("tenant-b")).ConfigureAwait(true);
+
+        using (TenantScope.BeginScope("tenant-a"))
+        {
+            var options = new DbContextOptionsBuilder<RegionContext>()
+                .UseSqlite(_connection)
+                .AddInterceptors(new LookupCacheReloadInterceptor(_services, _services.GetServices<ILookupCacheLoader>()))
+                .Options;
+            using var db = new RegionContext(options);
+            db.Regions.Add(new Region { Id = 2, Name = "South (A)", TenantId = "tenant-a" });
+            await db.SaveChangesAsync().ConfigureAwait(true);
+
+            LookupResolver.Get<Region, int>(2).Name.Should().Be("South (A)");
+        }
+
+        using (TenantScope.BeginScope("tenant-b"))
+            LookupResolver.TryGet<Region, int>(2, out _).Should().BeFalse("tenant-b's cache is its own rows, and it did not write this one");
+    }
+
     /// <summary>Startup, as the hosted service performs it: every tenant the store knows.</summary>
     private async Task Preload(ITenantStore store)
     {
@@ -153,6 +184,11 @@ public sealed class TenantCreatedWhileRunningTests : IAsyncLifetime
 
         public Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct)
             => LoadOneAsync(tenantId, ct);
+
+        public Type EntityType => typeof(Region);
+
+        public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct)
+            => tenantId is null ? LoadAsync(serviceProvider, ct) : LoadOneAsync(tenantId, ct);
 
         private async Task LoadOneAsync(string? tenantId, CancellationToken ct)
         {

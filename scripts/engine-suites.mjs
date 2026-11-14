@@ -64,6 +64,7 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   ...Object.fromEntries([
     'Authorization/ThePackageEntitiesHaveATableTests.cs',
     'Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs',
+    'CrossCutting/ALookupWriteReloadsTheCacheTests.cs',
     'CrossCutting/BoundaryKeyedServicesTests.cs',
     'CrossCutting/BoundaryTests.cs',
     'CrossCutting/CachingIntegrationTests.cs',
