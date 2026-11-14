@@ -88,13 +88,15 @@ internal static partial class EndpointTransform
         // "this route belongs to no tenant" would produce no model at all — the declaration read and
         // then dropped.
         var tenantAgnostic = Actions.Transforms.ActionTransform.ParseTenantAgnostic(symbol);
+        var noTenant = Actions.Transforms.ActionTransform.ParseNoTenant(symbol);
 
-        if (hasPermissions || allowAnonymous || policyName is not null || tenantAgnostic)
+        if (hasPermissions || allowAnonymous || policyName is not null || tenantAgnostic || noTenant)
             return new AuthorizationModel
             {
                 IsRequired = hasPermissions || policyName is not null,
                 AllowAnonymous = allowAnonymous,
                 RouteIsTenantAgnostic = tenantAgnostic,
+                RouteHasNoTenant = noTenant,
                 PolicyName = policyName,
                 RequiredPermissions = requiredPerms,
                 AnyPermissions = anyPerms,

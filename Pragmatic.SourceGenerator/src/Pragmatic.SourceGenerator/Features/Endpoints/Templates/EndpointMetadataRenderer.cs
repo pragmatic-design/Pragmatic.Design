@@ -42,6 +42,19 @@ internal static class EndpointMetadataRenderer
     public static string RenderTenantAgnostic(string builderVar)
         => $"{builderVar}.WithMetadata(global::Pragmatic.MultiTenancy.TenantAgnosticEndpoint.Instance);";
 
+    /// <summary>The marker that makes a route run in no tenant (#724), from the same one place for the same reason.</summary>
+    public static string RenderNoTenant(string builderVar)
+        => $"{builderVar}.WithMetadata(global::Pragmatic.MultiTenancy.NoTenantEndpoint.Instance);";
+
+    /// <summary>The tenant markers a route declares, in the one form the four handler configurations emit.</summary>
+    public static IEnumerable<string> RenderTenantMarkers(Models.AuthorizationModel? authorization, string builderVar)
+    {
+        if (authorization?.RouteIsTenantAgnostic == true)
+            yield return RenderTenantAgnostic(builderVar);
+        if (authorization?.RouteHasNoTenant == true)
+            yield return RenderNoTenant(builderVar);
+    }
+
     /// <summary>A response with no body at <paramref name="statusCode" />.</summary>
     public static string RenderProducesEmpty(string builderVar, int statusCode)
         => $"{builderVar}.WithMetadata(new {Produces}({statusCode}));";

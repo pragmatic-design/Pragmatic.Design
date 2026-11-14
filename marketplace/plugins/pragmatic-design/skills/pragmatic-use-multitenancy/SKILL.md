@@ -93,6 +93,10 @@ is still resolved and published.
 public partial class StatusEndpoint { … }
 ```
 
+**A platform operation** (onboarding a tenant, a report across tenants) declares `[NoTenant]` instead:
+a request that brings a tenant is refused with **400** `TENANT_NOT_ALLOWED`, and one without runs in no
+tenant. Under `[TenantAgnostic]` it would run inside the tenant the caller sent. Both together is PRAG0556.
+
 ## Who may claim a tenant
 
 Header, route and subdomain are **client-controlled**: the tenant is whatever the request says. Three
