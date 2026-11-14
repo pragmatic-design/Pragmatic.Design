@@ -44,6 +44,16 @@ internal static class FilterOverrideParser
                 // way past it is IgnoreQueryFilters with the name it was registered under.
                 if (IsVisibilityRule(attrClass.TypeArguments[0]))
                     liftedQueryFilterNames.Add(VisibilityFilterNaming.ForRule(argument));
+                else if (attr.NamedArguments.Any(a => a is { Key: "SoftDeleteOnly", Value.Value: true }))
+                {
+                    // The soft-delete filter alone (#732): its generated type, which every engine lifts by, and its EF named filter. The
+                    // entity's other filters stay. Not [SoftDelete]: the type does not exist, and the operation does not compile.
+                    var softDeleteFilter = argument + ".SoftDeleteFilter";
+                    if (!disabledEntityTypes.Contains(softDeleteFilter))
+                        disabledEntityTypes.Add(softDeleteFilter);
+                    if (!liftedQueryFilterNames.Contains(SoftDeleteFilterName))
+                        liftedQueryFilterNames.Add(SoftDeleteFilterName);
+                }
                 else
                 {
                     disabledEntityTypes.Add(argument);

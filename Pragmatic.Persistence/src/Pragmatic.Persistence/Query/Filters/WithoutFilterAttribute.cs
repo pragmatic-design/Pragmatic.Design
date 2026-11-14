@@ -23,6 +23,10 @@ namespace Pragmatic.Persistence.Query.Filters;
 ///         Naming a <c>VisibilityRule&lt;T&gt;</c> instead of an entity lifts that rule's named filter.
 ///         Use <see cref="FilterModeAttribute"/> for broader category-based control.
 ///     </para>
+///     <para>
+///         <see cref="SoftDeleteOnly" /> lifts the soft-delete filter and nothing else (#732): the deleted rows come back, and the
+///         tenant, ownership and scope filters stay, so the caller reads the deleted rows they would have read alive.
+///     </para>
 /// </remarks>
 /// <example>
 ///     <code>
@@ -32,4 +36,15 @@ namespace Pragmatic.Persistence.Query.Filters;
 /// </code>
 /// </example>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-public sealed class WithoutFilterAttribute<TEntity> : Attribute where TEntity : class;
+public sealed class WithoutFilterAttribute<TEntity> : Attribute where TEntity : class
+{
+    /// <summary>
+    ///     Lift only <typeparamref name="TEntity" />'s soft-delete filter, on every engine (#732):
+    ///     <c>[WithoutFilter&lt;Reservation&gt;(SoftDeleteOnly = true)]</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The generated <c>{Entity}.SoftDeleteFilter</c> and the named <c>"SoftDelete"</c> filter are lifted; every other filter of
+    ///     the entity applies. On an entity that is not <c>[SoftDelete]</c> there is no such filter, and the operation does not compile.
+    /// </remarks>
+    public bool SoftDeleteOnly { get; set; }
+}

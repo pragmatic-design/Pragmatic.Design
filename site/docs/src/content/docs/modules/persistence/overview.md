@@ -203,6 +203,9 @@ Full walkthrough: [Getting Started](/modules/persistence/01-getting-started/).
 (admin tooling, background jobs, cross-tenant reports), never under a normal request principal. Treat
 every call site as an authorization boundary. See [Query Filters](/modules/persistence/07-query-filters/).
 
+To read the soft-deleted rows a caller may otherwise read, lift that filter alone:
+`[WithoutFilter<Reservation>(SoftDeleteOnly = true)]` keeps the tenant, ownership and scope filters, on every engine.
+
 ## Status
 
 **Stable** within 1.0.0-alpha: the core entity, repository, query and mutation surface is settled; some
