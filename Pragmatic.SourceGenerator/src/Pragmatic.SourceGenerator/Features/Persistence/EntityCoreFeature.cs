@@ -15,7 +15,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence;
 ///     Setters (with cascade event support), Specifications, and StateMachine.
 ///     Uses per-entity emission: changing one entity regenerates only that entity's artifacts.
 /// </summary>
-internal static class EntityCoreFeature
+internal static partial class EntityCoreFeature
 {
     /// <returns>
     ///     The cascade handlers of targets an engine persists, for the engines' binding: they read through <c>Spec&lt;T&gt;.Where</c>, which an
@@ -157,6 +157,8 @@ internal static class EntityCoreFeature
 
             GenerateValueRegistration(ctx, pairs.Select(static p => p.Left).ToImmutableArray());
         });
+
+        RegisterComputedDefaults(context, features);
 
         return cascadeSources;
     }

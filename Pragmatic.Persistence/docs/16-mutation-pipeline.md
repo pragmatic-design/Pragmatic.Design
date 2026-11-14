@@ -34,7 +34,6 @@ HTTP POST /api/v1/invoices
 │     │ 2b. IActionFilter<TMutation>           │   │
 │     │ 3.  Load the entity, or construct it:  │   │
 │     │       new TEntity() → IsNew = true      │   │
-│     │       → ApplyComputedDefaultsAsync      │   │
 │     │       → IEntityLifecycle.OnCreating     │   │
 │     │ 4a. Generated ApplyToEntity (always)   │   │
 │     │     [TransitionsTo] BeforeBody move    │   │
@@ -293,26 +292,22 @@ protected override async Task<Invoice?> LoadEntityAsync(
 }
 ```
 
-### 2e. Apply Computed Defaults
+### 2e. Computed Defaults: at the save, not here
 
-For `MutationMode.Create`, the invoker applies computed defaults before the mutation:
+The invoker fills no `[ComputedDefault]`. The unit of work does, at the save, on every engine, for each
+entity the save adds whose property is still empty, as it fills a `[GeneratedValue]`: an entity added by
+a domain action, an import or a handler gets its default as one a create mutation made does. The
+generator and its binding are registered scoped by the entity's assembly
+(`Add{Prefix}ComputedDefaults()`, which the host calls from its metadata), so a generator may take a
+scoped service (the current user, a repository). The `LifecycleContext` it receives carries `Now`,
+`UserId` and `TenantId`.
 
-```csharp
-// If the entity has [ComputedDefault<Invoice, string, InvoiceNumberGenerator>]
-var generator = _serviceProvider.GetRequiredService<IDefaultValueGenerator<Invoice, string>>();
-var invoiceNumber = await generator.GenerateAsync(entity, lifecycleContext, ct);
-entity.SetInvoiceNumber(invoiceNumber);   // or a direct assignment, when the setter is public
-```
+A value the caller sent is kept: the binding fills only an empty property (`null` or `""` for a string,
+the default of any other type). ⚠️ So the value is not there yet for `OnCreating`, the body, or the
+mutation's validation: they see the entity as constructed.
 
-The `LifecycleContext` in the middle is what carries `Now`, `UserId` and `TenantId`; a generator that
-needs the clock takes it from there rather than from `DateTime.UtcNow`.
-
-This runs **after construction and before `ApplyToEntity`**, so a value the caller sent overrides the
-computed default rather than the other way round. `IEntityLifecycle<T>.OnCreating` runs immediately
-after it, on the same context.
-
-⚠️ Presets are the exception to that placement: `ApplyPresetsAsync` runs **after** the entity is
-persisted (step 6), because the children it creates need the parent to exist.
+⚠️ Presets run in the invoker: `ApplyPresetsAsync` runs **after** the entity is persisted (step 6),
+because the children it creates need the parent to exist.
 
 ### 2f. mutation.ApplyAsync(entity)
 
@@ -514,7 +509,7 @@ public partial class CreateInvoiceMutation
         protected override Task SaveChangesAsync(CancellationToken ct);
         protected override IUnitOfWork? UnitOfWork { get; }
         protected override void InjectDependencies(CreateInvoiceMutation m);
-        // and, when the entity declares them: ApplyComputedDefaultsAsync, ApplyPresetsAsync,
+        // and, when the entity declares them: ApplyPresetsAsync,
         // RestoreEntity, CompensateSoftDeleteCascade
     }
 }

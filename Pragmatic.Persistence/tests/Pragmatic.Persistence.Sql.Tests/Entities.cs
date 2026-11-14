@@ -393,6 +393,14 @@ public partial class SupportCase : IEntity
     public string Number { get; private set; } = "";
 
     public string Subject { get; set; } = "";
+
+    /// <summary>The desk of whoever opened the case, from a scoped service, filled at the save (#740).</summary>
+    [ComputedDefault<SupportCase, string, DeskOfTheCaller>]
+    public string Desk { get; set; } = "";
+
+    /// <summary>The desk's priority, a value type: empty when it is its default, 0.</summary>
+    [ComputedDefault<SupportCase, int, PriorityOfTheDesk>]
+    public int Priority { get; private set; }
 }
 
 /// <summary>

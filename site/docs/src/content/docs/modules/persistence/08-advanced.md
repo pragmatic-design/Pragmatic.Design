@@ -304,7 +304,10 @@ public class InvoiceNumberGenerator : IDefaultValueGenerator<Invoice, string>
 }
 ```
 
-The generated `MutationInvoker` automatically resolves the generator from DI and calls it during entity creation.
+The unit of work calls it at the save, on every engine, for each entity the save adds whose property is still empty, however it was added
+(a create mutation, a domain action, an import, a handler). The generator is registered **scoped** by the entity's assembly, with the
+binding that applies it, so it may take a scoped service. A value the caller set is kept. The value is filled at the save, so the operation
+that creates the entity does not see it yet.
 
 ### `[CascadeOn<TTarget>]`
 

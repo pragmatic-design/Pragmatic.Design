@@ -211,27 +211,8 @@ internal sealed class MutationRegistrationTemplate : CSharpTemplate
         RenderPresetProviderRegistrations();
         RenderResiliencePolicyDeclarations();
 
-        // Auto-register IDefaultValueGenerator<TEntity, TValue> from [ComputedDefault] and auto-generatable
-        // [GeneratedValue] attributes. Sequence-backed formatters inject a keyed DbContext, so they register
-        // as scoped; stateless generators stay singleton.
-        var generators = _mutations
-            .Where(m => m.HasComputedDefaults)
-            .SelectMany(m => m.ComputedDefaults!.Properties)
-            .Select(p => (p.EntityTypeFqn, p.ValueTypeFqn, p.GeneratorTypeFqn, p.RequiresScope))
-            .Distinct()
-            .ToList();
-
-        if (generators.Count > 0)
-        {
-            AppendLine();
-            Comment("Auto-registered IDefaultValueGenerator from [ComputedDefault]/[GeneratedValue] attributes");
-            foreach (var (entityFqn, valueFqn, generatorFqn, requiresScope) in generators)
-            {
-                var interfaceFqn = $"global::Pragmatic.Persistence.Lifecycle.IDefaultValueGenerator<{entityFqn}, {valueFqn}>";
-                var lifetime = requiresScope ? "AddScoped" : "AddSingleton";
-                AppendLine($"services.{lifetime}<{interfaceFqn}, {generatorFqn}>();");
-            }
-        }
+        // A [ComputedDefault]'s generator is not registered here: the entity's assembly registers it with the binding the unit of work applies
+        // at the save (ComputedDefaultRegistrationTemplate, #740), whichever operation added the entity.
 
         // Register the generated authorization registries (only when this assembly has no
         // actions — otherwise ActionsRegistrationTemplate already does, avoiding a duplicate).

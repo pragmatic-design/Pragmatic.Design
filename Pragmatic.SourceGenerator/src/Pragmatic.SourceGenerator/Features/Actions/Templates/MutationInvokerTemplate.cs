@@ -172,12 +172,6 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
                 $"protected override global::Pragmatic.Actions.Commit.CommitMode CommitMode => global::Pragmatic.Actions.Commit.CommitMode.{_model.CommitMode};");
         }
 
-        if (_model.HasComputedDefaults)
-        {
-            AppendLine();
-            RenderApplyComputedDefaultsAsync();
-        }
-
         if (_model.HasPresets)
         {
             AppendLine();

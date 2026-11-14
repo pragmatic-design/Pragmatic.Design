@@ -106,33 +106,6 @@ internal static partial class MetadataReader
         if (type is null || entityType is null || invokerType is null)
             return null;
 
-        // Parse computed default generators if present
-        var computedDefaults = ImmutableArray<DiscoveredComputedDefaultInfo>.Empty;
-        if (element.TryGetProperty("computedDefaults", out var cdArray) &&
-            cdArray.ValueKind == JsonValueKind.Array)
-        {
-            var builder = ImmutableArray.CreateBuilder<DiscoveredComputedDefaultInfo>();
-            foreach (var cd in cdArray.EnumerateArray())
-            {
-                var cdEntityType = GetStringOrNull(cd, "entityType");
-                var cdValueType = GetStringOrNull(cd, "valueType");
-                var cdGeneratorType = GetStringOrNull(cd, "generatorType");
-                var cdRequiresScope = GetStringOrNull(cd, "requiresScope") == "true";
-                if (cdEntityType is not null && cdValueType is not null && cdGeneratorType is not null)
-                {
-                    builder.Add(new DiscoveredComputedDefaultInfo
-                    {
-                        EntityTypeFqn = cdEntityType,
-                        ValueTypeFqn = cdValueType,
-                        GeneratorTypeFqn = cdGeneratorType,
-                        RequiresScope = cdRequiresScope
-                    });
-                }
-            }
-
-            computedDefaults = builder.ToImmutable();
-        }
-
         return new DiscoveredMutationInfo
         {
             MutationType = type,
@@ -142,7 +115,6 @@ internal static partial class MetadataReader
             CompensatorType = GetStringOrNull(element, "compensatorType"),
             PresetProviders = GetStringArrayOrEmpty(element, "presetProviders"),
             SourceAssembly = assemblyName,
-            ComputedDefaults = computedDefaults,
             PolicyTypeFqn = GetStringOrNull(element, "policyType"),
             RequireAllPermissions = GetStringArrayOrEmpty(element, "requireAllPermissions"),
             RequireAnyPermissions = GetStringArrayOrEmpty(element, "requireAnyPermissions"),

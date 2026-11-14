@@ -258,12 +258,14 @@ Full treatment: `Pragmatic.Persistence/docs/20-eager-loading.md`.
 
 ## `[ComputedDefault<TEntity, TValue, TGenerator>]` and `[HasPresets]` + `[PresetProvider<TProvider>]`
 
-For what a format cannot express, both run in the **create** mutation's invoker:
+For what a format cannot express:
 
 - `[ComputedDefault<Invoice, string, InvoiceNumberGenerator>]` on a property: the generator implements
   `IDefaultValueGenerator<TEntity, TValue>` and computes the value from the new entity and the
-  `LifecycleContext` (clock, user, tenant).
-- `[HasPresets]` + `[PresetProvider<ReservationPresetProvider>]` on the entity: the provider implements
+  `LifecycleContext` (clock, user, tenant). The unit of work fills it **at the save**, on every engine,
+  for any added entity whose property is empty (a domain action's insert too). The generator is
+  registered scoped, so it may take a scoped service. A value the caller set is kept.
+- `[HasPresets]` + `[PresetProvider<ReservationPresetProvider>]` on the entity, run by the **create** mutation's invoker: the provider implements
   `IPresetProvider<TParent>.CreatePresetsAsync(parent, context, ct)` and returns child entities saved
   with the parent (a reservation created with its default room assignment). Several providers may be
   declared.

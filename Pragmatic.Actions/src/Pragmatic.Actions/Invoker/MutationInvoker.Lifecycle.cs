@@ -8,15 +8,8 @@ namespace Pragmatic.Actions.Invoker;
 public abstract partial class MutationInvoker<TMutation, TEntity>
 {
     // =========================================================================
-    // Lifecycle — Computed Defaults, Presets, Domain Events, Cache Invalidation
+    // Lifecycle — Presets, Domain Events, Cache Invalidation
     // =========================================================================
-
-    /// <summary>
-    ///     Applies computed default values to a newly created entity.
-    ///     Override in generated invokers when entity has [ComputedDefault] properties.
-    /// </summary>
-    protected virtual Task ApplyComputedDefaultsAsync(TEntity entity, LifecycleContext context, CancellationToken ct)
-        => Task.CompletedTask;
 
     /// <summary>
     ///     Creates preset child entities after the main entity is persisted.

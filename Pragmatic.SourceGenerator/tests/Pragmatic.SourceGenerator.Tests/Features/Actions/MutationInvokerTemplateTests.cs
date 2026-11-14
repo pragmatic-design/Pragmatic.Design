@@ -21,40 +21,12 @@ public class MutationInvokerTemplateTests
         source.Should().Contain("SaveChangesAsync");
     }
 
+    /// <summary>
+    ///     The invoker fills no [ComputedDefault] any more: the unit of work does, at the save, for an entity added any way (#740).
+    /// </summary>
     [Fact]
-    public void ComputedDefaults_GeneratesApplyComputedDefaultsAsync()
-    {
-        var model = BuildModel("Sales", "CreateOrder") with
-        {
-            ComputedDefaults = new ComputedDefaultContribution
-            {
-                Properties = ImmutableArray.Create(new ComputedDefaultPropertyModel
-                {
-                    PropertyName = "OrderNumber",
-                    SetterName = "SetOrderNumber",
-                    ValueTypeFqn = "string",
-                    GeneratorTypeFqn = "global::Sales.OrderNumberGenerator",
-                    EntityTypeFqn = "global::Sales.Order"
-                })
-            }
-        };
-
-        var source = Render(model);
-
-        source.Should().Contain("ApplyComputedDefaultsAsync");
-        source.Should().Contain("IDefaultValueGenerator<global::Sales.Order, string>");
-        source.Should().Contain("GenerateAsync(entity, context, ct)");
-        source.Should().Contain("entity.SetOrderNumber(orderNumberValue)");
-    }
-
-    [Fact]
-    public void NoComputedDefaults_DoesNotGenerateApplyComputedDefaultsAsync()
-    {
-        var model = BuildModel("Sales", "CreateOrder");
-        var source = Render(model);
-
-        source.Should().NotContain("ApplyComputedDefaultsAsync");
-    }
+    public void TheInvoker_FillsNoComputedDefault()
+        => Render(BuildModel("Sales", "CreateOrder")).Should().NotContain("ApplyComputedDefaultsAsync");
 
     [Fact]
     public void RaisedEvents_GeneratesCollectRaisedEventsOverride()
@@ -81,62 +53,6 @@ public class MutationInvokerTemplateTests
     public void NoRaisedEvents_DoesNotGenerateCollectRaisedEvents()
     {
         Render(BuildModel("Sales", "CreateOrder")).Should().NotContain("CollectRaisedEvents");
-    }
-
-    [Fact]
-    public void ComputedDefaults_PublicSetter_UsesDirectAssignment()
-    {
-        var model = BuildModel("Sales", "CreateOrder") with
-        {
-            ComputedDefaults = new ComputedDefaultContribution
-            {
-                Properties = ImmutableArray.Create(new ComputedDefaultPropertyModel
-                {
-                    PropertyName = "Status",
-                    SetterName = "Status", // Same as property = public setter
-                    ValueTypeFqn = "int",
-                    GeneratorTypeFqn = "global::Sales.StatusGenerator",
-                    EntityTypeFqn = "global::Sales.Order"
-                })
-            }
-        };
-
-        var source = Render(model);
-
-        source.Should().Contain("entity.Status = statusValue");
-    }
-
-    [Fact]
-    public void ComputedDefaults_MultipleProperties_GeneratesAll()
-    {
-        var model = BuildModel("Sales", "CreateOrder") with
-        {
-            ComputedDefaults = new ComputedDefaultContribution
-            {
-                Properties = ImmutableArray.Create(
-                    new ComputedDefaultPropertyModel
-                    {
-                        PropertyName = "OrderNumber",
-                        SetterName = "SetOrderNumber",
-                        ValueTypeFqn = "string",
-                        GeneratorTypeFqn = "global::Sales.OrderNumberGenerator",
-                        EntityTypeFqn = "global::Sales.Order"
-                    },
-                    new ComputedDefaultPropertyModel
-                    {
-                        PropertyName = "CreatedDate",
-                        SetterName = "CreatedDate",
-                        ValueTypeFqn = "global::System.DateTimeOffset",
-                        GeneratorTypeFqn = "global::Sales.DateGenerator",
-                        EntityTypeFqn = "global::Sales.Order"
-                    })
-            }
-        };
-
-        var source = Render(model);
-
-        source.Should().Contain("orderNumberGenerator");
-        source.Should().Contain("createdDateGenerator");
     }
 
     [Fact]

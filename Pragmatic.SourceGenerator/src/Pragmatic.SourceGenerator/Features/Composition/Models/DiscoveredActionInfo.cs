@@ -106,9 +106,6 @@ internal sealed record DiscoveredMutationInfo
     /// <summary>Gets the source assembly name for grouping/comments.</summary>
     public required string SourceAssembly { get; init; }
 
-    /// <summary>Gets computed default generators from [ComputedDefault] attributes on entity properties.</summary>
-    public EquatableArray<DiscoveredComputedDefaultInfo> ComputedDefaults { get; init; } = EquatableArray<DiscoveredComputedDefaultInfo>.Empty;
-
     /// <summary>Gets the fully qualified policy type from [RequirePolicy&lt;T&gt;], or null.</summary>
     public string? PolicyTypeFqn { get; init; }
 
@@ -129,19 +126,4 @@ internal sealed record DiscoveredMutationInfo
     ///     that was compiled in the package.
     /// </remarks>
     public EquatableArray<string> BoundaryKeyedServices { get; init; } = EquatableArray<string>.Empty;
-}
-
-/// <summary>
-///     Represents a [ComputedDefault] generator discovered from metadata.
-///     Used by the host to register IDefaultValueGenerator&lt;TEntity, TValue&gt; in DI.
-/// </summary>
-internal sealed record DiscoveredComputedDefaultInfo
-{
-    public required string EntityTypeFqn { get; init; }
-    public required string ValueTypeFqn { get; init; }
-    public required string GeneratorTypeFqn { get; init; }
-
-    /// <summary>Whether the generator injects scoped services (a keyed DbContext) and must be registered
-    /// as scoped rather than singleton — true for sequence-backed [GeneratedValue] {SEQ:N} formatters.</summary>
-    public bool RequiresScope { get; init; }
 }
