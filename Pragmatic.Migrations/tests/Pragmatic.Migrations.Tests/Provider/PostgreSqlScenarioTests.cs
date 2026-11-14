@@ -23,6 +23,14 @@ public class PostgreSqlScenarioTests(PostgreSqlContainerFixture fixture)
 
     private bool _created;
 
+    /// <summary>
+    ///     A [Unique(Filter = …)] as the generator writes it for PostgreSQL (#729, pinned in the generator's
+    ///     <c>AFilteredUnique_IsAPartialIndexInEfCoresSchema</c>): the rows outside it are free, two inside are refused.
+    /// </summary>
+    [Fact]
+    public Task Scenario29_AFilteredUnique_HoldsTheRowsItsFilterSelectsOnly()
+        => AFilteredUnique_HoldsTheRowsItsFilterSelectsOnlyAsync("\"IsDeleted\" = false AND (\"Active\" = TRUE)", "TRUE", "FALSE");
+
     protected override ISqlMigrationGenerator CreateGenerator() => new PostgreSqlMigrationGenerator();
     protected override ISchemaIntrospector CreateIntrospector() => new PostgreSqlSchemaIntrospector();
 

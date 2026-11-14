@@ -138,15 +138,9 @@ internal sealed partial class EntityConfigurationTemplate : CSharpTemplate
         // columns as written, led by TenantId unless the index asked to be global.
         if (!isDerived)
         {
+            // A declared filter (#729) is raw provider SQL, so the context adds it by the same selector (FilteredUniqueIndexes).
             foreach (var index in _model.UniqueIndexes)
-            {
-                var columns = _model.UniqueIndexColumns(index);
-                var selector = columns.Length == 1
-                    ? $"e => e.{columns[0]}"
-                    : $"e => new {{ {string.Join(", ", columns.Select(c => $"e.{c}"))} }}";
-
-                AppendLine($"builder.HasIndex({selector}).IsUnique();");
-            }
+                AppendLine($"builder.HasIndex({_model.UniqueIndexSelector(index)}).IsUnique();");
 
             if (_model.UniqueIndexes.Length > 0)
                 AppendLine();

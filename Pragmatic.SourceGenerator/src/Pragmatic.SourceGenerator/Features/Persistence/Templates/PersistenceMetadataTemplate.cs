@@ -168,6 +168,9 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
                     builder.Property("columns", string.Join(",", index.Columns));
                     if (index.IsGlobal)
                         builder.Property("scope", "global");
+                    // The partial index's predicate (#729): the host writes the schema and the model's HasFilter from this.
+                    if (index.Filter is not null)
+                        builder.Property("filter", index.Filter);
                     builder.EndObject();
                 }
 

@@ -158,6 +158,19 @@ the fields the engine reports, or by the end of the constraint's name where the 
 (MongoDB). Cosmos DB names neither, so there a duplicate stays `DB_CONFLICT`, as it does for a bulk insert
 on the documents engine.
 
+`Filter` makes the index partial: only the rows it selects are unique, so one open row per key and any
+number of closed ones. The syntax is the Sql engine's: identifiers double-quoted, a boolean as `{bt:0}` /
+`{bt:1}`, which each provider writes its own way:
+
+```csharp
+[Unique(nameof(DeskId), Filter = "\"ValidTo\" IS NULL")] // one open stretch per desk
+```
+
+On EF Core and the Sql engine the database's index carries the predicate, joined with a soft-deleted
+entity's live rows, and EF Core's model has the same `HasFilter`. MySQL and Oracle have no partial index,
+so the migration refuses it there. On the documents engine the index stays unique over every document,
+and the generator reports it (`PRAG3113`).
+
 An index written only in an EF Core `IEntityTypeConfiguration` is seen by no other engine, and for a
 package's entities by nothing at all.
 

@@ -432,7 +432,7 @@ Both are in **[references/database.md](references/database.md)**:
   clock and a temporal assertion becomes an equality;
 - a violated unique index, foreign key or constraint is a `PersistenceRuleViolationException` carrying
   an `IError` (a conflict is **409**, a delete a relation refuses is `ENTITY_IN_USE`), not a provider
-  exception; a duplicate's code is `DB_CONFLICT`, or the index's own with `[Unique(…, ErrorCode = "EMAIL_TAKEN")]`;
+  exception; a duplicate is `DB_CONFLICT`, or `[Unique(…, ErrorCode = "EMAIL_TAKEN")]`'s code; `Filter = "\"ValidTo\" IS NULL"` makes it partial (not on documents: `PRAG3113`);
 - ⚠️ a failed save leaves its entity tracked, and the next save retries it: `IUnitOfWork.Detach(entity)`.
 
 ## Most frequent diagnostics

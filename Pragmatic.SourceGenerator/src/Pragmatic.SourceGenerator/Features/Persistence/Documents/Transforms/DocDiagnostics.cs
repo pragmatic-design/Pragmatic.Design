@@ -112,6 +112,18 @@ internal static class DocDiagnostics
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     A warning: a <c>[Unique(Filter = …)]</c> on the documents engine (#729). A filter is a SQL predicate, which a document index cannot
+    ///     carry, so the index is unique over every document: stricter than declared, a row outside the filter refused too.
+    /// </summary>
+    public static readonly DiagnosticDescriptor FilteredUniqueNotSupported = new(
+        "PRAG3113",
+        "A filtered [Unique] on the documents engine is unique over every document",
+        "[Unique] on {0} declares the filter '{1}', a SQL predicate a document index cannot carry: on the documents engine the index is unique over every document, including those outside the filter",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <summary>Information: the call site's query as the generator wrote it (shown with -p:PragmaticCensus=true promoted, or in the IDE).</summary>
     public static readonly DiagnosticDescriptor Translated = new(
         "PRAG3199",

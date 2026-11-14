@@ -134,4 +134,10 @@ internal sealed record DbContextEntityModel
     ///     is true of is the database.
     /// </remarks>
     public string? TemporalMaxOneParentKey { get; init; }
+
+    /// <summary>
+    ///     The <c>[Unique(Filter = …)]</c> indexes (#729), each as the lambda selecting its columns (the EntityConfig's bare index, which EF
+    ///     Core merges this one with by property set) and the predicate as declared; the provider's text is written in the context.
+    /// </summary>
+    public EquatableArray<FilteredUniqueIndexModel> FilteredUniqueIndexes { get; init; } = EquatableArray<FilteredUniqueIndexModel>.Empty;
 }

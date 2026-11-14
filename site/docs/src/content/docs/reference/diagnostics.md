@@ -704,6 +704,7 @@ translated subset does not cover is a compile-time error with its remedy, never 
 | `PRAG3110` | Warning | A data scope rule of a Pragmatic entity is not compiled for the documents engine; the message says why. Registered and Computed or Hybrid, it is refused at read; EF Core runs it as before. |
 | `PRAG3111` | Error | A `[LoadEntity(Include = …)]` of an entity on the documents engine: a document keeps a relation as its key, so there is no navigation to load. Load the other entity with a second `[LoadEntity]` by that key. |
 | `PRAG3112` | Error | A mutation of an entity on the documents engine loads navigations (`[EagerLoad]`, what its response DTO maps from) or writes children (merged, or reached by a cascading soft delete): a document keeps a relation as its key. Read the other entity by that key, and write it with a mutation of its own. |
+| `PRAG3113` | Warning | A `[Unique(Filter = …)]` on the documents engine: a document index carries no SQL predicate, so the index is unique over every document, those outside the filter included. Drop the filter, or keep the entity on EF Core or the Sql engine, where the index is partial. |
 | `PRAG3199` | Hidden | A call site translated to a document query, with the query: what a census build prints for every call site. |
 
 ### Source generator infrastructure: `PRAG9000-9001`

@@ -838,7 +838,7 @@ internal static partial class SchemaMetadataTransform
         if (entity.InheritanceStrategy == "TPH" && ctx.TphDerivedTypes.TryGetValue(entity.FullTypeName, out var derivedInfos))
             AddTphDerivedColumns(derivedInfos, provider, columns);
 
-        var indexes = BuildIndexes(entity, tableName);
+        var indexes = BuildIndexes(entity, tableName, provider);
         var foreignKeys = BuildForeignKeys(entity, tableName);
         var checks = BuildCheckConstraints(entity, tableName);
 
@@ -1133,7 +1133,7 @@ internal static partial class SchemaMetadataTransform
             "\"ValidTo\" IS NULL OR \"ValidTo\" >= \"ValidFrom\""));
     }
 
-    private static ImmutableArray<IndexSchemaModel> BuildIndexes(EntityMetadataModel entity, string tableName)
+    private static ImmutableArray<IndexSchemaModel> BuildIndexes(EntityMetadataModel entity, string tableName, EfCoreProvider provider)
     {
         var indexes = new List<IndexSchemaModel>();
 
@@ -1182,7 +1182,8 @@ internal static partial class SchemaMetadataTransform
                 $"IX_{tableName}_{string.Join("_", cols)}",
                 cols,
                 IsUnique: true,
-                Filter: entity.IsSoftDelete ? "\"IsDeleted\" = false" : null));
+                // A declared predicate (#729) on the provider, joined with the live rows' when soft-deleted; the live rows' alone otherwise.
+                Filter: UniqueIndexFilters.Declared(entity, index, provider) ?? (entity.IsSoftDelete ? "\"IsDeleted\" = false" : null)));
         }
 
         // Composite unique constraint (the single-column case is [LogicKey] above)
