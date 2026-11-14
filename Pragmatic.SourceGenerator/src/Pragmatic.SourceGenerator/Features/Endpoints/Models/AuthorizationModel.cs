@@ -38,6 +38,12 @@ internal sealed record AuthorizationModel
     public bool RouteIsTenantAgnostic { get; init; }
 
     /// <summary>
+    ///     Whether the route runs in no tenant (<c>[NoTenant]</c>, #724): a tenant the request resolves is refused. Rides here for the reason
+    ///     <see cref="RouteIsTenantAgnostic" /> does.
+    /// </summary>
+    public bool RouteHasNoTenant { get; init; }
+
+    /// <summary>
     ///     The authorization policy name.
     /// </summary>
     public string? PolicyName { get; init; }

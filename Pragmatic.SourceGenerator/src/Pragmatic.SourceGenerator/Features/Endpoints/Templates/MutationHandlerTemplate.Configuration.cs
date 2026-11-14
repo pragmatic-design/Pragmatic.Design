@@ -39,8 +39,8 @@ internal sealed partial class MutationHandlerTemplate
         // before the authorization block because the two are separate questions: [AllowAnonymous]
         // lifts authentication, and the tenant refusal happens at order 92, before the route runs and
         // whoever is asking — which is why an anonymous probe was answered 400 in a multi-tenant host.
-        if (_model.Authorization?.RouteIsTenantAgnostic == true)
-            AppendLine(EndpointMetadataRenderer.RenderTenantAgnostic("builder"));
+        foreach (var marker in EndpointMetadataRenderer.RenderTenantMarkers(_model.Authorization, "builder"))
+            AppendLine(marker);
 
         // Authorization
         if (_model.Authorization is not null)

@@ -339,6 +339,18 @@ internal static partial class ActionTransform
         return false;
     }
 
+    /// <summary>Whether the operation declares <c>[NoTenant]</c>: it runs in no tenant, and one the request brings is refused (#724).</summary>
+    internal static bool ParseNoTenant(INamedTypeSymbol symbol)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (attr.AttributeClass?.ToDisplayString() == Endpoints.EndpointAttributeNames.NoTenant)
+                return true;
+        }
+
+        return false;
+    }
+
     internal static bool ParseAllowAnonymous(INamedTypeSymbol symbol)
     {
         foreach (var attr in symbol.GetAttributes())

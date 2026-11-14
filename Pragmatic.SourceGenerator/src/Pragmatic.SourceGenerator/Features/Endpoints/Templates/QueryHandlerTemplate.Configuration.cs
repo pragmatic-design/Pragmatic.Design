@@ -36,8 +36,8 @@ internal sealed partial class QueryHandlerTemplate
         // [AllowAnonymous] lifts authentication, and the tenant refusal happens at order 92, before
         // the route runs and whoever is asking — which is why an anonymous probe was answered 400 in
         // a multi-tenant host.
-        if (_model.Authorization?.RouteIsTenantAgnostic == true)
-            AppendLine(EndpointMetadataRenderer.RenderTenantAgnostic("builder"));
+        foreach (var marker in EndpointMetadataRenderer.RenderTenantMarkers(_model.Authorization, "builder"))
+            AppendLine(marker);
 
         if (_model.Authorization is not null)
         {

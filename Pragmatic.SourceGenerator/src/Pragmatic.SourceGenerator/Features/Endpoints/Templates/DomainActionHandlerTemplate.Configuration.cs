@@ -41,8 +41,8 @@ internal sealed partial class DomainActionHandlerTemplate
         // [AllowAnonymous] lifts authentication, and the tenant refusal happens at order 92, before
         // the route runs and whoever is asking — which is why an anonymous probe was answered 400 in
         // a multi-tenant host.
-        if (_model.Authorization?.RouteIsTenantAgnostic == true)
-            AppendLine(EndpointMetadataRenderer.RenderTenantAgnostic(b));
+        foreach (var marker in EndpointMetadataRenderer.RenderTenantMarkers(_model.Authorization, b))
+            AppendLine(marker);
 
         // Authorization
         if (_model.Authorization is not null)

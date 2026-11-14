@@ -554,6 +554,13 @@ internal static partial class EndpointsFeature
                 EndpointsDiagnostics.SharedResponseCacheOnAuthenticatedEndpoint, model.Location, model.TypeName));
         }
 
+        // A route that runs in no tenant and one that does not require one, both at once (PRAG0556).
+        if (model.Authorization is { RouteHasNoTenant: true, RouteIsTenantAgnostic: true })
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                EndpointsDiagnostics.NoTenantBesideTenantAgnostic, model.Location, model.TypeName));
+        }
+
         // Streaming (SSE) constraints: PRAG0520-0524
         if (model is { IsValid: true, IsStreamingResponse: true })
         {

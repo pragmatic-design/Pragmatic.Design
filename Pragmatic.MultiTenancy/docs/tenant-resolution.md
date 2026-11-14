@@ -304,6 +304,24 @@ liveness probe with it.
 `HostHealthOptions`, the document's through `MapPragmaticOpenApi(pattern)`), so a default list of
 strings would be right only for applications that changed nothing, and silently wrong for the rest.
 
+## Routes That Run in No Tenant
+
+A platform operation (onboarding a tenant, an operator's report across all of them) must not run
+inside a tenant the caller brings: its reads would be filtered to that tenant and its writes stamped
+with it. A tenant-agnostic route serves the caller in that tenant. Declare the operation with
+`[NoTenant]` (`Pragmatic.Endpoints.Attributes`), or attach `NoTenantEndpoint.Instance` to a route you
+map yourself:
+
+```csharp
+[Endpoint(HttpVerb.Get, "api/platform/tenants")]
+[NoTenant]
+public partial class ListTenantsAction : DomainAction<TenantSummary[]> { … }
+```
+
+A request that resolves a tenant, by any strategy and the caller's tenant claim included, is refused
+with `400` and `code` `TENANT_NOT_ALLOWED`. One that resolves none runs with no tenant, whatever
+`RequireTenant` says. `[NoTenant]` beside `[TenantAgnostic]` is `PRAG0556`.
+
 **Measured, not assumed:** before this existed, a host that had simply enabled the health endpoint
 answered `/health` with **400** and, with `X-Tenant-Id`, with **200**. A Kubernetes probe would have
 marked the application dead and restarted it for ever, by a check that never ran.
