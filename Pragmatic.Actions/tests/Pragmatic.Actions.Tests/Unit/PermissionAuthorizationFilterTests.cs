@@ -151,6 +151,31 @@ public class PermissionAuthorizationFilterTests
         result.Error.Should().BeOfType<UnauthorizedError>();
     }
 
+    /// <summary>
+    ///     An unauthenticated caller holding the permission, through the anonymous role, is let through (#722): it was refused before its
+    ///     permissions were asked, so a public operation could not be gated by a grant an administrator can withdraw.
+    /// </summary>
+    [Fact]
+    public async Task RequirePermission_UnauthenticatedUserHoldingIt_Succeeds()
+    {
+        var filter = CreateFilter(false, ["orders.create"]);
+
+        var result = await filter.BeforeExecuteAsync<SinglePermissionAction, string>(new SinglePermissionAction(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    /// <summary>Lacking the permission an unauthenticated caller is still asked to authenticate, not forbidden (#722).</summary>
+    [Fact]
+    public async Task RequirePermission_UnauthenticatedUserLackingIt_ReturnsUnauthorized()
+    {
+        var filter = CreateFilter(false, ["orders.read"]);
+
+        var result = await filter.BeforeExecuteAsync<SinglePermissionAction, string>(new SinglePermissionAction(), CancellationToken.None);
+
+        result.Error.Should().BeOfType<UnauthorizedError>();
+    }
+
     [Fact]
     public async Task RequirePermission_UserHasPermission_Succeeds()
     {

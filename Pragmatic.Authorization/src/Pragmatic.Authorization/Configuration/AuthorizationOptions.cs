@@ -57,6 +57,29 @@ public sealed class AuthorizationOptions
     public int MaxDelegationChainDepth { get; set; } = 2;
 
     /// <summary>
+    ///     The role an unauthenticated caller holds, or <see langword="null" /> for none (the default).
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Its permissions are an anonymous caller's, expanded by the role stores as any role's: an operation under
+    ///         <c>[AllowAnonymous]</c> and <c>[RequirePermission(P)]</c> runs for an anonymous caller when this role holds <c>P</c>, and asks
+    ///         it to authenticate (401) when it does not (#722). Without it an anonymous caller was refused before its permissions were asked,
+    ///         so a public operation could not be gated by a grant an administrator can withdraw.
+    ///     </para>
+    ///     <para>
+    ///         An authenticated caller does not hold it. Name a role nobody is assigned, since its permissions are everyone's.
+    ///     </para>
+    /// </remarks>
+    public string? AnonymousRole { get; set; }
+
+    /// <summary>
+    ///     The <see cref="AnonymousRole" /> when <paramref name="user" /> is unauthenticated and one is configured, otherwise
+    ///     <see langword="null" />: the one answer every role expansion asks, so the static stores and the managed ones agree on who holds it.
+    /// </summary>
+    public string? AnonymousRoleFor(Identity.ICurrentUser user)
+        => user is { IsAuthenticated: false } && !string.IsNullOrWhiteSpace(AnonymousRole) ? AnonymousRole : null;
+
+    /// <summary>
     ///     Options for cross-request permission caching. Null means no cross-request caching
     ///     (request-scoped lazy resolution only).
     /// </summary>

@@ -1,3 +1,5 @@
+using Pragmatic.Authorization.Configuration;
+
 namespace Pragmatic.Authorization.Evaluation;
 
 /// <summary>
@@ -20,9 +22,15 @@ public sealed partial class CachedPermissionResolver
     /// </remarks>
     public IReadOnlyCollection<string> Roles => _resolvedRoles ?? ResolveRoles();
 
-    private IReadOnlyCollection<string> ClaimedRoles => _currentUser.Claims.TryGetValue("role", out var roles)
-        ? (IReadOnlyCollection<string>)roles
-        : Array.Empty<string>();
+    private readonly AuthorizationOptions? _options;
+
+    // The identity's own roles: its role claims, or the anonymous role for an unauthenticated caller when one is configured (#722), so
+    // IsInRole agrees with the permissions the role stores grant it.
+    private IReadOnlyCollection<string> ClaimedRoles => _options?.AnonymousRoleFor(_currentUser) is { } anonymous
+        ? [anonymous]
+        : _currentUser.Claims.TryGetValue("role", out var roles)
+            ? (IReadOnlyCollection<string>)roles
+            : Array.Empty<string>();
 
     private IReadOnlyCollection<string> ResolveRoles()
     {

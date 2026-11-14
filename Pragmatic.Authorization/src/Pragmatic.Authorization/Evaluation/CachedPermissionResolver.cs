@@ -66,6 +66,7 @@ public sealed partial class CachedPermissionResolver : IUserAuthorization
         _currentUser = currentUser;
         _cacheOptions = options?.Value.CacheOptions;
         _trustsClaims = options?.Value.TrustPermissionClaims ?? false;
+        _options = options?.Value;
         _cache = cache;
         _tenantContext = tenantContext;
         _roleProviders = roleProviders?.ToList() ?? [];

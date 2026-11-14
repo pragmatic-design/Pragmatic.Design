@@ -98,28 +98,26 @@ public sealed partial class PermissionAuthorizationFilter(
         if (requirement is null)
             return VoidResult<IError>.Success();
 
+        var granted = requirement.Mode == PermissionMode.All
+            ? currentUser.Authorization.HasAllPermissions(requirement.Permissions)
+            : currentUser.Authorization.HasAnyPermission(requirement.Permissions);
+
+        return Decide(granted, requirement, type, currentUser);
+    }
+
+    // The one decision both checks end in. An unauthenticated caller is asked for its permissions like anyone (#722): it holds the
+    // anonymous role's, when one is configured, and nothing otherwise. Lacking them it is asked to authenticate, never forbidden, so with no
+    // anonymous role the answer is the 401 it always was.
+    private static VoidResult<IError> Decide(bool granted, PermissionRequirement requirement, Type type, ICurrentUser currentUser)
+    {
+        if (granted)
+            return VoidResult<IError>.Success();
+
         if (!currentUser.IsAuthenticated)
-            return VoidResult<IError>.Failure(
-                UnauthorizedError.Create("Authentication required"));
+            return VoidResult<IError>.Failure(UnauthorizedError.Create("Authentication required"));
 
-        if (requirement.Mode == PermissionMode.All)
-        {
-            if (!currentUser.Authorization.HasAllPermissions(requirement.Permissions))
-            {
-                return VoidResult<IError>.Failure(
-                    ForbiddenError.MissingPermissions(requirement.Permissions, PermissionMatch.All, type.Name));
-            }
-        }
-        else
-        {
-            if (!currentUser.Authorization.HasAnyPermission(requirement.Permissions))
-            {
-                return VoidResult<IError>.Failure(
-                    ForbiddenError.MissingPermissions(requirement.Permissions, PermissionMatch.Any, type.Name));
-            }
-        }
-
-        return VoidResult<IError>.Success();
+        var match = requirement.Mode == PermissionMode.All ? PermissionMatch.All : PermissionMatch.Any;
+        return VoidResult<IError>.Failure(ForbiddenError.MissingPermissions(requirement.Permissions, match, type.Name));
     }
 
     /// <summary>
@@ -169,28 +167,11 @@ public sealed partial class PermissionAuthorizationFilter(
         if (requirement is null)
             return VoidResult<IError>.Success();
 
-        if (!currentUser.IsAuthenticated)
-            return VoidResult<IError>.Failure(
-                UnauthorizedError.Create("Authentication required"));
+        var granted = requirement.Mode == PermissionMode.All
+            ? await currentUser.Authorization.HasAllPermissionsAsync(requirement.Permissions, ct).ConfigureAwait(false)
+            : await currentUser.Authorization.HasAnyPermissionAsync(requirement.Permissions, ct).ConfigureAwait(false);
 
-        if (requirement.Mode == PermissionMode.All)
-        {
-            if (!await currentUser.Authorization.HasAllPermissionsAsync(requirement.Permissions, ct).ConfigureAwait(false))
-            {
-                return VoidResult<IError>.Failure(
-                    ForbiddenError.MissingPermissions(requirement.Permissions, PermissionMatch.All, type.Name));
-            }
-        }
-        else
-        {
-            if (!await currentUser.Authorization.HasAnyPermissionAsync(requirement.Permissions, ct).ConfigureAwait(false))
-            {
-                return VoidResult<IError>.Failure(
-                    ForbiddenError.MissingPermissions(requirement.Permissions, PermissionMatch.Any, type.Name));
-            }
-        }
-
-        return VoidResult<IError>.Success();
+        return Decide(granted, requirement, type, currentUser);
     }
 
     private static PermissionRequirement? ResolveRequirementFromRegistry(

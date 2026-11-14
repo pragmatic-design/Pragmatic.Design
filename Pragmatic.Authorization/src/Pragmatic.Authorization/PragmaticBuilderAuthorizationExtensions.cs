@@ -90,7 +90,7 @@ public static class PragmaticBuilderAuthorizationExtensions
             o.EnablePermissionCaching = authBuilder.Options.EnablePermissionCaching;
             o.TrustPermissionClaims = authBuilder.Options.TrustPermissionClaims;
             o.CacheOptions = authBuilder.Options.CacheOptions;
-        });
+            o.AnonymousRole = authBuilder.Options.AnonymousRole;        });
 
         // Register the resolver as IUserAuthorization (scoped per request). Built by hand rather than
         // by type so the cache stack comes from CacheCategories.Permissions: type registration would

@@ -223,6 +223,18 @@ The `NoOpAuthenticationHandler` maps these headers to claims. The `RoleExpansion
 
 `[AllowAnonymous]` is an ASP.NET Core concept that overrides endpoint-level authorization. It works with `Pragmatic.Endpoints` group-level authorization. For action-level authorization (`[RequirePermission]` on a `DomainAction`), the enforcement happens in the action pipeline, not in ASP.NET Core middleware. To skip authorization on specific actions, do not apply `[RequirePermission]` to them.
 
+The two together are a public operation gated by a permission: the route needs no sign-in, and the action asks for the permission. An anonymous caller holds the permissions of `authz.AnonymousRole` (none configured by default), so the operation runs when that role holds the permission and answers 401 when it does not. Grant the role the permission in the role store, or through `AssignPermissionsToRole` with `Pragmatic.Authorization.Management`, to open the operation without a deploy.
+
+```csharp
+app.UseAuthorization(authz =>
+{
+    authz.AnonymousRole = "anonymous";
+    authz.MapRole("anonymous", r => r.WithPermissions(CatalogPermissions.Amenity.Read));
+});
+```
+
+Name a role nobody is assigned: an authenticated caller does not hold it, but whoever is assigned it holds its permissions as well.
+
 ### What happens when a user has both direct permissions and role-based permissions?
 
 All provider results are merged with union semantics (additive). If `ClaimsPermissionProvider` (Order 0) returns `{"booking.reservation.read"}` and `RoleExpansionProvider` (Order 100) returns `{"booking.*"}`, the final set is `{"booking.reservation.read", "booking.*"}`. No provider can remove permissions added by another.
@@ -276,7 +288,7 @@ If `pragmatic.authorization.permission_denied` is much higher than expected:
 
 3. **Check wildcard coverage.** A role with `"booking.reservation.*"` does not grant `"billing.invoice.read"`. Verify that wildcard patterns cover the right boundary and entity.
 
-4. **Check for anonymous requests.** Unauthenticated requests always fail permission checks. For a public endpoint use `[AllowAnonymous]` rather than expecting an anonymous user to hold permissions.
+4. **Check for anonymous requests.** An unauthenticated request holds only the permissions of `authz.AnonymousRole`, and nothing when none is configured. For a public endpoint use `[AllowAnonymous]`; to gate it by a permission, configure the anonymous role and grant it that permission.
 
 5. **Check cache behavior.** If `pragmatic.authorization.cache_misses` is very high, the provider chain runs on every request. This may indicate that cross-request caching is not configured or that `ICacheStack` is not registered.
 

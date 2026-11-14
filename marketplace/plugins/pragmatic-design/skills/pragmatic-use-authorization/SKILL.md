@@ -267,7 +267,7 @@ Do not map `Jwt:*` into the lambda by hand: the parameterless form does it, and 
 missing. It also reads `TokenExpiration`, `ClockSkew` (TimeSpan) and `RequireSecurityStamp`;
 `UseJwtAuthentication("Auth:Tokens")` reads another section.
 
-`UseJwtAuthentication` (from `Pragmatic.Identity.Local.Jwt`) for local token auth; `UseOidcAuthentication` (from `Pragmatic.Identity.Oidc`) when an external provider issues the tokens; `UseAuthentication(...)` / `UseAuthentication<THandler>(scheme)` for a custom handler or scheme. Each of them registers the scheme **and** the pipeline step that adds the authentication/authorization middleware, so you never write `UseAuthentication()`/`UseAuthorization()` yourself. Endpoints require authentication by default; opt out with `[AllowAnonymous]`.
+`UseJwtAuthentication` (from `Pragmatic.Identity.Local.Jwt`) for local token auth; `UseOidcAuthentication` (from `Pragmatic.Identity.Oidc`) when an external provider issues the tokens; `UseAuthentication(...)` / `UseAuthentication<THandler>(scheme)` for a custom handler or scheme. Each of them registers the scheme **and** the pipeline step that adds the authentication/authorization middleware, so you never write `UseAuthentication()`/`UseAuthorization()` yourself. Endpoints require authentication by default; opt out with `[AllowAnonymous]`. To gate a public operation by a permission an administrator can grant and revoke, put `[RequirePermission]` beside `[AllowAnonymous]` and set `authz.AnonymousRole = "anonymous"`: an unauthenticated caller holds that role's permissions (none by default) and gets 401 without them.
 
 ### External provider (OIDC)
 
