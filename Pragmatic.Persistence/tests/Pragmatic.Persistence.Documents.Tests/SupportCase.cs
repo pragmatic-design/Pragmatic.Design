@@ -10,4 +10,8 @@ public partial class SupportCase : IEntity
     public string Number { get; private set; } = "";
 
     public string Subject { get; set; } = "";
+
+    /// <summary>The desk of whoever opened the case, from a scoped service, filled at the save (#740).</summary>
+    [ComputedDefault<SupportCase, string, ReceptionDeskName>]
+    public string Desk { get; set; } = "";
 }

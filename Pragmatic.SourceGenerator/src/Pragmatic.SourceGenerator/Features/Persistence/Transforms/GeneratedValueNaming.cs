@@ -7,9 +7,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Transforms;
 ///     generator.
 /// </summary>
 /// <remarks>
-///     Two sides depend on this name and never meet: <c>GeneratedValueTransform</c> +
-///     <c>GeneratedValueTemplate</c> <em>declare</em> the class, and
-///     <c>ComputedDefaultEnricher</c> <em>references</em> it from the mutation invoker. When each side
+///     Two sides depend on this name and never meet: <c>GeneratedValueTemplate</c> <em>declares</em> the class, and
+///     <c>GeneratedValueRegistrationTemplate</c> <em>references</em> it, both through the name the transform reads here. When each side
 ///     built the name for itself, a rename on one side produced generated code pointing at a type that
 ///     does not exist — a compile error in the consumer's project, from the generator's own output.
 /// </remarks>

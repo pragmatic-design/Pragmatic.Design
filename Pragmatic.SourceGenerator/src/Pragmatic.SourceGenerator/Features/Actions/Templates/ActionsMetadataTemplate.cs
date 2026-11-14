@@ -198,25 +198,6 @@ internal sealed class ActionsMetadataTemplate : CSharpTemplate
             if (mutation.IsInternal)
                 builder.Property("internal", true);
 
-            // Serialize computed default generators for host-level DI registration
-            if (mutation.HasComputedDefaults && mutation.ComputedDefaults?.Properties.Length > 0)
-            {
-                builder.Property("computedDefaults");
-                builder.StartArray();
-                foreach (var cd in mutation.ComputedDefaults.Properties)
-                {
-                    builder.StartObject();
-                    builder.Property("entityType", cd.EntityTypeFqn);
-                    builder.Property("valueType", cd.ValueTypeFqn);
-                    builder.Property("generatorType", cd.GeneratorTypeFqn);
-                    if (cd.RequiresScope)
-                        builder.Property("requiresScope", "true");
-                    builder.EndObject();
-                }
-
-                builder.EndArray();
-            }
-
             // Policy and permission metadata for host-level registry generation
             if (mutation.HasPolicy)
                 builder.Property("policyType", mutation.PolicyTypeFullName!);

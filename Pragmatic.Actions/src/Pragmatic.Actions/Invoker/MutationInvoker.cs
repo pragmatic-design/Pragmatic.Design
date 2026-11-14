@@ -326,20 +326,18 @@ public abstract partial class MutationInvoker<TMutation, TEntity> : IMutationInv
         return (newEntity, true, null);
     }
 
-    private async Task<TEntity> CreateAndPrepareEntityAsync(string mutationType, CancellationToken ct)
+    private Task<TEntity> CreateAndPrepareEntityAsync(string mutationType, CancellationToken ct)
     {
         var entity = CreateEntity();
 
         if (entity is IChangeTracking newTracking)
             newTracking.IsNew = true;
 
-        var lifecycleContext = BuildLifecycleContext();
-        await ApplyComputedDefaultsAsync(entity, lifecycleContext, ct).ConfigureAwait(false);
+        // IEntityLifecycle<TEntity>.OnCreating — after construction, before validation. A [ComputedDefault] is not filled yet: the unit of
+        // work fills it at the save, for an entity added any way (#740), as it fills a [GeneratedValue].
+        InvokeOnCreatingHooks(entity, BuildLifecycleContext());
 
-        // IEntityLifecycle<TEntity>.OnCreating — after construction/defaults, before validation.
-        InvokeOnCreatingHooks(entity, lifecycleContext);
-
-        return entity;
+        return Task.FromResult(entity);
     }
 
     // =========================================================================

@@ -403,10 +403,6 @@ internal sealed record MutationModel
     public TransitionModel? Transition { get; init; }
     public bool HasResilience => Resilience is not null;
 
-    /// <summary>Computed default contribution from [ComputedDefault] on entity properties.</summary>
-    public ComputedDefaultContribution? ComputedDefaults { get; init; }
-    public bool HasComputedDefaults => ComputedDefaults is not null;
-
     /// <summary>Preset contribution from [HasPresets] + [PresetProvider] on entity.</summary>
     public PresetContribution? Presets { get; init; }
     public bool HasPresets => Presets is not null;

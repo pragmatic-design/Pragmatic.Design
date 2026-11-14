@@ -281,7 +281,7 @@ Based on `MutationMode`:
 
 If the entity is not found (Update/Delete/Restore), returns `NotFoundError`.
 
-For Create mode, `ApplyComputedDefaultsAsync()` runs (if entity has `[ComputedDefault]` properties).
+A `[ComputedDefault]` is not filled here: the unit of work fills it at the save, for an entity added any way, as it fills a `[GeneratedValue]`.
 
 ### 4a. Apply Auto-Mapping
 

@@ -11,16 +11,6 @@ namespace Pragmatic.SourceGenerator.Tests.Compositions;
 public sealed class ContributionEqualityTests
 {
     [Fact]
-    public void ComputedDefaultContribution_WithEqualProperties_AreEqual()
-    {
-        var a = new ComputedDefaultContribution { Properties = BuildProps() };
-        var b = new ComputedDefaultContribution { Properties = BuildProps() };
-
-        a.Should().Be(b);
-        a.GetHashCode().Should().Be(b.GetHashCode());
-    }
-
-    [Fact]
     public void PresetContribution_WithEqualProviders_AreEqual()
     {
         var a = new PresetContribution { Providers = BuildProviders() };
@@ -29,18 +19,6 @@ public sealed class ContributionEqualityTests
         a.Should().Be(b);
         a.GetHashCode().Should().Be(b.GetHashCode());
     }
-
-    private static ImmutableArray<ComputedDefaultPropertyModel> BuildProps() =>
-    [
-        new ComputedDefaultPropertyModel
-        {
-            PropertyName = "InvoiceNumber",
-            SetterName = "SetInvoiceNumber",
-            ValueTypeFqn = "string",
-            GeneratorTypeFqn = "global::MyApp.InvoiceNumberGenerator",
-            EntityTypeFqn = "global::MyApp.Invoice",
-        },
-    ];
 
     private static ImmutableArray<PresetProviderModel> BuildProviders() =>
     [

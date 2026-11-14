@@ -206,36 +206,6 @@ internal sealed partial class MutationInvokerTemplate
         });
     }
 
-    private void RenderApplyComputedDefaultsAsync()
-    {
-        var entityType = _model.EntityFullTypeName;
-        var contextType = "global::Pragmatic.Persistence.Lifecycle.LifecycleContext";
-
-        XmlSummary("Applies computed default values to a newly created entity via registered generators.");
-
-        AppendLine($"protected override async global::System.Threading.Tasks.Task ApplyComputedDefaultsAsync({entityType} entity, {contextType} context, global::System.Threading.CancellationToken ct)");
-        Block(() =>
-        {
-            if (_model.ComputedDefaults is null) return;
-
-            foreach (var prop in _model.ComputedDefaults.Properties)
-            {
-                var generatorInterface = $"global::Pragmatic.Persistence.Lifecycle.IDefaultValueGenerator<{prop.EntityTypeFqn}, {prop.ValueTypeFqn}>";
-
-                var varName = TemplateHelpers.ToCamelCase(prop.PropertyName);
-                AppendLine($"var {varName}Generator = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{generatorInterface}>(_serviceProvider);");
-                AppendLine($"var {varName}Value = await {varName}Generator.GenerateAsync(entity, context, ct).ConfigureAwait(false);");
-
-                // Public setter: direct assignment. Private setter: use generated SetXxx method.
-                if (prop.SetterName == prop.PropertyName)
-                    AppendLine($"entity.{prop.PropertyName} = {varName}Value;");
-                else
-                    AppendLine($"entity.{prop.SetterName}({varName}Value);");
-                AppendLine();
-            }
-        });
-    }
-
     private void RenderApplyPresetsAsync()
     {
         var entityType = _model.EntityFullTypeName;

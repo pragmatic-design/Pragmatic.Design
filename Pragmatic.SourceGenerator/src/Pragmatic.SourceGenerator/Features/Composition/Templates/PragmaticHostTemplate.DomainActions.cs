@@ -244,35 +244,8 @@ internal sealed partial class PragmaticHostTemplate
             // TryAddSingleton, which never overwrites and never wins a later AddSingleton.
             RenderPolicyAndPermissionRegistries();
 
-            // Register IDefaultValueGenerator<TEntity, TValue> from [ComputedDefault] and auto-generatable
-            // [GeneratedValue] attributes. Sequence-backed formatters inject a keyed DbContext, so they
-            // register as scoped; stateless generators stay singleton.
-            // ⚠️ Remote assemblies excluded here too, and it had to be said three times because these
-            // three lists are read straight from the model rather than from the filtered groupings
-            // above. A sequence-backed generator injects a keyed DbContext, and a module this host
-            // reaches over HTTP has no database here to key — which is what the distributed host's
-            // container validation reported second, once it had something to start.
-            var allComputedDefaults = _model.DiscoveredMutations
-                .Where(m => !remoteAssemblySet.Contains(m.SourceAssembly))
-                .Where(m => !m.ComputedDefaults.IsDefaultOrEmpty)
-                .SelectMany(m => m.ComputedDefaults)
-                .GroupBy(cd => (cd.EntityTypeFqn, cd.ValueTypeFqn, cd.GeneratorTypeFqn))
-                .Select(g => g.First())
-                .ToList();
-
-            if (allComputedDefaults.Count > 0)
-            {
-                Comment("IDefaultValueGenerator from [ComputedDefault]/[GeneratedValue] attributes");
-                foreach (var cd in allComputedDefaults)
-                {
-                    var interfaceFqn =
-                        $"global::Pragmatic.Persistence.Lifecycle.IDefaultValueGenerator<{cd.EntityTypeFqn}, {cd.ValueTypeFqn}>";
-                    var lifetime = cd.RequiresScope ? "AddScoped" : "AddSingleton";
-                    AppendLine($"services.{lifetime}<{interfaceFqn}, {cd.GeneratorTypeFqn}>();");
-                }
-
-                AppendLine();
-            }
+            // A [ComputedDefault]'s generator is registered by its entity's assembly, through its Persistence metadata, scoped and with
+            // the binding the unit of work applies at the save (#740): the host reads no list of them from the mutations any more.
 
             RenderCompensatorRegistrations(remoteAssemblySet);
             RenderPresetProviderRegistrations(remoteAssemblySet);

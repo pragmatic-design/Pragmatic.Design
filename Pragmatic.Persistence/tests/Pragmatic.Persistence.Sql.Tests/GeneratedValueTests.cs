@@ -25,6 +25,8 @@ public class GeneratedValueTests(PragmaticDatabases databases)
         var services = new ServiceCollection();
         services.AddSingleton(session);
         services.AddPragmaticEntitiesValueGenerators(); // what the generated host calls, from the assembly's metadata
+        services.AddPragmaticEntitiesComputedDefaults(); // and this, for SupportCase's [ComputedDefault] (#740): Oracle stores no empty string
+        services.AddScoped(_ => new CallerDesk { Name = "Front desk", Priority = 1 });
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
         await using var scope = provider.CreateAsyncScope();
 

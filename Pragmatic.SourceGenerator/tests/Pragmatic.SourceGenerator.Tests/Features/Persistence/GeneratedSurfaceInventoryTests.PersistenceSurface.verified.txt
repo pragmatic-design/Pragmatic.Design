@@ -6302,6 +6302,10 @@ public static partial class InventoryMutationsRegistrationExtensions
 public static class InventoryCascadeHandlerRegistrationExtensions
     public static IServiceCollection AddInventoryCascadeHandlers(this IServiceCollection services)
 
+## _Infra.Persistence.ComputedDefaults.g.cs
+public static class ComputedDefaultRegistrationExtensions
+    public static IServiceCollection AddInventoryComputedDefaults(this IServiceCollection services)
+
 ## _Infra.Persistence.DbContextRegistration.g.cs
 public static partial class DbContextRegistrationExtensions
     public static IServiceCollection AddInventoryDbContext(this IServiceCollection services, Action<DbContextOptionsBuilder> configure)

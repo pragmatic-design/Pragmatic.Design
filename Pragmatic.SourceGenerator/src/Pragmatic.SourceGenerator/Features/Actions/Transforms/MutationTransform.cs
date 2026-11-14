@@ -110,7 +110,6 @@ internal static partial class MutationTransform
         var softDelete = SoftDeleteEnricher.Enrich(entityType, mode.Value, softDeleteExplicit);
         var (resilience, blankResiliencePolicy) = ResilienceEnricher.Enrich(symbol);
         var isCreate = mode.Value is MutationModeValue.Create or MutationModeValue.CreateOrUpdate;
-        var computedDefaults = ComputedDefaultEnricher.Enrich(entityType, isCreate);
         var presets = PresetEnricher.Enrich(entityType, isCreate);
         var filterOverrides = FilterOverrideParser.Parse(symbol);
         var policyTypeFullName = ActionTransform.ParseRequirePolicy(symbol);
@@ -222,7 +221,6 @@ internal static partial class MutationTransform
             Resilience = resilience,
             Transition = TransitionReader.ForMutation(
                 symbol, entityType, mode.Value == MutationModeValue.Update, context.SemanticModel.Compilation),
-            ComputedDefaults = computedDefaults,
             Presets = presets,
             FilterOverrides = filterOverrides,
             PolicyTypeFullName = policyTypeFullName,
