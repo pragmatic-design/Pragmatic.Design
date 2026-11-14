@@ -84,14 +84,15 @@ internal static partial class ActionsFeature
                 model.IsTransactional ? "Transactional" : "CommitStrategy"));
         }
 
-        // PRAG0433: an event parameter that binds to nothing and is dispatched as default.
+        // PRAG0433: an event parameter that binds to nothing and is dispatched as default. For an action the result's members and the
+        // loaded entities' are candidates too (#737), so the message says so.
         foreach (var raised in model.RaisedEvents)
         {
             foreach (var parameter in raised.UnmatchedParameters)
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     ActionsDiagnostics.EventParameterHasNoSource, model.Location,
-                    model.TypeName, raised.EventFullName, parameter, string.Empty));
+                    model.TypeName, raised.EventFullName, parameter, ", result member or loaded entity property"));
             }
         }
 

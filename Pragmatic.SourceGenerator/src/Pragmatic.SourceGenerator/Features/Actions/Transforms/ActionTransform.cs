@@ -131,7 +131,8 @@ internal static partial class ActionTransform
         var (requireAllPerms, requireAnyPerms, unresolvedAll, unresolvedAny) = ParseRequirePermissions(symbol, context.SemanticModel.Compilation);
         var explicitPermission = ParseExplicitPermission(symbol, context.SemanticModel.Compilation);
         var allowAnonymous = ParseAllowAnonymous(symbol);
-        var raisedEvents = ParseRaisedEvents(symbol, inputProperties);
+        var raisedEvents = ParseRaisedEvents(symbol, inputProperties, loadEntities, isVoid ? null : returnTypeSymbol,
+            context.SemanticModel.Compilation);
 
         var declaredSubBoundary = SubBoundaryTransform.Declared(symbol);
 
