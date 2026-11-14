@@ -173,7 +173,9 @@ internal static partial class MetadataReader
                                 inputName!,
                                 inputType!,
                                 input.TryGetProperty("nullable", out var nu) && nu.ValueKind == JsonValueKind.True,
-                                input.TryGetProperty("required", out var rq) && rq.ValueKind == JsonValueKind.True));
+                                input.TryGetProperty("required", out var rq) && rq.ValueKind == JsonValueKind.True,
+                                // Absent from a module compiled before #780: read as settable, the form it was emitted for.
+                                input.TryGetProperty("initOnly", out var io) && io.ValueKind == JsonValueKind.True));
                         }
                         inputs = read.ToImmutable();
                     }

@@ -37,9 +37,10 @@ namespace Showcase.Accounts;
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.RevokePermissionsFromRole, OperationsGroup>(HttpVerb.Post, "roles/revoke-permissions")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.DeactivateRole, OperationsGroup>(HttpVerb.Post, "roles/deactivate")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.ReactivateRole, OperationsGroup>(HttpVerb.Post, "roles/reactivate")]
-// Groups (#726): a group is given roles, and its members hold them. At /api/operations/groups/…. ListGroups is not exposed: over GET
-// its optional init input does not compile in the generated handler (#780).
+// Groups (#726): a group is given roles, and its members hold them. At /api/operations/groups/….
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.CreateGroup, OperationsGroup>(HttpVerb.Post, "groups")]
+// Over GET, its optional init input (TenantId) is bound from the query string (#780).
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.ListGroups, OperationsGroup>(HttpVerb.Get, "groups")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.AssignRoleToGroup, OperationsGroup>(HttpVerb.Post, "groups/assign-role")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.RevokeRoleFromGroup, OperationsGroup>(HttpVerb.Post, "groups/revoke-role")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Assignments.AssignUserToGroup, OperationsGroup>(HttpVerb.Post, "groups/add-member")]

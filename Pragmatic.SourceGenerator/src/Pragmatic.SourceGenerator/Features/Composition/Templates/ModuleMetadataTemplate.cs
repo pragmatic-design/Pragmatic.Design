@@ -135,6 +135,7 @@ internal sealed class ModuleMetadataTemplate : CSharpTemplate
                         builder.Property("type", input.TypeName);
                         builder.Property("nullable", input.IsNullable);
                         builder.Property("required", input.IsRequired);
+                        builder.Property("initOnly", input.IsInitOnly);
                         builder.EndObject();
                     }
                     builder.EndArray();

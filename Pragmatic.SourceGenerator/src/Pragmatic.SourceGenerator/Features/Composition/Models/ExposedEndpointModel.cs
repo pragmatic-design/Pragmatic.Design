@@ -60,4 +60,7 @@ internal sealed record ExposedEndpointModel
 /// <param name="TypeName">Fully qualified, because the handler is emitted into the host's file.</param>
 /// <param name="IsNullable">Whether the declaration accepts nothing.</param>
 /// <param name="IsRequired">Whether the caller must supply it.</param>
-internal sealed record ExposedInputModel(string Name, string TypeName, bool IsNullable, bool IsRequired);
+/// <param name="IsInitOnly">
+///     Whether its setter is <c>init</c>: then it can be set only in the action's initializer, never after construction (#780).
+/// </param>
+internal sealed record ExposedInputModel(string Name, string TypeName, bool IsNullable, bool IsRequired, bool IsInitOnly);

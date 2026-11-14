@@ -205,16 +205,40 @@ internal sealed class ExposedEndpointHandlerTemplate : CSharpTemplate
                 // omitted must leave the action's own default standing: GetConfigValues declares
                 // `Limit = 500`, and assigning the unbound `null` would turn every call into a dump of
                 // one entry — or not compile, for a value type.
+                //
+                // An optional `init` input cannot be assigned after construction (#780), so it goes in
+                // the initializer, taking what was bound or, when nothing was, the value an action built
+                // without it has: the same default the assignment below leaves standing.
+                var required = _ep.Inputs.Where(i => i.IsRequired && !i.IsNullable).ToList();
+                var optional = _ep.Inputs.Where(i => !i.IsRequired || i.IsNullable).ToList();
+                var initOnly = optional.Where(i => i.IsInitOnly).ToList();
+
                 AppendLine();
+                if (initOnly.Count > 0)
+                {
+                    AppendLine($"var __defaults = new {_ep.ActionTypeName}");
+                    Block(() =>
+                    {
+                        foreach (var input in required)
+                            AppendLine($"{input.Name} = {ToCamelCase(input.Name)},");
+                    });
+                    AppendLine(";");
+                }
+
                 AppendLine($"var action = new {_ep.ActionTypeName}");
                 Block(() =>
                 {
-                    foreach (var input in _ep.Inputs.Where(i => i.IsRequired && !i.IsNullable))
+                    foreach (var input in required)
                         AppendLine($"{input.Name} = {ToCamelCase(input.Name)},");
+                    foreach (var input in initOnly)
+                    {
+                        var local = ToCamelCase(input.Name);
+                        AppendLine($"{input.Name} = {local} is {{ }} __bound_{local} ? __bound_{local} : __defaults.{input.Name},");
+                    }
                 });
                 AppendLine(";");
 
-                foreach (var input in _ep.Inputs.Where(i => !i.IsRequired || i.IsNullable))
+                foreach (var input in optional.Where(i => !i.IsInitOnly))
                 {
                     var local = ToCamelCase(input.Name);
                     AppendLine($"if ({local} is {{ }} __bound_{local}) action.{input.Name} = __bound_{local};");
