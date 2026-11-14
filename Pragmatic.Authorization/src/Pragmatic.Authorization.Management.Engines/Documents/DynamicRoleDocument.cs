@@ -26,6 +26,8 @@ public sealed partial class DynamicRoleDocument
 
     public string? TenantId { get; set; }
 
+    public long? DeactivatedAt { get; set; }
+
     public long CreatedAt { get; set; }
 
     public string? CreatedBy { get; set; }
@@ -43,6 +45,7 @@ public sealed partial class DynamicRoleDocument
         Name = role.Name,
         Description = role.Description,
         TenantId = role.TenantId,
+        DeactivatedAt = role.DeactivatedAt?.UtcTicks,
         CreatedAt = role.CreatedAt.UtcTicks,
         CreatedBy = role.CreatedBy,
         UpdatedAt = role.UpdatedAt?.UtcTicks,
@@ -58,6 +61,7 @@ public sealed partial class DynamicRoleDocument
         Name = Name,
         Description = Description,
         TenantId = TenantId,
+        DeactivatedAt = Instants.Of(DeactivatedAt),
         CreatedAt = Instants.Of(CreatedAt),
         CreatedBy = CreatedBy,
         UpdatedAt = Instants.Of(UpdatedAt),

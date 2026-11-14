@@ -64,19 +64,7 @@ public partial class AssignPermissionsToRole : VoidDomainAction
 
         await _store.AddRolePermissionsAsync(added, ct).ConfigureAwait(false);
 
-        // The cache tags a user's claim roles, not the roles this package assigns, so the users who
-        // hold this role here are found and evicted one by one.
-        if (_permissionCache is not null)
-        {
-            var holders = (await _store.GetRoleHoldersAsync(RoleName, ct).ConfigureAwait(false))
-                .Where(a => (TenantId == null || a.TenantId == null || a.TenantId == TenantId)
-                            && (a.ValidTo == null || a.ValidTo > now))
-                .Select(a => a.UserId)
-                .Distinct();
-
-            foreach (var holder in holders)
-                await _permissionCache.InvalidateUserAsync(holder, ct).ConfigureAwait(false);
-        }
+        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, TenantId, now, ct).ConfigureAwait(false);
 
         return VoidResult<IError>.Success();
     }

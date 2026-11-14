@@ -32,6 +32,12 @@ public interface IAuthorizationManagementStore
     /// <summary>Stores a new role, stamped as created now by the caller.</summary>
     ValueTask AddRoleAsync(DynamicRole role, CancellationToken ct = default);
 
+    /// <summary>
+    ///     Writes a role read through <see cref="GetRolesAsync" /> back, with what the caller changed on it: its description, whether it is
+    ///     deactivated (#725), who changed it and when.
+    /// </summary>
+    ValueTask UpdateRoleAsync(DynamicRole role, CancellationToken ct = default);
+
     /// <summary>The permissions not deleted, global or of <paramref name="tenantId" />.</summary>
     ValueTask<IReadOnlyList<DynamicPermission>> GetPermissionsAsync(string? tenantId, CancellationToken ct = default);
 
@@ -44,6 +50,11 @@ public interface IAuthorizationManagementStore
 
     /// <summary>Stores new grants, in one write.</summary>
     ValueTask AddRolePermissionsAsync(IReadOnlyList<DynamicRolePermission> grants, CancellationToken ct = default);
+
+    /// <summary>
+    ///     Ends <paramref name="grants" /> at <paramref name="validTo" /> (#725): the rows stay, as the history of what the role granted.
+    /// </summary>
+    ValueTask EndRolePermissionsAsync(IReadOnlyList<DynamicRolePermission> grants, DateTimeOffset validTo, CancellationToken ct = default);
 
     /// <summary>The role assignments of <paramref name="userId" />, global or of <paramref name="tenantId" />, in force or not.</summary>
     ValueTask<IReadOnlyList<UserRoleAssignment>> GetUserRolesAsync(string userId, string? tenantId, CancellationToken ct = default);

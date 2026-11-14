@@ -89,11 +89,18 @@ How do I assign a role to a user?
 - Use `AssignRoleToUser`.
 - Use `RevokeRoleFromUser` to remove it later.
 
+How do I take back what a role grants?
+
+- `RevokePermissionsFromRole` ends the role's grants of those permissions in that tenant; the rows stay as history.
+- `DeactivateRole` makes the role grant nothing and leaves it out of its holders' roles, keeping its grants and assignments;
+  `ReactivateRole` gives both back. Both act on the role `CreateRole` made in that scope.
+- Renaming a role is not an action yet (#777).
+
 How do I inspect effective permissions for a user today?
 
 - Use the management action `GetEffectivePermissions`.
 - Prefer this workflow over calling low-level catalog APIs directly from application code.
-- Today this action resolves persisted role assignments through the role store; treat it as an admin-side lookup, not as a full replacement for the request-time resolver.
+- It resolves the user's assignments in force, through the host's role store and the grants this package wrote, and leaves out a deactivated role; treat it as an admin-side lookup, not as a full replacement for the request-time resolver.
 
 ## Main Actions
 
@@ -103,6 +110,8 @@ How do I inspect effective permissions for a user today?
 | `ListPermissions` | `authorization.view` |
 | `CreateRole` | `authorization.roles.manage` |
 | `AssignPermissionsToRole` | `authorization.roles.manage` |
+| `RevokePermissionsFromRole` | `authorization.roles.manage` |
+| `DeactivateRole` / `ReactivateRole` | `authorization.roles.manage` |
 | `ListRoles` | `authorization.view` |
 | `AssignRoleToUser` | `authorization.assignments.manage` |
 | `RevokeRoleFromUser` | `authorization.assignments.manage` |

@@ -37,6 +37,13 @@ public partial class DynamicRole : IAuditable, ISoftDelete, IEntity
     [Pragmatic.Validation.Attributes.MaxLength(128)]
     public string? TenantId { get; set; }
 
+    /// <summary>
+    ///     When <c>DeactivateRole</c> deactivated the role, or <see langword="null" /> while it is active (#725). A deactivated role grants
+    ///     nothing and is in nobody's roles, and keeps its grants and assignments, so reactivating it restores both.
+    /// </summary>
+    /// <remarks>An instant rather than a flag: the column is nullable, so the rows written before it existed read as active.</remarks>
+    public DateTimeOffset? DeactivatedAt { get; set; }
+
     /// <inheritdoc />
     public DateTimeOffset CreatedAt { get; set; }
 

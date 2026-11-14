@@ -28,6 +28,10 @@ public sealed class SqlAuthorizationManagementStore : IAuthorizationManagementSt
         => await _session.InsertAsync(DynamicRoleRow.From(role), ct).ConfigureAwait(false);
 
     /// <inheritdoc />
+    public async ValueTask UpdateRoleAsync(DynamicRole role, CancellationToken ct = default)
+        => await _session.UpdateAsync(DynamicRoleRow.From(role), ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DynamicPermission>> GetPermissionsAsync(string? tenantId, CancellationToken ct = default)
     {
         var rows = await _session.Query<DynamicPermissionRow>()
@@ -60,6 +64,16 @@ public sealed class SqlAuthorizationManagementStore : IAuthorizationManagementSt
             return;
 
         await _session.InsertManyAsync(grants.Select(DynamicRolePermissionRow.From).ToList(), ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask EndRolePermissionsAsync(IReadOnlyList<DynamicRolePermission> grants, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        foreach (var grant in grants)
+        {
+            grant.ValidTo = validTo;
+            await _session.UpdateAsync(DynamicRolePermissionRow.From(grant), ct).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />

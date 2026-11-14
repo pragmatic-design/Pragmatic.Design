@@ -28,6 +28,10 @@ public sealed class DocAuthorizationManagementStore : IAuthorizationManagementSt
         => await _session.InsertAsync(DynamicRoleDocument.From(role), ct).ConfigureAwait(false);
 
     /// <inheritdoc />
+    public async ValueTask UpdateRoleAsync(DynamicRole role, CancellationToken ct = default)
+        => await _session.ReplaceAsync(DynamicRoleDocument.From(role), ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DynamicPermission>> GetPermissionsAsync(string? tenantId, CancellationToken ct = default)
     {
         var documents = await _session.Query<DynamicPermissionDocument>()
@@ -60,6 +64,16 @@ public sealed class DocAuthorizationManagementStore : IAuthorizationManagementSt
             return;
 
         await _session.InsertManyAsync(grants.Select(DynamicRolePermissionDocument.From).ToList(), ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask EndRolePermissionsAsync(IReadOnlyList<DynamicRolePermission> grants, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        foreach (var grant in grants)
+        {
+            grant.ValidTo = validTo;
+            await _session.ReplaceAsync(DynamicRolePermissionDocument.From(grant), ct).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
