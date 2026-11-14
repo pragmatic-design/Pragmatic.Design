@@ -40,6 +40,11 @@ public sealed class AuditEntryPreparer(
 
         entry.SegmentId = naming.SegmentFor(entry.OccurredAt);
 
+        // Every writer's entry, not only a data change's (#750): a login failure, a message, an application's own record. The caller's
+        // correlation wins; without one, the trace id, and without tracing the operation's own, so the entries of one operation are tied
+        // together wherever no listener runs.
+        entry.CorrelationId ??= System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Pragmatic.Pipeline.OperationScope.Correlation;
+
         // Applied here, not asked of the caller. The trail's promise is that an entry holds no personal
         // value; a promise every caller has to remember to keep is not a promise.
         if (entry.Detail is { Length: > 0 })
