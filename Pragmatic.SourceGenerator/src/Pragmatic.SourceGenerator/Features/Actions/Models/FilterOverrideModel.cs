@@ -13,6 +13,8 @@ internal sealed record FilterOverrideModel
     ///     Fully qualified entity type names whose filters should be disabled.
     ///     Resolved from [WithoutFilter&lt;TFilter&gt;] by extracting TEntity from IQueryFilter&lt;TEntity&gt;.
     ///     Used as argument to IQueryFilterToggle.Disable(typeof(TEntity)) which matches FilterMap entity keys.
+    ///     With <c>SoftDeleteOnly = true</c> the name is the entity's generated <c>{Entity}.SoftDeleteFilter</c> instead (#732): one
+    ///     filter type, which the toggle lifts alone.
     /// </summary>
     public EquatableArray<string> DisabledEntityTypes { get; init; } = EquatableArray<string>.Empty;
 

@@ -26,6 +26,9 @@ Choose `RunAsync` to reuse a read; choose the facade to invoke an operation.
 rows afterwards with `GetByIdAsync` goes through the repository's ordinary filters and may not find
 it. Declare the same `[WithoutFilter<T>]` on the operation when it has to act on what it read.
 
+`[WithoutFilter<T>]` lifts every filter of the entity, tenant, ownership and scopes too. To read the soft-deleted rows the caller
+would read alive, lift that one alone: `[WithoutFilter<Reservation>(SoftDeleteOnly = true)]`, on every engine.
+
 **Rung 1: publish a rule you already wrote.** `[Query]` sits on a **static** member returning
 `Specification<TEntity>`, and derives `{Member}Query` beside it. The member's parameters become the
 query's inputs; the specification itself is not touched, so it still composes with `&`:

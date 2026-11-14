@@ -167,19 +167,10 @@ internal sealed partial class EndpointHandlerTemplate
 
     private void RenderEndpointFilterOverrideScopes()
     {
-        var overrides = _model.FilterOverrides!;
-
-        for (var i = 0; i < overrides.DisabledEntityTypes.Length; i++)
-        {
-            AppendLine(
-                $"using var __disableFilter{i} = filterToggle.Disable(typeof({overrides.DisabledEntityTypes[i]}));");
-        }
-
-        if (overrides.FilterModeOverride is not null)
-        {
-            AppendLine(
-                $"using var __filterMode = filterToggle.UseMode((global::Pragmatic.Persistence.Query.Filters.FilterMode){overrides.FilterModeOverride.Value});");
-        }
+        // The shared emitter, so the named filters are lifted here too: this copy disabled the types and the mode only, and a
+        // [WithoutFilter<T>] on a [SoftDelete] entity left its EF "SoftDelete" filter applied (#732).
+        foreach (var line in Core.FilterOverrideEmitter.ScopeLines(_model.FilterOverrides!, "filterToggle"))
+            AppendLine(line);
     }
 
     /// <summary>The handler's parameters, and where each value comes from.</summary>

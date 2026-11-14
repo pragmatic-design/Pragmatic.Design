@@ -197,6 +197,9 @@ Full walkthrough: [Getting Started](docs/01-getting-started.md).
 (admin tooling, background jobs, cross-tenant reports), never under a normal request principal. Treat
 every call site as an authorization boundary. See [Query Filters](docs/07-query-filters.md).
 
+To read the soft-deleted rows a caller may otherwise read, lift that filter alone:
+`[WithoutFilter<Reservation>(SoftDeleteOnly = true)]` keeps the tenant, ownership and scope filters, on every engine.
+
 ## Status
 
 **Stable** within 1.0.0-alpha: the core entity, repository, query and mutation surface is settled; some
