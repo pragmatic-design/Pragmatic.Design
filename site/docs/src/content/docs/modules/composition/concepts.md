@@ -449,7 +449,7 @@ Follow these conventions to avoid ordering conflicts:
 |------|-------|-----------------|
 | `ResponseCompressionStep` | 25 | `app.UseResponseCompression()` |
 | `RoutingStep` | 50 | `app.UseRouting()` |
-| `CorsStep` | 75 | `app.UseCors()` |
+| `CorsStep` | 75 | `app.UseCors()` when a default policy exists, which `Cors:Origins` in configuration registers |
 
 ### NeedsStep Declaration
 

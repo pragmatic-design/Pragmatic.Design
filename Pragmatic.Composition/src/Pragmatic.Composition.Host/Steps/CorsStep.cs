@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,6 +12,11 @@ namespace Pragmatic.Composition.Steps;
 ///     Adds CORS middleware to the pipeline.
 ///     Order 75 — runs after routing but before authentication.
 /// </summary>
+/// <remarks>
+///     The generated host registers it for every host with endpoints, beside <see cref="ConfiguredCorsPolicy" /> (#748): <c>Cors:Origins</c>
+///     in configuration is the whole declaration. A host with neither that section nor a default policy of its own gets no CORS middleware,
+///     as before, and no warning: most hosts serve their own origin.
+/// </remarks>
 public class CorsStep : IStartupStep
 {
     /// <inheritdoc />
@@ -19,20 +25,22 @@ public class CorsStep : IStartupStep
     /// <inheritdoc />
     public void ConfigurePipeline(IApplicationBuilder app)
     {
-        // app.UseCors() with no policy name applies the DEFAULT policy. If no default policy was
-        // registered (AddCors without a default), the middleware is a silent no-op and CORS headers
-        // never appear — a confusing class of "CORS just doesn't work" bug. Warn loudly here so the
-        // misconfiguration is visible at startup instead of being discovered from the browser.
+        // app.UseCors() with no policy name applies the DEFAULT policy, and with none registered it is a silent no-op. A Cors section that
+        // produced no policy is a misconfiguration worth saying at startup; no section at all is the host that does not use CORS.
         var corsOptions = app.ApplicationServices.GetService<IOptions<CorsOptions>>()?.Value;
-        var hasDefaultPolicy = corsOptions?.GetPolicy(corsOptions.DefaultPolicyName) is not null;
-        if (!hasDefaultPolicy)
+        if (corsOptions?.GetPolicy(corsOptions.DefaultPolicyName) is null)
         {
-            app.ApplicationServices.GetService<ILoggerFactory>()?
-                .CreateLogger<CorsStep>()
-                .LogWarning(
-                    "CorsStep ran but no default CORS policy is registered; app.UseCors() will be a no-op " +
-                    "and no CORS headers will be emitted. Configure a default policy (AddCors(o => o.AddDefaultPolicy(...))) " +
-                    "or remove CORS from the pipeline.");
+            var configured = app.ApplicationServices.GetService<IConfiguration>()?.GetSection(ConfiguredCorsPolicy.Section).Exists() is true;
+            if (configured)
+            {
+                app.ApplicationServices.GetService<ILoggerFactory>()?
+                    .CreateLogger<CorsStep>()
+                    .LogWarning(
+                        "A Cors section is configured but no default CORS policy was registered: no CORS headers will be emitted. " +
+                        "Set Cors:Origins, or register a default policy (AddCors(o => o.AddDefaultPolicy(...))).");
+            }
+
+            return;
         }
 
         app.UseCors();

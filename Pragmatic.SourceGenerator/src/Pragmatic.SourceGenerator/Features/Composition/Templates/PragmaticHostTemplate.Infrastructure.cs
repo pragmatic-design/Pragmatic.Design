@@ -177,6 +177,22 @@ internal sealed partial class PragmaticHostTemplate
         }, "IServiceCollection", parameters, AccessModifier.Internal, new MethodModifiers { IsStatic = true });
     }
 
+    /// <summary>
+    ///     CORS from configuration (#748): <c>Cors:Origins</c> registers the default policy, read when the options are first resolved, and the
+    ///     step applies it; no section, no policy, and the step adds no middleware. The step once, so a module's <c>[NeedsStep&lt;CorsStep&gt;]</c>
+    ///     does not put the middleware in twice.
+    /// </summary>
+    private void RenderConfiguredCors()
+    {
+        const string step = "global::Pragmatic.Composition.Steps.CorsStep";
+        Comment("CORS from configuration: Cors:Origins registers the default policy; no section, no CORS");
+        AppendLine("global::Microsoft.Extensions.DependencyInjection.CorsServiceCollectionExtensions.AddCors(services);");
+        AppendLine("services.AddSingleton<global::Microsoft.Extensions.Options.IConfigureOptions<global::Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions>, "
+                   + "global::Pragmatic.Composition.Steps.ConfiguredCorsPolicy>();");
+        if (_model.AggregatedNeedsSteps.IsDefaultOrEmpty || !_model.AggregatedNeedsSteps.Any(s => s == step))
+            AppendLine($"services.AddSingleton<global::Pragmatic.Composition.Abstractions.IStartupStep, {step}>();");
+    }
+
     private void RenderInfraModuleRegistrations()
     {
         var f = _model.DetectedFeatures;
@@ -190,6 +206,7 @@ internal sealed partial class PragmaticHostTemplate
             Comment("Request body size limits ([MaxBodySize] metadata + Pragmatic:RequestLimits config; no-op when unused)");
             AppendLine(
                 "services.AddSingleton<global::Pragmatic.Composition.Abstractions.IStartupStep, global::Pragmatic.Composition.Steps.RequestLimitsStep>();");
+            RenderConfiguredCors();
             // The middleware throws at startup without AddRateLimiter, which the endpoint services emit
             // only when some module exposes an endpoint — the Endpoints package alone is not that.
             // Same condition, so the two cannot disagree.
