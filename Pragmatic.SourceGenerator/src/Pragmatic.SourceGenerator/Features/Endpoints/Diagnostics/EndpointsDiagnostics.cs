@@ -614,4 +614,21 @@ internal static class EndpointsDiagnostics
         DiagnosticSeverity.Info,
         true,
         "The generated writer is used only where it writes exactly what the serializer would.");
+
+    /// <summary>
+    ///     PRAG0556: an operation declares both <c>[NoTenant]</c> and <c>[TenantAgnostic]</c> (#724).
+    /// </summary>
+    /// <remarks>
+    ///     The two answer a tenant the request brings in opposite ways: <c>[TenantAgnostic]</c> serves the caller in it, <c>[NoTenant]</c>
+    ///     refuses it. Both on one route leave the reader to guess which one wins (the refusal), so the build says to keep one.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor NoTenantBesideTenantAgnostic = new(
+        "PRAG0556",
+        "[NoTenant] and [TenantAgnostic] on one operation",
+        "'{0}' declares [NoTenant], which refuses a tenant the request brings, and [TenantAgnostic], which serves the caller in it. "
+            + "Keep [NoTenant] for an operation that must run in no tenant, or [TenantAgnostic] for one that only does not require one.",
+        Category,
+        DiagnosticSeverity.Error,
+        true,
+        "A route either runs in no tenant or merely does not require one.");
 }

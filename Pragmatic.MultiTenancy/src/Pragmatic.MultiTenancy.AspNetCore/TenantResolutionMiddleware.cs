@@ -51,6 +51,22 @@ public sealed partial class TenantResolutionMiddleware(
 
         var tenantId = await resolver.ResolveAsync(context.RequestAborted).ConfigureAwait(false);
 
+        // A route that runs in no tenant (#724): a tenant the request brings is refused, whatever resolved it, rather than served in, and
+        // without one the route runs with none, RequireTenant notwithstanding. Before the claim guard, since no tenant is the caller's here.
+        if (context.GetEndpoint()?.Metadata.GetMetadata<NoTenantEndpoint>() is not null)
+        {
+            if (!string.IsNullOrEmpty(tenantId))
+            {
+                LogTenantNotAllowed(tenantId, context.Request.Path);
+                await RefuseAsync(context, StatusCodes.Status400BadRequest, TenantRefusalCodes.NotAllowed,
+                    "The operation runs in no tenant, and the request names one.").ConfigureAwait(false);
+                return;
+            }
+
+            await next(context).ConfigureAwait(false);
+            return;
+        }
+
         // Fail-closed claim guard: for an authenticated user carrying a tenant claim, the tenant
         // resolved by ANY strategy (header/route/subdomain/custom) must equal the claim value.
         // This prevents cross-tenant escalation via client-controlled request input.
@@ -182,6 +198,10 @@ public sealed partial class TenantResolutionMiddleware(
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "No tenant resolved for the unauthenticated request {RequestPath}; passed on, for authorization to challenge it")]
     private partial void LogUnauthenticatedWithoutTenant(PathString requestPath);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "Tenant '{TenantId}' resolved for {RequestPath}, which runs in no tenant. Rejecting with 400.")]
+    private partial void LogTenantNotAllowed(string tenantId, PathString requestPath);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Tenant '{TenantId}' resolved for {RequestPath}")]
     private partial void LogTenantResolved(string tenantId, PathString requestPath);

@@ -25,6 +25,9 @@ internal static class EndpointAttributeNames
     /// <summary>The route belongs to no tenant, so tenant resolution does not require one.</summary>
     public const string TenantAgnostic = "Pragmatic.Endpoints.Attributes.TenantAgnosticAttribute";
 
+    /// <summary>The route runs in no tenant: one the request resolves is refused (#724).</summary>
+    public const string NoTenant = "Pragmatic.Endpoints.Attributes.NoTenantAttribute";
+
     // Pre/Post processors
     public const string PreProcessor = "Pragmatic.Endpoints.Attributes.PreProcessorAttribute`1";
     public const string PostProcessor = "Pragmatic.Endpoints.Attributes.PostProcessorAttribute`1";

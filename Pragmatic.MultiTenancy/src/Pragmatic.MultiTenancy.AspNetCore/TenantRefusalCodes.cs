@@ -23,4 +23,7 @@ public static class TenantRefusalCodes
 
     /// <summary>404: the tenant store does not know the tenant (<c>RequireKnownTenant</c>).</summary>
     public const string Unknown = "TENANT_UNKNOWN";
+
+    /// <summary>400: a tenant was resolved on a route that runs in none (<see cref="NoTenantEndpoint" />, <c>[NoTenant]</c>).</summary>
+    public const string NotAllowed = "TENANT_NOT_ALLOWED";
 }
