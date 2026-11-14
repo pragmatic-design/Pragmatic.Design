@@ -154,6 +154,23 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
            && LogicKeys.Length > 0
            && !LogicKeys.AsImmutableArray().Any(p => p.IsGlobal);
 
+    /// <summary>The <c>[Unique(Filter = …)]</c> indexes (#729), as the context's <c>HasFilter</c> needs them.</summary>
+    public EquatableArray<FilteredUniqueIndexModel> FilteredUniqueIndexes()
+        => BaseEntityFullTypeName is not null
+            ? EquatableArray<FilteredUniqueIndexModel>.Empty // a derived type's indexes are its root's
+            : UniqueIndexes.AsImmutableArray().Where(i => i.Filter is not null)
+                .Select(i => new FilteredUniqueIndexModel(UniqueIndexSelector(i), i.Filter!))
+                .ToImmutableArray();
+
+    /// <summary>The lambda selecting one <c>[Unique]</c> index's columns, as the EntityConfig writes it.</summary>
+    public string UniqueIndexSelector(UniqueIndexModel index)
+    {
+        var columns = UniqueIndexColumns(index);
+        return columns.Length == 1
+            ? $"e => e.{columns[0]}"
+            : $"e => new {{ {string.Join(", ", columns.Select(c => $"e.{c}"))} }}";
+    }
+
     /// <summary>
     ///     The columns of one <c>[Unique]</c> index, in order — as written, led by <c>TenantId</c>
     ///     unless the index asked to be global.

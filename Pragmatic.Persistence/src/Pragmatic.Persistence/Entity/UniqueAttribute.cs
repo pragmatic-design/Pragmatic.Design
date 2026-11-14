@@ -70,4 +70,17 @@ public sealed class UniqueAttribute : Attribute
     ///     error carries, which change when the entity does.
     /// </remarks>
     public string? ErrorCode { get; set; }
+
+    /// <summary>
+    ///     A partial index's predicate (#729): only the rows it holds are unique, so <c>"ValidTo" IS NULL</c> allows one open row per key and
+    ///     any number of closed ones. The syntax the Sql engine's <c>[Unique]</c> takes: identifiers double-quoted, a boolean literal as
+    ///     <c>{bt:0}</c> / <c>{bt:1}</c>, which each provider writes its own way.
+    /// </summary>
+    /// <remarks>
+    ///     On EF Core and the Sql engine the database's index carries it, combined with a soft-deletable entity's live rows. The documents
+    ///     engine has no predicate to carry it with: there the index stays unique over every document, and the generator says so
+    ///     (<c>PRAG3113</c>). MySQL and Oracle have no partial index, so Pragmatic.Migrations refuses to create one there, as for a
+    ///     soft-deleted entity's.
+    /// </remarks>
+    public string? Filter { get; set; }
 }

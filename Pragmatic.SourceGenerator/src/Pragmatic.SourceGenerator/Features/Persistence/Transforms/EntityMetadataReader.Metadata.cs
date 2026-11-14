@@ -599,7 +599,8 @@ internal static partial class EntityMetadataReader
             indexes.Add(new UniqueIndexModel
             {
                 Columns = columns!.Split(',').ToImmutableArray(),
-                IsGlobal = GetJsonString(index, "scope") == "global"
+                IsGlobal = GetJsonString(index, "scope") == "global",
+                Filter = GetJsonString(index, "filter"),
             });
         }
 

@@ -480,6 +480,7 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
 
                 // Logic-key partial unique indexes — raw SQL filter is provider-specific
                 RenderLogicKeyFilteredIndexes();
+                RenderDeclaredFilteredUniqueIndexes();
                 RenderTemporalMaxActiveIndexes();
 
                 // Apply i18n conventions: CurrencyCode → varchar(3), LocalizedString → JSON column.
@@ -668,6 +669,31 @@ internal sealed class BoundaryDbContextTemplate : CSharpTemplate
                 $"modelBuilder.Entity<{entity.FullTypeName}>()" +
                 $".HasIndex({entity.LogicKeySelector ?? $"e => e.{entity.LogicKeyPropertyName}"})" +
                 $".IsUnique().HasFilter(\"{filterSql}\");");
+    }
+
+    /// <summary>
+    ///     The <c>[Unique(Filter = …)]</c> indexes (#729) with their predicate in the provider's SQL: the text the generated schema gives the
+    ///     database (<c>UniqueIndexFilters</c>), so the model EF holds and the index the migrations create describe the same rows.
+    /// </summary>
+    private void RenderDeclaredFilteredUniqueIndexes()
+    {
+        var filtered = _model.Entities.Where(e => e.FilteredUniqueIndexes.Length > 0).ToList();
+        if (filtered.Count == 0)
+            return;
+
+        AppendLine();
+        Comment("[Unique(Filter = ...)] partial unique indexes (provider-specific filter SQL)");
+        foreach (var entity in filtered)
+        {
+            foreach (var index in entity.FilteredUniqueIndexes)
+            {
+                var filterSql = Transforms.UniqueIndexFilters.OnProvider(index.Filter, entity.IsSoftDelete, _model.EfCoreProvider);
+                AppendLine(
+                    $"modelBuilder.Entity<{entity.FullTypeName}>()" +
+                    $".HasIndex({index.Selector})" +
+                    $".IsUnique().HasFilter({Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(filterSql, true)});");
+            }
+        }
     }
 
     /// <summary>

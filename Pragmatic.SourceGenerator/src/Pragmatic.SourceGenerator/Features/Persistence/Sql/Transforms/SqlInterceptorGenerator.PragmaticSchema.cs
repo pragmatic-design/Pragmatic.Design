@@ -253,7 +253,12 @@ internal static partial class SqlInterceptorGenerator
             {
                 var names = unique.ConstructorArguments.SelectMany(a => a.Kind == TypedConstantKind.Array ? a.Values.Select(v => v.Value as string) : [a.Value as string]).Where(n => n is not null).Select(n => entity.Column(n!)?.Column ?? n!).ToList();
                 var global = unique.NamedArguments.Any(n => n.Key == "Scope" && n.Value.Value is { } scope && n.Value.Type is INamedTypeSymbol kind && kind.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => Equals(f.ConstantValue, scope))?.Name == "Global");
-                Index(tenant && !global ? names.Prepend("TenantId").ToArray() : names.ToArray(), true, softDelete ? live : null);
+                // A declared predicate (#729), in this engine's own syntax, joined with the live rows' under a soft delete.
+                var declared = unique.NamedArguments.FirstOrDefault(n => n.Key == "Filter").Value.Value is string written && !string.IsNullOrWhiteSpace(written)
+                    ? SqlDialects.ResolveBooleanLiterals(written, dialect)
+                    : null;
+                var filter = declared is null ? softDelete ? live : null : softDelete ? $"{live} AND ({declared})" : declared;
+                Index(tenant && !global ? names.Prepend("TenantId").ToArray() : names.ToArray(), true, filter);
             }
 
             // MaxActive = 1: one open stretch per parent, EF Core's partial unique index, so that a write past the mutation's check (the

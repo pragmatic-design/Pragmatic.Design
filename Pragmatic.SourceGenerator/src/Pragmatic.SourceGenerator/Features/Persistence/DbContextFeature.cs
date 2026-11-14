@@ -610,7 +610,8 @@ internal static class DbContextFeature
                 LogicKeyPropertyName = e.LogicKey,
                 LogicKeySelector = e.LogicKeys.Length > 0 ? e.LogicKeySelector : null,
                 IsSoftDelete = e.IsSoftDelete,
-                TemporalMaxOneParentKey = TemporalMaxOneParentKey(e)
+                TemporalMaxOneParentKey = TemporalMaxOneParentKey(e),
+                FilteredUniqueIndexes = e.FilteredUniqueIndexes(),
             }).ToList();
 
             // Add trait entities belonging to this boundary
@@ -814,7 +815,8 @@ internal static class DbContextFeature
             LogicKeyPropertyName = e.LogicKey,
             LogicKeySelector = e.LogicKeys.Length > 0 ? e.LogicKeySelector : null,
             IsSoftDelete = e.IsSoftDelete,
-            TemporalMaxOneParentKey = TemporalMaxOneParentKey(e)
+            TemporalMaxOneParentKey = TemporalMaxOneParentKey(e),
+            FilteredUniqueIndexes = e.FilteredUniqueIndexes(),
         }).ToList();
 
         // Add trait entities to migration context

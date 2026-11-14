@@ -21,4 +21,10 @@ internal sealed record UniqueIndexModel
 
     /// <summary>The code a violation of the index answers with (<c>[Unique(ErrorCode = …)]</c>, #728); null for the generic one.</summary>
     public string? ErrorCode { get; init; }
+
+    /// <summary>
+    ///     The partial index's predicate as declared (<c>[Unique(Filter = …)]</c>, #729), in the Sql engine's syntax (<c>{bt:0}</c> for a
+    ///     boolean); null for an index over every row.
+    /// </summary>
+    public string? Filter { get; init; }
 }

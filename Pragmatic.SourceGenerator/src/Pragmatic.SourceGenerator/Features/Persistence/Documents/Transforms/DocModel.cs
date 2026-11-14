@@ -221,6 +221,16 @@ internal sealed class DocModel
             fields.Add(field);
         }
 
+        // A [Unique(Filter = …)] (#729): a SQL predicate no document index carries, so the index the schema declares is over every document.
+        if (pragmatic)
+        {
+            foreach (var unique in type.GetAttributes().Where(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.UniqueAttribute"))
+            {
+                if (unique.NamedArguments.FirstOrDefault(n => n.Key == "Filter").Value.Value is string filter && !string.IsNullOrWhiteSpace(filter))
+                    diagnostics.Add(Diagnostic.Create(DocDiagnostics.FilteredUniqueNotSupported, unique.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? where, type.Name, filter));
+            }
+        }
+
         if ((document is not null || pragmatic) && !fields.Any(f => f.Name == "_id"))
         {
             diagnostics.Add(Diagnostic.Create(DocDiagnostics.UnsupportedMember, where, type.Name, "(key)", "-", "a [Document] has one [Key] property, stored as _id"));

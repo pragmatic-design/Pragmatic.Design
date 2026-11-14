@@ -23,6 +23,14 @@ public partial class SqlServerScenarioTests(SqlServerContainerFixture fixture)
 
     private bool _created;
 
+    /// <summary>
+    ///     A [Unique(Filter = …)] as the generator writes it for SQL Server (#729, pinned in the generator's
+    ///     <c>AFilteredUnique_IsAPartialIndexInEfCoresSchema</c>): the rows outside it are free, two inside are refused.
+    /// </summary>
+    [Fact]
+    public Task Scenario29_AFilteredUnique_HoldsTheRowsItsFilterSelectsOnly()
+        => AFilteredUnique_HoldsTheRowsItsFilterSelectsOnlyAsync("\"IsDeleted\" = 0 AND (\"Active\" = 1)", "1", "0");
+
     protected override ISqlMigrationGenerator CreateGenerator() => new SqlServerMigrationGenerator();
     protected override ISchemaIntrospector CreateIntrospector() => new SqlServerSchemaIntrospector();
 

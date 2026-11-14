@@ -223,7 +223,15 @@ internal static partial class EntityTransform
 
             var errorCode = attribute.NamedArguments.FirstOrDefault(a => a.Key == "ErrorCode").Value.Value as string;
 
-            indexes.Add(new UniqueIndexModel { Columns = columns, IsGlobal = isGlobal, ErrorCode = string.IsNullOrEmpty(errorCode) ? null : errorCode });
+            var filter = attribute.NamedArguments.FirstOrDefault(a => a.Key == "Filter").Value.Value as string;
+
+            indexes.Add(new UniqueIndexModel
+            {
+                Columns = columns,
+                IsGlobal = isGlobal,
+                ErrorCode = string.IsNullOrEmpty(errorCode) ? null : errorCode,
+                Filter = string.IsNullOrWhiteSpace(filter) ? null : filter,
+            });
         }
 
         return indexes.ToImmutable();
