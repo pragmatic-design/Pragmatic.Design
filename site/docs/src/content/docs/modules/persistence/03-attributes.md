@@ -376,6 +376,9 @@ public partial class Category
 public sealed class CategoryLookupCacheLoader : ILookupCacheLoader
 {
     public Task LoadAsync(IServiceProvider serviceProvider, CancellationToken ct);
+    public Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct);
+    public Type EntityType { get; }
+    public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct);
 }
 
 // _Infra.Persistence.LookupCache.g.cs: one per assembly
@@ -395,6 +398,12 @@ generates `AddShowcaseLookupCaches()`.
 The preload runs in `LookupPreloadHostedService` at startup, sequentially, and **fails fast**: a loader
 that throws stops the application rather than leaving a half-filled cache to surface later as scattered
 `KeyNotFoundException`s.
+
+A write to a lookup entity reloads its cache once it commits: `LookupCacheReloadInterceptor`, registered
+by the same method, reloads at the save when it ran in no transaction and at the commit when it ran in
+one, and a rolled-back write reloads nothing. A tenant-scoped lookup reloads the writing tenant's cache
+only. ⚠️ The reload is this process's: another instance of the host keeps the rows it loaded until it
+restarts, since no invalidation reaches an in-memory lookup cache across processes.
 
 ### Usage
 

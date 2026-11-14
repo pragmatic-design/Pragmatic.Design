@@ -2124,6 +2124,8 @@ public partial class LookupTable : ICreatable<LookupTable>
 public sealed class LookupTableLookupCacheLoader : ILookupCacheLoader
     public async Task LoadAsync(IServiceProvider serviceProvider, CancellationToken ct)
     public Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct)
+    public Type EntityType { get; }
+    public Task ReloadAsync(IServiceProvider serviceProvider, string? tenantId, CancellationToken ct)
 
 ## Inventory.LookupTable.Repository.g.cs
 public partial class LookupTable

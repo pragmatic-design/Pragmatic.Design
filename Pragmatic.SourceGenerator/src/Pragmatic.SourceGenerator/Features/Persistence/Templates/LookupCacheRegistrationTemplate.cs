@@ -148,6 +148,12 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         Comment("Register hosted service for preloading caches at startup");
         AppendLine("services.AddHostedService<global::Pragmatic.Persistence.EFCore.Repository.LookupPreloadHostedService>();");
 
+        // A committed write to a lookup reloads its cache (#734). The boundary's context adds every IInterceptor the container holds.
+        AppendLine();
+        Comment("Reload a lookup's cache after a committed write to it");
+        AppendLine("services.AddSingleton<global::Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor, "
+                   + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheReloadInterceptor>();");
+
         // Only when a lookup is tenant-scoped. The preload enumerates the tenants known at startup
         // and stops there, so a tenant created afterwards has no cache — but a lookup with one cache
         // for the whole process has nothing to follow, and registering an observer that every
