@@ -188,8 +188,9 @@ properties, never a collection), are in **[references/transactions.md](reference
 
 Declare the event on the operation and the generated invoker builds and dispatches it **after the
 commit**. Constructor parameters bind by name to the operation's input properties, and for a mutation
-to the entity's as well, with `Id`/`PersistenceId`/`{Entity}Id` all resolving to the entity's id.
-`OccurredAt` is filled in.
+to the entity's as well, with `Id`/`PersistenceId`/`{Entity}Id` all resolving to the entity's id. For
+an action, to the result's members and each required `[LoadEntity]`'s (its `{Entity}Id` too); an input
+wins, then the result, then the loaded row. `OccurredAt` is filled in.
 
 ```csharp
 [Mutation(Mode = MutationMode.Update)]

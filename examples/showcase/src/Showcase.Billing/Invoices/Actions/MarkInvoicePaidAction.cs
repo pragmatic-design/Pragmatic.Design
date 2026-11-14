@@ -1,3 +1,6 @@
+using Pragmatic.Authoring;
+using Showcase.Billing.Events;
+
 namespace Showcase.Billing.Actions;
 
 /// <summary>
@@ -5,8 +8,11 @@ namespace Showcase.Billing.Actions;
 /// Demonstrates: [Endpoint] on DomainAction — VoidDomainAction whose state move is declared with
 /// [TransitionsTo] and performed by the invoker on the [LoadEntity] row, before the body.
 /// Also demonstrates: [FromClaim] binding — PaidByUserId is extracted from the JWT "sub" claim.
+/// And [Raises&lt;T&gt;] on an action: InvoicePaymentRecorded takes the invoice's number and total from the loaded row and the payer from
+/// the input, after the commit.
 /// </summary>
 [DomainAction]
+[Raises<InvoicePaymentRecorded>]
 [RequirePermission(BillingPermissions.Invoice.Update)]
 [LoadEntity<Invoice>(nameof(Id))]
 [Endpoint(HttpVerb.Post, "/api/invoices/{id}/pay")]

@@ -359,7 +359,7 @@ public partial class ConfirmReservationMutation : Mutation<Reservation>
 public sealed record ReservationConfirmed(Guid ReservationId, Guid GuestId, DateTimeOffset ConfirmedAt) : IDomainEvent;
 ```
 
-**What you get**: no hand-written event construction, no `entity.RaiseEvent(...)`, dispatch guaranteed to run only after the transaction commits. Multiple `[Raises<T>]` are allowed. Works identically on `DomainAction` and `VoidDomainAction`.
+**What you get**: no hand-written event construction, no `entity.RaiseEvent(...)`, dispatch guaranteed to run only after the transaction commits. Multiple `[Raises<T>]` are allowed. Works on `DomainAction` and `VoidDomainAction` too: there the parameters bind to the action's inputs, to the members of the value its body returned, and to the members of each required single `[LoadEntity]` (its `{Entity}Id` to the row's id). A name in more than one place takes the input, then the result, then the loaded row. An optional load, a `[LoadEntities]` and a `[RequireExists]` are no source.
 
 > Dispatch requires an `IDomainEventDispatcher` in DI (provided by `Pragmatic.Events`). Without one, raised events are silently dropped.
 
