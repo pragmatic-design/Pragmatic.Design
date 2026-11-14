@@ -88,7 +88,7 @@ public partial class Order
     public string OrderNumber { get; private set; } = default!;
 
     public Guid CustomerId { get; private set; }
-    public decimal Total { get; private set; }
+    public decimal Total { get; private set; }   // numeric(18,2) on every engine; [Precision(18, 4)] keeps 4 decimals
 
     [Projectable]                                // SQL-translatable expression
     public bool IsHighValue => Total >= 1000m;

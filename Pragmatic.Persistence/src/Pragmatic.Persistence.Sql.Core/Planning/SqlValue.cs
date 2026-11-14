@@ -201,8 +201,8 @@ public static class SqlValue
     /// <summary>
     ///     Types a parameter once, so the command can be prepared: the database's type for the value, as the schema
     ///     the generator writes declares it (SQLite: guids as text, money as REAL, booleans and dates as text/integers).
-    ///     Sizes are the ones SqlClient needs to prepare a variable-length parameter; a decimal is (18,2) until
-    ///     [Column] carries precision and scale (ASSUMPTION: the workload's schema).
+    ///     Sizes are the ones SqlClient needs to prepare a variable-length parameter; a decimal is (18,2), widened to its
+    ///     value's scale before the statement runs (<see cref="SqlParameterFit" />, #731).
     /// </summary>
     public static void Configure(DbParameter parameter, SqlParamKind kind, SqlDialect dialect)
     {

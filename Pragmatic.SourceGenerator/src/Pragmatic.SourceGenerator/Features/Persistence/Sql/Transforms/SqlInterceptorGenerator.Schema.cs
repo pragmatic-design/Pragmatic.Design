@@ -21,8 +21,10 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 /// </summary>
 internal static partial class SqlInterceptorGenerator
 {
-    private sealed class SchemaColumn(string name, ColumnModel source, bool nullable, bool key, string? defaultValue, int? maxLength, bool keyed, bool identity = false)
+    private sealed class SchemaColumn(string name, ColumnModel source, bool nullable, bool key, string? defaultValue, int? maxLength, bool keyed, bool identity = false,
+        (int Precision, int Scale)? precision = null)
     {
+        public (int Precision, int Scale)? Precision { get; } = precision; // a decimal's [Precision] (#731)
         public string Name { get; } = name;
         public ColumnModel Source { get; } = source;
         public bool Nullable { get; } = nullable;
@@ -159,7 +161,7 @@ internal static partial class SqlInterceptorGenerator
                 var property = SchemaTypes.PropertyOf(entity, column);
                 var nullable = !column.IsDiscriminator && (EntityModel.IsNullable(column.Type) || column.OptionalOwner || column.DerivedOf is not null);
                 table.Columns.Add(new SchemaColumn(column.Column, column, nullable, entity.Keys.Contains(column), column.RollUpChild is not null ? "0" : null, SchemaTypes.MaxLength(property), entity.Keys.Contains(column),
-                    identity: entity.Identity && entity.Keys.Contains(column)));
+                    identity: entity.Identity && entity.Keys.Contains(column), precision: Persistence.Transforms.ColumnPrecision.Of(property)));
                 if (!column.IsKey && SchemaTypes.IsMarkedIndexed(property))
                     table.Index(column.Column, SchemaTypes.IsUnique(property), SchemaTypes.IsUnique(property) ? live : null);
             }
@@ -238,7 +240,7 @@ internal static partial class SqlInterceptorGenerator
     private static TableSchemaModel TableModel(SchemaTable table, SqlDialect dialect)
         => new(
             table.Name,
-            table.Columns.Select(c => new ColumnSchemaModel(c.Name, c.Identity ? SchemaTypes.Identity(SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed), dialect) : SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed),
+            table.Columns.Select(c => new ColumnSchemaModel(c.Name, c.Identity ? SchemaTypes.Identity(SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed), dialect) : SchemaTypes.Of(c.Source, dialect, c.MaxLength, c.Keyed, c.Precision),
                 c.Nullable, c.Key, c.DefaultValue)).ToEquatableArray(),
             table.Indexes.Select(i => new IndexSchemaModel(i.Name, i.Columns.ToEquatableArray(), i.Unique, i.Filter is null ? null : SqlDialects.ResolveBooleanLiterals(i.Filter, dialect))).ToEquatableArray(),
             table.ForeignKeys.Select(f => new ForeignKeySchemaModel(f.Name, f.Column, f.Table, f.ReferencedColumn)).ToEquatableArray());

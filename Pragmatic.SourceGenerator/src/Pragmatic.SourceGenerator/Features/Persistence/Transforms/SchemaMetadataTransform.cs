@@ -29,7 +29,7 @@ internal static partial class SchemaMetadataTransform
 
     internal sealed class TphDerivedInfo
     {
-        public required List<(string Name, string TypeName, bool IsNullable, bool IsEnum)> Properties { get; init; }
+        public required List<(string Name, string TypeName, bool IsNullable, bool IsEnum, (int Precision, int Scale)? Precision)> Properties { get; init; }
     }
 
     public static SchemaMetadataModel Transform(
@@ -1020,14 +1020,15 @@ internal static partial class SchemaMetadataTransform
 
         foreach (var derived in derivedInfos)
         {
-            foreach (var (name, typeName, _, isEnum) in derived.Properties)
+            foreach (var (name, typeName, _, isEnum, precision) in derived.Properties)
             {
                 if (existingNames.Contains(name)) continue;
 
-                // Derived-only columns must be nullable (not all rows belong to this derived type)
+                // Derived-only columns must be nullable (not all rows belong to this derived type). A declared [Precision] is the column's
+                // here too (#731): EF Core's configuration of the derived type already said (18,4) while this merged column said (18,2).
                 columns.Add(new ColumnSchemaModel(
                     name,
-                    SqlTypeMapper.MapToSqlType(typeName, provider, isEnum: isEnum),
+                    SqlTypeMapper.MapToSqlType(typeName, provider, precision: precision?.Precision, scale: precision?.Scale, isEnum: isEnum),
                     IsNullable: true,
                     IsPrimaryKey: false));
                 existingNames.Add(name);

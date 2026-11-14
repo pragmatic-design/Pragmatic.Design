@@ -11,7 +11,8 @@ namespace Showcase.Billing.Entities;
 [Entity]
 public partial class CancellationFee : Fee
 {
-    /// <summary>Percentage of the reservation total applied as penalty (e.g. 0.25 = 25%).</summary>
+    /// <summary>Percentage of the reservation total applied as penalty (e.g. 0.25 = 25%, 0.1275 = 12.75%): four decimals.</summary>
+    [Precision(18, 4)]
     public decimal PenaltyRate { get; private set; }
 
     /// <summary>The original reservation amount the penalty was calculated from.</summary>

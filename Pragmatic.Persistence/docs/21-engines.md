@@ -86,7 +86,10 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
   past 16,383 `longtext` on MySQL; a binary past 8,000 bytes `varbinary(max)`, past 2,000 `BLOB` on Oracle, past
   65,535 `longblob` on MySQL. ⚠️ On Oracle a `CLOB` compares with no `=` and is no index key, so a filter by
   equality on such a column is refused there. On MySQL a row holds 65,535 bytes across its sized columns, and a
-  table past it is reported (**PRAG3040**).
+  table past it is reported (**PRAG3040**). A decimal is `numeric(18,2)` (`decimal(18,2)`, `NUMBER(18,2)`) unless it
+  declares `[Precision(p, s)]` (`Pragmatic.Persistence.Entity`), read by both engines and EF Core's branch alike; a
+  value with more decimals than its parameter was typed with is sent at its own scale, and the column rounds it to
+  what it declares. SQLite stores every decimal as `REAL`.
 - **Documents engine.** A boundary gets the generated `{Boundary}DocSchema`: its collections, their indexes, their
   Cosmos DB partition keys and composite indexes. A Pragmatic host applies it at start through the boundary's
   session. What the backend cannot apply stops the start, and so does a boundary whose session nothing

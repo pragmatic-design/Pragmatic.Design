@@ -179,6 +179,10 @@ internal sealed partial class EntityConfigurationTemplate : CSharpTemplate
         foreach (var prop in _model.Properties.Where(p => !p.HasPrivateSetter && !ProtectedValueType.Matches(p.TypeName) && p.MaxLength.HasValue))
             AppendLine($"builder.Property(e => e.{prop.Name}).HasMaxLength({prop.MaxLength!.Value});");
 
+        // A declared precision likewise (#731): EF Core's own convention reads its [Precision], not Pragmatic's.
+        foreach (var prop in _model.Properties.Where(p => !p.HasPrivateSetter && !ProtectedValueType.Matches(p.TypeName) && p.Precision.HasValue))
+            AppendLine($"builder.Property(e => e.{prop.Name}).HasPrecision({prop.Precision!.Value}, {prop.Scale ?? 2});");
+
         // Collections of primitives (List<string>, string[], …) — EF Core 8+ primitive collections
         // stored as a JSON column. Mapped explicitly so they are not skipped as navigations.
         foreach (var coll in _model.PrimitiveCollectionProperties)

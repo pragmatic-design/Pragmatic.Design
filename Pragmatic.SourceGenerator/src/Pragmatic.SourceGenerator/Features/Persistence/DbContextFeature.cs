@@ -1631,7 +1631,7 @@ internal static class DbContextFeature
                 if (!InheritsFrom(typeSymbol, baseSymbol)) continue;
 
                 // Collect declared-only properties (not inherited from base)
-                var props = new List<(string Name, string TypeName, bool IsNullable, bool IsEnum)>();
+                var props = new List<(string Name, string TypeName, bool IsNullable, bool IsEnum, (int Precision, int Scale)? Precision)>();
                 foreach (var prop in typeSymbol.GetMembers().OfType<IPropertySymbol>())
                 {
                     if (prop.IsStatic || prop.IsIndexer) continue;
@@ -1647,7 +1647,7 @@ internal static class DbContextFeature
                                      || prop.Type.IsValueType && prop.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
                     var isEnum = prop.Type.TypeKind == TypeKind.Enum;
 
-                    props.Add((prop.Name, propTypeName, isNullable, isEnum));
+                    props.Add((prop.Name, propTypeName, isNullable, isEnum, Transforms.ColumnPrecision.Of(prop)));
                 }
 
                 if (props.Count > 0)

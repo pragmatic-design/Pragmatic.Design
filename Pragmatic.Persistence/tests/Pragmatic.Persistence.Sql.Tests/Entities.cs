@@ -425,4 +425,8 @@ public partial class Archive : IEntity
 
     [Pragmatic.Validation.Attributes.MaxLength(3000)]
     public byte[] Scan { get; set; } = [];
+
+    /// <summary>A rate with four decimals, declared (18,4) (#731): <see cref="ADeclaredDecimalPrecisionRoundTripsTests" />.</summary>
+    [Precision(18, 4)]
+    public decimal Rate { get; set; }
 }
