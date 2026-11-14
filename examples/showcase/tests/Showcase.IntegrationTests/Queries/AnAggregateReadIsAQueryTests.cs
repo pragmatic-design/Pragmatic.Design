@@ -93,6 +93,33 @@ public class AnAggregateReadIsAQueryTests(PostgresFixture fixture) : Integration
         others.EnumerateArray().Sum(g => g.GetProperty("reservations").GetInt32()).Should().Be(3);
     }
 
+    /// <summary>
+    ///     A status no reservation is in has no row: the grouping answers the groups the rows form, and counts no zero (#735).
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Reported as a defect, measured here as the behaviour: the view is a <c>GROUP BY</c>, on every engine, and a group with no
+    ///         row is not one of its groups. A caller that wants every status, with zero beside the empty ones, joins the answer to the
+    ///         values of <see cref="Showcase.Booking.Enums.ReservationStatus" /> itself.
+    ///     </para>
+    ///     <para>
+    ///         The control is the status the rows are in: it has its row, with its count.
+    ///     </para>
+    /// </remarks>
+    [Fact]
+    public async Task AStatusNoReservationIsIn_HasNoRow()
+    {
+        var propertyId = await APropertyWithReservationsAsync(2);
+
+        var groups = (await GetAsync<JsonElement>($"/api/reservations/by-status?propertyId={propertyId}")).EnumerateArray().ToList();
+
+        groups.Should().ContainSingle("every new reservation is pending, so the rows form one group");
+        groups[0].GetProperty("status").GetString().Should().Be("Pending");
+        groups[0].GetProperty("reservations").GetInt32().Should().Be(2);
+        groups.Should().NotContain(g => g.GetProperty("status").GetString() == "Cancelled",
+            "no reservation is cancelled, and a group of no rows is no group");
+    }
+
     /// <summary>A property with a room type and <paramref name="count"/> reservations on it.</summary>
     private async Task<Guid> APropertyWithReservationsAsync(int count)
     {

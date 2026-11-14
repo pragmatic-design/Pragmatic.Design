@@ -342,6 +342,13 @@ Marks the class as a query view. `TRoot` is the primary entity: the starting `IQ
 
 Specifies which properties to group by. Multiple `[GroupBy]` attributes combine into a composite grouping key.
 
+⚠️ **A group is the rows that share a key, so a key no row has has no group.** Grouped by an enum, a
+status no row is in is absent from the answer, not a row with a count of zero: the view is a
+`GROUP BY`, on every engine. A screen that lists every status joins the answer to the enum's values
+itself, zero beside the missing ones. This is measured, not assumed:
+`AnAggregateReadIsAQueryTests.AStatusNoReservationIsIn_HasNoRow` in the Showcase, on EF Core, the Sql
+engine and the documents engine.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `Properties` | `string` | Comma-separated property names to group by |

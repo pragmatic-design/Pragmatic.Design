@@ -171,6 +171,8 @@ public partial class ReservationsByStatusQuery
 
 The grouping runs in the database, and the route, the permission and the invoker are the ones every
 other query gets. Paged, the page is a page of **groups** and the total is the number of groups.
+⚠️ A key no row has has no group: a status no reservation is in is absent, not counted as zero. To
+show every status, join the answer to the enum's values in the caller.
 
 - A key may be a member the generator writes. `[GroupBy<LeaveRequest>(Properties = "TeamId")]` groups
   by the foreign key a `[Relation.*]` produces, and `Via = "AbsenceKind"` walks the navigation it
