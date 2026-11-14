@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -84,7 +85,30 @@ public class AGroupsRolesReachItsMembersTests(PostgresFixture fixture) : Integra
         (await CreateClientAsWithPermissions(userId, "Group Member").GetAsync(Probe)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    /// <summary>In process: over GET the action's optional init input does not compile in the generated handler (#780).</summary>
+    /// <summary>
+    ///     Over GET (#780): the action's optional <c>init</c> input is bound from the query string, and left at the action's default when the
+    ///     query does not carry it. Before #780 the generated handler assigned it after construction and the host did not compile.
+    /// </summary>
+    [Fact]
+    public async Task ListGroups_OverGet_BindsTheTenantFromTheQuery_AndLeavesTheDefaultWithoutIt()
+    {
+        var (global, ofTheTenant, tenant) = (NewId("night-shift"), NewId("day-shift"), NewId("acme"));
+        await SucceedsAsync(await OperatorPostsAsync("groups", new { name = global }));
+        using (var scope = As(tenant: null, "authorization.roles.manage"))
+            (await scope.ServiceProvider.GetRequiredService<IDomainActionInvoker<CreateGroup, Guid>>()
+                .InvokeAsync(new CreateGroup { Name = ofTheTenant, TenantId = tenant })).IsSuccess.Should().BeTrue();
+        var viewer = CreateClientAsWithPermissions(NewId("viewer"), "Viewer", "authorization.view");
+
+        var withoutTenant = await NamesListedAsync(await viewer.GetAsync("/api/operations/groups"));
+        var withTenant = await NamesListedAsync(await viewer.GetAsync($"/api/operations/groups?TenantId={tenant}"));
+
+        withoutTenant.Should().Contain(global);
+        withoutTenant.Should().NotContain(ofTheTenant, "without the parameter the action's default stands: the global groups only");
+        withTenant.Should().Contain(global);
+        withTenant.Should().Contain(ofTheTenant, "the query's tenant was bound");
+    }
+
+    /// <summary>In process, where a role taken back from the group can be checked against the listed roles.</summary>
     [Fact]
     public async Task ListGroups_ShowsAGroupWithTheRolesGivenToIt()
     {
@@ -180,6 +204,13 @@ public class AGroupsRolesReachItsMembersTests(PostgresFixture fixture) : Integra
     private Task<HttpResponseMessage> OperatorPostsAsync(string route, object body)
         => CreateClientAsWithPermissions(NewId("operator"), "Operator", "authorization.roles.manage", "authorization.assignments.manage")
             .PostAsJsonAsync($"/api/operations/{route}", body);
+
+    private static async Task<List<string?>> NamesListedAsync(HttpResponseMessage response)
+    {
+        await SucceedsAsync(response);
+        using var listed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return [.. listed.RootElement.EnumerateArray().Select(g => g.GetProperty("name").GetString())];
+    }
 
     private static async Task SucceedsAsync(HttpResponseMessage response)
         => response.IsSuccessStatusCode.Should().BeTrue(

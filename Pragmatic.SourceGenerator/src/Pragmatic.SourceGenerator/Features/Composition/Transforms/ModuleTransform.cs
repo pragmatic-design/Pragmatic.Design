@@ -596,7 +596,8 @@ internal static class ModuleTransform
                     property.Name,
                     property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     property.Type.NullableAnnotation == NullableAnnotation.Annotated,
-                    property.IsRequired));
+                    property.IsRequired,
+                    property.SetMethod.IsInitOnly));
             }
         }
 
