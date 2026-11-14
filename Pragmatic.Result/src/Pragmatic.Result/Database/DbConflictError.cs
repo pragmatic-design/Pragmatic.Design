@@ -16,7 +16,14 @@ namespace Pragmatic.Result.Database;
 public sealed record DbConflictError : Error
 {
     /// <inheritdoc />
-    public override string Code => "DB_CONFLICT";
+    /// <remarks><see cref="DeclaredCode" /> when the violated index declared one, <c>DB_CONFLICT</c> otherwise.</remarks>
+    public override string Code => DeclaredCode ?? "DB_CONFLICT";
+
+    /// <summary>
+    ///     The code the violated unique index declared (<c>[Unique(ErrorCode = "EMAIL_TAKEN")]</c>, #728), which <see cref="Code" /> answers
+    ///     in place of <c>DB_CONFLICT</c>; null when it declared none, or the index was not recognized.
+    /// </summary>
+    public string? DeclaredCode { get; init; }
 
     /// <inheritdoc />
     public override int StatusCode => 409;

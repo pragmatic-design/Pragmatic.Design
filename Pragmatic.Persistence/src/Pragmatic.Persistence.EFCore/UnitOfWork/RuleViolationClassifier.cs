@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Pragmatic.Persistence.Entity;
 using Pragmatic.Result.Database;
 using Pragmatic.Result;
 using Pragmatic.Result.EntityFrameworkCore;
@@ -36,8 +37,14 @@ internal static class RuleViolationClassifier
     {
         var error = db.ClassifyRuleViolation(exception);
 
-        if (error is DbConflictError { FieldName: null, ConstraintName: { } violated } duplicate)
-            return NameTheFields(db, exception, duplicate, violated);
+        if (error is DbConflictError { FieldName: null, ConstraintName: { } violated } unnamed)
+            error = NameTheFields(db, exception, unnamed, violated);
+
+        // The code the broken index declared (#728), asked of the written entity of the type the duplicate names.
+        if (error is DbConflictError duplicate)
+            return UniqueErrorCodes.Declared(duplicate, exception.Entries
+                .Select(e => e.Entity)
+                .FirstOrDefault(e => e.GetType().Name == duplicate.EntityType) ?? (exception.Entries.Count > 0 ? exception.Entries[0].Entity : null));
 
         if (error is not DbConstraintError { ConstraintType: "ForeignKey" } foreignKeyViolation)
             return error;

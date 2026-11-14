@@ -221,7 +221,9 @@ internal static partial class EntityTransform
                 .FirstOrDefault(a => a.Key == "Scope")
                 .Value.Value as int? == 1;
 
-            indexes.Add(new UniqueIndexModel { Columns = columns, IsGlobal = isGlobal });
+            var errorCode = attribute.NamedArguments.FirstOrDefault(a => a.Key == "ErrorCode").Value.Value as string;
+
+            indexes.Add(new UniqueIndexModel { Columns = columns, IsGlobal = isGlobal, ErrorCode = string.IsNullOrEmpty(errorCode) ? null : errorCode });
         }
 
         return indexes.ToImmutable();

@@ -60,4 +60,14 @@ public sealed class UniqueAttribute : Attribute
     ///     and tell them so by refusing it.
     /// </remarks>
     public UniquenessScope Scope { get; set; } = UniquenessScope.PerTenant;
+
+    /// <summary>
+    ///     The code a write that breaks this index answers with (<c>"EMAIL_TAKEN"</c>), still a 409, on every engine (#728). Without it the
+    ///     answer is the generic <c>DB_CONFLICT</c>.
+    /// </summary>
+    /// <remarks>
+    ///     A client that has to tell one duplicate from another, an email taken from a code taken, otherwise reads the field names the
+    ///     error carries, which change when the entity does.
+    /// </remarks>
+    public string? ErrorCode { get; set; }
 }

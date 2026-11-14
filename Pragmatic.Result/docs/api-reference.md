@@ -849,7 +849,7 @@ persistence engine, so every engine's unit of work answers a broken rule with th
 
 | Type | Code | Status | Properties / Factories |
 |------|------|--------|------------------------|
-| `DbConflictError` | `DB_CONFLICT` | 409 | `EntityType`, `EntityId`, `Reason`, `FieldName`, `ConstraintName`; `ConcurrencyConflict(entityType, id?)`, `UniqueViolation(entityType, fieldName?, constraintName?)` |
+| `DbConflictError` | `DB_CONFLICT`, or `DeclaredCode` | 409 | `EntityType`, `EntityId`, `Reason`, `FieldName`, `ConstraintName`, `DeclaredCode` (the code a `[Unique(ErrorCode = …)]` index declared, which `Code` answers instead); `ConcurrencyConflict(entityType, id?)`, `UniqueViolation(entityType, fieldName?, constraintName?)` |
 | `DbConstraintError` | `DB_CONSTRAINT` | 400 | `ConstraintName`, `ConstraintType`, `TableName`, `Details`; `ForeignKeyViolation(tableName, constraintName?)`, `FromDetails(details?)` |
 | `DbInUseError` | `ENTITY_IN_USE` | 409 | `EntityType`, `UsedBy` (both written as problem extensions). A delete refused by a restricting relation: produced by the unit of work in `Pragmatic.Persistence.EFCore`, which has the model to name both sides; the `SaveChanges*AsResultAsync` extensions here still answer such a violation with `DbConstraintError` |
 | `DbNullConstraintError` | `DB_NULL_CONSTRAINT` | 400 | `TableName`, `ColumnName`; `Create(tableName, columnName?)` |

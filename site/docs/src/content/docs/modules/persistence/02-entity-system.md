@@ -151,6 +151,18 @@ public partial class Member : IEntity { /* ... */ }
 Name the columns with `nameof`, in the order the index should be searched by. A name that matches no
 property is `PRAG0627`.
 
+A write that breaks a unique index answers `409 DB_CONFLICT`. `ErrorCode` gives that index a code of its
+own, on every engine:
+
+```csharp
+[Unique(nameof(Email), ErrorCode = "EMAIL_TAKEN")] // a duplicate answers 409 with "code": "EMAIL_TAKEN"
+```
+
+The error is still a `DbConflictError`; its `DeclaredCode` carries the code. The index is recognized by
+the fields the engine reports, or by the end of the constraint's name where the database names only that
+(MongoDB). Cosmos DB names neither, so there a duplicate stays `DB_CONFLICT`, as it does for a bulk insert
+on the documents engine.
+
 An index written only in an EF Core `IEntityTypeConfiguration` is seen by no other engine, and for a
 package's entities by nothing at all.
 
