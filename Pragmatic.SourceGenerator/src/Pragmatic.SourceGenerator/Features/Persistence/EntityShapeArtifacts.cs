@@ -27,6 +27,8 @@ internal static class EntityShapeArtifacts
         yield return new EntityCreateTemplate(entity).RenderOutput();
         yield return new SpecificationTemplate(entity).RenderOutput();
         yield return new EntityTraitsTemplate(entity).RenderOutput();
+        // The code a duplicate of a [Unique(ErrorCode = …)] index answers with, on every engine (#728).
+        yield return new UniqueErrorCodesTemplate(entity).RenderOutput();
         if (entity.IsOwnedEntity)
             yield return new OwnershipPropertyTemplate(entity).RenderOutput();
         if (entity.IsScopedEntity)

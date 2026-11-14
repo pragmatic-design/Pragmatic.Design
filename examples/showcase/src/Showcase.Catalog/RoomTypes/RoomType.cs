@@ -26,7 +26,8 @@ namespace Showcase.Catalog.Entities;
     Capabilities = ResourceCapabilities.Read | ResourceCapabilities.Delete | ResourceCapabilities.Restore)]
 [Relation.ManyToMany<Amenity, RoomTypeAmenity>.WithNavigation("Amenities")]
 [Relation.ManyToOne<Property>]
-[Unique("PropertyId", "Code")]
+// A second room type of the code in the property answers 409 ROOM_TYPE_CODE_TAKEN rather than the generic DB_CONFLICT (#728).
+[Unique("PropertyId", "Code", ErrorCode = "ROOM_TYPE_CODE_TAKEN")]
 public partial class RoomType : IEntity
 {
     [Required]

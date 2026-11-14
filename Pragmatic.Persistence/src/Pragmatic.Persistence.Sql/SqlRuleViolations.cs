@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Text.RegularExpressions;
+using Pragmatic.Persistence.Entity;
 using Pragmatic.Result;
 using Pragmatic.Result.Database;
 
@@ -38,7 +39,9 @@ internal static partial class SqlRuleViolations
         switch (kind)
         {
             case Kind.Unique:
-                return DbConflictError.UniqueViolation(entityType, map is null ? null : Fields(message, constraint, map), constraint);
+                // The code the broken index declared (#728), asked of the written row of the type whose table the constraint names.
+                var duplicate = DbConflictError.UniqueViolation(entityType, map is null ? null : Fields(message, constraint, map), constraint);
+                return UniqueErrorCodes.Declared(duplicate, (map is null ? written[0] : written.FirstOrDefault(e => map.Type.IsInstanceOfType(e.Entity)) ?? written[0]).Entity);
             case Kind.ForeignKey:
                 var deleted = written.Where(e => e.State == SqlEntryState.Deleted).Select(e => e.Entity.GetType()).Distinct().ToList();
                 if (deleted.Count > 0 && InUse(deleted, constraint) is { } inUse)

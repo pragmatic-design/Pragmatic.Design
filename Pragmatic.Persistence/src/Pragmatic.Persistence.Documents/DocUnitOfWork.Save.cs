@@ -93,7 +93,7 @@ public sealed partial class DocUnitOfWork
                     break;
             }
         }
-        catch (Exception refused) when (Refusal(refused, type, entry.State == DocEntryState.Added) is { } violation)
+        catch (Exception refused) when (Refusal(refused, type, entry.State == DocEntryState.Added, entry.Entity) is { } violation)
         {
             throw violation;
         }
@@ -103,7 +103,12 @@ public sealed partial class DocUnitOfWork
     ///     A store's refusal of a write as Pragmatic's broken rule: a stale copy a <see cref="ConcurrencyError" />, a duplicate key (or, on Cosmos
     ///     DB, a taken id of a new document) a conflict. Null for any other failure, which stays as it is.
     /// </summary>
-    private static PersistenceRuleViolationException? Refusal(Exception refused, string type, bool added)
+    /// <remarks>
+    ///     A duplicate carries the code its index declared (#728), asked of <paramref name="written" />: MongoDB names the index and only the
+    ///     first key, so the index is recognized by its name. Cosmos DB names none, so there the code stays the generic one, as it does for a
+    ///     bulk write, which has no one document to ask.
+    /// </remarks>
+    private static PersistenceRuleViolationException? Refusal(Exception refused, string type, bool added, object? written = null)
     {
         switch (refused)
         {
@@ -111,7 +116,10 @@ public sealed partial class DocUnitOfWork
                 return new PersistenceRuleViolationException(new ConcurrencyError { Message = stale.Message, EntityTypeName = type }, stale);
             case MongoWriteException { IsDuplicateKey: true } duplicate:
                 var (index, field) = DuplicateKey(duplicate.Message);
-                return new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, field, index), duplicate);
+                // The first key alone is not the index's fields (a tenant's index starts with TenantId): the index's name is, so it is asked by name.
+                var conflict = DbConflictError.UniqueViolation(type, field, index);
+                var code = written is IDeclaresUniqueErrorCodes declares ? declares.UniqueErrorCode(null, index) : null;
+                return new PersistenceRuleViolationException(code is null ? conflict : conflict with { DeclaredCode = code }, duplicate);
             case CosmosException { IsConflict: true } taken when added:
                 // The id is taken in its partition (or a unique key policy refused the document): Cosmos DB names no field.
                 return new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, null, null), taken);

@@ -18,4 +18,7 @@ internal sealed record UniqueIndexModel
 
     /// <summary>Whether the index asked for uniqueness across every tenant rather than within one.</summary>
     public bool IsGlobal { get; init; }
+
+    /// <summary>The code a violation of the index answers with (<c>[Unique(ErrorCode = …)]</c>, #728); null for the generic one.</summary>
+    public string? ErrorCode { get; init; }
 }
