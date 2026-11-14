@@ -103,7 +103,7 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
                 var rule = Rule(operation, le);
                 if (le.IsMany)
                 {
-                    yield return $"global::System.Collections.Generic.IReadOnlyList<{le.EntityTypeFullName}> {variable} = await {le.RepositoryFieldName}.FindAsync({rule}, ct).ConfigureAwait(false);";
+                    yield return $"global::System.Collections.Generic.IReadOnlyList<{le.EntityTypeFullName}> {variable} = await {ReadMany(le, rule)}.ConfigureAwait(false);";
                     if (le.RequireAny)
                     {
                         yield return $"if ({variable}.Count == 0)";
@@ -183,9 +183,8 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
         yield return $"global::System.Collections.Generic.IReadOnlyList<{le.EntityTypeFullName}> {variable} = [];";
         yield return $"if ({keys}.Length > 0)";
         yield return "{";
-        yield return $"    var {rows} = await {le.RepositoryFieldName}.FindAsync(";
-        yield return $"        global::Pragmatic.Specification.Spec<{le.EntityTypeFullName}>.Where(__row => {linq}.Contains({keys}, __row.PersistenceId)),";
-        yield return "        ct).ConfigureAwait(false);";
+        var byKeys = $"global::Pragmatic.Specification.Spec<{le.EntityTypeFullName}>.Where(__row => {linq}.Contains({keys}, __row.PersistenceId))";
+        yield return $"    var {rows} = await {ReadMany(le, byKeys)}.ConfigureAwait(false);";
         yield return $"    var {byKey} = {linq}.ToDictionary({rows}, __row => __row.PersistenceId);";
         yield return $"    var {missing} = {linq}.ToArray({linq}.Where({keys}, __key => !{byKey}.ContainsKey(__key)));";
         yield return $"    if ({missing}.Length > 0)";
@@ -245,6 +244,28 @@ internal sealed partial class LoadEntityTemplate : CSharpTemplate
             query = $"{ef}.Include({query}, \"{path}\")";
 
         return $"{ef}.FirstOrDefaultAsync(global::System.Linq.Queryable.Where({query}, ({rule}).ToExpression()), ct)";
+    }
+
+    /// <summary>The rows <paramref name="spec" /> matches, with the <c>Include</c> paths if any (#730): the list form of <see cref="ReadByRule" />.</summary>
+    /// <remarks>
+    ///     Without an include it is the repository's own <c>FindAsync(spec)</c>. With one it is the repository's filtered, tracked
+    ///     <c>Query()</c> with an EF Core <c>Include</c> per path, still one query. An engine that compiles its reads has no list read with
+    ///     navigations: refused at build (PRAG3036, PRAG3111).
+    /// </remarks>
+    private static string ReadMany(LoadEntityModel le, string spec)
+    {
+        if (le.Includes.Count == 0)
+            return $"{le.RepositoryFieldName}.FindAsync({spec}, ct)";
+        if (CompilesItsReads(le))
+            return $"global::System.Threading.Tasks.Task.FromException<global::System.Collections.Generic.IReadOnlyList<{le.EntityTypeFullName}>>(new global::System.NotSupportedException("
+                   + $"\"[LoadEntities<{le.EntityTypeShortName}>] with Include is not compiled for the {le.Engine} engine.\"))";
+
+        const string ef = "global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions";
+        var query = $"{le.RepositoryFieldName}.Query()";
+        foreach (var path in le.Includes)
+            query = $"{ef}.Include({query}, \"{path}\")";
+
+        return $"{ef}.ToListAsync(global::System.Linq.Queryable.Where({query}, ({spec}).ToExpression()), ct)";
     }
 
     /// <summary>

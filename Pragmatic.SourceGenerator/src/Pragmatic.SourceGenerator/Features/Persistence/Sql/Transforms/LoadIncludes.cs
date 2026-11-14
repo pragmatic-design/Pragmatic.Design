@@ -8,7 +8,8 @@ using Pragmatic.SourceGenerator.Features.Actions.Transforms;
 namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 
 /// <summary>
-///     The operations of this compilation that load an entity with navigations (<c>[LoadEntity(Include = …)]</c>): what an
+///     The operations of this compilation that load an entity with navigations (<c>[LoadEntity(Include = …)]</c>, and the list form
+///     <c>[LoadEntities(Include = …)]</c>, #730): what an
 ///     engine that compiles its reads has to compile a read for, or refuse. Shared by the Sql and documents engines.
 /// </summary>
 /// <remarks>
@@ -18,6 +19,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 internal static class LoadIncludes
 {
     private const string LoadEntity = "Pragmatic.Actions.Attributes.LoadEntityAttribute";
+
+    private const string LoadEntities = "Pragmatic.Actions.Attributes.LoadEntitiesAttribute";
 
     /// <summary>One operation's load of <see cref="Entity" /> with <see cref="Includes" />; <see cref="Unsupported" /> says why an engine compiling reads by key does not compile it.</summary>
     internal sealed record Declaration(INamedTypeSymbol Operation, INamedTypeSymbol Entity, string Attribute, ImmutableArray<string> Includes, string? Unsupported, Location Location)
@@ -34,18 +37,23 @@ internal static class LoadIncludes
         {
             foreach (var attribute in operation.GetAttributes())
             {
-                if (attribute.AttributeClass is not { } type || !type.OriginalDefinition.ToDisplayString().StartsWith(LoadEntity + "<", System.StringComparison.Ordinal)
-                    || type.TypeArguments.FirstOrDefault() is not INamedTypeSymbol entity)
+                if (attribute.AttributeClass is not { } type || type.TypeArguments.FirstOrDefault() is not INamedTypeSymbol entity)
+                    continue;
+                var name = type.OriginalDefinition.ToDisplayString();
+                var many = name.StartsWith(LoadEntities + "<", System.StringComparison.Ordinal);
+                if (!many && !name.StartsWith(LoadEntity + "<", System.StringComparison.Ordinal))
                     continue;
                 var include = attribute.NamedArguments.FirstOrDefault(a => a.Key == "Include").Value.Value as string;
                 var includes = IncludePaths.Declared(entity, include);
                 if (includes.IsEmpty)
                     continue;
 
-                var unsupported = LoadSpecification.NameOf(attribute) is not null ? "it loads by a specification"
+                // A list ([LoadEntities], #730) is read through EF Core's Include: an engine compiling reads by key has no list read with navigations.
+                var unsupported = many ? "it loads a list of rows ([LoadEntities])"
+                    : LoadSpecification.NameOf(attribute) is not null ? "it loads by a specification"
                     : attribute.NamedArguments.Any(a => a.Key == "By") ? "it loads by the logic key (By)"
                     : null;
-                declarations.Add(new Declaration(operation, entity, "LoadEntity", includes, unsupported,
+                declarations.Add(new Declaration(operation, entity, many ? "LoadEntities" : "LoadEntity", includes, unsupported,
                     attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? operation.Locations.FirstOrDefault() ?? Location.None));
             }
         }

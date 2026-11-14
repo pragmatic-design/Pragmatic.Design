@@ -88,7 +88,7 @@ private IRepository<Order> _orders = null!;     // SG generates SetDependencies 
 | `[Validate]` | class | Changes the validation default: `Async = false` switches the async half off, `AsyncOnly` skips the sync pass. It does not enable async validation: declaring a `[Validator]` for the operation (or for a property's type) in the same assembly is the opt-in |
 | `[NoValidation]` | class | Skips all validation |
 | `[LoadEntity<TEntity>("IdProp")]` | class, `AllowMultiple` | Loads entity by id before `Execute` (on a mutation, before `ApplyAsync`, for another entity than its own); 404 when missing; optional `FieldName` |
-| `[LoadEntities<TEntity>("IdsProp")]` | class, `AllowMultiple` | Loads the rows a list of ids names, in one query, into an `IReadOnlyList<TEntity>` in the order of the ids; one 404 naming every missing id; optional `FieldName`, `RequireAny` |
+| `[LoadEntities<TEntity>("IdsProp")]` | class, `AllowMultiple` | Loads the rows a list of ids names, in one query, into an `IReadOnlyList<TEntity>` in the order of the ids; one 404 naming every missing id; optional `FieldName`, `RequireAny`, `Include` (EF Core only: PRAG3036/PRAG3111 on the other engines) |
 | `[LoadFrom<TQuery>]` | property | Fills the property with the declared query's answer before `Execute`, through the query's own invoker (permission included), inputs bound by name; not an input |
 | `Specification = nameof(…)` on either load | named arg | Reads by a static `Specification<TEntity>` instead of a key, its parameters bound by name to the operation's properties; `RequireReadPermission = true` asks the entity's read permission first |
 | `[CompositeAction]` | class | Composes fixed steps (mutations, actions or void actions) with one atomic commit |

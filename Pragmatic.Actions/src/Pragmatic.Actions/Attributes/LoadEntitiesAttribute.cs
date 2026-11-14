@@ -76,4 +76,15 @@ public sealed class LoadEntitiesAttribute<TEntity> : Attribute where TEntity : c
     ///     By default, the field name is the plural of the entity type (e.g., _employees).
     /// </summary>
     public string? FieldName { get; set; }
+
+    /// <summary>
+    ///     The navigations loaded with every row, as <see cref="LoadEntityAttribute{TEntity}.Include" /> loads them with one: dotted
+    ///     paths, several separated by commas — <c>"Lines"</c>, <c>"Lines.Product, Customer"</c> (#730).
+    /// </summary>
+    /// <remarks>
+    ///     Still one query for the rows, the navigations read with it. There is no lazy loading: a navigation not named here is empty on
+    ///     every loaded row. A path that names no navigation is <c>PRAG0453</c>. On EF Core; the Sql engine (<c>PRAG3036</c>) and the
+    ///     documents engine (<c>PRAG3111</c>) compile no list read with navigations, and refuse it at build.
+    /// </remarks>
+    public string? Include { get; set; }
 }
