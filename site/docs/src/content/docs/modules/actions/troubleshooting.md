@@ -359,6 +359,11 @@ given twice once. Every key that names no row is in **one** 404 (`NotFoundError.
 comma-separated in `entityId`), not the first alone. An empty list, or a null one, is an empty field and no
 query. A property that is not a collection of the entity's key is `PRAG0411`.
 
+`Include` loads navigations with every row, as on `[LoadEntity]`:
+`[LoadEntities<Order>(nameof(OrderIds), Include = "Lines")]`, still one query. It reads through EF Core's
+`Include`; the Sql engine (`PRAG3036`) and the documents engine (`PRAG3111`) compile no list read with
+navigations and refuse it at build.
+
 ### How do I check that a referenced row exists without loading it?
 
 For a key the operation carries but does not read, a foreign key in the body of a create:

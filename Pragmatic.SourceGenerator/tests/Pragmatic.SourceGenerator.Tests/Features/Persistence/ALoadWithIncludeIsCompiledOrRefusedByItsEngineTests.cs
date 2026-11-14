@@ -94,6 +94,38 @@ public class ALoadWithIncludeIsCompiledOrRefusedByItsEngineTests
         refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
     }
 
+    /// <summary>A list load with navigations (#730): EF Core reads it through Include, and an engine compiling reads by key has no such read.</summary>
+    private const string ListLoad = """
+
+        namespace Probe.Loads
+        {
+            [Pragmatic.Actions.Attributes.LoadEntities<Room>(nameof(Ids), Include = nameof(Room.Beds))]
+            public partial class ReadBedsOfRooms { public System.Collections.Generic.IReadOnlyList<System.Guid> Ids { get; init; } = []; }
+        }
+        """;
+
+    [Fact]
+    public void OnTheSqlEngine_AListLoadWithInclude_IsPrag3036()
+    {
+        var result = Run(Loads + ListLoad + SqlBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3036").ToList();
+        refused.Count.Should().Be(1, "the control: the single load by key is compiled, the list is not");
+        refused[0].GetMessage().Should().Contain("ReadBedsOfRooms");
+        refused[0].GetMessage().Should().Contain("it loads a list of rows ([LoadEntities])");
+        refused[0].Severity.Should().Be(DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void OnTheDocumentsEngine_AListLoadWithInclude_IsPrag3111()
+    {
+        var result = Run(Entities + ListLoad + DocumentsBridge);
+
+        var refused = GeneratorTestHelper.GetGeneratorDiagnostics(result, "PRAG3111").ToList();
+        refused.Count.Should().Be(1);
+        refused[0].GetMessage().Should().Contain("[LoadEntities<Room>] on ReadBedsOfRooms loads with Include");
+    }
+
     [Fact]
     public void OnTheDocumentsEngine_ALoadWithInclude_IsPrag3111()
     {
