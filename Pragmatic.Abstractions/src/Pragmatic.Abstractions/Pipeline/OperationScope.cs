@@ -29,6 +29,7 @@ public static class OperationScope
     // action fanning out — must not read each other's operation, or the trail attributes a change to
     // whichever branch happened to run last.
     private static readonly AsyncLocal<string?> CurrentName = new();
+    private static readonly AsyncLocal<string?> CurrentCorrelation = new();
 
     /// <summary>
     ///     The operation being executed, fully qualified, or <see langword="null" /> outside one.
@@ -39,6 +40,16 @@ public static class OperationScope
     /// </remarks>
     public static string? Current => CurrentName.Value;
 
+    /// <summary>
+    ///     An id shared by everything the outermost operation of the flow does, the operations nested in it included, or
+    ///     <see langword="null" /> outside one (#750).
+    /// </summary>
+    /// <remarks>
+    ///     What ties an operation's audit entries together where no tracing listener runs: the trace id is null there. Created when the first
+    ///     operation of a flow is entered and dropped when it is left, so a nested operation keeps it and the next request gets another.
+    /// </remarks>
+    public static string? Correlation => CurrentCorrelation.Value;
+
     /// <summary>Declares the operation for the current flow until the returned handle is disposed.</summary>
     /// <param name="operation">
     ///     The operation type's full name. A blank name is ignored rather than recorded as one, so a
@@ -46,7 +57,7 @@ public static class OperationScope
     /// </param>
     public static Scope Enter(string? operation)
         => string.IsNullOrWhiteSpace(operation)
-            ? new Scope(CurrentName.Value, entered: false)
+            ? new Scope(CurrentName.Value, entered: false, startedCorrelation: false)
             : Set(operation!);
 
     private static Scope Set(string operation)
@@ -54,21 +65,28 @@ public static class OperationScope
         var previous = CurrentName.Value;
         CurrentName.Value = operation;
 
-        return new Scope(previous, entered: true);
+        var starts = CurrentCorrelation.Value is null;
+        if (starts)
+            CurrentCorrelation.Value = Guid.NewGuid().ToString("N");
+
+        return new Scope(previous, entered: true, startedCorrelation: starts);
     }
 
     /// <summary>Restores the operation that was current before <see cref="Enter" />.</summary>
     /// <remarks>
     ///     Restores the captured value rather than clearing: an action that invokes a mutation is two
-    ///     nested operations, and clearing on the inner one would leave the outer half unattributed.
+    ///     nested operations, and clearing on the inner one would leave the outer half unattributed. The correlation is dropped only by the
+    ///     scope that created it.
     /// </remarks>
-    public readonly struct Scope(string? previous, bool entered) : IDisposable
+    public readonly struct Scope(string? previous, bool entered, bool startedCorrelation) : IDisposable
     {
         /// <inheritdoc />
         public void Dispose()
         {
             if (entered)
                 CurrentName.Value = previous;
+            if (startedCorrelation)
+                CurrentCorrelation.Value = null;
         }
     }
 }

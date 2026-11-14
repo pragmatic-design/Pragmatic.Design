@@ -74,6 +74,29 @@ public class AuditEntryPreparerTests
         Create().Prepare(Entry()).Detail.Should().BeNull();
     }
 
+    /// <summary>
+    ///     An entry a writer builds itself (a sign-in, a message, an application's record) gets the operation's correlation where nothing
+    ///     traces (#750): only a data change's entry used to, and only the trace id.
+    /// </summary>
+    [Fact]
+    public void AnEntryWithoutACorrelation_GetsTheOperations()
+    {
+        System.Diagnostics.Activity.Current = null;
+
+        using (Pragmatic.Pipeline.OperationScope.Enter("App.Identity.SignInAction"))
+            Create().Prepare(Entry()).CorrelationId.Should().Be(Pragmatic.Pipeline.OperationScope.Correlation).And.NotBeNull();
+    }
+
+    [Fact]
+    public void AnEntryThatCarriesItsOwnCorrelation_KeepsIt()
+    {
+        var entry = Entry();
+        entry.CorrelationId = "message-7";
+
+        using (Pragmatic.Pipeline.OperationScope.Enter("App.Identity.SignInAction"))
+            Create().Prepare(entry).CorrelationId.Should().Be("message-7");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

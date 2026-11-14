@@ -47,7 +47,11 @@ public static class AuditedChange
             // identity is pseudonymised where it enters the system, not looked up here.
             ActorRef = delegation?.ActorId ?? subjectId,
             OnBehalfOfRef = delegation is null ? null : subjectId,
-            CorrelationId = Activity.Current?.TraceId.ToString(),
+            // The tenant the caller acted in (#750): it was never set, so an entry could not be scoped to a tenant at all.
+            TenantId = currentUser?.TenantId,
+            // The trace id when something traces, which correlates across services; the operation's own correlation otherwise (#750),
+            // because the trace id is null wherever no listener is registered and the entries of one operation were then tied to nothing.
+            CorrelationId = Activity.Current?.TraceId.ToString() ?? OperationScope.Correlation,
             // What the application was doing, as opposed to what happened to the row. Read from
             // the ambient the invokers set rather than from Activity.Current, which is null
             // wherever no tracing listener is registered.
