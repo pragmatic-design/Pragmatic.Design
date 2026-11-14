@@ -175,6 +175,7 @@ Key points:
 - **Events accumulate, not dispatch immediately.** `RaiseEvent()` adds the event to the entity's internal list. Nothing happens until persistence completes.
 - **The interceptor collects and clears before dispatching.** This ordering prevents double-dispatch if `SaveChangesAsync()` is retried by a resilience wrapper.
 - **Each handler runs as an internal call.** Authorization filters are skipped because handlers are system reactions, not user-initiated operations.
+- **Each handler is an operation of its own.** The dispatcher enters `OperationScope` with the handler's type name around it, so what the handler writes is attributed to the handler (the audit trail's operation), not to the operation that raised the event; the raiser's is current again when the handler returns, a throw included. An operation the handler invokes nests inside it.
 - **`OperationCanceledException` propagates immediately.** All other exceptions are caught, logged, and counted -- but do not stop the dispatch chain.
 
 ---
