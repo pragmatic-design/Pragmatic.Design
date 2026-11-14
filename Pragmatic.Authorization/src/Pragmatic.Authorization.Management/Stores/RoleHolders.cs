@@ -19,12 +19,23 @@ internal static class RoleHolders
             return;
 
         var holders = (await store.GetRoleHoldersAsync(roleName, ct).ConfigureAwait(false))
-            .Where(a => (tenantId == null || a.TenantId == null || a.TenantId == tenantId)
-                        && (a.ValidTo == null || a.ValidTo > now))
+            .Where(a => InScope(a.TenantId, a.ValidTo, tenantId, now))
             .Select(a => a.UserId)
-            .Distinct();
+            .ToHashSet();
+
+        // The members of the groups the role was given to hold it too (#726).
+        var groups = (await store.GetRoleGroupsAsync(roleName, ct).ConfigureAwait(false))
+            .Where(gr => InScope(gr.TenantId, gr.ValidTo, tenantId, now))
+            .Select(gr => gr.GroupName)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in groups)
+            holders.UnionWith(await GroupMembers.UserIdsAsync(store, group, tenantId, now, ct).ConfigureAwait(false));
 
         foreach (var holder in holders)
             await cache.InvalidateUserAsync(holder, ct).ConfigureAwait(false);
     }
+
+    // A row reaches a change in tenantId when it is of that tenant or global, or the change is global, and it has not ended.
+    private static bool InScope(string? rowTenant, DateTimeOffset? validTo, string? tenantId, DateTimeOffset now)
+        => (tenantId == null || rowTenant == null || rowTenant == tenantId) && (validTo == null || validTo > now);
 }

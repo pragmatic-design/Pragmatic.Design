@@ -70,4 +70,32 @@ public interface IAuthorizationManagementStore
 
     /// <summary>The group assignments of <paramref name="userId" />, global or of <paramref name="tenantId" />, in force or not.</summary>
     ValueTask<IReadOnlyList<UserGroupAssignment>> GetUserGroupsAsync(string userId, string? tenantId, CancellationToken ct = default);
+
+    /// <summary>The members of <paramref name="groupName" /> in every tenant, in force or not: the users whose permissions it changes (#726).</summary>
+    ValueTask<IReadOnlyList<UserGroupAssignment>> GetGroupMembersAsync(string groupName, CancellationToken ct = default);
+
+    /// <summary>Stores a new group membership (#726).</summary>
+    ValueTask AddUserGroupAsync(UserGroupAssignment assignment, CancellationToken ct = default);
+
+    /// <summary>Ends <paramref name="assignment" /> at <paramref name="validTo" /> (#726): the row stays, as the history of who was a member.</summary>
+    ValueTask EndUserGroupAsync(UserGroupAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default);
+
+    /// <summary>The groups not deleted, global or of <paramref name="tenantId" /> (#726).</summary>
+    ValueTask<IReadOnlyList<DynamicGroup>> GetGroupsAsync(string? tenantId, CancellationToken ct = default);
+
+    /// <summary>Stores a new group, stamped as created now by the caller (#726).</summary>
+    ValueTask AddGroupAsync(DynamicGroup group, CancellationToken ct = default);
+
+    /// <summary>The roles given to <paramref name="groupNames" />, global or of <paramref name="tenantId" />, in force or not (#726).</summary>
+    ValueTask<IReadOnlyList<GroupRoleAssignment>> GetGroupRolesAsync(
+        IReadOnlyCollection<string> groupNames, string? tenantId, CancellationToken ct = default);
+
+    /// <summary>The groups <paramref name="roleName" /> was given to, in every tenant, in force or not: whose members it reaches (#726).</summary>
+    ValueTask<IReadOnlyList<GroupRoleAssignment>> GetRoleGroupsAsync(string roleName, CancellationToken ct = default);
+
+    /// <summary>Stores a new role of a group (#726).</summary>
+    ValueTask AddGroupRoleAsync(GroupRoleAssignment assignment, CancellationToken ct = default);
+
+    /// <summary>Ends <paramref name="assignment" /> at <paramref name="validTo" /> (#726): the row stays, as the history of what the group held.</summary>
+    ValueTask EndGroupRoleAsync(GroupRoleAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default);
 }

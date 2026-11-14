@@ -103,7 +103,8 @@ string as written; nothing is derived from the operation.
 `[UsePackage<AuthorizationManagementPackage, TBoundary>]` and exposed action by action with
 `[ExposeEndpoint<…>]`: `CreatePermission`, `ListPermissions`, `CreateRole`, `ListRoles`,
 `AssignPermissionsToRole`, `RevokePermissionsFromRole`, `DeactivateRole`, `ReactivateRole` (a deactivated role grants nothing and
-keeps its rows), `AssignRoleToUser`, `RevokeRoleFromUser`, `GetEffectivePermissions`, under
+keeps its rows), `AssignRoleToUser`, `RevokeRoleFromUser`, `CreateGroup`, `ListGroups`, `AssignRoleToGroup`,
+`RevokeRoleFromGroup`, `AssignUserToGroup`, `RemoveUserFromGroup` (a member holds the group's roles), `GetEffectivePermissions`, under
 `authorization.permissions.manage`, `authorization.roles.manage`, `authorization.assignments.manage` and
 `authorization.view`. A caller bound to a tenant can act only on its own tenant, and not on the global
 level either: a role, permission or assignment with no tenant holds in **every** tenant, so only a caller

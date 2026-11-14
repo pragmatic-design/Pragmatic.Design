@@ -30,6 +30,17 @@ public sealed partial class UserGroupAssignmentDocument
 
     public long? ValidTo { get; set; }
 
+    internal static UserGroupAssignmentDocument From(UserGroupAssignment assignment) => new()
+    {
+        PersistenceId = assignment.PersistenceId,
+        UserId = assignment.UserId,
+        GroupName = assignment.GroupName,
+        TenantId = assignment.TenantId,
+        AssignedBy = assignment.AssignedBy,
+        ValidFrom = assignment.ValidFrom.UtcTicks,
+        ValidTo = assignment.ValidTo?.UtcTicks,
+    };
+
     internal UserGroupAssignment ToEntity() => new()
     {
         PersistenceId = PersistenceId,

@@ -9,7 +9,8 @@ namespace Pragmatic.Authorization.Management.Providers;
 
 /// <summary>
 ///     The permissions of the roles assigned to the caller through this package: the rows
-///     <c>AssignRoleToUser</c> and <c>AssignPermissionsToRole</c> write, read on every permission
+///     <c>AssignRoleToUser</c> and <c>AssignPermissionsToRole</c> write, and the roles of the caller's
+///     groups (<c>AssignUserToGroup</c>, <c>AssignRoleToGroup</c>, #726), read on every permission
 ///     resolution.
 /// </summary>
 /// <remarks>
@@ -58,13 +59,10 @@ public sealed class ManagedRolePermissionProvider(
         var tenant = tenantContext?.TenantId is { Length: > 0 } resolved ? resolved : user.TenantId;
         var now = DateTimeOffset.UtcNow;
 
+        // A member of a group holds the group's roles (#726).
         List<string> roles = anonymous is not null
             ? [anonymous]
-            : (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
-                .Where(a => a.IsInForceAt(now))
-                .Select(a => a.RoleName)
-                .Distinct()
-                .ToList();
+            : [.. await HeldRoles.OfAsync(store, user.Id, tenant, now, ct).ConfigureAwait(false)];
 
         if (roles.Count == 0)
             return permissions;

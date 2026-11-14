@@ -37,15 +37,10 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
 
         var now = DateTimeOffset.UtcNow;
 
-        // Get active role assignments for the user
-        var activeRoles = (await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false))
-            .Where(a => a.IsInForceAt(now))
-            .Select(a => a.RoleName);
+        // The roles the user holds through this package: assigned, and given to a group they are a member of (#726), as the providers read them.
+        var roleNames = await HeldRoles.OfAsync(_store, UserId, TenantId, now, ct).ConfigureAwait(false);
 
-        var roleNames = new HashSet<string>(activeRoles, StringComparer.OrdinalIgnoreCase);
-
-        // Group assignments contribute their roles too — without this expansion the admin
-        // answer omits everything a user gets via groups, which is incomplete and misleading.
+        // A group's roles the host declares (IGroupRoleStore, e.g. MapGroup) are added for the same memberships.
         // IGroupRoleStore is optional (absent when no group store is configured), so it is
         // resolved lazily instead of being a hard ctor dependency of the invoker.
         if (_rootServices.GetService<IGroupRoleStore>() is { } groupStore)

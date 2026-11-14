@@ -15,7 +15,7 @@ namespace PragmaticEntities.Tests;
 public class AuthorizationManagementTests(PragmaticDatabases databases)
 {
     /// <summary>
-    ///     EF Core's tables for the package's five entities, as Pragmatic's EF branch describes them on PostgreSQL (the Showcase's
+    ///     EF Core's tables for the package's seven entities, as Pragmatic's EF branch describes them on PostgreSQL (the Showcase's
     ///     <c>ShowcaseAppDatabase</c> schema): the same names, types, nullability and keys, so a database holds one set of roles whichever
     ///     engine writes it. And the indexes the entities declare (#490): a role's and a permission's name unique in its tenant, unfiltered
     ///     (the entities are not <c>[SoftDelete]</c> to the generator), and the lookups of the grants and the assignments.
@@ -31,6 +31,8 @@ public class AuthorizationManagementTests(PragmaticDatabases databases)
             ["DynamicRolePermissions"] = ["IX_DynamicRolePermissions_RoleName_PermissionName_TenantId (RoleName, PermissionName, TenantId)"],
             ["UserRoleAssignments"] = ["IX_UserRoleAssignments_UserId_RoleName_TenantId (UserId, RoleName, TenantId)"],
             ["UserGroupAssignments"] = ["IX_UserGroupAssignments_UserId_GroupName_TenantId (UserId, GroupName, TenantId)"],
+            ["DynamicGroups"] = ["IX_DynamicGroups_Name_TenantId (Name, TenantId) unique"],
+            ["GroupRoleAssignments"] = ["IX_GroupRoleAssignments_GroupName_RoleName_TenantId (GroupName, RoleName, TenantId)"],
         };
         (string, string, bool, bool)[] Columns(string table)
         {
@@ -62,6 +64,11 @@ public class AuthorizationManagementTests(PragmaticDatabases databases)
         Assert.Equal([("PersistenceId", "uuid", false, true), ("UserId", "varchar(256)", false, false), ("GroupName", "varchar(256)", false, false),
             ("TenantId", "varchar(128)", true, false), ("AssignedBy", "varchar(256)", true, false), ("ValidFrom", "timestamptz", false, false),
             ("ValidTo", "timestamptz", true, false)], Columns("UserGroupAssignments"));
+        // Groups (#726): a group as a role without its deactivation, and a group's role as a user's.
+        Assert.Equal([.. audited, .. stamps], Columns("DynamicGroups"));
+        Assert.Equal([("PersistenceId", "uuid", false, true), ("GroupName", "varchar(256)", false, false), ("RoleName", "varchar(256)", false, false),
+            ("TenantId", "varchar(128)", true, false), ("AssignedBy", "varchar(256)", true, false), ("ValidFrom", "timestamptz", false, false),
+            ("ValidTo", "timestamptz", true, false)], Columns("GroupRoleAssignments"));
     }
 
     [Theory]
