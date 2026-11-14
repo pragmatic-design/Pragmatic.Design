@@ -51,7 +51,8 @@ public class AuthorizationManagementTests(PragmaticDatabases databases)
             ("TenantId", "varchar(128)", true, false), ("CreatedAt", "timestamptz", false, false), ("CreatedBy", "text", true, false),
             ("UpdatedAt", "timestamptz", true, false), ("UpdatedBy", "text", true, false),
         ];
-        Assert.Equal([.. audited, .. stamps], Columns("DynamicRoles"));
+        // A role's deactivation instant (#725) sits between its tenant and its creation, where the entity declares it.
+        Assert.Equal([.. audited, stamps[0], ("DeactivatedAt", "timestamptz", true, false), .. stamps[1..]], Columns("DynamicRoles"));
         Assert.Equal([.. audited, ("Category", "varchar(128)", true, false), .. stamps], Columns("DynamicPermissions"));
         Assert.Equal([("PersistenceId", "uuid", false, true), ("RoleName", "varchar(256)", false, false), ("PermissionName", "varchar(256)", false, false),
             ("TenantId", "varchar(128)", true, false), ("ValidFrom", "timestamptz", false, false), ("ValidTo", "timestamptz", true, false)], Columns("DynamicRolePermissions"));

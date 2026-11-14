@@ -62,6 +62,9 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
             }
         }
 
+        // A deactivated role grants nothing (#725), the answer here included.
+        roleNames.ExceptWith(RoleActivity.Deactivated(await _store.GetRolesAsync(TenantId, ct).ConfigureAwait(false), TenantId));
+
         // One store call per role, run in parallel: IRolePermissionStore reads a role at a time, so the
         // cost grows with the number of roles a user holds, not with a single round trip.
         var permissionSets = await Task.WhenAll(
@@ -72,6 +75,13 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
         foreach (var permSet in permissionSets)
             foreach (var permission in permSet)
                 allPermissions.Add(permission);
+
+        // What this package's roles grant: the rows AssignPermissionsToRole writes, which ManagedRolePermissionProvider grants at runtime.
+        // Read from the role store above alone, the answer left out every permission granted here (#725).
+        if (roleNames.Count > 0)
+            allPermissions.UnionWith((await _store.GetRolePermissionsAsync(roleNames, TenantId, ct).ConfigureAwait(false))
+                .Where(rp => rp.IsInForceAt(now))
+                .Select(rp => rp.PermissionName));
 
         IReadOnlyList<string> result = allPermissions.Order().ToList();
         return Result<IReadOnlyList<string>, IError>.Success(result);

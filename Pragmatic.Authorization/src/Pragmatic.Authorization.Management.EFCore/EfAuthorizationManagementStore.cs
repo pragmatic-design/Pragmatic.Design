@@ -28,6 +28,16 @@ public sealed class EfAuthorizationManagementStore : IAuthorizationManagementSto
     }
 
     /// <inheritdoc />
+    public async ValueTask UpdateRoleAsync(DynamicRole role, CancellationToken ct = default)
+    {
+        // Read through this context, the role is tracked; one built elsewhere is attached and written whole.
+        if (_dbContext.Entry(role).State == EntityState.Detached)
+            _dbContext.Update(role);
+
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DynamicPermission>> GetPermissionsAsync(string? tenantId, CancellationToken ct = default)
         => await _dbContext.Set<DynamicPermission>()
             .Where(p => !p.IsDeleted && (p.TenantId == null || p.TenantId == tenantId))
@@ -60,6 +70,23 @@ public sealed class EfAuthorizationManagementStore : IAuthorizationManagementSto
             return;
 
         _dbContext.Set<DynamicRolePermission>().AddRange(grants);
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask EndRolePermissionsAsync(IReadOnlyList<DynamicRolePermission> grants, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        if (grants.Count == 0)
+            return;
+
+        // As EndUserRoleAsync: a grant read here is tracked, one built elsewhere is attached so only ValidTo is written.
+        foreach (var grant in grants)
+        {
+            if (_dbContext.Entry(grant).State == EntityState.Detached)
+                _dbContext.Attach(grant);
+            grant.ValidTo = validTo;
+        }
+
         await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 

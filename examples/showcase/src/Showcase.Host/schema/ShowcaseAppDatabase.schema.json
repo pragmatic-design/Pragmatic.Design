@@ -886,6 +886,14 @@
           "renamedFrom": null
         },
         {
+          "name": "DeactivatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
           "name": "CreatedAt",
           "sqlType": "timestamptz",
           "isNullable": false,
@@ -3705,5 +3713,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "4e1ec4915940"
+  "hash": "3b6551013abf"
 }

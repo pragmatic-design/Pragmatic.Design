@@ -27,9 +27,16 @@ public sealed class ManagedRoleProvider(IAuthorizationManagementStore store, ITe
         var tenant = tenantContext?.TenantId is { Length: > 0 } resolved ? resolved : user.TenantId;
         var now = DateTimeOffset.UtcNow;
 
-        return [.. (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
+        var assigned = (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
             .Where(a => a.IsInForceAt(now))
             .Select(a => a.RoleName)
-            .Distinct(StringComparer.OrdinalIgnoreCase)];
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (assigned.Count == 0)
+            return [];
+
+        // A deactivated role is in nobody's roles (#725), as it grants nobody its permissions.
+        var deactivated = RoleActivity.Deactivated(await store.GetRolesAsync(tenant, ct).ConfigureAwait(false), tenant);
+        return [.. assigned.Where(role => !deactivated.Contains(role))];
     }
 }

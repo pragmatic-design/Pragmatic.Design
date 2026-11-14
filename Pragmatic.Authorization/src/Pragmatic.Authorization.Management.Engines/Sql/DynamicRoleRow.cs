@@ -31,6 +31,8 @@ public sealed class DynamicRoleRow
     [MaxLength(128)]
     public string? TenantId { get; set; }
 
+    public DateTimeOffset? DeactivatedAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public string? CreatedBy { get; set; }
@@ -48,6 +50,7 @@ public sealed class DynamicRoleRow
         Name = role.Name,
         Description = role.Description,
         TenantId = role.TenantId,
+        DeactivatedAt = role.DeactivatedAt,
         CreatedAt = role.CreatedAt,
         CreatedBy = role.CreatedBy,
         UpdatedAt = role.UpdatedAt,
@@ -63,6 +66,7 @@ public sealed class DynamicRoleRow
         Name = Name,
         Description = Description,
         TenantId = TenantId,
+        DeactivatedAt = DeactivatedAt,
         CreatedAt = CreatedAt,
         CreatedBy = CreatedBy,
         UpdatedAt = UpdatedAt,

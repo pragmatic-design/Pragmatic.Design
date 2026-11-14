@@ -69,6 +69,12 @@ public sealed class ManagedRolePermissionProvider(
         if (roles.Count == 0)
             return permissions;
 
+        // A deactivated role grants nothing and keeps its rows (#725), so reactivating it gives back what it granted.
+        var deactivated = RoleActivity.Deactivated(await store.GetRolesAsync(tenant, ct).ConfigureAwait(false), tenant);
+        roles.RemoveAll(deactivated.Contains);
+        if (roles.Count == 0)
+            return permissions;
+
         var granted = (await store.GetRolePermissionsAsync(roles, tenant, ct).ConfigureAwait(false))
             .Where(rp => rp.IsInForceAt(now))
             .Select(rp => rp.PermissionName);
