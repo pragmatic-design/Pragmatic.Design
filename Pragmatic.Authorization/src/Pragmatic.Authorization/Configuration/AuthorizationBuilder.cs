@@ -32,6 +32,16 @@ public sealed class AuthorizationBuilder
         set => Options.TrustPermissionClaims = value;
     }
 
+    /// <summary>
+    ///     The role an unauthenticated caller holds, whose permissions it has (#722). <see langword="null" /> by default: an anonymous caller
+    ///     holds nothing. See <see cref="AuthorizationOptions.AnonymousRole" />.
+    /// </summary>
+    public string? AnonymousRole
+    {
+        get => Options.AnonymousRole;
+        set => Options.AnonymousRole = value;
+    }
+
     /// <summary>Adds a custom permission provider to the chain.</summary>
     public AuthorizationBuilder AddPermissionProvider<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>()
         where T : class, IPermissionProvider

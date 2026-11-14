@@ -191,6 +191,10 @@ await PragmaticApp.RunAsync(args, app =>
         // production app should leave this false and drive authority from roles for immediate revocation.
         authz.TrustPermissionClaims = true;
 
+        // The role an unauthenticated caller holds. It is granted nothing here: an administrator grants it what the public may do
+        // (GetPublicAmenityNoticeAction), through the managed roles, and revokes it the same way.
+        authz.AnonymousRole = "anonymous";
+
         // ── Application roles (IRole, composed from module IRoleDefinitions) ─
 
         // Admin: full system access

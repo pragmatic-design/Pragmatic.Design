@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using Pragmatic.Authorization.Configuration;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Composition.Attributes;
 using Pragmatic.Identity;
@@ -28,8 +30,12 @@ namespace Pragmatic.Authorization.Management.Providers;
 /// </remarks>
 /// <param name="store">The rows of the boundary that imported the package.</param>
 /// <param name="tenantContext">The resolved tenant, when multi-tenancy is in use.</param>
+/// <param name="options">The authorization options, whose anonymous role an unauthenticated caller holds (#722).</param>
 [Service<IPermissionProvider>(Multiple = true)]
-public sealed class ManagedRolePermissionProvider(IAuthorizationManagementStore store, ITenantContext? tenantContext = null)
+public sealed class ManagedRolePermissionProvider(
+    IAuthorizationManagementStore store,
+    ITenantContext? tenantContext = null,
+    IOptions<AuthorizationOptions>? options = null)
     : IPermissionProvider
 {
     /// <inheritdoc />
@@ -37,21 +43,28 @@ public sealed class ManagedRolePermissionProvider(IAuthorizationManagementStore 
     public int Order => 150;
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     An unauthenticated caller holds the configured anonymous role and its rows here (#722): what an administrator grants it through
+    ///     <c>AssignPermissionsToRole</c> is what an anonymous request may do, and revoking it takes that away.
+    /// </remarks>
     public async ValueTask<IReadOnlySet<string>> ResolvePermissionsAsync(
         ICurrentUser user, CancellationToken ct = default)
     {
         var permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!user.IsAuthenticated)
+        var anonymous = options?.Value.AnonymousRoleFor(user);
+        if (!user.IsAuthenticated && anonymous is null)
             return permissions;
 
         var tenant = tenantContext?.TenantId is { Length: > 0 } resolved ? resolved : user.TenantId;
         var now = DateTimeOffset.UtcNow;
 
-        var roles = (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
-            .Where(a => a.IsInForceAt(now))
-            .Select(a => a.RoleName)
-            .Distinct()
-            .ToList();
+        List<string> roles = anonymous is not null
+            ? [anonymous]
+            : (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
+                .Where(a => a.IsInForceAt(now))
+                .Select(a => a.RoleName)
+                .Distinct()
+                .ToList();
 
         if (roles.Count == 0)
             return permissions;
