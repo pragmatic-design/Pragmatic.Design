@@ -33,10 +33,10 @@ Today the public action surface covers:
 - create and list roles
 - assign permissions to roles
 - assign and revoke roles for users
+- create and list groups, give roles to a group, and add and remove its members
 - inspect effective permissions through the management action
 
 Important current limits:
-- the package contains a `UserGroupAssignment` entity, but public group management actions are not currently present here
 - the `GetEffectivePermissions` management action is the code-backed admin entry point; it is not the same thing as the default `IPermissionCatalog.GetEffectivePermissionsAsync(...)`
 
 ## Quick Start
@@ -96,6 +96,16 @@ How do I take back what a role grants?
   `ReactivateRole` gives both back. Both act on the role `CreateRole` made in that scope.
 - Renaming a role is not an action yet (#777).
 
+How do I give roles to several users at once?
+
+- `CreateGroup`, then `AssignRoleToGroup` for each role the group holds.
+- `AssignUserToGroup` makes a user a member; `RemoveUserFromGroup` ends the membership. `RevokeRoleFromGroup` takes a role back
+  from every member.
+- A member holds the group's roles while both the membership and the group's role are in force: they grant what the roles grant,
+  are among the member's roles, and are in `GetEffectivePermissions`. A deactivated role grants nothing through a group either.
+- `ListGroups` lists the groups created here, each with its roles in force. Groups a host declares in code (`MapGroup`) are not
+  listed, and a `group` claim from the identity is expanded by the host's group store, not by the roles given here.
+
 How do I inspect effective permissions for a user today?
 
 - Use the management action `GetEffectivePermissions`.
@@ -115,11 +125,15 @@ How do I inspect effective permissions for a user today?
 | `ListRoles` | `authorization.view` |
 | `AssignRoleToUser` | `authorization.assignments.manage` |
 | `RevokeRoleFromUser` | `authorization.assignments.manage` |
+| `CreateGroup` | `authorization.roles.manage` |
+| `AssignRoleToGroup` / `RevokeRoleFromGroup` | `authorization.roles.manage` |
+| `AssignUserToGroup` / `RemoveUserFromGroup` | `authorization.assignments.manage` |
+| `ListGroups` | `authorization.view` |
 | `GetEffectivePermissions` | `authorization.view` |
 
 A caller with a tenant gives only what they hold: `AssignPermissionsToRole` refuses a permission the caller does
-not hold, and `AssignRoleToUser` refuses a role carrying one (every grant of the role not yet expired). Both answer
-`403`. A caller with no tenant is the platform, and is not bound by what they hold.
+not hold, and `AssignRoleToUser` and `AssignRoleToGroup` refuse a role carrying one (every grant of the role not yet
+expired), as `AssignUserToGroup` refuses a group whose roles carry one. They answer `403`. A caller with no tenant is the platform, and is not bound by what they hold.
 
 `CreatePermission` refuses (`409`) a name the permission catalog already holds, compared ignoring case: a
 generated permission, or a dynamic one of the caller's tenant or global. A dynamic permission is a new name.
@@ -133,17 +147,20 @@ generated permission, or a dynamic one of the caller's tenant or global. A dynam
 | `DynamicRolePermission` | Role to permission mapping | Temporal |
 | `UserRoleAssignment` | User to role assignment | Temporal |
 | `UserGroupAssignment` | User to group assignment | Temporal |
+| `DynamicGroup` | Runtime-created groups | Audited and soft-deletable |
+| `GroupRoleAssignment` | Group to role assignment | Temporal |
 
 All entities are tenant-aware through `TenantId`. A row with no tenant holds in every tenant, so only a
 caller with no tenant may write one.
 
 The indexes are declared on the entities, so every engine's tables have them:
-- a unique index on `(Name, TenantId)` for roles and for permissions;
+- a unique index on `(Name, TenantId)` for roles, for permissions and for groups;
 - one on `(RoleName, PermissionName, TenantId)` for grants;
 - one on `(UserId, RoleName, TenantId)` for role assignments;
-- one on `(UserId, GroupName, TenantId)` for group assignments.
+- one on `(UserId, GroupName, TenantId)` for group assignments;
+- one on `(GroupName, RoleName, TenantId)` for a group's roles.
 
-A second role or permission of the same name in a tenant is refused by the database, not only by the
+A second role, permission or group of the same name in a tenant is refused by the database, not only by the
 operation's check before the insert. ⚠️ A global row's `TenantId` is NULL, and PostgreSQL, SQLite and
 MySQL hold NULLs distinct in a unique index: there, two global roles of one name are refused by the check
 alone. The grants and the assignments are not unique, because an ended one is kept.
@@ -152,9 +169,10 @@ alone. The grants and the assignments are not unique, because an ended one is ke
 
 `ManagedRolePermissionProvider` is an `IPermissionProvider` the package registers: on every permission
 resolution it reads the caller's active `UserRoleAssignment`s (in the request's tenant or global) and
-the active `DynamicRolePermission`s of those roles. An assigned role grants on the next request; a revoked
-one stops granting, because the assign, revoke and assign-permissions actions evict the affected users
-from the permission cache when one is configured.
+the active `DynamicRolePermission`s of those roles, together with the roles of the caller's active group
+memberships. An assigned role grants on the next request; a revoked one stops granting, because the
+assign, revoke and assign-permissions actions, and the group actions, evict the affected users (a group's
+members included) from the permission cache when one is configured.
 
 `ManagedRoleProvider` is the package's `IRoleProvider`: it puts the names of the same assignments among the
 caller's roles, beside the identity's own `role` claims, so `ICurrentUser.Authorization.Roles` and

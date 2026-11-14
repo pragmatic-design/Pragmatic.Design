@@ -6,7 +6,7 @@ using Pragmatic.Authorization;
 // Managing permissions: a meta-permission — whoever holds it defines what the others can hold.
 [assembly: Permission("authorization.permissions.manage", "Create, update, and delete dynamic permissions", Category = "Authorization")]
 
-[assembly: Permission("authorization.roles.manage", "Create, update, and delete roles and their permission assignments", Category = "Authorization")]
+[assembly: Permission("authorization.roles.manage", "Create, update, and delete roles and groups, and what they grant", Category = "Authorization")]
 
 [assembly: Permission("authorization.assignments.manage", "Assign and revoke roles and groups for users", Category = "Authorization")]
 

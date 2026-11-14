@@ -37,4 +37,11 @@ namespace Showcase.Accounts;
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.RevokePermissionsFromRole, OperationsGroup>(HttpVerb.Post, "roles/revoke-permissions")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.DeactivateRole, OperationsGroup>(HttpVerb.Post, "roles/deactivate")]
 [ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Roles.ReactivateRole, OperationsGroup>(HttpVerb.Post, "roles/reactivate")]
+// Groups (#726): a group is given roles, and its members hold them. At /api/operations/groups/…. ListGroups is not exposed: over GET
+// its optional init input does not compile in the generated handler (#780).
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.CreateGroup, OperationsGroup>(HttpVerb.Post, "groups")]
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.AssignRoleToGroup, OperationsGroup>(HttpVerb.Post, "groups/assign-role")]
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Groups.RevokeRoleFromGroup, OperationsGroup>(HttpVerb.Post, "groups/revoke-role")]
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Assignments.AssignUserToGroup, OperationsGroup>(HttpVerb.Post, "groups/add-member")]
+[ExposeEndpoint<global::Pragmatic.Authorization.Management.Actions.Assignments.RemoveUserFromGroup, OperationsGroup>(HttpVerb.Post, "groups/remove-member")]
 public sealed class AccountsModule;

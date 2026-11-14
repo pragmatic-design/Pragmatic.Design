@@ -6,8 +6,8 @@ using Pragmatic.MultiTenancy;
 namespace Pragmatic.Authorization.Management.Providers;
 
 /// <summary>
-///     The roles assigned to the caller through this package, by name: what <c>AssignRoleToUser</c> wrote and is in force now, in the
-///     request's tenant or global.
+///     The roles assigned to the caller through this package, by name: what <c>AssignRoleToUser</c> wrote, and the roles of the groups the
+///     caller is a member of (#726), in force now, in the request's tenant or global.
 /// </summary>
 /// <remarks>
 ///     <see cref="ManagedRolePermissionProvider" /> grants what these roles grant; this puts their names in the caller's roles, so a role
@@ -27,11 +27,8 @@ public sealed class ManagedRoleProvider(IAuthorizationManagementStore store, ITe
         var tenant = tenantContext?.TenantId is { Length: > 0 } resolved ? resolved : user.TenantId;
         var now = DateTimeOffset.UtcNow;
 
-        var assigned = (await store.GetUserRolesAsync(user.Id, tenant, ct).ConfigureAwait(false))
-            .Where(a => a.IsInForceAt(now))
-            .Select(a => a.RoleName)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        // A member of a group holds the group's roles (#726), by name too.
+        var assigned = await HeldRoles.OfAsync(store, user.Id, tenant, now, ct).ConfigureAwait(false);
         if (assigned.Count == 0)
             return [];
 

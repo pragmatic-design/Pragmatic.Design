@@ -43,16 +43,20 @@ internal static class PackageStores
         "Pragmatic.Authorization.Management.Engines.Documents.DocAuthorizationManagementExtensions.AddDocAuthorizationManagement",
         "Pragmatic.Authorization.Management.Engines",
         [
+            "Pragmatic.Authorization.Management.Engines.Sql.DynamicGroupRow",
             "Pragmatic.Authorization.Management.Engines.Sql.DynamicPermissionRow",
             "Pragmatic.Authorization.Management.Engines.Sql.DynamicRoleRow",
             "Pragmatic.Authorization.Management.Engines.Sql.DynamicRolePermissionRow",
+            "Pragmatic.Authorization.Management.Engines.Sql.GroupRoleAssignmentRow",
             "Pragmatic.Authorization.Management.Engines.Sql.UserGroupAssignmentRow",
             "Pragmatic.Authorization.Management.Engines.Sql.UserRoleAssignmentRow",
         ],
         [
+            "Pragmatic.Authorization.Management.Engines.Documents.DynamicGroupDocument",
             "Pragmatic.Authorization.Management.Engines.Documents.DynamicPermissionDocument",
             "Pragmatic.Authorization.Management.Engines.Documents.DynamicRoleDocument",
             "Pragmatic.Authorization.Management.Engines.Documents.DynamicRolePermissionDocument",
+            "Pragmatic.Authorization.Management.Engines.Documents.GroupRoleAssignmentDocument",
             "Pragmatic.Authorization.Management.Engines.Documents.UserGroupAssignmentDocument",
             "Pragmatic.Authorization.Management.Engines.Documents.UserRoleAssignmentDocument",
         ]);

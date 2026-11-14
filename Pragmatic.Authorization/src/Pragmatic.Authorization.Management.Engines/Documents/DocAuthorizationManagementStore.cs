@@ -113,4 +113,70 @@ public sealed class DocAuthorizationManagementStore : IAuthorizationManagementSt
             .ToListAsync(ct).ConfigureAwait(false);
         return documents.ConvertAll(d => d.ToEntity());
     }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<UserGroupAssignment>> GetGroupMembersAsync(string groupName, CancellationToken ct = default)
+    {
+        var documents = await _session.Query<UserGroupAssignmentDocument>()
+            .Where((a, group) => a.GroupName == group, groupName)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return documents.ConvertAll(d => d.ToEntity());
+    }
+
+    /// <inheritdoc />
+    public async ValueTask AddUserGroupAsync(UserGroupAssignment assignment, CancellationToken ct = default)
+        => await _session.InsertAsync(UserGroupAssignmentDocument.From(assignment), ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask EndUserGroupAsync(UserGroupAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        assignment.ValidTo = validTo;
+        await _session.ReplaceAsync(UserGroupAssignmentDocument.From(assignment), ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<DynamicGroup>> GetGroupsAsync(string? tenantId, CancellationToken ct = default)
+    {
+        var documents = await _session.Query<DynamicGroupDocument>()
+            .Where((g, t) => !g.IsDeleted && (g.TenantId == null || g.TenantId == t), tenantId)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return documents.ConvertAll(d => d.ToEntity());
+    }
+
+    /// <inheritdoc />
+    public async ValueTask AddGroupAsync(DynamicGroup group, CancellationToken ct = default)
+        => await _session.InsertAsync(DynamicGroupDocument.From(group), ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<GroupRoleAssignment>> GetGroupRolesAsync(
+        IReadOnlyCollection<string> groupNames, string? tenantId, CancellationToken ct = default)
+    {
+        if (groupNames.Count == 0)
+            return [];
+
+        var documents = await _session.Query<GroupRoleAssignmentDocument>()
+            .Where((gr, k) => k.Groups.Contains(gr.GroupName) && (gr.TenantId == null || gr.TenantId == k.Tenant), (Groups: groupNames.ToArray(), Tenant: tenantId))
+            .ToListAsync(ct).ConfigureAwait(false);
+        return documents.ConvertAll(d => d.ToEntity());
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<GroupRoleAssignment>> GetRoleGroupsAsync(string roleName, CancellationToken ct = default)
+    {
+        var documents = await _session.Query<GroupRoleAssignmentDocument>()
+            .Where((gr, role) => gr.RoleName == role, roleName)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return documents.ConvertAll(d => d.ToEntity());
+    }
+
+    /// <inheritdoc />
+    public async ValueTask AddGroupRoleAsync(GroupRoleAssignment assignment, CancellationToken ct = default)
+        => await _session.InsertAsync(GroupRoleAssignmentDocument.From(assignment), ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask EndGroupRoleAsync(GroupRoleAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        assignment.ValidTo = validTo;
+        await _session.ReplaceAsync(GroupRoleAssignmentDocument.From(assignment), ct).ConfigureAwait(false);
+    }
 }

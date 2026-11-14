@@ -31,6 +31,17 @@ public sealed class UserGroupAssignmentRow
 
     public DateTimeOffset? ValidTo { get; set; }
 
+    internal static UserGroupAssignmentRow From(UserGroupAssignment assignment) => new()
+    {
+        PersistenceId = assignment.PersistenceId,
+        UserId = assignment.UserId,
+        GroupName = assignment.GroupName,
+        TenantId = assignment.TenantId,
+        AssignedBy = assignment.AssignedBy,
+        ValidFrom = assignment.ValidFrom,
+        ValidTo = assignment.ValidTo,
+    };
+
     internal UserGroupAssignment ToEntity() => new()
     {
         PersistenceId = PersistenceId,

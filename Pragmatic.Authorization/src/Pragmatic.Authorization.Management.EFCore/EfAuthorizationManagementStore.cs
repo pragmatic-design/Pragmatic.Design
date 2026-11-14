@@ -125,4 +125,77 @@ public sealed class EfAuthorizationManagementStore : IAuthorizationManagementSto
         => await _dbContext.Set<UserGroupAssignment>()
             .Where(a => a.UserId == userId && (a.TenantId == null || a.TenantId == tenantId))
             .ToListAsync(ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<UserGroupAssignment>> GetGroupMembersAsync(string groupName, CancellationToken ct = default)
+        => await _dbContext.Set<UserGroupAssignment>()
+            .Where(a => a.GroupName == groupName)
+            .ToListAsync(ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask AddUserGroupAsync(UserGroupAssignment assignment, CancellationToken ct = default)
+    {
+        _dbContext.Set<UserGroupAssignment>().Add(assignment);
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask EndUserGroupAsync(UserGroupAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        // As EndUserRoleAsync: tracked when read here, attached when built elsewhere, so only ValidTo is written.
+        if (_dbContext.Entry(assignment).State == EntityState.Detached)
+            _dbContext.Attach(assignment);
+
+        assignment.ValidTo = validTo;
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<DynamicGroup>> GetGroupsAsync(string? tenantId, CancellationToken ct = default)
+        => await _dbContext.Set<DynamicGroup>()
+            .Where(g => !g.IsDeleted && (g.TenantId == null || g.TenantId == tenantId))
+            .ToListAsync(ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask AddGroupAsync(DynamicGroup group, CancellationToken ct = default)
+    {
+        _dbContext.Set<DynamicGroup>().Add(group);
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<GroupRoleAssignment>> GetGroupRolesAsync(
+        IReadOnlyCollection<string> groupNames, string? tenantId, CancellationToken ct = default)
+    {
+        if (groupNames.Count == 0)
+            return [];
+
+        var names = groupNames.ToList();
+        return await _dbContext.Set<GroupRoleAssignment>()
+            .Where(gr => names.Contains(gr.GroupName) && (gr.TenantId == null || gr.TenantId == tenantId))
+            .ToListAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<GroupRoleAssignment>> GetRoleGroupsAsync(string roleName, CancellationToken ct = default)
+        => await _dbContext.Set<GroupRoleAssignment>()
+            .Where(gr => gr.RoleName == roleName)
+            .ToListAsync(ct).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask AddGroupRoleAsync(GroupRoleAssignment assignment, CancellationToken ct = default)
+    {
+        _dbContext.Set<GroupRoleAssignment>().Add(assignment);
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask EndGroupRoleAsync(GroupRoleAssignment assignment, DateTimeOffset validTo, CancellationToken ct = default)
+    {
+        if (_dbContext.Entry(assignment).State == EntityState.Detached)
+            _dbContext.Attach(assignment);
+
+        assignment.ValidTo = validTo;
+        await _dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
 }

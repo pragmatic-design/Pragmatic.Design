@@ -20,7 +20,7 @@ public sealed class AuthorizationManagementOnTheDocumentsEngineTests(MongoServer
 {
     [Fact]
     public void The_boundarys_schema_holds_the_packages_collections()
-        => Assert.Equal(["Desks", "DynamicPermissions", "DynamicRolePermissions", "DynamicRoles", "UserGroupAssignments", "UserRoleAssignments"],
+        => Assert.Equal(["Desks", "DynamicGroups", "DynamicPermissions", "DynamicRolePermissions", "DynamicRoles", "GroupRoleAssignments", "UserGroupAssignments", "UserRoleAssignments"],
             StaffOnDocumentsBoundaryDocSchema.Collections.Select(c => c.Collection).Order(StringComparer.Ordinal));
 
     /// <summary>The package's collections carry the indexes its entities declare, as the Sql engine's and EF Core's tables do (#490).</summary>
@@ -28,9 +28,11 @@ public sealed class AuthorizationManagementOnTheDocumentsEngineTests(MongoServer
     public void The_packages_collections_have_the_entities_indexes()
         => Assert.Equal(
             [
+                "DynamicGroups: IX_DynamicGroups_Name_TenantId (Name, TenantId) unique",
                 "DynamicPermissions: IX_DynamicPermissions_Name_TenantId (Name, TenantId) unique",
                 "DynamicRolePermissions: IX_DynamicRolePermissions_RoleName_PermissionName_TenantId (RoleName, PermissionName, TenantId)",
                 "DynamicRoles: IX_DynamicRoles_Name_TenantId (Name, TenantId) unique",
+                "GroupRoleAssignments: IX_GroupRoleAssignments_GroupName_RoleName_TenantId (GroupName, RoleName, TenantId)",
                 "UserGroupAssignments: IX_UserGroupAssignments_UserId_GroupName_TenantId (UserId, GroupName, TenantId)",
                 "UserRoleAssignments: IX_UserRoleAssignments_UserId_RoleName_TenantId (UserId, RoleName, TenantId)",
             ],

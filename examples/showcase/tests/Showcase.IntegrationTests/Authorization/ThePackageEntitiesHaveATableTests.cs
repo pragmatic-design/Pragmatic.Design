@@ -182,5 +182,7 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
         mapped.Should().Contain(typeof(DynamicRolePermission));
         mapped.Should().Contain(typeof(UserRoleAssignment));
         mapped.Should().Contain(typeof(UserGroupAssignment));
+        mapped.Should().Contain(typeof(DynamicGroup));
+        mapped.Should().Contain(typeof(GroupRoleAssignment));
     }
 }
