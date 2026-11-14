@@ -493,21 +493,34 @@ internal sealed partial class QueryApplyTemplate : CSharpTemplate
             {
                 // Always apply with default fallback
                 AppendLine($"var {ToCamelCase(prop.PropertyName)}Dir = {propAccess} ?? {defaultDir};");
-                RenderSortApplication(entityPath, $"{ToCamelCase(prop.PropertyName)}Dir");
+                RenderSortApplication(entityPath, $"{ToCamelCase(prop.PropertyName)}Dir", prop.SortNulls);
             }
             else
             {
                 // Only apply if specified
                 If($"{propAccess} is not null", () =>
                 {
-                    RenderSortApplication(entityPath, $"{propAccess}.Value");
+                    RenderSortApplication(entityPath, $"{propAccess}.Value", prop.SortNulls);
                 });
             }
         }
     }
 
-    private void RenderSortApplication(string entityPath, string directionExpr)
+    private void RenderSortApplication(string entityPath, string directionExpr, int nulls)
     {
+        // [Sort(Nulls = …)] (#733): the rows without a value placed first, by their null-ness, whatever the direction; then the column.
+        // EF Core translates the comparison on every provider, where NULLS FIRST/LAST is a dialect's.
+        if (nulls is 1 or 2)
+        {
+            var nullKey = nulls == 2 ? $"e.{entityPath} == null" : $"e.{entityPath} != null";
+            If("isFirstSort", () =>
+            {
+                AppendLine($"query = query.OrderBy(e => {nullKey});");
+                AppendLine("isFirstSort = false;");
+            });
+            Else(() => { AppendLine($"query = ((IOrderedQueryable<global::{_model.EntityTypeFullName}>)query).ThenBy(e => {nullKey});"); });
+        }
+
         If("isFirstSort", () =>
         {
             If($"{directionExpr} == SortDirection.Ascending", () =>

@@ -92,16 +92,16 @@ internal sealed partial class PragmaticQuery
     internal void Refuse(string why) => Unsupported ??= why;
 
     private readonly List<QueryConditionModel> _conditions = [];
-    private readonly List<(string Name, string Column, int Direction, int Priority)> _sorts = [];
+    private readonly List<(string Name, string Column, int Direction, int Priority, int Nulls)> _sorts = [];
 
     /// <summary>The sorts: the property, the entity's field it orders by, the default direction (-1: none), the priority.</summary>
-    internal IReadOnlyList<(string Name, string Column, int Direction, int Priority)> Sorts => _sorts;
+    internal IReadOnlyList<(string Name, string Column, int Direction, int Priority, int Nulls)> Sorts => _sorts;
 
     /// <summary>
     ///     The sorts in the order an engine applies them, as EF Core's <c>Apply</c> does (#642): those without a default first, then those with
     ///     one, <c>Priority</c> within each group (a stable order). A default declared first would otherwise take the place of the caller's sort.
     /// </summary>
-    internal IEnumerable<(string Name, string Column, int Direction, int Priority)> AppliedSorts
+    internal IEnumerable<(string Name, string Column, int Direction, int Priority, int Nulls)> AppliedSorts
         => _sorts.OrderBy(s => s.Direction >= 0).ThenBy(s => s.Priority);
 
     /// <summary>
@@ -186,7 +186,7 @@ internal sealed partial class PragmaticQuery
             var mapTo = Named(sort, "MapTo") as string;
             var column = mapTo ?? (property.Name.EndsWith("Sort", StringComparison.Ordinal) ? property.Name.Substring(0, property.Name.Length - 4) : property.Name);
             var direction = Named(sort, "DefaultDirection") is int d && d >= 0 ? d : -1;
-            _sorts.Add((property.Name, column, direction, Named(sort, "Priority") is int p ? p : 0));
+            _sorts.Add((property.Name, column, direction, Named(sort, "Priority") is int p ? p : 0, Named(sort, "Nulls") is int n ? n : 0));
             return;
         }
 

@@ -75,4 +75,14 @@ public sealed class SortAttribute : Attribute
     ///     a sort without. Default is 0.
     /// </summary>
     public int Priority { get; set; }
+
+    /// <summary>
+    ///     Where the rows with a null key go, whatever the direction (#733): <c>[Sort(Nulls = NullOrder.Last)]</c>. Unset, each database's
+    ///     own order, which differs between them.
+    /// </summary>
+    /// <remarks>
+    ///     On EF Core and the Sql engine. The documents engine sorts through an index, which has no such option, and does not compile a
+    ///     query that asks for one.
+    /// </remarks>
+    public NullOrder Nulls { get; set; }
 }

@@ -103,6 +103,9 @@ internal sealed record QueryPropertyModel
     /// </summary>
     public int SortPriority { get; init; }
 
+    /// <summary>For sort properties: where null keys go (<c>[Sort(Nulls = …)]</c>, #733): 0 the database's order, 1 first, 2 last.</summary>
+    public int SortNulls { get; init; }
+
     /// <summary>
     ///     Whether this is the Page property (by convention).
     /// </summary>
