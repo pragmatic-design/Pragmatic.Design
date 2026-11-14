@@ -26,9 +26,10 @@ DispatchAsync<TEvent>(@event)
   5. For each handler:
      a. Resolve ICallContext (optional, from Pragmatic.Abstractions)
      b. Enter internal call scope (skips auth filters)
-     c. handler.HandleAsync(@event, ct)
-     d. Dispose internal call scope
-     e. On exception (except OperationCanceledException):
+     c. Enter OperationScope with the handler's type name (restored after it)
+     d. handler.HandleAsync(@event, ct)
+     e. Dispose the operation scope, then the internal call scope
+     f. On exception (except OperationCanceledException):
         - Log at Error level
         - Increment pragmatic.events.handler_failures counter
         - Record exception on Activity

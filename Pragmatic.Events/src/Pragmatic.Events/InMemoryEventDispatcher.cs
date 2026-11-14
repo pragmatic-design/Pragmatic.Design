@@ -111,12 +111,17 @@ public sealed partial class InMemoryEventDispatcher : IDomainEventDispatcher
                 LogHandlerExecuting(eventName, handlerName);
 
                 var scope = callContext?.EnterInternalCall();
+
+                // The handler is an operation of its own (#738). Dispatched inline it ran inside the raising operation's scope, so what
+                // it wrote without an invoker of its own was attributed to the raiser; the raiser's is restored when the handler returns.
+                var operation = Pragmatic.Pipeline.OperationScope.Enter(handler.GetType().FullName);
                 try
                 {
                     await handler.HandleAsync(@event, ct).ConfigureAwait(false);
                 }
                 finally
                 {
+                    operation.Dispose();
                     scope?.Dispose();
                 }
 
