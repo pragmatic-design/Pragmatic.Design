@@ -86,13 +86,28 @@ public class RoutingStep : IStartupStep
 
 ### CorsStep (Order 75)
 
-```csharp
-public class CorsStep : IStartupStep
+Registered by the generated host for every host with endpoints. It applies `app.UseCors()` when a default policy exists, and adds no
+middleware when none does.
+
+The default policy comes from configuration (`ConfiguredCorsPolicy`), the same keys the gateway reads under `Gateway:Cors`:
+
+```json
 {
-    public int Order => 75;
-    public void ConfigurePipeline(IApplicationBuilder app) => app.UseCors();
+  "Cors": {
+    "Origins": [ "https://app.example.com" ],
+    "AllowCredentials": true,
+    "Methods": [ "GET", "POST" ],
+    "Headers": [ "content-type", "authorization" ]
+  }
 }
 ```
+
+- `Origins` is the declaration. Without it, no policy is registered, and so there is no CORS, which is what a host serving its own origin
+  wants.
+- `"*"` allows any origin. `Methods` and `Headers` left out, or `"*"`, allow any.
+- ⚠️ `AllowCredentials` with the origin `"*"` is refused when the options are first read: the browser rejects that combination.
+- A default policy registered in code (`AddCors(o => o.AddDefaultPolicy(...))`) works as before. With `Cors:Origins` set too, the policy
+  configured last wins.
 
 ## Declaring Step Dependencies
 

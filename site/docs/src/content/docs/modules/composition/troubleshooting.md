@@ -92,7 +92,7 @@ Authentication fails, CORS headers are missing, or middleware behaves unexpected
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | 401 on all requests | Auth middleware after endpoint mapping | Set auth step Order < endpoint mapping |
-| CORS headers missing | CORS step after routing | Use built-in `CorsStep` (Order 75) |
+| CORS headers missing | No default policy: no `Cors:Origins` and none in code, or the origin is not listed | Set `Cors:Origins` (see the startup pipeline's `CorsStep`) |
 | Tenant ID always null | Tenant resolution before authentication | Set tenant step Order > auth step |
 | Response not compressed | Compression after response started | Use built-in `ResponseCompressionStep` (Order 25) |
 
