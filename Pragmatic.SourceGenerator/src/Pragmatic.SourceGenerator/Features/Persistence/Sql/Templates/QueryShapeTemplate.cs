@@ -103,7 +103,9 @@ internal sealed class QueryShapeTemplate(QueryShapeModel model) : CSharpTemplate
         {
             var fallback = sort.Direction < 0 ? "null" : $"(global::Pragmatic.Persistence.Query.SortDirection)({sort.Direction})";
             AppendLine($"        if ((this.{sort.Name} ?? {fallback}) is {{ }} {sort.Name}Direction)");
-            AppendLine($"            ordering = ordering.Then(__OrderBy_{sort.Key}, {sort.Name}Direction == global::Pragmatic.Persistence.Query.SortDirection.Descending);");
+            // Where the null keys go (#733): the dialect's NULLS FIRST/LAST, or a key on their null-ness where it has none.
+            var nulls = sort.Nulls switch { 1 => ", nullsLast: false", 2 => ", nullsLast: true", _ => "" };
+            AppendLine($"            ordering = ordering.Then(__OrderBy_{sort.Key}, {sort.Name}Direction == global::Pragmatic.Persistence.Query.SortDirection.Descending{nulls});");
         }
 
         AppendLine("        return ordering;");

@@ -481,6 +481,7 @@ internal static class QueryTransform
         var isSort = sortAttr is not null;
         SortDirectionKind? defaultSortDirection = null;
         var sortPriority = 0;
+        var sortNulls = 0;
 
         if (sortAttr is not null)
         {
@@ -500,6 +501,9 @@ internal static class QueryTransform
                         break;
                     case "Priority" when arg.Value.Value is int priority:
                         sortPriority = priority;
+                        break;
+                    case "Nulls" when arg.Value.Value is int nulls:
+                        sortNulls = nulls;
                         break;
                 }
             }
@@ -525,6 +529,7 @@ internal static class QueryTransform
             IsSort = isSort,
             DefaultSortDirection = defaultSortDirection,
             SortPriority = sortPriority,
+            SortNulls = sortNulls,
             IsPageProperty = isPageProperty,
             IsPageSizeProperty = isPageSizeProperty,
             // Settable, because a get-only computed property is not an input the caller supplies and

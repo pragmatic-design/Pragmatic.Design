@@ -65,6 +65,12 @@ public partial class GetOrders
 The source generator reads the `[Query]`, `[Filter]` and `[Sort]` attributes and produces the
 `Apply()` method, the `Projection` expression and the right interface implementation.
 
+On a nullable column each database puts the null keys its own way (PostgreSQL and Oracle last
+ascending, SQL Server, MySQL and SQLite first). `Nulls` fixes it, whatever the direction:
+`[Sort(MapTo = "ShippedAt", Nulls = NullOrder.Last)]`. EF Core orders by the key's null-ness first; the
+Sql engine writes `NULLS LAST` where the dialect has it and a `CASE` key elsewhere. The documents engine
+sorts through an index, which has no such option, and does not compile the query (`PRAG3108`).
+
 ⚠️ **The result DTO needs two attributes, not one.** `[MapFrom<TEntity>]` gives it `FromEntity` and
 `Selector`, which map an object already in memory; the `Projection` the generated `Apply` names comes
 from **`[GenerateProjection]`**. Declare only the first and the query is **PRAG0704**:

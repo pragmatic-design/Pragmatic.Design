@@ -26,6 +26,9 @@ internal static partial class DocQueries
     {
         foreach (var sort in query.Sorts.Where(s => DocOrderKeys.Texts(model, s.Column) is null))
             query.Refuse($"the sort {sort.Name} orders by {sort.Column}, which is not a field of the document");
+        // [Sort(Nulls = …)] (#733): a document sort is an index order, with no option to move the null keys: refused rather than ordered otherwise.
+        foreach (var sort in query.Sorts.Where(s => s.Nulls != 0))
+            query.Refuse($"the sort {sort.Name} places its null keys (Nulls), which a document sort cannot");
         if (query.MapsInMemory)
             return query.Unsupported is null ? InMemory(query, model, models, lookups) : null;
         if (query.View is not null)

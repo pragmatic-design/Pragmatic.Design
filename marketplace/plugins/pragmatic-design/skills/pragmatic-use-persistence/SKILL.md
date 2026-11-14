@@ -280,7 +280,7 @@ public partial class SearchOrdersQuery
     public string? OrderNumber { get; init; }
     [Filter(Operator = FilterOperator.GreaterOrEqual, MapTo = "Total")]
     public decimal? MinTotal { get; init; }
-    [Sort(MapTo = "CreatedAt", DefaultDirection = SortDirection.Descending)]
+    [Sort(MapTo = "CreatedAt", DefaultDirection = SortDirection.Descending)] // Nulls = NullOrder.Last: null keys last on every engine
     public SortDirection? CreatedAtSort { get; init; }
 }
 ```
