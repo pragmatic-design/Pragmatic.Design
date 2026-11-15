@@ -364,6 +364,32 @@ query. A property that is not a collection of the entity's key is `PRAG0411`.
 `Include`; the Sql engine (`PRAG3036`) and the documents engine (`PRAG3111`) compile no list read with
 navigations and refuse it at build.
 
+### How do I change many rows in one operation?
+
+With a `[DomainAction]` over `[LoadEntities<T>]`, by design: there is no bulk mutation. The action loads
+every row the keys name in one query, its body calls the entity's own methods on each, and the invoker
+writes them in one unit of work. Each row's `[Invariant]` rules are checked one by one, and a broken one
+names the row (`entityType`, `entityId`):
+
+```csharp
+[DomainAction]
+[LoadEntities<Invoice>(nameof(InvoiceIds))]
+public partial class VoidInvoicesAction : VoidDomainAction
+{
+    public required IReadOnlyList<Guid> InvoiceIds { get; init; }
+
+    public override Task<VoidResult<IError>> Execute(CancellationToken ct = default)
+    {
+        foreach (var invoice in _invoices)
+            invoice.Void();
+        return Task.FromResult(VoidResult<IError>.Success());
+    }
+}
+```
+
+A mutation is one row's write, with its mapping and its lifecycle. Many rows changed by the same rule are
+an operation of the aggregate's, which is what an action is for.
+
 ### How do I check that a referenced row exists without loading it?
 
 For a key the operation carries but does not read, a foreign key in the body of a create:
