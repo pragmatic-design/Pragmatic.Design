@@ -29,6 +29,8 @@ internal sealed partial class SqlSourceTemplate
             foreach (var rollUp in map.RollUps)
                 AppendLine($"            {Sql}.Writing.SqlRollUp.Register(new({Literal(rollUp.ParentTable)}, {Literal(rollUp.ParentKeyColumn)}, {Literal(rollUp.Column)}, {Literal(rollUp.ChildTable)}, {Literal(rollUp.ForeignKey)}, {LiteralOrNull(rollUp.AmountColumn)}){(rollUp.LiveColumn is null ? "" : $" {{ LiveColumn = {Literal(rollUp.LiveColumn)} }}")});");
             AppendLine($"            {Sql}.Schema.SqlEntityMap<{map.EntityType}>.Register(new(\"{map.Table}\", {Strings(map.KeyColumns)}, new {Sql}.Schema.SqlColumn[] {{ {Join(map.Columns.Select(Column))} }}, new {Sql}.Schema.SqlNavigation[] {{ {Join(map.Navigations.Select(Navigation))} }}, new {Sql}.Schema.SqlCollection[] {{ {Join(map.Collections.Select(Collection))} }}, new global::System.Func<global::System.Linq.Expressions.LambdaExpression>[] {{ {Join(map.RuleTypes.Select(r => $"static () => new {r}().ToExpression()"))} }}, Read_{map.ReaderName}, static e => e.{map.KeySelectorProperty}, {LiteralOrNull(map.FixedPredicate)}) {{ {MapTail(map)} }});");
+            foreach (var rule in map.SoftDeleteRules)
+                AppendLine(SoftDeleteRule(rule));
         }
 
         foreach (var projection in maps.Projections)
@@ -88,6 +90,21 @@ internal sealed partial class SqlSourceTemplate
                 : $" {{ IsJson = true, JsonNames = new global::System.Collections.Generic.Dictionary<string, string>(global::System.StringComparer.Ordinal) {{ {Join(column.JsonRenames.Select(r => $"[{Literal(r.Path)}] = {Literal(r.Name)}"))} }} }}"
             : column.FullTextTable is not null ? $" {{ FullTextTable = {Literal(column.FullTextTable)}, FullTextKey = {Literal(column.FullTextKey!)} }}" : "";
         return $"new {Sql}.Schema.SqlColumn(\"{column.Property}\", \"{column.Column}\", {Sql}.Planning.SqlParamKind.{column.Kind}, static (r, i, d) => {column.Read}, {toStore}){initializer}";
+    }
+
+    /// <summary>
+    ///     A relation's <c>OnSoftDelete</c>: the referrers read through the dependent's own repository — the caller's filters, the soft-deleted rows
+    ///     left out — by a predicate on the foreign key compiled here for every dialect, and tracked by the unit of work so its save writes what the
+    ///     rule changes on them.
+    /// </summary>
+    private static string SoftDeleteRule(SoftDeleteRuleMapModel rule)
+    {
+        var text = Literal($"t.\"{rule.ForeignKeyColumn}\" = {{v:0}}");
+        var predicate = $"new {Sql}.Planning.SqlCompiledPredicate({text}, {text}, {text}, {text}, {text}, new[] {{ {Sql}.Planning.SqlParamKind.{rule.Kind} }})";
+        var specification = $"new {Sql}.CompiledSpecification<{rule.DependentType}>({predicate}, new object?[] {{ key }}, d => d.{rule.ForeignKeyProperty} == key)";
+        var referrers = $"static async (unitOfWork, key, ct) => new global::System.Collections.Generic.List<object>(await new {rule.DependentType}.SqlRepository(unitOfWork).FindAsync({specification}, ct))";
+        var clear = rule.ClearKey is null ? "null" : $"static d => {rule.ClearKey}";
+        return $"            {Sql}.SqlSoftDeleteRules.Register(new(typeof({rule.PrincipalType}), typeof({rule.DependentType}), global::Pragmatic.Persistence.Entity.DeleteBehavior.{rule.Behavior}, {referrers}, {clear}));";
     }
 
     /// <summary>The setter takes a missing row as null whatever the property's annotation: a cast of null to a class is null.</summary>

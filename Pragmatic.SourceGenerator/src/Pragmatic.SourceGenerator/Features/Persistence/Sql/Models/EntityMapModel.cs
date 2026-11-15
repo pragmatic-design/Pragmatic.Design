@@ -23,4 +23,5 @@ internal sealed record EntityMapModel(
     bool SoftDeleteCascade,
     bool CallerFiltered,
     EquatableArray<string> CompositeKeyProperties,
-    EquatableArray<RollUpModel> RollUps);
+    EquatableArray<RollUpModel> RollUps,
+    EquatableArray<SoftDeleteRuleMapModel> SoftDeleteRules);

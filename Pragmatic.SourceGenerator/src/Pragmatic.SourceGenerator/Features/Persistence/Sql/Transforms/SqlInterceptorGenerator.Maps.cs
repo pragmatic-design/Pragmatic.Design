@@ -82,7 +82,40 @@ internal static partial class SqlInterceptorGenerator
             entity.SoftDeleteCascade,
             entity.IsPragmatic, // its rows depend on the caller: the runtime path refuses it until it applies the families
             keys.Count > 1 ? keys.Select(k => k.Property).ToEquatableArray() : EquatableArray<string>.Empty, // what a composite parent's children group on
-            rollUps.ToEquatableArray());
+            rollUps.ToEquatableArray(),
+            SoftDeleteRulesOf(entity).ToEquatableArray());
+    }
+
+    /// <summary>
+    ///     The relations of this entity, as the referrer, that declare <c>OnSoftDelete</c> towards a to-one target: what the unit of work does to
+    ///     this entity's rows when it soft-deletes the target (<c>SqlSoftDeleteRules</c>). A single-column key only: a composite navigation's
+    ///     referrers are read on several columns, which this rule does not compile.
+    /// </summary>
+    private static IEnumerable<SoftDeleteRuleMapModel> SoftDeleteRulesOf(EntityModel entity)
+    {
+        if (!entity.IsPragmatic)
+            yield break;
+        foreach (var navigation in entity.Navigations.Where(n => !n.Principal && !n.IsComposite))
+        {
+            if (PragmaticRelations.OnSoftDelete(entity.Type, navigation.Property, navigation.Target) is not { } behavior
+                || entity.Column(navigation.ForeignKey) is not { Owner: null } key)
+                continue;
+
+            var dependent = entity.FullName;
+            var clear = behavior is "SetNull" or "ClientSetNull"
+                ? key.PrivateSetter
+                    ? $"EntityMaps.{key.SetterName}(({dependent})d, null)"
+                    : $"(({dependent})d).{key.Property} = null"
+                : null;
+            yield return new SoftDeleteRuleMapModel(
+                navigation.Target.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                dependent,
+                behavior,
+                key.Column,
+                key.Property,
+                LambdaTranslator.KindOf(key.Store).ToString(),
+                clear);
+        }
     }
 
     /// <summary>A JSON column carries its mark, and the members whose JSON name is not their own, for the runtime path's JSON paths.</summary>
