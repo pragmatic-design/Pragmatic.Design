@@ -178,7 +178,7 @@ services.AddEventOutbox<AppDbContext>(o =>
 });
 ```
 
-The events an **operation** declares (`[Raises<T>]` on a mutation or an action) go through the same outbox: the invocation that owns the commit stages them, and the capture builds and writes them inside the save, after the generated values are filled. Nested operations hand theirs to the owner's batch, dispatched in process after its commit. The same holds for Messaging's `[EnableOutbox]`.
+The events an **operation** declares (`[Raises<T>]` on a mutation or an action) go through the same outbox: the invocation that owns the commit stages them, and the capture builds and writes them inside the save, after the generated values are filled. Nested operations (a mutation an action invokes, a composite's steps) hand theirs to the owner's batch, and the owner stages them with its own, so they reach the outbox in its save. The same holds for Messaging's `[EnableOutbox]`. On the Sql and documents engines an owner's save that writes nothing (under `[Transactional]`, after the steps saved) captures nothing, and the events go out in process.
 
 Delivery is **at-least-once** (a crash between dispatch and mark-processed re-delivers), so **handlers must be idempotent**. Rows are claimed atomically across replicas (`ClaimedBy`/`ClaimedUntil`) so an event is delivered once per healthy run; the W3C trace context and tenant are propagated across the async boundary. Deserialization is **fail-closed**: only event types with a registered handler are resolvable (no `Type.GetType` on a DB string).
 

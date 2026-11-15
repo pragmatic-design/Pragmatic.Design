@@ -102,7 +102,8 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
     /// </summary>
     private async Task RunPostCommitSideEffectsAsync(
         TMutation mutation, TEntity entity,
-        IReadOnlyList<IDomainEvent> declaredEvents, string mutationType, CancellationToken ct)
+        IReadOnlyList<IDomainEvent> declaredEvents, global::Pragmatic.Actions.Commit.CommitEventStaging? staging,
+        string mutationType, CancellationToken ct)
     {
         try
         {
@@ -121,8 +122,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             await DispatchDomainEventsAsync(entity, ct).ConfigureAwait(false);
             await DispatchRaisedEventsAsync(declaredEvents, ct).ConfigureAwait(false);
 
+            // Less what the staging handed to the save, or dispatched above with the declared events.
             await global::Pragmatic.Actions.Commit.DeferredEventFlush
-                .FlushAsync(batch, _serviceProvider, ct)
+                .FlushAsync(batch, _serviceProvider, staging, ct)
                 .ConfigureAwait(false);
             await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(batch, ct).ConfigureAwait(false);
 

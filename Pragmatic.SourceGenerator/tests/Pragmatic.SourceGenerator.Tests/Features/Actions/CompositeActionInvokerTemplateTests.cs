@@ -76,7 +76,9 @@ public class CompositeActionInvokerTemplateTests
         // composite has no way to save.
         source.Should().Contain("CommitScope.Claim");
         source.Should().Contain("global::Pragmatic.Events.IDomainEventDispatcher");
-        source.Should().Contain("__batch.DeferredEvents");
+        // Staged for an outbox in the save, and flushed after it less what the outbox took (#800).
+        source.Should().Contain("global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(_serviceProvider, __commitOwnership.Batch, null)");
+        source.Should().Contain("global::Pragmatic.Actions.Commit.DeferredEventFlush.FlushAsync(__batch, _serviceProvider, __staging, ct)");
         // The steps' invalidations, which each step deferred into the same batch (#707).
         source.Should().Contain("global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(__batch, ct)");
     }
