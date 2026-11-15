@@ -145,6 +145,8 @@ public class EntityMetadataModelEqualityTests
             return (string?)current + "changed";
         if (type == typeof(TraitParentModel))
             return new TraitParentModel(((TraitParentModel?)current)?.TypeName + "Changed", true, false);
+        if (type == typeof(TenantSourceModel))
+            return new TenantSourceModel(((TenantSourceModel?)current)?.Id + "Changed", "Name", "State", null, false);
 
         // EquatableArray<T>: one element where there were none. Equality compares the lengths first, so the
         // element's own contents are never read and an uninitialised one is enough.

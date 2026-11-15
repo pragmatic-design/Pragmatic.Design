@@ -33,6 +33,9 @@ public sealed partial class ObservedTenantStore(
     private readonly ITenantLifecycleObserver[] _observers = [.. observers];
     private readonly ILogger _logger = logger ?? NullLogger<ObservedTenantStore>.Instance;
 
+    /// <summary>The store this one announces the writes of: what a host asks to tell which store answers.</summary>
+    public ITenantStore Inner => inner;
+
     /// <inheritdoc />
     public Task<TenantInfo?> GetByIdAsync(string tenantId, CancellationToken ct = default)
         => inner.GetByIdAsync(tenantId, ct);

@@ -560,6 +560,12 @@ internal static partial class HostModeGenerator
         // Event handler registration is now handled by a separate pipeline in CompositionFeature
         // to avoid regenerating host output when only event handlers change.
 
+        // One tenant store per host: two [TenantSource] entities leave it on the in-memory store, and say so.
+        var tenantSources = PragmaticHostTemplate.TenantSources(model);
+        if (tenantSources.Count > 1)
+            context.ReportDiagnostic(Diagnostic.Create(
+                CompositionDiagnostics.TenantSourceDeclaredTwice, Location.None, string.Join(", ", tenantSources)));
+
         // Generate PragmaticHost.g.cs (internal helper class)
         var hostTemplate = new PragmaticHostTemplate(model, localStartups);
         var hostArtifact = hostTemplate.RenderOutput();

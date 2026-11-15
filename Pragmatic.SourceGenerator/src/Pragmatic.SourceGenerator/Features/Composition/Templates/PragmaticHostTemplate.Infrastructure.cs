@@ -442,16 +442,33 @@ internal sealed partial class PragmaticHostTemplate
             // derived from the set of tenants goes stale in silence — the [Lookup] preload first. The
             // observers come from the container, so the store has to be built from it: a bare
             // instance would leave them unreachable.
-            Comment("Tenant store — wrapped so ITenantLifecycleObserver instances hear create/update/deactivate/delete");
+            // The [TenantSource] entity's store when a module declares exactly one: its rows are the tenants. Two are PRAG1617, and
+            // the host keeps the in-memory store rather than choosing.
+            var sources = TenantSources(_model);
+            Comment(sources.Count == 1
+                ? "Tenant store — the [TenantSource] entity's rows, wrapped so ITenantLifecycleObserver instances hear create/update/deactivate/delete"
+                : "Tenant store — wrapped so ITenantLifecycleObserver instances hear create/update/deactivate/delete");
             AppendLine("services.AddSingleton<global::Pragmatic.MultiTenancy.ITenantStore>(sp =>");
             AppendLine("    new global::Pragmatic.MultiTenancy.ObservedTenantStore(");
-            AppendLine("        new global::Pragmatic.MultiTenancy.InMemoryTenantStore(),");
+            AppendLine(sources.Count == 1
+                ? $"        {sources[0]}(sp),"
+                : "        new global::Pragmatic.MultiTenancy.InMemoryTenantStore(),");
             AppendLine("        sp.GetServices<global::Pragmatic.MultiTenancy.ITenantLifecycleObserver>(),");
             AppendLine("        sp.GetService<global::Microsoft.Extensions.Logging.ILogger<global::Pragmatic.MultiTenancy.ObservedTenantStore>>()));");
         }
 
         AppendLine();
     }
+
+    /// <summary>The factories of the <c>[TenantSource]</c> stores the composed assemblies declare, the host's own among them.</summary>
+    internal static List<string> TenantSources(Models.HostAggregationModel model)
+        => model.Assemblies
+            .SelectMany(a => a.Entries)
+            .Where(e => e.Category == MetadataCategoryIds.TenantSource && e.RegistrationMethod.Length > 0)
+            .Select(e => e.RegistrationMethod)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToList();
 
     private void RenderRegisterAllDatabasesMethod()
     {

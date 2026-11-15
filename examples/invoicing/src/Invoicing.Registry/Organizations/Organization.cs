@@ -15,12 +15,14 @@ namespace Invoicing.Registry.Entities;
 ///         tenant?" about the value that answers that question.
 ///     </para>
 ///     <para>
-///         <c>State</c> is read on every request by the tenant middleware, through
-///         <c>OrganizationTenantStore</c>: a suspended company is not served, and that is the whole
-///         mechanism — no flag anybody has to remember to check.
+///         <c>State</c> is read on every request by the tenant middleware, through the tenant store
+///         <c>[TenantSource]</c> generates over this entity: a suspended company is not served, and that is
+///         the whole mechanism — no flag anybody has to remember to check. The store only reads: a company
+///         is onboarded, suspended and reactivated by this module's actions, under their permissions.
 ///     </para>
 /// </remarks>
 [Entity]
+[TenantSource(Id = nameof(Slug), Name = nameof(LegalName), State = nameof(State))]
 [Auditable]
 [Audited]
 [ConcurrencyAware]

@@ -11,5 +11,4 @@ Copied from `examples/invoicing/src`, which compiles in the repository and is ex
 | [`Invoicing.Host/AppDatabase.cs`](Invoicing.Host/AppDatabase.cs) | The database marker: `[PragmaticDatabase]` with its provider and connection-string key |
 | [`Invoicing.Billing/BillingModule.cs`](Invoicing.Billing/BillingModule.cs) | A module that builds on another: `[IncludeModule<RegistryModule>]` |
 | [`Invoicing.Billing/BillingBoundary.cs`](Invoicing.Billing/BillingBoundary.cs) | A `[Boundary]`, asking for the job store's tables in its own database (`[EnableJobPersistence]`) |
-| [`Invoicing.Registry/Infrastructure/MultiTenancy/OrganizationTenantStore.cs`](Invoicing.Registry/Infrastructure/MultiTenancy/OrganizationTenantStore.cs) | `[Service<ITenantStore>]` replacing the framework's empty default with a read view over the application's own table |
 | [`Invoicing.Billing/Infrastructure/Jobs/OverdueReminderSweep.cs`](Invoicing.Billing/Infrastructure/Jobs/OverdueReminderSweep.cs) | `[Service<T>]` on a class whose dependencies are registered elsewhere, by another module and by the host's `UseStorage`/`UseEmail` |

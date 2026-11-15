@@ -93,8 +93,21 @@ To which the write path adds `TenantInterceptor` in `Pragmatic.Persistence.EFCor
 
 `ITenantStore` is the list of tenants that exist: lookup by id, enumeration, registration. The
 generated host registers `InMemoryTenantStore` as a singleton when multi-tenancy is detected, so a
-small fixed set of tenants needs no wiring at all. Applications that keep their tenants elsewhere
-supply their own implementation.
+small fixed set of tenants needs no wiring at all.
+
+An application whose tenants are rows of one of its entities declares it with
+`[TenantSource(Id = nameof(Slug), Name = nameof(LegalName), State = nameof(State))]`: the generator
+writes `{Entity}.TenantStore`, a read view through the entity's read repository, and the host
+registers it in place of the in-memory store, still wrapped by `ObservedTenantStore`. Its writes
+refuse with `NotSupportedException`, because a tenant's row is written by the application's own
+operations under their permissions. `PRAG0642` reports a member it cannot read, and `PRAG1617` two
+sources in one host.
+
+⚠️ **Shared database only.** On a database per tenant the routing asks the store which database to
+open, so the store cannot read through the routed context: `AddDbPerTenant` refuses the generated
+store at startup. A host on a database per tenant supplies its own `ITenantStore` that reads the
+shared database itself, as the Casework example does. Any other application that keeps its tenants
+elsewhere supplies its own implementation too.
 
 `DeleteAsync` **has a default implementation that throws `NotSupportedException`**. That shape is
 chosen over an optional member or a silent no-op: an append-only store stays source-compatible when

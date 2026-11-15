@@ -120,15 +120,19 @@ app.UseMultiTenancy(mt =>
 |---|---|
 | `EnforceTenantClaim` (true) | an authenticated user whose token carries a tenant claim (`TenantClaimType`, `tenant_id`) asking for another tenant by header/route/subdomain: rejected, neither value used. ⚠️ A token **without** the claim is not checked: issue the claim, or a signed-in user of A can send `X-Tenant-Id: B` |
 | `EnforceTenantState` (true) | a tenant the store knows in any state but `Active`: 403. Only with an `ITenantStore` that knows the tenant |
-| `RequireKnownTenant` (false) | a tenant the store does not know: 404. Off by default because the generated host registers an **empty** `InMemoryTenantStore`: on, with nothing seeded, it refuses every request. Without it, an invented id becomes the request's tenant and writes land under a tenant nobody onboarded |
+| `RequireKnownTenant` (false) | a tenant the store does not know: 404. Off by default because, without a `[TenantSource]`, the generated host registers an **empty** `InMemoryTenantStore`: on, with nothing seeded, it refuses every request. Without it, an invented id becomes the request's tenant and writes land under a tenant nobody onboarded |
 | `RequireTenant` (true) | no tenant at all (above) |
 
 Names: `TenantHeaderName` (`X-Tenant-Id`), `TenantClaimType` (`tenant_id`), `TenantRouteParameter`
 (`tenantId`), or pass them to `UseHeader(name)`, `UseClaim(type)`, `UseRoute(name)`.
 
 **The register of tenants** is `ITenantStore` (`TenantInfo`: `TenantId`, `TenantName`, `State`,
-`ConnectionString`, `Metadata`). The framework ships only `InMemoryTenantStore` (`Seed(...)` at start-up);
-a register in the database is a class of yours implementing the interface, registered as a singleton.
+`ConnectionString`, `Metadata`). The default is `InMemoryTenantStore` (`Seed(...)` at start-up). When the
+tenants are rows of an entity, declare it: `[TenantSource(Id = nameof(Slug), Name = nameof(LegalName),
+State = nameof(State))]` generates a read-only store over it, which the host registers instead (writes
+refuse: onboarding and suspension are your actions). `PRAG0642` on a wrong member, `PRAG1617` on two
+sources. ⚠️ Shared database only: `AddDbPerTenant` refuses the generated store at startup, so a host on
+a database per tenant writes its own store over the shared connection, registered as a singleton.
 Behind the gateway, `X-Tenant-Id` from the client is stripped and recomputed from the token
 (`pragmatic-use-distributed`).
 

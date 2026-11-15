@@ -506,6 +506,12 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
     public string? LocalIdentityProperty { get; init; }
 
     /// <summary>
+    ///     The entity's <c>[TenantSource]</c> when its members check out: its rows are the tenants, and the generated
+    ///     <c>{Entity}.TenantStore</c> reads them. <c>null</c> for every other entity, and for a declaration <c>PRAG0642</c> refuses.
+    /// </summary>
+    public TenantSourceModel? TenantSource { get; init; }
+
+    /// <summary>
     ///     The user entity implements <c>ISelfRegisteringUser&lt;TSelf&gt;</c>: the store's
     ///     <c>CreateAsync</c> builds one through it. Without it the application creates its users itself,
     ///     and registration is refused.
@@ -715,6 +721,7 @@ internal sealed record EntityMetadataModel : IEquatable<EntityMetadataModel>
                IsFromReference == other.IsFromReference &&
                IsFromImportedPackage == other.IsFromImportedPackage &&
                LocalIdentityProperty == other.LocalIdentityProperty &&
+               Equals(TenantSource, other.TenantSource) &&
                RegistersFromLocalIdentity == other.RegistersFromLocalIdentity &&
                HasParentVisibilityFilter == other.HasParentVisibilityFilter &&
                Equals(TraitParent, other.TraitParent) &&

@@ -73,8 +73,8 @@ Every refusal of the middleware is a ProblemDetails (`application/problem+json`)
 host's `IErrorMessageResolver` for that code, as any other error's do, and fall back to English.
 
 **It is off by default, unlike every other guard here, and the reason is a fact about the framework
-rather than a preference.** When multi-tenancy is detected the generated host registers an *empty*
-`InMemoryTenantStore`. Defaulting this to `true` would answer 404 to every request of every
+rather than a preference.** When multi-tenancy is detected and no entity is declared `[TenantSource]`,
+the generated host registers an *empty* `InMemoryTenantStore`. Defaulting this to `true` would answer 404 to every request of every
 multi-tenant application until someone populated that store: "unknown" cannot mean anything while the
 default list is empty.
 

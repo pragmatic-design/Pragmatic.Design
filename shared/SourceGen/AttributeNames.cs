@@ -104,6 +104,7 @@ internal static class AttributeNames
 
     // MultiTenancy
     public const string FromTenant = "Pragmatic.MultiTenancy.FromTenantAttribute";
+    public const string TenantSource = "Pragmatic.MultiTenancy.TenantSourceAttribute";
 
     // FeatureFlags
     public const string RequiresFeature = "Pragmatic.FeatureFlags.RequiresFeatureAttribute";

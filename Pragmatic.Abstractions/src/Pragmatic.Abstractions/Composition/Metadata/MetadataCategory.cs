@@ -230,5 +230,15 @@ public enum MetadataCategory
     ///     A count: the host decides whether it can evaluate a flag at all, and says so if it cannot
     ///     (<c>PRAG1616</c>), since without one every such operation is refused.
     /// </remarks>
-    FeatureGates = 35
+    FeatureGates = 35,
+
+    /// <summary>
+    ///     That an assembly declares the entity whose rows are the tenants (<c>[TenantSource]</c>), with the factory of the store the
+    ///     generator wrote over it.
+    /// </summary>
+    /// <remarks>
+    ///     The host registers that store, wrapped by <c>ObservedTenantStore</c>, in place of the empty in-memory one; two sources in one
+    ///     host are <c>PRAG1617</c>.
+    /// </remarks>
+    TenantSource = 36
 }
