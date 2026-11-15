@@ -1,0 +1,17 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Folder Name="/docs/">
+    <SolutionItem Path="README.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Worker.Host/Worker.Host.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Worker.Tests/Worker.Tests.csproj" />
+  </Folder>
+</Solution>

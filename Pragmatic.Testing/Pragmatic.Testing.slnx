@@ -8,10 +8,12 @@
     <File Path="docs/getting-started.md" />
     <File Path="docs/troubleshooting.md" />
     <File Path="docs/typed-client.md" />
+    <File Path="docs/worker-host.md" />
   </Folder>
 
   <Folder Name="/src/">
     <Project Path="src/Pragmatic.Testing/Pragmatic.Testing.csproj" />
+    <Project Path="src/Pragmatic.Testing.Hosting/Pragmatic.Testing.Hosting.csproj" />
     <Project Path="src/Pragmatic.Testing.SourceGenerator/Pragmatic.Testing.SourceGenerator.csproj" />
   </Folder>
   <Folder Name="/tests/">

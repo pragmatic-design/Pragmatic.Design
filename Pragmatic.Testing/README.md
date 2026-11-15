@@ -17,6 +17,7 @@ reads the endpoint contracts your app already emits.
 | `.Should()` assertions | `Pragmatic.Testing` runtime (`Assertions/`) | The assertion library the repository's own tests use; no FluentAssertions |
 | Mocks | `Pragmatic.Testing.Mocking.SourceGenerator` | `[GenerateMock<T>]` → a reflection-free, AOT-safe mock; opt in by referencing the generator |
 | Comparers | `Pragmatic.Testing.Comparers.SourceGenerator` | `[GenerateComparer<T>]` → a member-by-member `BeEquivalentTo` for types without value equality |
+| `PragmaticWorkerFactory<TEntryPoint>` | `Pragmatic.Testing.Hosting` | A worker host (no HTTP: jobs, message handlers) built from its entry point, with overrides, started and stopped; see [Testing a worker host](docs/worker-host.md) |
 
 The client pairs with the `ApiRoutes` class the unified source generator emits into the app
 assembly (route constants + typed URL builders): rename a route and every test that calls
@@ -66,6 +67,7 @@ HTTP assertions; four of the reference applications' suites run on it. See the
 | [Getting started](docs/getting-started.md) | Wiring the generator, the collection fixture, your first test |
 | [Contract tests](docs/contract-tests.md) | What each generated family asserts, and what it deliberately does not |
 | [Typed test client](docs/typed-client.md) | The two tiers (`ApiRoutes` + `Api`), setup, usage, limits |
+| [Testing a worker host](docs/worker-host.md) | `PragmaticWorkerFactory`: a host with no HTTP built from its entry point, a job run through it |
 | [Common mistakes](docs/common-mistakes.md) | Denial tests that pass for the wrong reason, assertion strength, fixture wiring |
 | [Troubleshooting](docs/troubleshooting.md) | Nothing generated, missing client, unexpected 401/400 |
 

@@ -500,6 +500,7 @@
     <File Path="Pragmatic.Testing/docs/getting-started.md" />
     <File Path="Pragmatic.Testing/docs/troubleshooting.md" />
     <File Path="Pragmatic.Testing/docs/typed-client.md" />
+    <File Path="Pragmatic.Testing/docs/worker-host.md" />
   </Folder>
   <Folder Name="/Pragmatic.Validation/docs/">
     <File Path="Pragmatic.Validation/README.md" />
@@ -780,6 +781,7 @@
     <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.Mocking.SourceGenerator/Pragmatic.Testing.Mocking.SourceGenerator.csproj" />
     <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.SourceGenerator/Pragmatic.Testing.SourceGenerator.csproj" />
     <Project Path="Pragmatic.Testing/src/Pragmatic.Testing/Pragmatic.Testing.csproj" />
+    <Project Path="Pragmatic.Testing/src/Pragmatic.Testing.Hosting/Pragmatic.Testing.Hosting.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Validation/">
     <Project Path="Pragmatic.Validation/src/Pragmatic.Validation/Pragmatic.Validation.csproj" />
@@ -1046,6 +1048,10 @@
     <Project Path="examples/time-off/src/TimeOff.Leave/TimeOff.Leave.csproj" />
     <Project Path="examples/time-off/src/TimeOff.Host/TimeOff.Host.csproj" />
     <Project Path="examples/time-off/tests/TimeOff.IntegrationTests/TimeOff.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/Examples/Worker/">
+    <Project Path="examples/worker/src/Worker.Host/Worker.Host.csproj" />
+    <Project Path="examples/worker/tests/Worker.Tests/Worker.Tests.csproj" />
   </Folder>
   <Folder Name="/Examples/Invoicing/">
     <Project Path="examples/invoicing/src/Invoicing.Registry/Invoicing.Registry.csproj" />
