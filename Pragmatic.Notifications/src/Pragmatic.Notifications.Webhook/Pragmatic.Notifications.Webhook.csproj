@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pragmatic.Notifications\Pragmatic.Notifications.csproj" />
+    <!-- Retries go through the framework's resilience pipeline (WebhookOptions.ResiliencePolicy). -->
+    <ProjectReference Include="..\..\..\Pragmatic.Resilience\src\Pragmatic.Resilience\Pragmatic.Resilience.csproj" />
   </ItemGroup>
 
   <ItemGroup>
