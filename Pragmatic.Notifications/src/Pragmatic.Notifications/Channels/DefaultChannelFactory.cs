@@ -29,8 +29,9 @@ internal sealed class DefaultChannelFactory : INotificationChannelFactory
     /// <inheritdoc />
     /// <remarks>
     ///     <paramref name="tenantId"/> is accepted for per-tenant channel selection but is not used by
-    ///     this implementation — every tenant shares the registered channels. Supply a custom
-    ///     <see cref="INotificationChannelFactory"/> to vary channels per tenant.
+    ///     this implementation — every tenant shares the registered channels, and a channel that varies by
+    ///     tenant reads it off the recipient (the e-mail channel's sender: <c>ITenantEmailSenderResolver</c>).
+    ///     Supply a custom <see cref="INotificationChannelFactory"/> to vary the channels themselves.
     /// </remarks>
     public INotificationChannel? GetChannel(NotificationChannel channel, string? tenantId = null)
         => _channels.GetValueOrDefault(channel);

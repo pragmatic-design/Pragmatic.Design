@@ -55,6 +55,24 @@ This registers:
 - `NotificationDeliveryWorker` (background service for `EnqueueAsync`)
 - `InMemoryNotificationStore` (default tracking -- swap for EF Core in production)
 
+### A sender per tenant
+
+Every e-mail leaves from `SenderAddress` unless an `ITenantEmailSenderResolver` is registered. With one,
+the channel asks it for the tenant of each recipient — the tenant the notification was sent under — and
+uses the address it answers; `null`, or a recipient with no tenant, keeps `SenderAddress`:
+
+```csharp
+public sealed class CompanySenders : ITenantEmailSenderResolver
+{
+    public ValueTask<EmailSenderIdentity?> ResolveAsync(string tenantId, CancellationToken ct = default)
+        => ValueTask.FromResult<EmailSenderIdentity?>(new($"billing@{tenantId}.example", tenantId));
+}
+
+builder.Services.AddSingleton<ITenantEmailSenderResolver, CompanySenders>();
+```
+
+The channel is a singleton, so the resolver is too: one that reads the tenant's row opens its own scope.
+
 ## 3. Inject and Send
 
 ### Direct Email (Simplest)

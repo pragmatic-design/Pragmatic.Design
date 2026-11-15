@@ -104,6 +104,10 @@ app.UseNotifications(n =>
 });
 ```
 
+**Each tenant sending as itself:** register a singleton `ITenantEmailSenderResolver`
+(`Pragmatic.Notifications.Email`). The e-mail channel asks it for the recipient's tenant and uses the
+`EmailSenderIdentity` it answers; `null`, or no tenant, keeps `SenderAddress`.
+
 `AddSmtp` takes the sender and the transport settings together; there is no overload without the
 transport.
 
