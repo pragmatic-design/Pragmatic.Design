@@ -447,7 +447,11 @@ internal static class CompositionFeature
             refMetadata.Any(a => a.Entries.Any(e => e.Category == MetadataCategoryIds.ClockBindings))
             || localRegistrations.AsImmutableArray().Any(e => e.Category == MetadataCategoryIds.ClockBindings);
 
-        Validation.PragmaticBuilderValidator.Validate(context, detectedFeatures, modules, takesTheClock);
+        var takesTheTenant =
+            refMetadata.Any(a => a.Entries.Any(e => e.Category == MetadataCategoryIds.TenantBindings))
+            || localRegistrations.AsImmutableArray().Any(e => e.Category == MetadataCategoryIds.TenantBindings);
+
+        Validation.PragmaticBuilderValidator.Validate(context, detectedFeatures, modules, takesTheClock, takesTheTenant);
 
         // Cross-boundary event-graph completeness: dangling events (raised, never handled) → PRAG0816.
         Validation.EventGraphValidator.Validate(context, compilation);

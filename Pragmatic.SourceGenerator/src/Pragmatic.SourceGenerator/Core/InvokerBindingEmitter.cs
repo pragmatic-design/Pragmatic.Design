@@ -40,6 +40,7 @@ internal static class InvokerBindingEmitter
     /// <summary>Yields the statements to emit, in order; nothing when no binding is written.</summary>
     /// <param name="currentUser">The <c>[FromCurrentUser]</c> bindings, resolved.</param>
     /// <param name="clock">The <c>[FromClock]</c> bindings.</param>
+    /// <param name="tenant">The <c>[FromTenant]</c> bindings.</param>
     /// <param name="target">The variable holding the operation at the emission site.</param>
     /// <param name="services">The expression naming the <c>IServiceProvider</c>.</param>
     /// <param name="cancellation">The expression naming the cancellation token.</param>
@@ -47,6 +48,7 @@ internal static class InvokerBindingEmitter
     public static IEnumerable<string> Statements(
         IEnumerable<CurrentUserBindingModel> currentUser,
         IEnumerable<ClockBindingModel> clock,
+        IEnumerable<TenantBindingModel> tenant,
         string target,
         string services,
         string cancellation,
@@ -94,6 +96,29 @@ internal static class InvokerBindingEmitter
 
             foreach (var binding in fromTheClock)
                 yield return $"{target}.{binding.PropertyName} = __clock.{binding.ClockMember};";
+
+            yield return "";
+        }
+
+        var fromTheTenant = tenant.Where(b => b.IsRendered).ToList();
+        if (fromTheTenant.Count > 0)
+        {
+            // Looked for, unlike the clock: a host without multi-tenancy registers no ITenantContext, and
+            // that is a request with no tenant (PRAG1615 says so at build time), not a broken container.
+            yield return $"var __tenant = ({services}.GetService(typeof(global::Pragmatic.MultiTenancy.ITenantContext))";
+            yield return "    as global::Pragmatic.MultiTenancy.ITenantContext)?.TenantId;";
+
+            if (fromTheTenant.Any(b => !b.AcceptsNoTenant))
+            {
+                yield return "if (string.IsNullOrEmpty(__tenant))";
+                yield return "    " + refuse(
+                    "global::Pragmatic.Result.Http.BadRequestError.Create(\"The request names no tenant, and this operation reads it.\")");
+            }
+
+            foreach (var binding in fromTheTenant)
+                yield return binding.AcceptsNoTenant
+                    ? $"{target}.{binding.PropertyName} = __tenant;"
+                    : $"{target}.{binding.PropertyName} = __tenant!;";
 
             yield return "";
         }

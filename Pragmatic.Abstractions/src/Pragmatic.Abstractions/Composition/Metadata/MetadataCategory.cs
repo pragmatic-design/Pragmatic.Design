@@ -211,5 +211,15 @@ public enum MetadataCategory
     ///     <c>AddOutputCache</c> and the middleware because somebody declared one, not because the
     ///     package is on the compilation. Before this, nothing added them and the attribute kept nothing.
     /// </remarks>
-    OutputCache = 33
+    OutputCache = 33,
+
+    /// <summary>
+    ///     That an assembly declares an operation property filled with the request's tenant
+    ///     (<c>[FromTenant]</c>).
+    /// </summary>
+    /// <remarks>
+    ///     A count, as <see cref="ClockBindings" /> is: the host does not name the operations, it decides
+    ///     whether it can resolve a tenant at all and says so if it cannot (<c>PRAG1615</c>).
+    /// </remarks>
+    TenantBindings = 34
 }

@@ -22,7 +22,7 @@ internal static partial class ActionsFeature
         SourceProductionContext context, string typeName, InvokerBindingsModel bindings,
         LoadedValidationModel loadedValidation)
     {
-        InvokerBindingReporter.Report(context, typeName, bindings.CurrentUser, bindings.Clock);
+        InvokerBindingReporter.Report(context, typeName, bindings.CurrentUser, bindings.Clock, bindings.Tenant);
 
         if (bindings.CurrentUserLoad is { Problem: { } problem } load)
             context.ReportDiagnostic(Diagnostic.Create(

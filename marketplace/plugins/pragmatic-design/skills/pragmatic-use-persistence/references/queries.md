@@ -150,6 +150,14 @@ public Specification<Employee>? WhoIsAwayToday => AwayToday switch
 - **PRAG0733**: a `[ComputedFilter]` the generator cannot write. **PRAG0734**: a `[FromClock]` on a type
   the clock does not give, or with a setter anyone else reaches.
 
+**Reading the tenant: `[FromTenant]`** (`using Pragmatic.MultiTenancy`). The tenant filter already
+narrows a tenant's rows; this is for the query that needs the id itself — the company record a tenant
+id names. `[FromTenant] public string Slug { get; private set; } = "";` is filled from
+`ITenantContext.TenantId` by the invoker, with the clock's rules: no filter, no parameter, a value the
+caller sends is not read, and the same on an action or a mutation. No tenant resolved: a `string` refuses
+with 400, a `string?` reads null. **PRAG0747**: not a `string`, or a setter anyone else reaches;
+**PRAG1615** (host): no `Pragmatic.MultiTenancy` to resolve a tenant.
+
 **Counting instead of listing: a query whose result is a view.** A `GROUP BY` answers with rows that
 are not rows of the entity, so it is declared on the **result type** and the query stays a query:
 

@@ -21,6 +21,9 @@ internal sealed record InvokerBindingsModel
     /// <summary>The <c>[FromClock]</c> properties.</summary>
     public EquatableArray<ClockBindingModel> Clock { get; init; } = EquatableArray<ClockBindingModel>.Empty;
 
+    /// <summary>The <c>[FromTenant]</c> properties.</summary>
+    public EquatableArray<TenantBindingModel> Tenant { get; init; } = EquatableArray<TenantBindingModel>.Empty;
+
     /// <summary>The <c>[FromCurrentUser]</c> properties, resolved against the user entity once it has arrived.</summary>
     public EquatableArray<CurrentUserBindingModel> CurrentUser { get; init; } =
         EquatableArray<CurrentUserBindingModel>.Empty;
@@ -29,7 +32,8 @@ internal sealed record InvokerBindingsModel
     public CurrentUserLoadModel? CurrentUserLoad { get; init; }
 
     /// <summary>Whether the invoker writes anything, which is what the preparation hook exists for.</summary>
-    public bool AnyRendered => Clock.Any(b => b.IsRendered) || CurrentUser.Any(b => b.IsRendered) || LoadsTheUser;
+    public bool AnyRendered => Clock.Any(b => b.IsRendered) || Tenant.Any(b => b.IsRendered)
+                               || CurrentUser.Any(b => b.IsRendered) || LoadsTheUser;
 
     /// <summary>Whether the signed-in user's entity is loaded into the operation.</summary>
     public bool LoadsTheUser => CurrentUserLoad is { IsRendered: true };

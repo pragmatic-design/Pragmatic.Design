@@ -449,7 +449,7 @@ internal static class QueryFeature
     ///     for each <c>[FromClock]</c> one.
     /// </summary>
     private static void ReportCurrentUserBindings(SourceProductionContext context, QueryModel model)
-        => InvokerBindingReporter.Report(context, model.TypeName, model.CurrentUserBindings, model.ClockBindings);
+        => InvokerBindingReporter.Report(context, model.TypeName, model.CurrentUserBindings, model.ClockBindings, model.TenantBindings);
 
     private static void GenerateQueryInvoker(SourceProductionContext context, QueryModel model)
     {

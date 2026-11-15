@@ -541,6 +541,28 @@ internal static partial class CompositionDiagnostics
         "A generated route that no caller of this host can ever reach.");
 
     /// <summary>
+    ///     PRAG1615: something in this application takes the request's tenant with <c>[FromTenant]</c>,
+    ///     and this host has no multi-tenancy to resolve one.
+    /// </summary>
+    /// <remarks>
+    ///     PRAG1698's shape: the binding is declared in Abstractions, which every module has, and resolved
+    ///     by Pragmatic.MultiTenancy, which the host has to reference. Without it no <c>ITenantContext</c>
+    ///     is registered, so the invoker reads no tenant on every call: a <c>string</c> binding refuses
+    ///     each one with a 400, a <c>string?</c> one reads null. A warning, because a host can register an
+    ///     <c>ITenantContext</c> of its own, which this check cannot see.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TenantBindingWithoutMultiTenancy = new(
+        "PRAG1615",
+        "An operation takes the tenant and this host resolves none",
+        "An operation in this application declares [FromTenant], and its generated invoker reads "
+            + "ITenantContext per request — Pragmatic.MultiTenancy is not referenced here, so no tenant is "
+            + "ever resolved and that operation reads none. Reference Pragmatic.MultiTenancy.AspNetCore, or "
+            + "register an ITenantContext of your own.",
+        Category,
+        DiagnosticSeverity.Warning,
+        true);
+
+    /// <summary>
     ///     PRAG1698: something in this application takes a value from the clock, and this host cannot
     ///     supply an <c>IClock</c>.
     /// </summary>

@@ -131,7 +131,7 @@ internal sealed partial class QueryInvokerTemplate : CSharpTemplate
         // values are on it when the executor builds the cache key and applies the filter.
         var failure = $"global::Pragmatic.Result.Result<{answer}, global::Pragmatic.Result.IError>.Failure";
         foreach (var statement in InvokerBindingEmitter.Statements(
-                     _model.CurrentUserBindings, _model.ClockBindings, "q", "_services", "cancellationToken",
+                     _model.CurrentUserBindings, _model.ClockBindings, _model.TenantBindings, "q", "_services", "cancellationToken",
                      error => $"return {failure}({error});"))
             AppendLine(statement);
 

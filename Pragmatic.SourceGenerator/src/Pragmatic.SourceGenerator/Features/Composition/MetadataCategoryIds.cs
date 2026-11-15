@@ -91,4 +91,10 @@ internal static class MetadataCategoryIds
     ///     output cache services and middleware without which it keeps nothing.
     /// </summary>
     public const string OutputCache = "33";
+
+    /// <summary>
+    ///     TenantBindings = 34 — somebody's operation takes the request's tenant, so a host that cannot
+    ///     resolve one says so at build time instead of refusing every call to that route.
+    /// </summary>
+    public const string TenantBindings = "34";
 }

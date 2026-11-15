@@ -99,6 +99,23 @@ public sealed class TheTenantComesFromTheToken(PostgresFixture database) : Invoi
             "an operation that creates answers 201, and reaching it at all is what this measures");
     }
 
+    /// <summary>
+    ///     <c>[FromTenant]</c> on a query (#741): the company read is the one the token resolved, and a slug the
+    ///     caller sends for another company is not read.
+    /// </summary>
+    [Fact]
+    public async Task TheOwnCompany_IsTheTenantsOne_WhateverSlugTheCallerSends()
+    {
+        var acme = await OnboardAsync("acme");
+        var globex = await OnboardAsync("globex");
+
+        var response = await As(TestUsers.Accountant, acme).GetAsync($"api/me/company?slug={globex}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var company = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        company.GetProperty("slug").GetString().Should().Be(acme);
+    }
+
     [Fact]
     public async Task OnboardingTheSameSlugTwice_IsRefusedWith409()
     {

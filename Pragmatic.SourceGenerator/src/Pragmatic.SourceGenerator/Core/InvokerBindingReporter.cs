@@ -7,7 +7,7 @@ namespace Pragmatic.SourceGenerator.Core;
 
 /// <summary>
 ///     <c>PRAG0730</c> and <c>PRAG0731</c> for each <c>[FromCurrentUser]</c> property of an operation,
-///     <c>PRAG0734</c> for each <c>[FromClock]</c> one.
+///     <c>PRAG0734</c> for each <c>[FromClock]</c> one, <c>PRAG0747</c> for each <c>[FromTenant]</c> one.
 /// </summary>
 /// <remarks>
 ///     Reported for a query, an action and a mutation from here, so the three agree on what is wrong —
@@ -21,8 +21,17 @@ internal static class InvokerBindingReporter
         SourceProductionContext context,
         string typeName,
         IEnumerable<CurrentUserBindingModel> currentUser,
-        IEnumerable<ClockBindingModel> clock)
+        IEnumerable<ClockBindingModel> clock,
+        IEnumerable<TenantBindingModel> tenant)
     {
+        foreach (var binding in tenant)
+        {
+            if (binding.Problem is { } problem)
+                context.ReportDiagnostic(Diagnostic.Create(
+                    TenantBindingDiagnostics.TenantBindingCannotBeGenerated,
+                    binding.Location?.ToLocation(), typeName, binding.PropertyName, problem));
+        }
+
         foreach (var binding in currentUser)
         {
             if (!binding.OnlyTheInvokerSetsIt)

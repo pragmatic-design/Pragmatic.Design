@@ -39,7 +39,7 @@ internal readonly struct PreparationHook(
     /// <summary>The statements that write the bound properties of <paramref name="target" />.</summary>
     public IEnumerable<string> BindingStatements(string target, string services)
         => InvokerBindingEmitter.Statements(
-            bindings.CurrentUser, bindings.Clock, target, services, "ct", Refuse);
+            bindings.CurrentUser, bindings.Clock, bindings.Tenant, target, services, "ct", Refuse);
 
     /// <summary>
     ///     The statements that load the signed-in user's entity into <paramref name="target" />: 401 for a
