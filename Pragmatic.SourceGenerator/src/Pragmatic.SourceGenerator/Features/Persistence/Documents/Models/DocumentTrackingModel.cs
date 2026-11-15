@@ -12,4 +12,6 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="FullName">The entity's fully qualified name.</param>
 /// <param name="Fields">The tracked fields, in the order of their bits.</param>
 /// <param name="HidesBase">A hierarchy's derived type: its registration hides the base entity's (#539).</param>
-internal sealed record DocumentTrackingModel(string Hint, string? Namespace, string TypeName, string FullName, EquatableArray<TrackedFieldModel> Fields, bool HidesBase = false);
+/// <param name="SoftDeleteRules">The relations of this entity, as the referrer, that declare <c>OnSoftDelete</c>, registered with the tracker.</param>
+internal sealed record DocumentTrackingModel(string Hint, string? Namespace, string TypeName, string FullName, EquatableArray<TrackedFieldModel> Fields, bool HidesBase = false,
+    EquatableArray<DocSoftDeleteRuleModel> SoftDeleteRules = default);

@@ -32,6 +32,10 @@ public sealed partial class DocUnitOfWork
                 entry.State = DocEntryState.Modified;
         }
 
+        // The relations' OnSoftDelete, before anything is written: the referrers it changes are written with the principal, and a refusal writes
+        // nothing, on Cosmos DB too.
+        await ApplySoftDeleteRulesAsync(ct).ConfigureAwait(false);
+
         var written = _entries.Where(e => e.State != DocEntryState.Unchanged).ToList();
         if (written.Count == 0)
             return 0;

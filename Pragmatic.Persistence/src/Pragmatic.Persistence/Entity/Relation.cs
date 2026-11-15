@@ -78,7 +78,7 @@ public static class Relation
             ///     </para>
             ///     <para>
             ///         Not declared, a soft delete leaves the dependents as they are: only an argument
-            ///         written here changes it. Applied by the EF Core and the Sql engines.
+            ///         written here changes it. Applied by the EF Core, the Sql and the documents engines.
             ///     </para>
             /// </remarks>
             public DeleteBehavior OnSoftDelete { get; set; }
@@ -144,7 +144,7 @@ public static class Relation
             ///     </para>
             ///     <para>
             ///         Not declared, a soft delete leaves the children as they are: only an argument
-            ///         written here changes it. Applied by the EF Core and the Sql engines.
+            ///         written here changes it. Applied by the EF Core, the Sql and the documents engines.
             ///     </para>
             /// </remarks>
             public DeleteBehavior OnSoftDelete { get; set; }
@@ -216,7 +216,7 @@ public static class Relation
             ///     </para>
             ///     <para>
             ///         Not declared, a soft delete leaves these entities as they are: only an argument
-            ///         written here changes it. Applied by the EF Core and the Sql engines.
+            ///         written here changes it. Applied by the EF Core, the Sql and the documents engines.
             ///     </para>
             /// </remarks>
             public DeleteBehavior OnSoftDelete { get; set; }

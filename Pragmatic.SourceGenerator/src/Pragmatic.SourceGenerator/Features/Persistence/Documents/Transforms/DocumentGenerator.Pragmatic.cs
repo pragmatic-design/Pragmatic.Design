@@ -100,6 +100,8 @@ internal static partial class DocumentGenerator
         var shadow = compilation.AddSyntaxTrees(trees);
         var scopeRules = new List<string>();
         var bridged = shadow.GetTypeByMetadataName("Pragmatic.Persistence.Documents.CompiledScopeRules") is not null;
+        // A relation's OnSoftDelete reads its referrers through their repository, which exists where the read repositories are generated.
+        var softDeleteRules = DocReadRepository.Applies(compilation) && shadow.GetTypeByMetadataName("Pragmatic.Persistence.Documents.DocSoftDeleteRules") is not null;
         var documents = new List<DocModel>();
         foreach (var entity in entities)
         {
@@ -110,7 +112,7 @@ internal static partial class DocumentGenerator
             if (DocTypeEmitter.Model(model, hint, diagnostics, DocFamiliesEmitter.Families(model, shadow, diagnostics)) is not { } typeModel)
                 continue;
             spc.AddSource(new DocumentTypeTemplate(typeModel).RenderOutput());
-            if (DocTrackingEmitter.Model(model, diagnostics) is { } tracking)
+            if (DocTrackingEmitter.Model(model, diagnostics, softDeleteRules) is { } tracking)
                 spc.AddSource(new DocumentTrackingTemplate(tracking).RenderOutput());
             if (bridged)
                 scopeRules.AddRange(DocFamiliesEmitter.ScopeRuleRegistrations(model, shadow));

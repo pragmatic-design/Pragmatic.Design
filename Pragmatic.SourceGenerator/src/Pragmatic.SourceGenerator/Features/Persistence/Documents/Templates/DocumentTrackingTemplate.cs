@@ -50,7 +50,38 @@ internal sealed class DocumentTrackingTemplate(DocumentTrackingModel model) : CS
         AppendLine("    }");
         AppendLine();
         AppendLine("    [global::System.Runtime.CompilerServices.ModuleInitializer]");
-        AppendLine($"    internal static {(model.HidesBase ? "new " : "")}void __RegisterDocumentTracker() => {Runtime}.Writing.DocTrackers.Register<{name}>();");
+        var register = $"{Runtime}.Writing.DocTrackers.Register<{name}>();";
+        if (model.SoftDeleteRules.Count == 0)
+        {
+            AppendLine($"    internal static {(model.HidesBase ? "new " : "")}void __RegisterDocumentTracker() => {register}");
+        }
+        else
+        {
+            AppendLine($"    internal static {(model.HidesBase ? "new " : "")}void __RegisterDocumentTracker()");
+            AppendLine("    {");
+            AppendLine($"        {register}");
+            foreach (var rule in model.SoftDeleteRules)
+                AppendLine($"        {SoftDeleteRule(rule, name)}");
+            AppendLine("    }");
+        }
+
         AppendLine("}");
+    }
+
+    /// <summary>
+    ///     A relation's <c>OnSoftDelete</c>, written inside the referrer's partial so the key is emptied whatever its setter's access: the referrers
+    ///     read through the referrer's own repository — the caller's filters, the soft-deleted documents left out — by a condition on the foreign
+    ///     key compiled here for both stores, and tracked by the unit of work so its save writes what the rule changes on them.
+    /// </summary>
+    private static string SoftDeleteRule(DocSoftDeleteRuleModel rule, string name)
+    {
+        var mongo = $"static (w, s) => {{ w.StartDocument(\"{rule.ForeignKeyField}\"); {Runtime}.Conversion.DocValues.Write(w, \"$eq\", (global::System.Guid)s[0]!); w.EndDocument(); }}";
+        var cosmos = Transforms.DocTypeEmitter.Literal($"c[\"{rule.ForeignKeyJson}\"] = {{p}}0");
+        var json = $"static (w, i, s) => {Runtime}.Conversion.DocJson.WriteValue(w, (global::System.Guid)s[0]!)";
+        var predicate = $"new {Runtime}.Planning.DocCompiledPredicate({mongo}, {cosmos}, 1, {json})";
+        var specification = $"new {Runtime}.DocCompiledSpecification<{name}>({predicate}, new object?[] {{ key }}, d => d.{rule.ForeignKeyProperty} == key)";
+        var referrers = $"static async (unitOfWork, key, ct) => new global::System.Collections.Generic.List<object>(await new DocRepository(unitOfWork).FindAsync({specification}, ct))";
+        var clear = rule.ClearsKey ? $"static d => (({name})d).{rule.ForeignKeyProperty} = null" : "null";
+        return $"{Runtime}.DocSoftDeleteRules.Register(new(typeof({rule.PrincipalType}), typeof({name}), global::Pragmatic.Persistence.Entity.DeleteBehavior.{rule.Behavior}, {referrers}, {clear}));";
     }
 }
