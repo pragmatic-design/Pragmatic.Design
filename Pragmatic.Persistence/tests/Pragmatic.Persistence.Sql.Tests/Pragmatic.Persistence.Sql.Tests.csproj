@@ -81,6 +81,7 @@
   <ItemGroup>
     <!-- The entities' source, which DialectSchemas hands the generator. -->
     <EmbeddedResource Include="Entities.cs" LogicalName="Entities.cs" />
+    <EmbeddedResource Include="OnSoftDeleteEntities.cs" LogicalName="OnSoftDeleteEntities.cs" />
     <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\Supplier.cs" LogicalName="ReferencedModule.Supplier.cs" />
     <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\Part.cs" LogicalName="ReferencedModule.Part.cs" />
     <EmbeddedResource Include="..\Fixtures\Pragmatic.Persistence.Sql.ReferencedModule\ListedOnly.cs" LogicalName="ReferencedModule.ListedOnly.cs" />

@@ -288,7 +288,12 @@ It applies on every path that soft-deletes: a generated delete mutation, a repos
 hand-written `context.Remove`. It is read like `OnDelete`: from the parent's collection when it declares
 one, from the child otherwise.
 
-⚠️ **EF Core only, for now.** The Sql and documents engines do not apply `OnSoftDelete` yet.
+The EF Core engine applies it in `SoftDeleteInterceptor`, the Sql engine in `SqlUnitOfWork`'s save, before
+anything is written. On the Sql engine the referrers are read through their own repository, under the
+caller's filters, so a referrer the caller cannot see does not hold the principal, as on EF Core. A
+composite key is not covered there.
+
+⚠️ **Not on the documents engine yet.** Its soft delete leaves the referrers as they are.
 
 `[SoftDelete(Cascade = true)]` is the older, coarser switch: it soft-deletes the children along every
 navigation whose `OnDelete` is `Cascade`, and no longer reaches a child the relation restricts.

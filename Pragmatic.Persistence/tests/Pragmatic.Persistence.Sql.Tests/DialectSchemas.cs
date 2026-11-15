@@ -61,7 +61,7 @@ internal static class DialectSchemas
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
-        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
+        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("OnSoftDeleteEntities.cs"), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Validation.Attributes.MaxLengthAttribute),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),

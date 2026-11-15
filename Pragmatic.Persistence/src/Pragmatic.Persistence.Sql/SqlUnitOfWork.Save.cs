@@ -29,6 +29,9 @@ public sealed partial class SqlUnitOfWork
                 entry.State = SqlEntryState.Modified;
         }
 
+        // The relations' OnSoftDelete, before anything is written: the referrers it changes go in this batch, and a refusal writes nothing.
+        await ApplySoftDeleteRulesAsync(ct).ConfigureAwait(false);
+
         var written = _entries.Where(e => e.State != SqlEntryState.Unchanged).ToList();
         var links = DetectLinks();
         if (written.Count == 0 && links.Count == 0)

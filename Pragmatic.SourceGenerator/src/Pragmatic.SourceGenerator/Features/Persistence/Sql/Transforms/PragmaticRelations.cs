@@ -11,9 +11,11 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Transforms;
 internal static class PragmaticRelations
 {
     /// <summary>One <c>[Relation.X&lt;T&gt;]</c> as declared (a class, not a record: the generator compiles for netstandard2.0).</summary>
-    private sealed class Declared(string kind, INamedTypeSymbol owner, INamedTypeSymbol target, string? name, string? inverse, string? foreignKey, bool required, bool isPrincipal, string? joinTable, string? onDelete)
+    private sealed class Declared(string kind, INamedTypeSymbol owner, INamedTypeSymbol target, string? name, string? inverse, string? foreignKey, bool required, bool isPrincipal, string? joinTable, string? onDelete, string? onSoftDelete)
     {
         public string? OnDelete { get; } = onDelete;
+
+        public string? OnSoftDelete { get; } = onSoftDelete;
 
         public string Kind { get; } = kind;
         public INamedTypeSymbol Owner { get; } = owner;
@@ -132,6 +134,28 @@ internal static class PragmaticRelations
         return parent is null ? "NoAction" : parent.OnDelete ?? "Cascade";
     }
 
+    /// <summary>
+    ///     What soft-deleting <paramref name="target" /> does to <paramref name="dependent" />'s rows along <paramref name="navigation" />, as
+    ///     Pragmatic's <c>DeleteBehavior</c> name: the target's OneToMany of the dependent, else the dependent's ManyToOne/OneToOne declaration —
+    ///     the order <c>RelationPairing</c> resolves it in for EF Core, so both engines read one rule. Null when neither declares one: the referrers
+    ///     are left as they are.
+    /// </summary>
+    public static string? OnSoftDelete(INamedTypeSymbol dependent, string navigation, INamedTypeSymbol target)
+    {
+        // The principal's side: a OneToMany of the dependent, or the principal's declaration of a one-to-one.
+        var parent = Declarations(target).FirstOrDefault(d => (d.Kind == "OneToMany" || d is { Kind: "OneToOne", IsPrincipal: true })
+                                                              && SymbolEqualityComparer.Default.Equals(d.Target, dependent) && (d.Inverse ?? target.Name) == navigation);
+        if (parent?.OnSoftDelete is { } declared)
+            return declared;
+        return Declarations(dependent).FirstOrDefault(d => d.Kind is "ManyToOne" or "OneToOne" && !d.IsPrincipal && SymbolEqualityComparer.Default.Equals(d.Target, target) && (d.Name ?? d.Target.Name) == navigation)?.OnSoftDelete;
+    }
+
+    /// <summary>The name of the <c>DeleteBehavior</c> a named argument sets, or null when the attribute does not set it.</summary>
+    private static string? Behavior(AttributeData attribute, string argument)
+        => attribute.NamedArguments.FirstOrDefault(n => n.Key == argument).Value is { Type: INamedTypeSymbol behavior, Value: { } value }
+            ? behavior.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value))?.Name
+            : null;
+
     /// <summary>The <c>[Relation.X&lt;T&gt;]</c> and <c>[Relation.X&lt;T&gt;.WithNavigation(…)]</c> of an entity.</summary>
     private static IEnumerable<Declared> Declarations(INamedTypeSymbol entity)
     {
@@ -147,10 +171,8 @@ internal static class PragmaticRelations
             var name = withNavigation && attribute.ConstructorArguments.Length > 0 ? attribute.ConstructorArguments[0].Value as string : null;
             var required = attribute.NamedArguments.FirstOrDefault(n => n.Key == "Required").Value.Value is not false;
             var principal = attribute.NamedArguments.FirstOrDefault(n => n.Key == "IsPrincipal").Value.Value is true;
-            var onDelete = attribute.NamedArguments.FirstOrDefault(n => n.Key == "OnDelete").Value is { Type: INamedTypeSymbol behavior, Value: { } value }
-                ? behavior.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value))?.Name
-                : null;
-            yield return new Declared(kindType.Name, entity, target, name, Named("Inverse"), Named("ForeignKey"), required, principal, Named("JoinTable"), onDelete);
+            yield return new Declared(kindType.Name, entity, target, name, Named("Inverse"), Named("ForeignKey"), required, principal, Named("JoinTable"),
+                Behavior(attribute, "OnDelete"), Behavior(attribute, "OnSoftDelete"));
         }
     }
 }
