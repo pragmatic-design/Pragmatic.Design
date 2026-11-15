@@ -124,8 +124,10 @@ Per module it writes `types.ts` (DTO interfaces + enum unions), `errors.ts` (`Ap
 error-code union), `client.ts` (fetch-based class returning the discriminated
 `ApiResult<T> = { ok: true; value } | { ok: false; error }`), and `paging.ts`
 (`PagedResult<T>`). Every file carries the manifest SHA-256 header for drift detection.
-Host-aggregated manifests emit one folder per module. SSE endpoints are skipped
-(consume them with `EventSource`/stream readers).
+Host-aggregated manifests emit one folder per module. An `[Sse]` endpoint is a method returning
+`AsyncGenerator<TEvent>` over `fetch` streaming — `for await (const e of client.watchLinks()) …` — and a
+refused response or the server's terminal `event: error` is thrown as an `ApiStreamError` carrying the
+`ApiError`.
 
 ## Configuration
 

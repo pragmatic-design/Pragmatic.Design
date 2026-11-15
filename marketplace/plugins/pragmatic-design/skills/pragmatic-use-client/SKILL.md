@@ -92,7 +92,8 @@ error codes and their ProblemDetails extensions (`ConflictError.ConflictingId`),
 - Diagnostics: **PRAG2300** unreadable manifest (error), **PRAG2301** a type degraded to `object`,
   **PRAG2302** a boundary filter that matched nothing, **PRAG2303** a response type missing from the
   manifest.
-- Server-sent-event endpoints have no generated method: consume them with a stream reader.
+- Server-sent-event endpoints have no generated method in the .NET client: consume them with a stream
+  reader. The TypeScript client below does generate them.
 
 ## TypeScript
 
@@ -106,6 +107,10 @@ pragmatic-client ts --manifest PragmaticManifest.json --out src/api/
 Per module: `types.ts` (DTOs, enum unions), `errors.ts` (`ApiError`, error-code union), `client.ts`
 (`ApiResult<T> = { ok: true; value } | { ok: false; error }`), `paging.ts`. Each file carries the
 manifest's hash, so a stale client is visible in review. It needs the manifest file (see Mode A).
+
+An `[Sse]` endpoint is a method returning `AsyncGenerator<TEvent>` (`for await (const e of
+client.watchLinks()) …`); a refused response or the server's `event: error` is thrown as `ApiStreamError`,
+whose `error` is the same `ApiError`.
 
 ## Testing the client
 
