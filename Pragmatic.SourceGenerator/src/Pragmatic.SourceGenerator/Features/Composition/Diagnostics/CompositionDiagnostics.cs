@@ -563,6 +563,26 @@ internal static partial class CompositionDiagnostics
         true);
 
     /// <summary>
+    ///     PRAG1616: an operation of this application is refused when a feature flag is off
+    ///     (<c>[RequiresFeature]</c>), and this host has no feature flags to evaluate one.
+    /// </summary>
+    /// <remarks>
+    ///     The gate fails closed — with no <c>IFeatureFlags</c> nobody can turn the feature on — so without
+    ///     <c>Pragmatic.FeatureFlags</c> every such operation answers 404 to everyone. A warning, because a host
+    ///     can register an <c>IFeatureFlags</c> of its own, which this check cannot see.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor FeatureGateWithoutFeatureFlags = new(
+        "PRAG1616",
+        "An operation requires a feature flag and this host evaluates none",
+        "An operation in this application declares [RequiresFeature], and its generated invoker refuses it "
+            + "unless IFeatureFlags says the flag is on — Pragmatic.FeatureFlags is not referenced here, so "
+            + "nothing evaluates a flag and that operation answers 404 to everyone. Reference "
+            + "Pragmatic.FeatureFlags, or register an IFeatureFlags of your own.",
+        Category,
+        DiagnosticSeverity.Warning,
+        true);
+
+    /// <summary>
     ///     PRAG1698: something in this application takes a value from the clock, and this host cannot
     ///     supply an <c>IClock</c>.
     /// </summary>

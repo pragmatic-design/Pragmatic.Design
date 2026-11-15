@@ -52,13 +52,19 @@ public static class FeatureFlagServiceCollectionExtensions
         /// </summary>
         /// <remarks>
         ///     Scoped, because a context provider typically reads per-request state (tenant, user). The
-        ///     provider is resolved optionally: an app that has not registered one still gets a working
-        ///     <see cref="IFeatureFlags"/> that evaluates against <see cref="FeatureFlagContext.Empty"/>.
+        ///     provider defaults to <see cref="TenantFeatureFlagContextProvider" />: an app that has not
+        ///     registered one evaluates against the request's tenant, and without multi-tenancy against
+        ///     <see cref="FeatureFlagContext.Empty"/>.
         ///     Called by both <c>AddPragmaticFeatureFlags</c> overloads; safe to call directly when the store
         ///     is registered by other means (for example the store shipped by another package).
         /// </remarks>
         public IServiceCollection AddContextualFeatureFlags()
         {
+            // The request's tenant, unless the application registers a context of its own: registered before
+            // this, TryAdd leaves it alone; registered after, it is the one resolved. Without multi-tenancy the
+            // tenant is absent and the context is Empty, as it was.
+            services.TryAddScoped<IFeatureFlagContextProvider>(sp =>
+                new TenantFeatureFlagContextProvider(sp.GetService<Pragmatic.MultiTenancy.ITenantContext>()));
             services.TryAddScoped<IFeatureFlags>(sp => new ContextualFeatureFlags(
                 sp.GetRequiredService<IFeatureFlagStore>(),
                 sp.GetService<IFeatureFlagContextProvider>()));

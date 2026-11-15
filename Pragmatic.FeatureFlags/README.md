@@ -42,9 +42,25 @@ if (await store.IsEnabledAsync("new-checkout", context, ct)) { /* new path */ }
 if (await flags.IsEnabledAsync<NewCheckout>(ct)) { /* new path */ }
 ```
 
-`IFeatureFlags` knows the caller only through an `IFeatureFlagContextProvider` you register; no package
-ships one, and multi-tenancy is not bridged automatically. Without it every evaluation uses
-`FeatureFlagContext.Empty`: the global state and percentage rules apply, targeting rules never match.
+`IFeatureFlags` knows the caller through an `IFeatureFlagContextProvider`. `AddPragmaticFeatureFlags`
+registers `TenantFeatureFlagContextProvider`, which fills the request's tenant, so a tenant targeting rule
+works out of the box in a multi-tenant application. Register your own to add the user, the plan or the
+environment; it replaces the default. Without a tenant the context is `FeatureFlagContext.Empty`: the
+global state and percentage rules apply, targeting rules never match.
+
+An operation that exists only where a flag is on says so on its class:
+
+```csharp
+[Query<Reservation, ReservationSummaryDto>]
+[RequiresFeature<EarlyCheckInFlag>]     // or [RequiresFeature("early-check-in")]
+[Endpoint(HttpVerb.Get, "api/reservations/early-check-in")]
+public partial class EarlyCheckInReservationsQuery { … }
+```
+
+The generated invoker of a query, an action or a mutation evaluates the flag after validation and
+authorization and answers **404** when it is off: for that caller the operation does not exist. Several
+attributes must all be on. It fails closed: a host with no `IFeatureFlags` refuses it, and is warned with
+`PRAG1616`.
 
 Strongly-typed flags (`IFeatureFlag`), a configuration-backed store (`Pragmatic.FeatureFlags.Configuration`)
 and change notifications are all supported. Changes are broadcast: every watcher sees every change.

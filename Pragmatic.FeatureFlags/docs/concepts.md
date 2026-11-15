@@ -528,7 +528,7 @@ The store is registered as singleton by default. Flag definitions are global; th
 
 ### Multi-Tenancy
 
-`FeatureFlagContext.TenantId` enables per-tenant feature targeting. The bridging is manual -- your `IFeatureFlagContextProvider` must copy `ITenantContext.TenantId` into the context.
+`FeatureFlagContext.TenantId` enables per-tenant feature targeting. `AddPragmaticFeatureFlags` registers `TenantFeatureFlagContextProvider`, which copies the resolved `ITenantContext.TenantId` into the context, unless you register an `IFeatureFlagContextProvider` of your own (which then has to copy it itself). `[RequiresFeature]` on an operation then refuses it, with a 404, for the tenants a rule leaves out.
 
 See [Pragmatic.MultiTenancy](../../Pragmatic.MultiTenancy/README.md).
 

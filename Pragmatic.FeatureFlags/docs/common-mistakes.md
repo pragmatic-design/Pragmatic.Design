@@ -193,7 +193,7 @@ public class HttpFeatureFlagContextProvider(
 }
 ```
 
-**Why:** `FeatureFlagContext` and `ITenantContext` are independent systems. There is no automatic wiring. You must explicitly copy `ITenantContext.TenantId` into `FeatureFlagContext.TenantId`. The `IFeatureFlagContextProvider` pattern centralizes this bridging so you don't repeat it in every flag check.
+**Why:** `FeatureFlagContext` and `ITenantContext` are independent systems. The default provider `AddPragmaticFeatureFlags` registers (`TenantFeatureFlagContextProvider`) copies the tenant for you, and an explicit context passed to the store, as above, does not get it. A provider of your own replaces the default, so it has to copy `ITenantContext.TenantId` itself.
 
 ---
 

@@ -148,6 +148,7 @@ internal static class QueryTransform
             CurrentUserBindings = CurrentUserBindingTransform.Extract(targetSymbol, context.SemanticModel),
             ClockBindings = ClockBindingTransform.Extract(targetSymbol),
             TenantBindings = TenantBindingTransform.Extract(targetSymbol),
+            FeatureGates = FeatureGateTransform.Extract(targetSymbol),
             GridRequests = ExtractGridRequests(targetSymbol, ct),
             EntityDeclaresGridBridge = entityType.GetAttributes().Any(
                 a => a.AttributeClass?.ToDisplayString() == GenerateGridBridgeAttributeName),

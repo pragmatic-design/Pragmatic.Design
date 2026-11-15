@@ -105,6 +105,9 @@ internal static class AttributeNames
     // MultiTenancy
     public const string FromTenant = "Pragmatic.MultiTenancy.FromTenantAttribute";
 
+    // FeatureFlags
+    public const string RequiresFeature = "Pragmatic.FeatureFlags.RequiresFeatureAttribute";
+
     // Caching
     public const string Cacheable = "Pragmatic.Caching.Attributes.CacheableAttribute";
     public const string CacheKey = "Pragmatic.Caching.Attributes.CacheKeyAttribute";

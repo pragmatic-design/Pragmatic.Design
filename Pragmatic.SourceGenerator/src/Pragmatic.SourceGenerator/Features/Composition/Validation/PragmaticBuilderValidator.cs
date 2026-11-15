@@ -24,13 +24,26 @@ internal static class PragmaticBuilderValidator
     ///     Whether any assembly of this application declares a <c>[FromTenant]</c>, read the same way
     ///     (PRAG1615).
     /// </param>
+    /// <param name="somethingGatesAFeature">
+    ///     Whether any assembly of this application declares a <c>[RequiresFeature]</c> (PRAG1616).
+    /// </param>
     public static void Validate(
         SourceProductionContext context,
         DetectedFeatures features,
         ImmutableArray<ModuleModel> hostModules,
         bool somethingTakesTheClock = false,
-        bool somethingTakesTheTenant = false)
+        bool somethingTakesTheTenant = false,
+        bool somethingGatesAFeature = false)
     {
+        // PRAG1616: an operation is refused when a feature flag is off, and this host cannot evaluate one,
+        // so the gate is shut for everyone.
+        if (somethingGatesAFeature && !features.HasFeatureFlags)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                CompositionDiagnostics.FeatureGateWithoutFeatureFlags,
+                Location.None));
+        }
+
         // PRAG1615: an operation takes the request's tenant and this host cannot resolve one, so every
         // call to it reads no tenant.
         if (somethingTakesTheTenant && !features.HasMultiTenancy)

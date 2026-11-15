@@ -357,6 +357,10 @@ internal sealed record QueryModel
     public EquatableArray<TenantBindingModel> TenantBindings { get; init; } =
         EquatableArray<TenantBindingModel>.Empty;
 
+    /// <summary>The <c>[RequiresFeature]</c> flags the query is refused without.</summary>
+    public EquatableArray<FeatureGateModel> FeatureGates { get; init; } =
+        EquatableArray<FeatureGateModel>.Empty;
+
     /// <summary>
     ///     Inputs whose type is the canonical <c>GridFilterRequest</c>: what a data grid asks for, taken
     ///     as data.

@@ -97,4 +97,10 @@ internal static class MetadataCategoryIds
     ///     resolve one says so at build time instead of refusing every call to that route.
     /// </summary>
     public const string TenantBindings = "34";
+
+    /// <summary>
+    ///     FeatureGates = 35 — somebody's operation is refused when a feature flag is off, so a host that
+    ///     cannot evaluate a flag says so at build time instead of refusing that operation for everyone.
+    /// </summary>
+    public const string FeatureGates = "35";
 }

@@ -41,6 +41,7 @@ internal static class InvokerBindingEmitter
     /// <param name="currentUser">The <c>[FromCurrentUser]</c> bindings, resolved.</param>
     /// <param name="clock">The <c>[FromClock]</c> bindings.</param>
     /// <param name="tenant">The <c>[FromTenant]</c> bindings.</param>
+    /// <param name="gates">The <c>[RequiresFeature]</c> flags, checked first.</param>
     /// <param name="target">The variable holding the operation at the emission site.</param>
     /// <param name="services">The expression naming the <c>IServiceProvider</c>.</param>
     /// <param name="cancellation">The expression naming the cancellation token.</param>
@@ -49,11 +50,29 @@ internal static class InvokerBindingEmitter
         IEnumerable<CurrentUserBindingModel> currentUser,
         IEnumerable<ClockBindingModel> clock,
         IEnumerable<TenantBindingModel> tenant,
+        IEnumerable<FeatureGateModel> gates,
         string target,
         string services,
         string cancellation,
         Func<string, string> refuse)
     {
+        // First, before anything is read on the caller's behalf: an operation whose feature is off does not
+        // exist for this caller, so it answers what a missing route answers. Fail closed — with no
+        // IFeatureFlags registered nobody can turn the feature on (PRAG1616 says so in the host).
+        var required = gates.ToList();
+        if (required.Count > 0)
+        {
+            yield return $"var __featureFlags = {services}.GetService(typeof(global::Pragmatic.FeatureFlags.IFeatureFlags))";
+            yield return "    as global::Pragmatic.FeatureFlags.IFeatureFlags;";
+            foreach (var gate in required)
+            {
+                yield return $"if (__featureFlags is null || !await {gate.Evaluation("__featureFlags", cancellation)}.ConfigureAwait(false))";
+                yield return "    " + refuse("global::Pragmatic.Result.Http.NotFoundError.Create(\"Operation\")");
+            }
+
+            yield return "";
+        }
+
         var fromTheCaller = currentUser.Where(b => b.IsRendered).ToList();
         if (fromTheCaller.Count > 0)
         {
