@@ -107,6 +107,7 @@ public static class TsEmitter
     private static string EmitClient(ManifestJson.ManifestDoc module, string boundary)
     {
         var sb = new StringBuilder();
+        // Type-only imports, so client.ts runs as it is under a runtime that strips types.
         sb.AppendLine("import type { ApiError } from './errors';");
         sb.AppendLine("import type { PagedResult } from './paging';");
         sb.AppendLine("import type * as T from './types';");
@@ -122,12 +123,20 @@ public static class TsEmitter
         sb.AppendLine("    private readonly options?: { headers?: Record<string, string>; fetchImpl?: typeof fetch },");
         sb.AppendLine("  ) {}");
 
-        foreach (var endpoint in (module.Endpoints ?? [])
-                     // Not a nested `Response.IsStream` pattern: that never matches a null Response, and the
-                     // manifest writes none for an endpoint without a response type (#179).
-                     .Where(e => e is { OperationId: not null, FullRoute: not null } && e.Response?.IsStream != true)
-                     .OrderBy(e => e.OperationId, StringComparer.Ordinal))
+        var endpoints = (module.Endpoints ?? [])
+            .Where(e => e is { OperationId: not null, FullRoute: not null })
+            .OrderBy(e => e.OperationId, StringComparer.Ordinal)
+            .ToList();
+
+        // Not a nested `Response.IsStream` pattern: that never matches a null Response, and the manifest
+        // writes none for an endpoint without a response type (#179).
+        var streams = endpoints.Any(e => e.Response?.IsStream == true);
+
+        foreach (var endpoint in endpoints)
             EmitOperation(sb, endpoint, module);
+
+        if (streams)
+            TsStreamEmitter.AppendStreamReader(sb);
 
         sb.AppendLine();
         sb.AppendLine("  private async send<TValue>(method: string, url: string, body?: unknown): Promise<ApiResult<TValue>> {");
@@ -149,6 +158,9 @@ public static class TsEmitter
         sb.AppendLine("  }");
         sb.AppendLine("}");
 
+        if (streams)
+            TsStreamEmitter.AppendStreamError(sb);
+
         return sb.ToString();
     }
 
@@ -159,7 +171,10 @@ public static class TsEmitter
         var queryParams = (endpoint.Parameters ?? []).Where(p => p.In == "query" && p.Name is not null).ToList();
         var hasBody = endpoint.RequestBody?.Properties is { Count: > 0 };
 
-        var responseType = endpoint.IsVoid ? "void" : TsType(endpoint.Response?.Type, module);
+        var isStream = endpoint.Response?.IsStream == true;
+        var responseType = isStream
+            ? TsType(TsStreamEmitter.ItemClrType(endpoint.Response!.Type), module)
+            : endpoint.IsVoid ? "void" : TsType(endpoint.Response?.Type, module);
 
         var args = new List<string>();
         foreach (var routeParam in routeParams)
@@ -176,7 +191,9 @@ public static class TsEmitter
         if (endpoint.Summary is not null)
             sb.Append("  /** ").Append(endpoint.Summary.Replace("*/", "*\\/")).AppendLine(" */");
         sb.Append("  ").Append(name).Append('(').Append(string.Join(", ", args))
-            .Append("): Promise<ApiResult<").Append(responseType).AppendLine(">> {");
+            .AppendLine(isStream
+                ? $"): AsyncGenerator<{responseType}, void, undefined> {{"
+                : $"): Promise<ApiResult<{responseType}>> {{");
 
         // Route: /api/orders/{id} → `/api/orders/${encodeURIComponent(String(id))}`
         var route = endpoint.FullRoute!;
@@ -202,7 +219,7 @@ public static class TsEmitter
             sb.AppendLine("    if (qsText.length > 0) url += `?${qsText}`;");
         }
 
-        sb.Append("    return this.send<").Append(responseType).Append(">('")
+        sb.Append(isStream ? "    return this.stream<" : "    return this.send<").Append(responseType).Append(">('")
             .Append(endpoint.HttpMethod?.ToUpperInvariant() ?? "GET").Append("', url")
             .Append(hasBody ? ", body" : "").AppendLine(");");
         sb.AppendLine("  }");

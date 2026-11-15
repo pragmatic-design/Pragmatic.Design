@@ -121,9 +121,12 @@ public class TsEmitterTests
         client.Should().Contain("deleteLink(id: string): Promise<ApiResult<void>> {");
     }
 
-    /// <summary>Control: a streaming endpoint is still not a request-response operation of the client.</summary>
+    /// <summary>
+    ///     A streaming endpoint is a stream method of the client, not a request-response one (#746): its bare
+    ///     item type is the event type. The run against a stream is <c>AnSseEndpointIsAStreamOfTypedEventsTests</c>.
+    /// </summary>
     [Fact]
-    public void Emit_AStreamingEndpoint_IsLeftOut()
+    public void Emit_AStreamingEndpoint_IsAStreamMethod()
     {
         const string json = """
             {
@@ -135,7 +138,8 @@ public class TsEmitterTests
 
         var client = TsEmitter.Emit(ManifestJson.Read(json)[0], json)["client.ts"];
 
-        client.Should().NotContain("watchLinks(");
+        client.Should().Contain("watchLinks(): AsyncGenerator<string, void, undefined> {");
+        client.Should().NotContain("watchLinks(): Promise<", "a stream is not one answer");
     }
 
     /// <summary>

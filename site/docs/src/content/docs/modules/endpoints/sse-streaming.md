@@ -61,7 +61,9 @@ public partial class ScanAvailabilityAction : StreamingDomainAction<SlotDto>
   `Channel<T>` (`channel.Reader.ReadAllAsync(ct)`) gives producer-side backpressure for free.
 - The `ct` is the request-aborted token: enumeration stops when the client disconnects.
 - Consume from browsers with `EventSource` (GET) or `fetch` + stream reader; from .NET with
-  `System.Net.ServerSentEvents.SseParser`.
+  `System.Net.ServerSentEvents.SseParser`. The TypeScript client `pragmatic-client ts` generates makes the
+  endpoint a method returning `AsyncGenerator<TEvent>`, which reads this format, keep-alives and the
+  terminal `event: error` included (thrown as `ApiStreamError`).
 
 ## Constraints (compile-time)
 
