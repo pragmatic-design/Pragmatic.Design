@@ -77,7 +77,7 @@ public sealed class ContentPerRecipientTests
     {
         var deliveries = CaptureDeliveries();
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>(
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>(
             [At("ada@example.com", "it-IT"), At("bob@example.com", "en-US")]));
 
         var request = new NotificationRequest
@@ -115,7 +115,7 @@ public sealed class ContentPerRecipientTests
     {
         var deliveries = CaptureDeliveries();
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>(
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>(
             [At("ada@example.com", "it-IT"), At("bob@example.com", "en-US")]));
 
         var request = new NotificationRequest
@@ -146,7 +146,7 @@ public sealed class ContentPerRecipientTests
     {
         var deliveries = CaptureDeliveries();
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>(
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>(
             [At("ada@example.com", "it-IT"), At("nobody@example.com", null)]));
 
         var request = new NotificationRequest
@@ -185,7 +185,7 @@ public sealed class ContentPerRecipientTests
     {
         CaptureDeliveries();
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>(
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>(
             [At("ada@example.com", "it-IT")]));
 
         var request = new NotificationRequest

@@ -41,15 +41,20 @@ internal sealed partial class NotificationPipeline(
 
         // 2. Resolve recipients
         var resolved = await resolver.ResolveAsync(request.Recipient, request.Audience, ct).ConfigureAwait(false);
+        var unreached = resolved.Unreached;
+        foreach (var name in unreached)
+            LogUnreached(name);
         if (resolved.Count == 0)
         {
             LogNoRecipients(request.Audience);
-            return await FailAsync(
+            var failed = await FailAsync(
                 trackingId,
-                "No recipients resolved for the given audience and recipient. The built-in resolver only "
-                + "handles direct addresses (EmailAddress, PhoneNumber, WebhookUrl); resolving UserId, "
-                + "UserIds, RoleName or TenantId to delivery addresses requires a custom IRecipientResolver.",
+                unreached.Count > 0
+                    ? $"No recipient was reached: no address was found for {string.Join(", ", unreached)}. A user's or a role's addresses come "
+                      + "from an IRecipientDirectory (local accounts, Authorization.Management) or a custom IRecipientResolver."
+                    : "No recipients resolved for the given audience and recipient.",
                 ct).ConfigureAwait(false);
+            return failed with { Unreached = unreached };
         }
 
         var notificationId = trackingId ?? Guid.CreateVersion7();
@@ -194,7 +199,7 @@ internal sealed partial class NotificationPipeline(
             LogNothingDelivered(reason);
             NotificationsDiagnostics.NotificationsFailed.Add(1);
             activity?.SetStatus(ActivityStatusCode.Error, reason);
-            return await FailAsync(trackingId, reason, ct).ConfigureAwait(false);
+            return (await FailAsync(trackingId, reason, ct).ConfigureAwait(false)) with { Unreached = unreached };
         }
 
         if (errors.Count == 0)
@@ -229,7 +234,8 @@ internal sealed partial class NotificationPipeline(
             await store.UpdateStatusAsync(rootId, rootStatus, rootError, ct).ConfigureAwait(false);
         }
 
-        return outcome;
+        // The recipients nobody could reach, beside what was delivered to the others (#743).
+        return outcome with { Unreached = unreached };
     }
 
     /// <summary>Settles the tracking record (when present) and returns a failed result.</summary>
@@ -263,6 +269,9 @@ internal sealed partial class NotificationPipeline(
                 yield return value;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Notification recipient {Recipient} was not reached: no address was found for it")]
+    private partial void LogUnreached(string recipient);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No recipients resolved for audience {Audience}")]
     private partial void LogNoRecipients(NotificationAudience audience);

@@ -101,10 +101,11 @@ public sealed class BookingService(INotificationService notifications)
 
 ### User-Targeted (by ID)
 
-> **Requires a recipient resolver.** The built-in resolver only understands direct addresses: it has
-> no way of knowing where your users are stored. Targeting `User`, `Users`, `Role` or `Tenant` without
-> registering an `IRecipientResolver` resolves to zero recipients and the send **fails** with an
-> explanatory error. See [Resolving recipients](#resolving-recipients).
+> **Needs a directory of users.** A `User`, `Users` or `Role` recipient is resolved through the
+> `IRecipientDirectory`s registered: local accounts answer users, Authorization.Management answers
+> roles. A recipient none answers is named in `NotificationResult.Unreached`, and when nobody is
+> reached the send **fails** naming them. A `Tenant` recipient is resolved by none. See
+> [Resolving recipients](#resolving-recipients).
 
 ```csharp
 await notifications.EnqueueAsync(new NotificationRequest
@@ -352,16 +353,18 @@ app.UseNotifications(n =>
 <a id="resolving-recipients"></a>
 
 The built-in `DefaultRecipientResolver` handles only direct addresses: `Direct(email)`,
-`ToWebhook(url)` and a phone number. `User`, `Users`, `Role` and `Tenant` cannot be resolved by the
-library (it does not know where your users live), so they yield zero recipients and the send fails
-with an error saying exactly that. Registering a resolver is what makes those forms work:
+`ToWebhook(url)` and a phone number. `User`, `Users` and `Role` are resolved through the
+`IRecipientDirectory`s registered (local accounts and Authorization.Management ship one each). What
+none answers is named in `NotificationResult.Unreached`. To decide resolution yourself, register a
+resolver; it returns a `RecipientResolution`, which a list of resolved recipients converts to and
+which carries the unreached:
 
 ```csharp
 public sealed class IdentityRecipientResolver(
     IUserStore userStore,
     INotificationPreferenceProvider prefs) : IRecipientResolver
 {
-    public async Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+    public async Task<RecipientResolution> ResolveAsync(
         NotificationRecipient recipient, NotificationAudience audience, CancellationToken ct)
     {
         var results = new List<ResolvedRecipient>();
@@ -395,7 +398,7 @@ public sealed class IdentityRecipientResolver(
         if (recipient.WebhookUrl is not null)
             results.Add(new ResolvedRecipient(recipient.WebhookUrl, NotificationChannel.Webhook, null, null, null));
 
-        return results;
+        return new RecipientResolution(results);
     }
 }
 ```

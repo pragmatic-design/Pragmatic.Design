@@ -24,14 +24,15 @@ app.UseNotifications(n =>
 
 ### SendAsync returns Success=false with "No recipients resolved"
 
-**Cause**: The `DefaultRecipientResolver` cannot resolve the recipient type.
+**Cause**: No directory knows the recipient, and no address was found for it. The result's `Unreached` names it (`user 'u-1'`, `role 'admin'`, `tenant 'tenant-1'`), and so does the error.
 
-The default resolver only handles direct addresses (`EmailAddress`, `PhoneNumber`, `WebhookUrl`) and passes through `UserId` as-is. If you use `NotificationRecipient.Role("admin")` or `NotificationRecipient.Tenant("tenant-1")`, the default resolver returns zero results.
+The default resolver takes direct addresses (`EmailAddress`, `PhoneNumber`, `WebhookUrl`) as they are, and resolves a `UserId`, `UserIds` or `RoleName` through the `IRecipientDirectory`s registered: local accounts (`Pragmatic.Identity.Local`) answer users, and `Pragmatic.Authorization.Management` answers roles. A `TenantId` is resolved by none.
 
-**Fix**: Register a custom `IRecipientResolver` that queries your identity system:
+**Fix**: register a directory for the users you keep elsewhere, or replace the resolver:
 
 ```csharp
-services.AddSingleton<IRecipientResolver, IdentityRecipientResolver>();
+[Service<IRecipientDirectory>(Multiple = true)]
+public sealed class StaffDirectory(IRepository<Staff> staff) : IRecipientDirectory { /* FindUserAsync, UsersInRoleAsync */ }
 ```
 
 ### SendAsync returns Success=false with "Notification subject is required"
@@ -118,7 +119,7 @@ If you see multiple deliveries for one address, check:
 ### A Critical notification reaches one channel only
 
 That is the rule: a `Critical` notification to an e-mail address is one e-mail, even with SMS and webhooks registered. To
-reach the phone too, give the recipient a `PhoneNumber` (or resolve it from your custom `IRecipientResolver`): each
+reach the phone too, give the recipient a `PhoneNumber` (or let an `IRecipientDirectory` answer the user's phone): each
 address is one resolved recipient, and `Critical` uses every registered channel each one belongs to.
 
 ### Test harness shows 0 sent notifications

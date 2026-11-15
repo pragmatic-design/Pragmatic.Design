@@ -79,6 +79,9 @@ internal static class AuthorizationManagementScenario
         Assert.Contains(role, Resolver().Roles);
         Assert.True(Resolver().IsInRole(role));
 
+        // A notification addressed to the role reaches its holder (#743).
+        Assert.Equal([user], await MembersAsync(store, role));
+
         // List: the package's stores answer what was created, globally (the caller has no tenant, so not acme's role).
         var roles = await new ManagedDynamicRoleStore(store, admin).GetAllAsync();
         var listed = Assert.Single(roles, r => r.Name == role);
@@ -92,6 +95,7 @@ internal static class AuthorizationManagementScenario
         Assert.True((await revoke.InvokeAsync(new RevokeRoleFromUser { UserId = user, RoleName = role })).IsSuccess);
         Assert.Empty(await provider.ResolvePermissionsAsync(new TestUser(user)));
         Assert.DoesNotContain(role, Resolver().Roles); // the control: a revoked role is no longer the caller's
+        Assert.Empty(await MembersAsync(store, role)); // nor among the role's members a notification reaches
         Assert.IsType<NotFoundError>((await revoke.InvokeAsync(new RevokeRoleFromUser { UserId = user, RoleName = role })).Error);
         Assert.Equal([user, user, user], cache.Evicted);
 
@@ -135,6 +139,7 @@ internal static class AuthorizationManagementScenario
         Assert.Equal([$"reports.export.{suffix}", "reports.read", "reports.sign"], (await provider.ResolvePermissionsAsync(new TestUser(member))).Order(StringComparer.Ordinal));
         CachedPermissionResolver Resolver() => new([provider], new TestUser(member), roleProviders: [new ManagedRoleProvider(store)]);
         Assert.True(Resolver().IsInRole(role));
+        Assert.Equal([member], await MembersAsync(store, role)); // a member of the group the role is given to (#743)
         var listed = (await new ListGroups.Invoker(store, admin, services).InvokeAsync(new ListGroups())).Value;
         Assert.Equal([role], Assert.Single(listed, g => g.Name == group).Roles);
 
@@ -148,6 +153,7 @@ internal static class AuthorizationManagementScenario
         Assert.True((await remove.InvokeAsync(new RemoveUserFromGroup { UserId = member, GroupName = group })).IsSuccess);
         Assert.Empty(await provider.ResolvePermissionsAsync(new TestUser(member)));
         Assert.False(Resolver().IsInRole(role));
+        Assert.Empty(await MembersAsync(store, role));
         Assert.IsType<NotFoundError>((await remove.InvokeAsync(new RemoveUserFromGroup { UserId = member, GroupName = group })).Error);
         Assert.NotNull(Assert.Single(await store.GetUserGroupsAsync(member, null)).ValidTo); // kept, ended
 
@@ -166,6 +172,15 @@ internal static class AuthorizationManagementScenario
         var text = refused.ToString();
         Assert.True(text.Contains($"IX_{table}_Name_TenantId", StringComparison.OrdinalIgnoreCase)
                     || text.Contains($"{table}.Name, {table}.TenantId", StringComparison.Ordinal), text);
+    }
+
+    /// <summary>The users the package's recipient directory names for <paramref name="role" />, globally: whom a notification to it reaches.</summary>
+    private static async Task<List<string>> MembersAsync(IAuthorizationManagementStore store, string role)
+    {
+        var members = new List<string>();
+        await foreach (var userId in new ManagedRecipientDirectory(store).UsersInRoleAsync(role, null))
+            members.Add(userId);
+        return members;
     }
 
     /// <summary>A permission cache that records whose permissions were evicted.</summary>

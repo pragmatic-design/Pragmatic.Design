@@ -58,7 +58,7 @@ public sealed class NotificationPipelineTests
     public async Task Execute_WithNoResolvedRecipients_ReturnsFailed()
     {
         var request = CreateRequest();
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([]));
 
         var result = await _pipeline.ExecuteAsync(request);
 
@@ -72,7 +72,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest();
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
 
         _router.Route.Returns(NotificationChannel.Email);
 
@@ -96,7 +96,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest() with { ChannelOverride = NotificationChannel.Webhook };
         var resolved = new ResolvedRecipient("https://hooks.example.com", NotificationChannel.Webhook, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
 
         var mockChannel = new NotificationChannelMock();
         mockChannel.Channel.Returns(NotificationChannel.Webhook);
@@ -118,7 +118,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest() with { ChannelOverride = NotificationChannel.Email | NotificationChannel.Sms };
         var mail = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
         var phone = new ResolvedRecipient("+390000000000", NotificationChannel.Sms, null, null, null);
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([mail, phone]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([mail, phone]));
 
         var emailChannel = new NotificationChannelMock();
         emailChannel.Channel.Returns(NotificationChannel.Email);
@@ -149,7 +149,7 @@ public sealed class NotificationPipelineTests
     {
         var request = CreateRequest() with { ChannelOverride = NotificationChannel.Sms };
         var mail = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([mail]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([mail]));
 
         var smsChannel = new NotificationChannelMock();
         smsChannel.Channel.Returns(NotificationChannel.Sms);
@@ -169,7 +169,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest();
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
 
         _router.Route.Returns(NotificationChannel.Email);
 
@@ -193,7 +193,7 @@ public sealed class NotificationPipelineTests
         var r1 = new ResolvedRecipient("a@example.com", NotificationChannel.Email, null, null, null);
         var r2 = new ResolvedRecipient("b@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([r1, r2]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([r1, r2]));
 
         _router.Route.Returns(NotificationChannel.Email);
 
@@ -222,7 +222,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest() with { Priority = NotificationPriority.Critical };
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
 
         var emailChannel = new NotificationChannelMock();
         emailChannel.Channel.Returns(NotificationChannel.Email);
@@ -249,7 +249,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest();
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
         _router.Route.Returns(NotificationChannel.Email);
 
         var mockChannel = new NotificationChannelMock();
@@ -280,7 +280,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest();
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
         _router.Route.Returns(NotificationChannel.Email);
 
         var mockChannel = new NotificationChannelMock();
@@ -312,7 +312,7 @@ public sealed class NotificationPipelineTests
         var ok = new ResolvedRecipient("ok@example.com", NotificationChannel.Email, null, null, null);
         var ko = new ResolvedRecipient("ko@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([ok, ko]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([ok, ko]));
         _router.Route.Returns(NotificationChannel.Email);
 
         var mockChannel = new NotificationChannelMock();
@@ -336,7 +336,7 @@ public sealed class NotificationPipelineTests
         var request = CreateRequest();
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, null);
 
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
 
         _router.Route.Returns(NotificationChannel.Email);
 

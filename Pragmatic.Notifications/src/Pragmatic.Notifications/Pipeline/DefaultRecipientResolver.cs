@@ -1,76 +1,105 @@
-using Microsoft.Extensions.Logging;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Notifications.Preferences;
 
 namespace Pragmatic.Notifications.Pipeline;
 
 /// <summary>
-///     Default recipient resolver. Maps direct addresses to resolved recipients.
-///     For user ID resolution, a custom <see cref="IRecipientResolver"/> should be registered.
+///     Default recipient resolver: direct addresses as they are, a user through the <see cref="IRecipientDirectory" />s registered (local
+///     accounts know their users' e-mail), a role through them too (Authorization.Management knows who holds it), each member once.
 /// </summary>
-internal sealed partial class DefaultRecipientResolver(
+/// <remarks>
+///     What no directory answers is <b>not dropped</b>: it is named in <see cref="RecipientResolution.Unreached" />, and the notification's
+///     result names it, so a send to nobody is visible to whoever sent it (#743). A tenant recipient is not resolved by any directory and is
+///     reported the same way.
+/// </remarks>
+internal sealed class DefaultRecipientResolver(
     INotificationPreferenceProvider preferenceProvider,
-    ILogger<DefaultRecipientResolver> logger)
+    IEnumerable<IRecipientDirectory> directories,
+    ITenantContext? tenant = null)
     : IRecipientResolver
 {
-    public async Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+    private readonly IRecipientDirectory[] _directories = [.. directories];
+
+    public async Task<RecipientResolution> ResolveAsync(
         NotificationRecipient recipient,
         NotificationAudience audience,
         CancellationToken ct = default)
     {
         var results = new List<ResolvedRecipient>();
+        var unreached = new List<string>();
 
-        // Direct email
         if (recipient.EmailAddress is not null)
-        {
-            var prefs = await preferenceProvider.GetPreferencesAsync(recipient.EmailAddress, ct).ConfigureAwait(false);
-            results.Add(new ResolvedRecipient(recipient.EmailAddress, NotificationChannel.Email, prefs?.Locale, null, prefs));
-        }
+            results.Add(await AddressAsync(recipient.EmailAddress, NotificationChannel.Email, ct).ConfigureAwait(false));
 
-        // Direct webhook
         if (recipient.WebhookUrl is not null)
-        {
-            var prefs = await preferenceProvider.GetPreferencesAsync(recipient.WebhookUrl, ct).ConfigureAwait(false);
-            results.Add(new ResolvedRecipient(recipient.WebhookUrl, NotificationChannel.Webhook, prefs?.Locale, null, prefs));
-        }
+            results.Add(await AddressAsync(recipient.WebhookUrl, NotificationChannel.Webhook, ct).ConfigureAwait(false));
 
-        // Direct phone. Preferences are loaded for every channel, not just email: an opt-out or a muted
-        // category applies to the recipient, and leaving them null here let SMS ignore do-not-disturb.
+        // Preferences are loaded for every channel, not just email: an opt-out or a muted category applies to the recipient, and leaving
+        // them null here let SMS ignore do-not-disturb.
         if (recipient.PhoneNumber is not null)
-        {
-            var prefs = await preferenceProvider.GetPreferencesAsync(recipient.PhoneNumber, ct).ConfigureAwait(false);
-            results.Add(new ResolvedRecipient(recipient.PhoneNumber, NotificationChannel.Sms, prefs?.Locale, null, prefs));
-        }
+            results.Add(await AddressAsync(recipient.PhoneNumber, NotificationChannel.Sms, ct).ConfigureAwait(false));
 
-        // User ID → requires a custom IRecipientResolver for real email/address lookup.
-        // DefaultRecipientResolver cannot resolve a user ID to a delivery address; skipping.
-        if (recipient.UserId is not null)
-        {
-            LogUserIdNotResolved(recipient.UserId);
-        }
+        // Each user once, whether named directly, among several, or as a member of the role.
+        var users = new HashSet<string>(StringComparer.Ordinal);
+        if (recipient.UserId is not null && users.Add(recipient.UserId))
+            await UserAsync(recipient.UserId, $"user '{recipient.UserId}'", results, unreached, ct).ConfigureAwait(false);
 
-        // Multiple user IDs → same limitation; requires custom resolver.
         if (recipient.UserIds is { Count: > 0 })
         {
             foreach (var userId in recipient.UserIds)
-                LogUserIdNotResolved(userId);
+            {
+                if (users.Add(userId))
+                    await UserAsync(userId, $"user '{userId}'", results, unreached, ct).ConfigureAwait(false);
+            }
         }
 
-        // Role → requires Identity integration (default: no-op)
         if (recipient.RoleName is not null)
-            LogRecipientTypeNotSupported("Role", recipient.RoleName);
+        {
+            var members = 0;
+            foreach (var directory in _directories)
+            {
+                await foreach (var userId in directory.UsersInRoleAsync(recipient.RoleName, tenant?.TenantId, ct).ConfigureAwait(false))
+                {
+                    members++;
+                    if (users.Add(userId))
+                        await UserAsync(userId, $"user '{userId}' (role '{recipient.RoleName}')", results, unreached, ct).ConfigureAwait(false);
+                }
+            }
 
-        // TenantId → requires MultiTenancy integration (default: no-op)
+            if (members == 0)
+                unreached.Add($"role '{recipient.RoleName}'");
+        }
+
+        // No directory resolves a tenant to the people who administer it.
         if (recipient.TenantId is not null)
-            LogRecipientTypeNotSupported("TenantId", recipient.TenantId);
+            unreached.Add($"tenant '{recipient.TenantId}'");
 
-        return results;
+        return new RecipientResolution(results, unreached);
     }
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "DefaultRecipientResolver cannot resolve UserId '{UserId}' to a delivery address. Register a custom IRecipientResolver for user ID lookup.")]
-    private partial void LogUserIdNotResolved(string userId);
+    /// <summary>The user's addresses, from the first directory that knows them; the user named as unreached when none does.</summary>
+    private async Task UserAsync(string userId, string named, List<ResolvedRecipient> results, List<string> unreached, CancellationToken ct)
+    {
+        RecipientContact? contact = null;
+        foreach (var directory in _directories)
+        {
+            contact = await directory.FindUserAsync(userId, ct).ConfigureAwait(false);
+            if (contact is not null)
+                break;
+        }
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "DefaultRecipientResolver does not support {RecipientType} recipients (value: '{Value}'). Register a custom IRecipientResolver for {RecipientType} resolution.")]
-    private partial void LogRecipientTypeNotSupported(string recipientType, string value);
+        var before = results.Count;
+        if (contact?.Email is { Length: > 0 } email)
+            results.Add(await AddressAsync(email, NotificationChannel.Email, ct).ConfigureAwait(false));
+        if (contact?.Phone is { Length: > 0 } phone)
+            results.Add(await AddressAsync(phone, NotificationChannel.Sms, ct).ConfigureAwait(false));
+        if (results.Count == before)
+            unreached.Add(named);
+    }
+
+    private async Task<ResolvedRecipient> AddressAsync(string address, NotificationChannel channel, CancellationToken ct)
+    {
+        var prefs = await preferenceProvider.GetPreferencesAsync(address, ct).ConfigureAwait(false);
+        return new ResolvedRecipient(address, channel, prefs?.Locale, null, prefs);
+    }
 }

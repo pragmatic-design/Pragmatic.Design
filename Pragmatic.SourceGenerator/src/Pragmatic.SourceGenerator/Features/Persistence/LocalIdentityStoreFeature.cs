@@ -124,6 +124,26 @@ internal static class LocalIdentityStoreFeature
                         ProvidedByHostLifetime = "Scoped"
                     })
             });
+
+            // The users' addresses for a notification addressed to a user (#743): beside the store it reads, so it exists exactly
+            // where there are local accounts. One of several directories the notifications' resolver asks.
+            services.Add(new Composition.Models.ServiceModel
+            {
+                Namespace = "Pragmatic.Identity.Local.Services",
+                TypeName = "LocalIdentityRecipientDirectory",
+                FullTypeName = "global::Pragmatic.Identity.Local.Services.LocalIdentityRecipientDirectory",
+                ServiceTypeName = "global::Pragmatic.Notifications.IRecipientDirectory",
+                Lifetime = "Scoped",
+                AsSelf = false,
+                IsMultiple = true,
+                Dependencies = ImmutableArray.Create(
+                    new Composition.Models.DependencyModel
+                    {
+                        TypeName = "ILocalIdentityStore",
+                        FullTypeName = $"global::{StoreInterface}",
+                        IsOptional = false
+                    })
+            });
         }
 
         return services.ToImmutable();

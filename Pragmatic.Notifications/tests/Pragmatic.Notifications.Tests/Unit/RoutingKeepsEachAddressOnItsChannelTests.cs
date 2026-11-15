@@ -42,7 +42,7 @@ public sealed class RoutingKeepsEachAddressOnItsChannelTests
     }
 
     private void ResolvesTo(params ResolvedRecipient[] recipients)
-        => _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>(recipients));
+        => _resolver.ResolveAsync.Returns(Task.FromResult(new RecipientResolution(recipients)));
 
     private static NotificationRequest Request(NotificationPriority priority) => new()
     {

@@ -20,12 +20,13 @@ public sealed class GuestRecipientResolver(
     IQueryFilterToggle filterToggle)
     : IRecipientResolver
 {
-    public async Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+    public async Task<RecipientResolution> ResolveAsync(
         NotificationRecipient recipient,
         NotificationAudience audience,
         CancellationToken ct = default)
     {
         var results = new List<ResolvedRecipient>();
+        var unreached = new List<string>();
 
         if (recipient.EmailAddress is not null)
             results.Add(await ResolveAddressAsync(recipient.EmailAddress, null, ct).ConfigureAwait(false));
@@ -55,13 +56,17 @@ public sealed class GuestRecipientResolver(
             {
                 var guest = await guests.GetByIdAsync(guestId, ct).ConfigureAwait(false);
                 if (guest is null)
+                {
+                    // Named in the notification's result, so a send to a guest who is not there is not mistaken for one that went out.
+                    unreached.Add($"user '{guestId}'");
                     continue;
+                }
 
                 results.Add(await ResolveAddressAsync(guest.Email, guest.PreferredLanguage, ct).ConfigureAwait(false));
             }
         }
 
-        return results;
+        return new RecipientResolution(results, unreached);
     }
 
     private async Task<ResolvedRecipient> ResolveAddressAsync(string address, string? locale, CancellationToken ct)

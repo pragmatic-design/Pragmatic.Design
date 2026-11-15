@@ -17,7 +17,7 @@ NotificationRequest
        |
   1. Validate       Checks Subject and Body are non-empty
        |
-  2. Resolve         IRecipientResolver: logical recipient -> ResolvedRecipient[]
+  2. Resolve         IRecipientResolver: logical recipient -> RecipientResolution (resolved + unreached)
        |
   3. Route           INotificationRouter: priority + preferences -> NotificationChannel flags
        |
@@ -42,7 +42,14 @@ Minimal validation: `Subject` and `Body` must be non-empty. If validation fails,
 - `TenantId` -- for multi-tenant routing
 - `Preferences` -- user notification preferences (if available)
 
-The `DefaultRecipientResolver` handles direct addresses (email, phone, webhook). For user ID, role, or tenant resolution, register a custom `IRecipientResolver` that queries your identity system.
+It returns a `RecipientResolution`: the resolved recipients, and the recipients it could not reach (`Unreached`), which `NotificationResult.Unreached` reports beside what was delivered to the others.
+
+The `DefaultRecipientResolver` takes direct addresses (email, phone, webhook) as they are. It resolves a user ID, several, or a role through the `IRecipientDirectory`s registered (in Abstractions, several, each asked in turn):
+
+- local accounts answer a user's e-mail;
+- `Pragmatic.Authorization.Management` answers a role's members, in force, in the request's tenant or global.
+
+Each member is reached once. A user no directory knows, a role no directory has members for, and a tenant recipient, which no directory resolves, are named as unreached rather than dropped. For users kept elsewhere, implement `IRecipientDirectory`; to decide resolution entirely, register your own `IRecipientResolver`.
 
 ### 3. Route
 

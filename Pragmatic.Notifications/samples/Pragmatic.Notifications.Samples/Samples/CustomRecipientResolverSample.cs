@@ -8,11 +8,12 @@ using Pragmatic.Notifications.Preferences;
 namespace Pragmatic.Notifications.Samples.Samples;
 
 /// <summary>
-///     The built-in DefaultRecipientResolver only handles direct addresses; it cannot turn a
-///     UserId into an email. A custom <see cref="IRecipientResolver"/> bridges that gap — typically
-///     by querying Identity or a user-profile store. This sample registers a resolver backed by an
-///     in-memory user directory so that NotificationRecipient.User("...") and .Users([...]) actually
-///     resolve to concrete email addresses and get delivered.
+///     A custom <see cref="IRecipientResolver"/> replaces recipient resolution entirely. The built-in
+///     resolver turns a UserId into an email through the <see cref="IRecipientDirectory"/>s registered
+///     (local accounts, Authorization.Management); to add a source of users, register a directory. To
+///     decide resolution yourself, as here, register a resolver: this one is backed by an in-memory user
+///     directory, so NotificationRecipient.User("...") and .Users([...]) resolve to concrete email
+///     addresses and get delivered.
 /// </summary>
 public static class CustomRecipientResolverSample
 {
@@ -67,7 +68,7 @@ public static class CustomRecipientResolverSample
             ["u-2"] = "bob@example.com",
         };
 
-        public Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+        public Task<RecipientResolution> ResolveAsync(
             NotificationRecipient recipient,
             NotificationAudience audience,
             CancellationToken ct = default)
@@ -84,7 +85,7 @@ public static class CustomRecipientResolverSample
                 foreach (var id in recipient.UserIds)
                     AddUser(id, results);
 
-            return Task.FromResult<IReadOnlyList<ResolvedRecipient>>(results);
+            return Task.FromResult(new RecipientResolution(results));
         }
 
         private static void AddUser(string userId, List<ResolvedRecipient> results)

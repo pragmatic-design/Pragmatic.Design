@@ -41,7 +41,7 @@ public sealed class NotificationOutcomeTests
     private void ResolvesTo(NotificationPreferences? preferences)
     {
         var resolved = new ResolvedRecipient("user@example.com", NotificationChannel.Email, null, null, preferences);
-        _resolver.ResolveAsync.Returns(Task.FromResult<IReadOnlyList<ResolvedRecipient>>([resolved]));
+        _resolver.ResolveAsync.Returns(Task.FromResult<RecipientResolution>([resolved]));
     }
 
     private NotificationChannelMock RegisterEmailChannel(bool succeeds = true)
