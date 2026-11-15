@@ -221,5 +221,14 @@ public enum MetadataCategory
     ///     A count, as <see cref="ClockBindings" /> is: the host does not name the operations, it decides
     ///     whether it can resolve a tenant at all and says so if it cannot (<c>PRAG1615</c>).
     /// </remarks>
-    TenantBindings = 34
+    TenantBindings = 34,
+
+    /// <summary>
+    ///     That an assembly declares an operation refused when a feature flag is off (<c>[RequiresFeature]</c>).
+    /// </summary>
+    /// <remarks>
+    ///     A count: the host decides whether it can evaluate a flag at all, and says so if it cannot
+    ///     (<c>PRAG1616</c>), since without one every such operation is refused.
+    /// </remarks>
+    FeatureGates = 35
 }

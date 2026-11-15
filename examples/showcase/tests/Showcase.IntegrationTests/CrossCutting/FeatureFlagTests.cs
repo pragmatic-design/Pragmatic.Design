@@ -58,6 +58,32 @@ public class FeatureFlagTests(PostgresFixture fixture) : IntegrationTestBase(fix
     }
 
     // =========================================================================
+    // [RequiresFeature<EarlyCheckInFlag>]: the route exists for the tenant the flag targets (#747)
+    // =========================================================================
+
+    [Fact]
+    public async Task AGatedQuery_AnswersTheTenantWithTheFlagOn()
+    {
+        using var premiumClient = CreateClientAs("ff-user", "FF Test", "premium-hotel");
+
+        var response = await premiumClient.GetAsync("/api/reservations/early-check-in");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "EarlyCheckInFlag targets 'premium-hotel', so the early check-in desk exists for it");
+    }
+
+    [Fact]
+    public async Task AGatedQuery_Answers404ToATenantWithTheFlagOff()
+    {
+        using var regularClient = CreateClientAs("ff-user", "FF Test", "regular-tenant");
+
+        var response = await regularClient.GetAsync("/api/reservations/early-check-in");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound,
+            "for a tenant without the feature the operation does not exist, which is what a missing route answers");
+    }
+
+    // =========================================================================
     // LoyaltyDiscount: flag affects pricing in CreateReservation (V1)
     // =========================================================================
 

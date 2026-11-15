@@ -24,6 +24,9 @@ internal sealed record InvokerBindingsModel
     /// <summary>The <c>[FromTenant]</c> properties.</summary>
     public EquatableArray<TenantBindingModel> Tenant { get; init; } = EquatableArray<TenantBindingModel>.Empty;
 
+    /// <summary>The <c>[RequiresFeature]</c> flags the operation is refused without.</summary>
+    public EquatableArray<FeatureGateModel> FeatureGates { get; init; } = EquatableArray<FeatureGateModel>.Empty;
+
     /// <summary>The <c>[FromCurrentUser]</c> properties, resolved against the user entity once it has arrived.</summary>
     public EquatableArray<CurrentUserBindingModel> CurrentUser { get; init; } =
         EquatableArray<CurrentUserBindingModel>.Empty;
@@ -33,7 +36,7 @@ internal sealed record InvokerBindingsModel
 
     /// <summary>Whether the invoker writes anything, which is what the preparation hook exists for.</summary>
     public bool AnyRendered => Clock.Any(b => b.IsRendered) || Tenant.Any(b => b.IsRendered)
-                               || CurrentUser.Any(b => b.IsRendered) || LoadsTheUser;
+                               || CurrentUser.Any(b => b.IsRendered) || LoadsTheUser || FeatureGates.Count > 0;
 
     /// <summary>Whether the signed-in user's entity is loaded into the operation.</summary>
     public bool LoadsTheUser => CurrentUserLoad is { IsRendered: true };
@@ -41,4 +44,7 @@ internal sealed record InvokerBindingsModel
     /// <summary>Whether writing them reads the user entity: the one thing here that awaits.</summary>
     public bool ReadsTheUser =>
         CurrentUser.Any(b => b.IsRendered && b.ResolverTypeFullName is not null) || LoadsTheUser;
+
+    /// <summary>Whether the hook evaluates a feature flag, which awaits too.</summary>
+    public bool ChecksFeatures => FeatureGates.Count > 0;
 }

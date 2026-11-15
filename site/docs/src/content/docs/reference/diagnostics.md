@@ -433,6 +433,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG1613` | Warning | A module's embedded manifest is not valid JSON and was left out of the aggregated manifest. Rebuild that module with the current generator; the host is otherwise unaffected. |
 | `PRAG1614` | Warning | A registration names a type no generator has written at this point, so it is emitted with an unqualified name. Write it fully qualified, or register the service by hand in a startup step. |
 | `PRAG1615` | Warning | An operation of this application declares `[FromTenant]`, whose generated invoker reads `ITenantContext` on every request, and this host references no `Pragmatic.MultiTenancy`, so no tenant is ever resolved: a `string` binding refuses every call with 400, a `string?` one reads null. Reference `Pragmatic.MultiTenancy.AspNetCore`, or register an `ITenantContext` of your own. |
+| `PRAG1616` | Warning | An operation of this application declares `[RequiresFeature]`, whose generated invoker refuses it unless `IFeatureFlags` says the flag is on, and this host references no `Pragmatic.FeatureFlags`: the gate fails closed, so that operation answers 404 to everyone. Reference `Pragmatic.FeatureFlags`, or register an `IFeatureFlags` of your own. |
 | `PRAG1630` | Error | A `[StartupStep]` class does not implement `IStartupStep`. |
 | `PRAG1631` | Error | `[StartupStep]` is applied to something that is not a class. |
 | `PRAG1632` | Error | `[NeedsStep<T>]` references a type that is not available. Add the package reference. |

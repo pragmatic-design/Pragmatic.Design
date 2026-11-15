@@ -89,9 +89,15 @@ public sealed class FlagContextFromCurrentUser(ICurrentUser user, IHostEnvironme
 }
 ```
 
-Without a provider, evaluation falls back to `FeatureFlagContext.Empty`: global state and percentage
-rules still apply, targeting rules never match. Reach for `IFeatureFlagStore` directly only when the
-context is *not* the ambient one (a background job acting for another tenant).
+Without a provider of yours, `AddPragmaticFeatureFlags` uses `TenantFeatureFlagContextProvider`: the
+request's tenant, so `FeatureFlagRule.Tenant(...)` works; without a tenant the context is empty and
+targeting rules never match. Yours replaces it, and must copy the tenant itself. Reach for
+`IFeatureFlagStore` directly only when the context is *not* the ambient one (a background job acting for
+another tenant).
+
+**An operation only some tenants have:** `[RequiresFeature<TFlag>]` (or `[RequiresFeature("name")]`) on a
+query, action or mutation. The generated invoker answers **404** when the flag is off for the caller, after
+validation and authorization. It fails closed without `IFeatureFlags` (**PRAG1616** in the host).
 
 **Registration.** The Pragmatic host calls `AddPragmaticFeatureFlags()` when an assembly declares an
 `IFeatureFlag` (next section). With string names only, nothing declares one: call it yourself in an
