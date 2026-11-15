@@ -214,6 +214,13 @@ These interfaces support runtime RBAC management (creating roles and permissions
 > reads `UserRoleAssignment` and `DynamicRolePermission` on every resolution, and its assign and revoke
 > actions evict the users they change from the permission cache.
 >
+> The role's name reaches the caller as well: the package's `ManagedRoleProvider`, an `IRoleProvider`,
+> puts each role assigned with `AssignRoleToUser` (or held through a group, unless deactivated) among
+> `ICurrentUser.Authorization.Roles`, so `IsInRole` agrees with the permissions it grants. The resolver
+> joins every provider's roles to the identity's `role` claims, once per scope. An application that keeps
+> roles in a store of its own implements `IRoleProvider` (`ResolveRolesAsync(ICurrentUser, ct)`) and
+> registers it with `[Service<IRoleProvider>(Multiple = true)]`.
+>
 > The management package registers `ManagedDynamicRoleStore` and `ManagedDynamicPermissionStore`, so a role or
 > permission created with `CreateRole`/`CreatePermission` is listed by `ListRoles`/`ListPermissions` in its
 > tenant (and, when global, in every tenant). They read the tenant the request resolved first and the

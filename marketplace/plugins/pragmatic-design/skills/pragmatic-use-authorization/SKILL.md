@@ -119,6 +119,11 @@ registration adds it; without it the import is `PRAG0469`, naming the package to
 globally, from `ValidFrom` to `ValidTo`. Assign, revoke and a change to a role's permissions evict the
 affected users from the permission cache, so the next request sees it. These add to the roles the
 identity carries (claims, `IRolePermissionStore`); they do not replace them.
+The role's **name** reaches the caller too: the package also registers `ManagedRoleProvider`, an
+`IRoleProvider`, so an assigned role (a group's included, a deactivated one not) is among
+`ICurrentUser.Authorization.Roles` and answers `IsInRole`, beside the identity's `role` claims. An
+application with its own role store implements `IRoleProvider` (`ResolveRolesAsync(ICurrentUser, ct)`) and
+registers it with `[Service<IRoleProvider>(Multiple = true)]`; the providers' roles are joined once per scope.
 
 **A tenant admin grants only what they hold.** `AssignPermissionsToRole` refuses (403) a permission the
 caller does not hold (a wildcard they hold covers what it names), and `AssignRoleToUser` refuses (403) a role
