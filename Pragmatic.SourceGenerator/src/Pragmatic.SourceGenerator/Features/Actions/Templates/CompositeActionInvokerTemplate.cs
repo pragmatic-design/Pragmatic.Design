@@ -278,8 +278,20 @@ internal sealed class CompositeActionInvokerTemplate : LogCallSiteTemplateBase
                 AppendLine();
             }
 
-            Comment("All mutations succeeded — commit atomically");
-            AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);");
+            // The steps' events wait in the batch; staged for the save, an outbox writes them in its transaction instead of
+            // their being dispatched in process after the commit, past it (#800). Without an outbox the stage is null.
+            Comment("All mutations succeeded — commit atomically, the steps' events staged for an outbox if there is one");
+            AppendLine(
+                "var __staging = __commitOwnership.CommitsHere ? global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(" +
+                "_serviceProvider, __commitOwnership.Batch, null) : null;");
+            AppendLine("try");
+            Block(() => AppendLine("await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);"));
+            AppendLine("catch");
+            Block(() =>
+            {
+                AppendLine("__staging?.Discard(); // the save failed: nothing was raised, and the next save of this scope must not write it");
+                AppendLine("throw;");
+            });
             if (_model.IsTransactional)
                 AppendLine("await __transaction.CommitAsync(ct).ConfigureAwait(false);");
 
@@ -317,18 +329,21 @@ internal sealed class CompositeActionInvokerTemplate : LogCallSiteTemplateBase
 
     /// <summary>
     ///     Post-commit side effects: the steps ran in batch mode, so SaveChanges/event-dispatch/cache
-    ///     were deferred. Dispatch the batch's events once (after the single commit), then run the
-    ///     invalidations the steps deferred into the batch, as every owner does (#707).
+    ///     were deferred. Dispatch the batch's events once (after the single commit), less what an outbox
+    ///     took in the save, then run the invalidations the steps deferred into the batch, as every owner
+    ///     does (#707).
     /// </summary>
     private void RenderPostCommitFlush()
     {
-        Comment("Post-commit: dispatch deferred domain events once, then the steps' deferred cache invalidations.");
-        AppendLine(
-            "var __dispatcher = _serviceProvider.GetService<global::Pragmatic.Events.IDomainEventDispatcher>();");
+        Comment("Post-commit: dispatch the deferred domain events no outbox took, once, then the steps' deferred cache invalidations.");
         AppendLine("var __batch = __commitOwnership.Batch;");
-        AppendLine("if (__dispatcher is not null && __batch is not null && __batch.DeferredEvents.Count > 0)");
+        AppendLine("var __dispatcher = _serviceProvider.GetService<global::Pragmatic.Events.IDomainEventDispatcher>();");
         AppendLine(
-            "    await __dispatcher.DispatchAsync(global::System.Linq.Enumerable.Cast<global::Pragmatic.Events.IDomainEvent>(__batch.DeferredEvents), ct).ConfigureAwait(false);");
+            "var __remaining = global::Pragmatic.Actions.Commit.CommitEventStaging.Remaining(__staging, static () => []);");
+        AppendLine("if (__dispatcher is not null && __remaining.Count > 0)");
+        AppendLine("    await __dispatcher.DispatchAsync(__remaining, ct).ConfigureAwait(false);");
+        AppendLine(
+            "await global::Pragmatic.Actions.Commit.DeferredEventFlush.FlushAsync(__batch, _serviceProvider, __staging, ct).ConfigureAwait(false);");
         AppendLine();
         AppendLine("await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush.RunAsync(__batch, ct).ConfigureAwait(false);");
         AppendLine();

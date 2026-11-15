@@ -100,7 +100,7 @@ public class CompositeActionGeneratorTests : ActionsGeneratorTestBase
         // it could not save.
         generated.Should().Contain("CommitScope.Claim");
         generated.Should().Contain("global::Pragmatic.Events.IDomainEventDispatcher");
-        generated.Should().Contain("__batch.DeferredEvents");
+        generated.Should().Contain("DeferredEventFlush.FlushAsync(__batch, _serviceProvider, __staging, ct)");
     }
 
     [Fact]

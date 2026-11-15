@@ -25,16 +25,32 @@ public static class DeferredEventFlush
     /// <param name="batch">The owner's batch, or <c>null</c> when this invocation owned nothing.</param>
     /// <param name="serviceProvider">Resolves the dispatcher; absent means Events is not wired.</param>
     /// <param name="ct">Cancellation token.</param>
+    public static Task FlushAsync(BatchContext? batch, IServiceProvider serviceProvider, CancellationToken ct)
+        => FlushAsync(batch, serviceProvider, null, ct);
+
+    /// <summary>Dispatches what <paramref name="batch" /> accumulated and <paramref name="staging" /> did not hand to the owner's save.</summary>
+    /// <param name="batch">The owner's batch, or <c>null</c> when this invocation owned nothing.</param>
+    /// <param name="serviceProvider">Resolves the dispatcher; absent means Events is not wired.</param>
+    /// <param name="staging">
+    ///     The owner's staging, or <c>null</c> without an outbox. An event it handed on is in the outbox, or was in what
+    ///     <see cref="CommitEventStaging.Remaining" /> returned: dispatching it here too would deliver it twice.
+    /// </param>
+    /// <param name="ct">Cancellation token.</param>
     public static async Task FlushAsync(
-        BatchContext? batch, IServiceProvider serviceProvider, CancellationToken ct)
+        BatchContext? batch, IServiceProvider serviceProvider, CommitEventStaging? staging, CancellationToken ct)
     {
-        if (batch is null || batch.DeferredEvents.Count == 0)
+        if (batch is null)
+            return;
+
+        var deferred = batch.DeferredEvents;
+        IReadOnlyList<object> pending = staging is null ? deferred : deferred.Where(e => !staging.Handed(e)).ToList();
+        if (pending.Count == 0)
             return;
 
         var dispatcher = serviceProvider.GetService<IDomainEventDispatcher>();
         if (dispatcher is null)
             return;
 
-        await dispatcher.DispatchAsync(batch.DeferredEvents.Cast<IDomainEvent>(), ct).ConfigureAwait(false);
+        await dispatcher.DispatchAsync(pending.Cast<IDomainEvent>(), ct).ConfigureAwait(false);
     }
 }

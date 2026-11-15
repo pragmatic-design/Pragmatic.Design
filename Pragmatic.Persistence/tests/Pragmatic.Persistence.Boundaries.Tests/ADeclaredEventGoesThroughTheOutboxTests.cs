@@ -113,6 +113,75 @@ public sealed class ADeclaredEventGoesThroughTheOutboxTests(MongoServer mongo) :
             + $"AND \"MessageType\" = '{typeof(OrderRenumbered).FullName}'"));
     }
 
+    /// <summary>
+    ///     A mutation nested in an action that owns the commit leaves its declared event in the owner's batch; the owner hands it to the outbox
+    ///     with its own (#800). Before, the batch was dispatched in process after the commit, past the outbox.
+    /// </summary>
+    [Fact]
+    public async Task On_the_event_outbox_a_nested_mutations_declared_event_is_in_the_outbox_after_the_owners_commit_and_delivered_once()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+        var product = new Product { Name = "Lamp" };
+        await SaveAsync<Product, CatalogBoundary>(provider, product);
+
+        using (TenantScope.BeginScope("acme"))
+            await InvokeAsync(provider, new RelabelProductAction { Id = product.Id, Name = "Floor lamp" });
+
+        var deliveries = provider.GetRequiredService<Deliveries>().Received;
+        Assert.Empty(deliveries); // not dispatched in process after the owner's commit
+        Assert.Equal(1, Scalar(catalog, $"SELECT COUNT(*) FROM \"__EventOutbox\" WHERE \"ProcessedAt\" IS NULL AND \"EventType\" LIKE '%{nameof(ProductRenamed)}%'"));
+
+        Assert.Equal(1, await provider.GetRequiredService<IEngineEventOutboxDrainer<CatalogBoundary>>().DrainOnceAsync());
+        var (delivered, tenant) = Assert.Single(deliveries);
+        var renamed = Assert.IsType<ProductRenamed>(delivered);
+        Assert.Equal((product.Id, "Floor lamp", "acme"), (renamed.Id, renamed.Name, tenant));
+    }
+
+    /// <summary>The same through a composite, whose generated invoker owns the commit of its steps.</summary>
+    [Fact]
+    public async Task On_the_event_outbox_a_composites_steps_declared_events_are_in_the_outbox_after_its_commit()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+        var lamp = new Product { Name = "Lamp" };
+        var desk = new Product { Name = "Desk" };
+        await SaveAsync<Product, CatalogBoundary>(provider, lamp);
+        await SaveAsync<Product, CatalogBoundary>(provider, desk);
+
+        await InvokeAsync(provider, new RetitleTwoProductsAction
+        {
+            First = new RetitleProductMutation { Id = lamp.Id, Name = "Floor lamp" },
+            Second = new RetitleProductMutation { Id = desk.Id, Name = "Standing desk" },
+        });
+
+        var deliveries = provider.GetRequiredService<Deliveries>().Received;
+        Assert.Empty(deliveries);
+        Assert.Equal(2, Scalar(catalog, $"SELECT COUNT(*) FROM \"__EventOutbox\" WHERE \"ProcessedAt\" IS NULL AND \"EventType\" LIKE '%{nameof(ProductRenamed)}%'"));
+
+        Assert.Equal(2, await provider.GetRequiredService<IEngineEventOutboxDrainer<CatalogBoundary>>().DrainOnceAsync());
+        Assert.Equal(["Floor lamp", "Standing desk"], deliveries.Select(d => ((ProductRenamed)d.Event).Name).Order());
+    }
+
+    [Fact]
+    public async Task On_the_messaging_outbox_a_nested_mutations_declared_event_is_a_pending_message_after_the_owners_commit()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+        var order = new Order { Number = "B-1" };
+        await SaveAsync<Order, OrdersBoundary>(provider, order);
+
+        using (TenantScope.BeginScope("acme"))
+            await InvokeAsync(provider, new ReplaceOrderNumberAction { Id = order.Id, Number = "B-2" });
+
+        Assert.Empty(provider.GetRequiredService<Deliveries>().Received);
+        Assert.Equal(1, Scalar(orders, $"SELECT COUNT(*) FROM \"__OutboxMessages\" WHERE \"ProcessedAt\" IS NULL AND \"TenantId\" = 'acme' "
+            + $"AND \"MessageType\" = '{typeof(OrderRenumbered).FullName}'"));
+    }
+
     /// <summary>The control: the save that writes nothing new leaves no stage behind, and an entity's own events still go through the outbox.</summary>
     [Fact]
     public async Task An_entitys_own_event_is_still_captured_beside_none_declared()
@@ -170,6 +239,7 @@ public sealed class ADeclaredEventGoesThroughTheOutboxTests(MongoServer mongo) :
         services.AddReviewsBoundaryPersistence((_, filters) => new DocSession(mongo.Client, database) { Filters = filters });
         services.AddOrdersBoundaryPersistence((_, filters) => new SqlSession(Open(orders), SqlDialect.Sqlite) { Filters = filters });
         services.AddPragmaticBoundariesActions();
+        services.AddPragmaticBoundariesMutations();
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 

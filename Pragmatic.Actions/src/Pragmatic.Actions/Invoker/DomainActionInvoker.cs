@@ -244,16 +244,17 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                     || global::Pragmatic.Actions.Commit.CommitScope.BatchFor(UnitOfWork)
                         is { DefersSave: false };
 
-                // The events this action declares, staged for the save when it owns the commit: an outbox writes them in the save's
-                // transaction (#736). Nested, they go to the owner's batch below, as before.
-                global::Pragmatic.Events.Outbox.DeclaredEventStage? declared = null;
+                // The events this action declares, and those the operations nested in it left in its batch, staged for the save when it
+                // owns the commit: an outbox writes them in the save's transaction (#736, #800). Nested, they go to the owner's batch below.
+                global::Pragmatic.Actions.Commit.CommitEventStaging? declared = null;
                 if (!CommitsItsOwnWork && savesHere)
                 {
                     LogSavingChanges("Action", actionName);
                     if (commitOwnership.CommitsHere)
                     {
                         var staged = result.Value;
-                        declared = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Stage(ServiceProvider, () => CollectRaisedEvents(action, staged));
+                        declared = global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(
+                            ServiceProvider, commitOwnership.Batch, () => CollectRaisedEvents(action, staged));
                     }
 
                     try
@@ -286,13 +287,13 @@ public abstract partial class DomainActionInvoker<TAction, TReturn> : ActionInvo
                     var value = result.Value;
                     // What no outbox took: with one on this boundary, nothing; without, the events, built now as before.
                     await DispatchOrDeferRaisedEventsAsync(ownerBatch,
-                        () => global::Pragmatic.Actions.Commit.DeclaredEventStaging.Remaining(declared, () => CollectRaisedEvents(action, value)), ct).ConfigureAwait(false);
+                        () => global::Pragmatic.Actions.Commit.CommitEventStaging.Remaining(declared, () => CollectRaisedEvents(action, value)), ct).ConfigureAwait(false);
 
                     // What the nested invocations could not dispatch themselves, now that their writes
-                    // are committed. Without it a mutation invoked from here succeeds silently and its
-                    // handler never runs. The batch is the one captured before suspending.
+                    // are committed, less what the staging handed on. Without it a mutation invoked from here
+                    // succeeds silently and its handler never runs. The batch is the one captured before suspending.
                     await global::Pragmatic.Actions.Commit.DeferredEventFlush
-                        .FlushAsync(commitOwnership.Batch, ServiceProvider, ct).ConfigureAwait(false);
+                        .FlushAsync(commitOwnership.Batch, ServiceProvider, declared, ct).ConfigureAwait(false);
                     await global::Pragmatic.Actions.Commit.DeferredInvalidationFlush
                         .RunAsync(commitOwnership.Batch, ct).ConfigureAwait(false);
 

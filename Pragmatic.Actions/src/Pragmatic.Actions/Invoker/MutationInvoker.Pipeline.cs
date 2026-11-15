@@ -94,8 +94,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             // 6-D. Persist
             LogPersistingEntity(mutationType);
             // The mutation's [Raises<T>] events, staged for the save: an outbox builds and writes them inside it, after the generated
-            // values are filled, in the save's transaction (#736). Without one nothing is staged and they are built below, as before.
-            var declared = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Stage(_serviceProvider, () => CollectRaisedEvents(mutation, entity));
+            // values are filled, in the save's transaction (#736), with what the operations nested in it left in its batch (#800). Without one nothing is staged and they are built below, as before.
+            var declared = global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(
+                _serviceProvider, Commit.CommitScope.BatchFor(UnitOfWork), () => CollectRaisedEvents(mutation, entity));
             try
             {
                 await SaveChangesAsync(ct).ConfigureAwait(false);
@@ -110,9 +111,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
 
             // 7+8-D. Post-commit side effects (events + cache), isolated from the committed outcome.
             // Built here, after the save, for the reason spelled out in the batch branch above.
-            var declaredEvents = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
+            var declaredEvents = global::Pragmatic.Actions.Commit.CommitEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
 
-            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, mutationType, ct).ConfigureAwait(false);
+            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, declared, mutationType, ct).ConfigureAwait(false);
         }
 
         stopwatch.Stop();
@@ -197,8 +198,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             // 6-R. Persist
             LogPersistingEntity(mutationType);
             // The mutation's [Raises<T>] events, staged for the save: an outbox builds and writes them inside it, after the generated
-            // values are filled, in the save's transaction (#736). Without one nothing is staged and they are built below, as before.
-            var declared = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Stage(_serviceProvider, () => CollectRaisedEvents(mutation, entity));
+            // values are filled, in the save's transaction (#736), with what the operations nested in it left in its batch (#800). Without one nothing is staged and they are built below, as before.
+            var declared = global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(
+                _serviceProvider, Commit.CommitScope.BatchFor(UnitOfWork), () => CollectRaisedEvents(mutation, entity));
             try
             {
                 await SaveChangesAsync(ct).ConfigureAwait(false);
@@ -213,9 +215,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
 
             // 7+8-R. Post-commit side effects (events + cache), isolated from the committed outcome.
             // Built here, after the save, for the reason spelled out in the batch branch above.
-            var declaredEvents = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
+            var declaredEvents = global::Pragmatic.Actions.Commit.CommitEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
 
-            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, mutationType, ct).ConfigureAwait(false);
+            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, declared, mutationType, ct).ConfigureAwait(false);
         }
 
         stopwatch.Stop();
@@ -371,8 +373,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
             // so one refused row makes every later commit of the same request fail too, and PerStep
             // cannot keep what came before it. Measured on an import with one repeated key.
             // The mutation's [Raises<T>] events, staged for the save: an outbox builds and writes them inside it, after the generated
-            // values are filled, in the save's transaction (#736). Without one nothing is staged and they are built below, as before.
-            var declared = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Stage(_serviceProvider, () => CollectRaisedEvents(mutation, entity));
+            // values are filled, in the save's transaction (#736), with what the operations nested in it left in its batch (#800). Without one nothing is staged and they are built below, as before.
+            var declared = global::Pragmatic.Actions.Commit.CommitEventStaging.Stage(
+                _serviceProvider, Commit.CommitScope.BatchFor(UnitOfWork), () => CollectRaisedEvents(mutation, entity));
             try
             {
                 await SaveChangesAsync(ct).ConfigureAwait(false);
@@ -386,9 +389,9 @@ public abstract partial class MutationInvoker<TMutation, TEntity>
 
             // 7+8. Post-commit side effects (events + cache), isolated from the committed outcome.
             // Built here, after the save, for the reason spelled out in the batch branch above.
-            var declaredEvents = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
+            var declaredEvents = global::Pragmatic.Actions.Commit.CommitEventStaging.Remaining(declared, () => CollectRaisedEvents(mutation, entity));
 
-            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, mutationType, ct).ConfigureAwait(false);
+            await RunPostCommitSideEffectsAsync(mutation, entity, declaredEvents, declared, mutationType, ct).ConfigureAwait(false);
         }
 
         stopwatch.Stop();
