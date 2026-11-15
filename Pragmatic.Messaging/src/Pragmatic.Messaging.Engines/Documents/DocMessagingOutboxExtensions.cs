@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Identity;
 using Pragmatic.Messaging.Entities;
@@ -21,7 +22,9 @@ public static class DocMessagingOutboxExtensions
     public static IServiceCollection AddDocMessagingOutbox<TBoundary>(this IServiceCollection services, string boundaryName)
     {
         services.AddKeyedScoped<IDocSavePhase>(typeof(TBoundary), static (sp, _) => new DocMessagingOutboxPhase(
-            sp.GetService<ITenantContext>(), sp.GetService<ICurrentUser>(), sp.GetService<PragmaticJsonOptions>()));
+            sp.GetService<ITenantContext>(), sp.GetService<ICurrentUser>(), sp.GetService<PragmaticJsonOptions>(), sp.GetService<Pragmatic.Events.Outbox.DeclaredEventStage>()));
+        // Where the invocation that owns the commit stages the events it declares, for the phase to take (#736).
+        services.TryAddScoped<Pragmatic.Events.Outbox.DeclaredEventStage>();
         // AddScoped, not TryAddEnumerable: every boundary's source shares the implementation type, which would collapse them to one.
         services.AddScoped<IOutboxSource>(sp => new DocOutboxSource(sp.GetRequiredKeyedService<DocSession>(typeof(TBoundary)), boundaryName,
             sp.GetRequiredService<ILogger<DocOutboxSource>>(), sp.GetService<TimeProvider>()));

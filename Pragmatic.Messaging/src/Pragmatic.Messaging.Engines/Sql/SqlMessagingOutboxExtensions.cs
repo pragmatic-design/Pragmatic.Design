@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Identity;
 using Pragmatic.Messaging.Entities;
@@ -20,7 +21,9 @@ public static class SqlMessagingOutboxExtensions
     public static IServiceCollection AddSqlMessagingOutbox<TBoundary>(this IServiceCollection services, string boundaryName)
     {
         services.AddKeyedScoped<ISqlSavePhase>(typeof(TBoundary), static (sp, _) => new SqlMessagingOutboxPhase(
-            sp.GetService<ITenantContext>(), sp.GetService<ICurrentUser>(), sp.GetService<PragmaticJsonOptions>()));
+            sp.GetService<ITenantContext>(), sp.GetService<ICurrentUser>(), sp.GetService<PragmaticJsonOptions>(), sp.GetService<Pragmatic.Events.Outbox.DeclaredEventStage>()));
+        // Where the invocation that owns the commit stages the events it declares, for the phase to take (#736).
+        services.TryAddScoped<Pragmatic.Events.Outbox.DeclaredEventStage>();
         // AddScoped, not TryAddEnumerable: every boundary's source shares the implementation type, which would collapse them to one.
         services.AddScoped<IOutboxSource>(sp => new SqlOutboxSource(sp.GetRequiredKeyedService<SqlSession>(typeof(TBoundary)), boundaryName,
             sp.GetRequiredService<ILogger<SqlOutboxSource>>(), sp.GetService<TimeProvider>()));

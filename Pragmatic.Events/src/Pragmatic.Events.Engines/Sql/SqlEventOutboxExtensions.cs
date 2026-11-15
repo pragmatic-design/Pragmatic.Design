@@ -19,7 +19,7 @@ public static class SqlEventOutboxExtensions
     {
         if (!EngineEventOutboxRegistration.Shared<TBoundary>(services, configure))
             return services;
-        services.AddKeyedScoped<ISqlSavePhase>(typeof(TBoundary), static (sp, _) => new SqlEventOutboxPhase(sp.GetService<ITenantContext>(), sp.GetService<PragmaticJsonOptions>()));
+        services.AddKeyedScoped<ISqlSavePhase>(typeof(TBoundary), static (sp, _) => new SqlEventOutboxPhase(sp.GetService<ITenantContext>(), sp.GetService<PragmaticJsonOptions>(), sp.GetService<DeclaredEventStage>()));
         services.AddSingleton<IEngineEventOutboxDrainer<TBoundary>>(static sp => new SqlEventOutboxDrainer<TBoundary>(sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetRequiredService<EventOutboxOptions>(), sp.GetRequiredService<ILogger<SqlEventOutboxDrainer<TBoundary>>>(), sp.GetService<TimeProvider>()));
         return EngineEventOutboxRegistration.Loop<TBoundary>(services);

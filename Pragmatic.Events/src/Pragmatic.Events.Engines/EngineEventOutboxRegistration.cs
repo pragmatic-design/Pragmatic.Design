@@ -24,6 +24,8 @@ internal static class EngineEventOutboxRegistration
         // The allowlist of the event types a row may name: the handlers registered, read when it is first resolved (fail-closed: an event no
         // handler takes is not deserialized).
         services.TryAddSingleton<IEventOutboxTypeResolver>(_ => EventOutboxTypeResolver.FromHandlers(services));
+        // Where the invocation that owns the commit stages the events it declares, for the save's phase to take (#736).
+        services.TryAddScoped<DeclaredEventStage>();
         return true;
     }
 

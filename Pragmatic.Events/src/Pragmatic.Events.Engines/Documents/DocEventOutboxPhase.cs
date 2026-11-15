@@ -20,13 +20,13 @@ namespace Pragmatic.Events.Engines.Documents;
 ///         go out in process after the save, as without the outbox. EF Core's interceptor reads every tracked entity.
 ///     </para>
 /// </remarks>
-public sealed class DocEventOutboxPhase(ITenantContext? tenant, PragmaticJsonOptions? json) : IDocSavePhase
+public sealed class DocEventOutboxPhase(ITenantContext? tenant, PragmaticJsonOptions? json, Pragmatic.Events.Outbox.DeclaredEventStage? stage = null) : IDocSavePhase
 {
     /// <inheritdoc />
     public async ValueTask ApplyAsync(DocSaveContext save, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(save);
-        foreach (var captured in EventOutboxCapture.Take(save.Entries.Select(e => e.Entity), save.Now, tenant?.TenantId, json))
+        foreach (var captured in EventOutboxCapture.Take(save.Entries.Select(e => e.Entity), stage, save.Now, tenant?.TenantId, json))
         {
             await save.Session.InsertAsync(new EventOutboxDocument
             {

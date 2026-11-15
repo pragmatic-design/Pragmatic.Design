@@ -193,10 +193,24 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
                     || global::Pragmatic.Actions.Commit.CommitScope.BatchFor(UnitOfWork)
                         is { DefersSave: false };
 
+                // The events this action declares, staged for the save when it owns the commit: an outbox writes them in the save's
+                // transaction (#736). Nested, they go to the owner's batch below, as before.
+                global::Pragmatic.Events.Outbox.DeclaredEventStage? declared = null;
                 if (!CommitsItsOwnWork && savesHere)
                 {
                     LogSavingChanges("VoidAction", actionName);
-                    await SaveChangesAsync(ct).ConfigureAwait(false);
+                    if (commitOwnership.CommitsHere)
+                        declared = global::Pragmatic.Actions.Commit.DeclaredEventStaging.Stage(ServiceProvider, () => CollectRaisedEvents(action));
+
+                    try
+                    {
+                        await SaveChangesAsync(ct).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        declared?.Discard(); // the save failed: the action raised nothing, and the next save of this scope must not write it
+                        throw;
+                    }
                 }
 
                 // The commit, and only now: everything deferred below is flushed after it, never before.
@@ -213,7 +227,9 @@ public abstract partial class VoidDomainActionInvoker<TAction> : ActionInvokerBa
                     // of work is its own operation once the commit has happened.
                     using var outsideTheCommit = global::Pragmatic.Actions.Commit.CommitScope.Suspend();
 
-                    await DispatchOrDeferRaisedEventsAsync(ownerBatch, () => CollectRaisedEvents(action), ct).ConfigureAwait(false);
+                    // What no outbox took: with one on this boundary, nothing; without, the events, built now as before.
+                    await DispatchOrDeferRaisedEventsAsync(ownerBatch,
+                        () => global::Pragmatic.Actions.Commit.DeclaredEventStaging.Remaining(declared, () => CollectRaisedEvents(action)), ct).ConfigureAwait(false);
 
                     // What the nested invocations could not dispatch themselves, now that their writes
                     // are committed. Without it a mutation invoked from here succeeds silently and its

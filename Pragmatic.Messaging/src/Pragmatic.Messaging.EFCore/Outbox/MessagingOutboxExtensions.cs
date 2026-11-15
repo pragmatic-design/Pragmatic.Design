@@ -51,6 +51,8 @@ public static class MessagingOutboxExtensions
         // Capture interceptor — resolved by the generated DbContext options lambda and added to the
         // context's interceptors (writes __OutboxMessages rows in the same transaction as the change).
         services.TryAddSingleton<OutboxInterceptor>();
+        // Where the invocation that owns the commit stages the events it declares, for the interceptor to take (#736).
+        services.TryAddScoped<Pragmatic.Events.Outbox.DeclaredEventStage>();
 
         // One source per boundary (distinct TContext + name). AddScoped — NOT TryAddEnumerable —
         // because every source shares the EfCoreOutboxSource implementation type; TryAddEnumerable

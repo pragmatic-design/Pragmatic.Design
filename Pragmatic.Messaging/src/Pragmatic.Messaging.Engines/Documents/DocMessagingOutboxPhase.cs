@@ -22,13 +22,13 @@ namespace Pragmatic.Messaging.Engines.Documents;
 ///         go out in process after the save, as without the outbox. EF Core's interceptor reads every tracked entity.
 ///     </para>
 /// </remarks>
-public sealed class DocMessagingOutboxPhase(ITenantContext? tenant, ICurrentUser? currentUser, PragmaticJsonOptions? json) : IDocSavePhase
+public sealed class DocMessagingOutboxPhase(ITenantContext? tenant, ICurrentUser? currentUser, PragmaticJsonOptions? json, Pragmatic.Events.Outbox.DeclaredEventStage? stage = null) : IDocSavePhase
 {
     /// <inheritdoc />
     public async ValueTask ApplyAsync(DocSaveContext save, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(save);
-        foreach (var message in OutboxMessageCapture.Take(save.Entries.Select(e => e.Entity), save.Now, tenant, currentUser, json))
+        foreach (var message in OutboxMessageCapture.Take(save.Entries.Select(e => e.Entity), save.Now, tenant, currentUser, json, stage))
             await save.Session.InsertAsync(OutboxMessageRecords.From(new OutboxMessageDocument(), message), ct).ConfigureAwait(false);
     }
 }
