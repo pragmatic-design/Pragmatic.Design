@@ -18,6 +18,9 @@ namespace Pragmatic.Messaging.Engines.Sql;
 public sealed class SqlMessagingOutboxPhase(ITenantContext? tenant, ICurrentUser? currentUser, PragmaticJsonOptions? json, Pragmatic.Events.Outbox.DeclaredEventStage? stage = null) : ISqlSavePhase
 {
     /// <inheritdoc />
+    public bool HasPendingWork => stage is { IsStaged: true };
+
+    /// <inheritdoc />
     public ValueTask ApplyAsync(SqlSaveContext save, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(save);

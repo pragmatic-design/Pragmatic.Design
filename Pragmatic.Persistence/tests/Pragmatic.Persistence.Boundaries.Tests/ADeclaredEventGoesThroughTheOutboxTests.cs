@@ -182,6 +182,92 @@ public sealed class ADeclaredEventGoesThroughTheOutboxTests(MongoServer mongo) :
             + $"AND \"MessageType\" = '{typeof(OrderRenumbered).FullName}'"));
     }
 
+    /// <summary>
+    ///     In a transaction the nested mutation saves inside it, and the action's own save has nothing left to write: the save still runs the
+    ///     outbox's phase for the staged events (#803). Before, it returned before its phases and the event went out in process after the commit.
+    /// </summary>
+    [Fact]
+    public async Task On_the_event_outbox_a_transactions_nested_event_is_in_the_outbox_though_the_owners_save_writes_nothing()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+        var product = new Product { Name = "Lamp" };
+        await SaveAsync<Product, CatalogBoundary>(provider, product);
+
+        using (TenantScope.BeginScope("acme"))
+            await InvokeAsync(provider, new RetitleProductInATransactionAction { Id = product.Id, Name = "Wall lamp" });
+
+        var deliveries = provider.GetRequiredService<Deliveries>().Received;
+        Assert.Empty(deliveries);
+        Assert.Equal(1, Scalar(catalog, $"SELECT COUNT(*) FROM \"__EventOutbox\" WHERE \"ProcessedAt\" IS NULL AND \"EventType\" LIKE '%{nameof(ProductRenamed)}%'"));
+        Assert.Equal(1, Scalar(catalog, "SELECT COUNT(*) FROM \"Products\" WHERE \"Name\" = 'Wall lamp'")); // the step's write committed
+
+        Assert.Equal(1, await provider.GetRequiredService<IEngineEventOutboxDrainer<CatalogBoundary>>().DrainOnceAsync());
+        Assert.Equal("Wall lamp", Assert.IsType<ProductRenamed>(Assert.Single(deliveries).Event).Name);
+    }
+
+    [Fact]
+    public async Task On_the_messaging_outbox_a_transactions_nested_event_is_a_pending_message_though_the_owners_save_writes_nothing()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+        var order = new Order { Number = "C-1" };
+        await SaveAsync<Order, OrdersBoundary>(provider, order);
+
+        using (TenantScope.BeginScope("acme"))
+            await InvokeAsync(provider, new ReissueOrderInATransactionAction { Id = order.Id, Number = "C-2" });
+
+        Assert.Empty(provider.GetRequiredService<Deliveries>().Received);
+        Assert.Equal(1, Scalar(orders, $"SELECT COUNT(*) FROM \"__OutboxMessages\" WHERE \"ProcessedAt\" IS NULL AND \"TenantId\" = 'acme' "
+            + $"AND \"MessageType\" = '{typeof(OrderRenumbered).FullName}'"));
+    }
+
+    /// <summary>
+    ///     The same gap on the documents engine, in the other shape that reaches it: an action that declares its event and writes nothing (the
+    ///     text it sets is the one the review has). The fixture's MongoDB is standalone, so it runs no <c>[Transactional]</c>.
+    /// </summary>
+    [Fact]
+    public async Task On_the_documents_engine_an_actions_declared_event_is_in_the_outbox_though_its_save_writes_nothing()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        var database = Name();
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, database);
+        var review = new ProductReview { Text = "Fine", Stars = 4 };
+        review.SetProductId(Guid.NewGuid());
+        await SaveAsync<ProductReview, ReviewsBoundary>(provider, review);
+
+        await InvokeAsync(provider, new EditReviewAction { Id = review.Id, Text = "Fine" });
+
+        var deliveries = provider.GetRequiredService<Deliveries>().Received;
+        Assert.Empty(deliveries);
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var outbox = await scope.ServiceProvider.GetRequiredKeyedService<DocSession>(typeof(ReviewsBoundary)).Query<EventOutboxDocument>().ToListAsync();
+            Assert.Contains(nameof(ReviewEdited), Assert.Single(outbox).EventType, StringComparison.Ordinal);
+        }
+
+        Assert.Equal(1, await provider.GetRequiredService<IEngineEventOutboxDrainer<ReviewsBoundary>>().DrainOnceAsync());
+        Assert.Equal("Fine", Assert.IsType<ReviewEdited>(Assert.Single(deliveries).Event).Text);
+    }
+
+    /// <summary>The control for the three above: a save with nothing written and nothing staged still writes nothing.</summary>
+    [Fact]
+    public async Task A_save_with_nothing_written_and_nothing_staged_writes_nothing()
+    {
+        using var catalog = Database(CatalogSchema);
+        using var orders = Database(OrdersSchema);
+        await using var provider = Host(catalog.ConnectionString, orders.ConnectionString, Name());
+
+        await using (var scope = provider.CreateAsyncScope())
+            Assert.Equal(0, await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)).SaveChangesAsync());
+
+        Assert.Equal(0, Scalar(catalog, "SELECT COUNT(*) FROM \"__EventOutbox\""));
+        Assert.Empty(provider.GetRequiredService<Deliveries>().Received);
+    }
+
     /// <summary>The control: the save that writes nothing new leaves no stage behind, and an entity's own events still go through the outbox.</summary>
     [Fact]
     public async Task An_entitys_own_event_is_still_captured_beside_none_declared()

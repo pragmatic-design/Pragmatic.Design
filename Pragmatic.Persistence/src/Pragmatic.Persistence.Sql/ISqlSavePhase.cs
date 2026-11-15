@@ -9,4 +9,11 @@ namespace Pragmatic.Persistence.Sql;
 public interface ISqlSavePhase
 {
     ValueTask ApplyAsync(SqlSaveContext save, CancellationToken ct);
+
+    /// <summary>
+    ///     Whether the phase has rows to write even when the save writes no entity. A save with nothing to write returns before its phases,
+    ///     unless one of them answers true: then only the phases run, in one batch (#803). An outbox answers true while an operation's events
+    ///     are staged; a phase that only follows the entities keeps the default.
+    /// </summary>
+    bool HasPendingWork => false;
 }

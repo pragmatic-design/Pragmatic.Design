@@ -25,6 +25,9 @@ namespace Pragmatic.Messaging.Engines.Documents;
 public sealed class DocMessagingOutboxPhase(ITenantContext? tenant, ICurrentUser? currentUser, PragmaticJsonOptions? json, Pragmatic.Events.Outbox.DeclaredEventStage? stage = null) : IDocSavePhase
 {
     /// <inheritdoc />
+    public bool HasPendingWork => stage is { IsStaged: true };
+
+    /// <inheritdoc />
     public async ValueTask ApplyAsync(DocSaveContext save, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(save);
