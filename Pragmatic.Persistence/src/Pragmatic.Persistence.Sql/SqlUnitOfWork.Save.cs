@@ -35,7 +35,7 @@ public sealed partial class SqlUnitOfWork
         var written = _entries.Where(e => e.State != SqlEntryState.Unchanged).ToList();
         var links = DetectLinks();
         if (written.Count == 0 && links.Count == 0)
-            return 0;
+            return await PhasesOnlyAsync(now, userId, ct).ConfigureAwait(false);
         var added = written.Where(e => e.State == SqlEntryState.Added).ToList();
         SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
 
@@ -119,6 +119,26 @@ public sealed partial class SqlUnitOfWork
 
         await SaveSteps.PublishEventsAsync(this, raisers, _dispatcher, ct).ConfigureAwait(false);
         return rows;
+    }
+
+    /// <summary>
+    ///     A save with no entity to write: nothing, unless a phase still has rows of its own (an outbox holding an operation's staged events, #803).
+    ///     Then only the phases run, in one batch, in the session's transaction when there is one; no entity is written, stamped or published.
+    /// </summary>
+    /// <remarks>
+    ///     Returning before the phases, as every empty save did, left those events to the in-process dispatch after the commit, past the outbox:
+    ///     under <c>[Transactional]</c> the steps have saved already and the owner's own save has nothing left to write.
+    /// </remarks>
+    private async Task<int> PhasesOnlyAsync(DateTimeOffset now, string? userId, CancellationToken ct)
+    {
+        if (!_phases.Any(p => p.HasPendingWork))
+            return 0;
+
+        var batch = Session.WriteBatch();
+        foreach (var phase in _phases)
+            await phase.ApplyAsync(new SqlSaveContext([], batch, now, userId), ct).ConfigureAwait(false);
+        await batch.ExecuteAsync(ct).ConfigureAwait(false);
+        return 0;
     }
 
     /// <summary>

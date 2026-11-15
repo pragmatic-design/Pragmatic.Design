@@ -31,6 +31,12 @@ public sealed class DeclaredEventStage
         _build = build;
     }
 
+    /// <summary>
+    ///     Whether a construction is staged: a save that writes no entity still has the outbox's rows to write then (#803), as when the steps of a
+    ///     transaction have saved already and the owner's own save has nothing left.
+    /// </summary>
+    public bool IsStaged => _build is not null;
+
     /// <summary>The staged events, built now, and the stage emptied: whoever takes them is the one who delivers them.</summary>
     public IReadOnlyList<IDomainEvent> Take()
     {

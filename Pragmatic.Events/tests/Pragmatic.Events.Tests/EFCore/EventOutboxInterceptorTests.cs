@@ -91,6 +91,31 @@ public sealed class EventOutboxInterceptorTests
         stage.Take().Should().BeEmpty("the outbox took them: the invoker dispatches none after the commit");
     }
 
+    /// <summary>
+    ///     A save with no entity to write and the events of an operation staged: EF Core runs <c>SavingChanges</c> on an empty save too, and the
+    ///     row the interceptor adds is saved (#803). The engines needed a change for this; EF Core does not, and this measures it.
+    /// </summary>
+    [Fact]
+    public void SavingChanges_NothingWrittenButEventsStaged_WritesThem()
+    {
+        using var services = new ServiceCollection()
+            .AddScoped<DeclaredEventStage>()
+            .BuildServiceProvider();
+        using var scope = services.CreateScope();
+        var stage = scope.ServiceProvider.GetRequiredService<DeclaredEventStage>();
+        using var context = new OutboxTestDbContext(new DbContextOptionsBuilder<OutboxTestDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseApplicationServiceProvider(scope.ServiceProvider)
+            .AddInterceptors(new EventOutboxInterceptor())
+            .Options);
+        stage.Stage(() => [new TestDomainEvent("Declared, nothing else written")]);
+
+        context.SaveChanges();
+
+        context.Set<EventOutboxEntry>().ToList().Should().ContainSingle().Subject.Payload.Should().Contain("Declared, nothing else written");
+        stage.Take().Should().BeEmpty("the outbox took them");
+    }
+
     /// <summary>The control: without a stage in the container, a save with no entity events writes nothing, as before.</summary>
     [Fact]
     public void SavingChanges_NoStageRegistered_WritesNoOutboxRow()

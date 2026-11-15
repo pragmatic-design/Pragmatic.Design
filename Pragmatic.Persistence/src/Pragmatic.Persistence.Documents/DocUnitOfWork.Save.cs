@@ -38,7 +38,7 @@ public sealed partial class DocUnitOfWork
 
         var written = _entries.Where(e => e.State != DocEntryState.Unchanged).ToList();
         if (written.Count == 0)
-            return 0;
+            return await PhasesOnlyAsync(now, userId, ct).ConfigureAwait(false);
         SavePhases.Apply(written, now, userId, _tenant, _requireTenant, CompiledScopeRules.Registry, _scopeRules, _savingHooks);
 
         var own = Session.Transaction is null && await Session.SupportsTransactionsAsync(ct).ConfigureAwait(false) ? Session.BeginTransaction() : null;
@@ -76,6 +76,36 @@ public sealed partial class DocUnitOfWork
 
         await SaveSteps.PublishEventsAsync(this, raisers, _dispatcher, ct).ConfigureAwait(false);
         return written.Count; // the entities written, as EF Core counts its entries (a phase's own documents not among them)
+    }
+
+    /// <summary>
+    ///     A save with no entity to write: nothing, unless a phase still has documents of its own (an outbox holding an operation's staged events,
+    ///     #803). Then only the phases run, in one MongoDB transaction where the server runs them; no entity is written, stamped or published.
+    /// </summary>
+    /// <remarks>
+    ///     Returning before the phases, as every empty save did, left those events to the in-process dispatch after the commit, past the outbox:
+    ///     under <c>[Transactional]</c> the steps have saved already and the owner's own save has nothing left to write.
+    /// </remarks>
+    private async Task<int> PhasesOnlyAsync(DateTimeOffset now, string? userId, CancellationToken ct)
+    {
+        if (!_phases.Any(p => p.HasPendingWork))
+            return 0;
+
+        var own = Session.Transaction is null && await Session.SupportsTransactionsAsync(ct).ConfigureAwait(false) ? Session.BeginTransaction() : null;
+        try
+        {
+            foreach (var phase in _phases)
+                await phase.ApplyAsync(new DocSaveContext([], Session, now, userId), ct).ConfigureAwait(false);
+            if (own is not null)
+                await own.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (own is not null)
+                await own.DisposeAsync().ConfigureAwait(false); // not committed: aborted
+        }
+
+        return 0;
     }
 
     /// <summary>One document written as its state says; a stale copy and a duplicate key raised as Pragmatic's broken rules.</summary>
