@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>Test factory for a Pragmatic worker host (PragmaticApp.RunWorkerAsync): builds the host from its entry point, exposes its services, starts and stops it, with the test's service overrides — the generic-host counterpart of WebApplicationFactory.</Description>
+    <PackageTags>testing;hosting;worker;jobs;pragmatic</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The one dependency, and why it is its own package (owner's decision, #749): building a host from
+         its entry point means listening to the generic host's diagnostic source and stopping the entry
+         point with HostAbortedException, both of Microsoft.Extensions.Hosting. Pragmatic.Testing keeps
+         its single Logging.Abstractions dependency. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+</Project>

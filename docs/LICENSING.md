@@ -50,7 +50,7 @@ each competes with a single-purpose OSS library and is free on its own.
 - `Pragmatic.Temporal`, `Pragmatic.Internationalization`, `Pragmatic.Resilience`, `Pragmatic.Configuration`
 - `Pragmatic.Logging`, `Pragmatic.FeatureFlags`, `Pragmatic.Discovery`, `Pragmatic.Storage`
 - `Pragmatic.SourceGenerator` (the compile-time engine; the value it generates lives in the runtime packages below)
-- `Pragmatic.Testing` (+ its generators: assertions, generated mocks and comparers, the contract-test host)
+- `Pragmatic.Testing` (+ its generators: assertions, generated mocks and comparers, the contract-test host; + `.Hosting`, the worker-host factory)
 
 **PolyForm Small Business (free for small businesses, commercial above the threshold):** the
 domain-driven runtime and the composed-framework experience.

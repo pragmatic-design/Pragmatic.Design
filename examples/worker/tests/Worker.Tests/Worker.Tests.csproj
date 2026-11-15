@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The worker host, built from its entry point by PragmaticWorkerFactory: no HTTP, no container. -->
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <!-- CA2007: there is no SynchronizationContext to leave in a test project. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Worker.Host\Worker.Host.csproj" />
+    <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.Hosting\Pragmatic.Testing.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

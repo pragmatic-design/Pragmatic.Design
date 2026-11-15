@@ -3,7 +3,7 @@ title: "Common Mistakes"
 description: "**Wrong:**"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Testing/docs/common-mistakes.md
 sidebar:
-  order: 4
+  order: 5
 ---
 ## 1. Reusing the shared client for a denial test
 

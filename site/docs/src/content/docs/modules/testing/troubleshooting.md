@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Check, in order:"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Testing/docs/troubleshooting.md
 sidebar:
-  order: 5
+  order: 6
 ---
 ## No tests were generated at all
 
