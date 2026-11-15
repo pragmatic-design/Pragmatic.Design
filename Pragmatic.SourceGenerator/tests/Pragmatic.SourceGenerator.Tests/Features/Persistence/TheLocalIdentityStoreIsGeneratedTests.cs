@@ -142,6 +142,18 @@ public class TheLocalIdentityStoreIsGeneratedTests
             + "global::Contoso.Accounts.Member.LocalIdentityStore>();");
     }
 
+    /// <summary>
+    ///     Beside the store, the directory a notification addressed to a user reads their e-mail from (#743): one of several, so added and
+    ///     not tried.
+    /// </summary>
+    [Fact]
+    public void TheStore_BringsTheRecipientDirectoryOfItsUsers()
+    {
+        Registration(Run(UserWhoCannotRegister)).Should().Contain(
+            "services.TryAddEnumerable(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped<global::Pragmatic.Notifications.IRecipientDirectory, "
+            + "global::Pragmatic.Identity.Local.Services.LocalIdentityRecipientDirectory>());");
+    }
+
     [Fact]
     public void AUserThatDoesNotRegisterItself_RefusesARegistration()
     {

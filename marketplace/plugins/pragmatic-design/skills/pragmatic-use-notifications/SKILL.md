@@ -134,15 +134,25 @@ Without the attribute, the first send fails with `relation "__Notifications" doe
 
 ## Addressing a user, role or tenant
 
-`NotificationRecipient` offers `Direct`, `ToWebhook`, `User`, `Users`, `Role` and `Tenant`, but only the
-direct forms work out of the box: the library cannot know where your users live. `User`, `Users`,
-`Role` and `Tenant` resolve to nothing unless you register a resolver, and the send fails with an
-explanatory error:
+`NotificationRecipient` offers `Direct`, `ToWebhook`, `User`, `Users`, `Role` and `Tenant`. A user and
+a role are resolved through the `IRecipientDirectory`s registered (in Abstractions, several, each asked
+in turn):
+
+- local accounts (`Pragmatic.Identity.Local`) answer a user with the e-mail they sign in with; the
+  generator registers that directory beside the local identity store;
+- `Pragmatic.Authorization.Management` answers a role with the users it is assigned to, the members of
+  its groups included, in force and in the request's tenant or global. Each member is reached once.
+
+What no directory answers is **named, not dropped**: `NotificationResult.Unreached` lists it
+(`user 'u-1'`, `role 'ops'`, `tenant 't1'`, which no directory resolves), and the others are still
+delivered. When nobody is reached, the send fails and its error names them. For users stored
+elsewhere, implement `IRecipientDirectory` (`FindUserAsync`, `UsersInRoleAsync`) and register it with
+`[Service<IRecipientDirectory>(Multiple = true)]`. To decide resolution entirely, replace the resolver:
 
 ```csharp
 public sealed class AppRecipientResolver(IRepository<User> users) : IRecipientResolver
 {
-    public async Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+    public async Task<RecipientResolution> ResolveAsync(
         NotificationRecipient recipient, NotificationAudience audience, CancellationToken ct = default)
     {
         if (recipient.UserId is null || !Guid.TryParse(recipient.UserId, out var id))

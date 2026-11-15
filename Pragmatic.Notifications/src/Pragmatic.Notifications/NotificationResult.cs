@@ -17,6 +17,12 @@ public sealed record NotificationResult
     /// <summary>Errors encountered during delivery.</summary>
     public IReadOnlyList<string>? Errors { get; init; }
 
+    /// <summary>
+    ///     The recipients no address was found for (<c>user 'u-1'</c>, <c>role 'ops'</c>): not delivered, while the others were. Empty when
+    ///     every recipient was reached.
+    /// </summary>
+    public IReadOnlyList<string> Unreached { get; init; } = [];
+
     /// <summary>Creates a successful result.</summary>
     public static NotificationResult Succeeded(Guid notificationId, IReadOnlyList<Guid>? deliveryIds = null) => new()
     {

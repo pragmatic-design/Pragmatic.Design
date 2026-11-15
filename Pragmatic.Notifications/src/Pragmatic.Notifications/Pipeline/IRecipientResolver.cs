@@ -6,9 +6,10 @@ namespace Pragmatic.Notifications.Pipeline;
 public interface IRecipientResolver
 {
     /// <summary>
-    ///     Resolves the recipient to one or more concrete addresses with channel and preference information.
+    ///     Resolves the recipient to one or more concrete addresses with channel and preference information, and names the recipients it
+    ///     could not reach (<see cref="RecipientResolution.Unreached" />), which the notification's result reports.
     /// </summary>
-    Task<IReadOnlyList<ResolvedRecipient>> ResolveAsync(
+    Task<RecipientResolution> ResolveAsync(
         NotificationRecipient recipient,
         NotificationAudience audience,
         CancellationToken ct = default);
