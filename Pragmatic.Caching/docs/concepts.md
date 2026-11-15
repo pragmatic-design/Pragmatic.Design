@@ -248,6 +248,7 @@ How the broadcast works:
 - `BroadcastingCacheStack` decorates `ICacheStack`. It runs every invalidation locally, then publishes it on a Redis pub/sub channel (`RedisCacheInvalidationOptions.Channel`, default `pragmatic:cache:invalidations`).
 - `CacheInvalidationSubscriber`, a hosted service, applies the other instances' messages to its own `HybridCache` and ignores its own.
 - It applies beneath the decorator, so a received invalidation is not published again.
+- Then it tells the registered `ICacheInvalidationObserver`s (`Pragmatic.Abstractions`) the tag or key it applied, for what an instance keeps outside `HybridCache`. The in-memory lookup caches use it: a lookup's reload invalidates `pragmatic:lookup:{Entity}`, and every other instance's observer reloads that lookup. An observer that throws is logged, and the others still run.
 
 What it does not guarantee:
 

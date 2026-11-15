@@ -177,7 +177,10 @@ services.AddRedisCacheInvalidationBroadcast(redis);                  // shares t
 ```
 
 Every `RemoveAsync` and tag invalidation is then published on Redis pub/sub, and every other instance
-drops its copy. What the broadcast does not do:
+drops its copy. The `[Lookup]` caches, kept in memory outside `HybridCache`, follow too: a lookup's
+reload invalidates `pragmatic:lookup:{Entity}`, and each other instance reloads that lookup. Anything
+else an instance keeps outside `HybridCache` can do the same with an `ICacheInvalidationObserver`.
+What the broadcast does not do:
 
 - **Delivery is at most once.** An instance that misses a message stays stale until its copy expires,
   which is what every instance was without the broadcast.

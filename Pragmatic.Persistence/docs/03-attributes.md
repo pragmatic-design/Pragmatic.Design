@@ -397,8 +397,15 @@ that throws stops the application rather than leaving a half-filled cache to sur
 A write to a lookup entity reloads its cache once it commits: `LookupCacheReloadInterceptor`, registered
 by the same method, reloads at the save when it ran in no transaction and at the commit when it ran in
 one, and a rolled-back write reloads nothing. A tenant-scoped lookup reloads the writing tenant's cache
-only. ⚠️ The reload is this process's: another instance of the host keeps the rows it loaded until it
-restarts, since no invalidation reaches an in-memory lookup cache across processes.
+only.
+
+The other instances of the host hear the write through the cache's invalidation broadcast. The reload
+also invalidates the tag `pragmatic:lookup:{Entity}` through `ICacheStack`, and with
+`AddRedisCacheInvalidationBroadcast` (`Pragmatic.Caching.Redis`) every other instance receives it. Its
+`LookupCacheInvalidationObserver` then reloads the same lookup there; a tenant-scoped lookup is reloaded
+for every tenant that instance loaded. ⚠️ Without the broadcast, the reload stays in the writer's process:
+another instance keeps the rows it loaded until it restarts. The broadcast is pub/sub, so an instance that
+misses a message also keeps its rows until its next reload.
 
 ### Usage
 

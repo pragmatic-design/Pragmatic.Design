@@ -154,6 +154,14 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         AppendLine("services.AddSingleton<global::Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor, "
                    + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheReloadInterceptor>();");
 
+        // The other nodes' reloads, heard through a distributed invalidation broadcast (#763). Once per container whichever assembly
+        // registers it: the observer holds every loader, so a second one would reload each lookup twice.
+        AppendLine();
+        Comment("Reload a lookup when another node broadcasts that it reloaded its own");
+        AppendLine("global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services, "
+                   + "global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Caching.ICacheInvalidationObserver, "
+                   + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheInvalidationObserver>());");
+
         // Only when a lookup is tenant-scoped. The preload enumerates the tenants known at startup
         // and stops there, so a tenant created afterwards has no cache — but a lookup with one cache
         // for the whole process has nothing to follow, and registering an observer that every
