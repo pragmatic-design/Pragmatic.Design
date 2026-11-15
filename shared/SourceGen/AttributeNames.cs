@@ -102,6 +102,9 @@ internal static class AttributeNames
     // Temporal
     public const string FromClock = "Pragmatic.Temporal.Clock.FromClockAttribute";
 
+    // MultiTenancy
+    public const string FromTenant = "Pragmatic.MultiTenancy.FromTenantAttribute";
+
     // Caching
     public const string Cacheable = "Pragmatic.Caching.Attributes.CacheableAttribute";
     public const string CacheKey = "Pragmatic.Caching.Attributes.CacheKeyAttribute";

@@ -21,12 +21,13 @@ internal static class InvokerBindingsTransform
     public static InvokerBindingsModel Extract(INamedTypeSymbol operation, SemanticModel semanticModel)
     {
         var clock = ClockBindingTransform.Extract(operation);
+        var tenant = TenantBindingTransform.Extract(operation);
         var currentUser = CurrentUserBindingTransform.Extract(operation, semanticModel);
         var load = ExtractCurrentUserLoad(operation);
 
-        return clock.IsEmpty && currentUser.IsEmpty && load is null
+        return clock.IsEmpty && tenant.IsEmpty && currentUser.IsEmpty && load is null
             ? InvokerBindingsModel.None
-            : new InvokerBindingsModel { Clock = clock, CurrentUser = currentUser, CurrentUserLoad = load };
+            : new InvokerBindingsModel { Clock = clock, Tenant = tenant, CurrentUser = currentUser, CurrentUserLoad = load };
     }
 
     private static CurrentUserLoadModel? ExtractCurrentUserLoad(INamedTypeSymbol operation)

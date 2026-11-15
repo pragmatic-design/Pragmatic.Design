@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **485** |
-| Distinct IDs | **485** |
+| Declared descriptors | **487** |
+| Distinct IDs | **487** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -279,7 +279,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0691`.
 
-### Persistence.Query: 45 in use · range `PRAG0700`–`PRAG0799`
+### Persistence.Query: 46 in use · range `PRAG0700`–`PRAG0799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -328,8 +328,11 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0743` | `EntityHasNoPersistenceEngine` | Error | The entity's boundary names no persistence engine |
 | `PRAG0744` | `PersistenceEngineNotReferenced` | Error | The boundary names a persistence engine that is not referenced |
 | `PRAG0745` | `RelationBetweenEngines` | Error | A relation between entities on different engines keeps only the key |
+| `PRAG0747` | `TenantBindingCannotBeGenerated` | Error | The [FromTenant] binding cannot be generated |
 
-*First free after the last used:* `PRAG0746`.
+*Free inside the used span:* `PRAG0746`.
+
+*First free after the last used:* `PRAG0748`.
 
 ### Messaging: 19 in use · range `PRAG0800`–`PRAG0899`
 
@@ -418,7 +421,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1453`.
 
-### Composition: 44 in use · range `PRAG1600`–`PRAG1699`
+### Composition: 45 in use · range `PRAG1600`–`PRAG1699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -433,6 +436,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG1612` | `LegacySchemaVersion` | Info | Legacy metadata schema version |
 | `PRAG1613` | `ModuleManifestUnreadable` | Warning | Module manifest is not valid JSON |
 | `PRAG1614` | `ServiceTypeArgumentNotYetGenerated` | Warning | Service type argument is not resolvable yet |
+| `PRAG1615` | `TenantBindingWithoutMultiTenancy` | Warning | An operation takes the tenant and this host resolves none |
 | `PRAG1630` | `StartupMustImplementInterface` | Error | [StartupStep] must implement IStartupStep |
 | `PRAG1631` | `StartupMustBeClass` | Error | [StartupStep] must be on a class |
 | `PRAG1632` | `NeedsStepTypeNotFound` | Error | [NeedsStep<T>] references unavailable step type |
@@ -467,7 +471,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG1698` | `ClockBindingWithoutAClock` | Warning | An operation takes the clock and this host registers none |
 | `PRAG1699` | `UncalledMessagingRegistration` | Warning | A referenced assembly's message handlers are registered by nobody |
 
-*Free inside the used span:* `PRAG1604`, `PRAG1605`, `PRAG1606`, `PRAG1615`, `PRAG1616`, `PRAG1617`, `PRAG1618`, `PRAG1619`, `PRAG1620`, `PRAG1621`, `PRAG1622`, `PRAG1623`, `PRAG1624`, `PRAG1625`, `PRAG1626`, `PRAG1627`, `PRAG1628`, `PRAG1629`, `PRAG1633`, `PRAG1634`, `PRAG1635`, `PRAG1636`, `PRAG1637`, `PRAG1638`, `PRAG1639`, `PRAG1644`, `PRAG1648`, `PRAG1649`, `PRAG1650`, `PRAG1653`, `PRAG1654`, `PRAG1655`, `PRAG1656`, `PRAG1657`, `PRAG1658`, `PRAG1659`, `PRAG1662`, `PRAG1663`, `PRAG1664`, `PRAG1665`, `PRAG1666`, `PRAG1667`, `PRAG1668`, `PRAG1669`, `PRAG1671`, `PRAG1672`, `PRAG1673`, `PRAG1674`, `PRAG1675`, `PRAG1676`, `PRAG1677`, `PRAG1678`, `PRAG1679`, `PRAG1683`, `PRAG1684`.
+*Free inside the used span:* `PRAG1604`, `PRAG1605`, `PRAG1606`, `PRAG1616`, `PRAG1617`, `PRAG1618`, `PRAG1619`, `PRAG1620`, `PRAG1621`, `PRAG1622`, `PRAG1623`, `PRAG1624`, `PRAG1625`, `PRAG1626`, `PRAG1627`, `PRAG1628`, `PRAG1629`, `PRAG1633`, `PRAG1634`, `PRAG1635`, `PRAG1636`, `PRAG1637`, `PRAG1638`, `PRAG1639`, `PRAG1644`, `PRAG1648`, `PRAG1649`, `PRAG1650`, `PRAG1653`, `PRAG1654`, `PRAG1655`, `PRAG1656`, `PRAG1657`, `PRAG1658`, `PRAG1659`, `PRAG1662`, `PRAG1663`, `PRAG1664`, `PRAG1665`, `PRAG1666`, `PRAG1667`, `PRAG1668`, `PRAG1669`, `PRAG1671`, `PRAG1672`, `PRAG1673`, `PRAG1674`, `PRAG1675`, `PRAG1676`, `PRAG1677`, `PRAG1678`, `PRAG1679`, `PRAG1683`, `PRAG1684`.
 
 *Range exhausted.*
 

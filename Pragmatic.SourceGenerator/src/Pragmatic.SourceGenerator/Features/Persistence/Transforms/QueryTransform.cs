@@ -147,6 +147,7 @@ internal static class QueryTransform
             SpecificationInputs = ExtractSpecificationInputs(targetSymbol),
             CurrentUserBindings = CurrentUserBindingTransform.Extract(targetSymbol, context.SemanticModel),
             ClockBindings = ClockBindingTransform.Extract(targetSymbol),
+            TenantBindings = TenantBindingTransform.Extract(targetSymbol),
             GridRequests = ExtractGridRequests(targetSymbol, ct),
             EntityDeclaresGridBridge = entityType.GetAttributes().Any(
                 a => a.AttributeClass?.ToDisplayString() == GenerateGridBridgeAttributeName),
@@ -390,11 +391,14 @@ internal static class QueryTransform
         //                          generate a Where *and* feed the rule, applying it twice
         //   [FromClock]          — not an input at all: the invoker writes it, and a specification
         //                          reads it (ClockBindings)
+        //   [FromTenant]         — the same, from the request's tenant (TenantBindings); the tenant's rows
+        //                          are already filtered by the tenant filter
         if (HasAttribute(property, ComplexFilterAttributeName)
             || IsSpecificationType(property.Type)
             || IsGridFilterRequestType(property.Type)
             || HasAttribute(property, BindSpecificationAttributeName)
-            || InvokerBinding.IsFromTheClock(property))
+            || InvokerBinding.IsFromTheClock(property)
+            || InvokerBinding.IsFromTheTenant(property))
             return null;
 
         var propertyName = property.Name;

@@ -159,7 +159,7 @@ internal sealed partial class PragmaticQuery
         if (property.Name.Equals("Page", StringComparison.OrdinalIgnoreCase) || property.Name.Equals("PageSize", StringComparison.OrdinalIgnoreCase))
             return;
         var marks = property.GetAttributes().Select(a => a.AttributeClass?.Name).Where(n => n is not null).ToList();
-        foreach (var mark in new[] { "SearchAcrossAttribute", "FromClockAttribute", "BindSpecificationAttribute", "FilterGroupAttribute" })
+        foreach (var mark in new[] { "SearchAcrossAttribute", "FromClockAttribute", "FromTenantAttribute", "BindSpecificationAttribute", "FilterGroupAttribute" })
         {
             if (marks.Contains(mark))
                 Unsupported ??= $"[{mark.Substring(0, mark.Length - "Attribute".Length)}] on {property.Name} is not compiled yet";

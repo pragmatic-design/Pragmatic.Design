@@ -22,7 +22,7 @@ schema change the migration refuses. The password in `appsettings.json` is that 
 `docker-compose.yml`: not a secret, and not what a deployment uses.
 
 **Without an identity provider no route answers anything useful**, and that is the design rather than a
-missing piece: the caller is whoever a provider says they are. What comes back is **400** on the 19
+missing piece: the caller is whoever a provider says they are. What comes back is **400** on the 20
 routes that belong to a company — tenant resolution runs before authorization, and a request with no
 token resolves no tenant — and **401** on the three that belong to none (`api/organizations/*`). Point
 `appsettings.Development.json` at a provider —
@@ -51,7 +51,7 @@ lifetime and signature are all validated for real, against no network.
 node scripts/check.mjs --tier docker --only Invoicing.IntegrationTests   # from the repository root
 ```
 
-**171 passed and none skipped**, in 22–30 seconds. ⚠️ Consecutive runs have read 22.3s, 22.3s, 23.2s
+**173 passed and none skipped**, in 22–30 seconds. ⚠️ Consecutive runs have read 22.3s, 22.3s, 23.2s
 and 32.5s — the last one while other container suites were competing for the same Docker — so the count
 is the number to rely on and the duration is the machine's. A single decimal quoted from one run would
 be a precision this suite does not have. Each test boots the real host and talks HTTP to it:
@@ -59,8 +59,8 @@ PostgreSQL in a container, a signed token as a client would send, no test-only a
 The suite is part of the gate's docker tier — `<RequiresDocker>true</RequiresDocker>` is the whole
 registration — and CI runs that tier on ubuntu.
 
-**116 of those 171 tests are hand-written and 55 are generated** — the contract tests
-`Pragmatic.Testing.SourceGenerator` writes from the endpoints (24 + 19 authorization contracts for the
+**117 of those 173 tests are hand-written and 56 are generated** — the contract tests
+`Pragmatic.Testing.SourceGenerator` writes from the endpoints (24 + 20 authorization contracts for the
 two boundaries, 3 + 3 CRUD, 6 state-transition), counted as the `FactAttribute` occurrences in
 `obj/Debug/net10.0/generated/Pragmatic.Testing.SourceGenerator/` **after a rebuild** — an incremental
 build leaves generated files from the previous compilation in place, so counting those counts a
@@ -160,16 +160,16 @@ in it. Three more files are other generators' (89 + 485 lines, ASP.NET's OpenAPI
 in that 21,649.
 
 Behind those lines: **6 entities** (`Organization`, `Customer`, `Invoice`, `InvoiceLine`,
-`InvoiceNumberSeries`, `Payment`), **24 operations** — 8 mutations, 8 actions and 8 queries — and one
-endpoint class of its own (the PDF download), behind **22 routes**. Three of the operations serve no
+`InvoiceNumberSeries`, `Payment`), **25 operations** — 8 mutations, 8 actions and 9 queries — and one
+endpoint class of its own (the PDF download), behind **23 routes**. Three of the operations serve no
 route: `WriteInvoiceLineMutation` is the invoice's nested line, and two queries are `[Published]`
-contracts that Billing calls in process and nobody maps. So 7 + 8 + 6 + 1 is the 22, and the test that
-walks the access table asserts that those 22 are exactly the routes the application maps, each
-declaring the permission it needs — 19 of them belong to a company and three to none, which is the
-same 22 as in *Run it*.
+contracts that Billing calls in process and nobody maps. So 7 + 8 + 7 + 1 is the 23, and the test that
+walks the access table asserts that those 23 are exactly the routes the application maps, each
+declaring the permission it needs — 20 of them belong to a company and three to none, which is the
+same 23 as in *Run it*.
 
 `OutstandingByCustomerQuery` answers with `OutstandingByCustomerLine`, a `[QueryView<Invoice>]` that
-aggregates in SQL: the view is the shape of the answer, not a ninth query.
+aggregates in SQL: the view is the shape of the answer, not a tenth query.
 
 To read the generated code, build once and open `src/Invoicing.Billing/obj/Debug/net10.0/generated/`
 (`EmitCompilerGeneratedFiles` is on for this example so the files exist to be read). Good places to

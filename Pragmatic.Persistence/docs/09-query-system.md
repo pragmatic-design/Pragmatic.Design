@@ -382,6 +382,29 @@ public Specification<Employee>? WhoIsAwayToday => AwayToday switch
   and the `[LoadEntity]` preload, and the diagnostics are the same. On a mutation the value is also
   written to an entity member of the same name, when there is one.
 
+### Reading the tenant: `[FromTenant]`
+
+The tenant's rows are filtered for you, so most queries never name the tenant. The ones that do read
+something the tenant filter does not cover: the company record a tenant id *is*, a column in another
+system. `[FromTenant]` (in `Pragmatic.MultiTenancy`, from `Pragmatic.Abstractions`) makes the tenant a
+property the generated invoker fills from `ITenantContext.TenantId`:
+
+```csharp
+[FromTenant]
+public string Slug { get; private set; } = "";
+
+public Specification<Organization> TheCallersCompany => Spec<Organization>.Where(o => o.Slug == Slug);
+```
+
+- **The same rules as the clock**: written by the invoker before the read, no filter, no parameter
+  anywhere — a `slug` the caller sends is not read — and on a `[DomainAction]` or a `[Mutation]` too.
+- **No tenant resolved**: a `string` binding refuses the operation with a 400, a `string?` one reads
+  null.
+- `PRAG0747`: a type other than `string`, or a setter another caller can reach. `PRAG1615` (warning, in
+  the host): a `[FromTenant]` in an application whose host references no `Pragmatic.MultiTenancy`, so no
+  tenant is ever resolved.
+- The Sql engine does not compile a query with `[FromTenant]` yet, as it does not `[FromClock]`.
+
 ## Query Without Projection
 
 When you don't need to project to a DTO, use the single-type-argument form. This returns the entity itself:

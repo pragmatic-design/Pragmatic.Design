@@ -20,12 +20,26 @@ internal static class PragmaticBuilderValidator
     ///     metadata the modules emit, because the declaration is somebody else's syntax and the
     ///     registration is the host's business (PRAG1698).
     /// </param>
+    /// <param name="somethingTakesTheTenant">
+    ///     Whether any assembly of this application declares a <c>[FromTenant]</c>, read the same way
+    ///     (PRAG1615).
+    /// </param>
     public static void Validate(
         SourceProductionContext context,
         DetectedFeatures features,
         ImmutableArray<ModuleModel> hostModules,
-        bool somethingTakesTheClock = false)
+        bool somethingTakesTheClock = false,
+        bool somethingTakesTheTenant = false)
     {
+        // PRAG1615: an operation takes the request's tenant and this host cannot resolve one, so every
+        // call to it reads no tenant.
+        if (somethingTakesTheTenant && !features.HasMultiTenancy)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                CompositionDiagnostics.TenantBindingWithoutMultiTenancy,
+                Location.None));
+        }
+
         // PRAG1698: an operation takes a value from the clock and this host cannot name one. The host
         // registers AddPragmaticTemporal() whenever the package is there, so the only case left is the
         // one where it is not — and there, saying so is all a generator can do.

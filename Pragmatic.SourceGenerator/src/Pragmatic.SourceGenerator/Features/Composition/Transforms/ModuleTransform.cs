@@ -610,6 +610,6 @@ internal static class ModuleTransform
 
     private static bool IsWrittenByTheInvoker(IPropertySymbol property)
         => property.GetAttributes().Any(a => a.AttributeClass?.Name
-            is "FromClockAttribute" or "FromCurrentUserAttribute" or "LoadEntityAttribute"
+            is "FromClockAttribute" or "FromTenantAttribute" or "FromCurrentUserAttribute" or "LoadEntityAttribute"
             or "LoadCurrentUserAttribute" or "LoadEntitiesAttribute" or "LoadFromAttribute");
 }

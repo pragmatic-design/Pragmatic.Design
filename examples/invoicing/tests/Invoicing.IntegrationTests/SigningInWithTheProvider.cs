@@ -52,6 +52,7 @@ public sealed class SigningInWithTheProvider(PostgresFixture database) : Invoici
     private static readonly Operation[] Operations =
     [
         new("GET", "api/me", Everyone),
+        new("GET", "api/me/company", Everyone),
         new("POST", "api/organizations/onboard", [Administrator]),
         new("POST", "api/organizations/{slug}/suspend", [Administrator]),
         new("POST", "api/organizations/{slug}/reactivate", [Administrator]),

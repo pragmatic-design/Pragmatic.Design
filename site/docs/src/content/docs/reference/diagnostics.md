@@ -344,6 +344,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0743` | Error | The compilation references two or more persistence engines and the entity's boundary names none, so no engine persists it. Add `[PersistenceEngine(PersistenceEngineKind.…)]` to the boundary; with one engine referenced, that one is the default. Reported on the entity; in a host, for an entity of a referenced module, without a location. |
 | `PRAG0744` | Error | A boundary's `[PersistenceEngine]` names an engine the compilation does not reference. Reference the engine's package, or name one that is referenced. Reported on the boundary, once; in a host, for a boundary of a referenced module, without a location. |
 | `PRAG0745` | Error | A navigation or a many-to-many between entities on different engines. No engine joins a table it does not hold, so only the key may cross. A relation across boundaries already generates only its key; `[ReadAccess<T>]` for an entity on another engine would add a navigation, and a many-to-many has no key to keep. Drop the `[ReadAccess]`, or model the many-to-many as an entity on one engine that holds the other side's id, and read that side through its own boundary. Reported on the entity that declares the relation; in a host, for an entity of a referenced module, without a location. |
+| `PRAG0747` | Error | A `[FromTenant]` binding cannot be generated. It fills a `string` with `ITenantContext.TenantId`, and the property is declared `{ get; private set; }`. |
 
 ### Messaging: `PRAG0800-0835`
 
@@ -431,6 +432,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG1612` | Info | A legacy metadata schema version is being read in backward-compatibility mode. |
 | `PRAG1613` | Warning | A module's embedded manifest is not valid JSON and was left out of the aggregated manifest. Rebuild that module with the current generator; the host is otherwise unaffected. |
 | `PRAG1614` | Warning | A registration names a type no generator has written at this point, so it is emitted with an unqualified name. Write it fully qualified, or register the service by hand in a startup step. |
+| `PRAG1615` | Warning | An operation of this application declares `[FromTenant]`, whose generated invoker reads `ITenantContext` on every request, and this host references no `Pragmatic.MultiTenancy`, so no tenant is ever resolved: a `string` binding refuses every call with 400, a `string?` one reads null. Reference `Pragmatic.MultiTenancy.AspNetCore`, or register an `ITenantContext` of your own. |
 | `PRAG1630` | Error | A `[StartupStep]` class does not implement `IStartupStep`. |
 | `PRAG1631` | Error | `[StartupStep]` is applied to something that is not a class. |
 | `PRAG1632` | Error | `[NeedsStep<T>]` references a type that is not available. Add the package reference. |

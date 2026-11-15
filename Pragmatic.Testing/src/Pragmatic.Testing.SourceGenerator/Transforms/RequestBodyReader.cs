@@ -136,7 +136,7 @@ internal static class RequestBodyReader
     private static bool IsBoundFromRequestPart(IPropertySymbol property) =>
         property.GetAttributes().Any(a => a.AttributeClass?.Name is
             "FromRouteAttribute" or "FromQueryAttribute" or "FromHeaderAttribute"
-            or "FromClockAttribute" or "FromCurrentUserAttribute" or "FromClaimAttribute");
+            or "FromClockAttribute" or "FromTenantAttribute" or "FromCurrentUserAttribute" or "FromClaimAttribute");
 
     /// <summary>
     ///     A <c>Guid</c> whose name reads as a foreign key. Deliberately not invented: a random one

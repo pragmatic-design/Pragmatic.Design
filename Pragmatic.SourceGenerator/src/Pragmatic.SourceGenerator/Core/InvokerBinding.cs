@@ -5,7 +5,8 @@ namespace Pragmatic.SourceGenerator.Core;
 
 /// <summary>
 ///     Whether a property of an operation is filled by the generated invoker — from the caller
-///     (<c>[FromCurrentUser]</c>), from the clock (<c>[FromClock]</c>) or from a declared query
+///     (<c>[FromCurrentUser]</c>), from the clock (<c>[FromClock]</c>), from the request's tenant
+///     (<c>[FromTenant]</c>) or from a declared query
 ///     (<c>[LoadFrom&lt;TQuery&gt;]</c>) — and so is no input of anyone's.
 /// </summary>
 /// <remarks>
@@ -19,11 +20,16 @@ internal static class InvokerBinding
 
     /// <summary>Whether the invoker writes the property.</summary>
     public static bool IsBound(IPropertySymbol property)
-        => FromCurrentUserReader.IsBound(property) || IsFromTheClock(property) || IsLoadedFromAQuery(property);
+        => FromCurrentUserReader.IsBound(property) || IsFromTheClock(property) || IsFromTheTenant(property)
+           || IsLoadedFromAQuery(property);
 
     /// <summary>Whether the property carries <c>[FromClock]</c>.</summary>
     public static bool IsFromTheClock(IPropertySymbol property)
         => property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == AttributeNames.FromClock);
+
+    /// <summary>Whether the property carries <c>[FromTenant]</c>.</summary>
+    public static bool IsFromTheTenant(IPropertySymbol property)
+        => property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == AttributeNames.FromTenant);
 
     /// <summary>Whether the property carries <c>[LoadFrom&lt;TQuery&gt;]</c>.</summary>
     public static bool IsLoadedFromAQuery(IPropertySymbol property) => property.GetAttributes().Any(IsLoadFrom);

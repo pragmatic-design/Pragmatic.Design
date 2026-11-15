@@ -351,6 +351,13 @@ internal sealed record QueryModel
         EquatableArray<ClockBindingModel>.Empty;
 
     /// <summary>
+    ///     The <c>[FromTenant]</c> properties, which the generated invoker fills from the request's tenant
+    ///     before the read.
+    /// </summary>
+    public EquatableArray<TenantBindingModel> TenantBindings { get; init; } =
+        EquatableArray<TenantBindingModel>.Empty;
+
+    /// <summary>
     ///     Inputs whose type is the canonical <c>GridFilterRequest</c>: what a data grid asks for, taken
     ///     as data.
     /// </summary>

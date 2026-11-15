@@ -171,6 +171,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         // deserialized, and for an operation with body properties that is the generated {Trigger}Body
         // record rather than the operation the attribute sits on.
         var temporalRegistrations = TemporalFeature.Register(context, features, endpoints: endpointModels);
+        var tenantBindingRegistrations = Features.Persistence.TenantBindingsFeature.Register(context, features);
         // Endpoints are passed in for PRAG2904: whether special-category data is over-exposed cannot be
         // decided from the entity alone, only from what reaches it.
         var (privacyRegistrations, privacySources) =
@@ -198,6 +199,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         localRegistrations = Combine(localRegistrations, messagingRegistrations);
         localRegistrations = Combine(localRegistrations, serializationRegistrations);
         localRegistrations = Combine(localRegistrations, temporalRegistrations);
+        localRegistrations = Combine(localRegistrations, tenantBindingRegistrations);
         localRegistrations = Combine(localRegistrations, fastEnumRegistrations);
         localRegistrations = Combine(localRegistrations, redactionRegistrations);
         localRegistrations = Combine(localRegistrations, resilienceRegistrations);
