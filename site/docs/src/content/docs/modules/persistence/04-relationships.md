@@ -293,12 +293,15 @@ It applies on every path that soft-deletes: a generated delete mutation, a repos
 hand-written `context.Remove`. It is read like `OnDelete`: from the parent's collection when it declares
 one, from the child otherwise.
 
-The EF Core engine applies it in `SoftDeleteInterceptor`, the Sql engine in `SqlUnitOfWork`'s save, before
-anything is written. On the Sql engine the referrers are read through their own repository, under the
-caller's filters, so a referrer the caller cannot see does not hold the principal, as on EF Core. A
-composite key is not covered there.
+The EF Core engine applies it in `SoftDeleteInterceptor`, the Sql engine in `SqlUnitOfWork`'s save and the
+documents engine in `DocUnitOfWork`'s, both before anything is written. On those two the referrers are
+read through their own repository, under the caller's filters, so a referrer the caller cannot see does
+not hold the principal, as on EF Core. A composite key is not covered there.
 
-⚠️ **Not on the documents engine yet.** Its soft delete leaves the referrers as they are.
+On the documents engine every rule runs before the first write, so a refusal writes nothing, a cascade
+refused further down included. That holds on Cosmos DB too, which has no transaction. What it does not
+hold for is a write that fails midway, a stale document for example: as for any save there, the writes
+before it stay.
 
 `[SoftDelete(Cascade = true)]` is the older, coarser switch: it soft-deletes the children along every
 navigation whose `OnDelete` is `Cascade`, and no longer reaches a child the relation restricts.

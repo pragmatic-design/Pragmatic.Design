@@ -19,8 +19,11 @@ internal static class DocTrackingEmitter
     /// <summary>The fields tracked, in the order of their bits.</summary>
     public static List<DocField> Tracked(DocModel model) => model.Fields.Where(f => f != model.Key && f != model.Version).ToList();
 
-    /// <summary>The model, or null (reported) when the entity has more fields than a mask holds.</summary>
-    public static DocumentTrackingModel? Model(DocModel model, List<Diagnostic> diagnostics)
+    /// <summary>
+    ///     The model, or null (reported) when the entity has more fields than a mask holds. <paramref name="softDeleteRules" />: the runtime has
+    ///     <c>DocSoftDeleteRules</c> and the entity its repository, which the rules read the referrers through.
+    /// </summary>
+    public static DocumentTrackingModel? Model(DocModel model, List<Diagnostic> diagnostics, bool softDeleteRules = false)
     {
         var type = model.Type;
         var tracked = Tracked(model);
@@ -37,7 +40,39 @@ internal static class DocTrackingEmitter
             type.Name,
             name,
             tracked.Select(f => new TrackedFieldModel(Value(f, name), DocTypeEmitter.WriteField(f, "e." + f.Property.Name))).ToEquatableArray(),
-            Sql.Transforms.PragmaticReadRepository.DerivesFromAnEntity(type));
+            Sql.Transforms.PragmaticReadRepository.DerivesFromAnEntity(type),
+            softDeleteRules ? SoftDeleteRulesOf(model).ToEquatableArray() : default);
+    }
+
+    /// <summary>
+    ///     The relations of this entity, as the referrer, that declare <c>OnSoftDelete</c> towards a to-one target: what the unit of work does to
+    ///     this entity's documents when it soft-deletes the target (<c>DocSoftDeleteRules</c>). The navigations are the shaped entity's members,
+    ///     the key the field named after them (the relation's <c>ForeignKey</c> when it names one), as <c>PragmaticDocSchema</c> indexes them. A
+    ///     <c>Guid</c> key only: the principal's key is its <c>PersistenceId</c>.
+    /// </summary>
+    private static IEnumerable<DocSoftDeleteRuleModel> SoftDeleteRulesOf(DocModel model)
+    {
+        var type = model.Type;
+        if (!type.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
+            yield break;
+        var declared = Sql.Transforms.PragmaticRelations.References(type, "ManyToOne", "OneToOne").ToList();
+        foreach (var navigation in type.GetMembers().OfType<IPropertySymbol>().Where(p => DocModel.IsPragmatic(p.Type)).OrderBy(p => p.Name, System.StringComparer.Ordinal))
+        {
+            var target = (INamedTypeSymbol)navigation.Type;
+            if (Sql.Transforms.PragmaticRelations.PrincipalKey(type, navigation.Name, target) is not null
+                || Sql.Transforms.PragmaticRelations.OnSoftDelete(type, navigation.Name, target) is not { } behavior)
+                continue;
+            var keyName = declared.FirstOrDefault(r => r.Navigation == navigation.Name).ForeignKey ?? navigation.Name + "Id";
+            if (model.Field(keyName) is not { } key || key.ScalarName != "global::System.Guid")
+                continue;
+            yield return new DocSoftDeleteRuleModel(
+                target.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                behavior,
+                key.Name,
+                DocModel.JsonName(key),
+                key.Property.Name,
+                behavior is "SetNull" or "ClientSetNull");
+        }
     }
 
     /// <summary>The field's value as the snapshot keeps it.</summary>
