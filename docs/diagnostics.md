@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **488** |
-| Distinct IDs | **488** |
+| Declared descriptors | **490** |
+| Distinct IDs | **490** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -224,7 +224,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0557`.
 
-### Persistence.EFCore: 46 in use · range `PRAG0600`–`PRAG0699`
+### Persistence.EFCore: 47 in use · range `PRAG0600`–`PRAG0699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -262,6 +262,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0639` | `ReadNavigationTargetIsNotRead` | Warning | The read entity navigates to a type this boundary does not have |
 | `PRAG0640` | `SoftDeleteSetNullOnRequiredKey` | Error | OnSoftDelete = SetNull needs an optional key |
 | `PRAG0641` | `SoftDeleteCascadeToHardEntity` | Error | OnSoftDelete = Cascade needs a soft-deletable referrer |
+| `PRAG0642` | `TenantSourceMemberInvalid` | Error | [TenantSource] names a member the store cannot read |
 | `PRAG0651` | `PropertyTypeMayNeedConverter` | Warning | Property may need value converter |
 | `PRAG0652` | `ProtectedValueNeedsCryptographyEFCore` | Error | A protected value needs Pragmatic.Cryptography.EFCore |
 | `PRAG0680` | `PreferEntityCreate` | Warning | Use Entity.Create() factory instead of new |
@@ -275,7 +276,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0688` | `BulkUpdateSkipsInterceptors` | Warning | Bulk update skips the interceptors the entity declares |
 | `PRAG0690` | `InstantsAreNotNormalisedToUtc` | Warning | Stored instants are not normalised to UTC |
 
-*Free inside the used span:* `PRAG0601`, `PRAG0603`, `PRAG0604`, `PRAG0605`, `PRAG0606`, `PRAG0607`, `PRAG0608`, `PRAG0609`, `PRAG0642`, `PRAG0643`, `PRAG0644`, `PRAG0645`, `PRAG0646`, `PRAG0647`, `PRAG0648`, `PRAG0649`, `PRAG0650`, `PRAG0653`, `PRAG0654`, `PRAG0655`, `PRAG0656`, `PRAG0657`, `PRAG0658`, `PRAG0659`, `PRAG0660`, `PRAG0661`, `PRAG0662`, `PRAG0663`, `PRAG0664`, `PRAG0665`, `PRAG0666`, `PRAG0667`, `PRAG0668`, `PRAG0669`, `PRAG0670`, `PRAG0671`, `PRAG0672`, `PRAG0673`, `PRAG0674`, `PRAG0675`, `PRAG0676`, `PRAG0677`, `PRAG0678`, `PRAG0679`, `PRAG0689`.
+*Free inside the used span:* `PRAG0601`, `PRAG0603`, `PRAG0604`, `PRAG0605`, `PRAG0606`, `PRAG0607`, `PRAG0608`, `PRAG0609`, `PRAG0643`, `PRAG0644`, `PRAG0645`, `PRAG0646`, `PRAG0647`, `PRAG0648`, `PRAG0649`, `PRAG0650`, `PRAG0653`, `PRAG0654`, `PRAG0655`, `PRAG0656`, `PRAG0657`, `PRAG0658`, `PRAG0659`, `PRAG0660`, `PRAG0661`, `PRAG0662`, `PRAG0663`, `PRAG0664`, `PRAG0665`, `PRAG0666`, `PRAG0667`, `PRAG0668`, `PRAG0669`, `PRAG0670`, `PRAG0671`, `PRAG0672`, `PRAG0673`, `PRAG0674`, `PRAG0675`, `PRAG0676`, `PRAG0677`, `PRAG0678`, `PRAG0679`, `PRAG0689`.
 
 *First free after the last used:* `PRAG0691`.
 
@@ -421,7 +422,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG1453`.
 
-### Composition: 46 in use · range `PRAG1600`–`PRAG1699`
+### Composition: 47 in use · range `PRAG1600`–`PRAG1699`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -438,6 +439,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG1614` | `ServiceTypeArgumentNotYetGenerated` | Warning | Service type argument is not resolvable yet |
 | `PRAG1615` | `TenantBindingWithoutMultiTenancy` | Warning | An operation takes the tenant and this host resolves none |
 | `PRAG1616` | `FeatureGateWithoutFeatureFlags` | Warning | An operation requires a feature flag and this host evaluates none |
+| `PRAG1617` | `TenantSourceDeclaredTwice` | Error | Two [TenantSource] entities in one host |
 | `PRAG1630` | `StartupMustImplementInterface` | Error | [StartupStep] must implement IStartupStep |
 | `PRAG1631` | `StartupMustBeClass` | Error | [StartupStep] must be on a class |
 | `PRAG1632` | `NeedsStepTypeNotFound` | Error | [NeedsStep<T>] references unavailable step type |
@@ -472,7 +474,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG1698` | `ClockBindingWithoutAClock` | Warning | An operation takes the clock and this host registers none |
 | `PRAG1699` | `UncalledMessagingRegistration` | Warning | A referenced assembly's message handlers are registered by nobody |
 
-*Free inside the used span:* `PRAG1604`, `PRAG1605`, `PRAG1606`, `PRAG1617`, `PRAG1618`, `PRAG1619`, `PRAG1620`, `PRAG1621`, `PRAG1622`, `PRAG1623`, `PRAG1624`, `PRAG1625`, `PRAG1626`, `PRAG1627`, `PRAG1628`, `PRAG1629`, `PRAG1633`, `PRAG1634`, `PRAG1635`, `PRAG1636`, `PRAG1637`, `PRAG1638`, `PRAG1639`, `PRAG1644`, `PRAG1648`, `PRAG1649`, `PRAG1650`, `PRAG1653`, `PRAG1654`, `PRAG1655`, `PRAG1656`, `PRAG1657`, `PRAG1658`, `PRAG1659`, `PRAG1662`, `PRAG1663`, `PRAG1664`, `PRAG1665`, `PRAG1666`, `PRAG1667`, `PRAG1668`, `PRAG1669`, `PRAG1671`, `PRAG1672`, `PRAG1673`, `PRAG1674`, `PRAG1675`, `PRAG1676`, `PRAG1677`, `PRAG1678`, `PRAG1679`, `PRAG1683`, `PRAG1684`.
+*Free inside the used span:* `PRAG1604`, `PRAG1605`, `PRAG1606`, `PRAG1618`, `PRAG1619`, `PRAG1620`, `PRAG1621`, `PRAG1622`, `PRAG1623`, `PRAG1624`, `PRAG1625`, `PRAG1626`, `PRAG1627`, `PRAG1628`, `PRAG1629`, `PRAG1633`, `PRAG1634`, `PRAG1635`, `PRAG1636`, `PRAG1637`, `PRAG1638`, `PRAG1639`, `PRAG1644`, `PRAG1648`, `PRAG1649`, `PRAG1650`, `PRAG1653`, `PRAG1654`, `PRAG1655`, `PRAG1656`, `PRAG1657`, `PRAG1658`, `PRAG1659`, `PRAG1662`, `PRAG1663`, `PRAG1664`, `PRAG1665`, `PRAG1666`, `PRAG1667`, `PRAG1668`, `PRAG1669`, `PRAG1671`, `PRAG1672`, `PRAG1673`, `PRAG1674`, `PRAG1675`, `PRAG1676`, `PRAG1677`, `PRAG1678`, `PRAG1679`, `PRAG1683`, `PRAG1684`.
 
 *Range exhausted.*
 

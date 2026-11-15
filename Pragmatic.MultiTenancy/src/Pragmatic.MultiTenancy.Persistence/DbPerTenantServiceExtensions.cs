@@ -73,6 +73,10 @@ public static class DbPerTenantServiceExtensions
             services.TryAddEnumerable(ServiceDescriptor.Scoped<
                 Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor, TenantConnectionInterceptor>());
 
+            // The routing asks the tenant store which database to open, so the store cannot read through the routed context: the one
+            // generated over [TenantSource] does, and is refused at startup rather than recursing at the first request.
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, GeneratedTenantStoreRefusal>());
+
             return services;
         }
 

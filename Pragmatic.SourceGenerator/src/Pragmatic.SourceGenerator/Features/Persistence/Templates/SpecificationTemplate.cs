@@ -76,7 +76,31 @@ internal sealed class SpecificationTemplate : CSharpTemplate
                 AppendLine();
                 RenderLocalIdentitySpecifications();
             }
+
+            if (_model.TenantSource is { } source)
+            {
+                AppendLine();
+                RenderTenantSourceSpecifications(source);
+            }
         });
+    }
+
+    /// <summary>
+    ///     The reads of the generated <c>{Entity}.TenantStore</c>: a tenant by its id, and every tenant. Here for the reason the local identity's
+    ///     are: the engines compile the specifications in the entity's shape, and one in the store's own file would be seen by none.
+    /// </summary>
+    private void RenderTenantSourceSpecifications(TenantSourceModel source)
+    {
+        var entityType = $"global::{_model.FullTypeName}";
+
+        XmlSummary($"The {_model.TypeName} whose tenant id is this one: what the tenant store finds a tenant by.");
+        AppendLine($"internal static global::Pragmatic.Specification.Specification<{entityType}> ByTenantSourceId(string tenantId)");
+        Block(() => AppendLine($"return global::Pragmatic.Specification.Spec<{entityType}>.Where(e => e.{source.Id} == tenantId);"));
+        AppendLine();
+
+        XmlSummary($"Every {_model.TypeName}, whatever its state: what the tenant store enumerates.");
+        AppendLine($"internal static global::Pragmatic.Specification.Specification<{entityType}> TenantSourceAll()");
+        Block(() => AppendLine($"return global::Pragmatic.Specification.Spec<{entityType}>.Where(e => true);"));
     }
 
     /// <summary>

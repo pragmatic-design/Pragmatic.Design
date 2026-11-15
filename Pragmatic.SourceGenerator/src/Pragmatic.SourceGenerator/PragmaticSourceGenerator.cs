@@ -217,6 +217,8 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         localRegistrations = Combine(localRegistrations, cachingRegistrations);
         localRegistrations = Combine(localRegistrations, privacyRegistrations);
         localRegistrations = Combine(localRegistrations, configurationRegistrations);
+        // The [TenantSource] entity's store, which the host registers in place of the empty in-memory one.
+        localRegistrations = Combine(localRegistrations, Features.Persistence.TenantSourceFeature.Register(context, entityModels, features));
 
         // The persisted stores go the same way: the host names Add{Boundary}DbContext, {Db}Schema and
         // {Db}MigrationDbContext, which Persistence writes into this compilation only for entities.

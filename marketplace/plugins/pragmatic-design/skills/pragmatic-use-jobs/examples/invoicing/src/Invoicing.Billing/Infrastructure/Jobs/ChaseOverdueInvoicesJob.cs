@@ -24,7 +24,7 @@ namespace Invoicing.Billing.Infrastructure.Jobs;
 ///     </para>
 ///     <para>
 ///         Asking <c>ITenantStore</c> for the list works here because the store is this application's own
-///         (<c>OrganizationTenantStore</c>, over the companies it onboarded). The warning against
+///         (the one <c>[TenantSource]</c> generates over the companies it onboarded). The warning against
 ///         enumerating it is about the framework's stock in-memory one, which nothing ever writes to.
 ///     </para>
 /// </remarks>

@@ -583,6 +583,22 @@ internal static partial class CompositionDiagnostics
         true);
 
     /// <summary>
+    ///     PRAG1617: two entities this host composes are declared <c>[TenantSource]</c>.
+    /// </summary>
+    /// <remarks>
+    ///     A host has one <c>ITenantStore</c>, and which entity's rows were the tenants would depend on registration order. An error, and
+    ///     the host keeps the in-memory store until one declaration is removed.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TenantSourceDeclaredTwice = new(
+        "PRAG1617",
+        "Two [TenantSource] entities in one host",
+        "This host composes more than one [TenantSource] entity ({0}), and it has one tenant store: keep the declaration on the "
+            + "entity whose rows are the tenants and remove the others",
+        Category,
+        DiagnosticSeverity.Error,
+        true);
+
+    /// <summary>
     ///     PRAG1698: something in this application takes a value from the clock, and this host cannot
     ///     supply an <c>IClock</c>.
     /// </summary>

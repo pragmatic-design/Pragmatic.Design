@@ -103,4 +103,10 @@ internal static class MetadataCategoryIds
     ///     cannot evaluate a flag says so at build time instead of refusing that operation for everyone.
     /// </summary>
     public const string FeatureGates = "35";
+
+    /// <summary>
+    ///     TenantSource = 36 — an assembly declares the entity whose rows are the tenants, and names the factory of the store the
+    ///     generator wrote over it, which the host registers in place of the empty in-memory one.
+    /// </summary>
+    public const string TenantSource = "36";
 }

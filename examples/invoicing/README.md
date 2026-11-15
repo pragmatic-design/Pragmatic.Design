@@ -80,7 +80,7 @@ the total, which xUnit does not hand a test.
 | | Where |
 |---|---|
 | **Two modules, one direction** — Billing reads Registry through a published contract and never its entities | `Registry/Customers/Queries/GetCustomerBillingDetailsQuery.cs` (`[Published]` → `IRegistryReads`), `Billing/Invoices/Actions/IssueInvoiceAction.cs` |
-| **Multi-tenancy from the token** — the tenant is a claim, the store is the companies table, four guards | `Host/Program.cs` (`UseMultiTenancy(t => t.UseClaim())`), `Registry/Infrastructure/MultiTenancy/OrganizationTenantStore.cs` |
+| **Multi-tenancy from the token** — the tenant is a claim, the store is the companies table, four guards | `Host/Program.cs` (`UseMultiTenancy(t => t.UseClaim())`), `Registry/Organizations/Organization.cs` (`[TenantSource]`) |
 | **OIDC** — an external provider, roles in the token, permissions from the roles | `Host/Program.cs` (`UseOidcAuthentication`), `Billing/Infrastructure/Authorization/` |
 | **The invoice as a document** — one model, rendered to PDF once and stored per company and year | `Billing/Invoices/InvoiceDocument.cs`, `Billing/Invoices/InvoiceStorageKey.cs` |
 | **Money** — an amount carries its currency, and both columns stay queryable | `Billing/Invoices/Invoice.cs`, `Billing/Invoices/InvoiceLine.cs` |

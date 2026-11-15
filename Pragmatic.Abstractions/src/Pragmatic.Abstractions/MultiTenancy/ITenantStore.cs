@@ -2,9 +2,10 @@ namespace Pragmatic.MultiTenancy;
 
 /// <summary>
 ///     Persistent store for tenant metadata.
-///     Default: <c>InMemoryTenantStore</c> (seeded from configuration). No database-backed store ships:
-///     an application whose tenants live in its database implements this over them — the Casework
-///     example does, in <c>TheOrganisationsAreTheTenants</c>.
+///     Default: <c>InMemoryTenantStore</c> (seeded from configuration). An application whose tenants are
+///     rows of an entity declares it with <see cref="TenantSourceAttribute" />, and the generated store over
+///     it replaces the default (a shared database only). On a database per tenant the application implements
+///     this over the shared database itself — the Casework example does, in <c>TheOrganisationsAreTheTenants</c>.
 /// </summary>
 [global::Pragmatic.Composition.Attributes.ProvidedByHost(global::Pragmatic.Composition.Attributes.Lifetime.Singleton)]
 public interface ITenantStore
