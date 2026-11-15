@@ -5,16 +5,25 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pragmatic.Http;
 using Pragmatic.Notifications.Channels;
+using Pragmatic.Resilience;
+using Pragmatic.Resilience.Strategies;
 
 namespace Pragmatic.Notifications.Webhook;
 
 /// <summary>
 ///     Webhook delivery channel. Sends notification content as HTTP POST to the recipient's webhook URL.
 /// </summary>
+/// <remarks>
+///     A delivery has one id and one secret (the destination's, from <see cref="IWebhookSigningSecretResolver" />,
+///     or the application's), and runs through the <see cref="WebhookOptions.ResiliencePolicy" /> when one is
+///     named: every attempt carries the same id.
+/// </remarks>
 internal sealed partial class WebhookChannel(
     IHttpClientFactory httpClientFactory,
     IOptions<WebhookOptions> options,
-    ILogger<WebhookChannel> logger)
+    ILogger<WebhookChannel> logger,
+    IWebhookSigningSecretResolver? secrets = null,
+    IResiliencePipelineProvider? pipelines = null)
     : INotificationChannel
 {
     private readonly WebhookOptions _options = options.Value;
@@ -78,6 +87,11 @@ internal sealed partial class WebhookChannel(
         {
             var client = httpClientFactory.CreateClient("Pragmatic.Notifications.Webhook");
 
+            // One id and one secret for the delivery, whatever the number of attempts: a receiver that saw
+            // the first one recognises the second by the id, and verifies both with the same secret.
+            var deliveryId = Guid.NewGuid().ToString("N");
+            var secret = await SecretForAsync(uri, recipient.TenantId, ct).ConfigureAwait(false);
+
             string json;
             if (content.JsonPayload is not null)
             {
@@ -93,31 +107,26 @@ internal sealed partial class WebhookChannel(
                 }, WebhookJsonContext.Default.WebhookPayload);
             }
 
-            using var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
-            using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = httpContent };
+            var pipeline = _options.ResiliencePolicy is { Length: > 0 } policy && pipelines is not null
+                ? pipelines.GetPipeline(policy)
+                : null;
 
-            // Sign the payload (HMAC-SHA256 over "{timestamp}.{body}") so receivers can authenticate
-            // it and reject replays.
-            if (!string.IsNullOrEmpty(_options.SigningSecret))
-            {
-                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
-                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_options.SigningSecret));
-                var signature = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes($"{timestamp}.{json}")));
-                request.Headers.TryAddWithoutValidation("X-Pragmatic-Timestamp", timestamp);
-                request.Headers.TryAddWithoutValidation("X-Pragmatic-Signature", $"sha256={signature.ToLowerInvariant()}");
-            }
+            if (pipeline is null)
+                await AttemptAsync(client, uri, json, deliveryId, secret, ct).ConfigureAwait(false);
+            else
+                await pipeline.ExecuteAsync(
+                    (_, attemptCt) => AttemptAsync(client, uri, json, deliveryId, secret, attemptCt),
+                    new ResilienceContext { OperationName = "Pragmatic.Notifications.Webhook", OperationKey = uri.Host },
+                    ct).ConfigureAwait(false);
 
-            var response = await client.SendAsync(request, ct).ConfigureAwait(false);
-
-            if (response.IsSuccessStatusCode)
-            {
-                LogWebhookSent(recipient.Address);
-                return DeliveryResult.Succeeded();
-            }
-
+            LogWebhookSent(recipient.Address);
+            return DeliveryResult.Succeeded();
+        }
+        catch (Exception ex) when (StatusOf(ex) is { } status)
+        {
             // Do not include raw response body in DeliveryResult to avoid exposing sensitive remote data.
-            LogWebhookFailed(recipient.Address, (int)response.StatusCode);
-            return DeliveryResult.Failed($"HTTP {(int)response.StatusCode}");
+            LogWebhookFailed(recipient.Address, (int)status);
+            return DeliveryResult.Failed($"HTTP {(int)status}");
         }
         catch (Exception ex)
         {
@@ -125,6 +134,46 @@ internal sealed partial class WebhookChannel(
             return DeliveryResult.Failed(ex.Message);
         }
     }
+
+    /// <summary>
+    ///     One attempt: a fresh request — a sent one cannot be sent again — signed with a fresh timestamp
+    ///     and the delivery's id, and a non-success status thrown so a retry sees it.
+    /// </summary>
+    private static async Task AttemptAsync(
+        HttpClient client, Uri uri, string json, string deliveryId, string? secret, CancellationToken ct)
+    {
+        using var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = httpContent };
+        request.Headers.TryAddWithoutValidation("X-Pragmatic-Delivery", deliveryId);
+
+        // Sign the payload (HMAC-SHA256 over "{timestamp}.{deliveryId}.{body}") so receivers can
+        // authenticate it, reject replays, and trust the id they de-duplicate on.
+        if (!string.IsNullOrEmpty(secret))
+        {
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+            var signature = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes($"{timestamp}.{deliveryId}.{json}")));
+            request.Headers.TryAddWithoutValidation("X-Pragmatic-Timestamp", timestamp);
+            request.Headers.TryAddWithoutValidation("X-Pragmatic-Signature", $"sha256={signature.ToLowerInvariant()}");
+        }
+
+        using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new WebhookStatusException(response.StatusCode);
+    }
+
+    private async ValueTask<string?> SecretForAsync(Uri destination, string? tenantId, CancellationToken ct)
+        => secrets is not null && await secrets.ResolveAsync(destination, tenantId, ct).ConfigureAwait(false) is { Length: > 0 } own
+            ? own
+            : _options.SigningSecret;
+
+    /// <summary>The status a refused delivery was answered with, through the retry's wrapping when there was one.</summary>
+    private static System.Net.HttpStatusCode? StatusOf(Exception ex) => ex switch
+    {
+        WebhookStatusException refused => refused.Status,
+        RetryExhaustedException { InnerException: WebhookStatusException refused } => refused.Status,
+        _ => null
+    };
 
     /// <summary>
     ///     Turns a guard verdict into the failure text handed back to the caller. Deliberately vague

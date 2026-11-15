@@ -89,7 +89,7 @@ app.UseNotifications(n =>
         sender    => { sender.SenderAddress = cfg["Smtp:SenderAddress"]!; sender.SenderName = "My App"; },
         transport => { transport.Host = cfg["Smtp:Host"]!; transport.Port = 587; transport.UseSsl = true; });
 
-    n.AddWebhook(w => { w.SigningSecret = cfg["Webhook:Secret"]; w.Timeout = TimeSpan.FromSeconds(10); });  // Pragmatic.Notifications.Webhook; Timeout default 30 s
+    n.AddWebhook(w => { w.SigningSecret = cfg["Webhook:Secret"]; w.Timeout = TimeSpan.FromSeconds(10); });  // Pragmatic.Notifications.Webhook; Timeout default 30 s; ResiliencePolicy = a retry policy's name; IWebhookSigningSecretResolver for a secret per destination
 
     n.AddSlack(s => s.DefaultWebhookUrl = cfg["Slack:WebhookUrl"]);   // Pragmatic.Notifications.Slack
 
