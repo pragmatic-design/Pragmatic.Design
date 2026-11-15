@@ -143,7 +143,7 @@ Because it is a flags enum, routing can return `Email | Push` for `High` priorit
 
 **SmtpChannel** (`Pragmatic.Notifications`): Delegates to `Pragmatic.Email`'s `IEmailSender` for SMTP delivery, connection pooling, DKIM, and middleware. Configuration splits sender identity (`SmtpOptions`) from transport settings (`SmtpTransportOptions`).
 
-**WebhookChannel** (`Pragmatic.Notifications.Webhook`): Sends an HTTP POST with JSON payload. Uses a named `HttpClient` (`Pragmatic.Notifications.Webhook`). If `NotificationContent.JsonPayload` is set, it sends the raw payload; otherwise it serializes `{ Subject, Body, Timestamp }` using AOT-safe `JsonSerializerContext`.
+**WebhookChannel** (`Pragmatic.Notifications.Webhook`): Sends an HTTP POST with JSON payload. Uses a named `HttpClient` (`Pragmatic.Notifications.Webhook`). If `NotificationContent.JsonPayload` is set, it sends the raw payload; otherwise it serializes `{ Subject, Body, Timestamp }` using AOT-safe `JsonSerializerContext`. A delivery that takes longer than `WebhookOptions.Timeout` (default 30 s, connection included) fails: `n.AddWebhook(w => w.Timeout = TimeSpan.FromSeconds(5))`.
 
 ### Custom Channels
 

@@ -26,4 +26,13 @@ public sealed class WebhookOptions
     ///     authenticity and reject replays. Null = unsigned.
     /// </summary>
     public string? SigningSecret { get; set; }
+
+    /// <summary>
+    ///     How long one delivery may take, connection included, before it fails. Default 30 seconds.
+    /// </summary>
+    /// <remarks>
+    ///     A slow or hung endpoint would otherwise hold the delivery pipeline. The failure is the
+    ///     delivery's, recorded like any other: the notification is not retried here.
+    /// </remarks>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
 }

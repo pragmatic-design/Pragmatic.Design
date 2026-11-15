@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Pragmatic.Notifications.Channels;
 using Pragmatic.Notifications.Configuration;
 
@@ -16,10 +17,10 @@ public static class WebhookBuilderExtensions
         if (configure is not null)
             builder.Services.Configure(configure);
 
-        builder.Services.AddHttpClient("Pragmatic.Notifications.Webhook", client =>
+        builder.Services.AddHttpClient("Pragmatic.Notifications.Webhook", (services, client) =>
             {
                 // Prevent a slow/hung webhook from blocking the delivery pipeline indefinitely.
-                client.Timeout = TimeSpan.FromSeconds(30);
+                client.Timeout = services.GetRequiredService<IOptions<WebhookOptions>>().Value.Timeout;
             })
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
