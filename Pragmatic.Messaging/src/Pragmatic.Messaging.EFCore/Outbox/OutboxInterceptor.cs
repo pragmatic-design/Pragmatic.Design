@@ -62,7 +62,8 @@ public sealed partial class OutboxInterceptor(ILogger<OutboxInterceptor>? logger
             DateTimeOffset.UtcNow,
             services?.GetService<ITenantContext>(),
             services?.GetService<ICurrentUser>(),
-            services?.GetService<PragmaticJsonOptions>());
+            services?.GetService<PragmaticJsonOptions>(),
+            services?.GetService<Pragmatic.Events.Outbox.DeclaredEventStage>());
 
         if (messages.Count == 0)
             return;

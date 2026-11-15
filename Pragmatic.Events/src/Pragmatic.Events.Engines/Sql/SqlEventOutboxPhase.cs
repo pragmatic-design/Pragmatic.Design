@@ -13,13 +13,13 @@ namespace Pragmatic.Events.Engines.Sql;
 ///     ⚠️ The phase sees the entities the save writes: an entity that raised an event and changed no column is not among them, and its events go
 ///     out in process after the commit, as without the outbox. EF Core's interceptor reads every tracked entity.
 /// </remarks>
-public sealed class SqlEventOutboxPhase(ITenantContext? tenant, PragmaticJsonOptions? json) : ISqlSavePhase
+public sealed class SqlEventOutboxPhase(ITenantContext? tenant, PragmaticJsonOptions? json, Pragmatic.Events.Outbox.DeclaredEventStage? stage = null) : ISqlSavePhase
 {
     /// <inheritdoc />
     public ValueTask ApplyAsync(SqlSaveContext save, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(save);
-        foreach (var captured in EventOutboxCapture.Take(save.Entries.Select(e => e.Entity), save.Now, tenant?.TenantId, json))
+        foreach (var captured in EventOutboxCapture.Take(save.Entries.Select(e => e.Entity), stage, save.Now, tenant?.TenantId, json))
         {
             save.Batch.InsertAsIs(new EventOutboxRow
             {

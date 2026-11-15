@@ -52,6 +52,8 @@ public static class EventOutboxExtensions
 
         services.TryAddSingleton(options);
         services.TryAddSingleton<EventOutboxInterceptor>();
+        // Where the invocation that owns the commit stages the events it declares, for the interceptor to take (#736).
+        services.TryAddScoped<DeclaredEventStage>();
 
         // Build a closed allowlist of resolvable event types from the registered handlers.
         // This replaces an unsafe Type.GetType(dbString) in the delivery loop (gadget surface)

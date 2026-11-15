@@ -20,14 +20,25 @@ namespace Pragmatic.Messaging.Entities;
 public static class OutboxMessageCapture
 {
     /// <summary>
-    ///     The events of <paramref name="entities" />, taken as outbox messages: empty when none raised one (and the JSON options are not built).
+    ///     The events of <paramref name="entities" />, and those the operation declared (<paramref name="stage" />), taken as outbox messages:
+    ///     empty when there are none (and the JSON options are not built).
     /// </summary>
+    /// <param name="entities">The entities the save writes.</param>
+    /// <param name="now">The save's instant.</param>
+    /// <param name="tenant">The save's tenant.</param>
+    /// <param name="currentUser">The save's user.</param>
+    /// <param name="json">The application's JSON options.</param>
+    /// <param name="stage">
+    ///     The events the invocation that owns the commit declared (<c>[Raises&lt;T&gt;]</c>), built here, after the save filled the generated
+    ///     values, and taken, so the invoker dispatches none of them after the commit (#736).
+    /// </param>
     public static List<OutboxMessage> Take(
         IEnumerable<object> entities,
         DateTimeOffset now,
         ITenantContext? tenant,
         ICurrentUser? currentUser,
-        PragmaticJsonOptions? json)
+        PragmaticJsonOptions? json,
+        Pragmatic.Events.Outbox.DeclaredEventStage? stage = null)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -35,11 +46,8 @@ public static class OutboxMessageCapture
         JsonSerializerOptions? serializerOptions = null;
         AmbientContext ambient = default;
 
-        foreach (var entity in entities)
+        void Add(IDomainEvent domainEvent)
         {
-            if (entity is not IHasDomainEvents { DomainEvents.Count: > 0 } raiser)
-                continue;
-
             if (serializerOptions is null)
             {
                 // The shared JSON options from the seam (AOT-safe contexts when configured), falling back to the reflection-based default.
@@ -49,27 +57,39 @@ public static class OutboxMessageCapture
                 messages = [];
             }
 
-            foreach (var domainEvent in raiser.DomainEvents)
+            var eventType = domainEvent.GetType();
+            messages!.Add(new OutboxMessage
             {
-                var eventType = domainEvent.GetType();
-                messages!.Add(new OutboxMessage
-                {
-                    Id = Guid.NewGuid(),
-                    MessageType = eventType.FullName ?? eventType.Name,
-                    // Serialize through the resolver's JsonTypeInfo (AOT-safe: the SG-generated JsonSerializerContext carries every domain-event
-                    // type). Symmetric with the read path, which deserializes via the SG IMessageTypeRegistry. No reflection fallback.
-                    Payload = JsonSerializer.Serialize(domainEvent, serializerOptions.GetTypeInfo(eventType)),
-                    CreatedAt = now,
-                    RetryCount = 0,
-                    CorrelationId = ambient.CorrelationId,
-                    TenantId = ambient.TenantId,
-                    UserId = ambient.UserId,
-                    HeadersJson = ambient.HeadersJson,
-                });
-            }
+                Id = Guid.NewGuid(),
+                MessageType = eventType.FullName ?? eventType.Name,
+                // Serialize through the resolver's JsonTypeInfo (AOT-safe: the SG-generated JsonSerializerContext carries every domain-event
+                // type). Symmetric with the read path, which deserializes via the SG IMessageTypeRegistry. No reflection fallback.
+                Payload = JsonSerializer.Serialize(domainEvent, serializerOptions.GetTypeInfo(eventType)),
+                CreatedAt = now,
+                RetryCount = 0,
+                CorrelationId = ambient.CorrelationId,
+                TenantId = ambient.TenantId,
+                UserId = ambient.UserId,
+                HeadersJson = ambient.HeadersJson,
+            });
+        }
+
+        foreach (var entity in entities)
+        {
+            if (entity is not IHasDomainEvents { DomainEvents.Count: > 0 } raiser)
+                continue;
+
+            foreach (var domainEvent in raiser.DomainEvents)
+                Add(domainEvent);
 
             // Clear events from the entity to prevent re-dispatch.
             raiser.ClearDomainEvents();
+        }
+
+        if (stage is not null)
+        {
+            foreach (var domainEvent in stage.Take())
+                Add(domainEvent);
         }
 
         return messages ?? [];

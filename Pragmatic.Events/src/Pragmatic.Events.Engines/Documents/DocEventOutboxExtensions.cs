@@ -20,7 +20,7 @@ public static class DocEventOutboxExtensions
     {
         if (!EngineEventOutboxRegistration.Shared<TBoundary>(services, configure))
             return services;
-        services.AddKeyedScoped<IDocSavePhase>(typeof(TBoundary), static (sp, _) => new DocEventOutboxPhase(sp.GetService<ITenantContext>(), sp.GetService<PragmaticJsonOptions>()));
+        services.AddKeyedScoped<IDocSavePhase>(typeof(TBoundary), static (sp, _) => new DocEventOutboxPhase(sp.GetService<ITenantContext>(), sp.GetService<PragmaticJsonOptions>(), sp.GetService<DeclaredEventStage>()));
         services.AddSingleton<IEngineEventOutboxDrainer<TBoundary>>(static sp => new DocEventOutboxDrainer<TBoundary>(sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetRequiredService<EventOutboxOptions>(), sp.GetRequiredService<ILogger<DocEventOutboxDrainer<TBoundary>>>(), sp.GetService<TimeProvider>()));
         return EngineEventOutboxRegistration.Loop<TBoundary>(services);

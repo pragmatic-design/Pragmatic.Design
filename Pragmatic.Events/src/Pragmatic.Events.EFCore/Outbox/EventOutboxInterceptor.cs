@@ -50,7 +50,11 @@ public sealed class EventOutboxInterceptor : SaveChangesInterceptor
             .Select(e => e.Entity)
             .ToList();
 
-        if (entities.Count == 0)
+        // The events the operation declares ([Raises<T>] on a mutation or an action), staged by the invocation that owns the commit and
+        // built now, after the unit of work filled the generated values (#736). Taken, so the invoker dispatches none of them after the commit.
+        var declared = ApplicationServices(context)?.GetService<DeclaredEventStage>()?.Take() ?? [];
+
+        if (entities.Count == 0 && declared.Count == 0)
             return;
 
         var now = DateTimeOffset.UtcNow;
@@ -69,27 +73,33 @@ public sealed class EventOutboxInterceptor : SaveChangesInterceptor
         // has not opted into JSON context generation.
         var serializerOptions = ResolveSerializerOptions(context);
 
+        void Add(IDomainEvent domainEvent)
+        {
+            var (eventType, payload) = EventOutboxDelivery.Capture(domainEvent, serializerOptions);
+            context.Add(new EventOutboxEntry
+            {
+                Id = Guid.NewGuid(),
+                EventType = eventType,
+                Payload = payload,
+                OccurredAt = domainEvent.OccurredAt,
+                CreatedAt = now,
+                TenantId = tenantId,
+                TraceParent = traceParent,
+            });
+        }
+
         foreach (var entity in entities)
         {
             foreach (var domainEvent in entity.DomainEvents)
-            {
-                var (eventType, payload) = EventOutboxDelivery.Capture(domainEvent, serializerOptions);
-                context.Add(new EventOutboxEntry
-                {
-                    Id = Guid.NewGuid(),
-                    EventType = eventType,
-                    Payload = payload,
-                    OccurredAt = domainEvent.OccurredAt,
-                    CreatedAt = now,
-                    TenantId = tenantId,
-                    TraceParent = traceParent,
-                });
-            }
+                Add(domainEvent);
 
             // Cleared so EfCoreUnitOfWork finds nothing to take after the commit and the same event
             // is not delivered twice — once by the outbox and once in-process.
             entity.ClearDomainEvents();
         }
+
+        foreach (var domainEvent in declared)
+            Add(domainEvent);
     }
 
     private static JsonSerializerOptions ResolveSerializerOptions(DbContext context)
