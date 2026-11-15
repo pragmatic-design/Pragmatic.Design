@@ -28,6 +28,11 @@ namespace Pragmatic.Caching.Redis;
 ///         applied it (<see cref="CacheTags.Node" />) — which is also how a test knows the other node has
 ///         dropped the entry without sleeping on it.
 ///     </para>
+///     <para>
+///         Then the registered <see cref="ICacheInvalidationObserver" />s hear it (#763): a cache this node
+///         keeps outside <see cref="HybridCache" /> — the in-memory lookup caches — refreshes what the tag
+///         names. An observer that fails is logged and the others still run: the entry is dropped either way.
+///     </para>
 /// </remarks>
 public sealed partial class CacheInvalidationSubscriber : IHostedService
 {
@@ -36,6 +41,7 @@ public sealed partial class CacheInvalidationSubscriber : IHostedService
 
     private readonly RedisCacheInvalidationChannel _channel;
     private readonly HybridCache _cache;
+    private readonly ICacheInvalidationObserver[] _observers;
     private readonly ILogger<CacheInvalidationSubscriber> _logger;
     private ChannelMessageQueue? _subscription;
 
@@ -43,7 +49,8 @@ public sealed partial class CacheInvalidationSubscriber : IHostedService
     public CacheInvalidationSubscriber(
         RedisCacheInvalidationChannel channel,
         HybridCache cache,
-        ILogger<CacheInvalidationSubscriber> logger)
+        ILogger<CacheInvalidationSubscriber> logger,
+        IEnumerable<ICacheInvalidationObserver>? observers = null)
     {
         ThrowIfNull(channel);
         ThrowIfNull(cache);
@@ -51,6 +58,7 @@ public sealed partial class CacheInvalidationSubscriber : IHostedService
         _channel = channel;
         _cache = cache;
         _logger = logger;
+        _observers = observers?.ToArray() ?? [];
     }
 
     /// <inheritdoc />
@@ -84,10 +92,30 @@ public sealed partial class CacheInvalidationSubscriber : IHostedService
 
         CachingDiagnostics.CacheInvalidations.Add(1);
         LogApplied(message.Kind, message.Value, message.Origin);
+
+        foreach (var observer in _observers)
+        {
+            try
+            {
+                if (message.Kind == CacheInvalidationKind.Tag)
+                    await observer.OnTagInvalidatedAsync(message.Value, CancellationToken.None).ConfigureAwait(false);
+                else
+                    await observer.OnKeyInvalidatedAsync(message.Value, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                LogObserverFailed(ex, observer.GetType().Name, message.Kind, message.Value);
+            }
+        }
+
         activity?.SetSuccess();
     }
 
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "Applied the invalidation of {Kind} '{Value}' broadcast by node {Origin}")]
     private partial void LogApplied(CacheInvalidationKind kind, string value, string origin);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "{Observer} failed on the invalidation of {Kind} '{Value}' broadcast by another node; what it keeps outside HybridCache stays as it was")]
+    private partial void LogObserverFailed(Exception ex, string observer, CacheInvalidationKind kind, string value);
 }

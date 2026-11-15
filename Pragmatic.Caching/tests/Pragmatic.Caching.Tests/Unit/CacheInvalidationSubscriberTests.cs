@@ -76,4 +76,38 @@ public class CacheInvalidationSubscriberTests
 
         (await WasProducedAgainAsync("k")).Should().BeFalse();
     }
+
+    /// <summary>
+    ///     The observers hear what another node invalidated (#763), each one even when an earlier one fails, and none hears this node's own
+    ///     message.
+    /// </summary>
+    [Fact]
+    public async Task TheObservers_HearAnotherNodesInvalidations_AndOneFailingStopsNoneOfTheOthers()
+    {
+        var failing = new RecordingObserver(fail: true);
+        var heard = new RecordingObserver(fail: false);
+        var subscriber = new CacheInvalidationSubscriber(_channel, _cache, NullLogger<CacheInvalidationSubscriber>.Instance, [failing, heard]);
+
+        await subscriber.ApplyAsync(new CacheInvalidationMessage(CacheInvalidationKind.Tag, "pragmatic:lookup:Category", "node-b"));
+        await subscriber.ApplyAsync(new CacheInvalidationMessage(CacheInvalidationKind.Key, "k", "node-b"));
+        await subscriber.ApplyAsync(new CacheInvalidationMessage(CacheInvalidationKind.Tag, "mine", _channel.NodeId));
+
+        heard.Heard.Should().Equal("tag:pragmatic:lookup:Category", "key:k");
+        failing.Heard.Should().Equal("tag:pragmatic:lookup:Category", "key:k");
+    }
+
+    private sealed class RecordingObserver(bool fail) : ICacheInvalidationObserver
+    {
+        public List<string> Heard { get; } = [];
+
+        public Task OnTagInvalidatedAsync(string tag, CancellationToken ct) => Record($"tag:{tag}");
+
+        public Task OnKeyInvalidatedAsync(string key, CancellationToken ct) => Record($"key:{key}");
+
+        private Task Record(string what)
+        {
+            Heard.Add(what);
+            return fail ? Task.FromException(new InvalidOperationException("observer failure")) : Task.CompletedTask;
+        }
+    }
 }
