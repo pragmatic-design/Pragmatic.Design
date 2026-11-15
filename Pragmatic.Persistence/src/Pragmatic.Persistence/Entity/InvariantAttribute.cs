@@ -98,4 +98,52 @@ public sealed class InvariantAttribute : Attribute
     ///     </code>
     /// </example>
     public string? MessageKey { get; set; }
+
+    /// <summary>
+    ///     The code the refusal reports in place of <c>INVARIANT_VIOLATION</c>, so a client can switch
+    ///     on which rule refused instead of parsing its sentence.
+    /// </summary>
+    /// <remarks>
+    ///     Without it every invariant of the application answers with the same code, and the only thing
+    ///     telling two of them apart is <see cref="Message" />, which is words and changes with the
+    ///     language.
+    /// </remarks>
+    public string? ErrorCode { get; set; }
+
+    /// <summary>
+    ///     The member of the entity the rule is about, written with <c>nameof</c>: the refusal reports it
+    ///     as <c>member</c> and keys its <c>errors</c> map by it, the way a property rule's failure is
+    ///     keyed by its property, so a form can mark the field.
+    /// </summary>
+    /// <remarks>
+    ///     It must be a property or field of the entity the generated invoker can read — an instance
+    ///     member, at least <c>internal</c> — or the build fails with <c>PRAG0471</c>.
+    /// </remarks>
+    public string? Member { get; set; }
+
+    /// <summary>
+    ///     Members of the entity, written with <c>nameof</c>, whose values fill the message's
+    ///     placeholders: <c>{Total}</c> in <see cref="Message" />, or in the translation
+    ///     <see cref="MessageKey" /> names, is replaced with the value of <c>Total</c> when the rule
+    ///     breaks.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Read when the rule has already refused, from the row that broke it, so the message says the
+    ///         number that was wrong and not only that one was. They are the error's
+    ///         <c>Parameters</c>, the same dictionary a translation interpolates.
+    ///     </para>
+    ///     <para>
+    ///         Each must be readable by the generated invoker, as <see cref="Member" /> must
+    ///         (<c>PRAG0471</c>). A null value fills its placeholder with nothing.
+    ///     </para>
+    /// </remarks>
+    /// <example>
+    ///     <code>
+    ///     [Invariant("The total {Total} is over the limit {Limit}",
+    ///         ErrorCode = "ORDER_OVER_LIMIT", Member = nameof(Total), Parameters = [nameof(Total), nameof(Limit)])]
+    ///     internal bool StaysWithinTheLimit() => Total &lt;= Limit;
+    ///     </code>
+    /// </example>
+    public string[]? Parameters { get; set; }
 }

@@ -916,6 +916,20 @@ internal static partial class ActionsDiagnostics
         Category, DiagnosticSeverity.Error, true);
 
     /// <summary>
+    ///     PRAG0471: an <c>[Invariant]</c> names, as its <c>Member</c> or one of its <c>Parameters</c>, a
+    ///     member the refusal cannot report.
+    /// </summary>
+    /// <remarks>
+    ///     An error for the reason PRAG0463 is one: the generator leaves the name out of what it emits, so
+    ///     the refusal would carry the placeholder unfilled or no field to mark, and nothing would say why.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor InvariantMemberCannotBeRead = new(
+        "PRAG0471",
+        "The invariant names a member its refusal cannot report",
+        "The [Invariant] '{0}' names '{1}' as its member or a parameter, and the refusal cannot report it: {2}. Name an instance property or field of the entity, with a getter at least internal for a parameter.",
+        Category, DiagnosticSeverity.Error, true);
+
+    /// <summary>
     ///     PRAG0464: <c>[Retry]</c>, <c>[Timeout]</c> or <c>[CircuitBreaker]</c> on a class no engine
     ///     reads it on.
     /// </summary>

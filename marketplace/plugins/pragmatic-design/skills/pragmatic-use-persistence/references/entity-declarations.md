@@ -35,6 +35,20 @@ Without it the refusal reports `error.invariant.violation`, which **every** inva
 application shares: translating it means giving up which rule refused, so an application ends up
 sending the English sentence to a caller who asked for another language.
 
+**`ErrorCode`, `Member` and `Parameters` say what the refusal carries.** The code replaces
+`INVARIANT_VIOLATION`, so a client switches on the rule; the member is reported as `member` and keys
+an `errors` map, as a field's validation failure is; each name in `Parameters` is read off the row that
+broke the rule and fills its `{Name}` in the message and its translation.
+
+```csharp
+[Invariant("The amenity {Name} cannot have more than 20 keywords",
+    ErrorCode = "AMENITY_TOO_MANY_KEYWORDS", Member = nameof(Keywords), Parameters = [nameof(Name)])]
+internal bool KeywordsWithinLimit() => Keywords.Count <= 20;
+```
+
+A name that is not an instance property or field of the entity, or a parameter whose getter is
+`private`, is **PRAG0471**.
+
 **A `[PartOf]` child carries its own**, and the aggregate's invoker checks them after it has merged
 it, which is the only write path a child has, so it is the only place they could be checked. Put the
 rule about a line on the line.

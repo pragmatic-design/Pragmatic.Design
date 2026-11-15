@@ -206,6 +206,7 @@ internal static partial class MutationTransform
             // the method. Collected here rather than inside ParseInvariants so the models the invoker is
             // generated from cannot change shape.
             UncallableInvariants = UncallableInvariants(entityType),
+            UnreadableInvariantMembers = UnreadableInvariantMembers(entityType),
             HasTemporalConstraints = HasTemporalConstraint(entityType),
             IsOwnedEntity = isOwnedEntity,
             EntityHasParameterlessFactory =

@@ -54,7 +54,7 @@ internal sealed partial class InvokerTemplate
                 {
                     AppendLine($"if (!action.{load.FieldName}.{invariant.MethodName}())");
                     IncreaseIndent();
-                    AppendLine(Refusal(invariant.MethodName, invariant));
+                    AppendLine(InvariantRefusal.Line(invariant.MethodName, invariant, $"action.{load.FieldName}"));
                     DecreaseIndent();
                 }
 
@@ -79,23 +79,11 @@ internal sealed partial class InvokerTemplate
             {
                 AppendLine($"if (!__row.{invariant.MethodName}())");
                 IncreaseIndent();
-                AppendLine(Refusal(invariant.MethodName, invariant).TrimEnd(';')
-                           + $" {{ EntityType = \"{load.EntityTypeShortName}\", EntityId = __row.PersistenceId.ToString() }};");
+                AppendLine(InvariantRefusal.Line(invariant.MethodName, invariant, "__row",
+                    $"EntityType = \"{load.EntityTypeShortName}\", EntityId = __row.PersistenceId.ToString()"));
                 DecreaseIndent();
             }
         });
         AppendLine();
-    }
-
-    /// <summary>The refusal one broken rule returns — the mutation path's, so the two cannot differ.</summary>
-    private static string Refusal(string name, Models.InvariantModel invariant)
-    {
-        var message = StringHelper.CSharpLiteral(invariant.Message ?? "");
-        var key = invariant.MessageKey is { Length: > 0 } declared
-            ? $", \"{StringHelper.CSharpLiteral(declared)}\""
-            : "";
-
-        return "return new global::Pragmatic.Actions.Mutation.InvariantViolationError("
-               + $"\"{name}\", \"{message}\"{key});";
     }
 }

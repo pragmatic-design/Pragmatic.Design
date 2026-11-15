@@ -321,6 +321,24 @@ in that class and those two suffixes are its members. A rule that names no key r
 `error.invariant.violation`, which every invariant in the application shares: one text that cannot say
 which rule refused.
 
+Three more properties say what the refusal carries, the way a property rule's failure carries them:
+
+```csharp
+[Invariant("The amenity {Name} cannot have more than 20 keywords",
+    ErrorCode = "AMENITY_TOO_MANY_KEYWORDS", Member = nameof(Keywords), Parameters = [nameof(Name)])]
+public bool KeywordsWithinLimit() => Keywords.Count <= 20;
+```
+
+- `ErrorCode` replaces `INVARIANT_VIOLATION` as the response's `code`, so a client switches on the rule
+  instead of parsing its sentence.
+- `Member` is reported as `member` and keys an `errors` map (`{"keywords": ["error.invariant.violation"]}`),
+  the shape a validation failure has, so a form marks the field.
+- `Parameters` are read off the row that broke the rule into the error's `Parameters`: each `{Name}` in
+  `Message`, and in the translation `MessageKey` names, is replaced with its value.
+
+Each name must be an instance property or field of the entity, and a parameter one with a getter at
+least `internal`; anything else is `PRAG0471`.
+
 ### 6. Persist
 
 - **Create**: `PersistNew(entity)` adds to repository, then `ApplyPresetsAsync()` creates any preset child entities

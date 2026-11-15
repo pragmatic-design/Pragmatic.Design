@@ -198,6 +198,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 | `PRAG0467` | Error | `[TransitionsTo(When = AfterBody)]` on a domain action, which builds its response in the body and would answer with the state before the move. Use BeforeBody, or ByBody. |
 | `PRAG0468` | Error | `[TransitionsTo]` on a mutation that is not an `Update`: a create starts in the initial state, a delete or a restore has a lifecycle of its own. |
 | `PRAG0469` | Error | A package whose rows live in the importing boundary's database (`Pragmatic.Authorization.Management`) is imported into a boundary whose engine's store is not referenced. Reference the package the message names: `Pragmatic.Authorization.Management.EFCore` on EF Core, `Pragmatic.Authorization.Management.Engines` on the Sql and documents engines. |
+| `PRAG0471` | Error | An `[Invariant]` names, as its `Member` or one of its `Parameters`, something the refusal cannot report: no instance property or field of the entity has that name, or a parameter's getter is not at least `internal`. The generator leaves the name out, so without the error the placeholder would stay unfilled or the field unmarked. |
 
 ### Endpoints: `PRAG0500-0551`
 

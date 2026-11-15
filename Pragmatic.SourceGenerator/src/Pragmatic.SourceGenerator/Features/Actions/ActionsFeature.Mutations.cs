@@ -26,6 +26,15 @@ internal static partial class ActionsFeature
                 uncallable.MethodName, uncallable.Reason));
         }
 
+        // PRAG0471: a member or parameter the refusal cannot report, on the invariant, for the same reason.
+        foreach (var unreadable in model.UnreadableInvariantMembers)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                ActionsDiagnostics.InvariantMemberCannotBeRead,
+                unreadable.Location?.ToLocation(),
+                unreadable.MethodName, unreadable.MemberName, unreadable.Reason));
+        }
+
         if (model.Location is null)
             return;
 

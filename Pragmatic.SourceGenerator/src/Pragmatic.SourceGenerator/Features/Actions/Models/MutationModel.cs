@@ -328,6 +328,10 @@ internal sealed record MutationModel
     public EquatableArray<UncallableInvariantModel> UncallableInvariants { get; init; } =
         EquatableArray<UncallableInvariantModel>.Empty;
 
+    /// <summary>The names the entity's invariants report as member or parameters and cannot — PRAG0471.</summary>
+    public EquatableArray<UnreadableInvariantMemberModel> UnreadableInvariantMembers { get; init; } =
+        EquatableArray<UnreadableInvariantMemberModel>.Empty;
+
     /// <summary>
     ///     Whether there is anything to check before persist — the aggregate's own rules, or those of a
     ///     child it merges.
