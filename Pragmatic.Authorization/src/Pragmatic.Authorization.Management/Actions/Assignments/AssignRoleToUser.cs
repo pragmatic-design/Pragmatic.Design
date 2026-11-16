@@ -4,6 +4,7 @@ using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -24,6 +25,13 @@ public partial class AssignRoleToUser : DomainAction<Guid>
     public required string UserId { get; init; }
     public required string RoleName { get; init; }
     public string? TenantId { get; init; }
+
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
     public DateTimeOffset? ValidFrom { get; init; }
     public DateTimeOffset? ValidTo { get; init; }
 
@@ -32,23 +40,24 @@ public partial class AssignRoleToUser : DomainAction<Guid>
         var now = DateTimeOffset.UtcNow;
 
         // Tenant binding enforced uniformly across all management actions — see TenantScopeGuard.
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "assign-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "assign-role") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
         // A role gives what it carries, so the assigner must hold it, as AssignPermissionsToRole asks of a grantor.
-        if (await GrantorHolds.MissingAsync(_store, _currentUser, [RoleName], TenantId, now, ct).ConfigureAwait(false) is { } missing)
+        if (await GrantorHolds.MissingAsync(_store, _currentUser, [RoleName], tenantId, now, ct).ConfigureAwait(false) is { } missing)
             return Result<Guid, IError>.Failure(ForbiddenError.ActionDenied("assign-role", $"permission:{missing}"));
 
         // Guard: prevent duplicate active assignment for the same user/role/tenant
-        var assignments = await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false);
-        if (assignments.Any(a => a.RoleName == RoleName && a.TenantId == TenantId && a.IsInForceAt(now)))
+        var assignments = await _store.GetUserRolesAsync(UserId, tenantId, ct).ConfigureAwait(false);
+        if (assignments.Any(a => a.RoleName == RoleName && a.TenantId == tenantId && a.IsInForceAt(now)))
             return ConflictError.AlreadyExists("UserRoleAssignment", $"{UserId}/{RoleName}");
 
         var assignment = new UserRoleAssignment
         {
             UserId = UserId,
             RoleName = RoleName,
-            TenantId = TenantId,
+            TenantId = tenantId,
             AssignedBy = _currentUser.Id,
             ValidFrom = ValidFrom ?? now,
             ValidTo = ValidTo

@@ -4,6 +4,7 @@ using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -25,9 +26,17 @@ public partial class AssignPermissionsToRole : VoidDomainAction
     public required string[] Permissions { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "assign-permissions-to-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "assign-permissions-to-role") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
         // Holding the role and the assignment permissions together would otherwise let a tenant admin grant
@@ -45,9 +54,9 @@ public partial class AssignPermissionsToRole : VoidDomainAction
         var now = DateTimeOffset.UtcNow;
 
         // The role's grants in force in exactly this tenant: a global grant of the same permission is another row.
-        var grants = await _store.GetRolePermissionsAsync([RoleName], TenantId, ct).ConfigureAwait(false);
+        var grants = await _store.GetRolePermissionsAsync([RoleName], tenantId, ct).ConfigureAwait(false);
         var existing = grants
-            .Where(rp => rp.RoleName == RoleName && rp.TenantId == TenantId && rp.IsInForceAt(now))
+            .Where(rp => rp.RoleName == RoleName && rp.TenantId == tenantId && rp.IsInForceAt(now))
             .Select(rp => rp.PermissionName)
             .ToHashSet();
 
@@ -57,14 +66,14 @@ public partial class AssignPermissionsToRole : VoidDomainAction
             {
                 RoleName = RoleName,
                 PermissionName = permission,
-                TenantId = TenantId,
+                TenantId = tenantId,
                 ValidFrom = now
             })
             .ToList();
 
         await _store.AddRolePermissionsAsync(added, ct).ConfigureAwait(false);
 
-        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, TenantId, now, ct).ConfigureAwait(false);
+        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, tenantId, now, ct).ConfigureAwait(false);
 
         return VoidResult<IError>.Success();
     }

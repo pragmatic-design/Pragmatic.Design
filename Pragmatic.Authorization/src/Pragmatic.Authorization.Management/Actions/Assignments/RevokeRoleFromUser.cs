@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -24,15 +25,23 @@ public partial class RevokeRoleFromUser : VoidDomainAction<NotFoundError>
     public required string RoleName { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "revoke-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "revoke-role") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
 
-        var assignments = await _store.GetUserRolesAsync(UserId, TenantId, ct).ConfigureAwait(false);
-        var assignment = assignments.FirstOrDefault(a => a.RoleName == RoleName && a.TenantId == TenantId && a.IsInForceAt(now));
+        var assignments = await _store.GetUserRolesAsync(UserId, tenantId, ct).ConfigureAwait(false);
+        var assignment = assignments.FirstOrDefault(a => a.RoleName == RoleName && a.TenantId == tenantId && a.IsInForceAt(now));
 
         if (assignment is null)
             return VoidResult<IError>.Failure(

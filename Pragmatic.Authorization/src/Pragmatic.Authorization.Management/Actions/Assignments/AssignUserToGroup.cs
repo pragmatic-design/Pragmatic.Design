@@ -4,6 +4,7 @@ using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -27,6 +28,13 @@ public partial class AssignUserToGroup : DomainAction<Guid>
     public required string UserId { get; init; }
     public required string GroupName { get; init; }
     public string? TenantId { get; init; }
+
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
     public DateTimeOffset? ValidFrom { get; init; }
     public DateTimeOffset? ValidTo { get; init; }
 
@@ -34,28 +42,29 @@ public partial class AssignUserToGroup : DomainAction<Guid>
     {
         var now = DateTimeOffset.UtcNow;
 
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "assign-group") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "assign-group") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
         // A membership gives the group's roles, so the caller must hold what they carry, as AssignRoleToUser asks of one role.
         // Every role of the group not yet ended counts, a future one too.
-        var roles = (await _store.GetGroupRolesAsync([GroupName], TenantId, ct).ConfigureAwait(false))
+        var roles = (await _store.GetGroupRolesAsync([GroupName], tenantId, ct).ConfigureAwait(false))
             .Where(gr => gr.ValidTo is null || gr.ValidTo > now)
             .Select(gr => gr.RoleName)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (await GrantorHolds.MissingAsync(_store, _currentUser, roles, TenantId, now, ct).ConfigureAwait(false) is { } missing)
+        if (await GrantorHolds.MissingAsync(_store, _currentUser, roles, tenantId, now, ct).ConfigureAwait(false) is { } missing)
             return Result<Guid, IError>.Failure(ForbiddenError.ActionDenied("assign-group", $"permission:{missing}"));
 
-        var memberships = await _store.GetUserGroupsAsync(UserId, TenantId, ct).ConfigureAwait(false);
-        if (memberships.Any(a => a.GroupName == GroupName && a.TenantId == TenantId && a.IsInForceAt(now)))
+        var memberships = await _store.GetUserGroupsAsync(UserId, tenantId, ct).ConfigureAwait(false);
+        if (memberships.Any(a => a.GroupName == GroupName && a.TenantId == tenantId && a.IsInForceAt(now)))
             return ConflictError.AlreadyExists("UserGroupAssignment", $"{UserId}/{GroupName}");
 
         var assignment = new UserGroupAssignment
         {
             UserId = UserId,
             GroupName = GroupName,
-            TenantId = TenantId,
+            TenantId = tenantId,
             AssignedBy = _currentUser.Id,
             ValidFrom = ValidFrom ?? now,
             ValidTo = ValidTo

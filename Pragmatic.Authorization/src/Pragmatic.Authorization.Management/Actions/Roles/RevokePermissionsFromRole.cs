@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -32,23 +33,31 @@ public partial class RevokePermissionsFromRole : VoidDomainAction<NotFoundError>
     public required string[] Permissions { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "revoke-permissions-from-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "revoke-permissions-from-role") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
         var revoked = new HashSet<string>(Permissions, StringComparer.OrdinalIgnoreCase);
 
-        var grants = (await _store.GetRolePermissionsAsync([RoleName], TenantId, ct).ConfigureAwait(false))
-            .Where(rp => rp.RoleName == RoleName && rp.TenantId == TenantId && rp.IsInForceAt(now) && revoked.Contains(rp.PermissionName))
+        var grants = (await _store.GetRolePermissionsAsync([RoleName], tenantId, ct).ConfigureAwait(false))
+            .Where(rp => rp.RoleName == RoleName && rp.TenantId == tenantId && rp.IsInForceAt(now) && revoked.Contains(rp.PermissionName))
             .ToList();
 
         if (grants.Count == 0)
             return VoidResult<IError>.Failure(NotFoundError.Create("DynamicRolePermission", $"{RoleName}/{string.Join(",", Permissions)}"));
 
         await _store.EndRolePermissionsAsync(grants, now, ct).ConfigureAwait(false);
-        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, TenantId, now, ct).ConfigureAwait(false);
+        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, tenantId, now, ct).ConfigureAwait(false);
 
         return VoidResult<IError>.Success();
     }

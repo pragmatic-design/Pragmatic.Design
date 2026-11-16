@@ -4,6 +4,7 @@ using Pragmatic.Authorization.Catalog;
 using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -23,9 +24,17 @@ public partial class CreatePermission : DomainAction<Guid, ConflictError>
     public string? Category { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<Result<Guid, IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "create-permission") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "create-permission") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
         // A name the catalog already holds — a generated permission, a platform one, or a dynamic one of this tenant or global — is taken:
@@ -34,8 +43,8 @@ public partial class CreatePermission : DomainAction<Guid, ConflictError>
         if (catalog.Any(p => string.Equals(p.Name, Name, StringComparison.OrdinalIgnoreCase)))
             return ConflictError.AlreadyExists("Permission", Name);
 
-        var permissions = await _store.GetPermissionsAsync(TenantId, ct).ConfigureAwait(false);
-        if (permissions.Any(p => p.Name == Name && p.TenantId == TenantId))
+        var permissions = await _store.GetPermissionsAsync(tenantId, ct).ConfigureAwait(false);
+        if (permissions.Any(p => p.Name == Name && p.TenantId == tenantId))
             return ConflictError.AlreadyExists("DynamicPermission", Name);
 
         var permission = new DynamicPermission
@@ -43,7 +52,7 @@ public partial class CreatePermission : DomainAction<Guid, ConflictError>
             Name = Name,
             Description = Description,
             Category = Category,
-            TenantId = TenantId,
+            TenantId = tenantId,
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = _currentUser.Id
         };

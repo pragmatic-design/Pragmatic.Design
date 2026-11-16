@@ -160,6 +160,18 @@ expired), as `AssignUserToGroup` refuses a group whose roles carry one. They ans
 `CreatePermission` refuses (`409`) a name the permission catalog already holds, compared ignoring case: a
 generated permission, or a dynamic one of the caller's tenant or global. A dynamic permission is a new name.
 
+Which tenant an action acts on:
+
+- **The `TenantId` it is given**, when it is given one: in process, that is the caller's choice.
+- **Over HTTP, the request's tenant.** The serializer removes `TenantId` from every body, so an exposed
+  action never receives one, and a caller bound to a tenant acts on the tenant the request resolved
+  (`ITenantContext`).
+- **The global level** for a caller bound to no tenant, the platform, when it names none. That holds over HTTP
+  too, whatever tenant the request carries.
+
+The tenant rule applies after that, unchanged. A caller bound to one tenant is refused (`403`) when the request
+resolved another, and it cannot reach the global level at all: a name it sends is looked for in its tenant.
+
 ## Persisted Model
 
 | Entity | Purpose | Notes |

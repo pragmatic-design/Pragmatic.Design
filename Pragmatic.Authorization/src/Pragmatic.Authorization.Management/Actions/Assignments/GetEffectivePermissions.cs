@@ -4,6 +4,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Authorization.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -30,22 +31,30 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
     public required string UserId { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<Result<IReadOnlyList<string>, IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "get-effective-permissions") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "get-effective-permissions") is { } tenantError)
             return Result<IReadOnlyList<string>, IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
 
         // The roles the user holds through this package: assigned, and given to a group they are a member of (#726), as the providers read them.
-        var roleNames = await HeldRoles.OfAsync(_store, UserId, TenantId, now, ct).ConfigureAwait(false);
+        var roleNames = await HeldRoles.OfAsync(_store, UserId, tenantId, now, ct).ConfigureAwait(false);
 
         // A group's roles the host declares (IGroupRoleStore, e.g. MapGroup) are added for the same memberships.
         // IGroupRoleStore is optional (absent when no group store is configured), so it is
         // resolved lazily instead of being a hard ctor dependency of the invoker.
         if (_rootServices.GetService<IGroupRoleStore>() is { } groupStore)
         {
-            var activeGroups = (await _store.GetUserGroupsAsync(UserId, TenantId, ct).ConfigureAwait(false))
+            var activeGroups = (await _store.GetUserGroupsAsync(UserId, tenantId, ct).ConfigureAwait(false))
                 .Where(a => a.IsInForceAt(now))
                 .Select(a => a.GroupName)
                 .Distinct();
@@ -58,7 +67,7 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
         }
 
         // A deactivated role grants nothing (#725), the answer here included.
-        roleNames.ExceptWith(RoleActivity.Deactivated(await _store.GetRolesAsync(TenantId, ct).ConfigureAwait(false), TenantId));
+        roleNames.ExceptWith(RoleActivity.Deactivated(await _store.GetRolesAsync(tenantId, ct).ConfigureAwait(false), tenantId));
 
         // One store call per role, run in parallel: IRolePermissionStore reads a role at a time, so the
         // cost grows with the number of roles a user holds, not with a single round trip.
@@ -74,7 +83,7 @@ public partial class GetEffectivePermissions : DomainAction<IReadOnlyList<string
         // What this package's roles grant: the rows AssignPermissionsToRole writes, which ManagedRolePermissionProvider grants at runtime.
         // Read from the role store above alone, the answer left out every permission granted here (#725).
         if (roleNames.Count > 0)
-            allPermissions.UnionWith((await _store.GetRolePermissionsAsync(roleNames, TenantId, ct).ConfigureAwait(false))
+            allPermissions.UnionWith((await _store.GetRolePermissionsAsync(roleNames, tenantId, ct).ConfigureAwait(false))
                 .Where(rp => rp.IsInForceAt(now))
                 .Select(rp => rp.PermissionName));
 

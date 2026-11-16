@@ -109,6 +109,8 @@ keeps its rows), `AssignRoleToUser`, `RevokeRoleFromUser`, `CreateGroup`, `ListG
 `authorization.view`. A caller bound to a tenant can act only on its own tenant, and not on the global
 level either: a role, permission or assignment with no tenant holds in **every** tenant, so only a caller
 with no tenant may write one (`TenantBinding`, `403` otherwise).
+Over HTTP the body never carries `TenantId` (the serializer removes it). An exposed action acts on the request's
+tenant for a caller bound to one, and globally for a caller bound to none; in process, a `TenantId` given wins.
 **There is no `RenameRole`.** A role's name also lives in claims, `MapRole` and the host's group mappings, which a rename action
 could not move. Rename with the recipe in the package README:
 1. `CreateRole` the new name, and `AssignPermissionsToRole` with the old role's permissions.
