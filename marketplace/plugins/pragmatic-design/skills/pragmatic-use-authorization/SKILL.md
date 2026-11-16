@@ -109,6 +109,13 @@ keeps its rows), `AssignRoleToUser`, `RevokeRoleFromUser`, `CreateGroup`, `ListG
 `authorization.view`. A caller bound to a tenant can act only on its own tenant, and not on the global
 level either: a role, permission or assignment with no tenant holds in **every** tenant, so only a caller
 with no tenant may write one (`TenantBinding`, `403` otherwise).
+**There is no `RenameRole`.** A role's name also lives in claims, `MapRole` and the host's group mappings, which a rename action
+could not move. Rename with the recipe in the package README:
+1. `CreateRole` the new name, and `AssignPermissionsToRole` with the old role's permissions.
+2. Move each user (`AssignRoleToUser`, then `RevokeRoleFromUser`) and each group (`AssignRoleToGroup`, then `RevokeRoleFromGroup`).
+3. `DeactivateRole` the old one.
+4. Update the claims and mappings that name it.
+
 The package names no engine: its tables are in the importing boundary's database, read through the store
 of that boundary's engine, so reference `Pragmatic.Authorization.Management.EFCore` on EF Core or
 `Pragmatic.Authorization.Management.Engines` on the Sql and documents engines. The boundary's generated

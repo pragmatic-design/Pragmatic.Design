@@ -94,7 +94,29 @@ How do I take back what a role grants?
 - `RevokePermissionsFromRole` ends the role's grants of those permissions in that tenant; the rows stay as history.
 - `DeactivateRole` makes the role grant nothing and leaves it out of its holders' roles, keeping its grants and assignments;
   `ReactivateRole` gives both back. Both act on the role `CreateRole` made in that scope.
-- Renaming a role is not an action yet (#777).
+
+How do I rename a role?
+
+There is no `RenameRole`, deliberately (#777). A role's name is written in places this package does not own:
+
+- the `role` claims an identity provider issues;
+- `authz.MapRole(...)` and the `IRole` types of the host;
+- the group mappings of a host's `IGroupRoleStore`.
+
+An action that renamed the package's rows would leave every one of those on the old name, and promise a rename it did not do. A
+rename is a recipe, with the package's own actions, in the role's scope (global, or one tenant):
+
+1. `CreateRole` with the new name.
+2. `AssignPermissionsToRole` on the new role, with the old one's permissions.
+3. For each holder:
+   - each user: `AssignRoleToUser` with the new role, then `RevokeRoleFromUser` with the old one;
+   - each group of this package: `AssignRoleToGroup` with the new role, then `RevokeRoleFromGroup` with the old one.
+4. `DeactivateRole` on the old one. It then grants nothing, to a holder the recipe missed as well. Its grants and assignments stay as
+   history, and `ReactivateRole` undoes the step if one was missed.
+5. Update what names the role outside this package: the identity provider's role, `MapRole`, and the host's group mappings.
+
+A holder moved this way keeps what the old role granted on the next request, and `GetEffectivePermissions` lists it (measured by the
+Showcase's `ARoleIsRenamedByTheRecipeTests`, with a holder the recipe skips as the control).
 
 How do I give roles to several users at once?
 
