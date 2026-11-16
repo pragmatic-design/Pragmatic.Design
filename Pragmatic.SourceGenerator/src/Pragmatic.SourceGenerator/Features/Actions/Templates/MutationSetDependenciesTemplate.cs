@@ -35,7 +35,7 @@ internal sealed class MutationSetDependenciesTemplate : CSharpTemplate
         XmlSummary("Sets the dependencies for this mutation.");
 
         var parameters = _model.Dependencies
-            .Select(d => new MethodParameter(d.TypeName, TemplateHelpers.ToCamelCase(StripUnderscore(d.FieldName))))
+            .Select(d => new MethodParameter(d.DeclaredTypeName, TemplateHelpers.ToCamelCase(StripUnderscore(d.FieldName))))
             .ToList();
 
         Method("SetDependencies", RenderMethodBody, "void", parameters, AccessModifier.Internal);

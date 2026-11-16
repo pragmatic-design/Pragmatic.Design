@@ -125,7 +125,7 @@ internal sealed partial class InvokerTemplate : CSharpTemplate
         {
             if (IsTheInvokersOwnUnitOfWork(dep))
                 continue;
-            Field(TemplateHelpers.InvokerFieldName(dep.FieldName), dep.TypeName, AccessModifier.Private, isReadOnly: true);
+            Field(TemplateHelpers.InvokerFieldName(dep.FieldName), dep.DeclaredTypeName, AccessModifier.Private, isReadOnly: true);
         }
 
         if (_model.HasCompositeSteps)
@@ -284,16 +284,11 @@ internal sealed partial class InvokerTemplate : CSharpTemplate
         if (_model.HasResilience)
             ctorParams.Add("global::Pragmatic.Resilience.IResiliencePipelineProvider resiliencePipelineProvider");
 
-        foreach (var d in _model.Dependencies)
+        foreach (var d in _model.Dependencies.Where(d => !d.IsOptional))
         {
             if (IsTheInvokersOwnUnitOfWork(d))
                 continue;
-
-            var paramName = TemplateHelpers.ToCamelCase(StripUnderscore(d.FieldName));
-            if (!string.IsNullOrEmpty(d.KeyedServiceType))
-                ctorParams.Add($"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof({d.KeyedServiceType}))] {d.TypeName} {paramName}");
-            else
-                ctorParams.Add($"{d.TypeName} {paramName}");
+            ctorParams.Add(d.ConstructorParameter(TemplateHelpers.ToCamelCase(StripUnderscore(d.FieldName))));
         }
 
         if (_model.HasCompositeSteps)
@@ -302,6 +297,13 @@ internal sealed partial class InvokerTemplate : CSharpTemplate
         ctorParams.Add("global::System.IServiceProvider serviceProvider");
 
         // Optional params last (C# requires optional after required)
+        foreach (var d in _model.Dependencies.Where(d => d.IsOptional))
+        {
+            if (IsTheInvokersOwnUnitOfWork(d))
+                continue;
+            ctorParams.Add(d.ConstructorParameter(TemplateHelpers.ToCamelCase(StripUnderscore(d.FieldName))));
+        }
+
         if (_model.HasFilterOverrides)
             ctorParams.Add("global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle? filterToggle = null");
 

@@ -282,7 +282,7 @@ so a validation attribute on it sees `default`. On a mutation it is also written
 entity has a member of the same name (`[FromClock] DateOnly DecidedOn` → `entity.DecidedOn`); without one
 it is simply the body's to read, and no `PRAG0414` is raised.
 
-- **Dependency injection**: ONLY via uninitialised private fields (`= null!`). The SG detects them and generates `SetDependencies` + injects them in the `Invoker`. There is **no** `[Inject]` or `[FromServices]` for Action/Mutation.
+- **Dependency injection**: ONLY via uninitialised private fields (`= null!`). The SG detects them and generates `SetDependencies` + injects them in the `Invoker`. There is **no** `[Inject]` or `[FromServices]` for Action/Mutation. A field declared nullable (`IService? _x;`) is optional: null in a host that registers nothing for it.
 - `DomainAction<TReturn>` has typed-error variants `DomainAction<TReturn, TError1...TError6>`. `Execute` always returns `Result<TReturn, IError>`.
 - `VoidDomainAction` exposes the `Success` shorthand. Variants `VoidDomainAction<TError1...>`.
 - Generates `{Type}.Invoker.g.cs` (`IDomainActionInvoker<TAction,TReturn>` in DI) and, if there are dependencies, `{Type}.SetDependencies.g.cs`.

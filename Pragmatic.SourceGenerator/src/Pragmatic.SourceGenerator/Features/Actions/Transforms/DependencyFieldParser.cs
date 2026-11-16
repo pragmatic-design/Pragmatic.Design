@@ -47,6 +47,8 @@ internal static class DependencyFieldParser
                         FieldName = field.Name,
                         TypeName = typeName,
                         IsReadOnly = field.IsReadOnly,
+                        // FullyQualifiedFormat drops the annotation, so it is read here, where the symbol still has it.
+                        IsOptional = field.Type.IsReferenceType && field.NullableAnnotation == NullableAnnotation.Annotated,
                         // The two services a boundary registers keyed by its own type. Without the key
                         // the resolution fails at startup naming a generated invoker, which is why
                         // applications reached them through IServiceProvider instead — a runtime lookup
