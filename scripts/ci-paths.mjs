@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /**
- * Whether a change needs the build in CI, from the paths it touches (#199).
+ * What a change needs in CI, from the paths it touches (#199). Three scopes, the widest path deciding:
  *
- * `docs` when every path is Markdown that nothing compiles, packs or syncs: the gate then runs
- * `--tier docs` (the checks that read sources only) and the jobs that build skip their work. `full`
- * otherwise, and whenever there is any doubt. The exceptions are Markdown that the build reads:
- * - the root README.md (the package README of a module without its own) and a module's README.md and
- *   docs/, which are packed into its packages, where Pack & Validate checks them;
- * - anything under marketplace/, since a skill's examples are synced from compiled sources.
+ * - `docs`: Markdown that nothing compiles, packs or syncs, and anything under site/, which no .NET project
+ *   reads (docs.yml builds the site, and the docs tier checks the pages synced into it). The gate runs
+ *   `--tier docs` (the checks that read sources only) and every job that builds skips its work.
+ * - `pack`: Markdown packed into the packages, the root README.md (the package README of a module without
+ *   its own) and a module's README.md and docs/. Pack & Validate builds and checks them; the gate runs
+ *   `--tier docs`, and the container suites skip, since no test reads them.
+ * - `full`: everything else, and whenever there is any doubt. Anything under marketplace/ is `full`, since a
+ *   skill's examples are synced from compiled sources.
  *
  *   node scripts/ci-paths.mjs --base <sha>   # prints the scope, and writes scope=… to $GITHUB_OUTPUT
  *
@@ -18,20 +20,24 @@ import { appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Markdown that no build, pack or sync reads. */
-function needsNoBuild(path) {
+const WIDTH = { docs: 0, pack: 1, full: 2 };
+
+/** The scope one path needs on its own. */
+function scopeOfPath(path) {
   const p = path.replace(/\\/g, '/');
-  if (!p.toLowerCase().endsWith('.md')) return false;
-  if (p.startsWith('marketplace/')) return false;
-  if (p === 'README.md') return false;
-  if (/^Pragmatic\.[^/]+\/README\.md$/.test(p)) return false;
-  if (/^Pragmatic\.[^/]+\/docs\//.test(p)) return false;
-  return true;
+  if (p.startsWith('site/')) return 'docs';
+  if (!p.toLowerCase().endsWith('.md')) return 'full';
+  if (p.startsWith('marketplace/')) return 'full';
+  if (p === 'README.md') return 'pack';
+  if (/^Pragmatic\.[^/]+\/README\.md$/.test(p)) return 'pack';
+  if (/^Pragmatic\.[^/]+\/docs\//.test(p)) return 'pack';
+  return 'docs';
 }
 
-/** `docs` when every changed path needs no build, `full` otherwise; no paths is `full`. */
+/** The widest scope any changed path needs; no paths is `full`. */
 export function scopeOf(paths) {
-  return paths.length > 0 && paths.every(needsNoBuild) ? 'docs' : 'full';
+  if (paths.length === 0) return 'full';
+  return paths.map(scopeOfPath).reduce((widest, scope) => (WIDTH[scope] > WIDTH[widest] ? scope : widest), 'docs');
 }
 
 function changedSince(base) {
@@ -55,7 +61,7 @@ function main(argv) {
     const paths = changedSince(base);
     scope = scopeOf(paths);
     console.log(`${paths.length} path(s) changed since ${base.slice(0, 12)}:`);
-    for (const p of paths) console.log(`  ${needsNoBuild(p) ? 'docs' : 'full'}  ${p}`);
+    for (const p of paths) console.log(`  ${scopeOfPath(p)}  ${p}`);
   } else {
     console.log('no base to compare with: full');
   }
