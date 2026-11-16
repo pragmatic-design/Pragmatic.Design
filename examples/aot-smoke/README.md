@@ -1,6 +1,8 @@
 ﻿# Pragmatic AOT smoke
 
-Native AOT sanity checks for the serialization seam, the HTTP path and logging. Four samples:
+Native AOT checks for the serialization seam, the HTTP path, logging and persistence. Seven samples, each
+published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four are described
+here; the persistence ones in [5–7](#5-7-persistence-on-the-engines):
 
 ## 1. Seam with a hand-authored context (`Pragmatic.Aot.Smoke`)
 
@@ -125,6 +127,24 @@ The redacted types are now roots of the generated JSON context, and the generate
 to the redactor (`IRedactionMap.TypeInfoResolver`). A redacted value is written in camelCase, like every
 other complex value the JSON providers write, on the JIT and under AOT alike.
 
+## 5-7. Persistence on the engines
+
+```pwsh
+pwsh examples/aot-smoke/publish-and-smoke-sql.ps1
+pwsh examples/aot-smoke/publish-and-smoke-documents.ps1
+pwsh examples/aot-smoke/publish-and-smoke-boundaries.ps1
+```
+
+| Sample | What it runs, published Native AOT |
+|---|---|
+| `Pragmatic.Aot.SqlEngine` | The Sql engine on SQLite: queries with the caller's filters, a join to a row the caller cannot see, `WithoutFilters`, `Include`, a declared query, a grid load, a temporal history, a computed scope, a trait's child, a tree, and an `ExecuteUpdate` on the caller's rows |
+| `Pragmatic.Aot.DocumentsMongo` | The documents engine on MongoDB (started in Docker) |
+| `Pragmatic.Aot.Boundaries` | Two boundaries on two engines in one process (Sql on SQLite, documents on MongoDB): the schema applied at start, a write through each, the owner each save stamps, a unit of work per boundary, and another caller's rows hidden |
+
+Each prints one line per check and exits with the number that failed. They run through the boundaries'
+generated registration and repositories, not through an HTTP host: that composition is not measured yet
+(see the table below).
+
 ## Requirements
 
 The native toolchain for the target RID:
@@ -155,8 +175,12 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | The JSON reflection fallback is **off by default** under AOT | ✅ proven, sample 1 — and the check is not vacuous |
 | Multi-error `Result<T, E1, …>` serializes AOT-safely | ✅ generated converter from `[assembly: JsonResultContract<…>]` |
 | Error schemas and discriminators reach OpenAPI without reflection | ✅ generated module initializers; the reflective enricher is gone |
+| Persistence on the **Sql engine** works under AOT | ✅ proven, sample 5 |
+| Persistence on the **documents engine** works under AOT | ✅ proven, sample 6 |
+| **Two boundaries on two engines** in one process | ✅ proven, sample 7 |
+| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ⚠️ not measured: the pieces are proven one by one, no smoke publishes them together |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
-| EF Core | out of scope, stated |
+| EF Core | out of scope, stated: the JIT option |
 
 Five reflective call sites remain outside EF, and all five are already unreachable or fail-loud under
 AOT: the JSON fallback (off by default, proven above), the template accessor and Temporal's resolver

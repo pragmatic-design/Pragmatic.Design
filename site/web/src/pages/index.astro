@@ -152,8 +152,8 @@ builder.WithMetadata(<span class="text-[#c678dd]">new</span> <span class="text-[
             },
             {
               icon: "🚀",
-              title: "AOT-First Design",
-              desc: "The generated code never reflects, and a web host serving generated endpoints is published Native AOT by the gate. EF Core is not AOT-compatible yet, so a host with persistence is not an AOT application today.",
+              title: "Native AOT, Measured",
+              desc: "The generated code never reflects. Generated endpoints and persistence on the Sql and documents engines are each published Native AOT and run by the gate. EF Core stays the JIT option.",
             },
             {
               icon: "📐",
@@ -393,20 +393,23 @@ builder.WithMetadata(<span class="text-[#c678dd]">new</span> <span class="text-[
             </div>
             <div>
               <h2 class="font-heading font-bold text-2xl md:text-3xl mb-4">
-                AOT-First. <span class="text-text-variant">Not Full-Stack Yet.</span>
+                Native AOT, Measured. <span class="text-text-variant">Persistence Included.</span>
               </h2>
               <p class="text-text-variant font-body leading-relaxed mb-4">
                 The code Pragmatic generates never reflects: serialization goes through generated
                 <code class="text-primary font-mono text-sm">JsonTypeInfo</code>, and endpoints are mapped as plain
                 request delegates rather than through ASP.NET's runtime delegate factory.
-                Three smoke applications, a web host serving a generated endpoint among them, are published
-                Native AOT and run by the gate.
+                Seven smoke applications are published Native AOT and run by the gate: a web host serving a
+                generated endpoint, and persistence on the Sql engine, on the documents engine, and on both at once,
+                among them.
               </p>
               <p class="text-text-variant font-body leading-relaxed mb-6">
-                <strong class="text-text">What is not AOT yet.</strong> Entity Framework Core is not fully compatible
-                with trimming and AOT, so a host with persistence is not a Native AOT application today. The generated
-                HTTP client has no JSON context yet. And some runtime code is not trim-safe (reflective fallbacks,
-                configuration binding): it is annotated, and the gate counts it, with a budget that can only go down.
+                <strong class="text-text">What is not measured yet.</strong> The pieces are proven one by one: no smoke
+                yet publishes a single host that serves endpoints, writes through an engine and runs its migrations, so
+                that is the next proof, not a claim. Entity Framework Core is not fully compatible with trimming and AOT:
+                it stays the JIT option. The generated HTTP client carries a JSON context that no smoke publishes yet.
+                And some runtime code is not trim-safe (reflective fallbacks, configuration binding): it is annotated,
+                and the gate counts it, with a budget that can only go down.
               </p>
               <div class="flex flex-wrap gap-3">
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-primary/10 text-primary">
@@ -417,13 +420,21 @@ builder.WithMetadata(<span class="text-[#c678dd]">new</span> <span class="text-[
                   <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                   Generated endpoints: proven under AOT
                 </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-primary/10 text-primary">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Sql &amp; documents engines: proven under AOT
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-[#ffbd2e]/10 text-[#ffbd2e]">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#ffbd2e]"></span>
+                  One composed host: next
+                </span>
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-[#ffbd2e]/10 text-[#ffbd2e]">
                   <span class="w-1.5 h-1.5 rounded-full bg-[#ffbd2e]"></span>
                   Generated client: not yet
                 </span>
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-body bg-[#ffbd2e]/10 text-[#ffbd2e]">
                   <span class="w-1.5 h-1.5 rounded-full bg-[#ffbd2e]"></span>
-                  Persistence: not AOT (EF Core)
+                  EF Core: JIT only
                 </span>
               </div>
             </div>

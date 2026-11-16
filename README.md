@@ -303,18 +303,30 @@ laptop and in CI.
 - **A reference application**: the [Showcase](examples/showcase/), three bounded contexts on
   PostgreSQL, run as one host and as two, exercised end to end over HTTP.
 
-**Native AOT, precisely.** The code the generator emits does not reflect: serialization goes through
+**Native AOT, measured.** The code the generator emits does not reflect: serialization goes through
 generated `JsonTypeInfo`, and generated endpoints are mapped as plain `RequestDelegate`s rather than
-through ASP.NET's runtime delegate factory. Three smoke applications (the serialization seam, a
-generated JSON context, and a web host serving a generated endpoint) are published Native AOT and run
-by the gate. That is not the same as "every Pragmatic application is a Native AOT application":
+through ASP.NET's runtime delegate factory. Seven smoke applications are published Native AOT and run
+by the gate ([`examples/aot-smoke`](examples/aot-smoke/)):
+- the serialization seam;
+- a generated JSON context;
+- logging with declared redaction;
+- a web host serving a generated endpoint;
+- persistence on the Sql engine (SQLite);
+- persistence on the documents engine (MongoDB);
+- both engines at once, two boundaries in one process.
 
-- **EF Core is not fully compatible with trimming and AOT**, and Pragmatic does not test it there, so a
-  host with persistence is not a Native AOT application today.
-- The generated HTTP client has no JSON context yet.
+What that covers, and what it does not yet:
+
+- **Persistence on the Sql and documents engines works under Native AOT**: queries, filters, scopes,
+  includes and commands, and a unit of work per boundary. **EF Core** is not fully compatible with
+  trimming and AOT, and Pragmatic does not test it there: it is the JIT option.
+- **The pieces are proven one by one.** No smoke yet publishes a single host that serves endpoints,
+  writes through an engine and runs its migrations. Until one does, "a Pragmatic application on the
+  engines is a Native AOT application" is the goal, not a measurement.
+- The generated HTTP client carries a JSON context, but no smoke publishes one Native AOT yet.
 - Some runtime code is not trim-safe: reflective fallbacks, configuration binding. It is annotated, and
-  the gate counts it: 194 trim/AOT warnings across Pragmatic assemblies, a number that is only allowed
-  to fall.
+  the gate counts it: 98 trim/AOT warnings across Pragmatic assemblies (2026-11-16), a number that is
+  only allowed to fall.
 
 **Maturity.** This is `1.0.0-alpha`. A core set is stable: Abstractions, Ensure, Result,
 Specification, Mapping, Validation, Temporal, Storage and the core of Persistence. The other modules are
