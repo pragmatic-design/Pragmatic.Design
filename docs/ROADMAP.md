@@ -17,13 +17,31 @@ Stable within 1.0.0-alpha: Abstractions, Ensure, Result, Specification, Mapping,
 Storage, and the core entity, repository, query and mutation surface of Persistence. The other modules
 are functional or preview, as their README says.
 
+## Toward 1.0.0-beta
+
+The beta is the release where the platform underneath stops moving: the .NET version it supports is
+measured, nothing it ships is a native binary, and Native AOT on the engines is a measurement rather than
+a goal. Each item is an issue with acceptance criteria; the beta ships when they are closed.
+
+- **.NET 11** (#820): applications on `net11.0` measured against the packages, the repository built with
+  the .NET 11 SDK in CI, and EF Core 11 either supported or stated unsupported. .NET 10 stays the target:
+  it is LTS, and both are supported until 2028-11-14.
+- **PDF and imaging without native libraries** (#821): managed engines replace the Rust libraries behind
+  the same public API, with the modules' tests as the parity suite. Which image formats stay is decided
+  first.
+- **One composed host under Native AOT** (#818): a smoke that publishes a host serving endpoints and
+  writing through the Sql engine. Until it is green, AOT is claimed per piece, not per application.
+- **What the engines cover against EF Core, measured** (#819): every Showcase test either runs on the Sql
+  and documents engines or names the issue that says why not.
+
 ## Before 1.0
 
 - **Settle the functional modules.** Names and shapes that are still moving are fixed, and each module's
   status becomes Stable.
 - **Documents:** parsing works in memory today; streaming for large files.
 - **Agent:** the daemon runs as a regular .NET executable; a Native AOT build.
-- **Imaging:** the macOS native binary is built and stamped in CI; tests that run it on macOS.
+- **Imaging:** the macOS native binary is built and stamped in CI; tests that run it on macOS. Moot once
+  #821 removes the native library.
 
 ## Later
 
