@@ -120,9 +120,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/fetch-native.mjs --rid linux-x64
 
-      # A pull request or merge group that changes only Markdown nothing builds runs the gate's
-      # source-only checks (`--tier docs`) and nothing that compiles (#199, scripts/ci-paths.mjs). Any
-      # other event, and any doubt, is `full`. Decided in each job rather than by skipping jobs: a job
+      # A pull request or merge group whose scope is not `full` runs the gate's source-only checks
+      # (`--tier docs`) and nothing that compiles (#199, scripts/ci-paths.mjs): Markdown nothing builds and
+      # the site are `docs`, packed Markdown is `pack` and is built and checked by Pack & Validate instead.
+      # Any other event, and any doubt, is `full`. Decided in each job rather than by skipping jobs: a job
       # skipped whole reports a check of its own name, and for the container shards' matrix that is not
       # the three checks the branch rules wait for.
       - name: Classify the change
@@ -130,13 +131,13 @@ jobs:
         run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
 
       - name: Setup .NET
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: global.json
 
       - name: Restore
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       # The SBOM and the clean vulnerability verdict of the newest green run. supply-chain.mjs decides
@@ -145,7 +146,7 @@ jobs:
       # three minutes of the gate (#197). Saved under this run's id, so a newer verdict is never kept
       # out by an older key, and restored by prefix, so the newest one is what the next run sees.
       - name: Restore the supply-chain verdict
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -155,7 +156,7 @@ jobs:
           restore-keys: supply-chain-
 
       - name: Gate
-        run: node scripts/check.mjs --tier ${{ steps.change.outputs.scope == 'docs' && 'docs' || 'full' }} --keep-going
+        run: node scripts/check.mjs --tier ${{ steps.change.outputs.scope == 'full' && 'full' || 'docs' }} --keep-going
 
       # The log prints one capped line per failed test; the record beside it holds the message and the
       # stack. A failure that does not reproduce on a re-run is only diagnosable from that record.
@@ -171,7 +172,7 @@ jobs:
       # The CycloneDX SBOMs the gate just wrote, kept for release.yml to attach to the GitHub Release: it
       # calls this workflow, so the artifact is in its own run. Small, and kept a week.
       - name: Keep the SBOM
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
@@ -240,8 +241,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/fetch-native.mjs --rid linux-x64
 
-      # As in the gate job: a Markdown-only change runs no container suite, and the shard reports green
-      # under its own name having done nothing else.
+      # As in the gate job: a change whose scope is not `full` runs no container suite, and the shard
+      # reports green under its own name having done nothing else.
       - name: Classify the change
         id: change
         run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
@@ -251,31 +252,31 @@ jobs:
       # Postgres container could not write its init file, in the same run: the shape of a full disk,
       # though nothing in that log measured it. The df lines here and after the suites do.
       - name: Free disk space
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         run: |
           df -h /
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
           df -h /
 
       - name: Setup .NET
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: global.json
 
       - name: Restore
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         run: dotnet restore Pragmatic.Design.slnx --locked-mode
 
       # The Sql suites' fixture builds this image through Testcontainers, which reports only "has not been
       # created" when the build fails and drops Docker's output (#698). Built here, a failure prints why, and
       # the fixture finds the tag it asks for.
       - name: SQL Server image with full-text
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         run: docker build --progress=plain -t pragmatic-spike/mssql-fts:2025 Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts
 
       - name: Container suites
-        if: steps.change.outputs.scope != 'docs'
+        if: steps.change.outputs.scope == 'full'
         run: node scripts/check.mjs --tier docker --shard ${{ matrix.shard }}/3 --keep-going
 
       - name: Keep the failure record
@@ -288,7 +289,7 @@ jobs:
           retention-days: 30
 
       - name: Disk after the suites
-        if: always() && steps.change.outputs.scope != 'docs'
+        if: always() && steps.change.outputs.scope == 'full'
         run: |
           df -h /
           docker system df

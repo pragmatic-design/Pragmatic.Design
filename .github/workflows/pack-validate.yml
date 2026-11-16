@@ -116,9 +116,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/fetch-native.mjs --rid all ${{ inputs.build-native && format('--run-id {0}', github.run_id) || '' }}
 
-      # A Markdown-only change packs nothing (#199, scripts/ci-paths.mjs): the Markdown that is packed, a
-      # module's README and docs/ and the root README, classifies as `full`, so this job still validates
-      # it whenever it changes.
+      # A `docs` change packs nothing (#199, scripts/ci-paths.mjs). The Markdown that is packed, a module's
+      # README and docs/ and the root README, classifies as `pack`, so this job still builds and validates
+      # it whenever it changes, while the gate and the container suites skip their work.
       - name: Classify the change
         id: change
         run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
