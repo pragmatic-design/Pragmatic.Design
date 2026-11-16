@@ -30,6 +30,7 @@ public static class OperationScope
     // whichever branch happened to run last.
     private static readonly AsyncLocal<string?> CurrentName = new();
     private static readonly AsyncLocal<string?> CurrentCorrelation = new();
+    private static readonly AsyncLocal<string?> CurrentOrigin = new();
 
     /// <summary>
     ///     The operation being executed, fully qualified, or <see langword="null" /> outside one.
@@ -50,6 +51,16 @@ public static class OperationScope
     /// </remarks>
     public static string? Correlation => CurrentCorrelation.Value;
 
+    /// <summary>
+    ///     The outermost operation of the flow, fully qualified: the one the others are nested in, or <see cref="Current" /> itself when
+    ///     nothing is nested, and <see langword="null" /> outside one (#772).
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="Current" /> names the innermost operation, so an import action that invokes a mutation recorded the mutation and nothing
+    ///     of the import that started it. Set with <see cref="Correlation" />, by the first operation of the flow, and dropped with it.
+    /// </remarks>
+    public static string? Origin => CurrentOrigin.Value;
+
     /// <summary>Declares the operation for the current flow until the returned handle is disposed.</summary>
     /// <param name="operation">
     ///     The operation type's full name. A blank name is ignored rather than recorded as one, so a
@@ -67,7 +78,10 @@ public static class OperationScope
 
         var starts = CurrentCorrelation.Value is null;
         if (starts)
+        {
             CurrentCorrelation.Value = Guid.NewGuid().ToString("N");
+            CurrentOrigin.Value = operation;
+        }
 
         return new Scope(previous, entered: true, startedCorrelation: starts);
     }
@@ -86,7 +100,10 @@ public static class OperationScope
             if (entered)
                 CurrentName.Value = previous;
             if (startedCorrelation)
+            {
                 CurrentCorrelation.Value = null;
+                CurrentOrigin.Value = null;
+            }
         }
     }
 }

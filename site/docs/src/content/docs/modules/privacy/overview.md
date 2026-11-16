@@ -165,6 +165,7 @@ at the time or it does not exist.
 
 **The trail names the operation, not only the change.** Every audit entry carries `BusinessOperation` (
 the fully qualified query, mutation or action that was running), which is the same key the register uses.
+When that operation was nested in another, `OriginOperation` names the outermost (the import or job that started it).
 Without it the register described what *can* touch personal data and the trail recorded that something
 did, with no way to join them. It is read from an ambient the invokers set, deliberately not from
 `Activity.Current`: `StartActivity` returns null when no listener is registered, and a field populated

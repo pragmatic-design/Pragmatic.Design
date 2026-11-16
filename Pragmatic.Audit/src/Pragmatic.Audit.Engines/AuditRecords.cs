@@ -16,6 +16,7 @@ internal static class AuditRecords
         record.CorrelationId = entry.CorrelationId;
         record.BusinessOperation = entry.BusinessOperation;
         record.OnBehalfOfRef = entry.OnBehalfOfRef;
+        record.OriginOperation = entry.OriginOperation;
         record.TargetType = entry.TargetType;
         record.TargetId = entry.TargetId;
         record.Outcome = entry.Outcome;
@@ -38,6 +39,7 @@ internal static class AuditRecords
         CorrelationId = record.CorrelationId,
         BusinessOperation = record.BusinessOperation,
         OnBehalfOfRef = record.OnBehalfOfRef,
+        OriginOperation = record.OriginOperation,
         TargetType = record.TargetType,
         TargetId = record.TargetId,
         Outcome = record.Outcome,

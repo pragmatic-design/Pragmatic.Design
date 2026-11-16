@@ -56,6 +56,8 @@ public static class AuditedChange
             // the ambient the invokers set rather than from Activity.Current, which is null
             // wherever no tracing listener is registered.
             BusinessOperation = OperationScope.Current,
+            // The operation the current one is nested in (#772), and null when it is itself the outermost: it would only repeat it.
+            OriginOperation = OperationScope.Origin is { } origin && origin != OperationScope.Current ? origin : null,
             TargetType = targetType,
             TargetId = targetId,
             Outcome = AuditOutcome.Success,

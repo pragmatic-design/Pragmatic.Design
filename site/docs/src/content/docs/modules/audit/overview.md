@@ -176,6 +176,20 @@ because the same entries under the same predecessor always seal to the same hash
 carrying the hash the next segment still links to. It never removes individual entries: that would
 change a sealed segment's root, so retention would be indistinguishable from tampering.
 
+## Which operation an entry records
+
+An entry records two operations:
+
+- `BusinessOperation` is the operation that was running when the row changed, the innermost one.
+- `OriginOperation` is the operation it was nested in, the outermost of the flow. Examples: an import action that invoked the mutation, a job, another module's operation.
+
+`OriginOperation` is null when the operation was nested in nothing (it would only repeat `BusinessOperation`), and outside any operation. `CorrelationId` ties the entries of one outer operation together, and `OriginOperation` names it.
+
+⚠️ **Segments sealed before `OriginOperation` existed no longer verify.** The field is inside the entry hash, appended last, as
+`BusinessOperation` and `OnBehalfOfRef` were before it: a field outside the hash is one anyone with write access could rewrite while
+the rest verified. Appending it changes every entry's hash, so a trail sealed by an earlier version reports those segments as broken.
+This was accepted before 1.0 (#772); re-seal nothing, and read the report of those segments in that light.
+
 ## What this does not give you
 
 Tamper-**evidence**, not tamper-proofing. Anyone with write access to the database can still alter a

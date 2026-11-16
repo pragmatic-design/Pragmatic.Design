@@ -45,6 +45,9 @@ public sealed class AuditEntryRow : IAuditEntryRecord
     public string? OnBehalfOfRef { get; set; }
 
     [MaxLength(256)]
+    public string? OriginOperation { get; set; }
+
+    [MaxLength(256)]
     public string? TargetType { get; set; }
 
     [MaxLength(128)]

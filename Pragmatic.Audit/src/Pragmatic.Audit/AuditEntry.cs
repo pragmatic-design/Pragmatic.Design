@@ -94,6 +94,23 @@ public sealed class AuditEntry
     /// </remarks>
     public string? BusinessOperation { get; set; }
 
+    /// <summary>
+    ///     The operation <see cref="BusinessOperation" /> was nested in, the outermost of the flow, fully qualified — <c>null</c> when
+    ///     <see cref="BusinessOperation" /> is itself the outermost, or outside any operation (#772).
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="BusinessOperation" /> is the innermost operation: an import action that invokes a mutation writes entries whose
+    ///         operation is the mutation. This names the import — a job, an import, another module's operation — which the
+    ///         <see cref="CorrelationId" /> groups the entries of but cannot name.
+    ///     </para>
+    ///     <para>
+    ///         ⚠️ Inside the hash, appended last as <see cref="OnBehalfOfRef" /> was: segments sealed before this field verify as broken
+    ///         (<see cref="AuditHashing" />).
+    ///     </para>
+    /// </remarks>
+    public string? OriginOperation { get; set; }
+
     /// <summary>Type of the thing acted upon, e.g. <c>Order</c>.</summary>
     public string? TargetType { get; set; }
 

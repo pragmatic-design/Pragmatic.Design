@@ -3295,6 +3295,14 @@
           "renamedFrom": null
         },
         {
+          "name": "OriginOperation",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
           "name": "TargetType",
           "sqlType": "varchar(256)",
           "isNullable": true,
@@ -3896,5 +3904,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "7c254d46d588"
+  "hash": "37617aeecf02"
 }

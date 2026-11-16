@@ -1005,6 +1005,14 @@
           "renamedFrom": null
         },
         {
+          "name": "OriginOperation",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
           "name": "TargetType",
           "sqlType": "varchar(256)",
           "isNullable": true,
@@ -1507,5 +1515,5 @@
   "databaseName": "AppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "bcfc91d6a556"
+  "hash": "3fd87142fbac"
 }

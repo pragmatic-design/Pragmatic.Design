@@ -733,6 +733,7 @@ internal static partial class SchemaMetadataTransform
             new ColumnSchemaModel("CorrelationId", Str(64), true, false),
             new ColumnSchemaModel("BusinessOperation", Str(256), true, false),
             new ColumnSchemaModel("OnBehalfOfRef", Str(128), true, false),
+            new ColumnSchemaModel("OriginOperation", Str(256), true, false),
             new ColumnSchemaModel("TargetType", Str(256), true, false),
             new ColumnSchemaModel("TargetId", Str(128), true, false),
             new ColumnSchemaModel("Outcome", SqlTypeMapper.MapToSqlType("System.Int32", provider), false, false),

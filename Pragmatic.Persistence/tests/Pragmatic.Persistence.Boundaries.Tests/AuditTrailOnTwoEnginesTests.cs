@@ -10,6 +10,7 @@ using Pragmatic.Persistence.Documents;
 using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Persistence.Sql;
+using Pragmatic.Pipeline;
 using PragmaticEntities.Tests;
 using Xunit;
 
@@ -27,7 +28,7 @@ public sealed class AuditTrailOnTwoEnginesTests(MongoServer mongo) : IClassFixtu
         CREATE TABLE "Invoices" ("PersistenceId" TEXT PRIMARY KEY, "Number" TEXT NOT NULL);
         CREATE TABLE "__AuditEntries" ("Seq" INTEGER PRIMARY KEY, "SegmentId" TEXT NOT NULL, "OccurredAt" INTEGER NOT NULL, "Category" INTEGER NOT NULL,
             "Operation" TEXT NOT NULL, "ActorRef" TEXT NULL, "SubjectRef" TEXT NULL, "TenantId" TEXT NULL, "CorrelationId" TEXT NULL,
-            "BusinessOperation" TEXT NULL, "OnBehalfOfRef" TEXT NULL, "TargetType" TEXT NULL, "TargetId" TEXT NULL, "Outcome" INTEGER NOT NULL,
+            "BusinessOperation" TEXT NULL, "OnBehalfOfRef" TEXT NULL, "OriginOperation" TEXT NULL, "TargetType" TEXT NULL, "TargetId" TEXT NULL, "Outcome" INTEGER NOT NULL,
             "ValueHash" BLOB NULL, "Detail" TEXT NULL);
         CREATE TABLE "__AuditSegments" ("SegmentId" TEXT PRIMARY KEY, "OpenedAt" INTEGER NOT NULL, "SealedAt" INTEGER NULL, "EntryCount" INTEGER NOT NULL,
             "MerkleRoot" BLOB NULL, "PreviousHash" BLOB NULL, "SegmentHash" BLOB NULL);
@@ -49,8 +50,13 @@ public sealed class AuditTrailOnTwoEnginesTests(MongoServer mongo) : IClassFixtu
             var archive = writes.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(ArchiveBoundary));
             var letters = writes.ServiceProvider.GetRequiredService<IRepository<Letter>>();
             // A second apart: on the documents engine an entry's order is its instant, and entries of one instant are ordered by their id.
-            letters.Add(letter);
-            await archive.SaveChangesAsync();
+            // The first inside two nested operations, so its entry carries an origin (#772), which the seal below covers too.
+            using (OperationScope.Enter("App.Imports.ImportLettersAction"))
+            using (OperationScope.Enter("App.Letters.FileLetterMutation"))
+            {
+                letters.Add(letter);
+                await archive.SaveChangesAsync();
+            }
             clock.Now += TimeSpan.FromSeconds(1);
             letter.Subject = "Renewal, signed";
             await archive.SaveChangesAsync();
@@ -58,9 +64,17 @@ public sealed class AuditTrailOnTwoEnginesTests(MongoServer mongo) : IClassFixtu
             letters.Remove(letter);
             await archive.SaveChangesAsync();
 
-            writes.ServiceProvider.GetRequiredService<IRepository<Invoice>>().Add(new Invoice { Number = "F-1" });
-            await writes.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(LedgerBoundary)).SaveChangesAsync();
+            using (OperationScope.Enter("App.Imports.ImportLettersAction"))
+            using (OperationScope.Enter("App.Ledger.IssueInvoiceMutation"))
+            {
+                writes.ServiceProvider.GetRequiredService<IRepository<Invoice>>().Add(new Invoice { Number = "F-1" });
+                await writes.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(LedgerBoundary)).SaveChangesAsync();
+            }
         }
+
+        // The origin is written by each engine (#772): in SQLite's column, and read back from the documents' entry below.
+        Assert.Equal(1, Scalar(invoices, "SELECT COUNT(*) FROM \"__AuditEntries\" WHERE \"TargetType\" = 'Invoice' "
+            + "AND \"BusinessOperation\" = 'App.Ledger.IssueInvoiceMutation' AND \"OriginOperation\" = 'App.Imports.ImportLettersAction'"));
 
         // The invoice's entry is in its own database, not in the letters'; the letters' entries are not in SQLite.
         Assert.Equal(1, Scalar(invoices, "SELECT COUNT(*) FROM \"__AuditEntries\" WHERE \"TargetType\" = 'Invoice' AND \"Operation\" = 'Data.EntityCreated' AND \"ActorRef\" = 'anna'"));
@@ -71,6 +85,8 @@ public sealed class AuditTrailOnTwoEnginesTests(MongoServer mongo) : IClassFixtu
         var page = await reader.QueryAsync(new AuditQuery { TargetId = letter.PersistenceId.ToString() });
         Assert.Equal([AuditedChange.EntityDeleted, AuditedChange.EntityUpdated, AuditedChange.EntityCreated], page.Entries.Select(e => e.Operation)); // newest first
         Assert.All(page.Entries, e => Assert.Equal(("Letter", "anna", AuditCategory.Data), (e.TargetType, e.ActorRef, e.Category)));
+        Assert.Equal(("App.Letters.FileLetterMutation", "App.Imports.ImportLettersAction"), (page.Entries[2].BusinessOperation, page.Entries[2].OriginOperation));
+        Assert.Null(page.Entries[1].OriginOperation); // the later writes ran in no operation
         Assert.Equal(3, (await reader.QueryAsync(new AuditQuery())).TotalCount);
 
         // Sealed one grace period after its window closes, and verified intact.

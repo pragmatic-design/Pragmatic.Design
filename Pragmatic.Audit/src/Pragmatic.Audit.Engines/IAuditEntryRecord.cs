@@ -25,6 +25,8 @@ internal interface IAuditEntryRecord
 
     string? OnBehalfOfRef { get; set; }
 
+    string? OriginOperation { get; set; }
+
     string? TargetType { get; set; }
 
     string? TargetId { get; set; }
