@@ -65,7 +65,9 @@ using (toggle.UseMode(FilterMode.Raw))
 
 Check("properties of the caller", new[] { "RIVA" }, await session.Query<Property>().Select(p => p.Name).ToListAsync());
 Check("reservations of the caller", 2, await session.Query<Reservation>().CountAsync());
-Check("a join to a property the caller cannot see", new[] { "RIVA" }, await session.Query<Reservation>().Select(r => r.Property.Name).ToListAsync());
+// A to-one navigation is read past the target's owner and scopes, as on EF Core (#580): MARE is another desk's, and reads.
+Check("a join reads a property of another scope", new[] { "MARE", "RIVA" },
+    (await session.Query<Reservation>().Select(r => r.Property.Name).ToListAsync()).Order().ToList());
 Check("properties with a review the caller may read", new[] { "MARE", "RIVA" },
     await session.Query<Property>().WithoutFilters().Where(p => p.Reviews.Any()).OrderBy(p => p.Name).Select(p => p.Name).ToListAsync());
 var included = await session.Query<Property>().Include(p => p.Reviews).FirstOrDefaultAsync();

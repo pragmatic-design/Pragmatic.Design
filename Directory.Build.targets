@@ -16,7 +16,7 @@
   <Target Name="PinILLinkPack" BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <KnownILLinkPack Condition="'%(Identity)' == 'Microsoft.NET.ILLink.Tasks' AND '%(TargetFramework)' == 'net10.0'">
-        <ILLinkPackVersion>10.0.11</ILLinkPackVersion>
+        <ILLinkPackVersion>10.0.15</ILLinkPackVersion>
       </KnownILLinkPack>
     </ItemGroup>
   </Target>
