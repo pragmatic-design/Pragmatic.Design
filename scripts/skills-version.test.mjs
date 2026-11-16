@@ -64,6 +64,43 @@ test('set refuses a version that was never released', () => {
   assert.throws(() => setVersion(files(), '1.0.0-alpha.9', { tagExists: () => false }), /nuget-v1\.0\.0-alpha\.9/);
 });
 
+// Before a release the skills say what is not in the released packages yet. Moved by `set`, "not in alpha.1" would
+// read "not in alpha.2" about the very release that ships it: a false statement, written by the release step.
+for (const note of [
+  'the engine (not in 1.0.0-alpha.1); otherwise',
+  'Neither package is in 1.0.0-alpha.1: the engine ships later.',
+  'None of these packages is in 1.0.0-alpha.1: later.',
+  '<!-- New after alpha.1: on a local feed until the next release -->',
+  // Wrapped where the prose wraps: the note starts on the line where "not in" is.
+  'reference `Pragmatic.Audit.Engines` (not in\n1.0.0-alpha.1). The boundary\'s saves write the entries',
+]) {
+  test(`set refuses while a skill says something is not in the current version: ${note}`, () => {
+    const withNote = files();
+    withNote.set(SKILL, withNote.get(SKILL) + `\n${note}\n`);
+
+    assert.throws(() => setVersion(withNote, '1.0.0-alpha.2', { tagExists: () => true }),
+      (e) => e.message.includes(`${SKILL}:4`) && e.message.includes('1.0.0-alpha.1'));
+  });
+}
+
+test('a note in the documentation the site publishes refuses set too, and the documentation is not rewritten', () => {
+  const doc = 'Pragmatic.Testing/docs/worker-host.md';
+  const documents = new Map([[doc, '# Worker host\n\nThe package is not in 1.0.0-alpha.1: it ships with the next release.\n']]);
+
+  assert.throws(() => setVersion(files(), '1.0.0-alpha.2', { tagExists: () => true, documents }),
+    (e) => e.message.includes(`${doc}:3`));
+
+  const { changed } = setVersion(files(), '1.0.0-alpha.2', { tagExists: () => true, documents: new Map([[doc, 'nothing pending\n']]) });
+  assert.equal(changed.has(doc), false);
+});
+
+test('the notes about an unreleased feature do not fail the check: before the release they are true', () => {
+  const withNote = files();
+  withNote.set(SKILL, withNote.get(SKILL) + '\nthe engine (not in 1.0.0-alpha.1); otherwise\n');
+
+  assert.deepEqual(versionProblems(withNote), []);
+});
+
 test('set refuses to start from skills that already disagree', () => {
   assert.throws(() => setVersion(files({ other: '1.0.0-alpha.2' }), '1.0.0-alpha.3', { tagExists: () => true }), /more than one/);
 });

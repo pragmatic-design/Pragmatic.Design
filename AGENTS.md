@@ -89,7 +89,9 @@ an installed copy of the skills updates only when that number moves.
 
 After a package release (`nuget-v<version>` tagged), `node scripts/skills-version.mjs set <version>` moves
 every package version the skills name and raises the plugin's version in both manifests. The gate fails
-when the skills name more than one version or the two manifests disagree.
+when the skills name more than one version or the two manifests disagree. `set` refuses, and lists each
+one, while the skills or the published docs still say something is not in the current version ("not in
+1.0.0-alpha.3"): remove those notes first, since the release is what makes them false.
 
 ## Conventions worth knowing before your first change
 

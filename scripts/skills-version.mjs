@@ -14,11 +14,13 @@
  *                                                    and the plugin's patch version goes up in both manifests
  *
  * `set` refuses a version with no `nuget-v` tag in the local repository, so the skills never point an agent at
- * packages that were not released. The tags are local knowledge: CI checks out without them, which is why
+ * packages that were not released. It also refuses while the skills or the published docs still say something is
+ * not in the current version ("not in 1.0.0-alpha.3", "new after alpha.3"): moved, the note would say it of the
+ * release that ships it. The notes go first, by hand. The tags are local knowledge: CI checks out without them, which is why
  * `check` does not compare against them.
  */
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -78,6 +80,36 @@ export function versionProblems(files) {
   return problems;
 }
 
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Where the skills say something is not in `version` yet, as `path:line: text`.
+ *
+ * Before a release those notes are true ("the engine (not in 1.0.0-alpha.3)"). Moved by `set` they would say the
+ * same of the release that ships it, so `set` refuses while any is left, and `check` does not look for them.
+ */
+export function unreleasedNotes(files, version) {
+  const full = escapeRegExp(version);
+  const short = escapeRegExp(version.replace(/^\d+\.\d+\.\d+-/, ''));
+  // `\s+` before the version and not a space: prose wraps, and "(not in" may end a line the version starts.
+  const notes = [
+    new RegExp(`\\b(?:not|neither|none)\\b[^\\n]{0,80}?\\bin\\s+${full}\\b`, 'gi'),
+    new RegExp(`\\bafter\\s+(?:${full}|${short})\\b`, 'gi'),
+  ];
+
+  const found = [];
+  for (const [path, text] of files) {
+    if (Object.values(MANIFESTS).includes(path)) continue;
+    const lines = text.split(/\r?\n/);
+    const starts = new Set();
+    for (const note of notes)
+      for (const m of text.matchAll(note)) starts.add(text.slice(0, m.index).split('\n').length);
+    for (const line of [...starts].sort((a, b) => a - b))
+      found.push(`    ${path}:${line}: ${lines[line - 1].trim()}`);
+  }
+  return found;
+}
+
 /** `1.2.3` → `1.2.4`. */
 export function nextPatch(version) {
   const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
@@ -89,7 +121,7 @@ export function nextPatch(version) {
  * The files `set` rewrites, as a map of path to new text, with the version moved from and the plugin version
  * moved. Throws when the version was never tagged, or when the skills do not start from one version.
  */
-export function setVersion(files, version, { tagExists }) {
+export function setVersion(files, version, { tagExists, documents = new Map() }) {
   if (!tagExists(`nuget-v${version}`))
     throw new Error(`no tag nuget-v${version}: release the packages first, then move the skills to them`);
 
@@ -99,6 +131,13 @@ export function setVersion(files, version, { tagExists }) {
   const versions = [...packageVersions(files).keys()];
   if (versions.length === 0) throw new Error('the skills name no package version');
   const [from] = versions;
+
+  // The documentation the site publishes says the same kind of thing; it is read for the notes, never rewritten.
+  const notes = from === version ? [] : unreleasedNotes(new Map([...files, ...documents]), from);
+  if (notes.length > 0)
+    throw new Error(
+      `the skills still say something is not in ${from}, which the move to ${version} would make false. ` +
+      `Remove each note (what it describes ships with ${version}), then run set again:\n${notes.join('\n')}`);
 
   const changed = new Map();
   if (from !== version) {
@@ -130,6 +169,28 @@ function readMarketplace(root) {
   return files;
 }
 
+/** The documentation the site publishes: each module's README and docs/, and the repository's docs/. */
+function readDocuments(root) {
+  const files = new Map();
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (name.endsWith('.md')) files.set(relative(root, full).replaceAll('\\', '/'), readFileSync(full, 'utf8'));
+    }
+  };
+  for (const name of readdirSync(root)) {
+    if (name === 'docs') walk(join(root, name));
+    else if (name.startsWith('Pragmatic.') && statSync(join(root, name)).isDirectory()) {
+      const readme = join(root, name, 'README.md');
+      const docs = join(root, name, 'docs');
+      if (existsSync(readme)) files.set(relative(root, readme).replaceAll('\\', '/'), readFileSync(readme, 'utf8'));
+      if (existsSync(docs)) walk(docs);
+    }
+  }
+  return files;
+}
+
 function tagExists(tag) {
   return execFileSync('git', ['-C', ROOT, 'tag', '-l', tag], { encoding: 'utf8' }).trim() === tag;
 }
@@ -151,7 +212,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 
   if (command === 'set' && version) {
     try {
-      const { changed, from, plugin } = setVersion(files, version, { tagExists });
+      const { changed, from, plugin } = setVersion(files, version, { tagExists, documents: readDocuments(ROOT) });
       for (const [path, text] of changed) writeFileSync(join(ROOT, path), text);
       console.log(`${from} → ${version} in ${changed.size - 2} file(s); plugin ${plugin.from} → ${plugin.to} in both manifests`);
       process.exit(0);
