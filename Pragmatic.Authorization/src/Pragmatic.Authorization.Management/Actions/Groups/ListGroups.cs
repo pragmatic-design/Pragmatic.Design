@@ -2,6 +2,7 @@ using Pragmatic.Actions.Abstractions;
 using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 
 namespace Pragmatic.Authorization.Management.Actions.Groups;
@@ -20,16 +21,24 @@ public partial class ListGroups : DomainAction<IReadOnlyList<GroupInfo>>
 
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<Result<IReadOnlyList<GroupInfo>, IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "list-groups") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "list-groups") is { } tenantError)
             return Result<IReadOnlyList<GroupInfo>, IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
-        var groups = await _store.GetGroupsAsync(TenantId, ct).ConfigureAwait(false);
+        var groups = await _store.GetGroupsAsync(tenantId, ct).ConfigureAwait(false);
         var roles = groups.Count == 0
             ? []
-            : (await _store.GetGroupRolesAsync([.. groups.Select(g => g.Name)], TenantId, ct).ConfigureAwait(false))
+            : (await _store.GetGroupRolesAsync([.. groups.Select(g => g.Name)], tenantId, ct).ConfigureAwait(false))
                 .Where(gr => gr.IsInForceAt(now))
                 .ToList();
 

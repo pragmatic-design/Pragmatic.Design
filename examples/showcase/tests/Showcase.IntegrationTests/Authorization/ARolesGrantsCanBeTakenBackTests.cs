@@ -27,7 +27,7 @@ namespace Showcase.IntegrationTests.Authorization;
 ///     listed what the package granted.
 ///     <para>
 ///         The roles here are global, managed by a platform operator: the serializer removes <c>TenantId</c> from every body
-///         (<c>ReservedWireNames</c>), so an exposed management action cannot name a tenant over HTTP (#778). A global role's grants
+///         (<c>ReservedWireNames</c>), and a caller bound to no tenant acts globally over HTTP (#778). A global role's grants
 ///         reach its holders in the test tenant, where the probe is asked.
 ///     </para>
 /// </remarks>

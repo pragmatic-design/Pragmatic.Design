@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Management.Entities;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -21,20 +22,28 @@ public partial class CreateGroup : DomainAction<Guid, ConflictError>
     public string? Description { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<Result<Guid, IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "create-group") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "create-group") is { } tenantError)
             return Result<Guid, IError>.Failure(tenantError);
 
-        var groups = await _store.GetGroupsAsync(TenantId, ct).ConfigureAwait(false);
-        if (groups.Any(g => g.Name == Name && g.TenantId == TenantId))
+        var groups = await _store.GetGroupsAsync(tenantId, ct).ConfigureAwait(false);
+        if (groups.Any(g => g.Name == Name && g.TenantId == tenantId))
             return ConflictError.AlreadyExists("DynamicGroup", Name);
 
         var group = new DynamicGroup
         {
             Name = Name,
             Description = Description,
-            TenantId = TenantId,
+            TenantId = tenantId,
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = _currentUser.Id
         };

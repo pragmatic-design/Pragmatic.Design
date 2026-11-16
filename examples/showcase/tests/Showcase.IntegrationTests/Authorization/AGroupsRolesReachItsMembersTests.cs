@@ -26,8 +26,8 @@ namespace Showcase.IntegrationTests.Authorization;
 ///     Before #726 the package had a membership table nothing wrote, and no group could be given a role: groups could not be used.
 ///     <para>
 ///         The groups and roles here are global, managed by a platform operator, as in <see cref="ARolesGrantsCanBeTakenBackTests" />: the
-///         serializer removes <c>TenantId</c> from every body (<c>ReservedWireNames</c>), so an exposed management action cannot name a tenant
-///         over HTTP (#778). The rule for a caller bound to a tenant is invoked in process, where the tenant can be named.
+///         serializer removes <c>TenantId</c> from every body (<c>ReservedWireNames</c>), and a caller bound to no tenant acts globally over
+///         HTTP (#778). The rule for a caller bound to a tenant is invoked in process, where the tenant can be named.
 ///     </para>
 /// </remarks>
 public class AGroupsRolesReachItsMembersTests(PostgresFixture fixture) : IntegrationTestBase(fixture)

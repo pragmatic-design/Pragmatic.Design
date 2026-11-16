@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -26,12 +27,20 @@ public partial class ReactivateRole : VoidDomainAction<NotFoundError>
     public required string RoleName { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "reactivate-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "reactivate-role") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
-        var role = RoleActivity.InScope(await _store.GetRolesAsync(TenantId, ct).ConfigureAwait(false), RoleName, TenantId);
+        var role = RoleActivity.InScope(await _store.GetRolesAsync(tenantId, ct).ConfigureAwait(false), RoleName, tenantId);
         if (role is null)
             return VoidResult<IError>.Failure(NotFoundError.Create("DynamicRole", RoleName));
 
@@ -44,7 +53,7 @@ public partial class ReactivateRole : VoidDomainAction<NotFoundError>
             await _store.UpdateRoleAsync(role, ct).ConfigureAwait(false);
         }
 
-        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, TenantId, now, ct).ConfigureAwait(false);
+        await RoleHolders.InvalidateAsync(_store, _permissionCache, RoleName, tenantId, now, ct).ConfigureAwait(false);
         return VoidResult<IError>.Success();
     }
 }

@@ -21,8 +21,8 @@ namespace Showcase.IntegrationTests.Authorization;
 ///     new role, directly or through a group, keeps what the old one granted, and the old one, deactivated, grants nothing.
 /// </summary>
 /// <remarks>
-///     Global roles and a platform administrator, as in <see cref="ARolesGrantsCanBeTakenBackTests" />: an exposed management action
-///     cannot name a tenant over HTTP (#778).
+///     Global roles and a platform administrator, as in <see cref="ARolesGrantsCanBeTakenBackTests" />. In a tenant the recipe is the
+///     same actions, which a tenant administrator calls over HTTP on the request's tenant (#778).
 /// </remarks>
 public class ARoleIsRenamedByTheRecipeTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {

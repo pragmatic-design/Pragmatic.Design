@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -27,15 +28,23 @@ public partial class RevokeRoleFromGroup : VoidDomainAction<NotFoundError>
     public required string RoleName { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "revoke-group-role") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "revoke-group-role") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
 
-        var given = await _store.GetGroupRolesAsync([GroupName], TenantId, ct).ConfigureAwait(false);
-        var assignment = given.FirstOrDefault(gr => gr.GroupName == GroupName && gr.RoleName == RoleName && gr.TenantId == TenantId && gr.IsInForceAt(now));
+        var given = await _store.GetGroupRolesAsync([GroupName], tenantId, ct).ConfigureAwait(false);
+        var assignment = given.FirstOrDefault(gr => gr.GroupName == GroupName && gr.RoleName == RoleName && gr.TenantId == tenantId && gr.IsInForceAt(now));
 
         if (assignment is null)
             return VoidResult<IError>.Failure(NotFoundError.Create("GroupRoleAssignment", $"{GroupName}/{RoleName}"));
@@ -43,7 +52,7 @@ public partial class RevokeRoleFromGroup : VoidDomainAction<NotFoundError>
         await _store.EndGroupRoleAsync(assignment, now, ct).ConfigureAwait(false);
 
         // A revocation that waits for the cache to expire is a revocation that has not happened yet.
-        await GroupMembers.InvalidateAsync(_store, _permissionCache, GroupName, TenantId, now, ct).ConfigureAwait(false);
+        await GroupMembers.InvalidateAsync(_store, _permissionCache, GroupName, tenantId, now, ct).ConfigureAwait(false);
 
         return VoidResult<IError>.Success();
     }

@@ -3,6 +3,7 @@ using Pragmatic.Actions.Attributes;
 using Pragmatic.Authorization.Evaluation;
 using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Identity;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Result;
 using Pragmatic.Result.Http;
 
@@ -27,15 +28,23 @@ public partial class RemoveUserFromGroup : VoidDomainAction<NotFoundError>
     public required string GroupName { get; init; }
     public string? TenantId { get; init; }
 
+    /// <summary>
+    ///     The request's tenant, written by the invoker: over HTTP a body never carries <see cref="TenantId" />, so this is the scope for a
+    ///     caller bound to a tenant (#778).
+    /// </summary>
+    [FromTenant]
+    public string? RequestTenantId { get; private set; }
+
     public override async Task<VoidResult<IError>> Execute(CancellationToken ct = default)
     {
-        if (TenantScopeGuard.CheckTenantBinding(_currentUser, TenantId, "remove-group") is { } tenantError)
+        var tenantId = TenantScopeGuard.Scope(_currentUser, RequestTenantId, TenantId);
+        if (TenantScopeGuard.CheckTenantBinding(_currentUser, tenantId, "remove-group") is { } tenantError)
             return VoidResult<IError>.Failure(tenantError);
 
         var now = DateTimeOffset.UtcNow;
 
-        var memberships = await _store.GetUserGroupsAsync(UserId, TenantId, ct).ConfigureAwait(false);
-        var membership = memberships.FirstOrDefault(a => a.GroupName == GroupName && a.TenantId == TenantId && a.IsInForceAt(now));
+        var memberships = await _store.GetUserGroupsAsync(UserId, tenantId, ct).ConfigureAwait(false);
+        var membership = memberships.FirstOrDefault(a => a.GroupName == GroupName && a.TenantId == tenantId && a.IsInForceAt(now));
 
         if (membership is null)
             return VoidResult<IError>.Failure(NotFoundError.Create("UserGroupAssignment", $"{UserId}/{GroupName}"));
