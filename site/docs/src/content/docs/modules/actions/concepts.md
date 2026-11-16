@@ -192,7 +192,10 @@ public partial class CreateAmenityMutation : Mutation<Amenity>
 ```
 
 That is the entire class. The source generator:
-- Detects private fields and generates `SetDependencies()` for DI injection
+- Detects private fields and generates `SetDependencies()` for DI injection. A field declared nullable
+  (`private IPermissionCacheInvalidator? _cache;`) is optional: the invoker takes it as `= null`, and in a
+  host that registers nothing for it the field is null. A non-nullable field is required, and a host
+  without it fails to construct the invoker
 - Generates an `Invoker` nested class with the full pipeline (filters, logging, telemetry)
 - For mutations, generates `ApplyToEntity()` that maps matching properties via `entity.SetX(this.X)`
 - Generates a `MutationInvoker` with the lifecycle: validate, load/create, apply, entity-validate, persist, dispatch events

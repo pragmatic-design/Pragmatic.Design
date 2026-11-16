@@ -54,12 +54,12 @@ internal static class AuthorizationManagementScenario
 
         // Assign permissions to the role; nobody holds it yet, so nobody's cached permissions are evicted.
         var cache = new RecordingCache();
-        var assignPermissions = new AssignPermissionsToRole.Invoker(store, admin, cache, services);
+        var assignPermissions = new AssignPermissionsToRole.Invoker(store, admin, services, cache);
         Assert.True((await assignPermissions.InvokeAsync(new AssignPermissionsToRole { RoleName = role, Permissions = [permission, "reports.read"] })).IsSuccess);
         Assert.Empty(cache.Evicted);
 
         // Assign the role, which evicts its holder; the same assignment again is a conflict, and evicts nothing.
-        var assignRole = new AssignRoleToUser.Invoker(store, admin, cache, services);
+        var assignRole = new AssignRoleToUser.Invoker(store, admin, services, cache);
         Assert.True((await assignRole.InvokeAsync(new AssignRoleToUser { UserId = user, RoleName = role })).IsSuccess);
         Assert.IsType<ConflictError>((await assignRole.InvokeAsync(new AssignRoleToUser { UserId = user, RoleName = role })).Error);
         Assert.Equal([user], cache.Evicted);
@@ -91,7 +91,7 @@ internal static class AuthorizationManagementScenario
         Assert.Contains(await new ManagedDynamicPermissionStore(store, admin).GetAllAsync(), p => p.Name == permission && p.Category == "reports");
 
         // Revoke: the role stops granting, and revoking it again finds nothing to revoke.
-        var revoke = new RevokeRoleFromUser.Invoker(store, admin, cache, services);
+        var revoke = new RevokeRoleFromUser.Invoker(store, admin, services, cache);
         Assert.True((await revoke.InvokeAsync(new RevokeRoleFromUser { UserId = user, RoleName = role })).IsSuccess);
         Assert.Empty(await provider.ResolvePermissionsAsync(new TestUser(user)));
         Assert.DoesNotContain(role, Resolver().Roles); // the control: a revoked role is no longer the caller's
@@ -125,11 +125,11 @@ internal static class AuthorizationManagementScenario
         }), "DynamicGroups");
 
         var cache = new RecordingCache();
-        Assert.True((await new AssignRoleToGroup.Invoker(store, admin, cache, services)
+        Assert.True((await new AssignRoleToGroup.Invoker(store, admin, services, cache)
             .InvokeAsync(new AssignRoleToGroup { GroupName = group, RoleName = role })).IsSuccess);
         Assert.Empty(cache.Evicted); // nobody is a member yet
 
-        var addMember = new AssignUserToGroup.Invoker(store, admin, cache, services);
+        var addMember = new AssignUserToGroup.Invoker(store, admin, services, cache);
         Assert.True((await addMember.InvokeAsync(new AssignUserToGroup { UserId = member, GroupName = group })).IsSuccess);
         Assert.IsType<ConflictError>((await addMember.InvokeAsync(new AssignUserToGroup { UserId = member, GroupName = group })).Error);
         Assert.Equal([member], cache.Evicted);
@@ -144,12 +144,12 @@ internal static class AuthorizationManagementScenario
         Assert.Equal([role], Assert.Single(listed, g => g.Name == group).Roles);
 
         // A grant added to the role reaches the member through the group, so the member's cached permissions are evicted.
-        Assert.True((await new AssignPermissionsToRole.Invoker(store, admin, cache, services)
+        Assert.True((await new AssignPermissionsToRole.Invoker(store, admin, services, cache)
             .InvokeAsync(new AssignPermissionsToRole { RoleName = role, Permissions = ["reports.archive"] })).IsSuccess);
         Assert.Equal([member, member], cache.Evicted);
 
         // Removed, the member holds nothing from the group, and removing again finds nothing.
-        var remove = new RemoveUserFromGroup.Invoker(store, admin, cache, services);
+        var remove = new RemoveUserFromGroup.Invoker(store, admin, services, cache);
         Assert.True((await remove.InvokeAsync(new RemoveUserFromGroup { UserId = member, GroupName = group })).IsSuccess);
         Assert.Empty(await provider.ResolvePermissionsAsync(new TestUser(member)));
         Assert.False(Resolver().IsInRole(role));
@@ -158,7 +158,7 @@ internal static class AuthorizationManagementScenario
         Assert.NotNull(Assert.Single(await store.GetUserGroupsAsync(member, null)).ValidTo); // kept, ended
 
         // Taking the role back from the group ends it, and a second time finds nothing.
-        var revoke = new RevokeRoleFromGroup.Invoker(store, admin, cache, services);
+        var revoke = new RevokeRoleFromGroup.Invoker(store, admin, services, cache);
         Assert.True((await revoke.InvokeAsync(new RevokeRoleFromGroup { GroupName = group, RoleName = role })).IsSuccess);
         Assert.IsType<NotFoundError>((await revoke.InvokeAsync(new RevokeRoleFromGroup { GroupName = group, RoleName = role })).Error);
     }

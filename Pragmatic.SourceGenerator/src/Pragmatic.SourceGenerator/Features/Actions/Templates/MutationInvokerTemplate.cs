@@ -116,7 +116,7 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
             Field("_filterToggle", "global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle?", AccessModifier.Private, isReadOnly: true);
 
         foreach (var dep in _model.Dependencies)
-            Field(TemplateHelpers.InvokerFieldName(dep.FieldName), dep.TypeName, AccessModifier.Private, isReadOnly: true);
+            Field(TemplateHelpers.InvokerFieldName(dep.FieldName), dep.DeclaredTypeName, AccessModifier.Private, isReadOnly: true);
 
         if (_model.HasResilience)
             Field("_resiliencePipelineProvider", ResilienceProviderTypeName, AccessModifier.Private, isReadOnly: true);
@@ -360,16 +360,16 @@ internal sealed partial class MutationInvokerTemplate : CSharpTemplate
 
         ctorParams.Add("global::System.IServiceProvider serviceProvider");
 
-        foreach (var dep in _model.Dependencies)
-        {
-            var paramName = TemplateHelpers.ToCamelCase(StripLeadingUnderscore(dep.FieldName));
-            ctorParams.Add($"{dep.TypeName} {paramName}");
-        }
+        foreach (var dep in _model.Dependencies.Where(d => !d.IsOptional))
+            ctorParams.Add($"{dep.TypeName} {TemplateHelpers.ToCamelCase(StripLeadingUnderscore(dep.FieldName))}");
 
         if (_model.HasResilience)
             ctorParams.Add($"{ResilienceProviderTypeName} resiliencePipelineProvider");
 
         // Optional params last (C# requires optional after required)
+        foreach (var dep in _model.Dependencies.Where(d => d.IsOptional))
+            ctorParams.Add($"{dep.DeclaredTypeName} {TemplateHelpers.ToCamelCase(StripLeadingUnderscore(dep.FieldName))} = null");
+
         if (NeedsInfraCurrentUser)
             ctorParams.Add("global::Pragmatic.Identity.ICurrentUser? currentUser = null");
 

@@ -487,6 +487,27 @@ internal sealed record DependencyModel
     public string? KeyedServiceType { get; init; }
 
     /// <summary>
+    ///     The field is declared nullable (<c>IService? _service</c>): the invoker takes it as an optional constructor parameter, and a host
+    ///     that registers nothing for it injects <see langword="null" />.
+    /// </summary>
+    /// <remarks>
+    ///     Without it a nullable field was a required parameter, because <see cref="TypeName" /> carries no annotation, so the action's
+    ///     "null when absent" branch could never run: the invoker did not resolve (#812).
+    /// </remarks>
+    public bool IsOptional { get; init; }
+
+    /// <summary>The type as the invoker declares its field and parameter: <see cref="TypeName" />, annotated when optional.</summary>
+    public string DeclaredTypeName => IsOptional ? TypeName + "?" : TypeName;
+
+    /// <summary>The invoker's constructor parameter for this dependency: keyed when it is, and defaulted to null when optional.</summary>
+    public string ConstructorParameter(string parameterName)
+        => (string.IsNullOrEmpty(KeyedServiceType)
+               ? ""
+               : $"[global::Microsoft.Extensions.DependencyInjection.FromKeyedServices(typeof({KeyedServiceType}))] ")
+           + $"{DeclaredTypeName} {parameterName}"
+           + (IsOptional ? " = null" : "");
+
+    /// <summary>
     ///     Whether this dependency's type is <c>internal</c> to the module that declares it.
     /// </summary>
     /// <remarks>
