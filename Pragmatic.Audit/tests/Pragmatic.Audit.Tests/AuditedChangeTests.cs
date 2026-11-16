@@ -48,16 +48,38 @@ public class AuditedChangeTests
     }
 
     /// <summary>
-    ///     Inside nested operations the entry records the innermost one, and the outermost (the origin: a job, an import, another
-    ///     module's operation) nowhere (#750). Measured and kept as is here: recording the origin is a new hashed field, which breaks the
-    ///     verification of every segment sealed before it, and that is the owner's decision (#772).
+    ///     Inside nested operations the entry records the innermost as its operation and the outermost as its origin: the import (a job,
+    ///     another module's operation) that started it (#772). Before, the origin was recorded nowhere.
     /// </summary>
     [Fact]
-    public void Entry_InsideNestedOperations_RecordsTheInnermost()
+    public void Entry_InsideNestedOperations_RecordsTheInnermost_AndTheOutermostAsItsOrigin()
     {
         using (OperationScope.Enter("App.Imports.ImportOrdersAction"))
         using (OperationScope.Enter("App.Orders.PlaceOrderMutation"))
-            AuditedChange.Entry(AuditedChange.EntityCreated, "Order", "42", Now, null).BusinessOperation.Should().Be("App.Orders.PlaceOrderMutation");
+        {
+            var entry = AuditedChange.Entry(AuditedChange.EntityCreated, "Order", "42", Now, null);
+
+            (entry.BusinessOperation, entry.OriginOperation).Should().Be(("App.Orders.PlaceOrderMutation", "App.Imports.ImportOrdersAction"));
+        }
+    }
+
+    /// <summary>
+    ///     The control: an operation nested in nothing is its own origin, which the entry does not repeat, and outside any operation there
+    ///     is no origin either. Once the outer operation ends, the next one starts its own.
+    /// </summary>
+    [Fact]
+    public void Entry_InAnOperationNestedInNothing_RecordsNoOrigin()
+    {
+        using (OperationScope.Enter("App.Orders.PlaceOrderMutation"))
+            AuditedChange.Entry(AuditedChange.EntityCreated, "Order", "42", Now, null).OriginOperation.Should().BeNull("it would repeat BusinessOperation");
+
+        using (OperationScope.Enter("App.Imports.ImportOrdersAction"))
+        using (OperationScope.Enter("App.Orders.PlaceOrderMutation")) { }
+
+        using (OperationScope.Enter("App.Stock.ReserveMutation"))
+            AuditedChange.Entry(AuditedChange.EntityUpdated, "Stock", "7", Now, null).OriginOperation.Should().BeNull("the earlier flow's origin ended with it");
+
+        AuditedChange.Entry(AuditedChange.EntityCreated, "Order", "43", Now, null).OriginOperation.Should().BeNull();
     }
 
     /// <summary>The tenant the caller acted in is the entry's (#750): it was never set.</summary>

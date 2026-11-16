@@ -52,7 +52,7 @@ What else writes to it, once it exists:
 
 | Source | How |
 |---|---|
-| `[Audited]` entities | Created/Updated/Deleted, with the user and correlation id, in the save's transaction |
+| `[Audited]` entities | Created/Updated/Deleted, with the user and correlation id, in the save's transaction; `BusinessOperation` the innermost operation, `OriginOperation` the outermost it was nested in |
 | Sign-in failures, lockouts | `AddIdentitySecurityAuditing<TLocator>()`, see `pragmatic-use-identity` |
 | Message handling outcomes | `msg.EnableAuditing()` in `UseMessaging` (`Pragmatic.Messaging.Auditing`) |
 | Reads of personal data | `[RecordAccess]` on the operation, see `pragmatic-use-privacy` |

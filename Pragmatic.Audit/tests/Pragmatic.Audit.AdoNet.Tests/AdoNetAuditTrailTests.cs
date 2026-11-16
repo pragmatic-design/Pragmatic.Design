@@ -57,6 +57,8 @@ public class AdoNetAuditTrailTests : IDisposable
         TargetType = "config",
         TargetId = "App:Timeout",
         TenantId = "acme",
+        BusinessOperation = "App.Config.SetTimeoutMutation",
+        OriginOperation = "App.Config.ImportSettingsAction",
     };
 
     [Fact]
@@ -76,6 +78,8 @@ public class AdoNetAuditTrailTests : IDisposable
         stored.TargetId.Should().Be("App:Timeout");
         stored.TenantId.Should().Be("acme");
         stored.OccurredAt.Should().Be(Now);
+        // The operation the entry's operation was nested in (#772), through both paths' column.
+        (stored.BusinessOperation, stored.OriginOperation).Should().Be(("App.Config.SetTimeoutMutation", "App.Config.ImportSettingsAction"));
     }
 
     [Fact]

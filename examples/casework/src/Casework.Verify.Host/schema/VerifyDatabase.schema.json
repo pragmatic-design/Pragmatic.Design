@@ -249,6 +249,14 @@
           "renamedFrom": null
         },
         {
+          "name": "OriginOperation",
+          "sqlType": "varchar(256)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
           "name": "TargetType",
           "sqlType": "varchar(256)",
           "isNullable": true,
@@ -588,5 +596,5 @@
   "databaseName": "VerifyDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:Verify",
-  "hash": "e26e59ef111c"
+  "hash": "29787d9a86f0"
 }

@@ -113,6 +113,7 @@ public sealed class AdoNetAuditTrail(IAuditSqlDialect dialect, AuditEntryPrepare
             Add(insert, "@correlationId", entry.CorrelationId);
             Add(insert, "@businessOperation", entry.BusinessOperation);
             Add(insert, "@onBehalfOfRef", entry.OnBehalfOfRef);
+            Add(insert, "@originOperation", entry.OriginOperation);
             Add(insert, "@targetType", entry.TargetType);
             Add(insert, "@targetId", entry.TargetId);
             Add(insert, "@outcome", (int)entry.Outcome);

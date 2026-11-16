@@ -8,9 +8,9 @@ public sealed class SqliteAuditDialect : IAuditSqlDialect
         """
         INSERT INTO "__AuditEntries"
             ("SegmentId","OccurredAt","Category","Operation","ActorRef","SubjectRef","TenantId",
-             "CorrelationId","BusinessOperation","OnBehalfOfRef","TargetType","TargetId","Outcome","ValueHash","Detail")
+             "CorrelationId","BusinessOperation","OnBehalfOfRef","OriginOperation","TargetType","TargetId","Outcome","ValueHash","Detail")
         VALUES (@segmentId,@occurredAt,@category,@operation,@actorRef,@subjectRef,@tenantId,
-                @correlationId,@businessOperation,@onBehalfOfRef,@targetType,@targetId,@outcome,@valueHash,@detail)
+                @correlationId,@businessOperation,@onBehalfOfRef,@originOperation,@targetType,@targetId,@outcome,@valueHash,@detail)
         """;
 
     /// <inheritdoc />
@@ -48,6 +48,7 @@ public sealed class SqliteAuditDialect : IAuditSqlDialect
             "CorrelationId" VARCHAR(64) NULL,
             "BusinessOperation" VARCHAR(256) NULL,
             "OnBehalfOfRef" VARCHAR(128) NULL,
+            "OriginOperation" VARCHAR(256) NULL,
             "TargetType" VARCHAR(256) NULL,
             "TargetId" VARCHAR(128) NULL,
             "Outcome" INTEGER NOT NULL,

@@ -28,7 +28,8 @@ public sealed class AuditHashingTests
             ValueHash = [1, 2, 3],
             Detail = "changed",
             BusinessOperation = "App.UpdateOrderMutation",
-            OnBehalfOfRef = "principal-1"
+            OnBehalfOfRef = "principal-1",
+            OriginOperation = "App.ImportOrdersAction"
         };
         tweak?.Invoke(e);
         return e;
@@ -60,6 +61,9 @@ public sealed class AuditHashingTests
     // Who the actor was working for. Outside the hash it would be the one field that could be rewritten
     // to make a delegated change look like an ordinary one, while every other field still verified.
     [InlineData("OnBehalfOfRef")]
+    // What the entry's operation was nested in (#772): outside the hash, an import's entries could be rewritten to look started by
+    // something else while every other field verified.
+    [InlineData("OriginOperation")]
     public void HashEntry_ChangesWhenAnyCoveredFieldChanges(string field)
     {
         // A field the hash does not cover is a field an attacker can rewrite for free.
@@ -85,6 +89,7 @@ public sealed class AuditHashingTests
                 case "SegmentId": e.SegmentId = "2026-07-30T15"; break;
                 case "BusinessOperation": e.BusinessOperation = "App.OtherMutation"; break;
                 case "OnBehalfOfRef": e.OnBehalfOfRef = "principal-2"; break;
+                case "OriginOperation": e.OriginOperation = "App.OtherImportAction"; break;
             }
         }));
 

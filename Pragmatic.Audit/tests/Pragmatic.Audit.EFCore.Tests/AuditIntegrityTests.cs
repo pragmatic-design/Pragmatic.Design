@@ -72,6 +72,31 @@ public sealed class AuditIntegrityTests : IDisposable
         report.BrokenSegmentIds.Should().ContainSingle().Which.Should().Be(segmentId);
     }
 
+    /// <summary>
+    ///     The origin (#772) is stored, read back, and covered by the seal: a sealed segment with it verifies, and rewriting it alone
+    ///     afterwards breaks the segment.
+    /// </summary>
+    [Fact]
+    public async Task Verify_AnEntryWithAnOrigin_VerifiesSealed_AndRewritingTheOriginBreaksIt()
+    {
+        var entry = _f.Entry("A");
+        entry.BusinessOperation = "App.Orders.PlaceOrderMutation";
+        entry.OriginOperation = "App.Imports.ImportOrdersAction";
+        await _f.Trail.RecordAsync(entry);
+        await SealCurrentAsync();
+        _f.Db.ChangeTracker.Clear();
+
+        (await _f.Db.Entries.SingleAsync()).OriginOperation.Should().Be("App.Imports.ImportOrdersAction");
+        (await _f.Reader.VerifyAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue)).IsIntact.Should().BeTrue();
+
+        var stored = await _f.Db.Entries.SingleAsync();
+        stored.OriginOperation = "App.Imports.SomethingElseAction";
+        await _f.Db.SaveChangesAsync();
+
+        (await _f.Reader.VerifyAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue)).IsIntact.Should().BeFalse(
+            "the origin is inside the hash: rewritten, the segment no longer verifies");
+    }
+
     [Fact]
     public async Task Verify_EntryDeletedAfterSealing_Fails()
     {

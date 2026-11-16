@@ -8,9 +8,9 @@ public sealed class SqlServerAuditDialect : IAuditSqlDialect
         """
         INSERT INTO [__AuditEntries]
             ([SegmentId],[OccurredAt],[Category],[Operation],[ActorRef],[SubjectRef],[TenantId],
-             [CorrelationId],[BusinessOperation],[OnBehalfOfRef],[TargetType],[TargetId],[Outcome],[ValueHash],[Detail])
+             [CorrelationId],[BusinessOperation],[OnBehalfOfRef],[OriginOperation],[TargetType],[TargetId],[Outcome],[ValueHash],[Detail])
         VALUES (@segmentId,@occurredAt,@category,@operation,@actorRef,@subjectRef,@tenantId,
-                @correlationId,@businessOperation,@onBehalfOfRef,@targetType,@targetId,@outcome,@valueHash,@detail)
+                @correlationId,@businessOperation,@onBehalfOfRef,@originOperation,@targetType,@targetId,@outcome,@valueHash,@detail)
         """;
 
     /// <summary>
@@ -62,6 +62,7 @@ public sealed class SqlServerAuditDialect : IAuditSqlDialect
             [CorrelationId] NVARCHAR(64) NULL,
             [BusinessOperation] NVARCHAR(256) NULL,
             [OnBehalfOfRef] NVARCHAR(128) NULL,
+            [OriginOperation] NVARCHAR(256) NULL,
             [TargetType] NVARCHAR(256) NULL,
             [TargetId] NVARCHAR(128) NULL,
             [Outcome] INT NOT NULL,

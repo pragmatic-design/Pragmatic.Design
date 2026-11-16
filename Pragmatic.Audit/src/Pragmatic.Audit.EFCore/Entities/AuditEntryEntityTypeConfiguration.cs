@@ -35,6 +35,7 @@ public sealed class AuditEntryEntityTypeConfiguration : IEntityTypeConfiguration
         builder.Property(e => e.BusinessOperation).HasMaxLength(256);
         // Same width as the other refs: it holds a pseudonym, like ActorRef and SubjectRef.
         builder.Property(e => e.OnBehalfOfRef).HasMaxLength(128);
+        builder.Property(e => e.OriginOperation).HasMaxLength(256);
         builder.Property(e => e.TargetType).HasMaxLength(256);
         builder.Property(e => e.TargetId).HasMaxLength(128);
         builder.Property(e => e.Outcome).IsRequired();

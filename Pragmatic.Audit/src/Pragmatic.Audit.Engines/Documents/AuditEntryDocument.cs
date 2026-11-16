@@ -49,6 +49,8 @@ public sealed partial class AuditEntryDocument : IAuditEntryRecord
 
     public string? OnBehalfOfRef { get; set; }
 
+    public string? OriginOperation { get; set; }
+
     public string? TargetType { get; set; }
 
     public string? TargetId { get; set; }

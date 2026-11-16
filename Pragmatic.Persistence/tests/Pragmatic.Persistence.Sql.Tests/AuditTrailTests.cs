@@ -25,7 +25,7 @@ public class AuditTrailTests(PragmaticDatabases databases)
         var entries = tables.Single(t => t.Name == "__AuditEntries");
         Assert.Equal(
             [("Seq", false), ("SegmentId", false), ("OccurredAt", false), ("Category", false), ("Operation", false), ("ActorRef", true), ("SubjectRef", true),
-                ("TenantId", true), ("CorrelationId", true), ("BusinessOperation", true), ("OnBehalfOfRef", true), ("TargetType", true), ("TargetId", true),
+                ("TenantId", true), ("CorrelationId", true), ("BusinessOperation", true), ("OnBehalfOfRef", true), ("OriginOperation", true), ("TargetType", true), ("TargetId", true),
                 ("Outcome", false), ("ValueHash", true), ("Detail", true)],
             entries.Columns.Select(c => (c.Name, c.IsNullable)).OrderBy(c => Order(c.Name)));
         Assert.Equal(
@@ -41,7 +41,7 @@ public class AuditTrailTests(PragmaticDatabases databases)
         Assert.Equal(["FromSegmentId", "UntilSegmentId", "PrunedAt", "LinkHash"], tables.Single(t => t.Name == "__AuditPrunedRanges").Columns.Select(c => c.Name));
 
         static int Order(string column) => Array.IndexOf(["Seq", "SegmentId", "OccurredAt", "Category", "Operation", "ActorRef", "SubjectRef", "TenantId", "CorrelationId",
-            "BusinessOperation", "OnBehalfOfRef", "TargetType", "TargetId", "Outcome", "ValueHash", "Detail"], column);
+            "BusinessOperation", "OnBehalfOfRef", "OriginOperation", "TargetType", "TargetId", "Outcome", "ValueHash", "Detail"], column);
     }
 
     [Theory]
@@ -57,8 +57,13 @@ public class AuditTrailTests(PragmaticDatabases databases)
         {
             // One unit of work across the four saves: it tracks the row as saved, so it tells a soft delete and a restore from an update.
             var (unitOfWork, repository) = UnitOfWork(writes, session);
-            repository.Add(category);
-            await unitOfWork.SaveChangesAsync();
+            // Inside two nested operations, so the entry carries an origin (#772), which the seal below covers too.
+            using (Pragmatic.Pipeline.OperationScope.Enter("App.Imports.ImportCategoriesAction"))
+            using (Pragmatic.Pipeline.OperationScope.Enter("App.Catalog.CreateCategoryMutation"))
+            {
+                repository.Add(category);
+                await unitOfWork.SaveChangesAsync();
+            }
             category.Name = "Lights";
             await unitOfWork.SaveChangesAsync();
             repository.Remove(category); // soft: a delete in the trail
@@ -74,6 +79,8 @@ public class AuditTrailTests(PragmaticDatabases databases)
         Assert.Equal([AuditedChange.EntityRestored, AuditedChange.EntityDeleted, AuditedChange.EntityUpdated, AuditedChange.EntityCreated],
             page.Entries.Select(e => e.Operation)); // newest first
         Assert.All(page.Entries, e => Assert.Equal(("Category", "anna", AuditCategory.Data), (e.TargetType, e.ActorRef, e.Category)));
+        Assert.Equal(("App.Catalog.CreateCategoryMutation", "App.Imports.ImportCategoriesAction"), (page.Entries[3].BusinessOperation, page.Entries[3].OriginOperation));
+        Assert.Null(page.Entries[2].OriginOperation); // the later writes ran in no operation
         Assert.Equal(0, (await reader.QueryAsync(new AuditQuery { TargetId = "nobody" })).TotalCount);
 
         // Sealed one grace period after its window closes, and verified intact.

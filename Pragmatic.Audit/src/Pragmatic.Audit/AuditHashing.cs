@@ -23,9 +23,9 @@ namespace Pragmatic.Audit;
 ///         every existing position intact.
 ///     </para>
 ///     <para>
-///         <b>Adding a field is a breaking change to already-sealed data.</b> <c>BusinessOperation</c>
-///         and <c>OnBehalfOfRef</c> are the last two appended; segments sealed before each verify as
-///         broken. Doing it later costs the same and protects less, and the
+///         <b>Adding a field is a breaking change to already-sealed data.</b> <c>BusinessOperation</c>,
+///         <c>OnBehalfOfRef</c> and <c>OriginOperation</c> (#772) are the last three appended; segments sealed
+///         before each verify as broken. Doing it later costs the same and protects less, and the
 ///         alternative — a field outside the hash — is one an attacker with write access could rewrite
 ///         while the rest stayed verifiable.
 ///     </para>
@@ -62,6 +62,10 @@ public static class AuditHashing
         // is the half of an investigation that a delegated call makes interesting, and a field an
         // attacker could rewrite while the rest verified would be worse than not recording it.
         WriteString(buffer, entry.OnBehalfOfRef);
+
+        // Last (#772): the operation the entry's operation was nested in. Inside the hash for the reason the two above are, and appended
+        // so every earlier position is intact.
+        WriteString(buffer, entry.OriginOperation);
 
         return SHA256.HashData(buffer.ToArray());
     }
