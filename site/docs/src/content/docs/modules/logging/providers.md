@@ -21,6 +21,19 @@ services.AddPragmaticLogging(logging => logging
 );
 ```
 
+### Providers that were already there
+
+Providers registered before Pragmatic.Logging, such as those `WebApplication.CreateBuilder` adds, keep receiving entries,
+with two exceptions. A Pragmatic console replaces Microsoft's console provider, and a Pragmatic debug provider replaces
+Microsoft's debug provider. Without the replacement every entry reached the same output twice, and Microsoft's copy
+wrote what the caller passed as it is. A request path or header carrying CR/LF (ASP.NET decodes `%0D%0A` in a path)
+then started a line of its own there: log forging. Pragmatic's text providers write every entry on one line and
+escape the control characters (`\r`, `\n`, `\^[` for ESC).
+
+When no Pragmatic console is configured, Microsoft's stays, so an application that adds only a file still sees its
+console output. In that case an application's own entries reach Microsoft's console as they are; the request
+middleware's entries do not, because it escapes what the client sent before logging it.
+
 ---
 
 ## 1. Console -- `PragmaticConsoleProvider`

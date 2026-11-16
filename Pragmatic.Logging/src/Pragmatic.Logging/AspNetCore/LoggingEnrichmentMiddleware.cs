@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Logging.Context;
+using Pragmatic.Logging.Providers;
 
 namespace Pragmatic.Logging.AspNetCore;
 
@@ -65,8 +66,8 @@ public sealed class LoggingEnrichmentMiddleware(
         var contextProperties = new List<KeyValuePair<string, object?>>
         {
             new("CorrelationId", correlationId),
-            new("RequestPath", context.Request.Path.Value),
-            new("RequestMethod", context.Request.Method),
+            new("RequestPath", OneLine(context.Request.Path.Value)),
+            new("RequestMethod", OneLine(context.Request.Method)),
             new("RequestId", context.TraceIdentifier)
         };
 
@@ -93,11 +94,11 @@ public sealed class LoggingEnrichmentMiddleware(
         var scope = new Dictionary<string, object?>
         {
             ["CorrelationId"] = correlationId,
-            ["RequestMethod"] = request.Method,
-            ["RequestPath"] = request.Path.Value,
-            ["RequestQueryString"] = request.QueryString.Value,
-            ["RequestHost"] = request.Host.Value,
-            ["UserAgent"] = request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.ToString() : null
+            ["RequestMethod"] = OneLine(request.Method),
+            ["RequestPath"] = OneLine(request.Path.Value),
+            ["RequestQueryString"] = OneLine(request.QueryString.Value),
+            ["RequestHost"] = OneLine(request.Host.Value),
+            ["UserAgent"] = request.Headers.TryGetValue("User-Agent", out var userAgent) ? OneLine(userAgent.ToString()) : null
         };
 
         // PII / GDPR: only emit the client IP when explicitly enabled, masked by default.
@@ -111,7 +112,7 @@ public sealed class LoggingEnrichmentMiddleware(
         using (_logger.BeginScope(scope))
         {
             _logger.LogInformation("HTTP request started: {RequestMethod} {RequestPath}",
-                request.Method, request.Path.Value);
+                OneLine(request.Method), OneLine(request.Path.Value));
         }
     }
 
@@ -125,8 +126,8 @@ public sealed class LoggingEnrichmentMiddleware(
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
             ["CorrelationId"] = correlationId,
-            ["RequestMethod"] = request.Method,
-            ["RequestPath"] = request.Path.Value,
+            ["RequestMethod"] = OneLine(request.Method),
+            ["RequestPath"] = OneLine(request.Path.Value),
             ["StatusCode"] = response.StatusCode,
             ["ElapsedMilliseconds"] = elapsedMs,
             ["ContentLength"] = response.ContentLength,
@@ -135,7 +136,7 @@ public sealed class LoggingEnrichmentMiddleware(
         {
             _logger.Log(logLevel,
                 "HTTP request completed: {RequestMethod} {RequestPath} responded {StatusCode} in {ElapsedMs}ms",
-                request.Method, request.Path.Value, response.StatusCode, elapsedMs);
+                OneLine(request.Method), OneLine(request.Path.Value), response.StatusCode, elapsedMs);
         }
     }
 
@@ -146,15 +147,15 @@ public sealed class LoggingEnrichmentMiddleware(
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
             ["CorrelationId"] = correlationId,
-            ["RequestMethod"] = request.Method,
-            ["RequestPath"] = request.Path.Value,
+            ["RequestMethod"] = OneLine(request.Method),
+            ["RequestPath"] = OneLine(request.Path.Value),
             ["ElapsedMilliseconds"] = elapsedMs,
             ["ExceptionType"] = exception.GetType().Name
         }))
         {
             _logger.LogError(exception,
                 "HTTP request failed: {RequestMethod} {RequestPath} threw {ExceptionType} after {ElapsedMs}ms",
-                request.Method, request.Path.Value, exception.GetType().Name, elapsedMs);
+                OneLine(request.Method), OneLine(request.Path.Value), exception.GetType().Name, elapsedMs);
         }
     }
 
@@ -178,6 +179,10 @@ public sealed class LoggingEnrichmentMiddleware(
 
         return new System.Net.IPAddress(bytes).ToString();
     }
+
+    // What the client sent, escaped onto one line here as well as by Pragmatic's text providers: an application without a console
+    // of Pragmatic's keeps Microsoft's, which writes text as it is, and ASP.NET decodes %0D%0A in a path (CodeQL cs/log-forging).
+    private static string? OneLine(string? value) => value is null ? null : LogLineText.Escape(value);
 
     private static LogLevel GetLogLevelForStatusCode(int statusCode)
     {

@@ -83,13 +83,15 @@ public static class PragmaticLoggingServiceCollectionExtensions
             // Replace the standard ILoggerFactory with our enhanced one that preserves existing providers
             services.Replace(ServiceDescriptor.Singleton<ILoggerFactory>(serviceProvider =>
             {
+                var pragmaticProviders = serviceProvider.GetServices<IPragmaticLoggerProvider>().ToList();
+
                 // Use provided factory or auto-detect existing one
-                var innerFactory = existingFactory ?? GetExistingLoggerFactory(serviceProvider);
+                var innerFactory = existingFactory ?? GetExistingLoggerFactory(serviceProvider, pragmaticProviders);
                 var providerRegistry = serviceProvider.GetRequiredService<PragmaticLoggerProviderRegistry>();
                 var globalFilters = serviceProvider.GetRequiredService<GlobalFilterConfiguration>();
 
                 // Auto-populate registry from all IPragmaticLoggerProvider instances registered in DI
-                foreach (var provider in serviceProvider.GetServices<IPragmaticLoggerProvider>())
+                foreach (var provider in pragmaticProviders)
                 {
                     providerRegistry.RegisterProvider(provider);
                 }
@@ -211,8 +213,10 @@ public static class PragmaticLoggingServiceCollectionExtensions
     /// Gets the existing ILoggerFactory from the service provider or creates a new one with existing providers.
     /// </summary>
     /// <param name="serviceProvider">The service provider</param>
+    /// <param name="pragmaticProviders">The application's Pragmatic providers, which replace Microsoft's of the same kind.</param>
     /// <returns>An ILoggerFactory that preserves existing providers</returns>
-    private static ILoggerFactory GetExistingLoggerFactory(IServiceProvider serviceProvider)
+    private static ILoggerFactory GetExistingLoggerFactory(
+        IServiceProvider serviceProvider, IReadOnlyList<IPragmaticLoggerProvider> pragmaticProviders)
     {
         // Try to get an existing ILoggerFactory from the container without creating PragmaticLoggerFactory
         // This is tricky because we're replacing the registration, so we need to look for the underlying providers
@@ -221,7 +225,7 @@ public static class PragmaticLoggingServiceCollectionExtensions
         // Filter out our own factory by Type identity (not name string) to avoid a circular
         // dependency. typeof comparison is exact and refactor-safe, unlike GetType().Name.
         var existingProviders = serviceProvider.GetServices<ILoggerProvider>()
-            .Where(p => p.GetType() != typeof(PragmaticLoggerFactory))
+            .Where(p => p.GetType() != typeof(PragmaticLoggerFactory) && !IsReplacedBy(p, pragmaticProviders))
             .ToList();
 
         if (existingProviders.Any())
@@ -238,6 +242,24 @@ public static class PragmaticLoggingServiceCollectionExtensions
         // Fallback to NullLoggerFactory if no existing providers are found
         return new Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory();
     }
+
+    /// <summary>
+    ///     Whether <paramref name="provider" /> is a text provider of Microsoft's that one of the application's Pragmatic providers
+    ///     replaces: the two would write every entry to the same output twice.
+    /// </summary>
+    /// <remarks>
+    ///     <c>WebApplication.CreateBuilder</c> registers Microsoft's console and debug providers before the application configures
+    ///     anything, so keeping them beside Pragmatic's wrote each entry twice. The second copy was not kept on one line: a decoded
+    ///     request path or header carrying CR/LF forged a line there (CodeQL <c>cs/log-forging</c>), whatever Pragmatic's provider
+    ///     escaped. Without a Pragmatic provider of that kind Microsoft's stays, so no application loses its output.
+    /// </remarks>
+    private static bool IsReplacedBy(ILoggerProvider provider, IReadOnlyList<IPragmaticLoggerProvider> pragmaticProviders)
+        => provider switch
+        {
+            Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider => pragmaticProviders.Any(p => p is PragmaticConsoleProvider),
+            Microsoft.Extensions.Logging.Debug.DebugLoggerProvider => pragmaticProviders.Any(p => p is PragmaticDebugProvider),
+            _ => false,
+        };
 }
 
 /// <summary>
