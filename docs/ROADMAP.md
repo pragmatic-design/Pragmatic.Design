@@ -19,20 +19,27 @@ are functional or preview, as their README says.
 
 ## Toward 1.0.0-beta
 
-The beta is the release where the platform underneath stops moving: the .NET version it supports is
-measured, nothing it ships is a native binary, and Native AOT on the engines is a measurement rather than
-a goal. Each item is an issue with acceptance criteria; the beta ships when they are closed.
+The beta supports .NET 11 and makes use of it, ships no native binary, and brings the Sql and documents
+engines level with EF Core. Each item is an issue, or an analysis that produces issues, with acceptance
+criteria; the beta ships when they are closed.
 
-- **.NET 11** (#820): applications on `net11.0` measured against the packages, the repository built with
-  the .NET 11 SDK in CI, and EF Core 11 either supported or stated unsupported. .NET 10 stays the target:
-  it is LTS, and both are supported until 2028-11-14.
-- **PDF and imaging without native libraries** (#821): managed engines replace the Rust libraries behind
-  the same public API, with the modules' tests as the parity suite. Which image formats stay is decided
-  first.
+- **.NET 11, supported and used** (#820):
+  - An application on `net11.0` uses Pragmatic as soon as it is released: measured against the packages,
+    with the repository built with the .NET 11 SDK in CI, and EF Core 11 supported.
+  - What .NET 11 brings is analyzed for what Pragmatic can use. That includes C# 15 unions and closed
+    hierarchies against `Result<T, TError>`, System.Text.Json's unions in the generated JSON context, and
+    async validation. Each adoption becomes an issue.
+  - .NET 10 stays supported: it is LTS, and both are supported until 2028-11-14.
+- **PDF and imaging without native libraries** (#821): the two managed spikes replace the Rust libraries
+  behind the same public API, with the modules' tests as the parity suite. Which image formats stay is
+  decided first.
+- **The engines level with EF Core** (#819): what the Sql and documents engines do not cover is measured,
+  then closed. Every Showcase test runs on both engines, or names the issue that says why not.
 - **One composed host under Native AOT** (#818): a smoke that publishes a host serving endpoints and
   writing through the Sql engine. Until it is green, AOT is claimed per piece, not per application.
-- **What the engines cover against EF Core, measured** (#819): every Showcase test either runs on the Sql
-  and documents engines or names the issue that says why not.
+- **Where other libraries do better:** an analysis of its own, to come. Each module is compared with the
+  libraries an application would otherwise use, and what they do better is refined here, generated rather
+  than reflected.
 
 ## Before 1.0
 
