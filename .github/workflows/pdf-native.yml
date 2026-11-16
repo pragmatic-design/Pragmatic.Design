@@ -42,7 +42,7 @@ jobs:
             container: true
             artifact: libpragmatic_pdf_native.so
             target_name: libpragmatic_pdf_native.so
-          - os: macos-14        # arm64 runner → native aarch64-apple-darwin
+          - os: macos-15        # arm64 runner → native aarch64-apple-darwin (macos-14 is retired: the alpha.4 release run found it)
             rid: osx-arm64
             container: false
             artifact: libpragmatic_pdf_native.dylib
