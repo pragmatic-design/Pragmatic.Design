@@ -301,7 +301,7 @@ the task needs one of these:
   (**PRAG0730**/**PRAG0731**);
 - **`[FromClock]`** with a **`[ComputedFilter]`** method: reading by the clock
   (**PRAG0733**–**PRAG0735**);
-- **`[QueryView]`** with **`[GroupBy]`**: counting instead of listing (**PRAG0732**).
+- **`[QueryView]`** with **`[GroupBy]`**: counting instead of listing (**PRAG0732**); `IncludeEmpty = true` adds a zero row per missing value of a single enum key, with nullable `[Min]`/`[Max]`/`[Avg]` (**PRAG0748**–**PRAG0750**).
 
 ### 7. GridFilter (runtime operator selection)
 
@@ -449,8 +449,7 @@ Both are in **[references/database.md](references/database.md)**:
 | **PRAG0711** | Warning | `[LoadWith]` depth greater than 3 | Reduce depth or use projection |
 | **PRAG0730** | Error | A `[FromCurrentUser]` property with a `public`/`internal`/`init` setter | `{ get; private set; }` |
 | **PRAG0731** | Error | A `[FromCurrentUser]` binding that cannot be generated (the message says why) | Name a member of the `[PragmaticUser]` entity, of the property's type; `string` for the member-less form |
-| **PRAG0732** | Error | A `[GroupBy]` key or `Via` that names no member of the entity | Name a declared or generated member; reach another entity with `Via` |
-| **PRAG0733** | Error | A `[ComputedFilter]` the generator cannot write (not `bool`, static, generic, block body, `ref`/`out`/`in`/`params` parameter) | A `bool` property or instance method with an expression body |
+| **PRAG0732** | Error | A `[GroupBy]` key or `Via` that names no member of the entity | Name a declared or generated member; reach another entity with `Via` || **PRAG0733** | Error | A `[ComputedFilter]` the generator cannot write (not `bool`, static, generic, block body, `ref`/`out`/`in`/`params` parameter) | A `bool` property or instance method with an expression body |
 | **PRAG0735** | Error | A specification in a `[Projectable]`/`[ComputedFilter]` body takes a value from the row | Pass constants or a filter method's parameters; write a row-dependent condition as a lambda |
 | **PRAG0734** | Error | A `[FromClock]` binding that cannot be generated | `DateOnly` or `DateTimeOffset`, `{ get; private set; }` |
 | **PRAG1100** | Error | `[HasOwner]` not `partial` | Add `partial` |

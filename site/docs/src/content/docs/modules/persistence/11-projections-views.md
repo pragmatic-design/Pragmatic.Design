@@ -342,17 +342,46 @@ Marks the class as a query view. `TRoot` is the primary entity: the starting `IQ
 
 Specifies which properties to group by. Multiple `[GroupBy]` attributes combine into a composite grouping key.
 
-⚠️ **A group is the rows that share a key, so a key no row has has no group.** Grouped by an enum, a
-status no row is in is absent from the answer, not a row with a count of zero: the view is a
-`GROUP BY`, on every engine. A screen that lists every status joins the answer to the enum's values
-itself, zero beside the missing ones. This is measured, not assumed:
+⚠️ **A group is the rows that share a key, so a key no row has has no group.** The view is a `GROUP BY`
+on every engine. Grouped by an enum, a status no row is in is absent from the answer; it is not a row
+with a count of zero. This is measured, not assumed: see
 `AnAggregateReadIsAQueryTests.AStatusNoReservationIsIn_HasNoRow` in the Showcase, on EF Core, the Sql
 engine and the documents engine.
+
+**`IncludeEmpty = true` answers every value.** With it, the view also returns a row for each value of
+the key that no row has, placed after the groups the rows form, in the enum's declaration order. The
+values are the enum's members, written into the generated code. The rules:
+
+- **Only a single key that is an enum** and is also a property of the view.
+  - A composite key is **PRAG0748**: its values multiply, or are not known.
+  - Any other key is **PRAG0749**. That includes a lookup, whose values are rows read at startup.
+- **An empty group's `[Count]` and `[Sum]` are 0.**
+- **`[Min]`, `[Max]`, `[Avg]` and a `[From]` other than the key have no value in an empty group.** Their
+  property must be nullable, and answers null. A non-nullable one is **PRAG0750**, because a `decimal`
+  would read 0, which nobody could tell from a real 0.
+- **The empty groups are completed after the groups are read**, on each engine.
+  - A paged read pages over the completed set, and its total counts the empty groups.
+  - An enum has as many groups as members, so reading them all is cheap.
+
+```csharp
+[QueryView<Reservation>]
+[GroupBy<Reservation>(Properties = "Status", IncludeEmpty = true)]
+public partial class ReservationsByEveryStatusView
+{
+    [From<Reservation>] public ReservationStatus Status { get; init; }
+    [Count<Reservation>] public int Reservations { get; init; }                       // 0 when empty
+    [Sum<Reservation>(Expression = "TotalAmount")] public decimal TotalAmount { get; init; } // 0 when empty
+    [Max<Reservation>(Expression = "TotalAmount")] public decimal? LargestBooking { get; init; } // null when empty
+}
+```
+
+Measured in the Showcase on the three engines: `AnAggregateReadIsAQueryTests.WithIncludeEmpty_EveryStatusHasARow_ZeroBesideTheEmptyOnes`.
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `Properties` | `string` | Comma-separated property names to group by |
 | `Via` | `string?` | Navigation path for nested grouping |
+| `IncludeEmpty` | `bool` | A row for every value of a single enum key, the empty ones included (PRAG0748–0750) |
 
 A key is any member the entity will have: declared, inherited, or written by the generator. The
 foreign key and the navigation a `[Relation.*]` produces count, so an entity that declares neither by

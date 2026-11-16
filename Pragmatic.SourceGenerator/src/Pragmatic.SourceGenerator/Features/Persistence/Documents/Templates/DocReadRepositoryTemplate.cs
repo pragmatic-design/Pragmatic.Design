@@ -159,6 +159,9 @@ internal sealed class DocReadRepositoryTemplate(DocReadRepositoryModel model) : 
             // A grouped [QueryView] (#507): the matched documents read whole, grouped and aggregated in .NET. Not paged, not ordered (refused).
             AppendLine("                    var documents = await filtered.ToListAsync(ct);");
             AppendLine($"                    var rows = {grouped};");
+            // IncludeEmpty (#766): a row for each value of the key no document has, after the groups the documents formed.
+            if (query.EmptyGroups is { } emptyGroups)
+                AppendLine($"                    {emptyGroups}");
         }
         else if (query.Lookups.Count == 0 && !query.InMemory)
         {

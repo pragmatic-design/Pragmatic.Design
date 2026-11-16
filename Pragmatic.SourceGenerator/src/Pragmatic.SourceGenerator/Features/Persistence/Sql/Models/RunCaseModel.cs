@@ -7,6 +7,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 ///     entity), or why the Sql engine did not compile it (<see cref="Unsupported" />, the case then refuses). A query that maps in memory
 ///     (<see cref="InMemory" />) reads the entities with <see cref="Includes" /> loaded and runs the result's <c>Selector</c> over them. A query
 ///     whose result is a grouped <c>[QueryView]</c> reads through <see cref="Grouped" />, its grouping and the view's initializer; one with a
-///     <c>[Join&lt;T&gt;]</c> through <see cref="Joined" />, the join and the result's initializer.
+///     <c>[Join&lt;T&gt;]</c> through <see cref="Joined" />, the join and the result's initializer. A grouped view with
+///     <c>IncludeEmpty</c> completes its rows with <see cref="EmptyGroups" />, a statement over <c>rows</c> (#766).
 /// </summary>
-internal sealed record RunCaseModel(string QueryType, string QueryName, string? Unsupported, string ResultType, bool Projected, bool InMemory, EquatableArray<string> Includes, string? Grouped = null, string? Joined = null);
+internal sealed record RunCaseModel(string QueryType, string QueryName, string? Unsupported, string ResultType, bool Projected, bool InMemory, EquatableArray<string> Includes, string? Grouped = null, string? Joined = null, string? EmptyGroups = null);

@@ -190,6 +190,16 @@ internal sealed partial class QueryApplyTemplate : CSharpTemplate
         AppendLine(
             $"public System.Func<IQueryable<{entityType}>, IQueryable<{resultType}>>? Aggregate "
             + $"=> {resultType}.Build;");
+
+        // The values of the key no row has, for a view that asks for them (#766): completed once the groups have arrived.
+        if (_model.ResultCompletesEmptyGroups)
+        {
+            AppendLine();
+            XmlSummary("Completes the groups with the values of the key no row has: the view declares IncludeEmpty.");
+            AppendLine(
+                $"public System.Func<global::System.Collections.Generic.IReadOnlyList<{resultType}>, "
+                + $"global::System.Collections.Generic.IReadOnlyList<{resultType}>>? Complete => {resultType}.WithEmptyGroups;");
+        }
     }
 
     private void RenderProjectionProperty()

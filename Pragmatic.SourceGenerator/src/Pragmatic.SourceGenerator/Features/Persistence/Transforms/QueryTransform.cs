@@ -162,6 +162,9 @@ internal static class QueryTransform
             // The result declares the grouping; the query only has to hand the set over.
             ResultIsAggregateView = resultType.GetAttributes().Any(
                 a => a.AttributeClass?.Name == "QueryViewAttribute"),
+            // Read by the view's own transform, so the query and the view agree on whether WithEmptyGroups exists.
+            ResultCompletesEmptyGroups = resultType is INamedTypeSymbol view
+                && QueryViewTransform.Of(view, context.SemanticModel.Compilation) is { CompletesEmptyGroups: true },
             // Read with the endpoint transform's own readers: the posture is one rule, and two
             // readings of "does this opt out" is how the two doors come apart.
             AllowAnonymous = targetSymbol.GetAttributes().Any(a =>

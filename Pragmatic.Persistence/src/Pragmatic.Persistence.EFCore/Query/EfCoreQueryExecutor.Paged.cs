@@ -111,6 +111,16 @@ public sealed partial class EfCoreQueryExecutor
             if (query.Aggregate is not null)
             {
                 var grouped = ApplyNavigationFilters(Shaped(query, filtered)!, query);
+
+                // A view that answers the values no row has (#766): those groups are no rows of the database, so every group is read,
+                // completed, and the page taken from the completed set, which is also what the total counts.
+                if (query.Complete is { } complete)
+                {
+                    var all = complete(await grouped.ToListAsync(cancellationToken).ConfigureAwait(false));
+                    return PagedResult<TResult>.Success(
+                        all.Skip(query.Skip).Take(query.Take).ToList(), all.Count, query.Page, query.PageSize);
+                }
+
                 var groups = await grouped.CountAsync(cancellationToken).ConfigureAwait(false);
                 var page = await grouped
                     .Skip(query.Skip)
