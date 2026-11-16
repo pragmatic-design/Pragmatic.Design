@@ -66,7 +66,7 @@ public sealed class AccountsModule;
 ```
 
 - **The store is generated.** A `[PragmaticUser]` entity that owns a `LocalIdentity`, stored by EF Core
-  or by one of the engines (Sql, documents: not in 1.0.0-alpha.3), gets `{User}.LocalIdentityStore`
+  or by one of the engines (Sql, documents), gets `{User}.LocalIdentityStore`
   registered as `ILocalIdentityStore`, saving through the boundary's unit of work. Write your own class implementing the interface only when
   the credentials live elsewhere; then nothing is generated.
 - **Self-registration** (`RegisterUser`) needs a user to create: the entity implements

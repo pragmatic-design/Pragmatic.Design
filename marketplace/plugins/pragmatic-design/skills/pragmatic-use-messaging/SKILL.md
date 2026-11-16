@@ -20,11 +20,11 @@ For scheduled/recurring jobs use `pragmatic-use-jobs` instead.
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Messaging" Version="1.0.0-alpha.3" />
-<PackageReference Include="Pragmatic.Messaging.EFCore" Version="1.0.0-alpha.3" />     <!-- transactional outbox -->
-<PackageReference Include="Pragmatic.Messaging.Channels" Version="1.0.0-alpha.3" />   <!-- in-process transport -->
-<PackageReference Include="Pragmatic.Messaging.RabbitMQ" Version="1.0.0-alpha.3" />   <!-- distributed transport -->
-<PackageReference Include="Pragmatic.Messaging.Saga" Version="1.0.0-alpha.3" />       <!-- workflow -->
+<PackageReference Include="Pragmatic.Messaging" Version="1.0.0-alpha.4" />
+<PackageReference Include="Pragmatic.Messaging.EFCore" Version="1.0.0-alpha.4" />     <!-- transactional outbox -->
+<PackageReference Include="Pragmatic.Messaging.Channels" Version="1.0.0-alpha.4" />   <!-- in-process transport -->
+<PackageReference Include="Pragmatic.Messaging.RabbitMQ" Version="1.0.0-alpha.4" />   <!-- distributed transport -->
+<PackageReference Include="Pragmatic.Messaging.Saga" Version="1.0.0-alpha.4" />       <!-- workflow -->
 ```
 
 Always add `Pragmatic.SourceGenerator` as an analyzer. Namespaces: `Pragmatic.Messaging`, `Pragmatic.Messaging.Attributes`, `Pragmatic.Messaging.Saga`, and `Pragmatic.Resilience.Attributes` for `[Retry]`, `[Timeout]` and `[CircuitBreaker]`.
@@ -132,7 +132,7 @@ app.UseMessaging(msg =>
 });
 ```
 
-The generator maps `__OutboxMessages` into that boundary's DbContext, adds the capture interceptor, and registers the delivery pump plus a retention purge. `OutboxInterceptor` writes the rows in the **same transaction** as `SaveChanges`; the pump publishes them to the transport and an AOT-safe `MessageTypeRegistry` deserializes. Without `Pragmatic.Messaging.EFCore` the attribute is inert → **PRAG0831**. A boundary on the Sql or documents engine references `Pragmatic.Messaging.Engines` instead (not in 1.0.0-alpha.3): the same attribute, the save's phase writes the rows, and the same pump reads them.
+The generator maps `__OutboxMessages` into that boundary's DbContext, adds the capture interceptor, and registers the delivery pump plus a retention purge. `OutboxInterceptor` writes the rows in the **same transaction** as `SaveChanges`; the pump publishes them to the transport and an AOT-safe `MessageTypeRegistry` deserializes. Without `Pragmatic.Messaging.EFCore` the attribute is inert → **PRAG0831**. A boundary on the Sql or documents engine references `Pragmatic.Messaging.Engines` instead: the same attribute, the save's phase writes the rows, and the same pump reads them.
 
 Pick **one** outbox per boundary: this one publishes to the transport (cross-service); Events' `[EnableEventOutbox]` dispatches in-process. Both capture and clear the same domain events, so applying both → **PRAG0833**.
 

@@ -19,9 +19,9 @@ For **cross-boundary** or **durable/async** reactions (another service, a queue,
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Events" Version="1.0.0-alpha.3" />
-<PackageReference Include="Pragmatic.Events.EFCore" Version="1.0.0-alpha.3" />   <!-- EF interceptor + outbox -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.3">
+<PackageReference Include="Pragmatic.Events" Version="1.0.0-alpha.4" />
+<PackageReference Include="Pragmatic.Events.EFCore" Version="1.0.0-alpha.4" />   <!-- EF interceptor + outbox -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
@@ -194,7 +194,7 @@ using Pragmatic.Events.Attributes;
 public partial class OrdersBoundary;
 ```
 
-Requires the boundary project to reference `Pragmatic.Events.EFCore`, or `Pragmatic.Events.Engines` for a boundary on the Sql or documents engine (not in 1.0.0-alpha.3); otherwise the generator emits **PRAG2752** (rather than silently doing nothing). Two boundaries sharing one physical database share a single `__EventOutbox` table. The manual three-step wiring above stays the path for a hand-written DbContext.
+Requires the boundary project to reference `Pragmatic.Events.EFCore`, or `Pragmatic.Events.Engines` for a boundary on the Sql or documents engine; otherwise the generator emits **PRAG2752** (rather than silently doing nothing). Two boundaries sharing one physical database share a single `__EventOutbox` table. The manual three-step wiring above stays the path for a hand-written DbContext.
 
 ## What the SG generates
 

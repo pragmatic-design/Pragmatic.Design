@@ -17,7 +17,7 @@ description: Use when configuring logging providers (app.UseLogging), adding str
 ## Package
 
 ```xml
-<PackageReference Include="Pragmatic.Logging" Version="1.0.0-alpha.3" />
+<PackageReference Include="Pragmatic.Logging" Version="1.0.0-alpha.4" />
 ```
 
 ## Configuring logging (host)

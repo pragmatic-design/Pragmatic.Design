@@ -14,8 +14,6 @@ the reader, so nothing builds an expression tree per call.
 The namespaces carry no `.Core`: the engine's types are in `Pragmatic.Persistence.Sql` and its
 sub-namespaces (`.Attributes`, `.Functions`, `.Dialects`, `.Schema`, …).
 
-⚠️ Neither package is in 1.0.0-alpha.3: the engine ships with a later release.
-
 ## Pragmatic's entities on the engine
 
 A boundary on the engine keeps its `[Entity]` types, repositories, actions and endpoints. The host opens
