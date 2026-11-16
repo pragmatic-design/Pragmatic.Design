@@ -22,5 +22,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="Grouped">
 ///     A grouped <c>[QueryView]</c> (#507): the view's rows from the matched documents (<c>documents</c>), grouped in .NET; null for any other result.
 /// </param>
+/// <param name="EmptyGroups">
+///     For a grouped view with <c>IncludeEmpty</c> (#766), the statement that adds to <c>rows</c> a row for each value of the key none has; null otherwise.
+/// </param>
 internal sealed record DocRunCaseModel(string QueryType, string QueryName, string? Unsupported, string ResultType, string Projection,
-    EquatableArray<DocLookupModel> Lookups, bool InMemory, string? Grouped = null);
+    EquatableArray<DocLookupModel> Lookups, bool InMemory, string? Grouped = null, string? EmptyGroups = null);

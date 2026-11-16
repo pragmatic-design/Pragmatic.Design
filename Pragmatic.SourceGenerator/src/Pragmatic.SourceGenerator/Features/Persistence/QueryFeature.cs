@@ -930,6 +930,18 @@ internal static class QueryFeature
                 unresolved.EntityType));
         }
 
+        // IncludeEmpty's refusals (#766): with any of them the view generates no WithEmptyGroups, and the build fails here.
+        foreach (var refusal in model.EmptyGroupRefusals)
+        {
+            var descriptor = refusal.Kind switch
+            {
+                EmptyGroupRefusalKind.CompositeKey => QueryViewDiagnostics.EmptyGroupsOnACompositeKey,
+                EmptyGroupRefusalKind.KeyNotAProjectedEnum => QueryViewDiagnostics.EmptyGroupsOnAKeyNotAProjectedEnum,
+                _ => QueryViewDiagnostics.EmptyGroupMemberHasNoValue
+            };
+            context.ReportDiagnostic(Diagnostic.Create(descriptor, refusal.Location?.ToLocation(), model.TypeName, refusal.Detail));
+        }
+
         var template = new QueryViewBuildTemplate(model);
         var artifact = template.RenderOutput();
         if (!artifact.IsEmpty)

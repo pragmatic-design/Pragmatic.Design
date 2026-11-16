@@ -70,8 +70,14 @@ internal static class QueryViewTransform
             }
         }
 
+        var (includeEmpty, emptyGroupValues, emptyGroupKeyType, emptyGroupRefusals) = EmptyGroupReader.Read(typeSymbol, groupByProperties, ct);
+
         return new QueryViewModel
         {
+            IncludeEmpty = includeEmpty,
+            EmptyGroupValues = [.. emptyGroupValues],
+            EmptyGroupKeyType = emptyGroupKeyType,
+            EmptyGroupRefusals = [.. emptyGroupRefusals],
             TypeName = typeSymbol.Name,
             Namespace = typeSymbol.ContainingNamespace?.ToDisplayString() ?? "",
             Accessibility = typeSymbol.DeclaredAccessibility.ToString().ToLowerInvariant(),

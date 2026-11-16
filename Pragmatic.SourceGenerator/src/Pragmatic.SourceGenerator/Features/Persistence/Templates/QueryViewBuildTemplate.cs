@@ -66,6 +66,63 @@ internal sealed class QueryViewBuildTemplate : CSharpTemplate
     private void RenderBody()
     {
         RenderBuildMethod();
+
+        if (_model.CompletesEmptyGroups)
+        {
+            AppendLine();
+            RenderWithEmptyGroups();
+        }
+    }
+
+    /// <summary>
+    ///     <c>WithEmptyGroups</c> (#766): the groups the rows formed, then a row for each value of the key none of them has. The values are
+    ///     the enum's members, written here; <c>[Count]</c> and <c>[Sum]</c> are 0, and every other member, nullable by PRAG0750, is null.
+    /// </summary>
+    private void RenderWithEmptyGroups()
+    {
+        var viewType = $"global::{_model.FullTypeName}";
+        var key = _model.GroupByProperties[0];
+
+        XmlSummary("The groups the rows formed, then a row for each value of the key no row has: [GroupBy(IncludeEmpty = true)].");
+        XmlParam("groups", "The groups Build read.");
+        XmlReturns("Every value of the key, the empty ones after the others, in the enum's declaration order.");
+        Method("WithEmptyGroups", () =>
+        {
+            AppendLine($"var answered = new global::System.Collections.Generic.List<{viewType}>(groups);");
+            AppendLine($"var present = new global::System.Collections.Generic.HashSet<{_model.EmptyGroupKeyType}>(answered.Select(g => g.{key.PropertyName}));");
+            AppendLine($"foreach (var value in new {_model.EmptyGroupKeyType}[] {{ {string.Join(", ", _model.EmptyGroupValues)} }})");
+            AppendLine("{");
+            IncreaseIndent();
+            AppendLine("if (present.Contains(value))");
+            AppendLine("    continue;");
+            AppendLine();
+            AppendLine($"answered.Add(new {viewType}");
+            AppendLine("{");
+            IncreaseIndent();
+            var emitted = new HashSet<string>(StringComparer.Ordinal) { key.PropertyName };
+            AppendLine($"{key.PropertyName} = value,");
+            foreach (var agg in _model.AggregateProperties)
+            {
+                if (emitted.Add(agg.PropertyName))
+                    AppendLine($"{agg.PropertyName} = {(agg.Kind is AggregateKind.Count or AggregateKind.Sum ? "0" : "null")},");
+            }
+
+            foreach (var source in _model.SourceProperties)
+            {
+                if (emitted.Add(source.PropertyName))
+                    AppendLine($"{source.PropertyName} = null,");
+            }
+
+            DecreaseIndent();
+            AppendLine("});");
+            DecreaseIndent();
+            AppendLine("}");
+            AppendLine();
+            AppendLine("return answered;");
+        },
+        $"global::System.Collections.Generic.IReadOnlyList<{viewType}>",
+        [new($"global::System.Collections.Generic.IReadOnlyList<{viewType}>", "groups")],
+        modifiers: new MethodModifiers { IsStatic = true });
     }
 
     private void RenderBuildMethod()

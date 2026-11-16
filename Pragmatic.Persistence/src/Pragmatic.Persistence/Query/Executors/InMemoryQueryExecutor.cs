@@ -70,7 +70,9 @@ public sealed class InMemoryQueryExecutor : IQueryExecutor
             // page of groups, and the entities behind them are not what the caller receives.
             if (query.Aggregate is { } aggregate)
             {
-                var grouped = aggregate(query.Apply(source)).ToList();
+                IReadOnlyList<TResult> grouped = aggregate(query.Apply(source)).ToList();
+                if (query.Complete is { } complete)
+                    grouped = complete(grouped);
 
                 return Task.FromResult(PagedResult<TResult>.Success(
                     grouped.Skip(query.Skip).Take(query.Take).ToList(),
@@ -135,7 +137,10 @@ public sealed class InMemoryQueryExecutor : IQueryExecutor
     {
         var filtered = query.Apply(source);
         if (query.Aggregate is { } aggregate)
-            return Task.FromResult<IReadOnlyList<TResult>>(aggregate(filtered).ToList());
+        {
+            IReadOnlyList<TResult> groups = aggregate(filtered).ToList();
+            return Task.FromResult(query.Complete is { } complete ? complete(groups) : groups);
+        }
 
         IReadOnlyList<TResult> items = query.Projection != null
             ? filtered.Select(query.Projection.Compile()).ToList()

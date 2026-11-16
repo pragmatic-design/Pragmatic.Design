@@ -199,6 +199,9 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         {
             // A grouped [QueryView] (#507): the filters, then the view's grouping and aggregates, in one statement. Not paged, not ordered (refused).
             AppendLine($"                    var rows = await {filtered}{grouped}.ToListAsync(ct);");
+            // IncludeEmpty (#766): a row for each value of the key no row has, after the groups the statement read.
+            if (query.EmptyGroups is { } emptyGroups)
+                AppendLine($"                    {emptyGroups}");
             AppendLine("                    return (global::System.Collections.Generic.IReadOnlyList<TResult>)(object)rows;");
         }
         else if (query.Joined is { } joined)

@@ -42,4 +42,25 @@ public sealed class GroupByAttribute<TEntity> : Attribute where TEntity : class
     ///     Not needed for the root entity.
     /// </summary>
     public string? Via { get; init; }
+
+    /// <summary>
+    ///     Answer a row for every value of the key, beside the groups the rows form: a value no row has gets its row, with zero (#766).
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Without it a value no row has is absent: the view is a <c>GROUP BY</c>, and a group of no rows is none of its groups.
+    ///     </para>
+    ///     <para>
+    ///         Only on a single key whose type is an enum, the key projected onto the view, so the values are the enum's members, known at
+    ///         compile time. An empty group's <c>[Count]</c> and <c>[Sum]</c> are 0. <c>[Min]</c>, <c>[Max]</c>, <c>[Avg]</c> and a
+    ///         <c>[From]</c> other than the key have no value, so their property must be nullable, and answers null. Each other case is a
+    ///         compile error: PRAG0748 (a composite key), PRAG0749 (a key that is not a projected enum), PRAG0750 (a member with no value
+    ///         for an empty group that is not nullable).
+    ///     </para>
+    ///     <para>
+    ///         The empty groups follow the ones the rows form, in the enum's declaration order. A paged read pages over all of them, and its
+    ///         total counts them.
+    ///     </para>
+    /// </remarks>
+    public bool IncludeEmpty { get; init; }
 }

@@ -81,4 +81,14 @@ public interface IQuery<TEntity, TResult> : IQuery<TEntity>
     ///     </para>
     /// </remarks>
     Func<IQueryable<TEntity>, IQueryable<TResult>>? Aggregate => null;
+
+    /// <summary>
+    ///     Completes the groups <see cref="Aggregate" /> read, once they have arrived: a row for each value of the key no row has, for a
+    ///     view that declares <c>[GroupBy(IncludeEmpty = true)]</c> (#766).
+    /// </summary>
+    /// <remarks>
+    ///     Null unless the view declares it. The executor then reads every group, completes them, and pages in memory: what it counts and
+    ///     pages is the completed set, since the empty groups are no rows of the database. A single enum key has as many groups as members.
+    /// </remarks>
+    Func<IReadOnlyList<TResult>, IReadOnlyList<TResult>>? Complete => null;
 }

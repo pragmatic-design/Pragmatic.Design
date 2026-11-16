@@ -46,6 +46,31 @@ internal sealed partial class PragmaticQuery
         return $"{Linq}.ToList({Linq}.Select({Linq}.GroupBy({documents}, e => new {{ {string.Join(", ", Keys(View!))} }}), g => new {ResultName} {{ {string.Join(", ", Members(View!, sql: false))} }}))";
     }
 
+    /// <summary>
+    ///     For a view with <c>[GroupBy(IncludeEmpty = true)]</c> (#766), the statement that adds to the list <paramref name="rows" /> a row for
+    ///     each value of the key none of them has; null for any other view.
+    /// </summary>
+    /// <remarks>
+    ///     Written here, not called: the engines compile no <c>Build</c>, so the view's <c>WithEmptyGroups</c> (EF Core's) does not exist in
+    ///     their assembly. The same values, in the same order, with the same 0 and null as the view's.
+    /// </remarks>
+    internal string? EmptyGroupsStatement(string rows)
+    {
+        if (View is not { CompletesEmptyGroups: true } view)
+            return null;
+
+        var key = view.GroupByProperties[0].PropertyName;
+        var members = new List<string> { $"{key} = value" };
+        var named = new HashSet<string>(System.StringComparer.Ordinal) { key };
+        foreach (var aggregate in view.AggregateProperties.Where(a => named.Add(a.PropertyName)))
+            members.Add($"{aggregate.PropertyName} = {(aggregate.Kind is AggregateKind.Count or AggregateKind.Sum ? "0" : "null")}");
+        foreach (var source in view.SourceProperties.Where(s => named.Add(s.PropertyName)))
+            members.Add($"{source.PropertyName} = null");
+
+        return $"foreach (var value in new {view.EmptyGroupKeyType}[] {{ {string.Join(", ", view.EmptyGroupValues)} }}) "
+               + $"{{ if (!{rows}.Exists(r => r.{key} == value)) {rows}.Add(new {ResultName} {{ {string.Join(", ", members)} }}); }}";
+    }
+
     /// <summary>A key through a navigation: the documents engine keeps a relation as its key, so there is no navigation to group through.</summary>
     internal string? NavigationKey => View?.GroupByProperties.FirstOrDefault(g => g.NavigationPath.Length > 0)?.KeyAccessPath;
 

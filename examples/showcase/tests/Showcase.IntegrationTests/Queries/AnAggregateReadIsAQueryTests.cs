@@ -120,6 +120,32 @@ public class AnAggregateReadIsAQueryTests(PostgresFixture fixture) : Integration
             "no reservation is cancelled, and a group of no rows is no group");
     }
 
+    /// <summary>
+    ///     With <c>IncludeEmpty</c> every status has its row: the ones the rows form with their numbers, the others with zero (#766). The
+    ///     control is <see cref="AStatusNoReservationIsIn_HasNoRow" />, the same reservations through the view without the opt-in.
+    /// </summary>
+    [Fact]
+    public async Task WithIncludeEmpty_EveryStatusHasARow_ZeroBesideTheEmptyOnes()
+    {
+        var propertyId = await APropertyWithReservationsAsync(2);
+
+        var groups = (await GetAsync<JsonElement>($"/api/reservations/by-every-status?propertyId={propertyId}")).EnumerateArray().ToList();
+
+        groups.Select(g => g.GetProperty("status").GetString()).Should().BeEquivalentTo(
+            Enum.GetNames<Showcase.Booking.Enums.ReservationStatus>(), "a row for every value of the key, none twice");
+
+        var pending = groups.Single(g => g.GetProperty("status").GetString() == "Pending");
+        pending.GetProperty("reservations").GetInt32().Should().Be(2, "the group the rows form keeps its numbers");
+        pending.GetProperty("largestBooking").ValueKind.Should().Be(JsonValueKind.Number);
+
+        var cancelled = groups.Single(g => g.GetProperty("status").GetString() == "Cancelled");
+        cancelled.GetProperty("reservations").GetInt32().Should().Be(0, "no reservation is cancelled: its row counts zero");
+        cancelled.GetProperty("totalAmount").GetDecimal().Should().Be(0m, "and sums zero");
+        // The host writes no null, so the property is absent: what matters is that it is no number, not a 0 nobody could tell from a real one.
+        (cancelled.TryGetProperty("largestBooking", out var largest) && largest.ValueKind != JsonValueKind.Null).Should().BeFalse(
+            "a status with no reservation has no largest booking");
+    }
+
     /// <summary>A property with a room type and <paramref name="count"/> reservations on it.</summary>
     private async Task<Guid> APropertyWithReservationsAsync(int count)
     {

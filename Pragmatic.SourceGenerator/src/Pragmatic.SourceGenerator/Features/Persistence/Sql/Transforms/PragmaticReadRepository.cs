@@ -68,5 +68,6 @@ internal static class PragmaticReadRepository
         => new("global::" + query.Type.ToDisplayString(), query.Type.Name, query.Unsupported, "global::" + query.Result.ToDisplayString(),
             !query.MapsInMemory && query.View is null && !SymbolEqualityComparer.Default.Equals(query.Result, query.Entity), query.MapsInMemory, query.InMemoryNavigations.ToEquatableArray(),
             query.View is not null && query.Unsupported is null ? query.GroupedChain() : null,
-            query.JoinTarget is not null && query.Unsupported is null ? query.JoinedChain("session") : null);
+            query.JoinTarget is not null && query.Unsupported is null ? query.JoinedChain("session") : null,
+            query.Unsupported is null ? query.EmptyGroupsStatement("rows") : null);
 }

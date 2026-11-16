@@ -67,6 +67,25 @@ internal sealed record QueryViewModel
     public EquatableArray<UnresolvedGroupKeyModel> UnresolvedGroupKeys { get; init; } =
         EquatableArray<UnresolvedGroupKeyModel>.Empty;
 
+    /// <summary>Whether a <c>[GroupBy]</c> asks for a row per value of the key, the empty ones included (#766).</summary>
+    public bool IncludeEmpty { get; init; }
+
+    /// <summary>
+    ///     The key's values, as the enum members the generated <c>WithEmptyGroups</c> writes (<c>global::Ns.Status.Pending</c>), in
+    ///     declaration order. Empty unless <see cref="IncludeEmpty" /> holds and nothing is refused.
+    /// </summary>
+    public EquatableArray<string> EmptyGroupValues { get; init; } = EquatableArray<string>.Empty;
+
+    /// <summary>The key's enum type, fully qualified (<c>global::Ns.Status</c>), when <see cref="EmptyGroupValues" /> has values.</summary>
+    public string? EmptyGroupKeyType { get; init; }
+
+    /// <summary>What <see cref="IncludeEmpty" /> cannot answer, for PRAG0748, PRAG0749 and PRAG0750.</summary>
+    public EquatableArray<EmptyGroupRefusalModel> EmptyGroupRefusals { get; init; } =
+        EquatableArray<EmptyGroupRefusalModel>.Empty;
+
+    /// <summary>Whether the view generates <c>WithEmptyGroups</c>: asked for, and nothing refused.</summary>
+    public bool CompletesEmptyGroups => IncludeEmpty && EmptyGroupRefusals.Count == 0 && EmptyGroupValues.Count > 0;
+
     /// <summary>
     ///     Whether the model is valid for code generation.
     /// </summary>

@@ -503,6 +503,13 @@ internal sealed record QueryModel
 
     public bool ResultIsAggregateView { get; init; }
 
+    /// <summary>
+    ///     Whether the view answers its empty groups too (<c>[GroupBy(IncludeEmpty = true)]</c>, #766): the query hands its generated
+    ///     <c>WithEmptyGroups</c> to the executor as <c>Complete</c>. False when the view refuses the opt-in, which then fails on its own
+    ///     diagnostic.
+    /// </summary>
+    public bool ResultCompletesEmptyGroups { get; init; }
+
     public bool MapsInMemory { get; init; }
 
     /// <summary>

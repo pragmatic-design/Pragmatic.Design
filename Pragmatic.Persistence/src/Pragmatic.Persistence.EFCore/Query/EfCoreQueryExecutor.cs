@@ -252,7 +252,11 @@ public sealed partial class EfCoreQueryExecutor : IQueryExecutor
 
         // The whole step, not a row projection: the rows of a grouping are not rows of the entity.
         if (Shaped(query, filtered) is { } shaped)
-            return await ApplyNavigationFilters(shaped, query).ToListAsync(cancellationToken).ConfigureAwait(false);
+        {
+            var groups = await ApplyNavigationFilters(shaped, query).ToListAsync(cancellationToken).ConfigureAwait(false);
+            // The values of the key no row has, for a view that asks for them (#766).
+            return query.Complete is { } complete ? complete(groups) : groups;
+        }
 
         var rows = ApplyNavigationFilters(filtered, query);
 
