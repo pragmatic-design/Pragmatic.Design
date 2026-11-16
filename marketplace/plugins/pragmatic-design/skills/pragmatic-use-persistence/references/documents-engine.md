@@ -15,8 +15,6 @@ tree per call, no reflection.
 The namespaces carry no `.Core`: the engine's types are in `Pragmatic.Persistence.Documents` and its
 sub-namespaces (`.Attributes`, `.Filters`, `.Planning`, `.Schema`, …).
 
-⚠️ None of these packages is in 1.0.0-alpha.3: the engine ships with a later release.
-
 ## Pragmatic's entities on the engine
 
 A boundary on the engine keeps its `[Entity]` types, repositories, actions and endpoints. The host opens

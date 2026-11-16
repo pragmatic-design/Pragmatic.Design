@@ -13,8 +13,6 @@ It is a package of its own because it depends on `Microsoft.Extensions.Hosting`;
 
 ## Setup
 
-The package is not in 1.0.0-alpha.3: it ships with the next release, and until then it comes from a local feed.
-
 ```xml
 <ProjectReference Include="..\..\src\MyWorker\MyWorker.csproj" />
 <PackageReference Include="Pragmatic.Testing.Hosting" Version="$(PragmaticVersion)" />

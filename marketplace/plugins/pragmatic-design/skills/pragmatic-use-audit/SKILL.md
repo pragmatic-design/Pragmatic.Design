@@ -42,8 +42,8 @@ services.AddAuditTrail();                   // store + the sealing worker
 ⚠️ `[Audited]` entities in more than one database: the generated host cannot choose where the trail
 lives and says so; register `AuditDbContext` yourself.
 
-On a boundary of the Sql or documents engine, reference `Pragmatic.Audit.Engines` (not in
-1.0.0-alpha.3). The boundary's saves write the entries, and the host registers
+On a boundary of the Sql or documents engine, reference `Pragmatic.Audit.Engines`. The boundary's saves
+write the entries, and the host registers
 `AddSqlAuditTrail<TBoundary>()` / `AddDocAuditTrail<TBoundary>()` by the same one-place rule, counting
 EF Core's databases and the engines' boundaries together. On the documents engine, entries of the same
 instant are ordered by id, not by write.
