@@ -286,7 +286,7 @@ The full list, module by module, is [below](#modules).
   [stated below](#how-we-know-it-works)), and you can take a single library without the rest.
 
 **It is probably not for you (yet)** if you need a stable 1.0 today, depend on an ecosystem that is
-not first-class here, or cannot run .NET 10.
+not first-class here, or cannot run .NET 10 or later.
 
 ---
 
@@ -348,6 +348,19 @@ dotnet add package Pragmatic.SourceGenerator --prerelease
 
 To try changes that are not released yet, a clone can pack itself into a
 [local feed](docs/howto/local-nuget-server.md).
+
+**Which .NET.** The packages target .NET 10, the LTS release.
+- **An application on .NET 11 uses them as they are.** A consumer application on `net11.0` builds
+  against them and its tests pass, with EF Core 10 or with EF Core 11, whose PostgreSQL provider is
+  still a release candidate. The repository's own gate also runs on the .NET 11 SDK in CI.
+- **Known issues on .NET 11, being fixed:**
+  - a runtime OpenAPI document with Pragmatic's transformers ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832));
+  - a background service that fails once the host is running ([#839](https://github.com/pragmatic-design/Pragmatic.Design/issues/839));
+  - a `double` stored where the documents engine expects a `decimal` ([#831](https://github.com/pragmatic-design/Pragmatic.Design/issues/831)).
+- **Every .NET release Microsoft supports is supported, with the same public API on each.** A target
+  is added when it ships and removed when its support ends, so moving your application from one to
+  the next is never a breaking change of ours. Taking advantage of what .NET 11 and C# 15 add is part of
+  the [road to the beta](docs/ROADMAP.md).
 
 Then pick your way in:
 
