@@ -17,13 +17,38 @@ Stable within 1.0.0-alpha: Abstractions, Ensure, Result, Specification, Mapping,
 Storage, and the core entity, repository, query and mutation surface of Persistence. The other modules
 are functional or preview, as their README says.
 
+## Toward 1.0.0-beta
+
+The beta supports .NET 11 and makes use of it, ships no native binary, and brings the Sql and documents
+engines level with EF Core. Each item is an issue, or an analysis that produces issues, with acceptance
+criteria; the beta ships when they are closed.
+
+- **.NET 11, supported and used** (#820):
+  - An application on `net11.0` uses Pragmatic as soon as it is released: measured against the packages,
+    with the repository built with the .NET 11 SDK in CI, and EF Core 11 supported.
+  - What .NET 11 brings is analyzed for what Pragmatic can use. That includes C# 15 unions and closed
+    hierarchies against `Result<T, TError>`, System.Text.Json's unions in the generated JSON context, and
+    async validation. Each adoption becomes an issue.
+  - .NET 10 stays supported: it is LTS, and both are supported until 2028-11-14.
+- **PDF and imaging without native libraries** (#821): the two managed spikes replace the Rust libraries
+  behind the same public API, with the modules' tests as the parity suite. Which image formats stay is
+  decided first.
+- **The engines level with EF Core** (#819): what the Sql and documents engines do not cover is measured,
+  then closed. Every Showcase test runs on both engines, or names the issue that says why not.
+- **One composed host under Native AOT** (#818): a smoke that publishes a host serving endpoints and
+  writing through the Sql engine. Until it is green, AOT is claimed per piece, not per application.
+- **Where other libraries do better:** an analysis of its own, to come. Each module is compared with the
+  libraries an application would otherwise use, and what they do better is refined here, generated rather
+  than reflected.
+
 ## Before 1.0
 
 - **Settle the functional modules.** Names and shapes that are still moving are fixed, and each module's
   status becomes Stable.
 - **Documents:** parsing works in memory today; streaming for large files.
 - **Agent:** the daemon runs as a regular .NET executable; a Native AOT build.
-- **Imaging:** the macOS native binary is built and stamped in CI; tests that run it on macOS.
+- **Imaging:** the macOS native binary is built and stamped in CI; tests that run it on macOS. Moot once
+  #821 removes the native library.
 
 ## Later
 
