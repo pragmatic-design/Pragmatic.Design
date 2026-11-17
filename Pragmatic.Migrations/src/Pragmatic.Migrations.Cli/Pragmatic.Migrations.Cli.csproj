@@ -7,6 +7,10 @@
     <ToolCommandName>pragmatic-migrate</ToolCommandName>
     <Description>Interactive CLI for Pragmatic.Migrations: schema diff, preview, apply with rich terminal UX.</Description>
     <PackageTags>migrations;cli;schema;diff;interactive</PackageTags>
+    <!-- A console tool on the web SDK for its shared framework: it serves no files. With static web
+         assets on, the .NET 11 SDK gives it a Blazor hot-reload module in Debug, and every host that
+         references it to run the schema snapshot (LocalCli.targets) fails on a module with no endpoint. -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>
