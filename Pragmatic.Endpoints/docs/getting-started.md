@@ -180,6 +180,11 @@ endpoints registers its own, and a Composition host registers every module's at 
 seen both ways is read once. The assembly with the endpoints needs nothing beyond `Pragmatic.Endpoints`
 for this; only the project that calls `AddPragmaticOpenApi()` references `Pragmatic.Endpoints.OpenApi`.
 
+`Pragmatic.Endpoints.OpenApi` ships for net10.0 and net11.0. On net10.0 it is built against
+`Microsoft.AspNetCore.OpenApi` 10 and `Microsoft.OpenApi` 2. On net11.0 it is built against
+`Microsoft.AspNetCore.OpenApi` 11 and `Microsoft.OpenApi` 3, the source-incompatible major ASP.NET Core 11
+brings. NuGet picks the one that matches the application, and the public API is the same on both.
+
 A generated endpoint is mapped as a `RequestDelegate`, so that it survives an AOT publish, and ASP.NET's
 API explorer skips a handler it cannot see. The generated registration adds a description provider
 that reads what the generator attached to the endpoint instead: the bound parameters with their place

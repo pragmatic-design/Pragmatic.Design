@@ -13,6 +13,11 @@
 
     <!-- Prevent test SDK from generating its own entry point (we have Program.cs) -->
     <GenerateProgramFile>false</GenerateProgramFile>
+
+    <!-- Both targets: on net11.0 the host gets ASP.NET Core 11's OpenAPI and Microsoft.OpenApi 3, under the
+         transformers of Pragmatic.Result.AspNetCore and Pragmatic.Endpoints.OpenApi (#832). -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
   </PropertyGroup>
 
   <!-- ASP.NET Core integration testing -->
@@ -34,6 +39,8 @@
     <ProjectReference Include="..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.OpenApi\Pragmatic.Endpoints.OpenApi.csproj" />
     <ProjectReference Include="..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
     <ProjectReference Include="..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <!-- AddResultTypeSupport(): the Result transformers of the runtime document. -->
+    <ProjectReference Include="..\Pragmatic.Result\src\Pragmatic.Result.AspNetCore\Pragmatic.Result.AspNetCore.csproj" />
     <ProjectReference Include="..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
   </ItemGroup>
 

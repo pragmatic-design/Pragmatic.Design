@@ -84,6 +84,8 @@ import { ENGINE_PROJECTS_DIR, engineProjectProblems } from './engine-projects.mj
 import { ENGINE_SUITES, SUITE_DIR, engineSuiteProblems, suiteCount, suiteFilter } from './engine-suites.mjs';
 import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 import { csharp15FormsInGenerated } from './csharp15-forms.mjs';
+import { distinctWarningsPerProject } from './lib/build-warnings.mjs';
+import { summedCount } from './lib/test-counts.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -269,12 +271,9 @@ function run(cmd, cmdArgs) {
  * Field-position parsing is still a trap: "Non superati:  22" splits oddly.
  */
 function parseTestOutput(out) {
-  const num = (re) => {
-    const m = out.match(re);
-    return m ? Number(m[1]) : 0;
-  };
-  const block = (labels) => num(new RegExp(`^\\s*(?:${labels}):\\s+(\\d+)`, 'm'));
-  const line = (labels) => num(new RegExp(`(?:${labels}):\\s+(\\d+)`));
+  // Summed over every summary: a project on two target frameworks prints one per target (lib/test-counts.mjs).
+  const block = (labels) => summedCount(out, labels, true);
+  const line = (labels) => summedCount(out, labels, false);
 
   // A detailed logger prints "Totale test:" / "Total tests:"; its absence means the one-line shape.
   const detailed = /^\s*(?:Totale test|Total tests):\s+\d+/m.test(out);
@@ -659,28 +658,16 @@ function onlyPragmaticPackagesArePacked() {
 function undeclaredReflectionRatchet() {
   process.stdout.write('  undeclared reflective requirements … ');
 
-  const lines = lastBuildOutput.split(String.fromCharCode(10))
-    .filter((l) => /warning IL(2060|2070|2072|2075|2087|2090|2091)/.test(l));
-  const perProject = new Map();
-
-  for (const line of lines) {
-    const match = line.match(/([A-Za-z0-9_.]+)\.csproj/);
-    if (!match) continue;
-
-    const project = match[1];
-    // Same scope as the trim ratchet: only what ships as Pragmatic.
-    if (!project.startsWith('Pragmatic.')) continue;
-
-    perProject.set(project, (perProject.get(project) ?? 0) + 1);
-  }
-
-  // MSBuild prints each warning twice — at the project and again in the summary.
-  const total = Math.round([...perProject.values()].reduce((a, b) => a + b, 0) / 2);
+  // Same scope as the trim ratchet: only what ships as Pragmatic. Each warning once, whatever the
+  // target and the copy of the log (lib/build-warnings.mjs).
+  const perProject = new Map([...distinctWarningsPerProject(lastBuildOutput, /warning IL(2060|2070|2072|2075|2087|2090|2091)/)]
+    .filter(([project]) => project.startsWith('Pragmatic.')));
+  const total = [...perProject.values()].reduce((a, b) => a + b, 0);
 
   if (total > UNDECLARED_REFLECTION_BUDGET) {
     console.log(bad(`FAIL (${total}, budget ${UNDECLARED_REFLECTION_BUDGET})`));
     for (const [project, count] of [...perProject].sort((a, b) => b[1] - a[1]).slice(0, 10))
-      console.log(`    ${project}: ${Math.round(count / 2)}`);
+      console.log(`    ${project}: ${count}`);
     console.log('    Annotate the type parameter with [DynamicallyAccessedMembers] so the requirement');
     console.log('    reaches the caller, instead of stopping here and failing in a trimmed build.');
     return false;
@@ -705,28 +692,16 @@ function undeclaredReflectionRatchet() {
 function trimWarningRatchet() {
   process.stdout.write('  trim/AOT warnings from Pragmatic assemblies … ');
 
-  const lines = lastBuildOutput.split(String.fromCharCode(10))
-    .filter((l) => /warning IL(2026|3050)/.test(l));
-  const perProject = new Map();
-
-  for (const line of lines) {
-    const match = line.match(/([A-Za-z0-9_.]+)\.csproj/);
-    if (!match) continue;
-
-    const project = match[1];
-    // Only what ships as Pragmatic. A sample is allowed to show EF Core, which is the stated exception.
-    if (!project.startsWith('Pragmatic.')) continue;
-
-    perProject.set(project, (perProject.get(project) ?? 0) + 1);
-  }
-
-  // MSBuild prints each warning twice — at the project and again in the summary.
-  const total = Math.round([...perProject.values()].reduce((a, b) => a + b, 0) / 2);
+  // Only what ships as Pragmatic: a sample is allowed to show EF Core, which is the stated exception.
+  // Each warning once, whatever the target and the copy of the log (lib/build-warnings.mjs).
+  const perProject = new Map([...distinctWarningsPerProject(lastBuildOutput, /warning IL(2026|3050)/)]
+    .filter(([project]) => project.startsWith('Pragmatic.')));
+  const total = [...perProject.values()].reduce((a, b) => a + b, 0);
 
   if (total > TRIM_WARNING_BUDGET) {
     console.log(bad(`FAIL (${total}, budget ${TRIM_WARNING_BUDGET})`));
     for (const [project, count] of [...perProject].sort((a, b) => b[1] - a[1]).slice(0, 10))
-      console.log(`    ${project}: ${Math.round(count / 2)}`);
+      console.log(`    ${project}: ${count}`);
     console.log('    Pass a JsonTypeInfo, map with a RequestDelegate, or — when the code is genuinely');
     console.log('    reflective — annotate it so the requirement is declared instead of leaked.');
     return false;
@@ -2843,6 +2818,8 @@ function sourceChecks() {
     && nodeTestCases('scripts/fuzz.test.mjs', 'the fuzz runner finds every harness and keeps its seeds apart')
     && nodeTestCases('scripts/generator-crashes.test.mjs', 'a generator crash is read with the frame it threw from')
     && nodeTestCases('scripts/csharp15-forms.test.mjs', 'the C# 15 check finds each form and not its escaped spelling')
+    && nodeTestCases('scripts/build-warnings.test.mjs', 'a build warning counts once, whatever the target')
+    && nodeTestCases('scripts/test-counts.test.mjs', 'every target of a test project is counted')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()

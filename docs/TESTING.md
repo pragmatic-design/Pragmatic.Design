@@ -544,7 +544,9 @@ Updating the SDK means changing `global.json`, moving the pin to the version the
 regenerating the lock files, in the same commit.
 
 `global.json` says `rollForward: feature`. `setup-dotnet` installs the exact version for it (only the
-`latest…` policies make it install the newest SDK), and a clone still builds with any newer 10.0 SDK.
+`latest…` policies make it install the newest SDK), and a clone still builds with any newer 11.0 SDK. The
+SDK is 11 since some packages also target net11.0 (#832); it compiles the net10.0 targets too, and CI
+installs SDK 10.0.404 beside it for the .NET 10 runtime the suites run on.
 
 `--tier full` fails when a project in the solution has no lock file, a lock file has no project, a
 workflow restores without `--locked-mode`, `global.json` names no `rollForward` or one that would let CI

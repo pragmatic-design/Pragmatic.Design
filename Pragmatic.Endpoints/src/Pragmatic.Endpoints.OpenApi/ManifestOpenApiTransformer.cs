@@ -116,10 +116,7 @@ public sealed class ManifestOpenApiTransformer : IOpenApiDocumentTransformer
                 var response = new OpenApiResponse
                 {
                     Description = error.Code ?? $"Error {error.StatusCode}",
-                    Content = new Dictionary<string, OpenApiMediaType>
-                    {
-                        ["application/problem+json"] = new() { Schema = BuildProblemSchema(error) }
-                    }
+                    Content = MediaTypeMap.Of("application/problem+json", new OpenApiMediaType { Schema = BuildProblemSchema(error) })
                 };
                 operation.Responses[statusStr] = response;
             }
@@ -229,7 +226,9 @@ public sealed class ManifestOpenApiTransformer : IOpenApiDocumentTransformer
         if (endpoint.RequestExamples is not { Count: > 0 } examples)
             return;
 
-        if (operation.RequestBody?.Content?.TryGetValue("application/json", out var media) is not true || media is null)
+        // The concrete type: on Microsoft.OpenApi 3 (net11.0) the map holds the read-only interface.
+        if (operation.RequestBody?.Content?.TryGetValue("application/json", out var found) is not true
+            || found is not OpenApiMediaType media)
             return;
 
         // OpenAPI: Example and Examples are mutually exclusive — use the map when > 1.
@@ -267,8 +266,8 @@ public sealed class ManifestOpenApiTransformer : IOpenApiDocumentTransformer
                 operation.Responses[statusKey] = concrete;
             }
 
-            concrete.Content ??= new Dictionary<string, OpenApiMediaType>();
-            if (!concrete.Content.TryGetValue("application/json", out var media) || media is null)
+            concrete.Content ??= MediaTypeMap.Empty();
+            if (!concrete.Content.TryGetValue("application/json", out var found) || found is not OpenApiMediaType media)
             {
                 media = new OpenApiMediaType();
                 concrete.Content["application/json"] = media;

@@ -153,13 +153,18 @@ Named in `global.json`:
 ```json
 {
   "sdk": {
-    "version": "10.0.303",
+    "version": "11.0.100",
     "rollForward": "feature"
   }
 }
 ```
 
-CI runs exactly this version. A clone builds with any newer 10.0 SDK, and writes the same NuGet lock files:
+The SDK is 11 because some packages also target net11.0 (`Pragmatic.Result.AspNetCore`,
+`Pragmatic.Endpoints.OpenApi`), which only an SDK 11 compiles; it compiles the net10.0 targets as well. The
+suites target net10.0, so running them needs the .NET 10 runtime too: CI installs SDK 10.0.404 beside the
+one named here.
+
+CI runs exactly this version. A clone builds with any newer 11.0 SDK, and writes the same NuGet lock files:
 the trimmer package, whose version followed the SDK, is pinned in `Directory.Build.targets`
 (`docs/TESTING.md`, "Lock files"). Updating the SDK means changing this file, moving that pin to the version
 the new SDK bundles, and regenerating the lock files in the same commit:
@@ -479,7 +484,7 @@ examples/showcase/Showcase.slnx
 
 | Question | Answer |
 |----------|--------|
-| What .NET version? | 10.0 (SDK 10.0.303 in `global.json` and in CI; any newer 10.0 SDK builds) |
+| What .NET version? | Packages target net10.0, and some also net11.0. SDK 11.0.100 in `global.json` and in CI (any newer 11.0 SDK builds), plus the .NET 10 runtime for the suites |
 | What C# version? | `latest` (currently C# 14) |
 | Solution format? | `.slnx` (XML-based, not legacy `.sln`) |
 | Package versions? | Central in `Directory.Packages.props` |

@@ -64,7 +64,9 @@ var message = result.Match(
 - **ASP.NET Core integration**: return `Result` straight from Minimal API endpoints
   (`WithResultHandling()`) or Controllers (`ResultActionFilter`); failures become RFC 7807
   ProblemDetails with the right status code; OpenAPI transformers document Result schemas and
-  error responses (`AddResultTypeSupport()`).
+  error responses (`AddResultTypeSupport()`). `Pragmatic.Result.AspNetCore` ships for net10.0, built on
+  `Microsoft.OpenApi` 2, and for net11.0, built on `Microsoft.OpenApi` 3 as ASP.NET Core 11 requires. The
+  public API is the same on both.
 - **JSON round-trip**: typed, AOT-safe converters you register for the shapes you serialize
   (`ResultJsonConverter<TValue, TError>`, `VoidResultJsonConverter<TError>`, `MaybeJsonConverter<T>`); a
   multi-error `Result<T, E1, E2, …>` is declared with `[assembly: JsonResultContract<…>]` and the generator
