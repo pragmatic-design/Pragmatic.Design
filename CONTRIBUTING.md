@@ -6,9 +6,11 @@ Thank you for considering contributing to Pragmatic.Design! This document explai
 
 ### Prerequisites
 
-- .NET 10.0 SDK, the version in `global.json` or any newer 10.0 SDK. CI uses that exact version. A newer
+- .NET 11.0 SDK, the version in `global.json` or any newer 11.0 SDK. CI uses that exact version. A newer
   SDK writes the same NuGet lock files, since the one package that followed the SDK is pinned
   ([docs/TESTING.md](docs/TESTING.md#lock-files)).
+- The .NET 10 runtime, which any .NET 10 SDK brings: the packages target net10.0 (some also net11.0), and
+  so do the test suites.
 - Git
 
 ### Getting the source

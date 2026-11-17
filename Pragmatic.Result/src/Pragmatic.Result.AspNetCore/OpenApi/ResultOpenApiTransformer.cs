@@ -66,25 +66,22 @@ public sealed class ResultOpenApiTransformer : IOpenApiDocumentTransformer
             Description = "RFC 7807 Problem Details for HTTP APIs",
             Properties = new Dictionary<string, IOpenApiSchema>
             {
-                ["type"] = new OpenApiSchema
+                ["type"] = SchemaExample.With(new OpenApiSchema
                 {
                     Type = JsonSchemaType.String,
-                    Description = "A URI reference that identifies the problem type",
-                    Example = JsonValue.Create("https://httpstatuses.io/404")
-                },
-                ["title"] = new OpenApiSchema
+                    Description = "A URI reference that identifies the problem type"
+                }, JsonValue.Create("https://httpstatuses.io/404")),
+                ["title"] = SchemaExample.With(new OpenApiSchema
                 {
                     Type = JsonSchemaType.String,
-                    Description = "A short, human-readable summary of the problem type",
-                    Example = JsonValue.Create("Not Found")
-                },
-                ["status"] = new OpenApiSchema
+                    Description = "A short, human-readable summary of the problem type"
+                }, JsonValue.Create("Not Found")),
+                ["status"] = SchemaExample.With(new OpenApiSchema
                 {
                     Type = JsonSchemaType.Integer,
                     Format = "int32",
-                    Description = "The HTTP status code",
-                    Example = JsonValue.Create(404)
-                },
+                    Description = "The HTTP status code"
+                }, JsonValue.Create(404)),
                 ["detail"] = new OpenApiSchema
                 {
                     Type = JsonSchemaType.String | JsonSchemaType.Null,
@@ -95,12 +92,11 @@ public sealed class ResultOpenApiTransformer : IOpenApiDocumentTransformer
                     Type = JsonSchemaType.String | JsonSchemaType.Null,
                     Description = "A URI reference that identifies the specific occurrence"
                 },
-                ["code"] = new OpenApiSchema
+                ["code"] = SchemaExample.With(new OpenApiSchema
                 {
                     Type = JsonSchemaType.String,
-                    Description = "Application-specific error code",
-                    Example = JsonValue.Create("NOT_FOUND")
-                }
+                    Description = "Application-specific error code"
+                }, JsonValue.Create("NOT_FOUND"))
             },
             AdditionalPropertiesAllowed = true
         };
@@ -175,16 +171,20 @@ public sealed class ResultOpenApiTransformer : IOpenApiDocumentTransformer
         if (operation.Responses!.ContainsKey(statusCode))
             return;
 
+        var problem = new OpenApiMediaType
+        {
+            Schema = new OpenApiSchemaReference("ProblemDetails", document)
+        };
+
         operation.Responses[statusCode] = new OpenApiResponse
         {
             Description = description,
-            Content = new Dictionary<string, OpenApiMediaType>
-            {
-                ["application/problem+json"] = new OpenApiMediaType
-                {
-                    Schema = new OpenApiSchemaReference("ProblemDetails", document)
-                }
-            }
+            // Microsoft.OpenApi 3 (net11.0) types the map by the media type's interface (#832).
+#if NET11_0_OR_GREATER
+            Content = new Dictionary<string, IOpenApiMediaType> { ["application/problem+json"] = problem }
+#else
+            Content = new Dictionary<string, OpenApiMediaType> { ["application/problem+json"] = problem }
+#endif
         };
     }
 }

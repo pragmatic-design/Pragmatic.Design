@@ -3,6 +3,10 @@
   <PropertyGroup>
     <Description>OpenAPI enrichment for Pragmatic.Design: typed errors, permissions, validation constraints from compile-time manifest.</Description>
     <PackageTags>openapi;swagger;pragmatic;typed-errors;permissions</PackageTags>
+    <!-- net11.0 carries the transformers built against Microsoft.OpenApi 3, which ASP.NET Core 11 brings; net10.0
+         keeps Microsoft.OpenApi 2. The public API is the same on both (#832, #836). -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

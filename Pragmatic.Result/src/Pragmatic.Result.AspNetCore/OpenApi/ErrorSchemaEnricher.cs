@@ -107,11 +107,11 @@ public sealed class ErrorSchemaEnricher : IOpenApiSchemaTransformer
         };
 
         if (example is string s)
-            field.Example = JsonValue.Create(s);
+            SchemaExample.With(field, JsonValue.Create(s));
         else if (example is int i)
         {
             field.Format = "int32";
-            field.Example = JsonValue.Create(i);
+            SchemaExample.With(field, JsonValue.Create(i));
         }
 
         schema.Properties[name] = field;
