@@ -173,7 +173,7 @@ public static class DocValues
 
             if (type == BsonType.Null)
                 return default!;
-            object value = typeof(TValue) == typeof(decimal) || typeof(TValue) == typeof(decimal?) ? type == BsonType.Decimal128 ? reader.ReadDecimal() : (decimal)reader.ReadNumber()
+            object value = typeof(TValue) == typeof(decimal) || typeof(TValue) == typeof(decimal?) ? type == BsonType.Decimal128 ? reader.ReadDecimal() : DecimalFromDouble.Of(reader.ReadNumber())
                 : typeof(TValue) == typeof(int) || typeof(TValue) == typeof(int?) ? (int)reader.ReadNumber()
                 : typeof(TValue) == typeof(long) || typeof(TValue) == typeof(long?) ? type == BsonType.Int64 ? reader.ReadInt64() : (long)reader.ReadNumber()
                 : typeof(TValue) == typeof(double) || typeof(TValue) == typeof(double?) ? reader.ReadNumber()

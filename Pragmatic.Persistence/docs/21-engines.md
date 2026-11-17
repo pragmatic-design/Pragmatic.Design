@@ -147,6 +147,28 @@ A chain the generator did not see (written in another assembly, or reached by re
 call throws `NotSupportedException` naming why. The engines' diagnostics are `PRAG3000`–`PRAG3099` (Sql) and
 `PRAG3100`–`PRAG3199` (documents), listed in the repository's diagnostics reference.
 
+### A double where the model has a decimal
+
+The documents engine writes a `decimal` as a `Decimal128` and reads it back exactly. A `double` reaches a
+`decimal` member in two cases, and it is read as the decimal its shortest round-trip text spells: `19.99`, not
+`19.989999999999998436805981328`. The cast that read it before gave a different decimal on .NET 10 and on .NET 11.
+
+- **A document written by another program** that stores the number as a `double`.
+- **An aggregate the server returns as a `double`**, read into a `decimal` result (`Max`, `Min`, `Sum`, and a
+  group's `Average`). MongoDB returns:
+  - **`$sum`**: the widest type among the values, in the order int → long → double → decimal. Over a field the
+    engine wrote as `decimal`, a decimal. As soon as one document stores a `double`, the sum is a `double`, unless
+    another one stores a decimal.
+  - **`$avg`**: a `double`, unless at least one value is a decimal.
+  - **`$min` and `$max`**: one of the stored values, with its own type. They are a `double` when the chosen
+    document stores one.
+
+  The sources are [`$sum`](https://www.mongodb.com/docs/manual/reference/operator/aggregation/sum/),
+  [`$avg`](https://www.mongodb.com/docs/manual/reference/operator/aggregation/avg/) and
+  [`$min`](https://www.mongodb.com/docs/manual/reference/operator/aggregation/min/).
+
+On Azure Cosmos DB a number is JSON, and it is read with `GetDecimal()`.
+
 ## The modules' tables
 
 A module that keeps tables of its own (an outbox, the audit trail, the subject registry) has a package for the
