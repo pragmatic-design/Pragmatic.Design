@@ -83,6 +83,7 @@ import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
 import { ENGINE_PROJECTS_DIR, engineProjectProblems } from './engine-projects.mjs';
 import { ENGINE_SUITES, SUITE_DIR, engineSuiteProblems, suiteCount, suiteFilter } from './engine-suites.mjs';
 import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
+import { csharp15FormsInGenerated } from './csharp15-forms.mjs';
 
 // The gate owns its processes and leaves none behind.
 //
@@ -788,6 +789,41 @@ function noReflectionJsonInGeneratedCode() {
 
   console.log(ok('ok'));
   return true;
+}
+
+/**
+ * The code Pragmatic's generators wrote reads the same on C# 15 (#820).
+ *
+ * The generated source is compiled with the consumer's language version, and an application on net11.0
+ * is on C# 15 by default. A form C# 15 reads differently — `with(...)` in a collection expression, a type
+ * named `union` or `closed` — would compile here, where the repository is pinned to C# 14, and change
+ * meaning or fail there (scripts/csharp15-forms.mjs lists them). Read from the clean build's output, every
+ * file a Pragmatic generator wrote for every project, so it covers what the examples generate and not
+ * only what the snapshot tests ask for. Budget zero. It reads the build output, so it comes after it.
+ */
+function generatedCodeReadsTheSameOnCSharp15() {
+  process.stdout.write('  generated code reads the same on C# 15 … ');
+
+  const { files, offenders } = csharp15FormsInGenerated('artifacts/build/obj');
+
+  // A walk that found nothing has measured nothing: no build output, or a layout this no longer reads.
+  if (files === 0) {
+    console.log(bad('FAIL — no generated file under artifacts/build/obj/**/generated/Pragmatic.*: nothing was read'));
+    return false;
+  }
+
+  if (offenders.length === 0) {
+    console.log(`${ok('ok')} ${dim(`(${files} generated files, 0 forms, budget 0)`)}`);
+    return true;
+  }
+
+  console.log(bad(`FAIL (${offenders.length} in ${files} generated files, budget 0)`));
+  for (const o of offenders.slice(0, 10)) {
+    console.log(`    ${o.site}`);
+    console.log(`      ${o.form}: ${dim(o.text.slice(0, 120))}`);
+    console.log(`      ${dim(o.why)}`);
+  }
+  return false;
 }
 
 /**
@@ -2699,7 +2735,7 @@ if (tier === 'verify') {
   good = sourceChecks()
     && buildSolution({ clean: true })
     && onlyPragmaticPackagesArePacked()
-    && noReflectionJsonInGeneratedCode() && trimWarningRatchet() && undeclaredReflectionRatchet();
+    && noReflectionJsonInGeneratedCode() && generatedCodeReadsTheSameOnCSharp15() && trimWarningRatchet() && undeclaredReflectionRatchet();
   if (good) {
     // After the build, so the restore the scan needs has already happened. Its result is ANDed rather
     // than short-circuited: a known CVE and a failing test are independent signals, and letting the
@@ -2806,6 +2842,7 @@ function sourceChecks() {
     && nodeTestCases('scripts/check-root.test.mjs', 'the gate reads its own repository from any directory')
     && nodeTestCases('scripts/fuzz.test.mjs', 'the fuzz runner finds every harness and keeps its seeds apart')
     && nodeTestCases('scripts/generator-crashes.test.mjs', 'a generator crash is read with the frame it threw from')
+    && nodeTestCases('scripts/csharp15-forms.test.mjs', 'the C# 15 check finds each form and not its escaped spelling')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()
