@@ -10,7 +10,7 @@ namespace Pragmatic.SourceGen.Testing;
 /// <summary>
 ///     Helper for running source generator tests.
 /// </summary>
-public static class GeneratorTestHelper
+public static partial class GeneratorTestHelper
 {
     /// <summary>
     ///     Runs a source generator on the given source code.
@@ -182,13 +182,14 @@ public static class GeneratorTestHelper
         OutputKind outputKind,
         MetadataReference[] additionalReferences,
         AdditionalText[]? additionalTexts = null,
-        CSharpParseOptions? parseOptions = null)
+        CSharpParseOptions? parseOptions = null,
+        IEnumerable<MetadataReference>? frameworkReferences = null)
     {
         // Parse with a file path so the tree has a non-empty FilePath. LocationInfo.From returns null
         // for a path-less tree, which makes diagnostics guarded on a non-null location silently
         // suppress themselves under test (real compilations always have a file path).
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions, path: "TestSource.cs");
-        var references = GetBaseReferences().Concat(additionalReferences).ToArray();
+        var references = (frameworkReferences ?? GetBaseReferences()).Concat(additionalReferences).ToArray();
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",

@@ -17,6 +17,8 @@
   <ItemGroup>
     <!-- Generator testing -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <!-- A consumer on net11.0, for the forms the generator writes only where the API exists (#834) -->
+    <PackageReference Include="Basic.Reference.Assemblies.Net110" />
     <!-- Runtime testing -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />

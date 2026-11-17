@@ -102,6 +102,31 @@ public const string TemporalToClientTimezone = "Pragmatic.Temporal.Attributes.To
 
 Be aware that this convention is not yet universally followed: several features still carry their trigger FQN as a private const on the feature class (`ReadContractFeature`, `RollUpFeature`, `GlossaryFeature`, the `*BoundaryReader` classes). Follow the convention for new code; a literal you can only find by grepping is exactly how a typo survives.
 
+### 2.5 Emit for What the Consumer Can Express: `ConsumerPlatform`
+
+`DetectedFeatures` says which Pragmatic packages are referenced. `ConsumerPlatform` (`Core/ConsumerPlatform.cs`)
+says what the consumer's compilation can express. It holds its C# language version, and the platform
+APIs it can see, each one a capability flag. It is computed once per compilation by
+`ConsumerPlatformDetector` and passed to the features that need it, as `DetectedFeatures` is.
+
+Use it when a template can write a better line for a consumer on a newer .NET or C#: on .NET 11, the job
+invoker reads its parameters through `JsonSerializerOptions.GetTypeInfo<T>()` instead of `GetTypeInfo(typeof(T))`
+and a cast. The packages follow every supported .NET release with one public API
+([CONVENTIONS](../../docs/CONVENTIONS.md)), so the generator is where a newer platform pays off without a
+breaking change. The rules:
+
+- **A capability is the API the line calls, found by its presence.** It is not the target framework: a `net10.0`
+  application that references System.Text.Json 11 has `GetTypeInfo<T>()` too.
+- **A consumer without the capability gets exactly the code it got before.** The existing snapshots must
+  pass untouched.
+- **The template takes the fact through its constructor or model**, never by asking the compilation itself.
+- **A capability is added when a template reads it**, like a `DetectedFeatures` flag: each one is a lookup on
+  every compilation change.
+- **Test both shapes.** Run the generator over the .NET 11 reference assemblies with
+  `GeneratorTestHelper.RunGeneratorOnFramework`, using `Net110.References.All` from
+  `Basic.Reference.Assemblies.Net110`, and assert that the output compiles there. `Pragmatic.Jobs.Tests` has
+  the first example, `TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests`.
+
 ---
 
 ## 3. Step 2: Create Feature Directory
@@ -602,6 +627,7 @@ Write the test, run it, accept the `.verified.txt`. If some header form still le
 | Method | Purpose |
 |--------|---------|
 | `RunGenerator<T>(source, refs)` | Run the generator against source code |
+| `RunGeneratorOnFramework<T>(source, frameworkRefs, refs)` | Same, over another target framework's reference assemblies (e.g. `net11.0`) |
 | `GetGeneratedSource(result, hint)` | Get generated source by partial hint name match |
 | `GetGeneratedSourcesAsDictionary(result)` | All generated files as `Dictionary<string, string>` |
 | `HasCompilationErrors(result)` | Check for compilation errors after generation |

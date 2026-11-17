@@ -132,6 +132,9 @@
   <ItemGroup>
     <!-- dotnet/extensions line — see the note on Caching.Hybrid. -->
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.8.0" />
+    <!-- net11.0 reference assemblies for generator tests: what the generator emits for a consumer that can see the
+         .NET 11 APIs, from tests that run on net10.0 (#834). Test projects only. -->
+    <PackageVersion Include="Basic.Reference.Assemblies.Net110" Version="1.8.15" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
     <!-- Benchmark comparison only (Pragmatic.Endpoints.Benchmarks): a tuned, non-generated JSON writer
          to measure the generated response writer against (#51). Apache-2.0. -->

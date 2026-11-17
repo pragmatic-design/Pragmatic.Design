@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.SourceGen;
+using Pragmatic.SourceGenerator.Core;
 using Pragmatic.SourceGenerator.Features.Jobs.Diagnostics;
 using Pragmatic.SourceGenerator.Features.Jobs.Models;
 using Pragmatic.SourceGenerator.Features.Jobs.Templates;
@@ -17,6 +18,7 @@ internal static class JobsFeature
     private const string SchemaVersion = "1.0";
 
     /// <param name="context">The incremental generator initialization context.</param>
+    /// <param name="platform">What the consumer can express: the invoker reads typed JSON metadata where it can (#834).</param>
     /// <param name="programmaticJobs">
     ///     Jobs whose class is emitted by another feature (currently the
     ///     <c>[HasAttachments(PurgeDeletedAfterDays = N)]</c> purge job). They cannot come from
@@ -32,6 +34,7 @@ internal static class JobsFeature
     public static (IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Registrations,
         IncrementalValueProvider<EquatableArray<Composition.Models.ServiceModel>> Services) Register(
         IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<ConsumerPlatform> platform,
         IncrementalValueProvider<ImmutableArray<JobModel>>? programmaticJobs = null)
     {
         // Pipeline: [RecurringJob] and [Job] → JobModel
@@ -69,13 +72,13 @@ internal static class JobsFeature
                 .Select(static (pair, _) => pair.Left.AddRange(pair.Right));
 
             context.RegisterSourceOutputSafe(
-                programmaticJobs.Value.SelectMany(static (models, _) => models),
-                static (ctx, model) => AddInvoker(ctx, model));
+                programmaticJobs.Value.SelectMany(static (models, _) => models).Combine(platform),
+                static (ctx, pair) => AddInvoker(ctx, pair.Left, pair.Right));
         }
 
-        // Per-job: generate invoker
-        context.RegisterSourceOutputSafe(recurringJobs, static (ctx, model) => AddInvoker(ctx, model));
-        context.RegisterSourceOutputSafe(oneOffJobs, static (ctx, model) => AddInvoker(ctx, model));
+        // Per-job: generate invoker, in the form the consumer's platform allows (#834)
+        context.RegisterSourceOutputSafe(recurringJobs.Combine(platform), static (ctx, pair) => AddInvoker(ctx, pair.Left, pair.Right));
+        context.RegisterSourceOutputSafe(oneOffJobs.Combine(platform), static (ctx, pair) => AddInvoker(ctx, pair.Left, pair.Right));
 
         // Aggregate: registration + type registry
         var rootNs = context.CompilationProvider.Select(static (c, _) =>
@@ -183,9 +186,9 @@ internal static class JobsFeature
     // A template whose Validate() fails still yields an EMPTY SourceText rather than null, so the
     // usual `Source is not null` guard would emit a blank file. Length is what actually says
     // "nothing was rendered".
-    private static void AddInvoker(SourceProductionContext ctx, JobModel model)
+    private static void AddInvoker(SourceProductionContext ctx, JobModel model, ConsumerPlatform platform)
     {
-        var artifact = new JobInvokerTemplate(model).RenderOutput();
+        var artifact = new JobInvokerTemplate(model, platform.HasJsonTypeInfoOfT).RenderOutput();
         if (!artifact.IsEmpty)
             ctx.AddSource(artifact);
     }

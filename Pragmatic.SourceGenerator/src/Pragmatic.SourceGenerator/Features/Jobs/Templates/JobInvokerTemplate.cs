@@ -13,7 +13,14 @@ internal sealed class JobInvokerTemplate : CSharpTemplate
 {
     private readonly JobModel _model;
 
-    public JobInvokerTemplate(JobModel model) => _model = model;
+    /// <summary>The consumer has <c>JsonSerializerOptions.GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11).</summary>
+    private readonly bool _typedTypeInfo;
+
+    public JobInvokerTemplate(JobModel model, bool typedTypeInfo)
+    {
+        _model = model;
+        _typedTypeInfo = typedTypeInfo;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Jobs";
     protected override string? TriggerInfo => $"[{(_model.IsRecurring ? "RecurringJob" : "Job")}] on {_model.TypeName}";
@@ -131,7 +138,12 @@ internal sealed class JobInvokerTemplate : CSharpTemplate
             // PragmaticJobTypeRegistry serialize with. AOT-clean: the JsonTypeInfo-based overload carries
             // no IL2026/IL3050 (the generated context covers the parameter type).
             AppendLine("var jsonOptions = (serviceProvider.GetService(typeof(global::Pragmatic.Serialization.PragmaticJsonOptions)) as global::Pragmatic.Serialization.PragmaticJsonOptions ?? global::Pragmatic.Serialization.PragmaticJsonOptions.Default).Build();");
-            AppendLine($"var parameters = global::System.Text.Json.JsonSerializer.Deserialize(parametersJson!, (global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<{_model.ParameterTypeFqn}>)jsonOptions.GetTypeInfo(typeof({_model.ParameterTypeFqn})));");
+            // The typed overload where the consumer has it: a type with no metadata is then a clear error naming it,
+            // where the cast below fails with an InvalidCastException on the same mistake.
+            var typeInfo = _typedTypeInfo
+                ? $"jsonOptions.GetTypeInfo<{_model.ParameterTypeFqn}>()"
+                : $"(global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<{_model.ParameterTypeFqn}>)jsonOptions.GetTypeInfo(typeof({_model.ParameterTypeFqn}))";
+            AppendLine($"var parameters = global::System.Text.Json.JsonSerializer.Deserialize(parametersJson!, {typeInfo});");
             AppendLine($"await job.ExecuteAsync(parameters!, context, {ctArg}).ConfigureAwait(false);");
         }
         else

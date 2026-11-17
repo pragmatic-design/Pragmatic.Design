@@ -2,6 +2,15 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Basic.Reference.Assemblies.Net110": {
+        "type": "Direct",
+        "requested": "[1.8.15, )",
+        "resolved": "1.8.15",
+        "contentHash": "TH7PJqMupZtpxQOeq64BXLQnZB2ovpI1mgb+gzAMS2nH/O3RjoCoimB07eKgPQvtuLd2ILFl+nNpsOlBnoYLhA==",
+        "dependencies": {
+          "Microsoft.CodeAnalysis.Common": "4.11.0"
+        }
+      },
       "coverlet.collector": {
         "type": "Direct",
         "requested": "[6.0.2, )",
