@@ -32,6 +32,17 @@ An API is not deprecated, it is removed, and its callers are updated in the same
 protects consumers of a released API; before 1.0 there are none, and a deprecation only doubles the
 surface the generator has to handle.
 
+### One public API on every target framework
+
+The packages follow every .NET release Microsoft supports: a target framework is added when it ships
+and removed when its support ends. None of those steps may break an application, so a package exposes
+the same public API on every target it ships. What differs between targets lives where the application
+does not write code: method bodies (`#if NET11_0_OR_GREATER`), internals, and the generated code.
+Package validation enforces it when a package is packed (`EnablePackageValidation` with
+`EnableStrictModeForCompatibleFrameworksInPackage`, in `Directory.Build.props`): a public member on one
+target only fails the build with `CP0002`. A difference that is wanted goes in
+`CompatibilitySuppressions.xml` beside the project, with its reason in the pull request.
+
 ### Comments
 
 In English. A comment says **why**: a constraint that is not obvious, a deviation from the idiomatic

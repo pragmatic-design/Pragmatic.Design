@@ -359,6 +359,20 @@
     <None Include="$(PragmaticLicenseFile)" Pack="true" PackagePath="" Visible="false" />
   </ItemGroup>
 
+  <!-- One public API on every target framework a package ships (#836). Target frameworks roll — net11.0
+       added, net10.0 dropped one day — and none of those steps may break an application, so what one
+       target exposes the others expose too. Package validation compares the lib/ folders when the package
+       is packed; strict mode also reports a member that only the newer target has (CP0002), which plain
+       mode lets through. ⚠️ The strict switch for the frameworks inside one package is
+       EnableStrictModeForCompatibleFrameworksInPackage: EnableStrictModeForCompatibleTfms, the name
+       Microsoft's overview leads with, left a net10.0-only member unreported when measured. A difference
+       that is wanted goes in CompatibilitySuppressions.xml beside the project, with its reason in the
+       pull request. -->
+  <PropertyGroup Condition="('$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true') AND '$(IsPackable)' != 'false'">
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <EnableStrictModeForCompatibleFrameworksInPackage>true</EnableStrictModeForCompatibleFrameworksInPackage>
+  </PropertyGroup>
+
   <!-- The package icon nuget.org shows beside every Pragmatic package: the site's logo, one source. -->
   <PropertyGroup Condition="('$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true') AND '$(IsPackable)' != 'false' AND Exists('$(PragmaticRoot)site\logo.png')">
     <PackageIcon>icon.png</PackageIcon>
