@@ -47,6 +47,12 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var features = context.CompilationProvider
             .Select(static (compilation, _) => FeatureDetector.Detect(compilation));
 
+        // What the consumer can express — its language version, the platform APIs it can see — also once per
+        // compilation, and value-equatable so a change that leaves it the same re-renders nothing (#834).
+        var platform = context.CompilationProvider
+            .Select(static (compilation, _) => ConsumerPlatformDetector.Detect(compilation))
+            .WithTrackingName(TrackingNames.CoreConsumerPlatform);
+
         // Feature modules — registered as migrations complete.
         // Each feature guards itself via the DetectedFeatures snapshot.
         var (resourceModels, resourceQueries, resourceEndpoints, resourceMutations, resourceMappings, resourceManifestTypes, resourceEngineSources) = ResourceFeature.Register(context, features);
@@ -185,7 +191,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
 
         // Standalone features — no runtime package dependency needed
         var fastEnumRegistrations = FastEnumFeature.Register(context);
-        var (jobsRegistrations, jobServices) = JobsFeature.Register(context, programmaticJobs: traitOutput.Jobs);
+        var (jobsRegistrations, jobServices) = JobsFeature.Register(context, platform, programmaticJobs: traitOutput.Jobs);
 
         // Registrations these features generate into THIS compilation, for framework types declared in
         // the host project itself. They cannot travel as [assembly: PragmaticMetadata]: the attribute is

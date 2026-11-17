@@ -10,6 +10,9 @@ namespace Pragmatic.SourceGen;
 /// </summary>
 internal static class TrackingNames
 {
+    // ── Core ──
+    public const string CoreConsumerPlatform = "Core.ConsumerPlatform";
+
     // ── Persistence ──
     public const string PersistenceReferencedEntities = "Persistence.ReferencedEntities";
     public const string PersistenceCurrentEntities = "Persistence.CurrentEntities";
