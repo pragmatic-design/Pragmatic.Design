@@ -180,6 +180,84 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # The same gate on the .NET 11 SDK, beside the one on the pinned SDK (#820). The packages target
+  # net10.0 and an application on .NET 11 builds them with its own SDK, which changes how a project
+  # builds even when the target does not: the first run on 11.0.100 failed eight hosts on a static web
+  # asset the 10 SDK never produced. The SDK 10 is installed too, for the net10.0 runtime the suites run
+  # on, and global.json is rewritten in the runner only. No SBOM or supply-chain verdict: those are the
+  # gate's, and the dependency graph is the same.
+  gate-sdk-11:
+    name: Gate on the .NET 11 SDK
+    needs: [native, pdf-native, imaging-native]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read     # the native libraries, from the run that built them
+
+    steps:
+      - name: The native libraries were built where they had to be
+        if: needs.native.result != 'success' || needs.pdf-native.result == 'failure' || needs.imaging-native.result == 'failure' || needs.pdf-native.result == 'cancelled' || needs.imaging-native.result == 'cancelled'
+        run: |
+          echo "::error::native: ${{ needs.native.result }}, pdf: ${{ needs.pdf-native.result }}, imaging: ${{ needs.imaging-native.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Restore the native libraries
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            Pragmatic.Documents/runtimes/linux-x64/native/libpragmatic_pdf_native.so
+            Pragmatic.Imaging/runtimes/linux-x64/native/libpragmatic_imaging_native.so
+          key: native-linux-x64-${{ hashFiles('Pragmatic.Documents/native/pragmatic-pdf/**', 'Pragmatic.Imaging/native/pragmatic-imaging/**', 'shared/native/**') }}
+
+      - name: Native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/fetch-native.mjs --rid linux-x64
+
+      - name: Classify the change
+        id: change
+        run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
+
+      - name: Setup .NET
+        if: steps.change.outputs.scope == 'full'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: |
+            10.0.404
+            11.0.100
+
+      - name: Build with the .NET 11 SDK
+        if: steps.change.outputs.scope == 'full'
+        run: |
+          sed -i 's/"version": "[^"]*"/"version": "11.0.100"/' global.json
+          dotnet --version
+
+      - name: Restore
+        if: steps.change.outputs.scope == 'full'
+        run: dotnet restore Pragmatic.Design.slnx --locked-mode
+
+      - name: Gate
+        run: node scripts/check.mjs --tier ${{ steps.change.outputs.scope == 'full' && 'full' || 'docs' }} --keep-going
+
+      - name: Keep the failure record
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gate-failures-sdk-11
+          path: artifacts/gate/failures-*.json
+          if-no-files-found: ignore
+          retention-days: 30
+
   # The suites that start Testcontainers, run ONE AT A TIME within a job. In parallel on one host they
   # exhaust Docker and fail on container start-up, which reads exactly like a code regression — and on a
   # developer machine it can take the whole host down with it.
