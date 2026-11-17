@@ -102,7 +102,7 @@ public static class DocMapping
         BsonType.Decimal128 => reader.ReadDecimal(),
         BsonType.Int32 => reader.ReadInt32(),
         BsonType.Int64 => reader.ReadInt64(),
-        _ => (decimal)reader.ReadNumber(),
+        _ => DecimalFromDouble.Of(reader.ReadNumber()),
     };
 
     /// <summary>A DateTime as the UTC instant stored.</summary>
