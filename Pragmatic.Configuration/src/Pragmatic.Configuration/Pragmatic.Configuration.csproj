@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- net11.0 as well (#850): built for it, with runtime-async, the generated binder allocates 2,216 B instead of 2,720 B per call for
+         an application on net11.0 (TenantOptionsBenchmarks, measured in both run orders against this package on net10.0 only). The
+         public API is the same on both (#836). -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <Features Condition="'$(TargetFramework)' == 'net11.0'">$(Features);runtime-async=on</Features>
     <Description>Configuration binding, validation and DI registration via Source Generator</Description>
     <PackageTags>configuration;options;binding;validation;source-generator</PackageTags>
   </PropertyGroup>
