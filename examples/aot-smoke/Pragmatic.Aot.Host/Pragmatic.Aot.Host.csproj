@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsSample>true</IsSample>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- The question this project answers: is a composed Pragmatic application on the Sql engine a Native AOT application? The generated
+         host entry point, the module's exposed mutation and query over HTTP, the schema applied at start, an authenticated caller, all
+         published Native AOT. The trim and AOT warnings of the publish are counted against a budget by publish-and-smoke-host.ps1:
+         they are not zero yet (README.md, "One composed host"). -->
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- Every other warning is an error; the IL ones stay warnings (WarningsNotAsErrors, Directory.Build.props), hence the budget. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- CA2007: a console program has no SynchronizationContext to leave. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- Read the implicit usings of the Pragmatic projects referenced, as an application gets them from the packages. -->
+    <PragmaticInRepoImplicitUsings>true</PragmaticInRepoImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The repository adds SQLitePCLRaw.lib.e_sqlite3 beside it (Directory.Build.props). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Aot.Host.Notes\Pragmatic.Aot.Host.Notes.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

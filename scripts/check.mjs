@@ -1224,6 +1224,8 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-documents.ps1',
     // Two boundaries on two engines: SQLite in the process, MongoDB in Docker as above.
     'examples/aot-smoke/publish-and-smoke-boundaries.ps1',
+    // One composed host on the Sql engine, through the generated entry point; its trim/AOT warnings counted against a budget (#818).
+    'examples/aot-smoke/publish-and-smoke-host.ps1',
   ];
 
   let good = true;
