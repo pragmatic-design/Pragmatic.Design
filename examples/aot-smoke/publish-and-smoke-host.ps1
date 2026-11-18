@@ -33,8 +33,8 @@ if (-not ($publish | Where-Object { "$_" -match 'Generating native code' })) { t
 
 # The trim and AOT warnings this host's publish raises, each counted once (ILC repeats a warning per call site it reaches). Not zero yet,
 # so a budget that can only fall, as the gate's other ratchets: a warning above it is a regression, one below it is a fix that lowers the
-# number here. What the 14 are, and the issue that removes each, is in README.md ("One composed host").
-$budget = 14
+# number here. What the 10 are, and the issue that removes each, is in README.md ("One composed host").
+$budget = 10
 $warnings = @($publish | Where-Object { "$_" -match 'warning IL(2026|3050)' -and "$_" -match 'Pragmatic\.Aot\.Host\.csproj' } | Sort-Object -Unique)
 Write-Host "IL2026/IL3050 warnings in the publish: $($warnings.Count) (budget $budget)"
 if ($warnings.Count -gt $budget) {

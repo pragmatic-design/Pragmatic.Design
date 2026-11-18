@@ -19,7 +19,7 @@ var built = new PragmaticJsonOptions()
 // what the generated host entry point registers: without it this smoke would exercise a configuration
 // no real application runs, and the enum check below would be measuring nothing.
 var options = new JsonSerializerOptions(built);
-options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+options.Converters.Add(new PragmaticStringEnumConverter());
 
 var original = new JobParams { Name = "widget", Count = 3, Tags = ["a", "b"] };
 

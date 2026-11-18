@@ -50,8 +50,9 @@ disabled — a Native AOT proof that the generated context is complete and corre
 ⚠️ The enum case is here because it was missing, and its absence hid a real defect: the generated
 context baked in the numeric enum converter, so the same value went out as `"Shipped"` through the
 reflection path and `2` through this one — enabling `<PublishAot>` silently changed the wire format of
-every enum in an API. The smoke registers `JsonStringEnumConverter` exactly as the generated host entry
-point does; without that it would be exercising a configuration no real application runs.
+every enum in an API. The smoke registers `PragmaticStringEnumConverter` exactly as the generated host
+entry point does (it writes the names `JsonStringEnumConverter` writes, and needs no dynamic code to
+create); without that it would be exercising a configuration no real application runs.
 
 ```pwsh
 pwsh examples/aot-smoke/publish-and-smoke-generated.ps1
@@ -163,19 +164,23 @@ An application's shape, published Native AOT:
   | Check | Answer |
   |---|---|
   | `POST /api/notes` with the permission | `201` and the note |
+  | the note's enum, sent and returned | by its name, `"kind":"Final"` |
   | `GET /api/notes/{id}` | `200`, the same values |
   | no identity | `401` |
   | a caller without the permission | `403` |
 
-The four checks pass under Native AOT. **The publish is not warning-free:** it raises **14** distinct trim/AOT warnings, and the
+The five checks pass under Native AOT. **The publish is not warning-free:** it raises **10** distinct trim/AOT warnings, and the
 script fails if the count is above or below that number. A warning above it is a regression; one below it is a fix that lowers the
-budget in the same change. Each comes from one of three places, each with its issue:
+budget in the same change. Each comes from one of two places, each with its issue:
 
 | Warnings | From | Issue |
 |---|---|---|
-| 3 | the generated entry point: telemetry options bound by `ConfigurationBinder.Bind`, enums by the non-generic `JsonStringEnumConverter` | #857 |
 | 4 | EF Core's OpenTelemetry instrumentation, registered by `Pragmatic.Composition.Host` on every host | #858 |
 | 6 | C#'s `dynamic` binder, rooted by something the host brings in, not yet found | #859 |
+
+The budget started at 14. The generated entry point's four went with #857: the telemetry options are read by typed code, and enums
+are registered through `PragmaticStringEnumConverter`, which writes the names `JsonStringEnumConverter` writes and needs no dynamic
+code to create.
 
 That this host *runs* under Native AOT is proven. That a Pragmatic application is a warning-free Native AOT application is not,
 until the budget is 0.
@@ -213,7 +218,7 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | Persistence on the **Sql engine** works under AOT | ✅ proven, sample 5 |
 | Persistence on the **documents engine** works under AOT | ✅ proven, sample 6 |
 | **Two boundaries on two engines** in one process | ✅ proven, sample 7 |
-| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ runs, sample 8: 201, 200, 401 and 403 from the native binary · ⚠️ publishes with 14 trim/AOT warnings (#857, #858, #859), so not yet a warning-free claim |
+| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ runs, sample 8: 201, 200, 401 and 403 from the native binary, an enum by its name · ⚠️ publishes with 10 trim/AOT warnings (#858, #859), so not yet a warning-free claim |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
 | EF Core | out of scope, stated: the JIT option |
 
