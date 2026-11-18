@@ -180,6 +180,9 @@ internal sealed partial class PragmaticHostTemplate
             if (!HasEndpoints)
             {
                 Comment("No endpoint assemblies discovered");
+                // The dispatcher is generated for a host with local actions, endpoints or not: a service another host calls only through
+                // its remote boundary has actions and no HTTP endpoint of its own (#863).
+                RenderInvokeDispatcherMapping();
                 AppendLine("return endpoints;");
                 return;
             }
@@ -312,17 +315,25 @@ internal sealed partial class PragmaticHostTemplate
                 AppendLine();
             }
 
-            // Map /_pragmatic/invoke dispatcher for remote boundary access
-            // Only emitted when the PragmaticInvokeEndpoint class is generated (host has local actions)
-            if (HasLocalActions)
-            {
-                Comment("Remote boundary invoke dispatcher");
-                AppendLine($"{_model.RootNamespace}.PragmaticInvokeEndpoint.MapPragmaticInvoke(endpoints);");
-                AppendLine();
-            }
+            RenderInvokeDispatcherMapping();
 
             AppendLine("return endpoints;");
         }, "IEndpointRouteBuilder", parameters, AccessModifier.Internal, new MethodModifiers { IsStatic = true });
+    }
+
+    /// <summary>
+    ///     Maps <c>/_pragmatic/invoke</c> for remote boundary access, under the condition that generates the
+    ///     <c>PragmaticInvokeEndpoint</c> class (the host has local actions). <c>MapPragmaticInvoke</c> itself
+    ///     maps nothing unless the configuration enables it.
+    /// </summary>
+    private void RenderInvokeDispatcherMapping()
+    {
+        if (!HasLocalActions)
+            return;
+
+        Comment("Remote boundary invoke dispatcher");
+        AppendLine($"{_model.RootNamespace}.PragmaticInvokeEndpoint.MapPragmaticInvoke(endpoints);");
+        AppendLine();
     }
 
     /// <summary>

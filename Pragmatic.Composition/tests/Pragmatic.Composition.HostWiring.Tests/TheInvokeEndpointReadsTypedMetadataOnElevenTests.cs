@@ -37,8 +37,6 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
         using Pragmatic.Actions.Abstractions;
         using Pragmatic.Actions.Attributes;
         using Pragmatic.Composition.Attributes;
-        using Pragmatic.Endpoints;
-        using Pragmatic.Endpoints.Attributes;
         using Pragmatic.Result;
 
         // No [Boundary]: a boundary's invoker takes the unit of work of a database, and this action writes nothing.
@@ -50,9 +48,9 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
 
         namespace Echo.Actions
         {
-            // The route is not what the case calls: a host maps the dispatcher only beside endpoints of its own.
+            // No [Endpoint]: the action is reachable only through the dispatcher, the shape of a service another host calls through its
+            // remote boundary. A host without endpoints of its own once generated the dispatcher and never mapped it (#863).
             [DomainAction]
-            [Endpoint(HttpVerb.Post, "api/shout")]
             public partial class Shout : DomainAction<string>
             {
                 public required string Text { get; init; }
@@ -121,16 +119,42 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
         endpoint.Should().Contain(written);
         endpoint.Should().NotContain(notWritten);
 
+        var (status, body, output) = await InvokeAsync(name, frameworkMajor, rollForwardToLatestMajor, dispatcherEnabled: true);
+
+        output.Should().Contain(runtime, "this case is about that runtime; it has to be the one that ran");
+        status.Should().Be(HttpStatusCode.OK, body + "\n" + output);
+        body.Should().Contain("HELLO", "the action ran on the request the endpoint read");
+    }
+
+    /// <summary>
+    ///     The control for the host without endpoints (#863): the dispatcher it maps answers only when the configuration enables it, so
+    ///     the 200 above is the dispatcher's and not a route that is always there.
+    /// </summary>
+    [Fact]
+    public async Task ADispatcherNotEnabled_IsNotMapped()
+    {
+        var name = $"{RunProbePrefix}{Guid.NewGuid():N}";
+
+        var (status, body, output) = await InvokeAsync(name, frameworkMajor: null, rollForwardToLatestMajor: false, dispatcherEnabled: false);
+
+        status.Should().Be(HttpStatusCode.NotFound, body + "\n" + output);
+    }
+
+    private sealed record InvokeRun(HttpStatusCode Status, string Body, string Output);
+
+    /// <summary>Builds the module and the host, runs the host as a process, and posts one invoke request to it.</summary>
+    private static async Task<InvokeRun> InvokeAsync(string name, int? frameworkMajor, bool rollForwardToLatestMajor, bool dispatcherEnabled)
+    {
         var (errors, module, host) = ModuleAndHost.Emit(
             $"{name}.Module", [Module], $"{name}.Host", Host, frameworkMajor: frameworkMajor);
         errors.Should().BeEmpty("the host has to compile, or there is nothing to run");
 
         var running = await ProbeHost.StartAsync(name, module, host!, rollForwardToLatestMajor,
-            "--Pragmatic:RemoteBoundaries:InvokeEndpoint:Enabled=true",
+            $"--Pragmatic:RemoteBoundaries:InvokeEndpoint:Enabled={(dispatcherEnabled ? "true" : "false")}",
             "--Pragmatic:RemoteBoundaries:InvokeEndpoint:AllowAnonymous=true",
             // A startup failure ends the process, and so the wait for the address, with the reason printed.
-            "--Pragmatic:MaintenanceMode:EnableOnStartupFailure=false");
-        await using var _ = running.ConfigureAwait(true);
+            "--Pragmatic:MaintenanceMode:EnableOnStartupFailure=false").ConfigureAwait(false);
+        await using var _ = running.ConfigureAwait(false);
         using var bound = new CancellationTokenSource(Bound);
 
         // Both pipes are drained for the whole run: a host whose log fills an unread pipe blocks on its next write, request or not.
@@ -140,7 +164,7 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
         Uri? address = null;
         try
         {
-            while (address is null && await running.Process.StandardOutput.ReadLineAsync(bound.Token).ConfigureAwait(true) is { } line)
+            while (address is null && await running.Process.StandardOutput.ReadLineAsync(bound.Token).ConfigureAwait(false) is { } line)
             {
                 printed.Add(line);
                 if (ListeningAddress().Match(line) is { Success: true } match)
@@ -156,28 +180,24 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
         var output = string.Join('\n', printed);
         if (address is null)
         {
-            await running.StopAsync().ConfigureAwait(true);
-            output += "\n" + await errorOutput.ConfigureAwait(true);
+            await running.StopAsync().ConfigureAwait(false);
+            output += "\n" + await errorOutput.ConfigureAwait(false);
         }
 
-        output.Should().Contain(runtime, "this case is about that runtime; it has to be the one that ran");
         address.Should().NotBeNull("the host starts and says where it listens:\n" + output);
         var restOfOutput = running.Process.StandardOutput.ReadToEndAsync();
 
         using var client = new HttpClient();
         using var request = new StringContent(
             """{"actionType":"Echo.Actions.Shout","payload":{"Text":"hello"}}""", Encoding.UTF8, "application/json");
-        using var response = await client.PostAsync(new Uri(address!, "/_pragmatic/invoke"), request, bound.Token).ConfigureAwait(true);
-        var body = await response.Content.ReadAsStringAsync(bound.Token).ConfigureAwait(true);
+        using var response = await client.PostAsync(new Uri(address!, "/_pragmatic/invoke"), request, bound.Token).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(bound.Token).ConfigureAwait(false);
 
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            await running.StopAsync().ConfigureAwait(true);
-            output += "\n" + await restOfOutput.ConfigureAwait(true) + "\n" + await errorOutput.ConfigureAwait(true);
-        }
+        // The host's own log goes with the result: on an unexpected status it is the only account of what the host did.
+        await running.StopAsync().ConfigureAwait(false);
+        output += "\n" + await restOfOutput.ConfigureAwait(false) + "\n" + await errorOutput.ConfigureAwait(false);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK, body + "\n" + output);
-        body.Should().Contain("HELLO", "the action ran on the request the endpoint read");
+        return new InvokeRun(response.StatusCode, body, output);
     }
 
     [GeneratedRegex(@"listening on (?<url>http://\S+)")]
