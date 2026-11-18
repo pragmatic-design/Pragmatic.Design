@@ -169,21 +169,16 @@ An application's shape, published Native AOT:
   | no identity | `401` |
   | a caller without the permission | `403` |
 
-The five checks pass under Native AOT. **The publish is not warning-free:** it raises **6** distinct trim/AOT warnings, and the
-script fails if the count is above or below that number. A warning above it is a regression; one below it is a fix that lowers the
-budget in the same change. They come from one place, with its issue:
+The five checks pass under Native AOT, and **the publish is warning-free**: the script's budget of trim/AOT warnings is **0**, and
+it fails on any.
+
+The budget started at 14, and each warning went with the issue that removed its cause:
 
 | Warnings | From | Issue |
 |---|---|---|
-| 6 | C#'s `dynamic` binder, rooted by something the host brings in, not yet found | #859 |
-
-The budget started at 14. The generated entry point's four went with #857: the telemetry options are read by typed code, and enums
-are registered through `PragmaticStringEnumConverter`, which writes the names `JsonStringEnumConverter` writes and needs no dynamic
-code to create. Four more went with #858: EF Core's OpenTelemetry instrumentation is registered by `Pragmatic.Persistence.EFCore`,
-which this host, on the Sql engine, does not reference.
-
-That this host *runs* under Native AOT is proven. That a Pragmatic application is a warning-free Native AOT application is not,
-until the budget is 0.
+| 4 | The generated entry point: telemetry options read by the reflecting configuration binder, enums registered through `JsonStringEnumConverter`. Now typed code, and `PragmaticStringEnumConverter` | #857 |
+| 4 | EF Core's OpenTelemetry instrumentation, registered on every host. Now by `Pragmatic.Persistence.EFCore`, which this host on the Sql engine does not reference | #858 |
+| 6 | C#'s `dynamic` binder, rooted by the domain event dispatcher's fallback for an event no generated table knows. Now behind `RuntimeFeature.IsDynamicCodeSupported`, which Native AOT folds to `false` | #859 |
 
 ## Requirements
 
