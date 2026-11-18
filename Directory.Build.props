@@ -328,8 +328,8 @@
   <!-- MinVer drives the version of every packable Pragmatic NuGet. Generators and analyzers are
        packable too, so they MUST get MinVer — otherwise they fall back to a default stable 1.0.0,
        which shadows every 1.0.0-alpha.* prerelease (SemVer: stable > prerelease) and makes them
-       unrepublishable on a feed. Keeping them on MinVer pins generator+runtime to the same git
-       height, so the single-package experience (shared PackageId) stays version-consistent. -->
+       unrepublishable on a feed. Keeping them on MinVer pins generator and runtime packages to the
+       same git height, so a runtime package and the generator it references carry one version. -->
   <ItemGroup Condition="'$(IsRuntimeLib)' == 'true' OR '$(IsGenerator)' == 'true' OR '$(IsAnalyzer)' == 'true'">
     <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
@@ -403,29 +403,5 @@
   <ItemGroup Condition="'$(PackageReadmeShipsDocs)' == 'true'">
     <PackageMarkdown Include="$(PragmaticModuleDir)docs\**\*.md" PackagePath="docs/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-
-  <!-- ============================================
-       Generator Runtime Support (OPT-IN)
-       ============================================ -->
-
-  <!-- When a runtime library needs to be referenced by its sibling generator,
-       set IsGeneratorRuntime=true in the csproj. This:
-       - Multi-targets netstandard2.0 + net10.0
-       - Suppresses pack (generator will pack both)
-
-       Use when: Generator needs to read attributes/types from runtime at compile time
-       Don't use when: Generator only generates code without referencing runtime
-
-       Example (in Pragmatic.Mapping.csproj):
-       <PropertyGroup>
-         <IsGeneratorRuntime>true</IsGeneratorRuntime>
-       </PropertyGroup>
-  -->
-  <PropertyGroup Condition="'$(IsRuntimeLib)' == 'true' AND '$(IsGeneratorRuntime)' == 'true'">
-    <TargetFramework></TargetFramework>
-    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-    <IsPackable>false</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-  </PropertyGroup>
 
 </Project>

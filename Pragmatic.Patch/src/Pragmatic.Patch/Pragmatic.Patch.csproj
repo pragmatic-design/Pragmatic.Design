@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Description>Source-generated PATCH DTOs with tri-state Optional&lt;T&gt; for partial updates. Compile-time, zero reflection.</Description>
     <PackageTags>patch;partial-update;source-generator;optional;json-patch</PackageTags>
-    <IsGeneratorRuntime>true</IsGeneratorRuntime>
   </PropertyGroup>
 
   <ItemGroup>

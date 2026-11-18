@@ -78,66 +78,6 @@
   </Target>
 
   <!-- ============================================
-       Combined Runtime + Generator Package
-       When a .SourceGenerator project has a sibling runtime project,
-       pack both into a single NuGet package.
-
-       Example: Pragmatic.Mapping.SourceGenerator + Pragmatic.Mapping
-                -> Pragmatic.Mapping.nupkg (single package)
-       ============================================ -->
-
-  <PropertyGroup Condition="'$(IsGenerator)' == 'true'">
-    <!-- Derive runtime project name: Pragmatic.Mapping.SourceGenerator -> Pragmatic.Mapping -->
-    <RuntimeProjectName Condition="$(MSBuildProjectName.EndsWith('.SourceGenerator'))">$(MSBuildProjectName.Replace('.SourceGenerator', ''))</RuntimeProjectName>
-    <RuntimeProjectName Condition="$(MSBuildProjectName.EndsWith('.Generator'))">$(MSBuildProjectName.Replace('.Generator', ''))</RuntimeProjectName>
-    <RuntimeProjectPath>$(MSBuildProjectDirectory)\..\$(RuntimeProjectName)\$(RuntimeProjectName).csproj</RuntimeProjectPath>
-    <HasRuntimeProject Condition="Exists('$(RuntimeProjectPath)')">true</HasRuntimeProject>
-
-    <!-- Runtime project output paths -->
-    <RuntimeOutputBase>$(MSBuildProjectDirectory)\..\$(RuntimeProjectName)\bin\$(Configuration)\</RuntimeOutputBase>
-    <RuntimeDllNs20>$(RuntimeOutputBase)netstandard2.0\$(RuntimeProjectName).dll</RuntimeDllNs20>
-    <RuntimeDllNet10>$(RuntimeOutputBase)net10.0\$(RuntimeProjectName).dll</RuntimeDllNet10>
-
-    <!-- Detect if runtime project multi-targets (has ns2.0) -->
-    <RuntimeIsMultiTarget Condition="Exists('$(RuntimeDllNs20)')">true</RuntimeIsMultiTarget>
-  </PropertyGroup>
-
-  <!-- Single-Package Experience:
-       When the generator has a sibling runtime project that opts into
-       IsGeneratorRuntime=true (multi-targets ns2.0+net10.0), pack both
-       into a single package using the runtime name as PackageId.
-
-       For generators whose runtime doesn't opt-in (like Pragmatic.Result),
-       they remain separate packages. -->
-  <PropertyGroup Condition="'$(IsGenerator)' == 'true' AND '$(HasRuntimeProject)' == 'true' AND '$(RuntimeIsMultiTarget)' == 'true'">
-    <PackageId>$(RuntimeProjectName)</PackageId>
-  </PropertyGroup>
-
-  <!-- Include runtime DLLs in generator package when runtime multi-targets -->
-  <ItemGroup Condition="'$(IsGenerator)' == 'true' AND '$(RuntimeIsMultiTarget)' == 'true'">
-    <!-- Runtime ns2.0 in analyzers (for generator to reference at compile time) -->
-    <None Include="$(RuntimeDllNs20)"
-          Pack="true"
-          PackagePath="analyzers/dotnet/cs"
-          Visible="false"
-          Condition="Exists('$(RuntimeDllNs20)')" />
-
-    <!-- Runtime ns2.0 in lib (for consumers on older TFMs) -->
-    <None Include="$(RuntimeDllNs20)"
-          Pack="true"
-          PackagePath="lib/netstandard2.0"
-          Visible="true"
-          Condition="Exists('$(RuntimeDllNs20)')" />
-
-    <!-- Runtime net10.0 in lib (for consumers on net10.0, optimal codegen) -->
-    <None Include="$(RuntimeDllNet10)"
-          Pack="true"
-          PackagePath="lib/net10.0"
-          Visible="true"
-          Condition="Exists('$(RuntimeDllNet10)')" />
-  </ItemGroup>
-
-  <!-- ============================================
        Verify Snapshot Settings
        ============================================ -->
 

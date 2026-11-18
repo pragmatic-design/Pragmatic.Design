@@ -179,7 +179,6 @@ This file is automatically imported by every project in the repo. It configures:
 | **Generator projects** | Sets `netstandard2.0`, auto-includes `shared/SourceGen/*.cs` as linked files |
 | **Test projects** | Sets `net10.0`, adds xunit + Verify.Xunit + coverlet, and references Pragmatic.Testing for assertions and generated mocks, auto-includes `shared/Testing/` and `shared/SourceGen/Testing/` |
 | **Runtime libraries** | Sets `net10.0`, enables packaging, AOT compatibility analyzers |
-| **Generator-Runtime dual-target** | Opt-in `IsGeneratorRuntime=true` for libraries that need both `netstandard2.0` and `net10.0` |
 
 You almost never need to repeat these settings in individual `.csproj` files.
 
@@ -187,7 +186,6 @@ You almost never need to repeat these settings in individual `.csproj` files.
 
 Handles:
 - **Generator packaging**: packs SG DLL into `analyzers/dotnet/cs` NuGet folder.
-- **Combined packages**: when a generator has a sibling runtime library (e.g., `Pragmatic.Mapping` + `Pragmatic.Mapping.SourceGenerator`), both get packed into a single NuGet.
 - **Verify snapshot nesting**: `*.verified.cs` files appear nested under their test file in Solution Explorer.
 - **Analyzer warnings**: `CA1822`, `CA1826`, `CA2007` are promoted to errors.
 
