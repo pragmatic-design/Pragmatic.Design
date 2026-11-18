@@ -97,7 +97,7 @@ public class PatchTemplateTests
     {
         var model = BuildModel("MyApp.Catalog", "UpdatePropertyPatch");
 
-        var artifact = new PatchConverterTemplate(model).RenderOutput();
+        var artifact = new PatchConverterTemplate(model, typedTypeInfo: false).RenderOutput();
 
         artifact.HintName.Should().Be("MyApp.Catalog.UpdatePropertyPatch.JsonConverter.g.cs");
     }
@@ -107,7 +107,7 @@ public class PatchTemplateTests
     {
         var model = BuildModel("MyApp", "UpdateGuestPatch");
 
-        var source = new PatchConverterTemplate(model).RenderOutput().Text;
+        var source = new PatchConverterTemplate(model, typedTypeInfo: false).RenderOutput().Text;
 
         source.Should().Contain("[JsonConverter(typeof(UpdateGuestPatchJsonConverter))]");
     }
@@ -120,7 +120,7 @@ public class PatchTemplateTests
             new() { Name = "FirstName", TypeFullName = "global::System.String" }
         ]);
 
-        var source = new PatchConverterTemplate(model).RenderOutput().Text;
+        var source = new PatchConverterTemplate(model, typedTypeInfo: false).RenderOutput().Text;
 
         source.Should().Contain("public override UpdateGuestPatch Read(");
         source.Should().Contain("public override void Write(");
@@ -146,10 +146,30 @@ public class PatchTemplateTests
             new() { Name = "Note", TypeFullName = "global::System.String?", IsNullable = true }
         ]);
 
-        var source = new PatchConverterTemplate(model).RenderOutput().Text;
+        var source = new PatchConverterTemplate(model, typedTypeInfo: false).RenderOutput().Text;
 
         source.Should().Contain("Optional<global::System.String?>.Null");
         source.Should().NotContain("cannot be cleared");
+    }
+
+    /// <summary>
+    ///     The metadata lookup the read and write paths share: the cast for a consumer on System.Text.Json 10, the typed overload for
+    ///     one that has it (#838).
+    /// </summary>
+    [Theory]
+    [InlineData(false, "=> options.GetTypeInfo(typeof(T)) as global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>", "options.GetTypeInfo<T>()")]
+    [InlineData(true, "=> options.GetTypeInfo<T>();", "GetTypeInfo(typeof(T))")]
+    public void PatchConverterTemplate_ReadsMetadataInTheFormTheConsumerHas(bool typedTypeInfo, string written, string notWritten)
+    {
+        var model = BuildModel("MyApp", "UpdateGuestPatch", properties:
+        [
+            new() { Name = "FirstName", TypeFullName = "global::System.String" }
+        ]);
+
+        var source = new PatchConverterTemplate(model, typedTypeInfo).RenderOutput().Text;
+
+        source.Should().Contain(written);
+        source.Should().NotContain(notWritten);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

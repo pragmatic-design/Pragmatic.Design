@@ -1,6 +1,5 @@
 // Pragmatic.Composition.HostWiring.Tests - A background service that fails once the host is serving
 
-using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using Pragmatic.Testing.Assertions;
@@ -188,77 +187,12 @@ public sealed partial class AWorkerThatFailsAfterStartIsNotAStartupFailureTests
         return new HostRun(exited, exited ? host.Process.ExitCode : 0, output);
     }
 
-    private static async Task<RunningHost> StartHostAsync(bool rollForwardToLatestMajor, params string[] hostArgs)
+    private static Task<ProbeHost> StartHostAsync(bool rollForwardToLatestMajor, params string[] hostArgs)
     {
         var name = $"{RunProbePrefix}{Guid.NewGuid():N}";
         var (errors, module, host) = ModuleAndHost.Emit($"{name}.Module", [Module], $"{name}.Host", Host);
         errors.Should().BeEmpty("the host has to compile, or there is nothing to run");
 
-        // Beside the suite's own assemblies: without a deps file the runtime takes every assembly in the
-        // application's directory, which is how the host finds the Pragmatic packages and the module.
-        var directory = AppContext.BaseDirectory;
-        var running = new RunningHost(
-            Path.Combine(directory, $"{name}.Module.dll"),
-            Path.Combine(directory, $"{name}.Host.dll"),
-            Directory.CreateTempSubdirectory("worker-failure-probe").FullName);
-        await File.WriteAllBytesAsync(running.ModulePath, module).ConfigureAwait(false);
-        await File.WriteAllBytesAsync(running.HostPath, host!).ConfigureAwait(false);
-
-        var start = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = running.WorkingDirectory
-        };
-        start.ArgumentList.Add("exec");
-        start.ArgumentList.Add("--runtimeconfig");
-        start.ArgumentList.Add(Path.Combine(directory, "Pragmatic.Composition.HostWiring.Tests.runtimeconfig.json"));
-        if (rollForwardToLatestMajor)
-        {
-            start.ArgumentList.Add("--roll-forward");
-            start.ArgumentList.Add("LatestMajor");
-        }
-
-        start.ArgumentList.Add(running.HostPath);
-        start.ArgumentList.Add("--urls=http://127.0.0.1:0");
-        foreach (var arg in hostArgs)
-            start.ArgumentList.Add(arg);
-        start.Environment["DOTNET_ENVIRONMENT"] = "Production";
-        start.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
-
-        running.Process = Process.Start(start)!;
-        return running;
-    }
-
-    /// <summary>The child process and the files it runs from, removed once it is gone.</summary>
-    private sealed class RunningHost(string modulePath, string hostPath, string workingDirectory) : IAsyncDisposable
-    {
-        public string ModulePath { get; } = modulePath;
-
-        public string HostPath { get; } = hostPath;
-
-        public string WorkingDirectory { get; } = workingDirectory;
-
-        public Process Process { get; set; } = null!;
-
-        public async Task StopAsync()
-        {
-            if (!Process.HasExited)
-                Process.Kill(entireProcessTree: true);
-            await Process.WaitForExitAsync().ConfigureAwait(false);
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (Process is not null)
-            {
-                await StopAsync().ConfigureAwait(false);
-                Process.Dispose();
-            }
-
-            File.Delete(HostPath);
-            File.Delete(ModulePath);
-            Directory.Delete(WorkingDirectory, recursive: true);
-        }
+        return ProbeHost.StartAsync(name, module, host!, rollForwardToLatestMajor, hostArgs);
     }
 }

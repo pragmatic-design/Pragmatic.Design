@@ -36,7 +36,14 @@ internal sealed class PatchJsonConverterTemplate : CSharpTemplate
 
     private readonly MutationMetadataModel _model;
 
-    public PatchJsonConverterTemplate(MutationMetadataModel model) => _model = model;
+    /// <summary>The consumer has <c>JsonSerializerOptions.GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11, #838).</summary>
+    private readonly bool _typedTypeInfo;
+
+    public PatchJsonConverterTemplate(MutationMetadataModel model, bool typedTypeInfo)
+    {
+        _model = model;
+        _typedTypeInfo = typedTypeInfo;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";
     protected override string? SourceInfo => $"{_model.TypeName} from {_model.Namespace}";
@@ -225,6 +232,13 @@ internal sealed class PatchJsonConverterTemplate : CSharpTemplate
         XmlSummary("The metadata for a property's type, from these options.");
         AppendLine("private static global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> Info<T>("
             + "global::System.Text.Json.JsonSerializerOptions options)");
+        // The typed overload where the consumer has it: it throws, naming the type, when there is no metadata.
+        if (_typedTypeInfo)
+        {
+            AppendLine("    => options.GetTypeInfo<T>();");
+            return;
+        }
+
         AppendLine("    => options.GetTypeInfo(typeof(T)) as global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>");
         AppendLine("       ?? throw new global::System.InvalidOperationException(");
         AppendLine("           $\"No JSON metadata for '{typeof(T)}'. Cover it in a JsonSerializerContext registered with the host options.\");");

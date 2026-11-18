@@ -51,6 +51,25 @@ public class TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests : JobsGenera
         GetCompilationErrors(result).Should().BeEmpty();
     }
 
+    /// <summary>
+    ///     The type registry reads and writes the parameters the same way (#838). Its net10.0 output, with the cast, is pinned by
+    ///     <c>JobsGeneratorTests.OneOffJob_WithParameters_GeneratesInvokerAndRegistry</c>; this snapshot is the net11.0 one beside it.
+    /// </summary>
+    [Fact]
+    public async Task A_consumer_on_net11_gets_a_type_registry_on_the_typed_overload()
+    {
+        var result = GeneratorTestHelper.RunGeneratorOnFramework<PragmaticSourceGenerator>(
+            JobWithParameters, Net110.References.All, PackageReferences());
+
+        var registry = GetGeneratedSource(result, "_Infra.Jobs.TypeRegistry");
+        registry.Should().Contain("JsonSerializer.Deserialize(json, _options.GetTypeInfo<global::TestApp.Processing.SendEmailParams>())");
+        registry.Should().Contain("_options.GetTypeInfo<global::TestApp.Processing.SendEmailParams>())");
+        registry.Should().NotContain("GetTypeInfo(typeof(global::TestApp.Processing.SendEmailParams))");
+        GetCompilationErrors(result).Should().BeEmpty();
+
+        await Verify(registry);
+    }
+
     [Fact]
     public void A_consumer_on_net10_keeps_the_cast_it_has_today()
     {

@@ -34,9 +34,10 @@ internal static class ModuleAndHost
         string hostAssemblyName,
         string hostSource,
         IEnumerable<MetadataReference>? extraReferences = null,
-        Func<string, bool>? withoutReference = null)
+        Func<string, bool>? withoutReference = null,
+        int? frameworkMajor = null)
     {
-        var (errors, _, generated, _, _) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, extraReferences, withoutReference);
+        var (errors, _, generated, _, _) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, extraReferences, withoutReference, frameworkMajor);
         return (errors, generated);
     }
 
@@ -67,9 +68,10 @@ internal static class ModuleAndHost
         IEnumerable<string> moduleSources,
         string hostAssemblyName,
         string hostSource,
-        Func<string, bool>? withoutReference = null)
+        Func<string, bool>? withoutReference = null,
+        int? frameworkMajor = null)
     {
-        var (errors, _, _, module, host) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, null, withoutReference);
+        var (errors, _, _, module, host) = CompileAll(moduleAssemblyName, moduleSources, hostAssemblyName, hostSource, null, withoutReference, frameworkMajor);
 
         if (!errors.IsEmpty)
             return (errors, module, null);
@@ -99,11 +101,12 @@ internal static class ModuleAndHost
         string hostAssemblyName,
         string hostSource,
         IEnumerable<MetadataReference>? extraReferences = null,
-        Func<string, bool>? withoutReference = null)
+        Func<string, bool>? withoutReference = null,
+        int? frameworkMajor = null)
     {
         MetadataReference[] references =
         [
-            .. HostWiringFixture.BuildReferenceSet().Where(r => withoutReference is null || !withoutReference(Path.GetFileName(r.Display ?? ""))),
+            .. HostWiringFixture.BuildReferenceSet(frameworkMajor).Where(r => withoutReference is null || !withoutReference(Path.GetFileName(r.Display ?? ""))),
             .. extraReferences ?? []
         ];
 

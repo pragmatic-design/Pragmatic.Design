@@ -73,7 +73,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
             ? resourceQueries.Combine(traitOutput.Queries.Value)
                 .Select(static (pair, _) => pair.Left.AddRange(pair.Right))
             : resourceQueries;
-        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources, efCoreSchemas) = PersistenceFeature.Register(context, features,
+        var (entityModels, persistenceRegistrations, derivedQueryEndpoints, queryModels, persistedStores, shapeSources, efCoreSchemas) = PersistenceFeature.Register(context, features, platform,
             resourceQueries: allProgrammaticQueries,
             localTraitEntities: traitOutput.TraitEntities);
 
@@ -104,7 +104,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var (actionsRegistrations, derivedPermissions, localDomainModules, permissionDerivation, invokerSources, engineReads) = ActionsFeature.Register(
             context, features, traitActions: traitOutput.Actions, permissionCatalog: permissionCatalog,
             programmaticMutations: resourceMutations, queries: queryModels, currentUsers: bindableUsers);
-        var patchManifestTypes = PatchFeature.Register(context, features);
+        var patchManifestTypes = PatchFeature.Register(context, features, platform);
 
 
         // Declared resilience. Registered unconditionally and driven by the attributes, for the
@@ -159,7 +159,7 @@ public sealed class PragmaticSourceGenerator : IIncrementalGenerator
         var readContractRegistrations = ReadContractFeature.Register(context);
         var rollUpRegistrations = RollUpFeature.Register(context);
         var configurationRegistrations = ConfigurationFeature.Register(context, features);
-        var messagingRegistrations = MessagingFeature.Register(context, features);
+        var messagingRegistrations = MessagingFeature.Register(context, features, platform);
         // Endpoints are passed in for the request bodies this generator emits: they exist only as models,
         // never as symbols, so the JSON context cannot find them on its own. The redacted types too: the
         // redactor serializes them inside the logger, where a reflection failure under Native AOT

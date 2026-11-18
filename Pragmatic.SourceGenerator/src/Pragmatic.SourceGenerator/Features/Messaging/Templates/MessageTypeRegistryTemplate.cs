@@ -13,8 +13,14 @@ internal sealed class MessageTypeRegistryTemplate : CSharpTemplate
 {
     private readonly ImmutableArray<MessageTypeModel> _messageTypes;
 
-    public MessageTypeRegistryTemplate(ImmutableArray<MessageTypeModel> messageTypes)
-        => _messageTypes = messageTypes;
+    /// <summary>The consumer has <c>JsonSerializerOptions.GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11, #838).</summary>
+    private readonly bool _typedTypeInfo;
+
+    public MessageTypeRegistryTemplate(ImmutableArray<MessageTypeModel> messageTypes, bool typedTypeInfo)
+    {
+        _messageTypes = messageTypes;
+        _typedTypeInfo = typedTypeInfo;
+    }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Messaging";
     protected override string? TriggerInfo => $"{_messageTypes.Length} message type(s)";
@@ -87,7 +93,11 @@ internal sealed class MessageTypeRegistryTemplate : CSharpTemplate
             // AOT-clean: resolve the JsonTypeInfo from the seam (generated context covers this type) and
             // use the JsonTypeInfo-based overload, which carries no IL2026/IL3050. Falls back to the
             // options' reflection resolver only when reflection fallback is left enabled.
-            AppendLine($"\"{runtimeKey}\" => JsonSerializer.Deserialize(json, (JsonTypeInfo<{qualifiedFqn}>)_options.GetTypeInfo(typeof({qualifiedFqn}))),");
+            // The typed overload where the consumer has it, the cast otherwise (see JobInvokerTemplate).
+            var typeInfo = _typedTypeInfo
+                ? $"_options.GetTypeInfo<{qualifiedFqn}>()"
+                : $"(JsonTypeInfo<{qualifiedFqn}>)_options.GetTypeInfo(typeof({qualifiedFqn}))";
+            AppendLine($"\"{runtimeKey}\" => JsonSerializer.Deserialize(json, {typeInfo}),");
         }
 
         AppendLine("_ => null");
