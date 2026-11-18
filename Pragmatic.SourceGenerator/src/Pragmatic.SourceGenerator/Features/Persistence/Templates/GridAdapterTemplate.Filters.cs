@@ -235,6 +235,11 @@ internal sealed partial class GridAdapterTemplate
             AppendLine("foreach (var field in fields)");
             Block(() =>
             {
+                AppendLine("// A null in the list is a malformed request, not a field name to look up.");
+                AppendLine("if (field is null)");
+                IncreaseIndent();
+                AppendLine("throw Malformed();");
+                DecreaseIndent();
                 AppendLine("if (!IsFilterable(field))");
                 IncreaseIndent();
                 AppendLine("throw RejectedField(field);");

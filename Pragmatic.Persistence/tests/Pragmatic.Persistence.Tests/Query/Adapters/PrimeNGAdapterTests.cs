@@ -196,6 +196,34 @@ public class PrimeNGAdapterTests
         }
     }
 
+    /// <summary>
+    ///     A null where a sort or a column's filter stands, as a request body binds it, was a
+    ///     <see cref="NullReferenceException" />, a 500 (#845). It is a malformed request. A column whose metadata has no
+    ///     value is not one: that is a column without a filter, as before.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"multiSortMeta":[null]}""")]
+    [InlineData("""{"filters":{"status":null}}""")]
+    public void FromPrimeNG_WithANullSortOrColumn_IsRefusedAsMalformed(string lazyEvent)
+    {
+        var options = System.Text.Json.JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(lazyEvent, System.Text.Json.JsonSerializerOptions.Web)!;
+
+        var act = () => PersistenceQuery.For<Order>().FromPrimeNG(options).Build(CreateTestOrders().AsQueryable()).ToList();
+
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == GridFilterRejection.Malformed);
+    }
+
+    [Fact]
+    public void FromPrimeNG_WithAColumnWhoseValueIsNull_HasNoFilterOnIt()
+    {
+        var options = System.Text.Json.JsonSerializer.Deserialize<PrimeNGLazyLoadEvent>(
+            """{"filters":{"status":{"value":null,"matchMode":"equals"}}}""", System.Text.Json.JsonSerializerOptions.Web)!;
+
+        var result = PersistenceQuery.For<Order>().FromPrimeNG(options).Build(CreateTestOrders().AsQueryable()).ToList();
+
+        result.Should().HaveCount(CreateTestOrders().Count);
+    }
+
     #endregion
 
     #region Paging Tests

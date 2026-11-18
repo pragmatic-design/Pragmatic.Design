@@ -62,6 +62,10 @@ public static class DevExpressAdapter
 
             foreach (var sort in loadOptions.Sort)
             {
+                // A null in the array is a malformed request, refused like a malformed filter, not a column to pass over.
+                if (sort is null)
+                    throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
+
                 var sortExpr = CreateSortExpression<TEntity>(sort.Selector);
                 if (sortExpr != null)
                 {

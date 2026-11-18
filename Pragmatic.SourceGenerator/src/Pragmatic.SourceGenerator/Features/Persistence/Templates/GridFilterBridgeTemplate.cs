@@ -127,6 +127,8 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         AppendLine("foreach (var filter in request.Filters)");
         Block(() =>
         {
+            AppendLine("// A null in the list is a malformed request, not a clause to pass over.");
+            AppendLine("if (filter is null) throw Malformed();");
             AppendLine("// A predicate or a refusal: a clause left out answers with more rows than the client asked for.");
             AppendLine("var predicate = PredicateFor(filter);");
             AppendLine("combined = combined is null");
@@ -149,6 +151,7 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         AppendLine("foreach (var sort in request.Sorts)");
         Block(() =>
         {
+            AppendLine("if (sort is null) throw Malformed();");
             Switch("sort.Field", () =>
             {
                 foreach (var prop in _model.Properties)
@@ -406,5 +409,7 @@ internal sealed class GridFilterBridgeTemplate : CSharpTemplate
         AppendLine($"private static global::System.Exception Unusable(FilterClause filter) => new {adapters}.GridFilterRejectedException(filter.Field, {adapters}.GridFilterRejection.UnusableValue);");
         AppendLine();
         AppendLine($"private static global::System.Exception Unsupported(FilterClause filter) => new {adapters}.GridFilterRejectedException(filter.Field, {adapters}.GridFilterRejection.UnsupportedOperator, filter.Operator.ToString());");
+        AppendLine();
+        AppendLine($"private static global::System.Exception Malformed() => new {adapters}.GridFilterRejectedException(null, {adapters}.GridFilterRejection.Malformed);");
     }
 }

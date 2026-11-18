@@ -117,6 +117,8 @@ internal sealed partial class GridAdapterTemplate : CSharpTemplate
                 AppendLine("foreach (var sort in options.Sort)");
                 Block(() =>
                 {
+                    AppendLine("// A null in the array is a malformed request, refused like a malformed filter; an empty selector is passed over.");
+                    AppendLine("if (sort is null) throw Malformed();");
                     AppendLine("if (string.IsNullOrEmpty(sort.Selector)) continue;");
                     AppendLine("// A column the adapter does not know is skipped and returns the query as it was: only a sort");
                     AppendLine("// that applied makes the next one a ThenBy, which needs an ordered query under it.");
@@ -164,7 +166,12 @@ internal sealed partial class GridAdapterTemplate : CSharpTemplate
             Block(() =>
             {
                 AppendLine("foreach (var filter in lazyEvent.Filters)");
-                Block(() => AppendLine("if (filter.Value.Value != null) terms += TermsOf(filter.Value);"));
+                Block(() =>
+                {
+                    AppendLine("// A column sent as null is a malformed request; one whose metadata has no value has no filter.");
+                    AppendLine("if (filter.Value is null) throw Malformed();");
+                    AppendLine("if (filter.Value.Value != null) terms += TermsOf(filter.Value);");
+                });
             });
             AppendLine("if (!string.IsNullOrEmpty(lazyEvent.GlobalFilter)) terms += lazyEvent.GlobalFilterFields?.Count ?? 0;");
             AppendLine("if (string.IsNullOrEmpty(lazyEvent.SortField) && lazyEvent.MultiSortMeta != null) terms += lazyEvent.MultiSortMeta.Count;");
@@ -205,6 +212,7 @@ internal sealed partial class GridAdapterTemplate : CSharpTemplate
                 AppendLine("foreach (var sort in lazyEvent.MultiSortMeta)");
                 Block(() =>
                 {
+                    AppendLine("if (sort is null) throw Malformed();");
                     AppendLine("if (string.IsNullOrEmpty(sort.Field)) continue;");
                     AppendLine("// Only a sort that applied makes the next one a ThenBy (see the DevExpress Apply).");
                     AppendLine("var before = query;");
