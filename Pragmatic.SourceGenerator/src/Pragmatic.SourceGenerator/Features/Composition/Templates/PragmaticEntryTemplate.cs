@@ -178,12 +178,18 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
             Comment("Endpoints that require authorization need an authentication method in this environment");
             AppendLine("await global::Pragmatic.Composition.Hosting.AuthenticationRequirement.VerifyAsync(app, app.Environment);");
             AppendLine();
-            AppendLine("await app.RunAsync();");
+            // Start, not Run: running is outside this try. On .NET 11 IHost's wait for shutdown rethrows the
+            // exception of a BackgroundService that failed, at any time; inside the try, a worker failing
+            // hours after startup was taken for a failed startup and the process stayed up in maintenance.
+            AppendLine("await app.StartAsync();");
         });
         AppendLine("catch (Exception ex) when (maintenanceEnabled)");
         Block(() =>
         {
-            Comment("Enter maintenance mode — build a fresh minimal app since the original may be disposed.");
+            Comment("Released as RunAsync released a host that failed to start: the maintenance app listens where it did.");
+            AppendLine("await app.DisposeAsync();");
+            AppendLine();
+            Comment("Enter maintenance mode — a fresh minimal app, since the original is disposed.");
             Comment("From the same args: the page must answer where the host was told to listen (--urls).");
             AppendLine("var maintenanceBuilder = WebApplication.CreateBuilder(args);");
             AppendLine("var maintenanceApp = maintenanceBuilder.Build();");
@@ -191,7 +197,16 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
                 "var maintenance = new MaintenanceMode(ex, pragmaticBuilder.Options.MaintenanceMode, builder.Environment.IsDevelopment());");
             AppendLine("maintenance.Configure(maintenanceApp);");
             AppendLine("await maintenanceApp.RunAsync();");
+            AppendLine("return;");
         });
+        AppendLine();
+        Comment("Started: what fails from here on is not a startup failure. A BackgroundService that fails stops the");
+        Comment("host; on .NET 10 the wait then returns, on .NET 11 it rethrows the worker's exception, and either way");
+        Comment("the process ends for the orchestrator to see.");
+        AppendLine("try");
+        Block(() => AppendLine("await app.WaitForShutdownAsync();"));
+        AppendLine("finally");
+        Block(() => AppendLine("await app.DisposeAsync();"));
     }
 
     /// <summary>

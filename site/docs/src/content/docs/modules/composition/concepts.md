@@ -558,8 +558,9 @@ The source generator produces a `PragmaticApp.RunAsync` method that follows this
 10. Database initialization (EnsureCreated or Migrate if enabled)
 11. Configure pipeline (all startup steps, sorted by Order)
 12. Map all endpoints
-13. Run the application
-14. On failure: enter maintenance mode (if enabled)
+13. Start the application
+14. On a failure in steps 10–13: enter maintenance mode (if enabled)
+15. Wait for shutdown
 ```
 
 ### Maintenance Mode
@@ -573,6 +574,8 @@ When the application fails to start and `MaintenanceModeOptions.EnableOnStartupF
 | Any other path | 503 with pointer to `/health` and `/maintenance` |
 
 This ensures monitoring systems can detect the failure and operators can diagnose the issue without SSH access to the container.
+
+Maintenance mode is for a host that did not start. A `BackgroundService` that fails once the host is serving is not a startup failure: with the default `BackgroundServiceExceptionBehavior.StopHost` the host stops and the process ends. On .NET 10, `PragmaticApp.RunAsync` returns normally after logging the failure, so the process exits with code 0. On .NET 11, `RunAsync` throws the worker's exception, so the process exits with a non-zero code. In neither case does the host answer 503 for a startup that had succeeded. An orchestrator that restarts on exit restarts it either way.
 
 ---
 

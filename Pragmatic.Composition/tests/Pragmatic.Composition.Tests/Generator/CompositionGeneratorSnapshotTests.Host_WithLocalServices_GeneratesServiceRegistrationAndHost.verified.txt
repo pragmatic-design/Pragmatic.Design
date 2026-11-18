@@ -202,17 +202,33 @@ public static class PragmaticApp
             // Endpoints that require authorization need an authentication method in this environment
             await global::Pragmatic.Composition.Hosting.AuthenticationRequirement.VerifyAsync(app, app.Environment);
             
-            await app.RunAsync();
+            await app.StartAsync();
         }
         catch (Exception ex) when (maintenanceEnabled)
         {
-            // Enter maintenance mode — build a fresh minimal app since the original may be disposed.
+            // Released as RunAsync released a host that failed to start: the maintenance app listens where it did.
+            await app.DisposeAsync();
+            
+            // Enter maintenance mode — a fresh minimal app, since the original is disposed.
             // From the same args: the page must answer where the host was told to listen (--urls).
             var maintenanceBuilder = WebApplication.CreateBuilder(args);
             var maintenanceApp = maintenanceBuilder.Build();
             var maintenance = new MaintenanceMode(ex, pragmaticBuilder.Options.MaintenanceMode, builder.Environment.IsDevelopment());
             maintenance.Configure(maintenanceApp);
             await maintenanceApp.RunAsync();
+            return;
+        }
+        
+        // Started: what fails from here on is not a startup failure. A BackgroundService that fails stops the
+        // host; on .NET 10 the wait then returns, on .NET 11 it rethrows the worker's exception, and either way
+        // the process ends for the orchestrator to see.
+        try
+        {
+            await app.WaitForShutdownAsync();
+        }
+        finally
+        {
+            await app.DisposeAsync();
         }
     }
     
