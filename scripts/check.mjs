@@ -1226,6 +1226,8 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-boundaries.ps1',
     // One composed host on the Sql engine, through the generated entry point; its trim/AOT warnings counted against a budget (#818).
     'examples/aot-smoke/publish-and-smoke-host.ps1',
+    // The in-memory message bus dispatching to a generated [MessageHandler], with no trim/AOT warning (#869).
+    'examples/aot-smoke/publish-and-smoke-messaging.ps1',
   ];
 
   let good = true;

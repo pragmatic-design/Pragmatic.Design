@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Messaging.Diagnostics;
@@ -263,7 +264,15 @@ public sealed partial class InMemoryMessageBus : IMessageBus
         // Fallback: use dynamic dispatch when no SG-generated dispatch table
         // covers this type (e.g., passthrough default, test scenarios).
         // This routes through the DLR — not reflection — to call PublishAsync<T>.
-        return PublishAsync((dynamic)message, context, ct);
+        // ⚠️ Behind the guard ILC folds to false under Native AOT, so the C# runtime binder is not compiled into an AOT application:
+        // unguarded, this one line rooted it in every application that used the bus, with six IL3050 warnings of its own (#869).
+        if (RuntimeFeature.IsDynamicCodeSupported)
+            return PublishAsync((dynamic)message, context, ct);
+
+        // Native AOT: the generated tables list every message a generated [MessageHandler] handles, so a message none of them knows has
+        // no such handler. One registered by hand, without the generator, cannot be reached without the runtime binder.
+        LogNoDispatchTable(message.GetType().Name);
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -333,6 +342,10 @@ public sealed partial class InMemoryMessageBus : IMessageBus
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "No handlers registered for message {MessageName}")]
     private partial void LogNoHandlers(string messageName);
+
+    [LoggerMessage(Level = LogLevel.Debug,
+        Message = "No generated dispatch table knows message {MessageName}: it has no [MessageHandler], and under Native AOT a handler registered without the source generator is not run")]
+    private partial void LogNoDispatchTable(string messageName);
 
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "Found {HandlerCount} handler(s) for message {MessageName}")]

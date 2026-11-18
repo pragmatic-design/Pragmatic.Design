@@ -180,6 +180,20 @@ The budget started at 14, and each warning went with the issue that removed its 
 | 4 | EF Core's OpenTelemetry instrumentation, registered on every host. Now by `Pragmatic.Persistence.EFCore`, which this host on the Sql engine does not reference | #858 |
 | 6 | C#'s `dynamic` binder, rooted by the domain event dispatcher's fallback for an event no generated table knows. Now behind `RuntimeFeature.IsDynamicCodeSupported`, which Native AOT folds to `false` | #859 |
 
+## 9. The in-memory message bus (`Pragmatic.Aot.Messaging`)
+
+```bash
+pwsh examples/aot-smoke/publish-and-smoke-messaging.ps1
+```
+
+A console application with one `[MessageHandler]` and the registration the generator writes for it. It dispatches a message untyped
+through `IMessageBus.DispatchAsync`, the path that probes the generated dispatch tables, and checks that the handler received it.
+
+The script counts the publish's trim/AOT warnings against a budget of **0**. The bus's fallback for a message no generated table knows
+was `PublishAsync((dynamic)message, …)`, unguarded: it compiled C#'s runtime binder into every application that used the bus, with the
+six warnings the composed host had for the same reason in the event dispatcher. It is now behind `RuntimeFeature.IsDynamicCodeSupported`
+(#869).
+
 ## Requirements
 
 The native toolchain for the target RID:
