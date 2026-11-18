@@ -87,6 +87,24 @@ public sealed class AHostOnTheEnginesAloneReferencesNoEfCoreTests
             "a host that references EF Core keeps its executor");
     }
 
+    /// <summary>
+    ///     EF Core's tracing is registered by the host that references EF Core, through Pragmatic.Persistence.EFCore, and the host's own
+    ///     telemetry no longer carries it (#858). The case above, without EF Core, is the control: no generated file names it.
+    /// </summary>
+    [Fact]
+    public void AHostWithEfCore_RegistersEfCoresTracing_AndTheHostPackageDoesNotCarryIt()
+    {
+        var (errors, generated) = ModuleAndHost.Generate("Shop.Reviews", [Module], "Shop.Host", Host, Bridge);
+
+        errors.Should().BeEmpty();
+        generated["Host.Entry.g.cs"].Should().Contain(
+            "global::Pragmatic.Persistence.EFCore.Extensions.PragmaticEntityFrameworkCoreTelemetryExtensions.AddPragmaticEntityFrameworkCoreTracing(builder.Services);");
+
+        // What made an engines-only host carry the instrumentation, and its AOT warnings: the host package referenced it.
+        typeof(Pragmatic.Composition.Hosting.PragmaticTelemetry).Assembly.GetReferencedAssemblies()
+            .Select(a => a.Name).Should().NotContain("OpenTelemetry.Instrumentation.EntityFrameworkCore");
+    }
+
     /// <summary>EF Core and everything of Pragmatic's built on it, by file name.</summary>
     private static bool IsEfCore(string fileName)
         => fileName.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase)

@@ -87,10 +87,9 @@ public static class PragmaticTelemetry
                 foreach (var source in allSources)
                     tracing.AddSource(source);
 
-                // ASP.NET Core, HttpClient, and EF Core instrumentation
+                // ASP.NET Core and HttpClient. EF Core's is added by Pragmatic.Persistence.EFCore, where the host references it (#858).
                 tracing.AddAspNetCoreInstrumentation();
                 tracing.AddHttpClientInstrumentation();
-                tracing.AddEntityFrameworkCoreInstrumentation();
 
                 // Sampling: AlwaysOn in dev, ratio-based in prod
                 if (!isDevelopment && options.SamplingRatio < 1.0)

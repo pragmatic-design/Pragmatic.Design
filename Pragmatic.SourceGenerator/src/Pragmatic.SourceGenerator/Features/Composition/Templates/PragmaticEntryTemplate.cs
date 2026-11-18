@@ -742,6 +742,12 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
 
         Comment("OpenTelemetry — auto-configured, opt-out via options.Telemetry.Enabled = false");
         AppendLine($"global::Pragmatic.Composition.Hosting.PragmaticTelemetry.AddPragmaticTelemetry({servicesExpr}, {optionsExpr}, {isDevelopmentExpr});");
+
+        // EF Core's tracing, only where EF Core is: the instrumentation reflects, and an engines-only host published AOT carried its
+        // warnings for commands it never runs (#858).
+        if (_model.DetectedFeatures.HasPersistenceEFCore)
+            AppendLine($"global::Pragmatic.Persistence.EFCore.Extensions.PragmaticEntityFrameworkCoreTelemetryExtensions.AddPragmaticEntityFrameworkCoreTracing({servicesExpr});");
+
         AppendLine();
     }
 

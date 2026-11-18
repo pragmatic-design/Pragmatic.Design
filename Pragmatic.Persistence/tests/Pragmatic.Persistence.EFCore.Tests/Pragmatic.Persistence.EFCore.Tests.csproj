@@ -21,6 +21,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <!-- Runtime testing -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <!-- The tracer provider a host builds, for the test that EF Core commands are traced. -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <!-- EF Core for generated entity configurations -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />

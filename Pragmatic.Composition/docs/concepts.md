@@ -926,7 +926,7 @@ No manual `services.AddXxx()` needed.
 
 The generated `PragmaticApp.RunAsync` automatically configures OpenTelemetry with sensible defaults:
 
-- **Tracing**: ASP.NET Core, HttpClient, EF Core instrumentation. All Pragmatic ActivitySources registered.
+- **Tracing**: ASP.NET Core and HttpClient instrumentation, and EF Core's when the host references `Pragmatic.Persistence.EFCore` (a host on the Sql or documents engine alone does not carry it). All Pragmatic ActivitySources registered.
 - **Metrics**: ASP.NET Core metrics. All Pragmatic Meters registered.
 - **Logging**: OTel logging bridge with formatted messages and scopes.
 - **Sampling**: AlwaysOn in Development, ratio-based (default 10%) in production.
