@@ -22,7 +22,8 @@ internal static class PatchFeature
     /// </returns>
     public static IncrementalValueProvider<ImmutableArray<Manifest.Models.ManifestTypeModel>> Register(
         IncrementalGeneratorInitializationContext context,
-        IncrementalValueProvider<DetectedFeatures> features)
+        IncrementalValueProvider<DetectedFeatures> features,
+        IncrementalValueProvider<ConsumerPlatform> platform)
     {
         var patchProvider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
@@ -38,7 +39,8 @@ internal static class PatchFeature
         // Generate only for valid models
         var validPatches = patchProvider.Where(static m => m.IsValid);
         context.RegisterSourceOutputSafe(validPatches, GeneratePatchType);
-        context.RegisterSourceOutputSafe(validPatches, GeneratePatchConverter);
+        context.RegisterSourceOutputSafe(validPatches.Combine(platform),
+            static (ctx, pair) => GeneratePatchConverter(ctx, pair.Left, pair.Right.HasJsonTypeInfoOfT));
 
         return validPatches.Collect().Select(static (models, _) => PatchManifestTypeBuilder.Build(models));
     }
@@ -79,9 +81,9 @@ internal static class PatchFeature
         context.AddSource(artifact);
     }
 
-    private static void GeneratePatchConverter(SourceProductionContext context, PatchModel model)
+    private static void GeneratePatchConverter(SourceProductionContext context, PatchModel model, bool typedTypeInfo)
     {
-        var artifact = new PatchConverterTemplate(model).RenderOutput();
+        var artifact = new PatchConverterTemplate(model, typedTypeInfo).RenderOutput();
         context.AddSource(artifact);
     }
 }

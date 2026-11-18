@@ -17,12 +17,17 @@ internal sealed class PragmaticInvokeEndpointTemplate : CSharpTemplate
     private readonly ImmutableArray<DiscoveredActionInfo> _localActions;
     private readonly string _rootNamespace;
 
+    /// <summary>The consumer has <c>JsonSerializerOptions.GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11, #838).</summary>
+    private readonly bool _typedTypeInfo;
+
     public PragmaticInvokeEndpointTemplate(
         ImmutableArray<DiscoveredActionInfo> localActions,
-        string rootNamespace)
+        string rootNamespace,
+        bool typedTypeInfo)
     {
         _localActions = localActions;
         _rootNamespace = rootNamespace;
+        _typedTypeInfo = typedTypeInfo;
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Composition";
@@ -209,8 +214,16 @@ internal sealed class PragmaticInvokeEndpointTemplate : CSharpTemplate
             AppendLine("var __jsonOptions = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions");
             AppendLine("    .GetRequiredService<global::Microsoft.Extensions.Options.IOptions<global::Microsoft.AspNetCore.Http.Json.JsonOptions>>(");
             AppendLine("        httpContext.RequestServices).Value.SerializerOptions;");
-            AppendLine("var __requestInfo = (global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<PragmaticInvokeRequest>)");
-            AppendLine("    __jsonOptions.GetTypeInfo(typeof(PragmaticInvokeRequest));");
+            // The typed overload where the consumer has it, the cast otherwise (see JobInvokerTemplate).
+            if (_typedTypeInfo)
+            {
+                AppendLine("var __requestInfo = __jsonOptions.GetTypeInfo<PragmaticInvokeRequest>();");
+            }
+            else
+            {
+                AppendLine("var __requestInfo = (global::System.Text.Json.Serialization.Metadata.JsonTypeInfo<PragmaticInvokeRequest>)");
+                AppendLine("    __jsonOptions.GetTypeInfo(typeof(PragmaticInvokeRequest));");
+            }
             AppendLine("PragmaticInvokeRequest? __request;");
             AppendLine("try");
             AppendLine("{");

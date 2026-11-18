@@ -44,6 +44,7 @@ internal static class PersistenceFeature
         IncrementalValueProvider<EquatableArray<SchemaMetadataModel>> EfCoreSchemas) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
+        IncrementalValueProvider<ConsumerPlatform> platform,
         IncrementalValueProvider<ImmutableArray<Models.QueryModel>>? resourceQueries = null,
         IncrementalValueProvider<ImmutableArray<Traits.Models.TraitEntityInfo>>? localTraitEntities = null)
     {
@@ -153,7 +154,7 @@ internal static class PersistenceFeature
         var localRegistrations =
             RepositoryFeature.Register(context, perEntityWithFeatures, entitiesWithFeatures, shapeEntitiesWithFeatures, isDebugProvider, localTraitEntities);
 
-        var (derivedQueryEndpoints, queryModels, derivedEngineSources) = QueryFeature.Register(context, features, resourceQueries: resourceQueries);
+        var (derivedQueryEndpoints, queryModels, derivedEngineSources) = QueryFeature.Register(context, features, platform, resourceQueries: resourceQueries);
         ProjectionFeature.Register(context, efEntitiesProvider, features);
         AdvancedFeature.Register(context, entitiesWithFeatures, features);
         var (persistedStores, efCoreSchemas) = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);

@@ -109,9 +109,10 @@ says what the consumer's compilation can express. It holds its C# language versi
 APIs it can see, each one a capability flag. It is computed once per compilation by
 `ConsumerPlatformDetector` and passed to the features that need it, as `DetectedFeatures` is.
 
-Use it when a template can write a better line for a consumer on a newer .NET or C#: on .NET 11, the job
-invoker reads its parameters through `JsonSerializerOptions.GetTypeInfo<T>()` instead of `GetTypeInfo(typeof(T))`
-and a cast. The packages follow every supported .NET release with one public API
+Use it when a template can write a better line for a consumer on a newer .NET or C#: on .NET 11, every
+generated line that asks the options for a type's metadata — the job invoker and type registry, the message
+type registry, both patch converters and the remote invoke endpoint — calls `JsonSerializerOptions.GetTypeInfo<T>()`
+instead of `GetTypeInfo(typeof(T))` and a cast. The packages follow every supported .NET release with one public API
 ([CONVENTIONS](../../docs/CONVENTIONS.md)), so the generator is where a newer platform pays off without a
 breaking change. The rules:
 
@@ -126,6 +127,10 @@ breaking change. The rules:
   `GeneratorTestHelper.RunGeneratorOnFramework`, using `Net110.References.All` from
   `Basic.Reference.Assemblies.Net110`, and assert that the output compiles there. `Pragmatic.Jobs.Tests` has
   the first example, `TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests`.
+- **Run it where it runs.** A line that compiles is not a line that is called. To prove a generated host uses
+  the new form, compile it against the newer shared frameworks and run it on that runtime:
+  `Pragmatic.Composition.HostWiring.Tests` has `TheInvokeEndpointReadsTypedMetadataOnElevenTests`, which
+  serves a request through the generated invoke endpoint on .NET 11, with .NET 10 as the control.
 
 ---
 

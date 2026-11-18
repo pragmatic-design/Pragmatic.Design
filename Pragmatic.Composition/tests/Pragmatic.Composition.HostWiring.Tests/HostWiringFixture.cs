@@ -447,14 +447,19 @@ public sealed class HostWiringFixture
     ///     compilation references. A hand-picked reference list would quietly switch features off and
     ///     the comparison would then pass by having measured nothing, so the set is taken wholesale.
     /// </remarks>
-    internal static MetadataReference[] BuildReferenceSet()
+    /// <param name="frameworkMajor">
+    ///     The major version of the shared frameworks to compile against, instead of the ones this suite runs on: a compilation
+    ///     for a .NET 11 application, from a suite that runs on .NET 10. The frameworks then come first, so a framework assembly
+    ///     wins over an older copy a package left in the output directory.
+    /// </param>
+    internal static MetadataReference[] BuildReferenceSet(int? frameworkMajor = null)
     {
-        var directories = new List<string>
-        {
-            AppContext.BaseDirectory,
-            Path.GetDirectoryName(typeof(Microsoft.AspNetCore.Builder.IApplicationBuilder).Assembly.Location)!,
-            Path.GetDirectoryName(typeof(object).Assembly.Location)!
-        };
+        var aspNetCore = Path.GetDirectoryName(typeof(Microsoft.AspNetCore.Builder.IApplicationBuilder).Assembly.Location)!;
+        var netCore = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
+
+        var directories = frameworkMajor is { } major
+            ? new List<string> { SharedFramework(aspNetCore, major), SharedFramework(netCore, major), AppContext.BaseDirectory }
+            : new List<string> { AppContext.BaseDirectory, aspNetCore, netCore };
 
         var byFileName = new Dictionary<string, MetadataReference>(StringComparer.OrdinalIgnoreCase);
 
@@ -481,6 +486,19 @@ public sealed class HostWiringFixture
         }
 
         return [.. byFileName.Values];
+    }
+
+    /// <summary>
+    ///     The newest installed version of the shared framework <paramref name="running" /> belongs to, in major version
+    ///     <paramref name="major" />; a machine without one fails here, naming what is missing.
+    /// </summary>
+    private static string SharedFramework(string running, int major)
+    {
+        var root = Path.GetDirectoryName(running)!;
+        return Directory.EnumerateDirectories(root, $"{major}.*")
+                   .OrderByDescending(d => Version.TryParse(Path.GetFileName(d), out var v) ? v : new Version(0, 0))
+                   .FirstOrDefault()
+               ?? throw new InvalidOperationException($"No .NET {major} shared framework under {root}: this case needs it installed.");
     }
 
     /// <summary>
@@ -513,12 +531,13 @@ public sealed class HostWiringFixture
 
     /// <summary>
     ///     A host a test wrote into the output directory to run it as a process, and deletes afterwards
-    ///     (<see cref="AWorkerThatFailsAfterStartIsNotAStartupFailureTests" />). Out of the set by name, before the
+    ///     (<see cref="ProbeHost" />). Out of the set by name, before the
     ///     file is opened: the suite's cases run in parallel, and one that listed the directory while the file was
     ///     there would otherwise open it after it was deleted, or compile against another test's host.
     /// </summary>
     private static bool IsRunProbe(string fileName)
-        => fileName.StartsWith(AWorkerThatFailsAfterStartIsNotAStartupFailureTests.RunProbePrefix, StringComparison.Ordinal);
+        => fileName.StartsWith(AWorkerThatFailsAfterStartIsNotAStartupFailureTests.RunProbePrefix, StringComparison.Ordinal)
+           || fileName.StartsWith(TheInvokeEndpointReadsTypedMetadataOnElevenTests.RunProbePrefix, StringComparison.Ordinal);
 
     /// <summary>The bridge of an engine, from this suite's output, for the compilations of the test that persists a boundary there.</summary>
     internal static MetadataReference EngineBridge(string assemblyName)

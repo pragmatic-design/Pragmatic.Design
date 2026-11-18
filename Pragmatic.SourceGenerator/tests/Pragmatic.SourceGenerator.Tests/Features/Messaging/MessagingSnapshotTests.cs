@@ -186,7 +186,7 @@ public class MessagingSnapshotTests
             new MessageTypeModel { Fqn = "global::MyApp.Events.OrderPlaced", ShortName = "OrderPlaced" },
             new MessageTypeModel { Fqn = "global::MyApp.Events.InvoicePaid", ShortName = "InvoicePaid" });
 
-        var source = new MessageTypeRegistryTemplate(types).RenderOutput().Text;
+        var source = new MessageTypeRegistryTemplate(types, typedTypeInfo: false).RenderOutput().Text;
         return Verify(source);
     }
 

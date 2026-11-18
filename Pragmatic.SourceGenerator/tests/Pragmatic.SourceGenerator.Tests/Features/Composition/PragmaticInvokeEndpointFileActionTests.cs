@@ -35,7 +35,7 @@ public class PragmaticInvokeEndpointFileActionTests
                 SourceAssembly = "Billing"
             });
 
-        return new PragmaticInvokeEndpointTemplate(actions, "TestHost").RenderOutput().Text;
+        return new PragmaticInvokeEndpointTemplate(actions, "TestHost", typedTypeInfo: false).RenderOutput().Text;
     }
 
     [Fact]

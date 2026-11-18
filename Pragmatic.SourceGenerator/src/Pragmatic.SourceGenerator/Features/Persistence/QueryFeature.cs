@@ -35,6 +35,7 @@ internal static class QueryFeature
         IncrementalValueProvider<EquatableArray<ShapeSourceModel>> DerivedEngineSources) Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<DetectedFeatures> features,
+        IncrementalValueProvider<ConsumerPlatform> platform,
         IncrementalValueProvider<ImmutableArray<QueryModel>>? resourceQueries = null)
     {
         // Every query this assembly declares, however it was declared, collected for the invoker pass.
@@ -282,13 +283,15 @@ internal static class QueryFeature
                 MutationMetadataTransform.PatchAttributeName,
                 predicate: static (node, _) => node is TypeDeclarationSyntax,
                 transform: MutationMetadataTransform.Transform)
-            .Combine(features);
+            .Combine(features)
+            .Combine(platform);
 
         context.RegisterSourceOutputSafe(currentPatchProvider, (ctx, pair) =>
         {
-            if (!pair.Right.HasPersistenceEFCore)
+            var ((model, detected), consumer) = pair;
+            if (!detected.HasPersistenceEFCore)
                 return;
-            GeneratePatchApply(ctx, pair.Left);
+            GeneratePatchApply(ctx, model, consumer.HasJsonTypeInfoOfT);
         });
 
         // Resource-generated queries (programmatic QueryModels from [Resource(Capabilities)])
@@ -998,7 +1001,7 @@ internal static class QueryFeature
             context.AddSource(converterArtifact);
     }
 
-    private static void GeneratePatchApply(SourceProductionContext context, MutationMetadataModel? model)
+    private static void GeneratePatchApply(SourceProductionContext context, MutationMetadataModel? model, bool typedTypeInfo)
     {
         if (model is null || !model.IsValid)
             return;
@@ -1012,7 +1015,7 @@ internal static class QueryFeature
 
         // The producer of MarkSet: without it every patch read from a body took the "is not null"
         // fallback, where an explicit null and an absent property are the same thing.
-        var converter = new PatchJsonConverterTemplate(model).RenderOutput();
+        var converter = new PatchJsonConverterTemplate(model, typedTypeInfo).RenderOutput();
         if (!converter.IsEmpty)
             context.AddSource(converter);
     }

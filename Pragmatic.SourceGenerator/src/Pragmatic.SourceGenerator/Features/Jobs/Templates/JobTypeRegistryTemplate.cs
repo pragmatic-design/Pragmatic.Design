@@ -14,11 +14,19 @@ internal sealed class JobTypeRegistryTemplate : CSharpTemplate
     private readonly ImmutableArray<JobModel> _jobs;
     private readonly string _namespace;
 
-    public JobTypeRegistryTemplate(ImmutableArray<JobModel> jobs, string ns)
+    /// <summary>The consumer has <c>JsonSerializerOptions.GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11, #838).</summary>
+    private readonly bool _typedTypeInfo;
+
+    public JobTypeRegistryTemplate(ImmutableArray<JobModel> jobs, string ns, bool typedTypeInfo)
     {
         _jobs = jobs;
         _namespace = ns;
+        _typedTypeInfo = typedTypeInfo;
     }
+
+    // The typed overload where the consumer has it, the cast it had before otherwise (see JobInvokerTemplate).
+    private string TypeInfoOf(string? typeFqn)
+        => _typedTypeInfo ? $"_options.GetTypeInfo<{typeFqn}>()" : $"(JsonTypeInfo<{typeFqn}>)_options.GetTypeInfo(typeof({typeFqn}))";
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Jobs";
 
@@ -112,7 +120,7 @@ internal sealed class JobTypeRegistryTemplate : CSharpTemplate
             {
                 var fqn = $"{job.Namespace}.{job.TypeName}";
                 // AOT-clean: JsonTypeInfo-based overload (no IL2026/IL3050); the seam's generated context covers this type.
-                AppendLine($"\"{fqn}\" => JsonSerializer.Deserialize(json, (JsonTypeInfo<{job.ParameterTypeFqn}>)_options.GetTypeInfo(typeof({job.ParameterTypeFqn}))),");
+                AppendLine($"\"{fqn}\" => JsonSerializer.Deserialize(json, {TypeInfoOf(job.ParameterTypeFqn)}),");
             }
             AppendLine("_ => null");
             DecreaseIndent();
@@ -140,7 +148,7 @@ internal sealed class JobTypeRegistryTemplate : CSharpTemplate
             {
                 var fqn = $"{job.Namespace}.{job.TypeName}";
                 // AOT-clean: JsonTypeInfo-based overload (no IL2026/IL3050).
-                AppendLine($"\"{fqn}\" => JsonSerializer.Serialize(({job.ParameterTypeFqn})parameters, (JsonTypeInfo<{job.ParameterTypeFqn}>)_options.GetTypeInfo(typeof({job.ParameterTypeFqn}))),");
+                AppendLine($"\"{fqn}\" => JsonSerializer.Serialize(({job.ParameterTypeFqn})parameters, {TypeInfoOf(job.ParameterTypeFqn)}),");
             }
             // Default arm: unknown job type — resolve the runtime type's JsonTypeInfo (AOT-clean, still
             // throws under a fallback-disabled options set if the runtime type is not covered).

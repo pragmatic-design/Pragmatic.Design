@@ -27,7 +27,8 @@ internal static class MessagingFeature
     /// </returns>
     public static IncrementalValueProvider<EquatableArray<Composition.Models.MetadataEntry>> Register(
         IncrementalGeneratorInitializationContext context,
-        IncrementalValueProvider<DetectedFeatures> features)
+        IncrementalValueProvider<DetectedFeatures> features,
+        IncrementalValueProvider<ConsumerPlatform> platform)
     {
         // =====================================================================
         // Pipeline 1: [MessageHandler] → Handler models
@@ -172,11 +173,12 @@ internal static class MessagingFeature
 
         // Type registry: every messaging assembly gets one — outbox delivery, scheduled
         // messages (Jobs bridge), and dashboard replay all resolve FQN → type through it.
-        context.RegisterSourceOutputSafe(handlersWithEvents,
-            static (ctx, x) =>
+        context.RegisterSourceOutputSafe(handlersWithEvents.Combine(platform),
+            static (ctx, pair) =>
             {
+                var (x, consumer) = pair;
                 if (!x.Left.Right.HasMessaging) return;
-                GenerateTypeRegistry(ctx, x.Left.Left, x.Right);
+                GenerateTypeRegistry(ctx, x.Left.Left, x.Right, consumer.HasJsonTypeInfoOfT);
             });
 
         // Same predicate as the registration and its metadata: a host that declares the handlers itself
@@ -429,7 +431,8 @@ internal static class MessagingFeature
     private static void GenerateTypeRegistry(
         SourceProductionContext ctx,
         ImmutableArray<MessageHandlerModel> handlers,
-        ImmutableArray<MessageTypeModel> declaredEvents)
+        ImmutableArray<MessageTypeModel> declaredEvents,
+        bool typedTypeInfo)
     {
         var messageTypes = RegistryTypes(handlers, declaredEvents);
 
@@ -439,7 +442,7 @@ internal static class MessagingFeature
         if (messageTypes.IsDefaultOrEmpty)
             return;
 
-        var artifact = new MessageTypeRegistryTemplate(messageTypes).RenderOutput();
+        var artifact = new MessageTypeRegistryTemplate(messageTypes, typedTypeInfo).RenderOutput();
         ctx.AddSource(artifact);
     }
 

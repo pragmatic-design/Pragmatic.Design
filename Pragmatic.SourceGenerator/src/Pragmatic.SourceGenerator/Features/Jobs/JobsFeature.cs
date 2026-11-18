@@ -86,9 +86,10 @@ internal static class JobsFeature
 
         var jobsWithNs = allJobs.Combine(rootNs);
 
-        context.RegisterSourceOutputSafe(jobsWithNs, static (ctx, pair) =>
+        // The type registry reads typed JSON metadata where the consumer has it (#838).
+        context.RegisterSourceOutputSafe(jobsWithNs.Combine(platform), static (ctx, pair) =>
         {
-            var (jobs, ns) = pair;
+            var ((jobs, ns), consumer) = pair;
             if (jobs.IsEmpty) return;
 
             // ── Diagnostics ──
@@ -100,7 +101,7 @@ internal static class JobsFeature
                 ctx.AddSource(regArtifact);
 
             // Type registry
-            var registryArtifact = new JobTypeRegistryTemplate(jobs, ns).RenderOutput();
+            var registryArtifact = new JobTypeRegistryTemplate(jobs, ns, consumer.HasJsonTypeInfoOfT).RenderOutput();
             if (!registryArtifact.IsEmpty)
                 ctx.AddSource(registryArtifact);
 

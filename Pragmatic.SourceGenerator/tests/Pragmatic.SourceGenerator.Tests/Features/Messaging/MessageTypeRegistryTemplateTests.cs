@@ -13,7 +13,7 @@ public class MessageTypeRegistryTemplateTests
         var types = ImmutableArray.Create(
             new MessageTypeModel { Fqn = "global::App.Events.OrderPlaced", ShortName = "OrderPlaced" });
 
-        var artifact = new MessageTypeRegistryTemplate(types).RenderOutput();
+        var artifact = new MessageTypeRegistryTemplate(types, typedTypeInfo: false).RenderOutput();
 
         artifact.HintName.Should().Be("_Infra.Messaging.TypeRegistry.g.cs");
     }
@@ -25,7 +25,7 @@ public class MessageTypeRegistryTemplateTests
             new MessageTypeModel { Fqn = "global::App.Events.OrderPlaced", ShortName = "OrderPlaced" },
             new MessageTypeModel { Fqn = "global::App.Events.InvoicePaid", ShortName = "InvoicePaid" });
 
-        var source = new MessageTypeRegistryTemplate(types).RenderOutput().Text;
+        var source = new MessageTypeRegistryTemplate(types, typedTypeInfo: false).RenderOutput().Text;
 
         source.Should().Contain("fullyQualifiedTypeName switch");
         source.Should().Contain("global::App.Events.OrderPlaced");
@@ -39,7 +39,7 @@ public class MessageTypeRegistryTemplateTests
         var types = ImmutableArray.Create(
             new MessageTypeModel { Fqn = "global::App.OrderPlaced", ShortName = "OrderPlaced" });
 
-        var source = new MessageTypeRegistryTemplate(types).RenderOutput().Text;
+        var source = new MessageTypeRegistryTemplate(types, typedTypeInfo: false).RenderOutput().Text;
 
         source.Should().Contain("IMessageTypeRegistry");
         source.Should().Contain("Deserialize");
@@ -51,10 +51,26 @@ public class MessageTypeRegistryTemplateTests
         var types = ImmutableArray.Create(
             new MessageTypeModel { Fqn = "global::App.Evt", ShortName = "Evt" });
 
-        var source = new MessageTypeRegistryTemplate(types).RenderOutput().Text;
+        var source = new MessageTypeRegistryTemplate(types, typedTypeInfo: false).RenderOutput().Text;
 
         // AOT-clean: JsonTypeInfo-based overload resolved from the seam, not the reflection generic overload.
         source.Should().Contain("JsonSerializer.Deserialize(json, (JsonTypeInfo<")
             .And.Contain("_options.GetTypeInfo(typeof(");
+    }
+
+    /// <summary>
+    ///     Where the consumer has <c>GetTypeInfo&lt;T&gt;()</c> (System.Text.Json 11), the registry asks for the type's metadata by
+    ///     its type argument, and the cast is gone (#838). The case above is the control, unchanged.
+    /// </summary>
+    [Fact]
+    public void RenderOutput_ForAConsumerWithTypedMetadata_UsesTheTypedOverload()
+    {
+        var types = ImmutableArray.Create(
+            new MessageTypeModel { Fqn = "global::App.Evt", ShortName = "Evt" });
+
+        var source = new MessageTypeRegistryTemplate(types, typedTypeInfo: true).RenderOutput().Text;
+
+        source.Should().Contain("\"App.Evt\" => JsonSerializer.Deserialize(json, _options.GetTypeInfo<global::App.Evt>()),");
+        source.Should().NotContain("GetTypeInfo(typeof(");
     }
 }

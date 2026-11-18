@@ -601,7 +601,10 @@ internal static partial class HostModeGenerator
             var localActions = GetNonRemoteActions(discoveredActions, remoteBoundaries);
             if (localActions.Length > 0)
             {
-                var dispatcherTemplate = new PragmaticInvokeEndpointTemplate(localActions, rootNamespace);
+                // The host pass already holds the whole compilation, so it reads the consumer's platform from it
+                // rather than threading the pipeline's copy through CompositionFeature: same detector, same answer.
+                var typedTypeInfo = Core.ConsumerPlatformDetector.Detect(compilation).HasJsonTypeInfoOfT;
+                var dispatcherTemplate = new PragmaticInvokeEndpointTemplate(localActions, rootNamespace, typedTypeInfo);
                 var dispatcherArtifact = dispatcherTemplate.RenderOutput();
                 context.AddSource(dispatcherArtifact);
             }
