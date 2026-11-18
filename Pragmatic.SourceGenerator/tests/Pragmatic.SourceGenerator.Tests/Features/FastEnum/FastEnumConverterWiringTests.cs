@@ -131,10 +131,11 @@ public class FastEnumConverterWiringTests
         entry.Should().Contain(
             "global::App.Billing.Generated.PragmaticFastEnumJsonConverters.AddTo(jsonOptions.SerializerOptions);");
 
-        // Converters is consulted front to back and JsonStringEnumConverter accepts every enum, so a
+        // Converters is consulted front to back and the host's enum converter accepts every enum, so a
         // registration emitted after it would never run. Order is the contract, not a detail.
         var fastEnumAt = entry.IndexOf("PragmaticFastEnumJsonConverters.AddTo", StringComparison.Ordinal);
-        var frameworkAt = entry.IndexOf("JsonStringEnumConverter", StringComparison.Ordinal);
+        var frameworkAt = entry.IndexOf(HostEnumConverter, StringComparison.Ordinal);
+        frameworkAt.Should().BeGreaterThan(-1);
         frameworkAt.Should().BeGreaterThan(fastEnumAt);
     }
 
@@ -143,9 +144,12 @@ public class FastEnumConverterWiringTests
     {
         var entry = RunHost();
 
-        entry.Should().Contain("JsonStringEnumConverter");
+        entry.Should().Contain(HostEnumConverter);
         entry.Should().NotContain("PragmaticFastEnumJsonConverters");
     }
+
+    /// <summary>The enum converter the host registers last: Pragmatic's, which writes JsonStringEnumConverter's names (#857).</summary>
+    private const string HostEnumConverter = "new global::Pragmatic.Serialization.PragmaticStringEnumConverter()";
 
     // ---------------------------------------------------------------------------------------------
     // Host-mode harness: the host must see the module only through a reference, the way it does in a

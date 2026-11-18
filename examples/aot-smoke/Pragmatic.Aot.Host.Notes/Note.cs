@@ -1,3 +1,5 @@
+using Pragmatic.Aot.Host.Notes.Enums;
+
 namespace Pragmatic.Aot.Host.Notes.Entities;
 
 /// <summary>A note: what the smoke writes over HTTP and reads back.</summary>
@@ -9,4 +11,6 @@ public partial class Note : IEntity
     public string Title { get; private set; } = "";
 
     public int Pages { get; private set; }
+
+    public NoteKind Kind { get; private set; }
 }

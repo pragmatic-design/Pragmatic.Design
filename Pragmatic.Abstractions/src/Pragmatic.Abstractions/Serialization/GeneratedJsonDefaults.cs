@@ -27,7 +27,8 @@ namespace Pragmatic.Serialization;
 ///         <b>What every writer assumes</b>, checked when the options are marked: camelCase names and nothing for
 ///         dictionary keys, nulls left out, cycles ignored, ASP.NET's encoder (<see cref="ResponseEncoder" />), no
 ///         indentation, numbers as numbers, no fields, read-only properties written, no nullable annotations enforced,
-///         and the entry point's <c>JsonStringEnumConverter</c> last in the list.
+///         and the entry point's enum converter last in the list: <see cref="PragmaticStringEnumConverter" />, or a
+///         <c>JsonStringEnumConverter</c>, which writes the same names.
 ///     </para>
 ///     <para>
 ///         <b>What each writer is asked</b>, once while the options stay the same, for the types its
@@ -117,7 +118,8 @@ public static class GeneratedJsonDefaults
            && (options.NumberHandling & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) == 0
            && options.MaxDepth is 0 or 64
            && options.Converters.Count > 0
-           && options.Converters[^1].GetType() == typeof(JsonStringEnumConverter);
+           && (options.Converters[^1].GetType() == typeof(PragmaticStringEnumConverter)
+               || options.Converters[^1].GetType() == typeof(JsonStringEnumConverter));
 
     /// <summary>The converter the serializer would use for <paramref name="type" />: the first that claims it.</summary>
     private static JsonConverter? FirstClaiming(JsonConverter[] converters, Type type)

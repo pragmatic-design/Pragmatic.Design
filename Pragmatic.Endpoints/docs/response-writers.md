@@ -29,7 +29,7 @@ What the host registers besides is asked per writer, against the types it writes
 
 | Registered | A writer stays in use when |
 |------------|----------------------------|
-| A converter (Internationalization's for `Money`, Temporal's for its dates, an application's own) | it claims none of the writer's types; an enum is claimed by `JsonStringEnumConverter` or its own `[FastEnum]` converter |
+| A converter (Internationalization's for `Money`, Temporal's for its dates, an application's own) | it claims none of the writer's types; an enum is claimed by the host's enum converter (`PragmaticStringEnumConverter`, or a `JsonStringEnumConverter`) or its own `[FastEnum]` converter |
 | A modifier on the `PragmaticJsonOptions` seam | it was registered saying which types it touches (`AddModifier(modifier, touches)`), and touches none of the writer's; a modifier that does not say touches every type |
 | A resolver put in the chain after the entry point (ASP.NET's OpenAPI schema context) | it answers for none of the writer's types |
 

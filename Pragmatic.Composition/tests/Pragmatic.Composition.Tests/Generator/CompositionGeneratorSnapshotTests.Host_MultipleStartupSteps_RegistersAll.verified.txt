@@ -134,8 +134,8 @@ public static class PragmaticApp
             global::Microsoft.Extensions.DependencyInjection.HealthChecksBuilderAddCheckExtensions.AddCheck<global::Pragmatic.Composition.ControlPlane.ControlPlaneHealthCheck>(_healthChecks, "pragmatic-host");
         }
         
-        // Bind telemetry options from configuration (appsettings.json "Telemetry" section)
-        builder.Configuration.GetSection("Telemetry").Bind(pragmaticBuilder.Options.Telemetry);
+        // Read telemetry options from configuration (appsettings.json "Telemetry" section)
+        pragmaticBuilder.Options.Telemetry.ReadFrom(builder.Configuration.GetSection("Telemetry"));
         
         // OpenTelemetry — auto-configured, opt-out via options.Telemetry.Enabled = false
         global::Pragmatic.Composition.Hosting.PragmaticTelemetry.AddPragmaticTelemetry(builder.Services, pragmaticBuilder.Options.Telemetry, builder.Environment.IsDevelopment());
@@ -149,7 +149,7 @@ public static class PragmaticApp
             {
                 jsonOptions.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
                 jsonOptions.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-                jsonOptions.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                jsonOptions.SerializerOptions.Converters.Add(new global::Pragmatic.Serialization.PragmaticStringEnumConverter());
                 jsonOptions.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 
                 var resolver = pragmaticJson.Build().TypeInfoResolver;
@@ -248,8 +248,8 @@ public static class PragmaticApp
         var pragmaticBuilder = new PragmaticBuilder(builder.Services, builder.Configuration, builder.Environment);
         configure?.Invoke(pragmaticBuilder);
         
-        // Bind telemetry options from configuration (appsettings.json "Telemetry" section)
-        builder.Configuration.GetSection("Telemetry").Bind(pragmaticBuilder.Options.Telemetry);
+        // Read telemetry options from configuration (appsettings.json "Telemetry" section)
+        pragmaticBuilder.Options.Telemetry.ReadFrom(builder.Configuration.GetSection("Telemetry"));
         
         // OpenTelemetry — auto-configured, opt-out via options.Telemetry.Enabled = false
         global::Pragmatic.Composition.Hosting.PragmaticTelemetry.AddPragmaticTelemetry(builder.Services, pragmaticBuilder.Options.Telemetry, builder.Environment.IsDevelopment());

@@ -1,5 +1,6 @@
 using Pragmatic.Aot.Host.Notes.Dtos;
 using Pragmatic.Aot.Host.Notes.Entities;
+using Pragmatic.Aot.Host.Notes.Enums;
 
 namespace Pragmatic.Aot.Host.Notes.Mutations;
 
@@ -13,4 +14,6 @@ public partial class CreateNoteMutation : Mutation<Note>
     public required string Title { get; init; }
 
     public int Pages { get; init; }
+
+    public NoteKind Kind { get; init; }
 }

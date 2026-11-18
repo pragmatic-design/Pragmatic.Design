@@ -40,16 +40,22 @@ public sealed class SmokeClient(IServer server, IHostApplicationLifetime lifetim
             using var client = new HttpClient { BaseAddress = new Uri(address) };
 
             // Hand-written JSON on the client side, as the other smokes do: the point is the server's binding.
-            using var created = await Send(client, HttpMethod.Post, "/api/notes", "anna", Allowed, """{"title":"a note","pages":3}""", stoppingToken);
+            using var created = await Send(client, HttpMethod.Post, "/api/notes", "anna", Allowed, """{"title":"a note","pages":3,"kind":"Final"}""",
+                stoppingToken);
             var createdBody = await created.Content.ReadAsStringAsync(stoppingToken);
             Check("POST /api/notes creates the note", created.StatusCode == HttpStatusCode.Created && createdBody.Contains("\"a note\"", StringComparison.Ordinal),
                 $"{(int)created.StatusCode} {createdBody}");
+
+            // An enum by its name, read from the request and written in the response: what the non-generic JsonStringEnumConverter did
+            // by making a converter at run time, and what the host's enum converter does without dynamic code (#857).
+            Check("an enum goes in and comes out by its name", createdBody.Contains("\"kind\":\"Final\"", StringComparison.Ordinal), createdBody);
 
             var id = created.StatusCode == HttpStatusCode.Created ? IdOf(createdBody) : null;
             using var read = await Send(client, HttpMethod.Get, $"/api/notes/{id}", "anna", Allowed, null, stoppingToken);
             var readBody = await read.Content.ReadAsStringAsync(stoppingToken);
             Check("GET /api/notes/{id} reads it back", read.StatusCode == HttpStatusCode.OK
-                    && readBody.Contains("\"a note\"", StringComparison.Ordinal) && readBody.Contains("\"pages\":3", StringComparison.Ordinal),
+                    && readBody.Contains("\"a note\"", StringComparison.Ordinal) && readBody.Contains("\"pages\":3", StringComparison.Ordinal)
+                    && readBody.Contains("\"kind\":\"Final\"", StringComparison.Ordinal),
                 $"{(int)read.StatusCode} {readBody}");
 
             using var anonymous = await Send(client, HttpMethod.Get, $"/api/notes/{id}", null, null, null, stoppingToken);

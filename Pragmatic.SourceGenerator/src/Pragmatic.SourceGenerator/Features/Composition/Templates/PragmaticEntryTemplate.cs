@@ -733,8 +733,10 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
         // Bind telemetry options from appsettings.json "Telemetry" section (if present)
         if (configExpr is not null)
         {
-            Comment("Bind telemetry options from configuration (appsettings.json \"Telemetry\" section)");
-            AppendLine($"{configExpr}.GetSection(\"Telemetry\").Bind({optionsExpr});");
+            // Typed, not ConfigurationBinder.Bind: the binder reflects, and ASP.NET's binding generator, which would make it
+            // AOT-safe, never sees a call another generator wrote.
+            Comment("Read telemetry options from configuration (appsettings.json \"Telemetry\" section)");
+            AppendLine($"{optionsExpr}.ReadFrom({configExpr}.GetSection(\"Telemetry\"));");
             AppendLine();
         }
 
@@ -789,8 +791,9 @@ internal sealed partial class PragmaticEntryTemplate : CSharpTemplate
         AppendLine(
             "jsonOptions.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;");
         RenderFastEnumConverters();
+        // Pragmatic's, not JsonStringEnumConverter: the same names on the wire, and no dynamic code to create it (#857).
         AppendLine(
-            "jsonOptions.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());");
+            "jsonOptions.SerializerOptions.Converters.Add(new global::Pragmatic.Serialization.PragmaticStringEnumConverter());");
         AppendLine(
             "jsonOptions.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;");
         AppendLine();
