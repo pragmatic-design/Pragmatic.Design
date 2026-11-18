@@ -37,6 +37,9 @@ or from markup/templates) and render it to whichever format you need: the model 
 
 Add only the packages you need; each renderer depends on its model, not on the others.
 
+`Pragmatic.Documents.Templates` ships for net10.0 and net11.0, with the same API on both. An application on .NET 11 gets the
+net11.0 asset, which is compiled with runtime async and resolves a template 21–34% faster.
+
 ## Quick Start
 
 A document is a template and its data. The template is a file, changed, translated and reviewed

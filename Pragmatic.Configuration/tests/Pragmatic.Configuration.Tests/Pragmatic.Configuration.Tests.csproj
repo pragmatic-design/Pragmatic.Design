@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Both targets, so the net11.0 asset of the library under test is tested too (#850). -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <!-- CA2007 conflicts with xUnit1030 in test projects -->
     <NoWarn>$(NoWarn);CA2007</NoWarn>
   </PropertyGroup>
