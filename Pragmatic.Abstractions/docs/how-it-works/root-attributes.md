@@ -72,7 +72,8 @@ silently regress.
 same file. `Write` calls `ToStringFast()`; `Read` calls the case-insensitive `TryParse`.
 
 **It is generated, not applied.** Nothing puts `[JsonConverter]` on the enum and nothing registers
-it: the host's own JSON setup adds `JsonStringEnumConverter`, the framework one. To serialise
+it: the host's own JSON setup adds `PragmaticStringEnumConverter`, which writes the names
+`JsonStringEnumConverter` writes and needs no dynamic code to create. To serialise
 through the generated converter, say so: attribute the enum with
 `[JsonConverter(typeof(MyEnumJsonConverter))]`, or add an instance to
 `JsonSerializerOptions.Converters`.

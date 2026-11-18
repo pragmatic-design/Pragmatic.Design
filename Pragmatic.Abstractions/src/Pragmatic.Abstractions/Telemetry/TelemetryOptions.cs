@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace Pragmatic.Telemetry;
 
 /// <summary>
@@ -63,4 +65,45 @@ public sealed class TelemetryOptions
             _samplingRatio = value;
         }
     }
+
+    /// <summary>
+    ///     Reads the options from a configuration section (the <c>Telemetry</c> section of the generated host), key by key.
+    /// </summary>
+    /// <param name="section">The section; a key it does not hold leaves the property as it is.</param>
+    /// <exception cref="InvalidOperationException">A value that is not one of its property's type, named by its path.</exception>
+    /// <remarks>
+    ///     What <c>ConfigurationBinder.Bind</c> read, without its reflection: keys in any case, values in the invariant culture. The
+    ///     generated host calls this, and a call to <c>Bind</c> there could not be made AOT-safe, because ASP.NET's binding generator
+    ///     never sees code another generator wrote.
+    /// </remarks>
+    public void ReadFrom(IConfiguration section)
+    {
+        ArgumentNullException.ThrowIfNull(section);
+
+        Enabled = ReadBool(section, nameof(Enabled)) ?? Enabled;
+        Tracing = ReadBool(section, nameof(Tracing)) ?? Tracing;
+        Metrics = ReadBool(section, nameof(Metrics)) ?? Metrics;
+        Logging = ReadBool(section, nameof(Logging)) ?? Logging;
+        UseOtlpExporter = ReadBool(section, nameof(UseOtlpExporter)) ?? UseOtlpExporter;
+        ServiceName = section[nameof(ServiceName)] ?? ServiceName;
+
+        if (section[nameof(SamplingRatio)] is { } ratio)
+        {
+            SamplingRatio = double.TryParse(ratio, System.Globalization.NumberStyles.Float | System.Globalization.NumberStyles.AllowThousands,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : throw Unreadable(section, nameof(SamplingRatio), ratio, typeof(double));
+        }
+    }
+
+    private static bool? ReadBool(IConfiguration section, string key)
+        => section[key] is not { } value ? null
+            : bool.TryParse(value, out var parsed) ? parsed
+            : throw Unreadable(section, key, value, typeof(bool));
+
+    private static InvalidOperationException Unreadable(IConfiguration section, string key, string value, Type type)
+        => new($"Failed to convert configuration value '{value}' at '{PathOf(section, key)}' to type '{type}'.");
+
+    private static string PathOf(IConfiguration section, string key)
+        => section is IConfigurationSection { Path: { Length: > 0 } path } ? $"{path}:{key}" : key;
 }

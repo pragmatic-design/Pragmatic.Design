@@ -135,7 +135,11 @@ internal sealed class PragmaticJsonContextTemplate : CSharpTemplate
         Comment("The string-enum factory by name, built generically. Its CreateConverter goes through");
         Comment("MakeGenericType — RequiresDynamicCode, and the reason a published AOT binary warned");
         Comment("about every enum the host configured. TEnum is concrete here, so this is not.");
-        AppendLine("if (candidate is global::System.Text.Json.Serialization.JsonStringEnumConverter)");
+        Comment("Pragmatic.Serialization.PragmaticStringEnumConverter is the one the generated host registers: the same bytes,");
+        Comment("made without dynamic code. Matched by its name: this context also compiles where Pragmatic.Abstractions is not");
+        Comment("referenced (a generated client), and there no host registered it.");
+        AppendLine("if (candidate is global::System.Text.Json.Serialization.JsonStringEnumConverter");
+        AppendLine("    || candidate.GetType().FullName == \"Pragmatic.Serialization.PragmaticStringEnumConverter\")");
         AppendLine("{");
         IncreaseIndent();
         Comment("CreateConverter, not the factory itself: JsonStringEnumConverter<TEnum> is a factory");
