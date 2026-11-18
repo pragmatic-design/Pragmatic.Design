@@ -331,6 +331,21 @@ public class DevExpressAdapterTests
         }
     }
 
+    /// <summary>
+    ///     The fuzz harness's crash (#845): a null in the sort array, as a request body binds it, was a
+    ///     <see cref="NullReferenceException" />, a 500. It is a malformed request, refused like a malformed filter.
+    /// </summary>
+    [Fact]
+    public void FromDevExpress_WithANullSortDescriptor_IsRefusedAsMalformed()
+    {
+        var options = System.Text.Json.JsonSerializer.Deserialize<DevExpressLoadOptions>(
+            """{"sort":[null],"tAke":2}""", System.Text.Json.JsonSerializerOptions.Web)!;
+
+        var act = () => PersistenceQuery.For<Order>().FromDevExpress(options).Build(CreateTestOrders().AsQueryable()).ToList();
+
+        act.Should().Throw<GridFilterRejectedException>().Where(e => e.Rejection == GridFilterRejection.Malformed);
+    }
+
     #endregion
 
     #region Paging Tests

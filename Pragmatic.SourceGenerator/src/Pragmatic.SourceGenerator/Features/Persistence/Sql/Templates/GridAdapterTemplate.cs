@@ -231,6 +231,9 @@ internal sealed partial class GridAdapterTemplate(GridAdapterModel model) : CSha
         AppendLine("        terms = CountedTerms(terms + sort.Count);");
         AppendLine("        foreach (var descriptor in sort)");
         AppendLine("        {");
+        AppendLine("            // A null in the array is a malformed request, refused like a malformed filter.");
+        AppendLine("            if (descriptor is null)");
+        AppendLine("                throw Malformed();");
         AppendLine("            var key = descriptor.Selector?.ToLowerInvariant() switch");
         AppendLine("            {");
         foreach (var field in model.Fields.Where(f => f.Sortable))

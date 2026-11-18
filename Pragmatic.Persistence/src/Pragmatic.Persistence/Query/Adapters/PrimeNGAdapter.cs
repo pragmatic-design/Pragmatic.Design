@@ -43,6 +43,10 @@ public static class PrimeNGAdapter
         // Every column filter, every value of an in, every column of the global filter and every sort adds to
         // the query, and past GridFilterTooLargeException.MaxTerms the request is refused before any is built:
         // counted first, so the width is refused as the width whatever else is wrong with the request.
+        // A column sent as null is a malformed request; one whose metadata has no value is a column without a filter.
+        if (lazyEvent.Filters?.Any(f => f.Value is null) == true)
+            throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
+
         var columnFilters = lazyEvent.Filters?.Where(f => f.Value.Value != null).ToList() ?? [];
         var globalFields = string.IsNullOrEmpty(lazyEvent.GlobalFilter) ? null : lazyEvent.GlobalFilterFields ?? [];
         var sorts = string.IsNullOrEmpty(lazyEvent.SortField) ? lazyEvent.MultiSortMeta?.Count ?? 0 : 0;
@@ -71,6 +75,10 @@ public static class PrimeNGAdapter
         {
             foreach (var sortMeta in lazyEvent.MultiSortMeta)
             {
+                // A null in the array is a malformed request, refused like a malformed filter, not a column to pass over.
+                if (sortMeta is null)
+                    throw new GridFilterRejectedException(null, GridFilterRejection.Malformed);
+
                 var sortExpr = CreateSortExpression<TEntity>(sortMeta.Field);
                 if (sortExpr != null)
                 {

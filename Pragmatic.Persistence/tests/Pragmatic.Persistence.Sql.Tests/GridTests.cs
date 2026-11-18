@@ -120,4 +120,20 @@ public class GridTests(PragmaticDatabases databases)
             wide.AddRange(["or", new List<object?> { "text", "=", "x" }]);
         Assert.IsType<GridFilterTooLargeException>(Refusal(wide));
     }
+
+    /// <summary>
+    ///     A null in the sort array, as a request body binds it, is a malformed request (#845): it was a NullReferenceException, a 500. Refused
+    ///     before anything reaches the database; the documents engine's grid is the same generated code.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PragmaticDatabases.Dialects), MemberType = typeof(PragmaticDatabases))]
+    public async Task A_null_sort_descriptor_is_refused_as_malformed(SqlDialect dialect)
+    {
+        using var tenant = TenantScope.BeginScope("acme");
+        using var session = await databases.SessionAsync(dialect, new PragmaticSqlFilters(new TestUser("anna"), new TenantScope(), new TestScopes("desk-north"), _toggle));
+        var options = JsonSerializer.Deserialize<DevExpressLoadOptions>("""{"sort":[null],"take":2}""", JsonSerializerOptions.Web)!;
+
+        var refusal = await Assert.ThrowsAsync<GridFilterRejectedException>(() => ReviewGrid.LoadAsync(session, options));
+        Assert.Equal(GridFilterRejection.Malformed, refusal.Rejection);
+    }
 }

@@ -102,6 +102,22 @@ public class TheBridgeRefusesWhatItCannotApplyTests
     public void AUsableClause_StillApplies(string clause, string expected)
         => Codes(clause).Should().Equal(expected.Split(','));
 
+    /// <summary>
+    ///     A null where a clause or a sort stands is a malformed request (#845). Before the refusal it was a
+    ///     <see cref="NullReferenceException" />, a 500 for a body the client controls.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"filters":[null]}""")]
+    [InlineData("""{"sorts":[null]}""")]
+    public void ANullClauseOrSort_IsRefusedAsMalformed(string request)
+    {
+        var act = () => CodesOf(request);
+
+        var thrown = act.Should().Throw<TargetInvocationException>().Which.InnerException;
+        thrown.Should().BeOfType<GridFilterRejectedException>();
+        ((GridFilterRejectedException)thrown!).Rejection.Should().Be(GridFilterRejection.Malformed);
+    }
+
     private static GridFilterRejectedException Refusal(string clause)
     {
         var act = () => Codes(clause);
@@ -111,10 +127,12 @@ public class TheBridgeRefusesWhatItCannotApplyTests
         return (GridFilterRejectedException)thrown!;
     }
 
-    private static List<string> Codes(string clause)
+    private static List<string> Codes(string clause) => CodesOf($$"""{"filters":[{{clause}}]}""");
+
+    private static List<string> CodesOf(string requestJson)
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
-        var request = JsonSerializer.Deserialize<GridFilterRequest>($$"""{"filters":[{{clause}}]}""", options)!;
+        var request = JsonSerializer.Deserialize<GridFilterRequest>(requestJson, options)!;
 
         var assembly = Bridge.Value;
         var order = assembly.GetType("TestApp.Order")!;
