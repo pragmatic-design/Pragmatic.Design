@@ -1,8 +1,9 @@
 ﻿# Pragmatic AOT smoke
 
-Native AOT checks for the serialization seam, the HTTP path, logging and persistence. Seven samples, each
-published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four are described
-here; the persistence ones in [5–7](#5-7-persistence-on-the-engines):
+Native AOT checks for the serialization seam, the HTTP path, logging, persistence and a composed host. Eight
+samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four are
+described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
+[8](#8-one-composed-host-pragmaticaothost):
 
 ## 1. Seam with a hand-authored context (`Pragmatic.Aot.Smoke`)
 
@@ -142,8 +143,42 @@ pwsh examples/aot-smoke/publish-and-smoke-boundaries.ps1
 | `Pragmatic.Aot.Boundaries` | Two boundaries on two engines in one process (Sql on SQLite, documents on MongoDB): the schema applied at start, a write through each, the owner each save stamps, a unit of work per boundary, and another caller's rows hidden |
 
 Each prints one line per check and exits with the number that failed. They run through the boundaries'
-generated registration and repositories, not through an HTTP host: that composition is not measured yet
-(see the table below).
+generated registration and repositories, not through an HTTP host: that composition is sample 8.
+
+## 8. One composed host (`Pragmatic.Aot.Host`)
+
+```pwsh
+pwsh examples/aot-smoke/publish-and-smoke-host.ps1
+```
+
+An application's shape, published Native AOT:
+- **The module** (`Pragmatic.Aot.Host.Notes`): one entity on the Sql engine, a create mutation and a read query, both exposed with
+  `[Endpoint]` and each requiring its permission.
+- **The host:** includes the module on a SQLite database, and starts through the generated entry point (`PragmaticApp.RunAsync`).
+  - Pragmatic Migrations applies the module's schema at start.
+  - The caller comes from the development identity (`X-User-*` headers), with the permissions it carries trusted.
+- **The checks:** a hosted service inside the same process calls the host once it has started, then stops it. The exit code is the
+  number of checks that failed.
+
+  | Check | Answer |
+  |---|---|
+  | `POST /api/notes` with the permission | `201` and the note |
+  | `GET /api/notes/{id}` | `200`, the same values |
+  | no identity | `401` |
+  | a caller without the permission | `403` |
+
+The four checks pass under Native AOT. **The publish is not warning-free:** it raises **14** distinct trim/AOT warnings, and the
+script fails if the count is above or below that number. A warning above it is a regression; one below it is a fix that lowers the
+budget in the same change. Each comes from one of three places, each with its issue:
+
+| Warnings | From | Issue |
+|---|---|---|
+| 3 | the generated entry point: telemetry options bound by `ConfigurationBinder.Bind`, enums by the non-generic `JsonStringEnumConverter` | #857 |
+| 4 | EF Core's OpenTelemetry instrumentation, registered by `Pragmatic.Composition.Host` on every host | #858 |
+| 6 | C#'s `dynamic` binder, rooted by something the host brings in, not yet found | #859 |
+
+That this host *runs* under Native AOT is proven. That a Pragmatic application is a warning-free Native AOT application is not,
+until the budget is 0.
 
 ## Requirements
 
@@ -178,7 +213,7 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | Persistence on the **Sql engine** works under AOT | ✅ proven, sample 5 |
 | Persistence on the **documents engine** works under AOT | ✅ proven, sample 6 |
 | **Two boundaries on two engines** in one process | ✅ proven, sample 7 |
-| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ⚠️ not measured: the pieces are proven one by one, no smoke publishes them together |
+| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ runs, sample 8: 201, 200, 401 and 403 from the native binary · ⚠️ publishes with 14 trim/AOT warnings (#857, #858, #859), so not yet a warning-free claim |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
 | EF Core | out of scope, stated: the JIT option |
 
