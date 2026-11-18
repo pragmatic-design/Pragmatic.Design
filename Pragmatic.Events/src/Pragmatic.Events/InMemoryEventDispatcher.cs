@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pragmatic.Events.Diagnostics;
@@ -189,7 +190,15 @@ public sealed partial class InMemoryEventDispatcher : IDomainEventDispatcher
         // Fallback: dynamic dispatch when no SG-generated table covers this event type
         // (no module references the source generator, or an event dispatched with no handler).
         // Routes through the DLR — not reflection — but is NOT AOT-safe; see ITypedEventDispatchTable.
-        return DispatchAsync((dynamic)@event, ct);
+        // ⚠️ Behind the guard ILC folds to false under Native AOT, so the C# runtime binder is not compiled into an AOT application:
+        // unguarded, this one line rooted it in every composed host, with six IL3050 warnings of its own (#859).
+        if (RuntimeFeature.IsDynamicCodeSupported)
+            return DispatchAsync((dynamic)@event, ct);
+
+        // Native AOT: the tables list every event a generated [EventHandler] handles, so an event none of them knows has no such
+        // handler. One registered by hand, without the generator, cannot be reached without the runtime binder.
+        LogNoDispatchTable(@event.GetType().Name);
+        return Task.CompletedTask;
     }
 
     // =========================================================================
@@ -227,4 +236,8 @@ public sealed partial class InMemoryEventDispatcher : IDomainEventDispatcher
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "Dispatch completed for event {EventName}")]
     private partial void LogDispatchCompleted(string eventName);
+
+    [LoggerMessage(Level = LogLevel.Debug,
+        Message = "No generated dispatch table knows event {EventName}: it has no [EventHandler], and under Native AOT a handler registered without the source generator is not run")]
+    private partial void LogNoDispatchTable(string eventName);
 }
