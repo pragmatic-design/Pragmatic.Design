@@ -466,7 +466,7 @@ public sealed class HostWiringFixture
             foreach (var file in Directory.EnumerateFiles(directory, "*.dll"))
             {
                 var name = Path.GetFileName(file);
-                if (byFileName.ContainsKey(name) || IsToolingAssembly(name) || IsEngineBridge(name))
+                if (byFileName.ContainsKey(name) || IsToolingAssembly(name) || IsEngineBridge(name) || IsRunProbe(name))
                     continue;
 
                 try
@@ -510,6 +510,15 @@ public sealed class HostWiringFixture
            || fileName.Equals("Pragmatic.Privacy.Engines.dll", StringComparison.OrdinalIgnoreCase)
            || fileName.Equals("Pragmatic.Cryptography.Engines.dll", StringComparison.OrdinalIgnoreCase)
            || fileName.StartsWith("Pragmatic.Authorization.Management", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    ///     A host a test wrote into the output directory to run it as a process, and deletes afterwards
+    ///     (<see cref="AWorkerThatFailsAfterStartIsNotAStartupFailureTests" />). Out of the set by name, before the
+    ///     file is opened: the suite's cases run in parallel, and one that listed the directory while the file was
+    ///     there would otherwise open it after it was deleted, or compile against another test's host.
+    /// </summary>
+    private static bool IsRunProbe(string fileName)
+        => fileName.StartsWith(AWorkerThatFailsAfterStartIsNotAStartupFailureTests.RunProbePrefix, StringComparison.Ordinal);
 
     /// <summary>The bridge of an engine, from this suite's output, for the compilations of the test that persists a boundary there.</summary>
     internal static MetadataReference EngineBridge(string assemblyName)
