@@ -1,9 +1,13 @@
 ﻿# Pragmatic AOT smoke
 
-Native AOT checks for the serialization seam, the HTTP path, logging, persistence and a composed host. Eight
-samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four are
-described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
-[8](#8-one-composed-host-pragmaticaothost):
+Native AOT checks for the serialization seam, the HTTP path, logging, persistence, a composed host and the message
+bus. Nine samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four
+are described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
+[8](#8-one-composed-host-pragmaticaothost), the message bus in [9](#9-the-in-memory-message-bus-pragmaticaotmessaging).
+
+**Where they run:** in CI, the `Native AOT smokes` job of `ci.yml` on `ubuntu-latest`, on every pull request and merge
+group whose scope is `full` and on every push to `main`. A release runs `ci.yml` before `pack` (`release.yml`), so a
+`nuget-v*` tag does not publish with a red smoke (#825). On a developer machine, `--tier aot` (Windows or Linux).
 
 ## 1. Seam with a hand-authored context (`Pragmatic.Aot.Smoke`)
 
@@ -227,7 +231,8 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | Persistence on the **Sql engine** works under AOT | ✅ proven, sample 5 |
 | Persistence on the **documents engine** works under AOT | ✅ proven, sample 6 |
 | **Two boundaries on two engines** in one process | ✅ proven, sample 7 |
-| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ runs, sample 8: 201, 200, 401 and 403 from the native binary, an enum by its name · ⚠️ publishes with 10 trim/AOT warnings (#858, #859), so not yet a warning-free claim |
+| **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ proven, sample 8: 201, 200, 401 and 403 from the native binary, an enum by its name, and a publish with 0 trim/AOT warnings (#857, #858, #859) |
+| The **in-memory message bus** dispatches to a generated handler under AOT | ✅ proven, sample 9, with 0 trim/AOT warnings (#869) |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
 | EF Core | out of scope, stated: the JIT option |
 
