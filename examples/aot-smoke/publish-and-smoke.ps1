@@ -33,7 +33,7 @@ if (-not $exe) { throw "Native binary not found" }
 Write-Host "Running $($exe.FullName)..."
 $output = & $exe.FullName
 Write-Host $output
-if ($LASTEXITCODE -ne 0 -or $output -notmatch 'AOT-SMOKE-BROKEN-ON-PURPOSE') {
+if ($LASTEXITCODE -ne 0 -or $output -notmatch 'AOT-SMOKE-OK') {
     throw "AOT smoke FAILED (exit $LASTEXITCODE): $output"
 }
 Write-Host "AOT smoke PASSED."
