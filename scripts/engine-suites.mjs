@@ -42,6 +42,9 @@ const TEST_ON_SQL = 'test code bound to the SQL database: the test reads or migr
 const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
   + 'with no serializable transaction, so concurrent adds can cross it';
 
+/** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, EF_ONLY, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT };
+
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
 const catalog = (path) => `examples/showcase/src/Showcase.Catalog/${path}`;

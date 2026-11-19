@@ -19,6 +19,9 @@ const EF_ONLY = 'EF Core only (#363): it reads through an IQueryable';
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): a document keeps a relation as its key';
 const HOST_WIRING = 'the host\'s wiring on EF Core (#534), in place of which each engine host compiles its own ShowcaseEngine';
 
+/** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
+export const PROJECT_REASONS = { EF_ONLY, NO_NAVIGATION, HOST_WIRING };
+
 /** The files a module project may leave out, the engines it may leave each out on, and why. Paths from the repository's root. */
 export const ALLOWED_EXCLUSIONS = {
   'examples/showcase/src/Showcase.Catalog/Amenities/Actions/CountAmenitiesAction.cs': { engines: ['Sql', 'Documents'], reason: EF_ONLY },

@@ -244,4 +244,5 @@ no navigation member; the Sql engine's schema still gives that key the index and
 
 ## Known limits
 
-None tracked at the moment.
+[What the engines cover](/modules/persistence/22-engine-coverage/) lists every part of the Showcase left out on each engine, sorted by the kind of gap,
+with the test counts each engine runs. It is generated from the lists the gate checks.
