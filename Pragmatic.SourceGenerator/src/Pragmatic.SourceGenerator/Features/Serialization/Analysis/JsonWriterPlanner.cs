@@ -63,7 +63,8 @@ internal sealed class JsonWriterPlanner
         if (!JsonShapeExtractor.TryExtractClosure(root, out var objects, out _, out var collections))
             return false;
 
-        if (objects.Any(o => o.IsAbstract || o.DiscriminatorName is not null)
+        // A union is written as the case it holds, which only the serializer does (#838).
+        if (objects.Any(o => o.IsAbstract || o.DiscriminatorName is not null || o.IsUnion)
             || collections.Any(c => c.TypeExpr.StartsWith("global::System.Collections.Generic.Dictionary<", System.StringComparison.Ordinal)))
             return false;
 

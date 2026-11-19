@@ -112,6 +112,11 @@ internal sealed class JsonResponseWriterPlanner
         if (_onThePath.Contains(typeExpr))
             return Reject($"{type.Name} reaches itself, and the host ignores cycles");
 
+        // System.Text.Json 11 writes a union as the case it holds. Described member by member it is a struct with a Value property, and
+        // the writer would answer {"value":…} on every host whose options it reproduces (#838).
+        if (Core.UnionCases.IsUnion(type))
+            return Reject($"{type.Name} is a union, which the serializer writes as the case it holds");
+
         if (!_compilation.IsSymbolAccessibleWithin(type, _compilation.Assembly))
             return Reject($"{type.Name} is not accessible from this assembly");
 

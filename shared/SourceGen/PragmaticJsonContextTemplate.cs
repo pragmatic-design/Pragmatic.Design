@@ -172,8 +172,52 @@ internal sealed class PragmaticJsonContextTemplate : CSharpTemplate
         AppendLine("}");
     }
 
+    /// <summary>
+    ///     A C# 15 union, described with System.Text.Json 11's union metadata: written as the case it holds, read back into the case its
+    ///     JSON value resolves to, exactly as STJ's reflection resolver describes it (#838).
+    /// </summary>
+    /// <remarks>
+    ///     Measured against the reflection resolver on .NET 11: a held case deconstructs to its case type and value, a default union to
+    ///     <c>(null, null)</c>, written as <c>null</c>; the cases are not nullable. Reading an object that more than one case could be is
+    ///     refused by STJ alike, since neither declares a type classifier.
+    /// </remarks>
+    private void RenderCreateUnion(JsonObjectModel union)
+    {
+        var u = union.TypeExpr;
+        AppendLine($"private static JsonTypeInfo<{u}> Create_{union.MethodToken}(JsonSerializerOptions options)");
+        AppendLine($"    => JsonMetadataServices.CreateUnionInfo<{u}>(options, new JsonUnionInfoValues<{u}>");
+        AppendLine("    {");
+        IncreaseIndent();
+        IncreaseIndent();
+        var cases = union.UnionCases.AsImmutableArray();
+        AppendLine($"UnionCases = new JsonUnionCaseInfo[] {{ {string.Join(", ", cases.Select(c => $"new(typeof({c}))"))} }},");
+        AppendLine("UnionConstructor = static (caseType, value) =>");
+        IncreaseIndent();
+        foreach (var c in cases)
+            AppendLine($"caseType == typeof({c}) ? new {u}(({c})value!) :");
+        AppendLine($"throw new global::System.ArgumentOutOfRangeException(nameof(caseType), caseType, \"Not a case of {u.Replace("global::", "")}.\"),");
+        DecreaseIndent();
+        AppendLine("UnionDeconstructor = static union => union.Value switch");
+        AppendLine("{");
+        IncreaseIndent();
+        for (var i = 0; i < cases.Length; i++)
+            AppendLine($"{cases[i]} case{i} => (typeof({cases[i]}), case{i}),");
+        AppendLine("_ => (null!, null),");
+        DecreaseIndent();
+        AppendLine("},");
+        DecreaseIndent();
+        DecreaseIndent();
+        AppendLine("    });");
+    }
+
     private void RenderCreateObject(JsonObjectModel obj)
     {
+        if (obj.IsUnion)
+        {
+            RenderCreateUnion(obj);
+            return;
+        }
+
         // CreateJsonTypeInfo/CreateJsonPropertyInfo are the only metadata-customization APIs that populate
         // through the seam's resolver chain (the typed CreateObjectInfo path does not). They carry
         // IL2026/IL3050, but for the shapes this generator supports (mutable DTOs, primitives, enums,

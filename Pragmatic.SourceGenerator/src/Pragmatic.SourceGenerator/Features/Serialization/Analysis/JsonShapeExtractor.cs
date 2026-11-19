@@ -161,6 +161,9 @@ internal static class JsonShapeExtractor
         if (type.TypeKind is not (TypeKind.Class or TypeKind.Struct))
             return false;
 
+        if (Core.UnionCases.IsUnion(type))
+            return TryExtractUnion(type, typeExpr, leafMap, collMap, queue, out objectModel);
+
         var isPolymorphic = TryDetectPolymorphism(type, out var discriminator, out var derivedTypes, out var derivedSymbols);
 
         // Abstract types are only coverable as a polymorphic base (constructed via derived types).
@@ -326,6 +329,43 @@ internal static class JsonShapeExtractor
 
         derived = builder.ToImmutable();
         return builder.Count > 0;
+    }
+
+    /// <summary>
+    ///     A C# 15 union, described by its cases for System.Text.Json 11's <c>CreateUnionInfo</c>, which writes it as the case it holds
+    ///     (#838). Each case is reached like a property's type.
+    /// </summary>
+    /// <remarks>
+    ///     Only a union of the runtime's <c>IUnion</c>: that interface and STJ's union metadata ship together in .NET 11, so the
+    ///     generated code compiles where the union does. Read member by member, a union would be a struct with a <c>Value</c> property,
+    ///     written as <c>{"value":…}</c>; anything else defers, as an unsupported shape always has.
+    /// </remarks>
+    private static bool TryExtractUnion(
+        INamedTypeSymbol type,
+        string typeExpr,
+        Dictionary<string, JsonLeafModel> leafMap,
+        Dictionary<string, JsonCollectionModel> collMap,
+        Queue<INamedTypeSymbol> queue,
+        out JsonObjectModel objectModel)
+    {
+        objectModel = null!;
+        var unionInterface = type.AllInterfaces.First(i => i.ToDisplayString() == Core.UnionCases.UnionInterface);
+        if (unionInterface.ContainingAssembly?.Name is not ("System.Runtime" or "System.Private.CoreLib"))
+            return false;
+
+        var cases = Core.UnionCases.Of(type);
+        if (cases.IsEmpty)
+            return false;
+
+        foreach (var unionCase in cases)
+        {
+            if (!ProcessType(unionCase, leafMap, collMap, queue))
+                return false;
+        }
+
+        objectModel = new JsonObjectModel(typeExpr, TokenFor(typeExpr), ImmutableArray<JsonPropertyModel>.Empty,
+            UnionCases: cases.Select(c => c.ToDisplayString(Fq)).ToImmutableArray());
+        return true;
     }
 
     /// <summary>Registers a referenced type as a leaf/collection, or enqueues it as a nested object. Returns false if unsupported.</summary>

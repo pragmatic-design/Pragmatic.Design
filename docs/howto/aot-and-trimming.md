@@ -54,7 +54,7 @@ Opt-in per assembly, in one of two ways:
 
 - **Asynchronous boundaries**: `[MessageHandler]` payloads, `[Job]`/`[RecurringJob]` parameters, `[EventHandler]` payloads, **sagas** (`[Saga<TState>]` + `[CompensateWith<T>]` compensation).
 - **HTTP boundaries**: `[MapFrom]`/`[MapTo]` mapping DTOs (request/response).
-- **Shapes**: flat and nested objects (transitive closure), primitives/BCL/enums, `Nullable<T>`, `List<T>`/arrays/`Dictionary<K,V>`, **polymorphism** (`[JsonPolymorphic]`/`[JsonDerivedType]`), **positional `record`s** and **`init`-only** properties. The latter use the `[UnsafeAccessor]` technique (AOT-safe, reflection-free): `init` setters and record constructors are invoked through statically resolved accessors, which C# cannot express directly but ILC compiles without reflection.
+- **Shapes**: flat and nested objects (transitive closure), primitives/BCL/enums, `Nullable<T>`, `List<T>`/arrays/`Dictionary<K,V>`, **polymorphism** (`[JsonPolymorphic]`/`[JsonDerivedType]`), **C# 15 unions** on .NET 11 (System.Text.Json's union metadata: written as the case they hold, read back into the case the JSON resolves to; an object two cases could both be is refused, as STJ refuses it), **positional `record`s** and **`init`-only** properties. The latter use the `[UnsafeAccessor]` technique (AOT-safe, reflection-free): `init` setters and record constructors are invoked through statically resolved accessors, which C# cannot express directly but ILC compiles without reflection.
 
 ### What it does NOT cover (yet)
 
