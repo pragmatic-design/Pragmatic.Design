@@ -298,3 +298,47 @@ jobs:
         run: |
           df -h /
           docker system df
+
+  # The Native AOT smokes (examples/aot-smoke, `--tier aot`): each publishes a sample Native AOT, runs the binary and checks what it
+  # did; the composed host and the message bus also count their trim/AOT warnings against a budget. They ran only by hand, and two
+  # defects reached the alpha.4 release that way (#823): a vulnerable ILCompiler three smokes refused to publish with, and a smoke
+  # still expecting what the Sql engine no longer did (#825). Beside the gate, as the container suites are: it shares nothing with them.
+  aot-smokes:
+    name: Native AOT smokes
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # As in the gate job: a change whose scope is not `full` publishes nothing, and the job reports green having done nothing else.
+      - name: Classify the change
+        id: change
+        run: node scripts/ci-paths.mjs ${{ github.event_name == 'pull_request' && format('--base {0}', github.event.pull_request.base.sha) || github.event_name == 'merge_group' && format('--base {0}', github.event.merge_group.base_sha) || '' }}
+
+      # The Linux toolchain the ILC link step needs (examples/aot-smoke/README.md, "Requirements").
+      - name: Native toolchain
+        if: steps.change.outputs.scope == 'full'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang zlib1g-dev
+
+      - name: Setup .NET
+        if: steps.change.outputs.scope == 'full'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+          dotnet-version: '10.0.404'
+
+      # The documents and boundaries smokes start MongoDB in the runner's Docker themselves.
+      - name: Native AOT smokes
+        if: steps.change.outputs.scope == 'full'
+        run: node scripts/check.mjs --tier aot

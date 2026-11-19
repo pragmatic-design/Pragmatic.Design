@@ -233,14 +233,19 @@ number went into a budget, two of which read **low**; each is a case in
 
 ## The AOT tier
 
-`--tier aot` publishes three samples Native AOT and runs the binaries. It is the only signal that
+`--tier aot` publishes nine samples Native AOT and runs the binaries. It is the only signal that
 answers *does this work when published*: a solution can compile clean with every test green while a
 generated endpoint published AOT answers **500**, or **200 with an empty body**, which is worse,
 because it looks like success. Left as manual smokes, that goes unnoticed.
 
-It needs the native toolchain (Windows: a Visual Studio C++ workload). When it is missing the tier
-**fails** rather than skipping: a skip that reads as a pass is the failure mode this tier exists to
-prevent. See `examples/aot-smoke/README.md` for what each sample covers.
+It needs the native toolchain (Windows: a Visual Studio C++ workload; Linux: `clang` and `zlib1g-dev`). When it is missing
+the tier **fails** rather than skipping: a skip that reads as a pass is the failure mode this tier exists to prevent. See
+`examples/aot-smoke/README.md` for what each sample covers.
+
+**Where it runs.** In CI, the `Native AOT smokes` job of `ci.yml`, on `ubuntu-latest`. It runs beside the gate on every pull
+request and merge group whose scope is `full` (`scripts/ci-paths.mjs`), and on every push to `main`. `release.yml` runs `ci.yml`
+before `pack`, so a `nuget-v*` tag cannot publish with a red smoke (#825). On Linux the gate runs the smoke scripts with `pwsh`,
+on Windows with Windows PowerShell.
 
 ## Benchmarks
 

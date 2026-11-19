@@ -1234,7 +1234,9 @@ async function aotSmokes() {
   let good = true;
   for (const script of scripts) {
     process.stdout.write(`  ${basename(script)} … `);
-    const { code, out, spawnError } = run('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script]);
+    // Windows PowerShell on Windows; PowerShell 7 elsewhere, where only pwsh exists (#825: the smokes run on Linux in CI).
+    const shell = process.platform === 'win32' ? 'powershell' : 'pwsh';
+    const { code, out, spawnError } = run(shell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script]);
 
     if (spawnError) {
       console.log(bad(`COULD NOT RUN — ${spawnError}`));
