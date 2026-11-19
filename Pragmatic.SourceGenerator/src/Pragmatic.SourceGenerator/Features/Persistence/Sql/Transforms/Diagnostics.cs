@@ -306,6 +306,19 @@ internal static class Diagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     An error: an <c>[Audited]</c> entity of a boundary the Sql engine serves, in a project that does not reference Pragmatic.Audit.Engines.
+    ///     The boundary's <c>Add{Boundary}Persistence</c> registers the save phase that writes the trail only where the project sees it, while the
+    ///     host registers the trail's reader regardless: the build would succeed and every read of the trail answer empty (#901).
+    /// </summary>
+    public static readonly DiagnosticDescriptor AuditedWithoutTrail = new(
+        "PRAG3041",
+        "An [Audited] entity on the Sql engine has no trail to write to",
+        "{0} is [Audited] and its boundary {1} is persisted by the Sql engine, but this project does not reference Pragmatic.Audit.Engines: no save writes its trail, and every read of the trail answers empty. Reference Pragmatic.Audit.Engines from this project.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor InGeneratedSource = new(
         "PRAG3032",
         "A chain the Sql engine generated did not translate",

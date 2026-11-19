@@ -129,6 +129,22 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         return sources;
     }
 
+    /// <summary>
+    ///     The <c>[Audited]</c> entities of <paramref name="entities" /> whose boundary <see cref="For" /> registers here without the phase that writes
+    ///     their trail: the engine is referenced and Pragmatic.Audit.Engines is not. The host registers the trail's reader on its own count of the
+    ///     <c>[Audited]</c> entities, so without the phase every read answers an empty trail; empty when <see cref="For" /> registers nothing.
+    /// </summary>
+    public List<INamedTypeSymbol> AuditedWithoutTrail(Compilation compilation, IEnumerable<INamedTypeSymbol> entities)
+    {
+        if (compilation.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions") is null
+            || compilation.GetTypeByMetadataName(engine.UnitOfWork.Substring("global::".Length)) is null
+            || compilation.GetTypeByMetadataName(EngineAuditTrail) is not null)
+            return [];
+        return entities.Where(e => IsAudited(e) && PragmaticPermissions.BoundaryOf(e) is INamedTypeSymbol boundary
+                                   && boundary.ContainingAssembly?.Name == compilation.Assembly.Name)
+            .OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).ToList();
+    }
+
     /// <summary>True when <paramref name="boundary" /> carries <c>[EnableEventOutbox]</c> (Pragmatic.Events'): its saves write their events to an outbox.</summary>
     internal static bool EnablesEventOutbox(INamedTypeSymbol boundary)
         => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Events.Attributes.EnableEventOutboxAttribute");
