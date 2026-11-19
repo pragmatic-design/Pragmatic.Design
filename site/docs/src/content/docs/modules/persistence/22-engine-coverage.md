@@ -20,12 +20,12 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **523** | 670 | 36 | 2 |
-| Documents | **470** | 670 | 40 | 38 |
+| Sql | **554** | 670 | 34 | 2 |
+| Documents | **499** | 670 | 39 | 38 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**26 test files, 122 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
+**22 test files, 90 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -39,11 +39,7 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 | `DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs` | 1 |
 | `DomainActions/SharedDatabaseTransactionTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
-| `Endpoints/ApiVersioningTests.cs` | 6 |
-| `Endpoints/AttachmentEndpointTests.cs` | 16 |
-| `Endpoints/GeneratedClientTests.cs` | 5 |
-| `Endpoints/TheInvoiceAsAPdfTests.cs` | 3 |
-| `Endpoints/TypedClientTests.cs` | 3 |
+| `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
 | `EntityPersistence/AuditedE2ETests.cs` | 1 |
 | `EntityPersistence/CrudLifecycleTests.cs` | 8 |
 | `EntityPersistence/GeneratedValueTests.cs` | 4 |
@@ -82,7 +78,7 @@ here, is the owner's decision, per feature (#819).
 
 A document keeps a relation as the related row's key (#479), so the documents engine refuses a `[LoadEntity]` with an `Include`
 (PRAG3111) and a write that cascades through a navigation (PRAG3112). The module files that need them are left out there, and the
-suite's tests that call them: **35 single tests** in 19 files.
+suite's tests that call them: **35 single tests** in 19 files, and 1 files whole.
 
 | Module file | Refused as |
 |---|---|
@@ -113,6 +109,7 @@ suite's tests that call them: **35 single tests** in 19 files.
 | `EntityPersistence/AdvancedEntityTests.cs` | 4 |
 | `EntityPersistence/StateMachineTests.cs` | 5 |
 | `Queries/VisibilityRuleTests.cs` | 1 |
+| `Endpoints/TheInvoiceAsAPdfTests.cs` | the whole file, 2 test methods |
 
 ## 4. Real gaps, each with its issue
 
@@ -143,6 +140,10 @@ no serializable transaction, so concurrent adds can cross it.
 - `CrossCutting/LocalizedFieldProjectionTests.cs` (both), 1 test methods
 - `CrossCutting/ReadAccessSetTests.cs` (both), 1 test methods
 
+**The test names a type the generator puts in the assembly's namespace**, and an engine copy of a module is another assembly:
+
+- `Endpoints/ApiRoutesConstantsTests.cs` (both), 1 test methods
+
 **The test reads or migrates PostgreSQL itself**, and the documents host has none:
 
 - `EntityPersistence/OneToOneUniquenessTests.cs` (Documents), 2 test methods
@@ -154,3 +155,4 @@ no serializable transaction, so concurrent adds can cross it.
 - `examples/showcase/src/Showcase.Host/Engine/ShowcaseEngine.EfCore.cs` (both)
 - `Infrastructure/ShowcaseWebFactory.cs` (both)
 - `Infrastructure/PostgresFixture.cs` (Documents)
+- `Infrastructure/AttachmentRows.cs` (both)

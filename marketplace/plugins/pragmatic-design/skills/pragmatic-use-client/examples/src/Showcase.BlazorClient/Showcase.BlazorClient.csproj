@@ -24,9 +24,11 @@
     Private=false → DLL NOT copied to output (not deployed to browser).
     The Client SG reads [PragmaticMetadata] assembly attributes at compile time
     and generates typed clients — zero file sync, always up to date.
+    PrivateAssets="all" → the reference does not flow to whoever references the client: the engine
+    suites reference it beside their own engine copy of Booking, whose types have the same names.
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" Private="false" />
+    <ProjectReference Include="..\Showcase.Booking\Showcase.Booking.csproj" Private="false" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

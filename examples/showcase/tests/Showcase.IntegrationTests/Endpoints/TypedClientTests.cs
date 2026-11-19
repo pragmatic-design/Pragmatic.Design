@@ -43,15 +43,4 @@ public class TypedClientTests(PostgresFixture fixture) : IntegrationTestBase(fix
         response.Raw.ShouldBeOk();
         (await response.ReadAsync()).Should().Be("none");
     }
-
-    [Fact]
-    public void ApiRoutes_Constants_AreCompileTimeAndTyped()
-    {
-        // Tier 1 directly: constants + typed URL builders from the app assembly.
-        Showcase.Booking.ApiRoutes.Booking.CreateGuestMethod.Should().Be("POST");
-
-        var id = Guid.NewGuid();
-        var url = Showcase.Booking.ApiRoutes.Guests.GetGuest(id);
-        url.Should().Contain(id.ToString());
-    }
 }
