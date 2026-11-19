@@ -39,11 +39,22 @@ const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
 const TEST_ON_SQL = 'test code bound to the SQL database: the test reads or migrates PostgreSQL itself, and the documents host has none';
-const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
+const EF_PROVIDER = 'the EF Core provider\'s own mechanism, which the engines do not have by construction: the test is of that mechanism, '
+  + 'not of a feature';
+const LIMIT_BEST_EFFORT ='a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
   + 'with no serializable transaction, so concurrent adds can cross it';
 
+/**
+ * A real gap a measurement found (#819): the feature is missing on the engine, and the issue named implements it there. The exclusion goes
+ * with that issue, not before.
+ */
+const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
+const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
+const SNAPSHOT_BY_REFERENCE = `${REAL_GAP}the documents engine snapshots a localized field by reference, so a change in place is not seen (#883)`;
+const NO_QUERY_CACHE =`${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
+
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, EF_ONLY, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -55,10 +66,27 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Infrastructure/PostgresFixture.cs')]: { engines: ['Documents'], reason: REPLACED_FIXTURE },
 
   [s('Endpoints/GridSearchTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')] },
+  // POST /api/amenities/{id}/touch is CountAmenitiesAction, which injects the boundary's DbContext and counts through its entity set (#873).
+  [s('CrossCutting/BoundaryKeyedServicesTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Amenities/Actions/CountAmenitiesAction.cs')] },
   [s('Endpoints/TheGridInItsOwnFormatTests.cs')]: {
     engines: both, reason: EF_ONLY,
     follows: [catalog('Properties/Endpoints/DevExpressSearchPropertiesEndpoint.cs'), catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')],
   },
+
+  // The set [ReadAccess] adds to the reading boundary's DbContext, and its tenant filter. On the engines the reader reads through the
+  // owning boundary's repository: there is no second set to filter.
+  [s('CrossCutting/ReadAccessSetTests.cs')]: { engines: both, reason: EF_PROVIDER },
+  // The queryable extension of a declared specification composes onto an IQueryable, which the engines do not read through. Its repository
+  // terminals, in DeclaredSpecificationTests, run there.
+  [s('CrossCutting/DeclaredSpecificationQueryableTests.cs')]: { engines: both, reason: EF_PROVIDER },
+  // A DTO's projection, composed onto an IQueryable and translated to SQL through EF Core's value converter. The rest of the localized
+  // field's round trip, in LocalizedFieldTests, runs on the engines.
+  [s('CrossCutting/LocalizedFieldProjectionTests.cs')]: { engines: both, reason: EF_PROVIDER },
+
+  // The lookup cache, measured missing on both engines by InfrastructureTests (#873). These two exercise it whole: filled at startup,
+  // and reloaded by a write.
+  [s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
+  [s('CrossCutting/LookupCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
 
   [s('EntityPersistence/OneToOneUniquenessTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationPipelineTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
@@ -67,19 +95,8 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   ...Object.fromEntries([
     'Authorization/ThePackageEntitiesHaveATableTests.cs',
     'Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs',
-    'CrossCutting/ALookupWriteReloadsTheCacheTests.cs',
-    'CrossCutting/BoundaryKeyedServicesTests.cs',
-    'CrossCutting/BoundaryTests.cs',
-    'CrossCutting/CachingIntegrationTests.cs',
-    'CrossCutting/CascadeWiringTests.cs',
-    'CrossCutting/DeclaredSpecificationTests.cs',
-    'CrossCutting/InfrastructureTests.cs',
-    'CrossCutting/LocalizedFieldTests.cs',
-    'CrossCutting/LookupCacheTests.cs',
-    'CrossCutting/SagaFlowTests.cs',
-    'CrossCutting/TheRotaShowsWhoIsOnItTests.cs',
-    'CrossCutting/UserCultureTests.cs',
-    'CrossCutting/WhatTheApplicationSentIsKeptTests.cs',
+    // The status a saga ends in is read from EF Core's tables: ISagaRepository has no read of it on the engines (#884).
+    'CrossCutting/SagaPersistenceTests.cs',
     'DomainActions/CommitCountTests.cs',
     'DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs',
     'DomainActions/SharedDatabaseTransactionTests.cs',
@@ -118,6 +135,7 @@ export const ALLOWED_TEST_EXCLUSIONS = {
     'Authorization/PermissionEnforcementTests.cs': ['GetReservation_WithExactPermission_Returns200'],
     'CrossCutting/ANavigationsOwnerDoesNotHideTheRootTests.cs': ['AReservation_IsReadWithItsGuest_ByACallerWhoCannotReadTheGuest'],
     'CrossCutting/AuthorizationTests.cs': ['GetReservation_DifferentUser_FilteredByRowLevelSecurity', 'GetReservation_SameUser_CanSeeOwn'],
+    'CrossCutting/BoundaryTests.cs': ['BoundaryFacade_InvoicePaid_TriggersBookingPaymentReceived', 'ReadAccess_BookingReservation_IncludesCatalogPropertyName'],
     'CrossCutting/DataOwnershipTests.cs': [
       'OwnedEntity_AdminWithBypassPermission_SeesAll', 'OwnedEntity_DifferentUser_CannotSeeOtherReservation', 'OwnedEntity_SameUser_CanSeeOwnReservation',
       'Restore_OfTheCallersOwnRetiredReservation_BringsTheRowBack',
@@ -126,6 +144,7 @@ export const ALLOWED_TEST_EXCLUSIONS = {
     'CrossCutting/MessagingDeliveryTests.cs': ['FullPaymentFlow_Booking_Billing_Booking_RoundTrip'],
     'CrossCutting/MessagingPipelineTests.cs': ['MessagingPipeline_InvoicePaid_ReservationTransitionsToPaymentReceived'],
     'CrossCutting/NegativePathTests.cs': ['GetReservation_NonExistentId_Returns404'],
+    'CrossCutting/SagaFlowTests.cs': ['SagaFlow_HttpLifecycle_ReservationReachesCheckedInState'],
     'CrossCutting/TheZoneAMomentIsWrittenInTests.cs': [
       'AWallClockTheFrontDeskTyped_IsReadAgainstTheHotelsZone', 'AWallClockTheGuestTyped_IsReadAgainstTheGuestsZone',
       'ThePropertyThatFollowsTheReader_AndTheOneThatDoesNot_DisagreeInOnePayload', 'TheSameWallClockFromAnotherZone_IsAnotherInstant',
@@ -153,6 +172,21 @@ export const ALLOWED_TEST_EXCLUSIONS = {
   // A room type updated: UpdateRoomTypeMutation, which the documents engine refuses (PRAG3112) and the Catalog project leaves out there.
   [test('Endpoints/AutoIncludeTests.cs', 'AnUpdate_WhoseResponseFlattensANavigation_LoadsIt')]: {
     file: s('Endpoints/AutoIncludeTests.cs'), engines: ['Documents'], reason: NO_NAVIGATION, follows: [catalog('RoomTypes/Mutations/UpdateRoomTypeMutation.cs')],
+  },
+
+  // The lookup cache's registration: missing on both engines (#881). The five other tests of the file run there.
+  [test('CrossCutting/InfrastructureTests.cs', 'LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered')]: {
+    file: s('CrossCutting/InfrastructureTests.cs'), engines: both, reason: NO_LOOKUP_CACHE,
+  },
+
+  // The one caching test only a cache can pass: on the engines the read goes to the database (#882). The five others run there.
+  [test('CrossCutting/CachingIntegrationTests.cs', 'CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase')]: {
+    file: s('CrossCutting/CachingIntegrationTests.cs'), engines: both, reason: NO_QUERY_CACHE,
+  },
+
+  // A translation added in place is not saved on the documents engine (#883). The three other tests of the file run there.
+  [test('CrossCutting/LocalizedFieldTests.cs', 'ATranslationAddedInPlace_IsSaved')]: {
+    file: s('CrossCutting/LocalizedFieldTests.cs'), engines: ['Documents'], reason: SNAPSHOT_BY_REFERENCE,
   },
 
   // Six racers for a guest's last tag slot: on the documents engine more than one can take it, as decided. The sequential limit and the

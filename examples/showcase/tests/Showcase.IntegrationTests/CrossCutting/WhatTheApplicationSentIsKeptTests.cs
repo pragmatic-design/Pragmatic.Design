@@ -89,19 +89,21 @@ public sealed class WhatTheApplicationSentIsKeptTests(PostgresFixture fixture) :
     }
 
     /// <summary>
-    ///     The control: the store is the EF one, not the in-memory default.
+    ///     The control: the store is the database's, not the in-memory default.
     /// </summary>
     /// <remarks>
     ///     Without it the case above is satisfied by <c>InMemoryNotificationStore</c>, which keeps a
     ///     record perfectly well and needs no table at all — so it would pass on exactly the
-    ///     configuration this issue is about.
+    ///     configuration this issue is about. Named by what it is not, because which store backs the
+    ///     database depends on the engine: EF Core's, the Sql engine's or the documents engine's (#873).
     /// </remarks>
     [Fact]
     public void TheStoreIsTheOneBackedByTheDatabase()
     {
         using var scope = Services.CreateScope();
 
-        scope.ServiceProvider.GetRequiredService<INotificationStore>()
-            .GetType().Name.Should().Be("EfCoreNotificationStore");
+        var store = scope.ServiceProvider.GetRequiredService<INotificationStore>().GetType().Name;
+        store.Should().NotBe("InMemoryNotificationStore");
+        store.Should().EndWith("NotificationStore");
     }
 }

@@ -24,7 +24,7 @@ namespace Showcase.IntegrationTests.CrossCutting;
 /// </remarks>
 public class ALookupWriteReloadsTheCacheTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
-    /// <summary>A host of its own: these cases add categories, and <see cref="LookupCacheTests" /> measures a cold cache.</summary>
+    /// <summary>A host of its own: these cases add categories, and <c>LookupCacheTests</c> measures a cold cache.</summary>
     protected override bool NeedsItsOwnHost => true;
 
     private ILookupCache<Category, Guid> Cache => Services.GetRequiredService<ILookupCache<Category, Guid>>();

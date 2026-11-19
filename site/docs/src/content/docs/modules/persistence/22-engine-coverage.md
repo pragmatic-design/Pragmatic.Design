@@ -20,12 +20,12 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **484** | 670 | 42 | 0 |
-| Documents | **434** | 670 | 46 | 33 |
+| Sql | **523** | 670 | 36 | 2 |
+| Documents | **469** | 670 | 40 | 39 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**38 test files, 174 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
+**26 test files, 122 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -34,19 +34,7 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 |---|---|
 | `Authorization/ThePackageEntitiesHaveATableTests.cs` | 5 |
 | `Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs` | 2 |
-| `CrossCutting/ALookupWriteReloadsTheCacheTests.cs` | 3 |
-| `CrossCutting/BoundaryKeyedServicesTests.cs` | 1 |
-| `CrossCutting/BoundaryTests.cs` | 4 |
-| `CrossCutting/CachingIntegrationTests.cs` | 6 |
-| `CrossCutting/CascadeWiringTests.cs` | 2 |
-| `CrossCutting/DeclaredSpecificationTests.cs` | 3 |
-| `CrossCutting/InfrastructureTests.cs` | 6 |
-| `CrossCutting/LocalizedFieldTests.cs` | 5 |
-| `CrossCutting/LookupCacheTests.cs` | 4 |
-| `CrossCutting/SagaFlowTests.cs` | 12 |
-| `CrossCutting/TheRotaShowsWhoIsOnItTests.cs` | 2 |
-| `CrossCutting/UserCultureTests.cs` | 5 |
-| `CrossCutting/WhatTheApplicationSentIsKeptTests.cs` | 2 |
+| `CrossCutting/SagaPersistenceTests.cs` | 3 |
 | `DomainActions/CommitCountTests.cs` | 4 |
 | `DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs` | 1 |
 | `DomainActions/SharedDatabaseTransactionTests.cs` | 3 |
@@ -86,6 +74,7 @@ here, is the owner's decision, per feature (#819).
 
 | Suite file | Test methods | Follows from |
 |---|---|---|
+| `CrossCutting/BoundaryKeyedServicesTests.cs` | 1 | `CountAmenitiesAction.cs` |
 | `Endpoints/GridSearchTests.cs` | 6 | `GridSearchPropertiesEndpoint.cs` |
 | `Endpoints/TheGridInItsOwnFormatTests.cs` | 6 | `DevExpressSearchPropertiesEndpoint.cs`, `GridSearchPropertiesEndpoint.cs` |
 
@@ -93,7 +82,7 @@ here, is the owner's decision, per feature (#819).
 
 A document keeps a relation as the related row's key (#479), so the documents engine refuses a `[LoadEntity]` with an `Include`
 (PRAG3111) and a write that cascades through a navigation (PRAG3112). The module files that need them are left out there, and the
-suite's tests that call them: **32 single tests** in 17 files.
+suite's tests that call them: **35 single tests** in 19 files.
 
 | Module file | Refused as |
 |---|---|
@@ -108,11 +97,13 @@ suite's tests that call them: **32 single tests** in 17 files.
 | `Authorization/PermissionEnforcementTests.cs` | 1 |
 | `CrossCutting/ANavigationsOwnerDoesNotHideTheRootTests.cs` | 1 |
 | `CrossCutting/AuthorizationTests.cs` | 2 |
+| `CrossCutting/BoundaryTests.cs` | 2 |
 | `CrossCutting/DataOwnershipTests.cs` | 4 |
 | `CrossCutting/DomainEventTests.cs` | 2 |
 | `CrossCutting/MessagingDeliveryTests.cs` | 1 |
 | `CrossCutting/MessagingPipelineTests.cs` | 1 |
 | `CrossCutting/NegativePathTests.cs` | 1 |
+| `CrossCutting/SagaFlowTests.cs` | 1 |
 | `CrossCutting/TenantMutationIsolationTests.cs` | 1 |
 | `CrossCutting/TheZoneAMomentIsWrittenInTests.cs` | 4 |
 | `DomainActions/CompositeActionTests.cs` | 1 |
@@ -123,12 +114,38 @@ suite's tests that call them: **32 single tests** in 17 files.
 | `EntityPersistence/StateMachineTests.cs` | 5 |
 | `Queries/VisibilityRuleTests.cs` | 1 |
 
-## 4. The smaller kinds
+## 4. Real gaps, each with its issue
+
+What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
+its exclusion goes when the issue closes.
+
+**the documents engine snapshots a localized field by reference, so a change in place is not seen (#883)**
+
+- `CrossCutting/LocalizedFieldTests.cs`: `ATranslationAddedInPlace_IsSaved` (Documents)
+
+**the engines have no [Lookup] cache (#881)**
+
+- `CrossCutting/ALookupWriteReloadsTheCacheTests.cs` (both), 3 test methods
+- `CrossCutting/LookupCacheTests.cs` (both), 4 test methods
+- `CrossCutting/InfrastructureTests.cs`: `LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered` (both)
+
+**the engines read a [Cacheable] query past its cache (#882)**
+
+- `CrossCutting/CachingIntegrationTests.cs`: `CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase` (both)
+
+
+## 5. The smaller kinds
 
 **A per-entity limit is best effort on the documents engine** (owner decision, 2026-10-26, #397): it is counted before the write, with
 no serializable transaction, so concurrent adds can cross it.
 
 - `Endpoints/TagConcurrencyTests.cs`: `ConcurrentAdds_NeverExceedTheLimit` (Documents)
+
+**The test is of a mechanism of the EF Core provider**, which the engines do not have by construction:
+
+- `CrossCutting/DeclaredSpecificationQueryableTests.cs` (both), 1 test methods
+- `CrossCutting/LocalizedFieldProjectionTests.cs` (both), 1 test methods
+- `CrossCutting/ReadAccessSetTests.cs` (both), 1 test methods
 
 **The test reads or migrates PostgreSQL itself**, and the documents host has none:
 

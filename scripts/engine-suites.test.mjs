@@ -16,7 +16,10 @@ const sqlSuite = (extra = '', skip = null) => ({
   path: SQL,
   text: `<Project>\n  <!-- why -->\n  <ItemGroup>\n${allowedOn('Sql').filter((f) => f !== skip).map(remove).join('\n')}\n${extra}\n  </ItemGroup>\n</Project>`,
 });
-const read = (path) => (path.startsWith(SUITE_DIR) ? '[Fact]\npublic async Task Something_Holds()\n{\n}' : null);
+/** Every suite source declares one test of its own, and the tests the list leaves out of it by name: the list is real, the sources are not. */
+const named = (path) => Object.entries(ALLOWED_TEST_EXCLUSIONS).filter(([, a]) => a.file === path).map(([name]) => name.split('.').pop());
+const fact = (method) => `[Fact]\npublic async Task ${method}()\n{\n}`;
+const read = (path) => (path.startsWith(SUITE_DIR) ? ['Something_Holds', ...named(path)].map(fact).join('\n') : null);
 
 test('the Sql suite leaving out exactly its listed files, under a comment: nothing to report', () => {
   assert.deepEqual(engineSuiteProblems([sqlSuite()], read), []);
@@ -60,8 +63,12 @@ test('a test excluded by name that its file no longer declares is reported, and 
   const name = 'Showcase.IntegrationTests.Endpoints.SomeTests.Gone';
   ALLOWED_TEST_EXCLUSIONS[name] = { file: `${SUITE_DIR}/Endpoints/SomeTests.cs`, engines: ['Sql'], reason: 'test' };
   try {
-    assert.deepEqual(engineSuiteProblems([sqlSuite()], read), [`${name} is left out of the Sql suite and ${SUITE_DIR}/Endpoints/SomeTests.cs declares no such test`]);
-    assert.deepEqual(suiteFilter(SQL), ['--filter', `FullyQualifiedName!=${name}`]);
+    // The file declares every listed test but this one.
+    const gone = (path) => read(path)?.replace(fact('Gone'), '') ?? null;
+    assert.deepEqual(engineSuiteProblems([sqlSuite()], gone), [`${name} is left out of the Sql suite and ${SUITE_DIR}/Endpoints/SomeTests.cs declares no such test`]);
+    const onSql = Object.entries(ALLOWED_TEST_EXCLUSIONS).filter(([, a]) => a.engines.includes('Sql')).map(([n]) => n).sort();
+    assert.ok(onSql.includes(name));
+    assert.deepEqual(suiteFilter(SQL), ['--filter', onSql.map((n) => `FullyQualifiedName!=${n}`).join('&')]);
     assert.deepEqual(suiteFilter('examples/showcase/tests/Showcase.IntegrationTests/Showcase.IntegrationTests.csproj'), []);
   } finally {
     delete ALLOWED_TEST_EXCLUSIONS[name];
@@ -74,8 +81,13 @@ test('the test methods of a source are its Fact and Theory methods', () => {
 });
 
 test('the count is the EF Core suite\'s methods, those compiled on the engine and those it runs', () => {
-  const files = [`${SUITE_DIR}/Endpoints/GridSearchTests.cs`, `${SUITE_DIR}/Endpoints/CommentEndpointTests.cs`];
+  // One file left out, one compiled, and the files whose tests the list leaves out by name on Sql, each compiled with its own test too.
+  const onSql = Object.values(ALLOWED_TEST_EXCLUSIONS).filter((a) => a.engines.includes('Sql'));
+  const byName = [...new Set(onSql.map((a) => a.file))];
+  const files = [`${SUITE_DIR}/Endpoints/GridSearchTests.cs`, `${SUITE_DIR}/Endpoints/CommentEndpointTests.cs`, ...byName];
   const suite = sqlSuite();
   const readAll = (path) => (path === SQL ? suite.text : read(path));
-  assert.deepEqual(suiteCount(SQL, files, readAll), { all: 2, files: allowedOn('Sql').length, filtered: 0, runs: 1 });
+  assert.deepEqual(suiteCount(SQL, files, readAll), {
+    all: 2 + byName.length + onSql.length, files: allowedOn('Sql').length, filtered: onSql.length, runs: 1 + byName.length,
+  });
 });

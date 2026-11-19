@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The generated relation setters: the cascade test seeds a line item linked to a room type, which no operation writes (#873). -->
+    <InternalsVisibleTo Include="Showcase.Sql.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Showcase.Booking.Sql\Showcase.Booking.Sql.csproj" />
   </ItemGroup>
 

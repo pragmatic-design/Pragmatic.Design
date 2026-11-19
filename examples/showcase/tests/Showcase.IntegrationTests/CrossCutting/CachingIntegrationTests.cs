@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Persistence.Repository;
 using Showcase.Catalog;
 using Showcase.Catalog.Entities;
 using Showcase.IntegrationTests.Infrastructure;
@@ -33,25 +33,26 @@ public class CachingIntegrationTests(PostgresFixture fixture) : IntegrationTestB
         // [Cacheable] left the test green, which is the only thing a caching test must not do.
         //
         // What only a cache can produce is a read that disagrees with committed data. The row is
-        // deleted straight through the DbContext, so no endpoint runs and no [InvalidatesCache]
-        // fires; a served result that still contains it came from the cache and nowhere else.
+        // deleted straight through the boundary's repository, so no endpoint runs and no [InvalidatesCache]
+        // fires; a served result that still contains it came from the cache and nowhere else. The repository
+        // and the unit of work are the surface every engine registers (#873).
         var name = $"Cache-{Guid.NewGuid():N}"[..20];
-        await PostAsync<JsonElement>("/api/amenities", new { name, icon = "wifi" });
+        var created = await PostAsync<JsonElement>("/api/amenities", new { name, icon = "wifi" });
 
         var first = await GetAsync<JsonElement>($"/api/amenities/search?name={name}");
         first.GetProperty("items").GetArrayLength().Should().Be(1,
             "the amenity was just created and the query is not yet cached");
 
-        int removed;
         using (var scope = Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-            removed = await db.Set<Amenity>().IgnoreQueryFilters()
-                .Where(a => a.Name == name)
-                .ExecuteDeleteAsync();
+            var amenities = scope.ServiceProvider.GetRequiredService<IRepository<Amenity>>();
+            var amenity = await amenities.GetByIdAsync(created.GetProperty("id").GetGuid())
+                ?? throw new InvalidOperationException($"the amenity {name} was not written");
+            amenities.Remove(amenity);
+            await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)).SaveChangesAsync();
+            (await amenities.GetByIdAsync(amenity.Id)).Should().BeNull(
+                "the row has to be gone for the next assertion to mean anything");
         }
-
-        removed.Should().Be(1, "the row has to be gone for the next assertion to mean anything");
 
         var second = await GetAsync<JsonElement>($"/api/amenities/search?name={name}");
 

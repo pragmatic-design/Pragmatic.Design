@@ -30,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- EF Core only (#363): the grids read through an IQueryable, and the module projects leave their endpoints out on the engines. -->
+    <!-- EF Core only (#363): the grids and the amenity count read through an IQueryable, and the module projects leave them out on the
+         engines. -->
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\GridSearchTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheGridInItsOwnFormatTests.cs" />
   </ItemGroup>
@@ -41,19 +43,6 @@
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ALookupWriteReloadsTheCacheTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\CachingIntegrationTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\CascadeWiringTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\InfrastructureTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LookupCacheTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\SagaFlowTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\TheRotaShowsWhoIsOnItTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\UserCultureTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\WhatTheApplicationSentIsKeptTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\CommitCountTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\GuestPreferencesAreSetAndThenChangedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
@@ -95,6 +84,27 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers.ServiceBus" />
     <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A real gap (#881): the engines have no [Lookup] cache. These two exercise it whole, filled at startup and reloaded by a write. -->
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ALookupWriteReloadsTheCacheTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LookupCacheTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EF Core's own mechanisms, which the engines do not have by construction: the set [ReadAccess] adds to the reading boundary's
+         context (the reader reads through the owner's repository there), and the queryable extension of a declared specification (they
+         read through their own query model, not an IQueryable), and a DTO's projection translated to SQL through EF Core's value
+         converter (the same). -->
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationQueryableTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldProjectionTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ReadAccessSetTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test code bound to EF Core: the status a saga ends in is read from EF Core's tables, since ISagaRepository has no read of it (#884). -->
+    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\SagaPersistenceTests.cs" />
   </ItemGroup>
 
 </Project>

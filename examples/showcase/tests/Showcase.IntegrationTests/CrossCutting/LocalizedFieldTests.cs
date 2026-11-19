@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Repository;
 using Showcase.Catalog;
 using Showcase.Catalog.Dtos;
 using Showcase.Catalog.Entities;
@@ -125,40 +125,6 @@ public class LocalizedFieldTests(PostgresFixture fixture) : IntegrationTestBase(
     }
 
     /// <summary>
-    ///     And the <b>SQL projection</b> carries it too, which is the half nobody had measured.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         <c>PropertyDetailDto</c> declares <c>[GenerateProjection]</c>, and the column is JSON behind
-    ///         a value converter — so whether a localized field survives translation to SQL was the open
-    ///         question that kept this field <c>[MapIgnore]</c>. The read endpoint uses <c>FromEntity</c>,
-    ///         so no route exercises the projection: this case runs it directly.
-    ///     </para>
-    ///     <para>
-    ///         ⚠️ <c>IgnoreQueryFilters</c> because outside a request there is no ambient tenant and
-    ///         <c>Property</c> is an <c>ITenantEntity</c>. The subject is the projection, not the filters.
-    ///     </para>
-    /// </remarks>
-    [Fact]
-    public async Task TheProjection_CarriesTheLocalizedFieldToo()
-    {
-        var id = await APropertyDescribedAsync(new { en = "By the sea", it = "Sul mare" });
-
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-
-        var dto = await db.Set<Property>()
-            .IgnoreQueryFilters()
-            .Where(p => p.PersistenceId == id)
-            .Select(PropertyDetailDto.Projection)
-            .SingleAsync();
-
-        dto.Descriptions.Should().NotBeNull("the projection reads the JSON column through its converter");
-        dto.Descriptions!.GetExact("en").Should().Be("By the sea");
-        dto.Descriptions.GetExact("it").Should().Be("Sul mare");
-    }
-
-    /// <summary>
     ///     A translation added in place to a loaded entity is saved (#623).
     /// </summary>
     /// <remarks>
@@ -172,15 +138,18 @@ public class LocalizedFieldTests(PostgresFixture fixture) : IntegrationTestBase(
     {
         var id = await APropertyDescribedAsync(new { en = "On the hill" });
 
-        // The tenant the HTTP client created the row under: outside a request the write has none.
+        // The tenant the HTTP client created the row under: outside a request the write has none. Read and saved through the boundary's
+        // repository and unit of work, the surface every engine registers (#873).
         using (TenantScope.BeginScope("test-tenant"))
         using (var scope = Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-            var property = await db.Set<Property>().IgnoreQueryFilters().SingleAsync(p => p.PersistenceId == id);
+            var properties = scope.ServiceProvider.GetRequiredService<IRepository<Property>>();
+            var property = await properties.GetByIdAsync(id)
+                ?? throw new InvalidOperationException($"the property {id} was not written");
 
             property.Description.Set("it", "Sulla collina");
-            await db.SaveChangesAsync();
+            properties.Update(property);
+            await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)).SaveChangesAsync();
         }
 
         (await DescriptionInAsync(id, "it")).Should().Be("Sulla collina");

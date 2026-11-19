@@ -1,7 +1,7 @@
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Events;
+using Pragmatic.Persistence.Repository;
 using Showcase.Billing;
 using Showcase.Billing.Entities;
 using Showcase.Catalog.Entities;
@@ -36,69 +36,46 @@ public class CascadeWiringTests(PostgresFixture fixture) : IntegrationTestBase(f
     [Fact]
     public async Task CascadeHandler_OnRoomTypeBaseRateChange_UpdatesLineItemUnitPriceInDatabase()
     {
-        // The handler runs ExecuteUpdate with the (boxed) new value. A value left as object throws on
-        // PostgreSQL ("Expression '@p' ... does not have a type mapping") and the cascade silently never
-        // applies; wiring-only coverage cannot see that. This drives the real ExecuteUpdate against
-        // Postgres and asserts the row actually changed.
+        // The handler writes the (boxed) new value through the engine. On EF Core a value left as object threw on PostgreSQL
+        // ("Expression '@p' ... does not have a type mapping") and the cascade silently never applied; wiring-only coverage cannot see
+        // that. This drives the real write and asserts the row actually changed.
+        //
+        // Seeded and read through the boundary's repositories and unit of work, the surface every engine registers (#873). No operation
+        // links a line item to a room type, so the test sets the key with the generated relation setter.
         var roomTypeId = Guid.NewGuid();
-        var invoiceId = Guid.NewGuid();
-        var lineItemId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), 100m, 0m, 100m, DateTimeOffset.UtcNow);
+        var lineItem = LineItem.Create(100m, 100m);
+        lineItem.SetInvoiceId(invoice.Id);
+        lineItem.SetRoomTypeId(roomTypeId);
 
-        try
+        using (var scope = Services.CreateScope())
         {
-            using (var scope = Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BillingBoundary));
-
-                // Seed a parent invoice (LineItem.InvoiceId is an enforced FK) and one room-linked line item.
-                // AccessScopes is [HasAccessScopes]'s required column: seed a (non-null) empty array so other
-                // invoice queries in the shared test database can still materialize the row.
-                await db.Database.ExecuteSqlAsync(
-                    $"""
-                     INSERT INTO "Invoices"
-                       ("PersistenceId","AccessScopes","ReservationId","GuestId","InvoiceNumber","SubTotal","TaxAmount","TotalAmount","Currency","Status","IssuedAt","CreatedAt","IsDeleted")
-                     VALUES ({invoiceId},{Array.Empty<string>()},{Guid.NewGuid()},{Guid.NewGuid()},{"INV-CASCADE-W15"},{100m},{0m},{100m},{"EUR"},{0},{now},{now},{false})
-                     """);
-                await db.Database.ExecuteSqlAsync(
-                    $"""
-                     INSERT INTO "LineItems"
-                       ("PersistenceId","InvoiceId","RoomTypeId","Description","Quantity","UnitPrice","TotalPrice")
-                     VALUES ({lineItemId},{invoiceId},{roomTypeId},{"Room charge"},{1},{100m},{100m})
-                     """);
-            }
-
-            using (var scope = Services.CreateScope())
-            {
-                var handler = scope.ServiceProvider
-                    .GetServices<IDomainEventHandler<EntityPropertyChanged<RoomType>>>()
-                    .Single(h => h.GetType().Name == "LineItemUnitPriceCascadeHandler");
-
-                await handler.HandleAsync(new EntityPropertyChanged<RoomType>
-                {
-                    EntityId = roomTypeId,
-                    PropertyName = "BaseRate",
-                    OldValue = 100m,
-                    NewValue = 250m
-                }, CancellationToken.None);
-            }
-
-            using (var scope = Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BillingBoundary));
-                var lineItem = await db.Set<LineItem>().AsNoTracking()
-                    .SingleAsync(li => li.PersistenceId == lineItemId);
-
-                lineItem.UnitPrice.Should().Be(250m, "the RoomType.BaseRate change must cascade to the line item");
-            }
+            scope.ServiceProvider.GetRequiredService<IRepository<Invoice>>().Add(invoice);
+            scope.ServiceProvider.GetRequiredService<IRepository<LineItem>>().Add(lineItem);
+            await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(BillingBoundary)).SaveChangesAsync();
         }
-        finally
+
+        using (var scope = Services.CreateScope())
         {
-            // Leave no footprint in the shared, non-reset test database.
-            using var scope = Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BillingBoundary));
-            await db.Database.ExecuteSqlAsync($"""DELETE FROM "LineItems" WHERE "PersistenceId" = {lineItemId}""");
-            await db.Database.ExecuteSqlAsync($"""DELETE FROM "Invoices" WHERE "PersistenceId" = {invoiceId}""");
+            var handler = scope.ServiceProvider
+                .GetServices<IDomainEventHandler<EntityPropertyChanged<RoomType>>>()
+                .Single(h => h.GetType().Name == "LineItemUnitPriceCascadeHandler");
+
+            await handler.HandleAsync(new EntityPropertyChanged<RoomType>
+            {
+                EntityId = roomTypeId,
+                PropertyName = "BaseRate",
+                OldValue = 100m,
+                NewValue = 250m
+            }, CancellationToken.None);
+        }
+
+        using (var scope = Services.CreateScope())
+        {
+            var read = await scope.ServiceProvider.GetRequiredService<IRepository<LineItem>>().GetByIdAsync(lineItem.Id);
+
+            read.Should().NotBeNull("the line item was written");
+            read!.UnitPrice.Should().Be(250m, "the RoomType.BaseRate change must cascade to the line item");
         }
     }
 }
