@@ -26,7 +26,6 @@ namespace Pragmatic.SourceGenerator.Features.Result.Transforms;
 /// </remarks>
 internal static class UnionErrorTransform
 {
-    private const string UnionInterface = "System.Runtime.CompilerServices.IUnion";
     private const string ErrorInterface = "Pragmatic.Result.IError";
 
     /// <summary>The raw kind of a union declaration on the running compiler; -1 when it has none.</summary>
@@ -43,16 +42,10 @@ internal static class UnionErrorTransform
         var declaration = (TypeDeclarationSyntax)context.Node;
         if (ModelExtensions.GetDeclaredSymbol(context.SemanticModel, declaration) is not INamedTypeSymbol { TypeKind: TypeKind.Struct } union)
             return null;
-        if (!Implements(union, UnionInterface) || !Implements(union, ErrorInterface))
+        if (!UnionCases.IsUnion(union) || !Implements(union, ErrorInterface))
             return null;
 
-        var cases = union.InstanceConstructors
-            .Where(c => c.Parameters.Length == 1)
-            .Select(c => c.Parameters[0].Type)
-            .Distinct<ITypeSymbol>(SymbolEqualityComparer.Default)
-            .ToList();
-
-        var nonErrors = cases
+        var nonErrors = UnionCases.Of(union)
             .Where(c => !Implements(c, ErrorInterface))
             .Select(c => c.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat))
             .ToImmutableArray();
