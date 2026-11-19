@@ -3,7 +3,7 @@ title: "Repository Implementation"
 description: "Each entity needs a repository that:"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/02-repository-implementation.md
 sidebar:
-  order: 24
+  order: 25
 ---
 ## The Problem
 

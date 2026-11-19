@@ -82,6 +82,7 @@ import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provid
 import { DOCKER_SHARDS, parseShard, shardProblems } from './docker-shards.mjs';
 import { ENGINE_PROJECTS_DIR, engineProjectProblems } from './engine-projects.mjs';
 import { ENGINE_SUITES, SUITE_DIR, engineSuiteProblems, suiteCount, suiteFilter } from './engine-suites.mjs';
+import { COVERAGE_PAGE, expectedPage as expectedCoveragePage } from './engine-coverage.mjs';
 import { bundledILLinkVersion, ilLinkVersion, lockFileProblems, solutionProjects } from './lock-files.mjs';
 import { csharp15FormsInGenerated } from './csharp15-forms.mjs';
 import { distinctWarningsPerProject } from './lib/build-warnings.mjs';
@@ -1990,6 +1991,24 @@ function engineSuitesHold() {
 }
 
 /**
+ * The page of what the engines cover (engine-coverage.mjs) is what the two lists say: a list changed without the page, or the page edited
+ * by hand, fails here (#819).
+ */
+function engineCoveragePageInSync() {
+  process.stdout.write('  what the engines cover: the page matches the lists … ');
+  const actual = existsSync(COVERAGE_PAGE) ? readFileSync(COVERAGE_PAGE, 'utf-8').replaceAll('\r\n', '\n') : null;
+  if (actual === expectedCoveragePage('.')) {
+    console.log(ok('ok'));
+    return true;
+  }
+
+  console.log(bad('FAIL'));
+  console.log(`    ${COVERAGE_PAGE} differs from what engine-projects.mjs and engine-suites.mjs say`);
+  console.log(dim('    node scripts/engine-coverage.mjs: writes it'));
+  return false;
+}
+
+/**
  * Every project CI restores has a NuGet lock file, and every CI restore is locked to it (lock-files.mjs).
  */
 function everyRestoreIsLocked() {
@@ -2796,6 +2815,8 @@ function sourceChecks() {
     && nodeTestCases('scripts/engine-projects.test.mjs', 'the engine-projects check refuses EF Core and an exclusion not allowed')
     && engineSuitesHold()
     && nodeTestCases('scripts/engine-suites.test.mjs', 'the engine-suites check refuses an exclusion not listed')
+    && engineCoveragePageInSync()
+    && nodeTestCases('scripts/engine-coverage.test.mjs', 'the engine coverage page names every exclusion and reads its counts')
     && everyRestoreIsLocked()
     && nodeTestCases('scripts/lock-files.test.mjs', 'the lock-file check refuses a restore pinned by nothing')
     && skillCoverageRatchet() && silentDropsRatchet() && hostProvidedContractsRatchet()

@@ -3,7 +3,7 @@ title: "Migration Patterns"
 description: "Generated persistence features change both code and schema."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Persistence/docs/efcore/08-migration-patterns.md
 sidebar:
-  order: 30
+  order: 31
 ---
 Generated persistence features change both code and schema.
 
