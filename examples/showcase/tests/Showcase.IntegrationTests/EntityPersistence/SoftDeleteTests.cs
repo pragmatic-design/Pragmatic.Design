@@ -1,12 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Repository;
-using Pragmatic.Specification;
 using Pragmatic.Testing.Assertions;
 using Showcase.Catalog;
 using Showcase.Catalog.Entities;
@@ -35,13 +34,9 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         // stored.
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        // IgnoreQueryFilters: the row is soft-deleted, which is exactly what the filters hide, and this
-        // scope is not a request, so it has no tenant or caller either.
-        var stored = await db.Set<Property>().AsNoTracking().IgnoreQueryFilters()
-            .SingleAsync(p => p.PersistenceId == id);
-        stored.IsDeleted.Should().BeTrue();
+        var stored = await StoredPropertyAsync(id);
+        stored.Should().NotBeNull("[SoftDelete] keeps the row");
+        stored!.IsDeleted.Should().BeTrue();
         stored.DeletedAt.Should().NotBeNull();
         stored.DeletedAt!.Value.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(10));
     }
@@ -144,7 +139,10 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
     [Fact]
     public async Task BulkDeleteThroughTheRepository_InsideASuspendedScope_DeletesTheRow()
     {
-        var id = (await CreatePropertyAsync()).GetProperty("id").GetGuid();
+        // A city of this test's own, so the module's declared specification selects this row alone: a specification written here
+        // would not be compiled by an engine's generator, which runs on the module.
+        var city = $"Bulk-{Guid.NewGuid():N}"[..20];
+        var id = (await CreatePropertyAsync(city: city)).GetProperty("id").GetGuid();
 
         using (TenantScope.BeginScope("test-tenant"))
         using (var scope = Services.CreateScope())
@@ -152,7 +150,7 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         {
             // The generated repository implements IBulkRepository<T>; DI registers it as IRepository<T>.
             var bulk = (IBulkRepository<Property>)scope.ServiceProvider.GetRequiredService<IRepository<Property>>();
-            var deleted = await bulk.BulkDeleteAsync(Spec<Property>.Where(p => p.PersistenceId == id));
+            var deleted = await bulk.BulkDeleteAsync(PropertySpecifications.InCity(city));
             deleted.Should().Be(1);
         }
 
@@ -169,9 +167,11 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         using var tenant = TenantScope.BeginScope("test-tenant");
         using var scope = Services.CreateScope();
         var services = scope.ServiceProvider;
-        var db = services.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        var property = await db.Set<Property>().IgnoreQueryFilters().SingleAsync(p => p.PersistenceId == id);
         var repository = services.GetRequiredService<IRepository<Property>>();
+        Property property;
+        // Filters lifted for the read only: this scope has no caller, and the ownership filters are fail-closed.
+        using (services.GetRequiredService<IQueryFilterToggle>().DisableAll())
+            property = await repository.GetByIdAsync(id) ?? throw new InvalidOperationException($"no property {id}");
         var unitOfWork = services.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary));
 
         if (suspended)
@@ -189,20 +189,27 @@ public class SoftDeleteTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         }
     }
 
+    /// <summary>
+    ///     The row as stored, read through the boundary's repository with every filter lifted: the row is soft-deleted, which is
+    ///     exactly what the filters hide, and this scope is not a request, so it has no caller either.
+    /// </summary>
     private async Task<Property?> StoredPropertyAsync(Guid id)
     {
+        using var tenant = TenantScope.BeginScope("test-tenant");
         using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        return await db.Set<Property>().AsNoTracking().IgnoreQueryFilters().SingleOrDefaultAsync(p => p.PersistenceId == id);
+        var filters = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>();
+        using var all = filters.DisableAll();
+        using var softDelete = filters.DisableQueryFilter("SoftDelete");
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<Property>>().GetByIdAsync(id);
     }
 
-    private async Task<JsonElement> CreatePropertyAsync(string? name = null)
+    private async Task<JsonElement> CreatePropertyAsync(string? name = null, string city = "Rome")
     {
         var body = new
         {
             code = $"SD-{Guid.NewGuid():N}"[..12],
             name = name ?? $"SoftDel-{Guid.NewGuid():N}"[..20],
-            city = "Rome",
+            city,
             country = "IT",
             starRating = 3
         };

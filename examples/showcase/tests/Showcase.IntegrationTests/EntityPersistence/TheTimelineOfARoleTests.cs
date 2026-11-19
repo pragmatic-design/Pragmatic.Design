@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
+using Showcase.Booking;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -81,15 +83,9 @@ public class TheTimelineOfARoleTests(PostgresFixture fixture) : IntegrationTestB
 
         var propertyId = await APropertyAsync();
 
-        using var scope = Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<StaffAssignment.Repository>();
-
         var opening = StaffAssignment.Create(Guid.NewGuid(), propertyId, "Concierge", first);
         opening.ValidTo = second;
-        repository.Add(opening);
-        repository.Add(StaffAssignment.Create(Guid.NewGuid(), propertyId, "Concierge", second));
-
-        await repository.SaveChangesAsync();
+        await WriteAsync(opening, StaffAssignment.Create(Guid.NewGuid(), propertyId, "Concierge", second));
 
         return (first, second);
     }
@@ -114,13 +110,19 @@ public class TheTimelineOfARoleTests(PostgresFixture fixture) : IntegrationTestB
     {
         var propertyId = await APropertyAsync();
 
-        using var scope = Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<StaffAssignment.Repository>();
-
-        repository.Add(StaffAssignment.Create(Guid.NewGuid(), propertyId, "Concierge", between));
-        await repository.SaveChangesAsync();
+        await WriteAsync(StaffAssignment.Create(Guid.NewGuid(), propertyId, "Concierge", between));
 
         return between;
+    }
+
+    /// <summary>Writes the assignments through the boundary's repository, in one save of its unit of work.</summary>
+    private async Task WriteAsync(params StaffAssignment[] assignments)
+    {
+        using var scope = Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<StaffAssignment>>();
+        foreach (var assignment in assignments)
+            repository.Add(assignment);
+        await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(BookingBoundary)).SaveChangesAsync();
     }
 
     /// <remarks>

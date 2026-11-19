@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -27,13 +29,8 @@ public class GeneratedValueTests(PostgresFixture fixture) : IntegrationTestBase(
     {
         var reservationId = await CreateFullReservationAsync();
 
-        // ReservationNumber is not exposed in ReservationSummaryDto — verify via DB
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-
-        var reservation = await db.Reservations
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.PersistenceId == reservationId);
+        // ReservationNumber is not exposed in ReservationSummaryDto — verify the stored row
+        var reservation = await StoredAsync<Reservation>(reservationId);
 
         reservation.Should().NotBeNull("Reservation should exist in DB");
 
@@ -58,14 +55,11 @@ public class GeneratedValueTests(PostgresFixture fixture) : IntegrationTestBase(
         var id2 = await CreateReservationAsync(guestId, propertyId, roomTypeId, daysOffset: 20);
         var id3 = await CreateReservationAsync(guestId, propertyId, roomTypeId, daysOffset: 30);
 
-        // Verify all exist in DB
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-
-        var reservations = await db.Reservations
-            .IgnoreQueryFilters()
-            .Where(r => new[] { id1, id2, id3 }.Contains(r.PersistenceId))
-            .ToListAsync();
+        // Verify all exist as stored
+        var reservations = new List<Reservation>();
+        foreach (var id in new[] { id1, id2, id3 })
+            if (await StoredAsync<Reservation>(id) is { } stored)
+                reservations.Add(stored);
 
         reservations.Should().HaveCount(3, "All 3 reservations should exist in DB");
 
@@ -261,12 +255,19 @@ public class GeneratedValueTests(PostgresFixture fixture) : IntegrationTestBase(
         if (created.IsFailure)
             throw new Xunit.Sdk.XunitException($"the action failed: {created.Error.Code}");
 
-        var db = scope.ServiceProvider.GetRequiredService<Showcase.Billing.Entities.BillingDbContext>();
-        var invoice = await db.Invoices.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(i => i.PersistenceId == created.Value);
+        var invoice = await StoredAsync<Showcase.Billing.Entities.Invoice>(created.Value);
 
         invoice.Should().NotBeNull("the action reported the id of a row it wrote");
         invoice!.InvoiceNumber.Should().MatchRegex(@"^INV-\d{6}-\d{5}$",
             "a create that never touches a mutation gets the same declared format as one that does");
+    }
+
+    /// <summary>The row as stored, read through its boundary's repository with every filter lifted: this scope is not a request.</summary>
+    private async Task<TEntity?> StoredAsync<TEntity>(Guid id) where TEntity : class, Pragmatic.Persistence.Entity.IEntity
+    {
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        using var all = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<TEntity>>().GetByIdAsync(id);
     }
 }

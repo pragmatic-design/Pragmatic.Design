@@ -1,12 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
-using Showcase.Booking;
 using Showcase.Booking.Entities;
-using Showcase.Catalog;
 using Showcase.Catalog.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -179,13 +179,7 @@ public class CrudLifecycleTests(PostgresFixture fixture) : IntegrationTestBase(f
         // Read from the database, not from the response. CreatedBy is a user identifier the server
         // owns, and [ReturnsDto<PropertyDetailDto>] keeps it off the wire. The audit interceptor fills
         // it from ICurrentUser, which reads the X-User-Id header — so it is asserted where it lives.
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        // IgnoreQueryFilters: this scope is not a request, so it has no tenant and no caller. The
-        // tenant and ownership filters are fail-closed, so without this the row is simply not there —
-        // and the test would fail describing the wrong thing.
-        var stored = await db.Set<Property>().AsNoTracking().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(p => p.PersistenceId == propertyId);
+        var stored = await StoredAsync<Property>(propertyId);
 
         stored.Should().NotBeNull();
         stored!.CreatedBy.Should().Be("test-user",
@@ -211,10 +205,7 @@ public class CrudLifecycleTests(PostgresFixture fixture) : IntegrationTestBase(f
 
         // Read from the database: an update that declares no answer has no body, and
         // UpdatedBy is a user identifier the server owns, which no DTO carries.
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BookingBoundary));
-        var stored = await db.Set<Guest>().AsNoTracking().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(g => g.PersistenceId == guestId);
+        var stored = await StoredAsync<Guest>(guestId);
 
         stored.Should().NotBeNull();
         stored!.UpdatedBy.Should().Be("test-user",
@@ -283,5 +274,18 @@ public class CrudLifecycleTests(PostgresFixture fixture) : IntegrationTestBase(f
         json.GetProperty("propertyId").GetGuid().Should().Be(propertyId);
         json.GetProperty("name").GetString().Should().Be("Deluxe Suite");
         json.GetProperty("baseRate").GetDecimal().Should().Be(250.00m);
+    }
+
+    /// <summary>The row as stored, read through the boundary's repository.</summary>
+    /// <remarks>
+    ///     Every filter lifted: this scope is not a request, so it has no caller, and the ownership filters are fail-closed —
+    ///     without this the row is simply not there, and the test would fail describing the wrong thing.
+    /// </remarks>
+    private async Task<TEntity?> StoredAsync<TEntity>(Guid id) where TEntity : class, Pragmatic.Persistence.Entity.IEntity
+    {
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        using var all = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<TEntity>>().GetByIdAsync(id);
     }
 }

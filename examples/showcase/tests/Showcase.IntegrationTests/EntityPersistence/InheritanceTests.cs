@@ -2,10 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
-using Pragmatic.Migrations.Introspection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
+using Showcase.Billing;
 using Showcase.Billing.Dtos;
 using Showcase.Billing.Entities;
 using Showcase.IntegrationTests.Infrastructure;
@@ -13,11 +14,13 @@ using Showcase.IntegrationTests.Infrastructure;
 namespace Showcase.IntegrationTests.EntityPersistence;
 
 /// <summary>
-///     Tests TPH inheritance mapping for Fee hierarchy via the BillingDbContext.
+///     Tests TPH inheritance mapping for the Fee hierarchy, through the boundary's repositories.
 ///     Fee is the base type with [Inheritance(Tph, DiscriminatorColumn = "FeeType")].
 ///     Derived types: ServiceFee, CancellationFee — each stored in the same "Fees" table
 ///     with a "FeeType" discriminator column.
-///     Since there are no HTTP endpoints for fees, tests interact with the DB directly.
+///     Since there are no HTTP endpoints for fees, tests write and read them through the repositories,
+///     with the generated setters the module shows this assembly. The migrated table itself is read in
+///     TheFeeHierarchyIsOneTableTests.
 /// </summary>
 public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
@@ -30,30 +33,11 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider
-            .GetRequiredService<BillingDbContext>();
+        var serviceFee = AServiceFee(invoiceId, 25.00m, "Minibar", "Minibar Service");
+        await WriteAsync(serviceFee);
 
-        // Create a ServiceFee directly via EF Core
-        var serviceFee = new ServiceFee();
-        // Use EF Core entry to set private-setter properties
-        db.Set<Fee>().Add(serviceFee);
-        var entry = db.Entry(serviceFee);
-        entry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        entry.Property(nameof(Fee.Amount)).CurrentValue = 25.00m;
-        entry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        entry.Property(nameof(Fee.Reason)).CurrentValue = "Minibar";
-        entry.Property(nameof(ServiceFee.ServiceName)).CurrentValue = "Minibar Service";
-        entry.Property(nameof(ServiceFee.ServiceDate)).CurrentValue = DateTimeOffset.UtcNow;
-
-        await db.SaveChangesAsync();
-
-        // Verify the discriminator is set correctly by querying raw
-        // Note: use PersistenceId (EF-mapped) not Id (computed property, not translatable)
-        var feeId = serviceFee.PersistenceId;
-        var rawFee = await db.Set<Fee>()
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.PersistenceId == feeId);
+        // Read through the base type's repository: the discriminator decides the type that comes back.
+        var rawFee = await StoredAsync<Fee>(serviceFee.PersistenceId);
 
         rawFee.Should().NotBeNull();
         rawFee.Should().BeOfType<ServiceFee>(
@@ -73,29 +57,11 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider
-            .GetRequiredService<BillingDbContext>();
-
-        // Create a CancellationFee directly via EF Core
-        var cancellationFee = new CancellationFee();
-        db.Set<Fee>().Add(cancellationFee);
-        var entry = db.Entry(cancellationFee);
-        entry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        entry.Property(nameof(Fee.Amount)).CurrentValue = 75.00m;
-        entry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        entry.Property(nameof(Fee.Reason)).CurrentValue = "Late cancellation";
-        entry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.25m;
-        entry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 300.00m;
-
-        await db.SaveChangesAsync();
+        var cancellationFee = ACancellationFee(invoiceId, 75.00m, "Late cancellation", 0.25m, 300.00m);
+        await WriteAsync(cancellationFee);
 
         // Verify discriminator-based type resolution
-        // Note: use PersistenceId (EF-mapped) not Id (computed property, not translatable)
-        var feeId = cancellationFee.PersistenceId;
-        var rawFee = await db.Set<Fee>()
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.PersistenceId == feeId);
+        var rawFee = await StoredAsync<Fee>(cancellationFee.PersistenceId);
 
         rawFee.Should().NotBeNull();
         rawFee.Should().BeOfType<CancellationFee>(
@@ -107,7 +73,7 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     }
 
     /// <summary>
-    ///     A rate declared <c>[Precision(18, 4)]</c> keeps its four decimals through EF Core and the migrated column (#731): every
+    ///     A rate declared <c>[Precision(18, 4)]</c> keeps its four decimals through the store and the migrated column (#731): every
     ///     decimal was <c>numeric(18,2)</c>, and 0.1275 came back 0.13.
     /// </summary>
     [Fact]
@@ -115,33 +81,18 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using (var scope = Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-            var fee = new CancellationFee();
-            db.Set<Fee>().Add(fee);
-            var entry = db.Entry(fee);
-            entry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-            entry.Property(nameof(Fee.Amount)).CurrentValue = 38.25m;
-            entry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-            entry.Property(nameof(Fee.Reason)).CurrentValue = "Partial cancellation";
-            entry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.1275m;
-            entry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 300.00m;
-            await db.SaveChangesAsync();
-        }
+        var fee = ACancellationFee(invoiceId, 38.25m, "Partial cancellation", 0.1275m, 300.00m);
+        await WriteAsync(fee);
 
-        // A fresh context: the value read is the column's, not the one the change tracker kept.
-        using var readScope = Services.CreateScope();
-        var reader = readScope.ServiceProvider.GetRequiredService<BillingDbContext>();
-        var stored = await reader.Set<CancellationFee>()
-            .IgnoreQueryFilters()
-            .SingleAsync(f => f.InvoiceId == invoiceId && f.Reason == "Partial cancellation");
+        // A fresh scope: the value read is the column's, not the one the writing scope kept.
+        var stored = await StoredAsync<CancellationFee>(fee.PersistenceId);
 
-        stored.PenaltyRate.Should().Be(0.1275m);
+        stored.Should().NotBeNull();
+        stored!.PenaltyRate.Should().Be(0.1275m);
     }
 
     // =========================================================================
-    // TPH: Polymorphic query returns both derived types
+    // TPH: the base type's repository returns both derived types
     // =========================================================================
 
     [Fact]
@@ -149,42 +100,16 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider
-            .GetRequiredService<BillingDbContext>();
+        var serviceFee = AServiceFee(invoiceId, 15.00m, "Room service", "Room Service");
+        var cancellationFee = ACancellationFee(invoiceId, 50.00m, "No-show penalty", 0.50m, 100.00m);
+        await WriteAsync(serviceFee, cancellationFee);
 
-        // Create a ServiceFee
-        var serviceFee = new ServiceFee();
-        db.Set<Fee>().Add(serviceFee);
-        var sfEntry = db.Entry(serviceFee);
-        sfEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        sfEntry.Property(nameof(Fee.Amount)).CurrentValue = 15.00m;
-        sfEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        sfEntry.Property(nameof(Fee.Reason)).CurrentValue = "Room service";
-        sfEntry.Property(nameof(ServiceFee.ServiceName)).CurrentValue = "Room Service";
-        sfEntry.Property(nameof(ServiceFee.ServiceDate)).CurrentValue = DateTimeOffset.UtcNow;
-
-        // Create a CancellationFee
-        var cancellationFee = new CancellationFee();
-        db.Set<Fee>().Add(cancellationFee);
-        var cfEntry = db.Entry(cancellationFee);
-        cfEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        cfEntry.Property(nameof(Fee.Amount)).CurrentValue = 50.00m;
-        cfEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        cfEntry.Property(nameof(Fee.Reason)).CurrentValue = "No-show penalty";
-        cfEntry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.50m;
-        cfEntry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 100.00m;
-
-        await db.SaveChangesAsync();
-
-        // Query all fees for this invoice using the base Fee type (polymorphic query)
-        var allFees = await db.Set<Fee>()
-            .IgnoreQueryFilters()
-            .Where(f => f.InvoiceId == invoiceId)
-            .ToListAsync();
-
-        allFees.Should().HaveCountGreaterOrEqualTo(2,
-            "Polymorphic query on base Fee should return both ServiceFee and CancellationFee");
+        // Both read through the base Fee type's repository (a polymorphic read), each by its key.
+        var allFees = new[]
+        {
+            await StoredAsync<Fee>(serviceFee.PersistenceId),
+            await StoredAsync<Fee>(cancellationFee.PersistenceId),
+        };
 
         allFees.OfType<ServiceFee>().Should().ContainSingle(
             f => f.ServiceName == "Room Service",
@@ -196,7 +121,7 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     }
 
     // =========================================================================
-    // TPH: Querying derived type directly returns only that type
+    // TPH: a derived type's repository returns only that type
     // =========================================================================
 
     [Fact]
@@ -204,93 +129,19 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider
-            .GetRequiredService<BillingDbContext>();
+        var serviceFee = AServiceFee(invoiceId, 30.00m, "Spa treatment", "Spa");
+        var cancellationFee = ACancellationFee(invoiceId, 45.00m, "Early departure penalty", 0.15m, 300.00m);
+        await WriteAsync(serviceFee, cancellationFee);
 
-        // Create both fee types
-        var serviceFee = new ServiceFee();
-        db.Set<Fee>().Add(serviceFee);
-        var sfEntry = db.Entry(serviceFee);
-        sfEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        sfEntry.Property(nameof(Fee.Amount)).CurrentValue = 30.00m;
-        sfEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        sfEntry.Property(nameof(Fee.Reason)).CurrentValue = "Spa treatment";
-        sfEntry.Property(nameof(ServiceFee.ServiceName)).CurrentValue = "Spa";
-        sfEntry.Property(nameof(ServiceFee.ServiceDate)).CurrentValue = DateTimeOffset.UtcNow;
+        // The ServiceFee repository filters by discriminator: the CancellationFee row is not one of its own.
+        (await StoredAsync<ServiceFee>(serviceFee.PersistenceId)).Should().BeOfType<ServiceFee>();
+        (await StoredAsync<ServiceFee>(cancellationFee.PersistenceId)).Should().BeNull(
+            "reading ServiceFee should filter by discriminator automatically");
 
-        var cancellationFee = new CancellationFee();
-        db.Set<Fee>().Add(cancellationFee);
-        var cfEntry = db.Entry(cancellationFee);
-        cfEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        cfEntry.Property(nameof(Fee.Amount)).CurrentValue = 45.00m;
-        cfEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        cfEntry.Property(nameof(Fee.Reason)).CurrentValue = "Early departure penalty";
-        cfEntry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.15m;
-        cfEntry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 300.00m;
-
-        await db.SaveChangesAsync();
-
-        // Query only ServiceFee — EF Core adds WHERE FeeType = 'ServiceFee' automatically
-        var serviceFees = await db.Set<ServiceFee>()
-            .IgnoreQueryFilters()
-            .Where(f => f.InvoiceId == invoiceId)
-            .ToListAsync();
-
-        serviceFees.Should().OnlyContain(f => f is ServiceFee,
-            "Querying DbSet<ServiceFee> should filter by discriminator automatically");
-
-        // Query only CancellationFee
-        var cancellationFees = await db.Set<CancellationFee>()
-            .IgnoreQueryFilters()
-            .Where(f => f.InvoiceId == invoiceId)
-            .ToListAsync();
-
-        cancellationFees.Should().OnlyContain(f => f is CancellationFee,
-            "Querying DbSet<CancellationFee> should filter by discriminator automatically");
-    }
-
-    // =========================================================================
-    // The derived types declare [Entity] themselves
-    // =========================================================================
-
-    /// <summary>
-    ///     The hierarchy is one table in the migrated schema, and it holds the derived columns.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         ⚠️ <c>ServiceFee</c> and <c>CancellationFee</c> now carry <c>[Entity]</c> — the form
-    ///         <c>[Inheritance]</c>'s own documentation shows, and the only form that gives a derived
-    ///         type a repository, mutations and permissions of its own. Until today it compiled and
-    ///         killed the boundary at first use: the generated configuration claimed <c>ToTable</c> and
-    ///         <c>HasKey</c> for a derived type, which EF refuses while building the model, and the
-    ///         migration schema counted the derived types as tables on top of merging their columns into
-    ///         the root's — three tables where TPH wants one.
-    ///     </para>
-    ///     <para>
-    ///         Read from the live database through the introspector, so it says what the migration
-    ///         created rather than what the generator meant. Every other case in this class is the other
-    ///         half of the proof: they build the EF model and write rows through it.
-    ///     </para>
-    /// </remarks>
-    [Fact]
-    public async Task TheHierarchy_IsOneTableInTheMigratedSchema()
-    {
-        await using var connection = new NpgsqlConnection(Fixture.FinancialConnectionString);
-        await connection.OpenAsync();
-
-        var schema = await new PostgreSqlSchemaIntrospector().IntrospectAsync(connection);
-        var tables = schema.Tables.Select(t => t.Name).ToList();
-
-        tables.Should().Contain("Fees", "the root's table is the hierarchy's table");
-        tables.Should().NotContain("ServiceFees", "TPH is one table");
-        tables.Should().NotContain("CancellationFeses", "and one table for every derived type");
-
-        var fees = schema.Tables.First(t => t.Name == "Fees");
-        var columns = fees.Columns.Select(c => c.Name).ToList();
-        columns.Should().Contain("FeeType", "the discriminator [Inheritance] named");
-        columns.Should().Contain("ServiceName", "ServiceFee's own column, merged into the root's table");
-        columns.Should().Contain("PenaltyRate", "and CancellationFee's");
+        // And the other way round.
+        (await StoredAsync<CancellationFee>(cancellationFee.PersistenceId)).Should().BeOfType<CancellationFee>();
+        (await StoredAsync<CancellationFee>(serviceFee.PersistenceId)).Should().BeNull(
+            "reading CancellationFee should filter by discriminator automatically");
     }
 
     // =========================================================================
@@ -307,15 +158,17 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     ///         derived DTO must inherit the base (<c>PRAG0330</c>).
     ///     </para>
     ///     <para>
-    ///         ⚠️ Read back through the context and mapped in memory, because the dispatch is runtime
-    ///         only — <c>PRAG0331</c> says so on the build. A projection is one expression and the
-    ///         discriminator is not known until the row is read.
+    ///         ⚠️ Read back through the base type's repository and mapped in memory, because the dispatch
+    ///         is runtime only — <c>PRAG0331</c> says so on the build. A projection is one expression and
+    ///         the discriminator is not known until the row is read.
     ///     </para>
     ///     <para>
     ///         <c>InvoiceNumber</c> is the other half in the same assertion: it flattens through
     ///         <c>Invoice</c>, the navigation the base entity's <c>[Relation]</c> generates. On a derived
     ///         row the attribute is declared on <c>Fee</c>, so the resolver has to read the base's
     ///         attributes too: reading those of <c>ServiceFee</c> alone is <c>PRAG0302</c> at compile time.
+    ///         The test sets the navigation to the invoice it reads by key: an engine loads a navigation
+    ///         only where a load declares it, and no load of the module declares this one.
     ///     </para>
     /// </remarks>
     [Fact]
@@ -323,44 +176,26 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         var invoiceId = await CreateInvoiceViaReservationAsync();
 
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+        var service = AServiceFee(invoiceId, 45.00m, "Minibar", "Minibar Service");
+        var cancellation = ACancellationFee(invoiceId, 80.00m, "Late cancellation", 0.25m, 320.00m);
+        var plain = Fee.Create();
+        plain.SetInvoiceId(invoiceId);
+        plain.SetAmount(10.00m);
+        plain.SetCurrency("EUR");
+        plain.SetReason("City tax");
+        await WriteAsync(service, cancellation, plain);
 
-        var service = new ServiceFee();
-        db.Set<Fee>().Add(service);
-        var serviceEntry = db.Entry(service);
-        serviceEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        serviceEntry.Property(nameof(Fee.Amount)).CurrentValue = 45.00m;
-        serviceEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        serviceEntry.Property(nameof(Fee.Reason)).CurrentValue = "Minibar";
-        serviceEntry.Property(nameof(ServiceFee.ServiceName)).CurrentValue = "Minibar Service";
-        serviceEntry.Property(nameof(ServiceFee.ServiceDate)).CurrentValue = DateTimeOffset.UtcNow;
+        var invoice = await StoredAsync<Invoice>(invoiceId);
+        invoice.Should().NotBeNull();
 
-        var cancellation = new CancellationFee();
-        db.Set<Fee>().Add(cancellation);
-        var cancellationEntry = db.Entry(cancellation);
-        cancellationEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        cancellationEntry.Property(nameof(Fee.Amount)).CurrentValue = 80.00m;
-        cancellationEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        cancellationEntry.Property(nameof(Fee.Reason)).CurrentValue = "Late cancellation";
-        cancellationEntry.Property(nameof(CancellationFee.PenaltyRate)).CurrentValue = 0.25m;
-        cancellationEntry.Property(nameof(CancellationFee.OriginalAmount)).CurrentValue = 320.00m;
-
-        var plain = new Fee();
-        db.Set<Fee>().Add(plain);
-        var plainEntry = db.Entry(plain);
-        plainEntry.Property(nameof(Fee.InvoiceId)).CurrentValue = invoiceId;
-        plainEntry.Property(nameof(Fee.Amount)).CurrentValue = 10.00m;
-        plainEntry.Property(nameof(Fee.Currency)).CurrentValue = "EUR";
-        plainEntry.Property(nameof(Fee.Reason)).CurrentValue = "City tax";
-
-        await db.SaveChangesAsync();
-
-        var rows = await db.Set<Fee>()
-            .IgnoreQueryFilters()
-            .Include(f => f.Invoice)
-            .Where(f => f.InvoiceId == invoiceId)
-            .ToListAsync();
+        var rows = new List<Fee>();
+        foreach (var id in new[] { service.PersistenceId, cancellation.PersistenceId, plain.PersistenceId })
+        {
+            var row = await StoredAsync<Fee>(id);
+            row.Should().NotBeNull();
+            row!.Invoice = invoice!;
+            rows.Add(row);
+        }
 
         var mapped = rows.Select(FeeLineDto.FromEntity).ToList();
 
@@ -385,6 +220,49 @@ public class InheritanceTests(PostgresFixture fixture) : IntegrationTestBase(fix
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    private static ServiceFee AServiceFee(Guid invoiceId, decimal amount, string reason, string serviceName)
+    {
+        var fee = ServiceFee.Create();
+        fee.SetInvoiceId(invoiceId);
+        fee.SetAmount(amount);
+        fee.SetCurrency("EUR");
+        fee.SetReason(reason);
+        fee.SetServiceName(serviceName);
+        fee.SetServiceDate(DateTimeOffset.UtcNow);
+        return fee;
+    }
+
+    private static CancellationFee ACancellationFee(Guid invoiceId, decimal amount, string reason, decimal penaltyRate, decimal originalAmount)
+    {
+        var fee = CancellationFee.Create(penaltyRate, originalAmount);
+        fee.SetInvoiceId(invoiceId);
+        fee.SetAmount(amount);
+        fee.SetCurrency("EUR");
+        fee.SetReason(reason);
+        return fee;
+    }
+
+    /// <summary>Writes the fees through the base type's repository, in one save of the boundary's unit of work.</summary>
+    private async Task WriteAsync(params Fee[] fees)
+    {
+        // The tenant the HTTP client created the invoice under.
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<Fee>>();
+        foreach (var fee in fees)
+            repository.Add(fee);
+        await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(BillingBoundary)).SaveChangesAsync();
+    }
+
+    /// <summary>The row as stored, read through its repository with every filter lifted: this scope is not a request.</summary>
+    private async Task<TEntity?> StoredAsync<TEntity>(Guid id) where TEntity : class, Pragmatic.Persistence.Entity.IEntity
+    {
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        using var all = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<TEntity>>().GetByIdAsync(id);
+    }
 
     /// <summary>
     ///     Creates an invoice by confirming a reservation (triggers domain event → invoice creation).

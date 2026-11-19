@@ -1,8 +1,10 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Persistence.Repository;
+using Showcase.Catalog;
 using Showcase.Catalog.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -19,12 +21,14 @@ namespace Showcase.IntegrationTests.EntityPersistence;
 /// </summary>
 public class PrimitiveCollectionTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
-    private async Task<string> CreateAmenityAsync(params string[] keywords)
+    private async Task<string> CreateAmenityAsync(params string[] keywords) => (await CreateAmenityWithIdAsync(keywords)).Name;
+
+    private async Task<(string Name, Guid Id)> CreateAmenityWithIdAsync(params string[] keywords)
     {
         var name = $"PC-{Guid.NewGuid():N}"[..20];
         var resp = await PostAsync("/api/amenities", new { name, iconName = "wifi", keywords });
         resp.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created);
-        return name;
+        return (name, (await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetGuid());
     }
 
     private async Task<JsonElement[]> SearchAsync(string queryString) =>
@@ -83,26 +87,26 @@ public class PrimitiveCollectionTests(PostgresFixture fixture) : IntegrationTest
     public async Task PrimitiveCollection_InPlaceMutation_IsTrackedAndPersisted()
     {
         // Create with two keywords via the working HTTP path; Name is the unique LogicKey.
-        var name = await CreateAmenityAsync("alpha", "beta");
+        var (_, id) = await CreateAmenityWithIdAsync("alpha", "beta");
 
-        // In-place mutation of the tracked collection (entity.Keywords.Add) — NOT a reassignment.
-        // EF must detect this via a value comparer; a missing/incorrect comparer would silently
-        // drop the change at SaveChanges (the V2 concern from the EF Core course review).
+        // In-place mutation of the loaded collection (entity.Keywords.Add) — NOT a reassignment, and no Update call.
+        // The store must see it on its own: EF Core through a value comparer, the engines through the snapshot they
+        // take on load. Without either, the change is silently dropped at SaveChanges. Read by id: a specification
+        // written here would not be compiled by an engine's generator, which runs on the module.
         using (var scope = Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-            var amenity = await db.Amenities.FirstAsync(a => a.Name == name);
-            amenity.Keywords.Add("gamma");
-            await db.SaveChangesAsync();
+            var amenity = await scope.ServiceProvider.GetRequiredService<IRepository<Amenity>>().GetByIdAsync(id);
+            amenity.Should().NotBeNull();
+            amenity!.Keywords.Add("gamma");
+            await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary)).SaveChangesAsync();
         }
 
-        // Reload in a fresh context — the in-place addition must have persisted.
+        // Reload in a fresh scope — the in-place addition must have persisted.
         using (var scope = Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-            var reloaded = await db.Amenities.AsNoTracking().FirstAsync(a => a.Name == name);
-            reloaded.Keywords.Should().BeEquivalentTo(["alpha", "beta", "gamma"],
-                "EF must track in-place primitive-collection mutations via a value comparer");
+            var reloaded = await scope.ServiceProvider.GetRequiredService<IReadRepository<Amenity>>().GetByIdAsync(id);
+            reloaded!.Keywords.Should().BeEquivalentTo(["alpha", "beta", "gamma"],
+                "an in-place primitive-collection mutation must be tracked and saved");
         }
     }
 }

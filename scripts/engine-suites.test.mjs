@@ -81,13 +81,15 @@ test('the test methods of a source are its Fact and Theory methods', () => {
 });
 
 test('the count is the EF Core suite\'s methods, those compiled on the engine and those it runs', () => {
-  // One file left out, one compiled, and the files whose tests the list leaves out by name on Sql, each compiled with its own test too.
+  // One file left out, one compiled, and the files whose tests the list leaves out by name on Sql, each compiled with its own test too
+  // and with every test the list names in it, on Sql or on the documents engine only: those are compiled and run on Sql.
   const onSql = Object.values(ALLOWED_TEST_EXCLUSIONS).filter((a) => a.engines.includes('Sql'));
   const byName = [...new Set(onSql.map((a) => a.file))];
+  const declared = byName.reduce((sum, file) => sum + 1 + named(file).length, 0);
   const files = [`${SUITE_DIR}/Endpoints/GridSearchTests.cs`, `${SUITE_DIR}/Endpoints/CommentEndpointTests.cs`, ...byName];
   const suite = sqlSuite();
   const readAll = (path) => (path === SQL ? suite.text : read(path));
   assert.deepEqual(suiteCount(SQL, files, readAll), {
-    all: 2 + byName.length + onSql.length, files: allowedOn('Sql').length, filtered: onSql.length, runs: 1 + byName.length,
+    all: 2 + declared, files: allowedOn('Sql').length, filtered: onSql.length, runs: 1 + declared - onSql.length,
   });
 });
