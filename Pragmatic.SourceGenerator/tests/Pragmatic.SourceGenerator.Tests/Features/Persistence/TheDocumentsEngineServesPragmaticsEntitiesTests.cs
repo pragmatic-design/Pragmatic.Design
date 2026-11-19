@@ -134,6 +134,41 @@ public class TheDocumentsEngineServesPragmaticsEntitiesTests
         repository.Should().Contain("global::Pragmatic.Persistence.Repository.IRepository<global::Probe.Binding.Room>");
     }
 
+    /// <summary>
+    ///     A <c>LocalizedString</c> field is snapshot by its stored text, not by the instance (#883): <c>Set</c> changes it in place, and a snapshot
+    ///     that kept the instance would always agree with it. The scalar beside it, the control, is still kept as it is.
+    /// </summary>
+    [Fact]
+    public void ALocalizedField_IsSnapshotByItsText_NotByTheInstance()
+    {
+        const string leaflets = """
+            namespace Pragmatic.Internationalization.Types
+            {
+                public sealed class LocalizedString
+                {
+                    public string ToJson() => "";
+                    public static LocalizedString FromJson(string json) => new();
+                }
+            }
+
+            namespace Probe.Localized
+            {
+                [Pragmatic.Persistence.Entity.Entity]
+                public partial class Leaflet : Pragmatic.Persistence.Entity.IEntity
+                {
+                    public string Code { get; set; } = "";
+                    public Pragmatic.Internationalization.Types.LocalizedString Title { get; set; } = new();
+                }
+            }
+            """;
+
+        var tracking = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(Run(leaflets + DocumentsBridge))["Probe.Localized.Leaflet.DocumentTracking.g.cs"];
+
+        tracking.Should().Contain("(object?)e.Title.ToJson(),");
+        tracking.Should().NotContain("(object?)e.Title,");
+        tracking.Should().Contain("(object?)e.Code,");
+    }
+
     [Fact]
     public void AQueryWhoseProjectionDoesNotMap_IsPrag3108_AndTheSortedOneGetsItsOrdering()
     {

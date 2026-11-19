@@ -76,8 +76,16 @@ internal static class DocTrackingEmitter
     }
 
     /// <summary>The field's value as the snapshot keeps it.</summary>
-    private static string Value(DocField field, string typeName)
-        => field.Kind is DocKind.Embedded or DocKind.List
-            ? $"{Runtime}.Writing.DocTracking.Bytes<{typeName}>(e, static (w, x) => {DocTypeEmitter.WriteField(field, "x." + field.Property.Name)})"
-            : $"(object?)e.{field.Property.Name}";
+    /// <remarks>
+    ///     A value that can change in place is kept by what it holds, never by the instance: the snapshot would be the field itself, the two
+    ///     would always agree, and the save would write nothing. An embedded type or a list as its written bytes; a <c>LocalizedString</c>, which
+    ///     <c>Set</c> changes in place, as its stored JSON text (#883). A <c>ProtectedValue</c> is replaced whole, never changed in place.
+    /// </remarks>
+    private static string Value(DocField field, string typeName) => field.Kind switch
+    {
+        DocKind.Embedded or DocKind.List
+            => $"{Runtime}.Writing.DocTracking.Bytes<{typeName}>(e, static (w, x) => {DocTypeEmitter.WriteField(field, "x." + field.Property.Name)})",
+        DocKind.Localized => $"(object?){DocTypeEmitter.LocalizedText(field, "e." + field.Property.Name)}",
+        _ => $"(object?)e.{field.Property.Name}",
+    };
 }
