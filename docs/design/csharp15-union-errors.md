@@ -1,7 +1,14 @@
 # C# 15 unions and closed hierarchies as the error type
 
-Status: **study, measured; the shape is the owner's decision** (#837, part of #820). Measured on
-2026-11-18 with SDK 11.0.100 (Roslyn 5.12) and SDK 10.0.404 (Roslyn 5.9), on Windows x64.
+Status: **decided, option A** (owner, 2026-11-19): unions only, read structurally with Roslyn 4.14; `closed`
+hierarchies stay unsupported as an error type. The `IError` of a union is implemented (#865); the
+per-case contract is #866. The study below was measured on 2026-11-18 with SDK 11.0.100 (Roslyn 5.12) and
+SDK 10.0.404 (Roslyn 5.9), on Windows x64 (#837, part of #820).
+
+One fact the study did not have: a union declaration is a `TypeDeclarationSyntax` of kind
+`UnionDeclaration` in Roslyn 5.x, and Roslyn marks that syntax API experimental (`RSEXPERIMENTAL006`).
+The generator names neither: it looks the kind up by name on the compiler that runs it, and reads the
+union from its symbol.
 
 ## The question
 
