@@ -276,9 +276,38 @@ jobs:
       # The Sql suites' fixture builds this image through Testcontainers, which reports only "has not been
       # created" when the build fails and drops Docker's output (#698). Built here, a failure prints why, and
       # the fixture finds the tag it asks for.
+      #
+      # Built once per version of the Dockerfile, not on every shard of every run (#893): the tag carries the
+      # first twelve hex digits of the Dockerfile's SHA-256, as MssqlFtsImage.cs computes it, and the fixture
+      # builds only an image that is missing. The image is kept in the Actions cache under the same hash, so a
+      # warm run loads it and asks no package server for anything.
+      - name: SQL Server image tag
+        id: mssql
+        if: steps.change.outputs.scope == 'full'
+        run: echo "tag=pragmatic-spike/mssql-fts:2025-$(sha256sum Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts/Dockerfile | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+      - name: SQL Server image cache
+        id: mssql-cache
+        if: steps.change.outputs.scope == 'full'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/mssql-fts.tar
+          key: mssql-fts-${{ hashFiles('Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts/Dockerfile') }}
+
       - name: SQL Server image with full-text
         if: steps.change.outputs.scope == 'full'
-        run: docker build --progress=plain -t pragmatic-spike/mssql-fts:2025 Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts
+        env:
+          TAG: ${{ steps.mssql.outputs.tag }}
+          ARCHIVE: ${{ runner.temp }}/mssql-fts.tar
+          HIT: ${{ steps.mssql-cache.outputs.cache-hit }}
+        run: |
+          if [ "$HIT" = "true" ]; then
+            docker load -i "$ARCHIVE"
+          else
+            docker build --progress=plain -t "$TAG" Pragmatic.Persistence/tests/Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts
+            docker save -o "$ARCHIVE" "$TAG"
+          fi
+          docker image inspect "$TAG" --format 'image {{.Id}} as {{index .RepoTags 0}}'
 
       - name: Container suites
         if: steps.change.outputs.scope == 'full'

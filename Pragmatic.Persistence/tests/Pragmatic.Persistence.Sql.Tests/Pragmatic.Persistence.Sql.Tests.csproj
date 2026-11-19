@@ -30,6 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The SQL Server full-text image both Sql suites start: one file says how it is tagged and when it is built (#893). -->
+    <Compile Include="..\Pragmatic.Persistence.Sql.Core.Tests\MssqlFtsImage.cs" Link="MssqlFtsImage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql.Core\Pragmatic.Persistence.Sql.Core.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" />
     <ProjectReference Include="..\..\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
