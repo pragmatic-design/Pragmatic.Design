@@ -1,9 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Identity;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
+using Showcase.Accounts;
 using Showcase.Accounts.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -42,11 +44,16 @@ public class UserCultureTests(PostgresFixture fixture) : IntegrationTestBase(fix
 
         if (preferredCulture is not null)
         {
+            // Found the way a sign-in finds the user, then saved through the boundary's repository and unit of work: the surface every
+            // engine registers (#873). Not by a request as that user: the culture provider caches each user's preference for five
+            // minutes, and the first request would cache "none". Nor by a specification written here, which the Sql engine refuses:
+            // it runs the ones its generator compiled in the modules.
             using var scope = Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AccountsDbContext>();
-            var user = await db.Set<AppUser>().FirstAsync(u => u.Identity!.ExternalIdentityKey == key);
+            var user = await scope.ServiceProvider.GetRequiredService<IUserLookup<AppUser>>().FindByIdentityKeyAsync(key)
+                ?? throw new InvalidOperationException($"no user for the external identity key {key}");
             user.PreferredCulture = preferredCulture;
-            await db.SaveChangesAsync();
+            scope.ServiceProvider.GetRequiredService<IRepository<AppUser>>().Update(user);
+            await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(AccountsBoundary)).SaveChangesAsync();
         }
 
         return key;

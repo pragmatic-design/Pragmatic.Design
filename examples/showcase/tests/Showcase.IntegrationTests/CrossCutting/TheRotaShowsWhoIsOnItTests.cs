@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Testing.Assertions;
+using Showcase.Accounts;
 using Showcase.Accounts.Entities;
+using Showcase.Booking;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -43,18 +45,15 @@ public sealed class TheRotaShowsWhoIsOnItTests(PostgresFixture fixture) : Integr
 
         using (var scope = Services.CreateScope())
         {
-            var users = scope.ServiceProvider.GetRequiredService<AppUser.Repository>();
             var user = AppUser.Create();
             namedStaffId = user.Id;
             user.DisplayName = "Ada Lovelace";
             user.Department = "Front desk";
-            users.Add(user);
-            await users.SaveChangesAsync();
+            await AddAsync<AppUser, AccountsBoundary>(scope, user);
 
-            var assignments = scope.ServiceProvider.GetRequiredService<StaffAssignment.Repository>();
-            assignments.Add(StaffAssignment.Create(namedStaffId, withAccount, role, DateTimeOffset.UtcNow.AddDays(-1)));
-            assignments.Add(StaffAssignment.Create(namelessStaffId, withoutAccount, role, DateTimeOffset.UtcNow.AddDays(-1)));
-            await assignments.SaveChangesAsync();
+            await AddAsync<StaffAssignment, BookingBoundary>(scope,
+                StaffAssignment.Create(namedStaffId, withAccount, role, DateTimeOffset.UtcNow.AddDays(-1)),
+                StaffAssignment.Create(namelessStaffId, withoutAccount, role, DateTimeOffset.UtcNow.AddDays(-1)));
         }
 
         var rota = await RotaAsync(role);
@@ -89,16 +88,13 @@ public sealed class TheRotaShowsWhoIsOnItTests(PostgresFixture fixture) : Integr
         Guid staffId;
         using (var scope = Services.CreateScope())
         {
-            var users = scope.ServiceProvider.GetRequiredService<AppUser.Repository>();
             var user = AppUser.Create();
             staffId = user.Id;
             user.DisplayName = expected;
-            users.Add(user);
-            await users.SaveChangesAsync();
+            await AddAsync<AppUser, AccountsBoundary>(scope, user);
 
-            var assignments = scope.ServiceProvider.GetRequiredService<StaffAssignment.Repository>();
-            assignments.Add(StaffAssignment.Create(staffId, propertyId, role, DateTimeOffset.UtcNow.AddDays(-1)));
-            await assignments.SaveChangesAsync();
+            await AddAsync<StaffAssignment, BookingBoundary>(scope,
+                StaffAssignment.Create(staffId, propertyId, role, DateTimeOffset.UtcNow.AddDays(-1)));
         }
 
         var rota = await RotaAsync(role);
@@ -132,6 +128,18 @@ public sealed class TheRotaShowsWhoIsOnItTests(PostgresFixture fixture) : Integr
         public string Role { get; init; } = "";
         public string? StaffDisplayName { get; init; }
         public string? StaffDepartment { get; init; }
+    }
+
+    /// <summary>
+    ///     Writes the rows through the boundary's repository and unit of work: the surface every engine registers, so the case runs on
+    ///     EF Core, the Sql engine and the documents engine alike (#873).
+    /// </summary>
+    private static async Task AddAsync<TEntity, TBoundary>(IServiceScope scope, params TEntity[] entities)
+        where TEntity : class, Pragmatic.Persistence.Entity.IEntity
+    {
+        var repository = scope.ServiceProvider.GetRequiredService<Pragmatic.Persistence.Repository.IRepository<TEntity>>();
+        repository.AddRange(entities);
+        await scope.ServiceProvider.GetRequiredKeyedService<Pragmatic.Persistence.Repository.IUnitOfWork>(typeof(TBoundary)).SaveChangesAsync();
     }
 
     private async Task<Guid> CreatePropertyIdAsync()

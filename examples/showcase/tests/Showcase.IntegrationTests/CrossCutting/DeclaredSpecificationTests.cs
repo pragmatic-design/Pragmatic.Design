@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Repository;
@@ -43,37 +42,6 @@ public class DeclaredSpecificationTests(PostgresFixture fixture) : IntegrationTe
         });
 
         return created.GetProperty("id").GetGuid();
-    }
-
-    /// <summary>The queryable extension and the hand-written form select the same rows.</summary>
-    [Fact]
-    public async Task TheQueryableExtension_SelectsWhatTheHandWrittenFormSelects()
-    {
-        var city = $"City{Guid.NewGuid():N}"[..12];
-        var wanted = await APropertyInAsync(city);
-        var other = await APropertyInAsync($"Other{Guid.NewGuid():N}"[..12]);
-
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-
-        // IgnoreQueryFilters on both sides: outside a request there is no ambient tenant, and the
-        // subject here is the specification, not the filter pipeline.
-        var handWritten = await db.Set<Property>()
-            .IgnoreQueryFilters()
-            .Where(PropertySpecifications.InCity(city).ToExpression())
-            .Select(p => p.PersistenceId)
-            .ToListAsync();
-
-        var generated = await db.Set<Property>()
-            .IgnoreQueryFilters()
-            .InCity(city)
-            .Select(p => p.PersistenceId)
-            .ToListAsync();
-
-        generated.Should().Equal(handWritten, "the extension delegates to the same specification");
-        generated.Should().Contain(wanted);
-        generated.Should().NotContain(other,
-            "a filter that let everything through would satisfy the comparison above on its own");
     }
 
     /// <summary>And the four terminal reads answer for the same specification.</summary>

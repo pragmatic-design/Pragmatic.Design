@@ -2,10 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Messaging;
-using Pragmatic.Messaging.EFCore.Sagas;
 using Pragmatic.Messaging.Saga;
 using Pragmatic.MultiTenancy;
 using Showcase.Booking.Entities;
@@ -17,10 +15,15 @@ namespace Showcase.IntegrationTests.CrossCutting;
 /// <summary>
 ///     Tests the CheckInSaga orchestrated flow via the E2E pipeline.
 ///     The saga is triggered by domain events (GuestArrived → IdentityVerified → RoomReady).
-///     BookingBoundary is [EnableSagaPersistence], so the saga is EF Core-backed
-///     (EfCoreSagaRepository over the __SagaInstances/__SagaSteps tables in BookingDbContext):
-///     state survives across scopes and process restarts, verified here against the real database.
+///     BookingBoundary is [EnableSagaPersistence], so the saga is kept by the engine's durable store
+///     (EF Core's tables, the Sql engine's, or the documents engine's collection): state survives across
+///     scopes and process restarts, verified here against the real database.
 /// </summary>
+/// <remarks>
+///     It runs on every engine, through <see cref="ISagaRepository{TSaga}" /> (#873). The status a saga
+///     ends in is read from EF Core's tables in <c>SagaPersistenceTests</c>, until the repository
+///     reads it on every store (#884).
+/// </remarks>
 public class SagaFlowTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
     /// <summary>
@@ -116,40 +119,6 @@ public class SagaFlowTests(PostgresFixture fixture) : IntegrationTestBase(fixtur
         act.Should().Throw<SagaRejectedException>();
     }
 
-    // E2E through the real orchestrator: an invalid identity must NOT advance to
-    // RoomAssigned (the declared NextState must not overwrite the rejection), and the saga must be
-    // marked Compensated (terminal) rather than left Active.
-    [Fact]
-    public async Task SagaFlow_EndToEnd_InvalidIdentity_CompensatesWithoutAdvancing()
-    {
-        using var tenant = TenantScope.BeginScope(Tenant);
-
-        var reservationId = Guid.NewGuid();
-        var guestId = Guid.NewGuid();
-        var correlationId = reservationId.ToString();
-
-        await DispatchAsync(new GuestArrived(reservationId, guestId, DateTimeOffset.UtcNow));
-        await AssertSagaStateAsync(correlationId, CheckInState.GuestVerified,
-            "the start event must advance the saga to GuestVerified");
-
-        // Invalid identity → Handle throws SagaRejectedException → orchestrator compensates, marks
-        // Compensated, and does NOT rethrow. DispatchAsync completes normally (terminal, no retry).
-        await DispatchAsync(new IdentityVerified(reservationId, IsValid: false));
-
-        using var scope = Services.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<ISagaRepository<CheckInSaga>>();
-        var saga = await repo.FindByCorrelationAsync(correlationId);
-        saga.Should().NotBeNull();
-        saga!.State.Should().NotBe(CheckInState.RoomAssigned,
-            "the declared NextState must not overwrite the handler's rejection — the invalid guest must not advance");
-
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        var instance = await db.Set<SagaInstance>().AsNoTracking().FirstOrDefaultAsync(s => s.Id == saga.Id);
-        instance.Should().NotBeNull("the saga instance must be persisted");
-        instance!.Status.Should().Be(SagaStatus.Compensated,
-            "a rejected step must run compensation and leave the saga Compensated, not Active");
-    }
-
     // =========================================================================
     // Saga: Repository registered in DI (verifies SG registration)
     // =========================================================================
@@ -190,17 +159,6 @@ public class SagaFlowTests(PostgresFixture fixture) : IntegrationTestBase(fixtur
         found.ReservationId.Should().Be(saga.ReservationId);
     }
 
-    [Fact]
-    public void SagaRepository_IsEfCoreBacked_NotInMemory()
-    {
-        // BookingBoundary is [EnableSagaPersistence]: the SG wires EfCoreSagaRepository (durable) rather
-        // than the in-memory default, which is what lets saga state survive a process restart.
-        using var scope = Services.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<ISagaRepository<CheckInSaga>>();
-
-        repo.Should().BeOfType<EfCoreSagaRepository<CheckInSaga, CheckInState>>();
-    }
-
     // =========================================================================
     // E2E: publish events via IMessageBus → SG-generated handlers route to
     // Orchestrator → saga state persists across per-request scopes via the
@@ -239,50 +197,6 @@ public class SagaFlowTests(PostgresFixture fixture) : IntegrationTestBase(fixtur
         finalSaga!.State.Should().Be(CheckInState.Completed,
             "Saga must reach terminal state after the full three-step orchestration");
         finalSaga.AssignedRoom.Should().Be("507");
-    }
-
-    [Fact]
-    public async Task SagaFlow_TimeoutRunner_MarksTimedOut_AndRunsCompensationChain()
-    {
-        // Drive the saga to RoomAssigned (Handle(IdentityVerified) sets a 10-minute
-        // [SagaTimeout] deadline). Then force the deadline into the past and invoke
-        // the SG-generated ISagaTimeoutRunner directly — the compensation chain must
-        // run and the instance must be marked TimedOut.
-        using var tenant = TenantScope.BeginScope(Tenant);
-
-        var reservationId = Guid.NewGuid();
-        var guestId = Guid.NewGuid();
-        var correlationId = reservationId.ToString();
-
-        await DispatchAsync(new GuestArrived(reservationId, guestId, DateTimeOffset.UtcNow));
-        await DispatchAsync(new IdentityVerified(reservationId, IsValid: true));
-
-        using var scope = Services.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<ISagaRepository<CheckInSaga>>();
-        var saga = await repo.FindByCorrelationAsync(correlationId);
-        saga.Should().NotBeNull("saga should exist after the two dispatched events");
-        saga!.State.Should().Be(CheckInState.RoomAssigned,
-            "[SagaTimeout] is declared on Handle(IdentityVerified) so the deadline only kicks in once we're past GuestVerified");
-
-        await repo.SetTimeoutAsync(saga.Id, DateTimeOffset.UtcNow.AddSeconds(-10));
-
-        var runners = scope.ServiceProvider.GetServices<ISagaTimeoutRunner>().ToList();
-        runners.Should().NotBeEmpty(
-            "SG must register an ISagaTimeoutRunner for sagas that declare [SagaTimeout] on at least one step");
-
-        foreach (var r in runners)
-            await r.RunDueTimeoutsAsync(DateTimeOffset.UtcNow, default);
-
-        // EF-backed saga: the timeout outcome is persisted. Verify the __SagaInstances row was marked
-        // TimedOut (Orchestrator.HandleTimeoutAsync → MarkTimedOutAsync) directly against the database.
-        using var verifyScope = Services.CreateScope();
-        var db = verifyScope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        var instance = await db.Set<SagaInstance>()
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == saga.Id);
-        instance.Should().NotBeNull("the saga must be persisted in __SagaInstances");
-        instance!.Status.Should().Be(SagaStatus.TimedOut,
-            "the timeout runner should have invoked Orchestrator.HandleTimeoutAsync → MarkTimedOutAsync");
     }
 
     [Fact]

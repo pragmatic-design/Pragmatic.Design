@@ -6,7 +6,8 @@
  * - engine-suites.mjs: the files and single tests the Showcase suite leaves out on each engine, and the counts it runs.
  *
  * The page sorts every exclusion into the kind that decides what is done with it: not measured (the test's own code is bound to EF Core),
- * EF Core only (a feature read through an IQueryable), by design on the documents engine (a relation kept as a key), and the smaller kinds.
+ * EF Core only (a feature read through an IQueryable), by design on the documents engine (a relation kept as a key), the real gaps a
+ * measurement found (each with its issue), and the smaller kinds.
  *
  *   node scripts/engine-coverage.mjs           writes the page
  *   node scripts/engine-coverage.mjs --check   exits 1 when the page differs from what the lists say
@@ -126,19 +127,47 @@ export function coveragePage(read, suiteFiles) {
     ...[...byFile].sort(([a], [b]) => a.localeCompare(b)).map(([path, methods]) => `| \`${suitePath(path)}\` | ${methods.length} |`),
   );
 
+  // Real gaps: what a measurement of kind 1 found missing, each with the issue that implements it.
+  const isGap = (reason) => reason.startsWith(SUITE_REASONS.REAL_GAP);
+  const gapFiles = files.filter(([, a]) => isGap(a.reason));
+  const gapTests = tests.filter(([, a]) => isGap(a.reason));
+  const gapReasons = [...new Set([...gapFiles, ...gapTests].map(([, a]) => a.reason))].sort();
+  add(
+    '',
+    '## 4. Real gaps, each with its issue',
+    '',
+    'What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and',
+    'its exclusion goes when the issue closes.',
+    '',
+  );
+  if (gapReasons.length === 0) add('None found yet.');
+  for (const reason of gapReasons) {
+    add(`**${reason.slice(SUITE_REASONS.REAL_GAP.length)}**`, '');
+    for (const [path, a] of gapFiles.filter(([, a]) => a.reason === reason).sort(([x], [y]) => x.localeCompare(y)))
+      add(`- \`${suitePath(path)}\` (${engines(a.engines)}), ${methodsOf(path)} test methods`);
+    for (const [name, a] of gapTests.filter(([, a]) => a.reason === reason).sort(([x], [y]) => x.localeCompare(y)))
+      add(`- \`${suitePath(a.file)}\`: \`${name.split('.').pop()}\` (${engines(a.engines)})`);
+    add('');
+  }
+
   // The smaller kinds.
   const best = tests.filter(([, a]) => a.reason === SUITE_REASONS.LIMIT_BEST_EFFORT);
+  const provider = files.filter(([, a]) => a.reason === SUITE_REASONS.EF_PROVIDER).sort(([x], [y]) => x.localeCompare(y));
   const onSql = files.filter(([, a]) => a.reason === SUITE_REASONS.TEST_ON_SQL).map(([path]) => path).sort();
   const replaced = files.filter(([, a]) => a.reason === SUITE_REASONS.REPLACED || a.reason === SUITE_REASONS.REPLACED_FIXTURE);
   const wiring = modules.filter(([, a]) => a.reason === PROJECT_REASONS.HOST_WIRING).map(([path]) => path);
   add(
     '',
-    '## 4. The smaller kinds',
+    '## 5. The smaller kinds',
     '',
     '**A per-entity limit is best effort on the documents engine** (owner decision, 2026-10-26, #397): it is counted before the write, with',
     'no serializable transaction, so concurrent adds can cross it.',
     '',
     ...best.map(([name, a]) => `- \`${suitePath(a.file)}\`: \`${name.split('.').pop()}\` (${engines(a.engines)})`),
+    '',
+    '**The test is of a mechanism of the EF Core provider**, which the engines do not have by construction:',
+    '',
+    ...provider.map(([path, a]) => `- \`${suitePath(path)}\` (${engines(a.engines)}), ${methodsOf(path)} test methods`),
     '',
     '**The test reads or migrates PostgreSQL itself**, and the documents host has none:',
     '',

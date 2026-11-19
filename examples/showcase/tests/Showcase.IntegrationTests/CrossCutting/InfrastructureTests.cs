@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Pragmatic.Persistence.EFCore.Repository;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Testing.Assertions;
 using Showcase.Catalog.Entities;
@@ -83,7 +82,7 @@ public class InfrastructureTests(PostgresFixture fixture) : IntegrationTestBase(
     ///     </para>
     ///     <para>
     ///         It stops at the wiring on purpose. What that wiring produces — a filled cache and a
-    ///         navigation that returns the row from it — is <see cref="LookupCacheTests" />, which is
+    ///         navigation that returns the row from it — is <c>LookupCacheTests</c>, which is
     ///         where the rows come from too.
     ///     </para>
     /// </remarks>
@@ -96,12 +95,10 @@ public class InfrastructureTests(PostgresFixture fixture) : IntegrationTestBase(
         sp.GetService<ILookupCache<Category, Guid>>().Should().NotBeNull(
             "[Lookup] on Category registers the cache the generated navigation resolves from");
 
-        sp.GetServices<ILookupCacheLoader>().Should().Contain(
-            l => l.GetType().Name == "CategoryLookupCacheLoader",
-            "the per-entity loader is what fills that cache");
-
+        // By name, not by type: the preload service and its loaders are Pragmatic.Persistence.EFCore's, which an engine suite does not
+        // reference, and this file runs on the engines too (#873). LookupCacheTests shows the loader fills the cache.
         sp.GetServices<IHostedService>().Should().Contain(
-            s => s is LookupPreloadHostedService,
+            s => s.GetType().Name == "LookupPreloadHostedService",
             "and the hosted service is what runs the loaders at startup");
     }
 
