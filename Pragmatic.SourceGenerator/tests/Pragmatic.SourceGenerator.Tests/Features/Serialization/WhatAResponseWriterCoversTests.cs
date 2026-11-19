@@ -113,6 +113,41 @@ public class WhatAResponseWriterCoversTests
     }
 
     /// <summary>
+    ///     A C# 15 union, as the answer or as a member, is refused and left to the serializer (#838). System.Text.Json 11
+    ///     writes a union as the case it holds; the writer would have written it as a struct with a <c>Value</c>
+    ///     property, <c>{"value":…}</c>, on every host whose options it reproduces.
+    /// </summary>
+    /// <remarks>
+    ///     Parsed by Roslyn 4.14, so the union is the struct the compiler makes of one: it implements <c>IUnion</c>, with a
+    ///     one-parameter constructor per case (the shape <c>UnionCases</c> reads).
+    /// </remarks>
+    [Theory]
+    [InlineData("Dto")]
+    [InlineData("Holder")]
+    public void AUnion_IsRefusedAndLeftToTheSerializer(string root)
+    {
+        var compiled = CompiledResponseWriter.For(Usings + """
+            namespace System.Runtime.CompilerServices { public interface IUnion { object? Value { get; } } }
+
+            namespace App
+            {
+                public sealed record Courier(string Carrier);
+                public sealed record Pickup(string Store);
+                public struct Dto : System.Runtime.CompilerServices.IUnion
+                {
+                    public Dto(Courier value) => Value = value;
+                    public Dto(Pickup value) => Value = value;
+                    public object? Value { get; }
+                }
+                public sealed class Holder { public Dto Shipment { get; init; } }
+            }
+            """, CompiledResponseWriter.Named("App." + root));
+
+        compiled.Plan.Should().BeNull("a union written member by member is a 'value' wrapper, not its case");
+        compiled.Rejection.Should().Contain("union");
+    }
+
+    /// <summary>
     ///     A type the generated JSON context describes with an acronym-led name and a <c>[JsonIgnore]</c> member is
     ///     planned: the context names it and leaves the member out as reflection does
     ///     (<c>TheContextWritesWhatReflectionWritesTests</c>), so whichever of the two the host registered writes the

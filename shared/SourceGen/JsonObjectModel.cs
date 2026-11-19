@@ -12,6 +12,10 @@ namespace Pragmatic.SourceGen;
 ///     Init-only properties are assigned through <c>[UnsafeAccessor]</c> setters (see
 ///     <see cref="JsonPropertyModel.IsInitOnly"/>).
 ///     </para>
+///     <para>
+///     A C# 15 union carries its <see cref="UnionCases"/> and no properties: it is described with System.Text.Json 11's
+///     <c>JsonMetadataServices.CreateUnionInfo</c>, written as the case it holds (#838).
+///     </para>
 /// </summary>
 internal sealed record JsonObjectModel(
     string TypeExpr,
@@ -21,4 +25,9 @@ internal sealed record JsonObjectModel(
     string? DiscriminatorName = null,
     EquatableArray<JsonDerivedTypeModel> DerivedTypes = default,
     bool NeedsUnsafeConstructor = false,
-    EquatableArray<string> ConstructorParamTypes = default);
+    EquatableArray<string> ConstructorParamTypes = default,
+    EquatableArray<string> UnionCases = default)
+{
+    /// <summary>Whether this is a union, described by its cases.</summary>
+    public bool IsUnion => UnionCases.Length > 0;
+}
