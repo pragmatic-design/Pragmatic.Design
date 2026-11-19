@@ -227,6 +227,24 @@ These variants are `readonly struct` types with a `byte` discriminator index. Th
 
 **When to use:** The operation can fail with different error types that have different HTTP status codes or different semantic meaning to the caller.
 
+### A C# 15 union as the error set
+
+On C# 15 the same set can be written once, as a union, and used as the one `TError`:
+
+```csharp
+public partial union PlaceOrderError(NotFoundError, ConflictError, OrderLocked) : IError;
+
+public partial class PlaceOrder : DomainAction<OrderPlaced, PlaceOrderError> { … }
+```
+
+Declare the union `partial` and `IError`, and leave its members to the generator: it delegates each one to the case the union holds, so a
+`NotFoundError` returned through the union answers 404 with its own title. An endpoint documents each case, with the status, OpenAPI
+response and client type it has as a plain error type, so the union and the arity of the same errors are the same contract. A union that
+is not `partial` is `PRAG0003`; a case that is not an `IError` is `PRAG0004`.
+
+The arities stay the contract on every target framework: a C# 14 application uses them, and nothing changes for it. A `closed` hierarchy
+is not supported as an error type (docs/design/csharp15-union-errors.md).
+
 ### VoidResult\<TError\>
 
 For operations that return nothing on success but can fail with a typed error.

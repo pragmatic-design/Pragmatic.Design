@@ -25,15 +25,7 @@ internal static partial class EndpointTransform
                     ? typeArgs[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                     : null;
 
-                var errorTypes = typeArgs.Length > 1
-                    ? typeArgs.Skip(1).Select(t => new ErrorTypeModel
-                    {
-                        TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                        SimpleName = t.Name,
-                        StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
-                        ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
-                    }).ToImmutableArray()
-                    : ImmutableArray<ErrorTypeModel>.Empty;
+                var errorTypes = ErrorsFrom(typeArgs.Skip(1), symbol);
 
                 return (true, false, responseType, errorTypes);
             }
@@ -41,13 +33,7 @@ internal static partial class EndpointTransform
             // Check for VoidEndpoint variants
             if (baseName.StartsWith(EndpointShapes.VoidEndpoint.MetadataPrefix))
             {
-                var errorTypes = baseType.TypeArguments.Select(t => new ErrorTypeModel
-                {
-                    TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    SimpleName = t.Name,
-                    StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
-                    ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
-                }).ToImmutableArray();
+                var errorTypes = ErrorsFrom(baseType.TypeArguments, symbol);
 
                 return (true, true, null, errorTypes);
             }
@@ -73,15 +59,7 @@ internal static partial class EndpointTransform
                     ? typeArgs[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                     : null;
 
-                var errorTypes = typeArgs.Length > 1
-                    ? typeArgs.Skip(1).Select(t => new ErrorTypeModel
-                    {
-                        TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                        SimpleName = t.Name,
-                        StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
-                        ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
-                    }).ToImmutableArray()
-                    : ImmutableArray<ErrorTypeModel>.Empty;
+                var errorTypes = ErrorsFrom(typeArgs.Skip(1), symbol);
 
                 return (true, itemType, errorTypes);
             }
@@ -192,14 +170,31 @@ internal static partial class EndpointTransform
         return null;
     }
 
+    /// <summary>
+    ///     The error types an operation declares, a C# 15 union replaced by its cases (#866).
+    /// </summary>
+    /// <remarks>
+    ///     A union is an error set, not an error: it answers with the status of the case it holds. Documented as itself, it fell back to
+    ///     400, and the OpenAPI document, the endpoint manifest and the generated client all read this one list. Each case gets what it gets
+    ///     as a plain error type, so the union and the arity of the same errors document the same responses. A case declared twice, through
+    ///     the union and on its own, is documented once; an operation without a union keeps its list exactly as declared.
+    /// </remarks>
     private static ImmutableArray<ErrorTypeModel> ErrorsFrom(IEnumerable<ITypeSymbol> types, INamedTypeSymbol symbol)
-        => types.Select(t => new ErrorTypeModel
-        {
-            TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            SimpleName = t.Name,
-            StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
-            ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
-        }).ToImmutableArray();
+    {
+        var declared = types.ToList();
+        var errors = declared.Any(Core.UnionCases.IsUnion)
+            ? declared.SelectMany(t => Core.UnionCases.IsUnion(t) ? Core.UnionCases.Of(t).AsEnumerable() : [t])
+                .Distinct<ITypeSymbol>(SymbolEqualityComparer.Default)
+            : declared;
+
+        return errors.Select(t => new ErrorTypeModel
+            {
+                TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                SimpleName = t.Name,
+                StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
+                ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
+            }).ToImmutableArray();
+    }
 
     private static (bool IsQuery, string? EntityType, string? ResultType, string? BoundaryType, bool IsPaged, bool IsSingle)
         AnalyzeQueryAttribute(INamedTypeSymbol symbol)
@@ -262,15 +257,7 @@ internal static partial class EndpointTransform
                     : null;
 
                 // Positions 1+ = TError types
-                var errorTypes = typeArgs.Length > 1
-                    ? typeArgs.Skip(1).Select(t => new ErrorTypeModel
-                    {
-                        TypeName = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                        SimpleName = t.Name,
-                        StatusCode = GetErrorStatusCode(t, symbol.ContainingAssembly),
-                        ContradictedStatusCode = ContradictedStatusCode(t, symbol.ContainingAssembly)
-                    }).ToImmutableArray()
-                    : ImmutableArray<ErrorTypeModel>.Empty;
+                var errorTypes = ErrorsFrom(typeArgs.Skip(1), symbol);
 
                 // The Id a load-mode mutation is addressed by, when it declares none: this generator
                 // writes it, so it is not on the symbol and every consumer that binds or constructs the
