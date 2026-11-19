@@ -48,6 +48,26 @@ internal abstract partial class CSharpTemplate
         AppendLine();
     }
 
+    /// <summary>
+    ///     A <c>union</c> declaration, for a further part of a C# 15 union the user declared <c>partial</c>: the cases stay on the user's
+    ///     part, so this writes none. The generated code compiles in the consumer's C# 15 compilation, not in the generator's.
+    /// </summary>
+    protected void Union(string unionName, Action body, AccessModifier accessModifier = AccessModifier.Public,
+        ClassModifiers modifiers = default)
+    {
+        if (parent != null)
+        {
+            parent.Union(unionName, body, accessModifier, modifiers);
+            return;
+        }
+
+        var mod = BuildClassModifiers(accessModifier, modifiers);
+
+        AppendLine($"{mod}union {IdentifierHelper.EscapeIfKeyword(unionName)}");
+        Block(body);
+        AppendLine();
+    }
+
     protected void Record(string recordName, Action body, List<MethodParameter>? parameters = null,
         List<string>? interfaces = null, AccessModifier accessModifier = AccessModifier.Public,
         ClassModifiers modifiers = default)

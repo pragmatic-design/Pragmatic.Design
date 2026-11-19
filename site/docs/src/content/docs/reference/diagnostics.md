@@ -22,7 +22,7 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 
 | Range | Owner | Source |
 |-------|-------|--------|
-| `PRAG0001-0099` | Result | [`Pragmatic.Result.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Result/src/Pragmatic.Result.Analyzers/DiagnosticDescriptors.cs) |
+| `PRAG0001-0099` | Result | [`Pragmatic.Result.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Result/src/Pragmatic.Result.Analyzers/DiagnosticDescriptors.cs), [`Features/Result/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Result/Diagnostics/UnionErrorDiagnostics.cs) |
 | `PRAG0100-0199` | Ensure | [`Pragmatic.Ensure.Analyzers`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.Ensure/src/Pragmatic.Ensure.Analyzers/DiagnosticDescriptors.cs) |
 | `PRAG0200-0299` | Validation | [`Features/Validation/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/tree/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Validation/Diagnostics) |
 | `PRAG0300-0399` | Mapping | [`Features/Mapping/Diagnostics/`](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/Pragmatic.SourceGenerator/src/Pragmatic.SourceGenerator/Features/Mapping/Diagnostics/MappingDiagnostics.cs) |
@@ -56,12 +56,14 @@ All of them are visible in the IDE (Rider, Visual Studio, VS Code) and in `dotne
 
 ## Every diagnostic, by ID
 
-### Result: `PRAG0001-0002`
+### Result: `PRAG0001-0004`
 
 | ID | Severity | Meaning and fix |
 |----|----------|-----------------|
 | `PRAG0001` | Warning | `.Value` is read without checking `IsSuccess`, which may throw. Match on the result, or check `IsSuccess` first. |
 | `PRAG0002` | Warning | An error type declares custom properties but is not `partial`, so the generator cannot emit its `WriteExtensions`, and the properties never reach `ProblemDetails`. Add `partial`. |
+| `PRAG0003` | Warning | A C# 15 union implements `IError` and does not write its members, but is not `partial`, so the generator cannot write them. Declare it `partial union`: the generator then delegates every `IError` member to the case the union holds. |
+| `PRAG0004` | Error | A C# 15 union implements `IError`, but one of its cases does not. Every member of the union is delegated to its active case, so each case must be an error: implement `IError` on that case, or remove it from the union. |
 
 ### Ensure: `PRAG0100`
 

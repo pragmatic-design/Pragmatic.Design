@@ -10,21 +10,23 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **493** |
-| Distinct IDs | **493** |
+| Declared descriptors | **495** |
+| Distinct IDs | **495** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
 ## By range
 
-### Result: 2 in use · range `PRAG0001`–`PRAG0099`
+### Result: 4 in use · range `PRAG0001`–`PRAG0099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
 | `PRAG0001` | `UnsafeValueAccess` | Warning | Unsafe Result.Value access |
 | `PRAG0002` | `MissingPartialOnErrorWithCustomProperties` | Warning | Missing 'partial' on error type with custom properties |
+| `PRAG0003` | `UnionErrorNotPartial` | Warning | Union error set is not partial |
+| `PRAG0004` | `UnionErrorCaseNotAnError` | Error | Union error case is not an error |
 
-*First free after the last used:* `PRAG0003`.
+*First free after the last used:* `PRAG0005`.
 
 ### Ensure: 1 in use · range `PRAG0100`–`PRAG0199`
 

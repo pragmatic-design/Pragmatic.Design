@@ -20,6 +20,15 @@
     <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
   </PropertyGroup>
 
+  <!-- C# 15 on net11.0, for a union error set compiled by the real compiler (Unions/, #865). Unions need net11.0's IUnion, so the folder
+       builds there only; net10.0 stays on the repository's C# 14. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <LangVersion>15</LangVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net11.0'">
+    <Compile Remove="Unions\**" />
+  </ItemGroup>
+
   <!-- ASP.NET Core integration testing -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />

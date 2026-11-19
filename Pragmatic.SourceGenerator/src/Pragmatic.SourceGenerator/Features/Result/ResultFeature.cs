@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Pragmatic.SourceGenerator.Core;
+using Pragmatic.SourceGenerator.Features.Result.Diagnostics;
 using Pragmatic.SourceGenerator.Features.Result.Models;
 using Pragmatic.SourceGenerator.Features.Result.Templates;
 using Pragmatic.SourceGenerator.Features.Result.Transforms;
@@ -58,6 +59,7 @@ internal static class ResultFeature
             });
 
         RegisterConverters(context, features);
+        RegisterUnionErrors(context, features);
 
         // One module initializer per concrete error type, filling the two registries that the runtime
         // documents the generator as filling and that nothing actually filled:
@@ -144,6 +146,51 @@ internal static class ResultFeature
 
                 var registration = new ResultConvertersRegistrationTemplate(models, generatedNs);
                 ctx.AddSource(registration.RenderOutput());
+            });
+    }
+
+    /// <summary>
+    ///     The <c>IError</c> members of a C# 15 union error set, and the two diagnostics that say why they cannot be written (#865).
+    /// </summary>
+    /// <remarks>
+    ///     One model per union, not per part: a partial union has several declarations, and each would emit the same hint, which makes
+    ///     Roslyn drop the generator's whole output with a warning (CS8785).
+    /// </remarks>
+    private static void RegisterUnionErrors(
+        IncrementalGeneratorInitializationContext context,
+        IncrementalValueProvider<DetectedFeatures> features)
+    {
+        var unions = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                static (node, _) => UnionErrorTransform.IsCandidate(node),
+                static (ctx, _) => UnionErrorTransform.From(ctx))
+            .Where(static model => model is not null)
+            .Collect()
+            .SelectMany(static (models, _) => models
+                .GroupBy(static m => m!.FullName, StringComparer.Ordinal)
+                .Select(static g => g.First()!)
+                .ToImmutableArray());
+
+        context.RegisterSourceOutputSafe(
+            unions.Combine(features),
+            static (ctx, pair) =>
+            {
+                var (model, detected) = pair;
+                if (!detected.HasResult)
+                    return;
+
+                if (!model.IsPartial && model.LacksRequiredMembers)
+                    ctx.ReportDiagnostic(Diagnostic.Create(UnionErrorDiagnostics.UnionErrorNotPartial, model.Location?.ToLocation(), model.TypeName));
+
+                if (model.IsPartial)
+                {
+                    foreach (var nonError in model.NonErrorCases)
+                        ctx.ReportDiagnostic(Diagnostic.Create(
+                            UnionErrorDiagnostics.UnionErrorCaseNotAnError, model.Location?.ToLocation(), model.TypeName, nonError));
+                }
+
+                if (model.IsEmitted)
+                    ctx.AddSource(new UnionErrorTemplate(model).RenderOutput());
             });
     }
 
