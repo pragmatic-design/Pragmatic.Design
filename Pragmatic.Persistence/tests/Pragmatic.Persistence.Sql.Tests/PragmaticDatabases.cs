@@ -42,8 +42,7 @@ public sealed class PragmaticDatabases : IAsyncLifetime
     {
         _postgres = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
         // SQL Server 2025 with Full-Text, from the SQL suite's Dockerfile: built here too, so this suite does not need that one to have run first.
-        var sqlServerImage = new ImageFromDockerfileBuilder().WithDockerfileDirectory(CommonDirectoryPath.GetProjectDirectory(), "../Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts")
-            .WithName("pragmatic-spike/mssql-fts:2025").WithCleanUp(false).Build();
+        var sqlServerImage = Pragmatic.Persistence.Sql.Core.Tests.MssqlFtsImage.For("../Pragmatic.Persistence.Sql.Core.Tests/docker/mssql-fts");
         await sqlServerImage.CreateAsync();
         _sqlServer = new MsSqlBuilder(sqlServerImage).Build();
         _mySql = new ContainerBuilder("mysql:8.4").WithEnvironment("MYSQL_ROOT_PASSWORD", Password).WithEnvironment("MYSQL_DATABASE", "spike").WithPortBinding(3306, true)

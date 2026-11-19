@@ -60,8 +60,8 @@ public sealed class TestDatabases : IAsyncLifetime
             _postgres = new PostgreSqlBuilder("pgvector/pgvector:pg17").WithCommand("-c", "log_statement=all").Build();
             await _postgres.StartAsync();
             // SQL Server 2025: the VECTOR type and VECTOR_DISTANCE; with the Full-Text component (docker/mssql-fts: the official image lacks it), built
-            // once from the official image and kept under its tag (the layers cached: a later build is a check).
-            var sqlServerImage = new ImageFromDockerfileBuilder().WithDockerfileDirectory(CommonDirectoryPath.GetProjectDirectory(), "docker/mssql-fts").WithName("pragmatic-spike/mssql-fts:2025").WithCleanUp(false).Build();
+            // once per version of its Dockerfile and kept under a tag that names it (MssqlFtsImage).
+            var sqlServerImage = MssqlFtsImage.For("docker/mssql-fts");
             await sqlServerImage.CreateAsync();
             _sqlServer = new MsSqlBuilder(sqlServerImage).Build();
             await _sqlServer.StartAsync();
