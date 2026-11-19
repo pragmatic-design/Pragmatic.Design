@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -78,12 +80,7 @@ public class ApiVersioningTests(PostgresFixture fixture) : IntegrationTestBase(f
         var reservationId = await response.Content.ReadFromJsonAsync<Guid>(JsonOptions);
 
         // Verify discount was applied via DB (TotalAmount = 3 nights * 200 * 0.90 = 540)
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-
-        var reservation = await db.Reservations
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.PersistenceId == reservationId);
+        var reservation = await ReservationAsync(reservationId);
 
         reservation.Should().NotBeNull();
 
@@ -124,12 +121,7 @@ public class ApiVersioningTests(PostgresFixture fixture) : IntegrationTestBase(f
         var reservationId = await response.Content.ReadFromJsonAsync<Guid>(JsonOptions);
 
         // Verify no discount — full price
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-
-        var reservation = await db.Reservations
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.PersistenceId == reservationId);
+        var reservation = await ReservationAsync(reservationId);
 
         reservation.Should().NotBeNull();
 
@@ -258,5 +250,18 @@ public class ApiVersioningTests(PostgresFixture fixture) : IntegrationTestBase(f
         var roomTypeId = roomType.GetProperty("id").GetGuid();
 
         return (guestId, propertyId, roomTypeId);
+    }
+
+    /// <summary>
+    ///     The reservation as stored, through the boundary's repository under the tenant the HTTP client wrote it in: the surface every engine
+    ///     registers (#874).
+    /// </summary>
+    private async Task<Reservation?> ReservationAsync(Guid reservationId)
+    {
+        // Every filter lifted, as the reads it replaces did: outside a request there is no owner to see the row as.
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        using var all = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<Reservation>>().GetByIdAsync(reservationId);
     }
 }

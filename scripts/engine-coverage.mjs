@@ -108,6 +108,7 @@ export function coveragePage(read, suiteFiles) {
   // 3. By design on the documents engine.
   const noNavModules = modules.filter(([, a]) => isNoNavigation(a.reason)).map(([path]) => path).sort();
   const noNavTests = tests.filter(([, a]) => a.reason === SUITE_REASONS.NO_NAVIGATION);
+  const noNavFiles = files.filter(([, a]) => a.reason === SUITE_REASONS.NO_NAVIGATION).map(([path]) => path).sort();
   const byFile = new Map();
   for (const [name, a] of noNavTests) byFile.set(a.file, [...(byFile.get(a.file) ?? []), name.split('.').pop()]);
   add(
@@ -116,7 +117,7 @@ export function coveragePage(read, suiteFiles) {
     '',
     'A document keeps a relation as the related row\'s key (#479), so the documents engine refuses a `[LoadEntity]` with an `Include`',
     '(PRAG3111) and a write that cascades through a navigation (PRAG3112). The module files that need them are left out there, and the',
-    `suite's tests that call them: **${noNavTests.length} single tests** in ${byFile.size} files.`,
+    `suite's tests that call them: **${noNavTests.length} single tests** in ${byFile.size} files, and ${noNavFiles.length} files whole.`,
     '',
     '| Module file | Refused as |',
     '|---|---|',
@@ -125,6 +126,7 @@ export function coveragePage(read, suiteFiles) {
     '| Suite file | Single tests left out |',
     '|---|---|',
     ...[...byFile].sort(([a], [b]) => a.localeCompare(b)).map(([path, methods]) => `| \`${suitePath(path)}\` | ${methods.length} |`),
+    ...noNavFiles.map((path) => `| \`${suitePath(path)}\` | the whole file, ${methodsOf(path)} test methods |`),
   );
 
   // Real gaps: what a measurement of kind 1 found missing, each with the issue that implements it.
@@ -153,8 +155,9 @@ export function coveragePage(read, suiteFiles) {
   // The smaller kinds.
   const best = tests.filter(([, a]) => a.reason === SUITE_REASONS.LIMIT_BEST_EFFORT);
   const provider = files.filter(([, a]) => a.reason === SUITE_REASONS.EF_PROVIDER).sort(([x], [y]) => x.localeCompare(y));
+  const copyNamespace = files.filter(([, a]) => a.reason === SUITE_REASONS.COPY_NAMESPACE).sort(([x], [y]) => x.localeCompare(y));
   const onSql = files.filter(([, a]) => a.reason === SUITE_REASONS.TEST_ON_SQL).map(([path]) => path).sort();
-  const replaced = files.filter(([, a]) => a.reason === SUITE_REASONS.REPLACED || a.reason === SUITE_REASONS.REPLACED_FIXTURE);
+  const replaced = files.filter(([, a]) => [SUITE_REASONS.REPLACED, SUITE_REASONS.REPLACED_FIXTURE, SUITE_REASONS.REPLACED_ROWS].includes(a.reason));
   const wiring = modules.filter(([, a]) => a.reason === PROJECT_REASONS.HOST_WIRING).map(([path]) => path);
   add(
     '',
@@ -168,6 +171,10 @@ export function coveragePage(read, suiteFiles) {
     '**The test is of a mechanism of the EF Core provider**, which the engines do not have by construction:',
     '',
     ...provider.map(([path, a]) => `- \`${suitePath(path)}\` (${engines(a.engines)}), ${methodsOf(path)} test methods`),
+    '',
+    '**The test names a type the generator puts in the assembly\'s namespace**, and an engine copy of a module is another assembly:',
+    '',
+    ...copyNamespace.map(([path, a]) => `- \`${suitePath(path)}\` (${engines(a.engines)}), ${methodsOf(path)} test methods`),
     '',
     '**The test reads or migrates PostgreSQL itself**, and the documents host has none:',
     '',

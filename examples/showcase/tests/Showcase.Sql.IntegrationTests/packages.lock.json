@@ -691,6 +691,13 @@
           "Pragmatic.Result": "[1.0.0, )"
         }
       },
+      "pragmatic.client": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
+        }
+      },
       "pragmatic.comments": {
         "type": "Project",
         "dependencies": {
@@ -1299,6 +1306,14 @@
           "Pragmatic.Temporal": "[1.0.0, )",
           "Pragmatic.Validation": "[1.0.0, )",
           "Showcase.Booking.Sql": "[1.0.0, )"
+        }
+      },
+      "showcase.blazorclient": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Client": "[1.0.0, )",
+          "Pragmatic.Result": "[1.0.0, )"
         }
       },
       "showcase.booking.sql": {

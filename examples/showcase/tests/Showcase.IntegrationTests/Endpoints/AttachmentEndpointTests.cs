@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Jobs;
 using Pragmatic.Storage;
@@ -153,14 +152,7 @@ public class AttachmentEndpointTests(PostgresFixture fixture) : IntegrationTestB
         var recentUri = ToUri(await StorageUriOf(recentId));
 
         // Backdate one of the two past the 30-day window declared on the entity.
-        using (var scope = Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-            var row = await db.Set<ReservationAttachment>().IgnoreQueryFilters()
-                .SingleAsync(a => a.Id == expiredId);
-            row.DeletedAt = DateTimeOffset.UtcNow.AddDays(-60);
-            await db.SaveChangesAsync();
-        }
+        await BackdateTheDeletionAsync(expiredId, DateTimeOffset.UtcNow.AddDays(-60));
 
         using (var scope = Services.CreateScope())
         {
@@ -175,17 +167,8 @@ public class AttachmentEndpointTests(PostgresFixture fixture) : IntegrationTestB
         (await storage.ExistsAsync(expiredUri)).Should().BeFalse("the blob past the window is reclaimed");
         (await storage.ExistsAsync(recentUri)).Should().BeTrue("a fresh soft delete stays restorable");
 
-        using (var scope = Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-            var rows = await db.Set<ReservationAttachment>().IgnoreQueryFilters()
-                .Where(a => a.ReservationId == reservationId)
-                .Select(a => a.Id)
-                .ToListAsync();
-
-            rows.Should().NotContain(expiredId, "the row goes only after its blob");
-            rows.Should().Contain(recentId);
-        }
+        (await AttachmentRowAsync(expiredId)).Should().BeNull("the row goes only after its blob");
+        (await AttachmentRowAsync(recentId)).Should().NotBeNull();
     }
 
     [Fact]
@@ -398,26 +381,23 @@ public class AttachmentEndpointTests(PostgresFixture fixture) : IntegrationTestB
     /// </summary>
     private async Task<string> StorageUriOf(Guid attachmentId)
     {
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        return await db.Set<ReservationAttachment>()
-            .IgnoreQueryFilters()
-            .Where(a => a.Id == attachmentId)
-            .Select(a => a.StorageUri)
-            .SingleAsync();
+        var row = await AttachmentRowAsync(attachmentId) ?? throw new InvalidOperationException($"no attachment {attachmentId}");
+        return row.StorageUri;
     }
 
     /// <summary>The derived file's address, read the same way and for the same reason.</summary>
     private async Task<string?> ThumbnailUriOf(Guid attachmentId)
     {
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        return await db.Set<ReservationAttachment>()
-            .IgnoreQueryFilters()
-            .Where(a => a.Id == attachmentId)
-            .Select(a => a.ThumbnailUri)
-            .SingleAsync();
+        var row = await AttachmentRowAsync(attachmentId) ?? throw new InvalidOperationException($"no attachment {attachmentId}");
+        return row.ThumbnailUri;
     }
+
+    /// <summary>An attachment row by its key, deleted or not: each suite reads it through what its engine registers (#874).</summary>
+    private Task<ReservationAttachment?> AttachmentRowAsync(Guid attachmentId) => AttachmentRows.FindAsync(Services, attachmentId);
+
+    /// <summary>Moves a soft-deleted attachment's deletion back to <paramref name="deletedAt" />.</summary>
+    private Task BackdateTheDeletionAsync(Guid attachmentId, DateTimeOffset deletedAt)
+        => AttachmentRows.BackdateTheDeletionAsync(Services, attachmentId, deletedAt);
 
     /// <summary>
     ///     A real PNG, larger than the 200-square bound the entity declares.
@@ -485,14 +465,7 @@ public class AttachmentEndpointTests(PostgresFixture fixture) : IntegrationTestB
 
         await DeleteAsync(AttachmentUrl(reservationId, attachmentId));
 
-        using (var scope = Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-            var row = await db.Set<ReservationAttachment>().IgnoreQueryFilters()
-                .SingleAsync(a => a.Id == attachmentId);
-            row.DeletedAt = DateTimeOffset.UtcNow.AddDays(-60);
-            await db.SaveChangesAsync();
-        }
+        await BackdateTheDeletionAsync(attachmentId, DateTimeOffset.UtcNow.AddDays(-60));
 
         using (var scope = Services.CreateScope())
         {

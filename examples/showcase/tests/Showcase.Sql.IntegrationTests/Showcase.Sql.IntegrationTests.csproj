@@ -30,6 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Replaced, not left out: an attachment row read and backdated through the repository (AttachmentRows.cs beside this project), since
+         EF Core's copy reads through its DbContext: EF Core registers no repository for a trait's entity (#888). -->
+    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\AttachmentRows.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- EF Core only (#363): the grids and the amenity count read through an IQueryable, and the module projects leave them out on the
          engines. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
@@ -47,11 +53,7 @@
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\GuestPreferencesAreSetAndThenChangedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\ApiVersioningTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AttachmentEndpointTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\GeneratedClientTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceAsAPdfTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TypedClientTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\AuditedE2ETests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\CrudLifecycleTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\GeneratedValueTests.cs" />
@@ -76,6 +78,8 @@
     <ProjectReference Include="..\..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Testing\Pragmatic.Notifications.Testing.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing\Pragmatic.Testing.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Testing\src\Pragmatic.Testing.SourceGenerator\Pragmatic.Testing.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- The generated typed client, exercised against this engine's host by GeneratedClientTests (#874). -->
+    <ProjectReference Include="..\..\src\Showcase.BlazorClient\Showcase.BlazorClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -105,6 +109,11 @@
   <ItemGroup>
     <!-- Test code bound to EF Core: the status a saga ends in is read from EF Core's tables, since ISagaRepository has no read of it (#884). -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\SagaPersistenceTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Names a type the generator puts in the assembly's namespace (Showcase.Booking.ApiRoutes): an engine copy is another assembly, so it does not compile here. Not a gap. -->
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\ApiRoutesConstantsTests.cs" />
   </ItemGroup>
 
 </Project>

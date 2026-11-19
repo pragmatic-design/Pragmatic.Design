@@ -35,13 +35,16 @@ export function engineOf(path) {
 
 const REPLACED = 'replaced by the engine suite\'s own file: the engine host takes its content root and connection strings differently';
 const REPLACED_FIXTURE = 'replaced by the engine suite\'s own fixture, under the name every test takes';
+const REPLACED_ROWS = 'replaced by the engine suites\' own file: it reads through EF Core\'s DbContext what the engines read through the repository';
 const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects leave out on the engines';
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
 const TEST_ON_SQL = 'test code bound to the SQL database: the test reads or migrates PostgreSQL itself, and the documents host has none';
 const EF_PROVIDER = 'the EF Core provider\'s own mechanism, which the engines do not have by construction: the test is of that mechanism, '
   + 'not of a feature';
-const LIMIT_BEST_EFFORT ='a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
+const COPY_NAMESPACE = 'names a type the generator puts in the assembly\'s namespace: an engine copy is another assembly (Showcase.Booking.Sql), '
+  + 'so the same type has another name there; not a gap';
+const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
   + 'with no serializable transaction, so concurrent adds can cross it';
 
 /**
@@ -50,10 +53,10 @@ const LIMIT_BEST_EFFORT ='a per-entity limit is best effort on the documents eng
  */
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
-const NO_QUERY_CACHE =`${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
+const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS,EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -63,8 +66,14 @@ const catalog = (path) => `examples/showcase/src/Showcase.Catalog/${path}`;
 export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Infrastructure/ShowcaseWebFactory.cs')]: { engines: both, reason: REPLACED },
   [s('Infrastructure/PostgresFixture.cs')]: { engines: ['Documents'], reason: REPLACED_FIXTURE },
+  // Read through EF Core's DbContext, since EF Core registers no repository for a trait's entity (#888); the engines' copy reads through it.
+  [s('Infrastructure/AttachmentRows.cs')]: { engines: both, reason: REPLACED_ROWS },
 
   [s('Endpoints/GridSearchTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')] },
+  // GET /api/invoices/{id}/pdf is DownloadInvoicePdfAction, which loads the invoice with its lines: refused on the documents engine (#874).
+  [s('Endpoints/TheInvoiceAsAPdfTests.cs')]: {
+    engines: ['Documents'], reason: NO_NAVIGATION, follows: ['examples/showcase/src/Showcase.Billing/Invoices/Actions/DownloadInvoicePdfAction.cs'],
+  },
   // POST /api/amenities/{id}/touch is CountAmenitiesAction, which injects the boundary's DbContext and counts through its entity set (#873).
   [s('CrossCutting/BoundaryKeyedServicesTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Amenities/Actions/CountAmenitiesAction.cs')] },
   [s('Endpoints/TheGridInItsOwnFormatTests.cs')]: {
@@ -81,6 +90,10 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // A DTO's projection, composed onto an IQueryable and translated to SQL through EF Core's value converter. The rest of the localized
   // field's round trip, in LocalizedFieldTests, runs on the engines.
   [s('CrossCutting/LocalizedFieldProjectionTests.cs')]: { engines: both, reason: EF_PROVIDER },
+
+  // The route constants by their full name, Showcase.Booking.ApiRoutes: on an engine copy the generator names them after that assembly, and
+  // the file would not compile there. The typed client tests, in TypedClientTests, run on the engines.
+  [s('Endpoints/ApiRoutesConstantsTests.cs')]: { engines: both, reason: COPY_NAMESPACE },
 
   // The lookup cache, measured missing on both engines by InfrastructureTests (#873). These two exercise it whole: filled at startup,
   // and reloaded by a write.
@@ -99,12 +112,10 @@ export const ALLOWED_FILE_EXCLUSIONS = {
     'DomainActions/CommitCountTests.cs',
     'DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs',
     'DomainActions/SharedDatabaseTransactionTests.cs',
+    // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
-    'Endpoints/ApiVersioningTests.cs',
-    'Endpoints/AttachmentEndpointTests.cs',
-    'Endpoints/GeneratedClientTests.cs',
-    'Endpoints/TheInvoiceAsAPdfTests.cs',
-    'Endpoints/TypedClientTests.cs',
+    // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
+    'Endpoints/TheInvoiceInTheGuestsLanguageTests.cs',
     'EntityPersistence/AuditedE2ETests.cs',
     'EntityPersistence/CrudLifecycleTests.cs',
     'EntityPersistence/GeneratedValueTests.cs',
