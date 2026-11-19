@@ -16,7 +16,7 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
 | Sql | **523** | 670 | 36 | 2 |
-| Documents | **469** | 670 | 40 | 39 |
+| Documents | **470** | 670 | 40 | 38 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -113,10 +113,6 @@ suite's tests that call them: **35 single tests** in 19 files.
 
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
-
-**the documents engine snapshots a localized field by reference, so a change in place is not seen (#883)**
-
-- `CrossCutting/LocalizedFieldTests.cs`: `ATranslationAddedInPlace_IsSaved` (Documents)
 
 **the engines have no [Lookup] cache (#881)**
 

@@ -50,7 +50,6 @@ const LIMIT_BEST_EFFORT ='a per-entity limit is best effort on the documents eng
  */
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
-const SNAPSHOT_BY_REFERENCE = `${REAL_GAP}the documents engine snapshots a localized field by reference, so a change in place is not seen (#883)`;
 const NO_QUERY_CACHE =`${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
@@ -182,11 +181,6 @@ export const ALLOWED_TEST_EXCLUSIONS = {
   // The one caching test only a cache can pass: on the engines the read goes to the database (#882). The five others run there.
   [test('CrossCutting/CachingIntegrationTests.cs', 'CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase')]: {
     file: s('CrossCutting/CachingIntegrationTests.cs'), engines: both, reason: NO_QUERY_CACHE,
-  },
-
-  // A translation added in place is not saved on the documents engine (#883). The three other tests of the file run there.
-  [test('CrossCutting/LocalizedFieldTests.cs', 'ATranslationAddedInPlace_IsSaved')]: {
-    file: s('CrossCutting/LocalizedFieldTests.cs'), engines: ['Documents'], reason: SNAPSHOT_BY_REFERENCE,
   },
 
   // Six racers for a guest's last tag slot: on the documents engine more than one can take it, as decided. The sequential limit and the
