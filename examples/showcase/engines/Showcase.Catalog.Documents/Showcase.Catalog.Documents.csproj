@@ -50,6 +50,9 @@
     <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Storage\src\Pragmatic.Storage\Pragmatic.Storage.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Patch\src\Pragmatic.Patch\Pragmatic.Patch.csproj" />
+    <!-- [Audited] on this engine (Amenity): the generated Add{Boundary}Persistence registers the save phase that writes the trail only
+         where the boundary's project sees it. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Audit\src\Pragmatic.Audit.Engines\Pragmatic.Audit.Engines.csproj" />
   </ItemGroup>
 
   <ItemGroup>

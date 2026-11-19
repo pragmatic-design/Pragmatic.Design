@@ -15,12 +15,12 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **554** | 670 | 34 | 2 |
-| Documents | **499** | 670 | 39 | 38 |
+| Sql | **590** | 670 | 27 | 3 |
+| Documents | **530** | 670 | 33 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**22 test files, 90 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
+**13 test files, 47 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -35,15 +35,6 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 | `DomainActions/SharedDatabaseTransactionTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
 | `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
-| `EntityPersistence/AuditedE2ETests.cs` | 1 |
-| `EntityPersistence/CrudLifecycleTests.cs` | 8 |
-| `EntityPersistence/GeneratedValueTests.cs` | 4 |
-| `EntityPersistence/InheritanceTests.cs` | 7 |
-| `EntityPersistence/PrimitiveCollectionTests.cs` | 4 |
-| `EntityPersistence/SoftDeleteTests.cs` | 7 |
-| `EntityPersistence/TemporalRelationTests.cs` | 9 |
-| `EntityPersistence/TheTimelineOfARoleTests.cs` | 2 |
-| `EntityPersistence/ValueObjectE2ETests.cs` | 1 |
 | `Jobs/JobExecutionEndToEndTests.cs` | 2 |
 | `Jobs/JobLeaseIntegrationTests.cs` | 19 |
 | `Jobs/JobsDbContext.cs` | 0 |
@@ -73,7 +64,7 @@ here, is the owner's decision, per feature (#819).
 
 A document keeps a relation as the related row's key (#479), so the documents engine refuses a `[LoadEntity]` with an `Include`
 (PRAG3111) and a write that cascades through a navigation (PRAG3112). The module files that need them are left out there, and the
-suite's tests that call them: **35 single tests** in 19 files, and 1 files whole.
+suite's tests that call them: **38 single tests** in 20 files, and 1 files whole.
 
 | Module file | Refused as |
 |---|---|
@@ -102,6 +93,7 @@ suite's tests that call them: **35 single tests** in 19 files, and 1 files whole
 | `Endpoints/AutoIncludeTests.cs` | 1 |
 | `Endpoints/EndpointFeatureTests.cs` | 1 |
 | `EntityPersistence/AdvancedEntityTests.cs` | 4 |
+| `EntityPersistence/SoftDeleteTests.cs` | 3 |
 | `EntityPersistence/StateMachineTests.cs` | 5 |
 | `Queries/VisibilityRuleTests.cs` | 1 |
 | `Endpoints/TheInvoiceAsAPdfTests.cs` | the whole file, 2 test methods |
@@ -111,11 +103,24 @@ suite's tests that call them: **35 single tests** in 19 files, and 1 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
+**[GenerateTimeline] is generated on EF Core only, as an extension of the DbContext (#898)**
+
+- `EntityPersistence/TheTimelineOfARoleTests.cs` (both), 2 test methods
+
+**the documents engine's store does not refuse a second open stretch or an inverted one (#900)**
+
+- `EntityPersistence/TemporalRelationTests.cs`: `ASecondOpenStretch_IsRefusedByTheDatabase_EvenOutsideAMutation` (Documents)
+- `EntityPersistence/TemporalRelationTests.cs`: `AStretchEndingBeforeItBegins_IsRefusedByTheDatabase` (Documents)
+
 **the engines have no [Lookup] cache (#881)**
 
 - `CrossCutting/ALookupWriteReloadsTheCacheTests.cs` (both), 3 test methods
 - `CrossCutting/LookupCacheTests.cs` (both), 4 test methods
 - `CrossCutting/InfrastructureTests.cs`: `LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered` (both)
+
+**the engines have no point-in-time read or auto-close of a temporal relation, only IQueryable extensions (#899)**
+
+- `EntityPersistence/TemporalQueryExtensionsTests.cs` (both), 4 test methods
 
 **the engines read a [Cacheable] query past its cache (#882)**
 
@@ -139,9 +144,15 @@ no serializable transaction, so concurrent adds can cross it.
 
 - `Endpoints/ApiRoutesConstantsTests.cs` (both), 1 test methods
 
+**The test calls a bulk write itself**, which the Sql engine compiles where it is called, and the test assembly is not one its
+generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.Persistence.Sql.Tests`:
+
+- `EntityPersistence/SoftDeleteTests.cs`: `BulkDeleteThroughTheRepository_InsideASuspendedScope_DeletesTheRow` (Sql)
+
 **The test reads or migrates PostgreSQL itself**, and the documents host has none:
 
 - `EntityPersistence/OneToOneUniquenessTests.cs` (Documents), 2 test methods
+- `EntityPersistence/TheFeeHierarchyIsOneTableTests.cs` (Documents), 1 test methods
 - `Migrations/MigrationPipelineTests.cs` (Documents), 9 test methods
 - `Migrations/MigrationRunnerE2ETests.cs` (Documents), 6 test methods
 

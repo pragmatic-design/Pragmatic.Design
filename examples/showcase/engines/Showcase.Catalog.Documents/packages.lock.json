@@ -29,6 +29,19 @@
           "Pragmatic.Validation": "[1.0.0, )"
         }
       },
+      "pragmatic.audit": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Redaction": "[1.0.0, )"
+        }
+      },
+      "pragmatic.audit.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Audit": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
       "pragmatic.authorization": {
         "type": "Project",
         "dependencies": {
@@ -130,6 +143,12 @@
       },
       "pragmatic.persistence.expressions": {
         "type": "Project"
+      },
+      "pragmatic.redaction": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )"
+        }
       },
       "pragmatic.result": {
         "type": "Project",

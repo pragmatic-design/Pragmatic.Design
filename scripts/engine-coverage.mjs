@@ -156,6 +156,7 @@ export function coveragePage(read, suiteFiles) {
   const best = tests.filter(([, a]) => a.reason === SUITE_REASONS.LIMIT_BEST_EFFORT);
   const provider = files.filter(([, a]) => a.reason === SUITE_REASONS.EF_PROVIDER).sort(([x], [y]) => x.localeCompare(y));
   const copyNamespace = files.filter(([, a]) => a.reason === SUITE_REASONS.COPY_NAMESPACE).sort(([x], [y]) => x.localeCompare(y));
+  const compiledAtCall = tests.filter(([, a]) => a.reason === SUITE_REASONS.COMPILED_AT_CALL);
   const onSql = files.filter(([, a]) => a.reason === SUITE_REASONS.TEST_ON_SQL).map(([path]) => path).sort();
   const replaced = files.filter(([, a]) => [SUITE_REASONS.REPLACED, SUITE_REASONS.REPLACED_FIXTURE, SUITE_REASONS.REPLACED_ROWS].includes(a.reason));
   const wiring = modules.filter(([, a]) => a.reason === PROJECT_REASONS.HOST_WIRING).map(([path]) => path);
@@ -175,6 +176,11 @@ export function coveragePage(read, suiteFiles) {
     '**The test names a type the generator puts in the assembly\'s namespace**, and an engine copy of a module is another assembly:',
     '',
     ...copyNamespace.map(([path, a]) => `- \`${suitePath(path)}\` (${engines(a.engines)}), ${methodsOf(path)} test methods`),
+    '',
+    '**The test calls a bulk write itself**, which the Sql engine compiles where it is called, and the test assembly is not one its',
+    'generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.Persistence.Sql.Tests`:',
+    '',
+    ...compiledAtCall.map(([name, a]) => `- \`${suitePath(a.file)}\`: \`${name.split('.').pop()}\` (${engines(a.engines)})`),
     '',
     '**The test reads or migrates PostgreSQL itself**, and the documents host has none:',
     '',

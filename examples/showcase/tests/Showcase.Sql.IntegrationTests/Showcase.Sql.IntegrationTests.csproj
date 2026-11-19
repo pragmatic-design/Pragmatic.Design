@@ -54,15 +54,6 @@
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\AuditedE2ETests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\CrudLifecycleTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\GeneratedValueTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\InheritanceTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\PrimitiveCollectionTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\SoftDeleteTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalRelationTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TheTimelineOfARoleTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\ValueObjectE2ETests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobExecutionEndToEndTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobLeaseIntegrationTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobsDbContext.cs" />
@@ -94,6 +85,13 @@
     <!-- A real gap (#881): the engines have no [Lookup] cache. These two exercise it whole, filled at startup and reloaded by a write. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ALookupWriteReloadsTheCacheTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LookupCacheTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Real gaps (#898, #899): [GenerateTimeline] is generated on EF Core only, as an extension of the DbContext; and a temporal
+         relation's point-in-time read and auto-close exist only as IQueryable extensions, which the engines do not serve. -->
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalQueryExtensionsTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TheTimelineOfARoleTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

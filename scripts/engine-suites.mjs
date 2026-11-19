@@ -46,6 +46,8 @@ const COPY_NAMESPACE = 'names a type the generator puts in the assembly\'s names
   + 'so the same type has another name there; not a gap';
 const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
   + 'with no serializable transaction, so concurrent adds can cross it';
+const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine compiles one where it is called, and the test assembly is not one its '
+  + 'generator runs on; the bulk write is tested where it is compiled (Pragmatic.Persistence.Sql.Tests, BulkWritesTests), not a gap';
 
 /**
  * A real gap a measurement found (#819): the feature is missing on the engine, and the issue named implements it there. The exclusion goes
@@ -54,9 +56,12 @@ const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents en
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
 const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
+const NO_TIMELINE = `${REAL_GAP}[GenerateTimeline] is generated on EF Core only, as an extension of the DbContext (#898)`;
+const NO_TEMPORAL_AT = `${REAL_GAP}the engines have no point-in-time read or auto-close of a temporal relation, only IQueryable extensions (#899)`;
+const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does not refuse a second open stretch or an inverted one (#900)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS,EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS,EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -100,7 +105,14 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
   [s('CrossCutting/LookupCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
 
+  // Measured by #875. The timeline is read through BookingDbContext.GetTimeline(), which exists on EF Core only; its preparation goes
+  // through the repository. The temporal query extensions compose onto an IQueryable; the history scope, the constraints and the
+  // database's refusals, in TemporalRelationTests, run on the engines.
+  [s('EntityPersistence/TheTimelineOfARoleTests.cs')]: { engines: both, reason: NO_TIMELINE },
+  [s('EntityPersistence/TemporalQueryExtensionsTests.cs')]: { engines: both, reason: NO_TEMPORAL_AT },
+
   [s('EntityPersistence/OneToOneUniquenessTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
+  [s('EntityPersistence/TheFeeHierarchyIsOneTableTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationPipelineTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationRunnerE2ETests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
 
@@ -116,15 +128,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
     // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
     'Endpoints/TheInvoiceInTheGuestsLanguageTests.cs',
-    'EntityPersistence/AuditedE2ETests.cs',
-    'EntityPersistence/CrudLifecycleTests.cs',
-    'EntityPersistence/GeneratedValueTests.cs',
-    'EntityPersistence/InheritanceTests.cs',
-    'EntityPersistence/PrimitiveCollectionTests.cs',
-    'EntityPersistence/SoftDeleteTests.cs',
-    'EntityPersistence/TemporalRelationTests.cs',
-    'EntityPersistence/TheTimelineOfARoleTests.cs',
-    'EntityPersistence/ValueObjectE2ETests.cs',
     'Jobs/JobExecutionEndToEndTests.cs',
     'Jobs/JobLeaseIntegrationTests.cs',
     'Jobs/JobsDbContext.cs',
@@ -177,6 +180,26 @@ export const ALLOWED_TEST_EXCLUSIONS = {
   [test('CrossCutting/TenantMutationIsolationTests.cs', 'RestoreProperty_CrossTenant_CannotRestoreAnotherTenantsSoftDeletedRow')]: {
     ...deletesAProperty('CrossCutting/TenantMutationIsolationTests.cs'),
     follows: [catalog('Properties/Mutations/DeletePropertyMutation.cs'), catalog('Properties/Mutations/RestorePropertyMutation.cs')],
+  },
+  [test('EntityPersistence/SoftDeleteTests.cs', 'DeleteProperty_SetsIsDeletedTrue')]: deletesAProperty('EntityPersistence/SoftDeleteTests.cs'),
+  [test('EntityPersistence/SoftDeleteTests.cs', 'DeletedProperty_NotVisibleInSearch')]: deletesAProperty('EntityPersistence/SoftDeleteTests.cs'),
+  [test('EntityPersistence/SoftDeleteTests.cs', 'RestoreProperty_ResetsDeletedFields_VisibleAgain')]: {
+    ...deletesAProperty('EntityPersistence/SoftDeleteTests.cs'),
+    follows: [catalog('Properties/Mutations/DeletePropertyMutation.cs'), catalog('Properties/Mutations/RestorePropertyMutation.cs')],
+  },
+
+  // The repository's own delete, in and out of SoftDeleteScope.Suspend(), runs on both engines; its bulk form, on the documents one.
+  [test('EntityPersistence/SoftDeleteTests.cs', 'BulkDeleteThroughTheRepository_InsideASuspendedScope_DeletesTheRow')]: {
+    file: s('EntityPersistence/SoftDeleteTests.cs'), engines: ['Sql'], reason: COMPILED_AT_CALL,
+  },
+
+  // Written through the repository with no mutation, so only the store can refuse them: the documents engine's does not (#900). The
+  // history scope and the mutation's own check, in the same file, run there.
+  [test('EntityPersistence/TemporalRelationTests.cs', 'ASecondOpenStretch_IsRefusedByTheDatabase_EvenOutsideAMutation')]: {
+    file: s('EntityPersistence/TemporalRelationTests.cs'), engines: ['Documents'], reason: NO_DOC_TEMPORAL_REFUSAL,
+  },
+  [test('EntityPersistence/TemporalRelationTests.cs', 'AStretchEndingBeforeItBegins_IsRefusedByTheDatabase')]: {
+    file: s('EntityPersistence/TemporalRelationTests.cs'), engines: ['Documents'], reason: NO_DOC_TEMPORAL_REFUSAL,
   },
 
   // A room type updated: UpdateRoomTypeMutation, which the documents engine refuses (PRAG3112) and the Catalog project leaves out there.

@@ -1362,6 +1362,7 @@
         "dependencies": {
           "Pragmatic.Abstractions": "[1.0.0, )",
           "Pragmatic.Actions": "[1.0.0, )",
+          "Pragmatic.Audit.Engines": "[1.0.0, )",
           "Pragmatic.Caching": "[1.0.0, )",
           "Pragmatic.Endpoints": "[1.0.0, )",
           "Pragmatic.Endpoints.AspNetCore": "[1.0.0, )",
