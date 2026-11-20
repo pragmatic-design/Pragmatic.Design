@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Persistence.Query.Filters;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
 using Showcase.Booking;
@@ -126,16 +126,21 @@ public class TheTimelineOfARoleTests(PostgresFixture fixture) : IntegrationTestB
     }
 
     /// <remarks>
-    ///     ⚠️ The entry type is <b>nested</b> in the generated extensions class, so a caller names it
-    ///     <c>StaffAssignmentTimelineExtensions.StaffAssignmentTimelineEntry</c>. Nothing says so —
-    ///     inside the generated file the return type is written unqualified and compiles.
+    ///     <para>
+    ///         Through the read repository, the surface every engine generates (#898): EF Core runs its LAG/LEAD CTE, the Sql and
+    ///         documents engines read the periods with the history in and link them per property.
+    ///     </para>
+    ///     <para>
+    ///         ⚠️ The entry type is <b>nested</b> in the generated extensions class, so a caller names it
+    ///         <c>StaffAssignmentTimelineExtensions.StaffAssignmentTimelineEntry</c>. Nothing says so —
+    ///         inside the generated file the return type is written unqualified and compiles.
+    ///     </para>
     /// </remarks>
     private async Task<List<StaffAssignmentTimelineExtensions.StaffAssignmentTimelineEntry>> TimelineAsync()
     {
         using var scope = Services.CreateScope();
 
-        return await scope.ServiceProvider.GetRequiredService<BookingDbContext>()
-            .GetTimeline()
-            .ToListAsync();
+        return await scope.ServiceProvider.GetRequiredService<IReadRepository<StaffAssignment>>()
+            .GetTimelineAsync(scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>());
     }
 }

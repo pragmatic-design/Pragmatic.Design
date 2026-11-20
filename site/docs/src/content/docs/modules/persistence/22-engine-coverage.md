@@ -20,8 +20,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **612** | 672 | 20 | 3 |
-| Documents | **549** | 672 | 28 | 43 |
+| Sql | **614** | 672 | 19 | 3 |
+| Documents | **551** | 672 | 27 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -96,10 +96,6 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
-
-**[GenerateTimeline] is generated on EF Core only, as an extension of the DbContext (#898)**
-
-- `EntityPersistence/TheTimelineOfARoleTests.cs` (both), 2 test methods
 
 **the documents engine's store does not refuse a second open stretch or an inverted one (#900)**
 

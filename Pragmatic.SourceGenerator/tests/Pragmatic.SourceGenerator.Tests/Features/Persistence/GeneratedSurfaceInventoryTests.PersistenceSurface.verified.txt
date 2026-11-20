@@ -4586,6 +4586,7 @@ public partial class TemporalRow
 ## Inventory.TemporalRow.TimelineQuery.g.cs
 public static class TemporalRowTimelineExtensions
     public static IQueryable<TemporalRowTimelineEntry> GetTimeline(this DbContext dbContext)
+    public static Task<List<TemporalRowTimelineEntry>> GetTimelineAsync(this IReadRepository<TemporalRow> repository, IQueryFilterToggle filters, CancellationToken ct = default)
     public sealed record TemporalRowTimelineExtensions.TemporalRowTimelineEntry
         public DateTimeOffset ValidFrom { get; init; }
         public DateTimeOffset? ValidTo { get; init; }

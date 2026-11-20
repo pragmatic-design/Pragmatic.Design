@@ -57,7 +57,6 @@ const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine com
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
 const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
-const NO_TIMELINE = `${REAL_GAP}[GenerateTimeline] is generated on EF Core only, as an extension of the DbContext (#898)`;
 const NO_TEMPORAL_AT = `${REAL_GAP}the engines have no point-in-time read or auto-close of a temporal relation, only IQueryable extensions (#899)`;
 const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does not refuse a second open stretch or an inverted one (#900)`;
 const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
@@ -119,10 +118,8 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
   [s('CrossCutting/LookupCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
 
-  // Measured by #875. The timeline is read through BookingDbContext.GetTimeline(), which exists on EF Core only; its preparation goes
-  // through the repository. The temporal query extensions compose onto an IQueryable; the history scope, the constraints and the
-  // database's refusals, in TemporalRelationTests, run on the engines.
-  [s('EntityPersistence/TheTimelineOfARoleTests.cs')]: { engines: both, reason: NO_TIMELINE },
+  // Measured by #875. The temporal query extensions compose onto an IQueryable; the history scope, the constraints and the database's
+  // refusals, in TemporalRelationTests, run on the engines, and so does the timeline (#898).
   [s('EntityPersistence/TemporalQueryExtensionsTests.cs')]: { engines: both, reason: NO_TEMPORAL_AT },
 
   // Measured by #876. All four exercise EfCoreJobStore itself, through a DbContext of the test's own: what they test is the durable store,
