@@ -20,12 +20,12 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **609** | 670 | 22 | 3 |
-| Documents | **549** | 670 | 28 | 43 |
+| Sql | **612** | 672 | 21 | 3 |
+| Documents | **549** | 672 | 29 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**2 test files, 3 test methods**, left out on both engines because the test itself reads or prepares rows through
+**1 test files, 2 test methods**, left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -33,7 +33,6 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 | File | Test methods |
 |---|---|
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
-| `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
 
 ## 2. EF Core only: read through an IQueryable
 
@@ -57,7 +56,7 @@ here, is the owner's decision, per feature (#819).
 
 A document keeps a relation as the related row's key (#479), so the documents engine refuses a `[LoadEntity]` with an `Include`
 (PRAG3111) and a write that cascades through a navigation (PRAG3112). The module files that need them are left out there, and the
-suite's tests that call them: **38 single tests** in 20 files, and 1 files whole.
+suite's tests that call them: **38 single tests** in 20 files, and 3 files whole.
 
 | Module file | Refused as |
 |---|---|
@@ -90,6 +89,8 @@ suite's tests that call them: **38 single tests** in 20 files, and 1 files whole
 | `EntityPersistence/StateMachineTests.cs` | 5 |
 | `Queries/VisibilityRuleTests.cs` | 1 |
 | `Endpoints/TheInvoiceAsAPdfTests.cs` | the whole file, 2 test methods |
+| `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | the whole file, 1 test methods |
+| `EntityPersistence/ARowReadWithItsNavigationsStaysInsideTheFiltersTests.cs` | the whole file, 2 test methods |
 
 ## 4. Real gaps, each with its issue
 

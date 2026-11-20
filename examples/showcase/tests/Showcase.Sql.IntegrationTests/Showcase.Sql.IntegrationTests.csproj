@@ -54,7 +54,6 @@
          nested repositories, or references a project built over the EF Core modules (the Blazor client, its routes). The
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

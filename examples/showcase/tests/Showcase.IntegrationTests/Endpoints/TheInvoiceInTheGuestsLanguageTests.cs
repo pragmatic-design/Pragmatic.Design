@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Documents.Markup;
 using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
-using Showcase.Billing;
 using Showcase.Billing.Actions;
 using Showcase.Billing.Entities;
 using Showcase.Booking.Dtos;
@@ -16,9 +16,9 @@ namespace Showcase.IntegrationTests.Endpoints;
 ///     The invoice the PDF endpoint renders, composed in the guest's language.
 /// </summary>
 /// <remarks>
-///     It needs the invoice with its line items, and the only read of a row with its navigations that every engine serves does not exist
-///     yet: EF Core does not implement <c>IIncludingReadRepository</c> (#887). So it reads them through EF Core and runs on EF Core only. The
-///     endpoint itself, <see cref="TheInvoiceAsAPdfTests" />, runs on the Sql engine too (#874).
+///     It needs the invoice with its line items, read through <c>IIncludingReadRepository</c>, which EF Core's repository and the Sql
+///     engine's both implement (#887). On the documents engine the action it composes with is left out, as the endpoint is
+///     (<see cref="TheInvoiceAsAPdfTests" />): a document keeps a relation as its key, with no navigation to load.
 /// </remarks>
 public class TheInvoiceInTheGuestsLanguageTests(PostgresFixture fixture) : InvoiceTestsBase(fixture)
 {
@@ -38,11 +38,15 @@ public class TheInvoiceInTheGuestsLanguageTests(PostgresFixture fixture) : Invoi
 
         using var tenant = TenantScope.BeginScope("test-tenant");
         using var scope = Services.CreateScope();
+        // Outside a request no caller holds a scope on the invoice ([HasAccessScopes]): the row filters are lifted, the subject is the
+        // document. That the read stays inside them is ARowReadWithItsNavigationsStaysInsideTheFiltersTests.
+        using var filters = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
 
-        var invoice = await scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BillingBoundary))
-            .Set<Invoice>()
-            .Include(i => i.LineItems)
-            .SingleAsync(i => i.PersistenceId == invoiceId);
+        // The repository is registered as IReadRepository; the including read is the same instance, as the generated loads cast it.
+        var repository = (IIncludingReadRepository<Invoice>)scope.ServiceProvider.GetRequiredService<IReadRepository<Invoice>>();
+        var invoice = await repository.GetByIdIncludingAsync(invoiceId, nameof(Invoice.LineItems));
+        invoice.Should().NotBeNull("the invoice was created in this tenant");
+        invoice!.LineItems.Should().NotBeEmpty("the read loads the navigation it names");
 
         var document = await DownloadInvoicePdfAction.ComposeAsync(
             scope.ServiceProvider.GetRequiredService<IPdxTemplates>(), invoice, guest);

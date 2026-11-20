@@ -63,7 +63,6 @@
          nested repositories, or references a project built over the EF Core modules (the Blazor client, its routes). The
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -126,8 +125,11 @@
 
   <ItemGroup>
     <!-- Refused by the documents engine by design (#479): GET /api/invoices/{id}/pdf is DownloadInvoicePdfAction, which loads the
-         invoice with its lines (PRAG3111) and is left out of Showcase.Billing.Documents. -->
+         invoice with its lines (PRAG3111) and is left out of Showcase.Billing.Documents; the invoice in the guest's language composes
+         with the same action; and the read of an invoice with its lines itself, which every include path is refused on here. -->
+    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\ARowReadWithItsNavigationsStaysInsideTheFiltersTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceAsAPdfTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
   </ItemGroup>
 
 </Project>
