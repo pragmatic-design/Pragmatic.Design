@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Actions.Invoker;
 using Pragmatic.Persistence.Lifecycle;
 using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
+using Showcase.Billing;
 using Showcase.Catalog;
 using Showcase.Catalog.Entities;
 using Showcase.Catalog.Amenities.Actions;
@@ -25,13 +25,30 @@ namespace Showcase.IntegrationTests.DomainActions;
 ///         one call. What matters is how many times it runs.
 ///     </para>
 ///     <para>
-///         Measured by subscribing to the boundary <c>DbContext</c>'s <c>SavingChanges</c> in the same
-///         scope the invokers resolve theirs from, so the count is the database's, not the test's idea
-///         of it.
+///         Measured on the unit of work the invokers resolve in the same scope (<see cref="CommitCounter" />:
+///         the <c>DbContext</c>'s <c>SavingChanges</c> on EF Core, a save phase of the boundary on the
+///         engines), so the count is the save's, not the test's idea of it. The host is this class's
+///         own, because on the engines the counting phase is registered on it.
 ///     </para>
 /// </remarks>
-public class CommitCountTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
+[Collection(IntegrationTestCollection.Name)]
+[Trait("Category", "Integration")]
+public sealed class CommitCountTests(PostgresFixture fixture) : IAsyncLifetime
 {
+    private ShowcaseWebFactory _factory = null!;
+
+    private IServiceProvider Services => _factory.Services;
+
+    public Task InitializeAsync()
+    {
+        _factory = new ShowcaseWebFactory(
+            fixture,
+            extraServices: services => CommitCounter.Register(services, typeof(CatalogBoundary), typeof(BillingBoundary)));
+        return Task.CompletedTask;
+    }
+
+    public async Task DisposeAsync() => await _factory.DisposeAsync().ConfigureAwait(false);
+
     private static string UniquePrefix() => $"CNT{Guid.NewGuid():N}"[..12];
 
     private static CreateAmenityMutation Amenity(string name) =>
@@ -39,15 +56,13 @@ public class CommitCountTests(PostgresFixture fixture) : IntegrationTestBase(fix
 
     /// <summary>
     ///     Runs <paramref name="work" /> in one DI scope and returns how many times that scope's
-    ///     Catalog <c>DbContext</c> committed.
+    ///     Catalog unit of work committed.
     /// </summary>
     private async Task<int> CountCommitsAsync(Func<IServiceProvider, Task> work)
     {
         using var scope = Services.CreateScope();
 
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        var commits = 0;
-        db.SavingChanges += (_, _) => commits++;
+        var commits = CommitCounter.Watch(scope.ServiceProvider, typeof(CatalogBoundary));
 
         // The same internal-call scope the generated CompositeInvoker opens around its steps. Without
         // it a mutation invoked outside a request checks its own [RequirePermission] and returns
@@ -57,7 +72,7 @@ public class CommitCountTests(PostgresFixture fixture) : IntegrationTestBase(fix
         using var internalCall = callContext?.EnterInternalCall();
 
         await work(scope.ServiceProvider);
-        return commits;
+        return commits();
     }
 
     private static Task<Pragmatic.Result.Result<Amenity, Pragmatic.Result.IError>> CreateAsync(
@@ -157,13 +172,8 @@ public class CommitCountTests(PostgresFixture fixture) : IntegrationTestBase(fix
     {
         using var scope = Services.CreateScope();
 
-        var catalog = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        var billing = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(Showcase.Billing.BillingBoundary));
-
-        var catalogCommits = 0;
-        var billingCommits = 0;
-        catalog.SavingChanges += (_, _) => catalogCommits++;
-        billing.SavingChanges += (_, _) => billingCommits++;
+        var catalogCommits = CommitCounter.Watch(scope.ServiceProvider, typeof(CatalogBoundary));
+        var billingCommits = CommitCounter.Watch(scope.ServiceProvider, typeof(BillingBoundary));
 
         var callContext = scope.ServiceProvider.GetService<Pragmatic.Actions.Pipeline.ActionCallContext>();
         using var internalCall = callContext?.EnterInternalCall();
@@ -194,10 +204,10 @@ public class CommitCountTests(PostgresFixture fixture) : IntegrationTestBase(fix
             invoice.IsSuccess.Should().BeTrue(invoice.IsFailure ? invoice.Error.Code : "");
         }
 
-        catalogCommits.Should().Be(0,
+        catalogCommits().Should().Be(0,
             "the batch names Catalog's unit of work, so Catalog defers — and this test deliberately "
             + "never saves it, which is the opener's choice and their responsibility");
-        billingCommits.Should().Be(1,
+        billingCommits().Should().Be(1,
             "Billing is not the unit of work this batch names, so it commits itself. Before the batch "
             + "carried one it was suppressed here and nobody could save it: the row was lost");
     }

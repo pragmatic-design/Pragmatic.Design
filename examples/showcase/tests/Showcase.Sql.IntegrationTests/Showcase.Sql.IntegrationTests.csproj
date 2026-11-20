@@ -36,6 +36,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Replaced, not left out: a boundary's saves counted through a save phase keyed by the boundary (CommitCounter.cs beside this
+         project), since EF Core's copy counts its DbContext's SavingChanges. -->
+    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\CommitCounter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- EF Core only (#363): the grids and the amenity count read through an IQueryable, and the module projects leave them out on the
          engines. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
@@ -49,9 +55,6 @@
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\CommitCountTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\GuestPreferencesAreSetAndThenChangedTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
@@ -103,10 +106,11 @@
     <!-- EF Core's own mechanisms, which the engines do not have by construction: the set [ReadAccess] adds to the reading boundary's
          context (the reader reads through the owner's repository there), and the queryable extension of a declared specification (they
          read through their own query model, not an IQueryable), and a DTO's projection translated to SQL through EF Core's value
-         converter (the same). -->
+         converter (the same); and whether two boundaries' DbContexts share a DbConnection. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationQueryableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldProjectionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ReadAccessSetTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\BoundaryDbConnectionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
