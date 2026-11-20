@@ -103,7 +103,7 @@ public sealed class InMemorySagaRepository<TSaga>(
     public Task<IReadOnlyList<TSaga>> GetActiveAsync(CancellationToken ct = default)
     {
         IReadOnlyList<TSaga> active = _sagas.Values
-            .Where(s => completedAccessor(s) is null)
+            .Where(IsActive)
             .ToList();
 
         return Task.FromResult(active);
@@ -126,7 +126,7 @@ public sealed class InMemorySagaRepository<TSaga>(
         IReadOnlyList<TSaga> due = _timeouts
             .Where(kv => kv.Value <= asOf)
             .Select(kv => _sagas.TryGetValue(kv.Key, out var saga) ? saga : null)
-            .Where(s => s is not null && completedAccessor(s!) is null)
+            .Where(s => s is not null && IsActive(s))
             .Select(s => s!)
             .ToList();
 
@@ -156,6 +156,12 @@ public sealed class InMemorySagaRepository<TSaga>(
         _ended[sagaId] = SagaStatus.Faulted;
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    ///     Not completed and not ended by the orchestrator (timed out, compensated, faulted): what the durable stores read as
+    ///     <c>Status == Active</c> (#909).
+    /// </summary>
+    private bool IsActive(TSaga saga) => completedAccessor(saga) is null && !_ended.ContainsKey(idAccessor(saga));
 
     /// <summary>Total saga count.</summary>
     public int Count => _sagas.Count;
