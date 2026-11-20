@@ -1,34 +1,37 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Pragmatic.Identity;
 using Pragmatic.Actions.Invoker;
 using Pragmatic.Authorization.Management.Actions.Permissions;
 using Pragmatic.Authorization.Management.Entities;
+using Pragmatic.Authorization.Management.Stores;
 using Pragmatic.Result.Http;
 using Pragmatic.Testing.Assertions;
+using Showcase.Accounts;
 using Showcase.IntegrationTests.Infrastructure;
 
 namespace Showcase.IntegrationTests.Authorization;
 
 /// <summary>
-///     An imported package that owns entities gets them mapped into the importing boundary's database.
+///     An imported package that owns entities gets them stored by the importing boundary's engine.
 /// </summary>
 /// <remarks>
 ///     <para>
 ///         ⚠️ <c>Showcase.Accounts</c> declares
-///         <c>[UsePackage&lt;AuthorizationManagementPackage, AccountsBoundary&gt;]</c>, and the six
-///         operations of that package read and write through <c>DbContext.Set&lt;DynamicPermission&gt;()</c>.
-///         Resolving the context is one half; having something to read in it is this. Without the five
-///         entities declared, <c>Set&lt;T&gt;()</c> throws because the type is not in the model —
-///         and the generated schema snapshot shows it first, by not changing at all when the import
+///         <c>[UsePackage&lt;AuthorizationManagementPackage, AccountsBoundary&gt;]</c>, and the package's
+///         operations read and write through <c>IAuthorizationManagementStore</c>, keyed by that boundary:
+///         on EF Core over the boundary's <c>DbContext</c>, on the Sql and documents engines over their own
+///         rows. Resolving the store is one half; having something to read in it is this. On EF Core,
+///         without the entities declared, <c>Set&lt;T&gt;()</c> throws because the type is not in the
+///         model — and the generated schema snapshot shows it first, by not changing at all when the import
 ///         is added.
 ///     </para>
 ///     <para>
 ///         The action is invoked in process rather than over HTTP because it declares no
-///         <c>[Endpoint]</c>: what is being measured is the persistence, not a route.
+///         <c>[Endpoint]</c>: what is being measured is the persistence, not a route. The lengths the
+///         columns are bounded by, which EF Core's model carries, are <c>ThePackagesColumnLengthsTests</c>.
 ///     </para>
 /// </remarks>
 public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
@@ -56,14 +59,13 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
         });
 
         created.IsSuccess.Should().BeTrue(
-            "the action writes through the DbContext of the boundary that imported the package, but it "
+            "the action writes through the store of the boundary that imported the package, but it "
             + $"answered: {(created.IsFailure ? created.Error?.ToString() : "")}");
 
-        var context = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(
-            typeof(Showcase.Accounts.AccountsBoundary));
-
-        var row = await context.Set<DynamicPermission>()
-            .FirstOrDefaultAsync(p => p.PersistenceId == created.Value);
+        // Read in a scope of its own: what comes back is what was stored, not what the action held.
+        using var read = Services.CreateScope();
+        var permissions = await StoreOf(read).GetPermissionsAsync("test-tenant");
+        var row = permissions.FirstOrDefault(p => p.PersistenceId == created.Value);
 
         row.Should().NotBeNull("a create that reports success must leave a row behind");
         row!.Name.Should().Be(name);
@@ -93,26 +95,66 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
     }
 
     /// <summary>
-    ///     A role's name is unique in its tenant in the database, not only in <c>CreateRole</c>'s check, which two concurrent requests
+    ///     A role's name is unique in its tenant in the store, not only in <c>CreateRole</c>'s check, which two concurrent requests
     ///     can both pass (#490): the second row, written past the operation, is refused by the unique index on (Name, TenantId).
     /// </summary>
+    /// <remarks>
+    ///     The two roles have keys of their own (<c>Guid.CreateVersion7()</c>), so a refusal is the index's, not the primary key's. The
+    ///     exception each engine raises is its own, so what is asserted is that the write is refused and one row is left.
+    /// </remarks>
     [Fact]
     public async Task ASecondRoleOfTheSameNameInATenant_IsRefusedByTheDatabase()
     {
         var name = $"auditor-{Guid.NewGuid():N}"[..20];
         var tenant = $"acme-{Guid.NewGuid():N}"[..17];
 
-        using var scope = Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(Showcase.Accounts.AccountsBoundary));
-        context.Set<DynamicRole>().Add(new DynamicRole { Name = name, TenantId = tenant });
-        await context.SaveChangesAsync();
+        using (var scope = Services.CreateScope())
+            await StoreOf(scope).AddRoleAsync(new DynamicRole { Name = name, TenantId = tenant });
 
-        context.Set<DynamicRole>().Add(new DynamicRole { Name = name, TenantId = tenant });
-        var refused = await Record.ExceptionAsync(() => context.SaveChangesAsync());
+        using (var scope = Services.CreateScope())
+        {
+            var refused = await Record.ExceptionAsync(
+                async () => await StoreOf(scope).AddRoleAsync(new DynamicRole { Name = name, TenantId = tenant }));
+            refused.Should().NotBeNull("the unique index on (Name, TenantId) refuses the second row");
+        }
 
-        refused.Should().BeOfType<DbUpdateException>();
-        refused!.InnerException!.Message.Should().Contain("IX_DynamicRoles_Name_TenantId", "the database's unique index refused it");
+        using (var scope = Services.CreateScope())
+        {
+            var roles = await StoreOf(scope).GetRolesAsync(tenant);
+            roles.Where(r => r.Name == name).Should().ContainSingle("the first row stays, and the second was not written");
+        }
     }
+
+    /// <summary>
+    ///     The control: each of the package's entities has somewhere to be read from on the importing boundary's engine, which is what
+    ///     makes a row readable at all.
+    /// </summary>
+    /// <remarks>
+    ///     ⚠️ Without it, "the create succeeded" could be satisfied by an action that swallowed the
+    ///     failure — and the defect being closed here is precisely a type the boundary does not store. Every read of the store is made, so
+    ///     each of the seven sets answers; an unknown one throws.
+    /// </remarks>
+    [Fact]
+    public async Task TheImportingBoundary_StoresEveryOneOfThePackagesEntities()
+    {
+        using var scope = Services.CreateScope();
+        var store = StoreOf(scope);
+        var tenant = $"none-{Guid.NewGuid():N}"[..17];
+        var nobody = $"nobody-{Guid.NewGuid():N}";
+        var nothing = $"nothing-{Guid.NewGuid():N}";
+
+        (await store.GetPermissionsAsync(tenant)).Should().NotBeNull();
+        (await store.GetRolesAsync(tenant)).Should().NotBeNull();
+        (await store.GetRolePermissionsAsync([nothing], tenant)).Should().BeEmpty();
+        (await store.GetUserRolesAsync(nobody, tenant)).Should().BeEmpty();
+        (await store.GetUserGroupsAsync(nobody, tenant)).Should().BeEmpty();
+        (await store.GetGroupsAsync(tenant)).Should().NotBeNull();
+        (await store.GetGroupRolesAsync([nothing], tenant)).Should().BeEmpty();
+    }
+
+    /// <summary>The package's store for the boundary that imported it.</summary>
+    private static IAuthorizationManagementStore StoreOf(IServiceScope scope)
+        => scope.ServiceProvider.GetRequiredKeyedService<IAuthorizationManagementStore>(typeof(AccountsBoundary));
 
     /// <summary>
     ///     Puts an authenticated principal on the scope, so an in-process invocation of a permissioned
@@ -139,50 +181,5 @@ public class ThePackageEntitiesHaveATableTests(PostgresFixture fixture) : Integr
                 RequestServices = scope.ServiceProvider,
                 User = new ClaimsPrincipal(new ClaimsIdentity(claims, "PackageEntitiesTest")),
             };
-    }
-
-    /// <summary>
-    ///     The package's entities declare their column lengths (#590), and EF Core's model of the importing boundary bounds the columns with them.
-    ///     The package's EF Core configurations declared them once and were never applied, then removed (#527): every column was unbounded.
-    /// </summary>
-    [Fact]
-    public void ThePackagesColumns_AreBoundedByTheLengthsTheEntitiesDeclare()
-    {
-        using var scope = Services.CreateScope();
-        var model = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(Showcase.Accounts.AccountsBoundary)).Model;
-        int? Length<T>(string property) => model.FindEntityType(typeof(T))!.FindProperty(property)!.GetMaxLength();
-
-        Length<DynamicRole>(nameof(DynamicRole.Name)).Should().Be(256);
-        Length<DynamicRole>(nameof(DynamicRole.Description)).Should().Be(500);
-        Length<DynamicPermission>(nameof(DynamicPermission.Category)).Should().Be(128);
-        Length<DynamicRolePermission>(nameof(DynamicRolePermission.PermissionName)).Should().Be(256);
-        Length<UserRoleAssignment>(nameof(UserRoleAssignment.AssignedBy)).Should().Be(256);
-        Length<UserGroupAssignment>(nameof(UserGroupAssignment.TenantId)).Should().Be(128);
-        Length<DynamicRole>(nameof(DynamicRole.CreatedBy)).Should().BeNull("the control: an attribution was never bounded");
-    }
-
-    /// <summary>
-    ///     The control: the entity is in the model, which is what makes the row readable at all.
-    /// </summary>
-    /// <remarks>
-    ///     ⚠️ Without it, "the create succeeded" could be satisfied by an action that swallowed the
-    ///     failure — and the defect being closed here is precisely a type the model does not know.
-    /// </remarks>
-    [Fact]
-    public void TheImportingBoundarysModel_KnowsThePackagesEntities()
-    {
-        using var scope = Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(
-            typeof(Showcase.Accounts.AccountsBoundary));
-
-        var mapped = context.Model.GetEntityTypes().Select(e => e.ClrType).ToList();
-
-        mapped.Should().Contain(typeof(DynamicPermission));
-        mapped.Should().Contain(typeof(DynamicRole));
-        mapped.Should().Contain(typeof(DynamicRolePermission));
-        mapped.Should().Contain(typeof(UserRoleAssignment));
-        mapped.Should().Contain(typeof(UserGroupAssignment));
-        mapped.Should().Contain(typeof(DynamicGroup));
-        mapped.Should().Contain(typeof(GroupRoleAssignment));
     }
 }

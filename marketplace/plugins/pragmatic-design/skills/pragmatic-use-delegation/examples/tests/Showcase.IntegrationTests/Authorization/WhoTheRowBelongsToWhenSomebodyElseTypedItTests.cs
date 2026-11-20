@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
-using Showcase.Booking;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -104,15 +105,16 @@ public class WhoTheRowBelongsToWhenSomebodyElseTypedItTests(PostgresFixture fixt
             .Should().Be(HttpStatusCode.OK);
     }
 
-    private async Task<string> StoredOwnerAsync(Guid guestId)
+    /// <summary>The row's owner as stored, read past every row filter, so a row the reader may not see is still answered.</summary>
+    private async Task<string?> StoredOwnerAsync(Guid guestId)
     {
+        using var tenant = TenantScope.BeginScope("test-tenant");
         using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BookingBoundary));
+        using var filters = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
 
-        return await db.Set<Guest>().IgnoreQueryFilters().AsNoTracking()
-            .Where(g => g.PersistenceId == guestId)
-            .Select(g => g.OwnerId)
-            .FirstAsync();
+        var guest = await scope.ServiceProvider.GetRequiredService<IReadRepository<Guest>>().GetByIdAsync(guestId);
+        guest.Should().NotBeNull("the guest was created, so its row is there past the filters");
+        return guest!.OwnerId;
     }
 
     /// <summary>

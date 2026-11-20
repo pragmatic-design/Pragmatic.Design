@@ -103,6 +103,9 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // Whether two boundaries' DbContexts share a DbConnection, which UseTransaction needs. That each boundary has a unit of work of its own,
   // in SharedDatabaseTransactionTests, runs on the engines.
   [s('DomainActions/BoundaryDbConnectionTests.cs')]: { engines: both, reason: EF_PROVIDER },
+  // The column lengths of the RBAC package's entities in EF Core's model of the importing boundary. On the engines the package's rows are
+  // types of its own that declare them; that the entities are stored at all, in ThePackageEntitiesHaveATableTests, runs on the engines.
+  [s('Authorization/ThePackagesColumnLengthsTests.cs')]: { engines: both, reason: EF_PROVIDER },
 
   // The route constants by their full name, Showcase.Booking.ApiRoutes: on an engine copy the generator names them after that assembly, and
   // the file would not compile there. The typed client tests, in TypedClientTests, run on the engines.
@@ -134,16 +137,12 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Migrations/MigrationRunnerE2ETests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
 
   ...Object.fromEntries([
-    'Authorization/ThePackageEntitiesHaveATableTests.cs',
-    'Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs',
     // The status a saga ends in is read from EF Core's tables: ISagaRepository has no read of it on the engines (#884).
     'CrossCutting/SagaPersistenceTests.cs',
     // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
     // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
     'Endpoints/TheInvoiceInTheGuestsLanguageTests.cs',
-    'Queries/SpecificationCompositionTests.cs',
-    'Validation/WhenTheExpensiveRuleRunsTests.cs',
   ].map((path) => [s(path), { engines: both, reason: TEST_ON_EF }])),
 };
 

@@ -53,12 +53,8 @@
     <!-- Test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through a DbContext, EF Core's
          nested repositories, or references a project built over the EF Core modules (the Blazor client, its routes). The
          feature it exercises runs on the engine; the test's own code does not. -->
-    <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Validation\WhenTheExpensiveRuleRunsTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -106,7 +102,9 @@
     <!-- EF Core's own mechanisms, which the engines do not have by construction: the set [ReadAccess] adds to the reading boundary's
          context (the reader reads through the owner's repository there), and the queryable extension of a declared specification (they
          read through their own query model, not an IQueryable), and a DTO's projection translated to SQL through EF Core's value
-         converter (the same); and whether two boundaries' DbContexts share a DbConnection. -->
+         converter (the same); whether two boundaries' DbContexts share a DbConnection; and the column lengths of the RBAC package's
+         entities in EF Core's model (the engines' rows are the package's own types, which declare them). -->
+    <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackagesColumnLengthsTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationQueryableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldProjectionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ReadAccessSetTests.cs" />

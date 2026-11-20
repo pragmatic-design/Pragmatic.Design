@@ -15,6 +15,8 @@
   <!-- Allow test project to access generated internal SetXxx() methods -->
   <ItemGroup>
     <InternalsVisibleTo Include="Showcase.Tests" />
+    <!-- The generated setters: the bound-rule test writes a guest's address past the mutation, which no operation does (#878). -->
+    <InternalsVisibleTo Include="Showcase.IntegrationTests" />
   </ItemGroup>
 
   <!-- Sibling modules -->
