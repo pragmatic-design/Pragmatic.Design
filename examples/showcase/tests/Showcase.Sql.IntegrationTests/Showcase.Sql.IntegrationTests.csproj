@@ -85,8 +85,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- A real gap (#899): a temporal relation's point-in-time read and auto-close exist only as IQueryable extensions, which the
-         engines do not serve. -->
+    <!-- EF Core's own mechanism: a temporal relation's query extensions compose onto an IQueryable, which the engines do not read
+         through. Their repository form (TemporalRepositoryFormTests, #899) runs here. -->
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalQueryExtensionsTests.cs" />
   </ItemGroup>
 

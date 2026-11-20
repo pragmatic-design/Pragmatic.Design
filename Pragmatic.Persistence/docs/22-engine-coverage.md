@@ -15,8 +15,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **614** | 672 | 19 | 3 |
-| Documents | **551** | 672 | 27 | 43 |
+| Sql | **619** | 677 | 19 | 3 |
+| Documents | **556** | 677 | 27 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -110,10 +110,6 @@ its exclusion goes when the issue closes.
 - `CrossCutting/LookupCacheTests.cs` (both), 4 test methods
 - `CrossCutting/InfrastructureTests.cs`: `LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered` (both)
 
-**the engines have no point-in-time read or auto-close of a temporal relation, only IQueryable extensions (#899)**
-
-- `EntityPersistence/TemporalQueryExtensionsTests.cs` (both), 4 test methods
-
 **the engines read a [Cacheable] query past its cache (#882)**
 
 - `CrossCutting/CachingIntegrationTests.cs`: `CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase` (both)
@@ -133,6 +129,7 @@ no serializable transaction, so concurrent adds can cross it.
 - `CrossCutting/LocalizedFieldProjectionTests.cs` (both), 1 test methods
 - `CrossCutting/ReadAccessSetTests.cs` (both), 1 test methods
 - `DomainActions/BoundaryDbConnectionTests.cs` (both), 2 test methods
+- `EntityPersistence/TemporalQueryExtensionsTests.cs` (both), 4 test methods
 
 **The test names a type the generator puts in the assembly's namespace**, and an engine copy of a module is another assembly:
 
