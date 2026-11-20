@@ -90,7 +90,9 @@ public sealed class ContractTestGenerator : IIncrementalGenerator
             else if (notACreateBecause is not null)
                 notACreate[Key(endpoint)] = notACreateBecause;
 
-            if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "TransitionsToAttribute"))
+            // On a create, [TransitionsTo] says the state the record lands in (#917), read by the transitions of its entity; it is not a
+            // transition of a record that exists, and contracted as one it would POST the create's route as if it moved one.
+            if (create is null && type.GetAttributes().Any(a => a.AttributeClass?.Name == "TransitionsToAttribute"))
                 transitionCandidates.Add((type, endpoint));
         }
 

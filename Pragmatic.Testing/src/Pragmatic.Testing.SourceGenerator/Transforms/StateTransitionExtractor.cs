@@ -20,10 +20,14 @@ internal static class StateTransitionExtractor
     private const string TransitionFromAttributeName = "TransitionFromAttribute";
     private const string LoadEntityAttributeName = "LoadEntityAttribute";
 
-    public static StateTransitionModel? Extract(
-        INamedTypeSymbol endpointType,
-        EndpointContractModel endpoint,
-        IReadOnlyList<CrudCreateModel> creates)
+    /// <summary>
+    ///     The state an operation's <c>[TransitionsTo&lt;TState&gt;(X)]</c> names, and its enum fully qualified; nulls when it declares none.
+    ///     On a transition it is the target; on a create, the state the create leaves the entity in (#917).
+    /// </summary>
+    public static (string? State, string? Enum) DeclaredTarget(INamedTypeSymbol endpointType)
+        => Declared(endpointType) is { } declared ? (declared.State, declared.Enum.ToDisplayString()) : (null, null);
+
+    private static (string State, INamedTypeSymbol Enum)? Declared(INamedTypeSymbol endpointType)
     {
         var attr = endpointType.GetAttributes()
             .FirstOrDefault(a => a.AttributeClass?.Name == TransitionsToAttributeName);
@@ -34,8 +38,15 @@ internal static class StateTransitionExtractor
         if (attr.ConstructorArguments.Length < 1)
             return null;
 
-        var targetState = MemberName(stateEnum, attr.ConstructorArguments[0].Value);
-        if (targetState is null)
+        return MemberName(stateEnum, attr.ConstructorArguments[0].Value) is { } state ? (state, stateEnum) : null;
+    }
+
+    public static StateTransitionModel? Extract(
+        INamedTypeSymbol endpointType,
+        EndpointContractModel endpoint,
+        IReadOnlyList<CrudCreateModel> creates)
+    {
+        if (Declared(endpointType) is not var (targetState, stateEnum))
             return null;
 
         // What the operation declares comes first: a base type and an attribute survive into a reference
@@ -59,7 +70,13 @@ internal static class StateTransitionExtractor
         // nothing but its route yields no fields and keeps posting no content.
         var (transitionFields, canSynthesizeTransitionBody) = RequestBodyReader.Read(endpointType, entity, endpoint.Route);
 
-        var initialState = InitialState(stateEnum);
+        // Where the walk starts: the state the create declares it leaves the entity in, when it declares one of this enum (#917), and the
+        // enum's [InitialState] otherwise. A create that moves the record (draft -> submitted in its own body) leaves it elsewhere, and a
+        // walk from [InitialState] then asserts every step on a record in another state.
+        var landing = create is { LandingState: { } landed, LandingStateEnum: { } landedEnum } && landedEnum == stateEnum.ToDisplayString()
+            ? landed
+            : null;
+        var initialState = landing ?? InitialState(stateEnum);
         var legalSources = LegalSources(stateEnum, targetState);
 
         // No create route at all: emit the transition as a skipped placeholder rather than nothing. There is
@@ -86,7 +103,8 @@ internal static class StateTransitionExtractor
             CreateFields = create?.Fields ?? EquatableArray<CrudFieldModel>.Empty,
             TransitionFields = new EquatableArray<CrudFieldModel>(transitionFields),
             CanSynthesizeTransitionBody = canSynthesizeTransitionBody,
-            UngeneratableReason = reason
+            UngeneratableReason = reason,
+            StartsFromTheCreate = landing is not null
         };
     }
 

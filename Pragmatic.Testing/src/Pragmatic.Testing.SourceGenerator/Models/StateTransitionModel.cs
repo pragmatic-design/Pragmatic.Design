@@ -52,7 +52,18 @@ internal sealed record StateTransitionModel
     public string? CreatePermission { get; init; }
 
     public required string TargetState { get; init; }
+
+    /// <summary>
+    ///     The state the arranged entity starts in, which every walk and every "FromInitial" contract starts from: the state its create declares
+    ///     it lands in (<see cref="StartsFromTheCreate" />, #917), or the enum's <c>[InitialState]</c>.
+    /// </summary>
     public required string InitialState { get; init; }
+
+    /// <summary>
+    ///     True when <see cref="InitialState" /> is the create's declared landing state: the entity is then created over HTTP, never asked of
+    ///     <c>ArrangeFor</c>, whose record is in the enum's <c>[InitialState]</c>.
+    /// </summary>
+    public bool StartsFromTheCreate { get; init; }
 
     /// <summary>True when the entity's initial state can legally transition into <see cref="TargetState"/>.</summary>
     public required bool InitialToTargetIsLegal { get; init; }

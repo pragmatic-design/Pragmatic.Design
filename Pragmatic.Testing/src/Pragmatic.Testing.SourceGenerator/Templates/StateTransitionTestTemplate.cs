@@ -118,7 +118,10 @@ internal sealed class StateTransitionTestTemplate : CSharpTemplate
         AppendLine("}");
     }
 
-    /// <summary>Declares <c>id</c>: an entity in its initial state, created over HTTP or arranged by the application.</summary>
+    /// <summary>
+    ///     Declares <c>id</c>: an entity in the state the walk starts from. Arranged by the application when it answers for the entity, created
+    ///     over HTTP otherwise; always created when the create declares the state it lands in.
+    /// </summary>
     private void RenderArrange(StateTransitionModel t, string caller)
     {
         // No create route: the entity comes into being as a consequence of something else, and only the
@@ -129,6 +132,27 @@ internal sealed class StateTransitionTestTemplate : CSharpTemplate
             return;
         }
 
+        // A create whose landing state is declared starts the walk there, and only the create makes a record in it.
+        if (t.StartsFromTheCreate)
+        {
+            RenderCreate(t, caller, "var id = ");
+            return;
+        }
+
+        // The application first (#917): a record it arranges is in the [InitialState] the walk starts from, whatever the create does. A
+        // create that moves the record in its own body (draft -> submitted) leaves it elsewhere, and only the application can say so.
+        AppendLine($"var id = await {Host}.ArrangedAsync(\"{t.EntityName}\", Client);");
+        AppendLine("if (id is null)");
+        AppendLine("{");
+        IncreaseIndent();
+        RenderCreate(t, caller, "id = ");
+        DecreaseIndent();
+        AppendLine("}");
+    }
+
+    /// <summary>Creates the entity over HTTP and assigns its id through <paramref name="assign" /> (<c>var id = </c> or <c>id = </c>).</summary>
+    private void RenderCreate(StateTransitionModel t, string caller, string assign)
+    {
         // ⚠️ Named, and an array: AsUser takes string[]. A bare string in the fourth position bound to no
         // overload, so the first transition contract that stopped being a placeholder failed to compile.
         AppendLine("var body = new");
@@ -152,7 +176,7 @@ internal sealed class StateTransitionTestTemplate : CSharpTemplate
         AppendLine($"{Assert}.ShouldBeSuccess(createResponse);");
 
         // ⚠️ Not "return when there is no location": that is a contract which asserts nothing and passes.
-        AppendLine($"var id = await {Assert}.ShouldIdentifyTheCreatedAsync(createResponse);");
+        AppendLine($"{assign}await {Assert}.ShouldIdentifyTheCreatedAsync(createResponse);");
     }
 
     /// <summary>POSTs <paramref name="t" />'s route for <c>id</c>, as <c>{prefix}Request</c> / <c>{prefix}Response</c>.</summary>

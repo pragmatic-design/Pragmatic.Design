@@ -59,6 +59,15 @@ internal sealed record CrudCreateModel
     ///     </para>
     /// </summary>
     public bool IsDomainActionCreate { get; init; }
+
+    /// <summary>
+    ///     The state the create leaves the entity in, when the create declares it with <c>[TransitionsTo&lt;TState&gt;(X)]</c> (#917): X's
+    ///     member name. Null when it declares none, and the entity is taken to start in its enum's <c>[InitialState]</c>.
+    /// </summary>
+    public string? LandingState { get; init; }
+
+    /// <summary>The state enum <see cref="LandingState" /> belongs to, fully qualified: a transition of another enum does not start there.</summary>
+    public string? LandingStateEnum { get; init; }
 }
 
 /// <summary>A request-body field and the C# expression producing its synthesized value.</summary>

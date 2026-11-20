@@ -262,6 +262,23 @@ PragmaticContractHost.ArrangeFor = async (entity, client) => entity switch
 };
 ```
 
+**`ArrangeFor` is asked first, create route or not.** An entity it answers for starts from the record it
+returns, which is in the enum's `[InitialState]`; `null` keeps the create. This is how an application
+says that its create does not leave the record there: a report submitted as it is created is never a
+draft, and a walk from `Draft` would assert every step on a record in another state.
+
+**A create that declares where it lands is walked from there.** `[TransitionsTo<TState>(X)]` on a
+create says the record it makes is in `X`: the transitions of that entity start from `X`, the create
+is the arrange step, `ArrangeFor` is not asked, and the create gets no transition contract of its own.
+
+```csharp
+[Mutation(Mode = MutationMode.Create)]
+[TransitionsTo<ReportStatus>(ReportStatus.Submitted)]
+public partial class SubmitReportMutation : Mutation<InterventionReport> { … }
+// Revising (Submitted → Draft) is now the 2xx from the initial state; resubmitting is the 409, and its
+// 2xx half revises first.
+```
+
 **The transition posts its own body too**, read from its endpoint exactly as a create's is: every
 public settable member that is not a route token, a `[FromQuery]`/`[FromHeader]` parameter, or a value
 the invoker fills (`[FromClock]`, `[FromCurrentUser]`, `[FromClaim]`). It travels through
