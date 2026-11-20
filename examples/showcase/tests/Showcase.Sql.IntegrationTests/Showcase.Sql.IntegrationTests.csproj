@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <!-- Test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through a DbContext, EF Core's
-         nested repositories or Jobs.EFCore, or references a project built over the EF Core modules (the Blazor client, its routes). The
+         nested repositories, or references a project built over the EF Core modules (the Blazor client, its routes). The
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
@@ -54,12 +54,17 @@
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Validation\WhenTheExpensiveRuleRunsTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A real gap (#904): the durable job store exists on EF Core only. These exercise EfCoreJobStore itself, through a DbContext of
+         the test's own; the engines have no store for them to run against. -->
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobExecutionEndToEndTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobLeaseIntegrationTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobsDbContext.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\WhatRunsAfterTheJobFinishesTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Validation\WhenTheExpensiveRuleRunsTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

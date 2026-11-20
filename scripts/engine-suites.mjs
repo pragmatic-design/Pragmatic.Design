@@ -59,6 +59,7 @@ const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its
 const NO_TIMELINE = `${REAL_GAP}[GenerateTimeline] is generated on EF Core only, as an extension of the DbContext (#898)`;
 const NO_TEMPORAL_AT = `${REAL_GAP}the engines have no point-in-time read or auto-close of a temporal relation, only IQueryable extensions (#899)`;
 const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does not refuse a second open stretch or an inverted one (#900)`;
+const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
 export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS,EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
@@ -111,6 +112,15 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('EntityPersistence/TheTimelineOfARoleTests.cs')]: { engines: both, reason: NO_TIMELINE },
   [s('EntityPersistence/TemporalQueryExtensionsTests.cs')]: { engines: both, reason: NO_TEMPORAL_AT },
 
+  // Measured by #876. All four exercise EfCoreJobStore itself, through a DbContext of the test's own: what they test is the durable store,
+  // and the engines have none yet.
+  ...Object.fromEntries([
+    'Jobs/JobExecutionEndToEndTests.cs',
+    'Jobs/JobLeaseIntegrationTests.cs',
+    'Jobs/JobsDbContext.cs',
+    'Jobs/WhatRunsAfterTheJobFinishesTests.cs',
+  ].map((path) => [s(path), { engines: both, reason: NO_JOB_STORE }])),
+
   [s('EntityPersistence/OneToOneUniquenessTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('EntityPersistence/TheFeeHierarchyIsOneTableTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationPipelineTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
@@ -128,10 +138,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
     // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
     'Endpoints/TheInvoiceInTheGuestsLanguageTests.cs',
-    'Jobs/JobExecutionEndToEndTests.cs',
-    'Jobs/JobLeaseIntegrationTests.cs',
-    'Jobs/JobsDbContext.cs',
-    'Jobs/WhatRunsAfterTheJobFinishesTests.cs',
     'Queries/SpecificationCompositionTests.cs',
     'Validation/WhenTheExpensiveRuleRunsTests.cs',
   ].map((path) => [s(path), { engines: both, reason: TEST_ON_EF }])),
