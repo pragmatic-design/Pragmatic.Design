@@ -3,12 +3,20 @@ using Pragmatic.Persistence.Entity;
 namespace Pragmatic.Persistence.Repository;
 
 /// <summary>
-///     A read by key with navigations, on an engine that compiles its reads: the Sql engine's repository implements it with one compiled read
-///     per set of include paths its compilation declares (<c>[LoadEntity(Include = …)]</c>), and the generated invoker names the set.
+///     A read by key with navigations, the one form every engine with navigations serves: the Sql engine's repository implements it with one
+///     compiled read per set of include paths its compilation declares (<c>[LoadEntity(Include = …)]</c>), and EF Core's with an
+///     <c>Include</c> per path on <c>Query()</c> (#887).
 /// </summary>
 /// <remarks>
-///     EF Core's repository does not implement it: on EF Core the invoker includes through <c>Query()</c>, which an engine that compiles its
-///     reads does not serve.
+///     <para>
+///         The repository is registered as <see cref="IReadRepository{TEntity}" />; this is the same instance, cast, as the generated loads
+///         cast it. The documents engine keeps a relation as its key, so it has no navigation to load and refuses at build (PRAG3111).
+///     </para>
+///     <para>
+///         On EF Core the paths are strings, so a navigation filter that rewrites a lambda <c>Include</c> (<c>FilterMapComposer</c>) does
+///         not reach them: the root's filters and EF Core's named query filters apply, as they do to the generated loads, which include the
+///         same way.
+///     </para>
 /// </remarks>
 /// <typeparam name="TEntity">The entity type.</typeparam>
 public interface IIncludingReadRepository<TEntity>

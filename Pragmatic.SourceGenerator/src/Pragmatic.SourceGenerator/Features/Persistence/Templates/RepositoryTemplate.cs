@@ -83,7 +83,10 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             // attaching one means writing to the change tracker, which needs the context too.
             $"global::Pragmatic.Persistence.Repository.INavigationLinker<{entityType}>",
             // The set-based writes, declared where there is no EF Core.
-            $"global::Pragmatic.Persistence.Repository.IBulkRepository<{entityType}>"
+            $"global::Pragmatic.Persistence.Repository.IBulkRepository<{entityType}>",
+            // A read by key with navigations named by path, the form the Sql engine's repository serves too (#887): code that loads an
+            // aggregate with its children outside a generated operation writes one call on every engine.
+            $"global::Pragmatic.Persistence.Repository.IIncludingReadRepository<{entityType}>"
         };
 
         XmlSummary(
@@ -175,6 +178,9 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         AppendLine();
 
         RenderGetByIdWithIncludesAsync(entityType, idType);
+        AppendLine();
+
+        RenderGetByIdIncludingAsync(entityType);
         AppendLine();
 
         RenderAdd(entityType);
@@ -577,6 +583,37 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             AppendLine("var query = includes(ApplyFilters(Set));");
             AppendLine("return query.FirstOrDefaultAsync(e => e.PersistenceId.Equals(id), ct);");
         });
+    }
+
+    /// <summary>
+    ///     <c>IIncludingReadRepository.GetByIdIncludingAsync</c>: the entity by its key with each comma-separated path as an <c>Include</c>,
+    ///     inside the same filters as <c>Query()</c>, root and navigation (#887).
+    /// </summary>
+    private void RenderGetByIdIncludingAsync(string entityType)
+    {
+        XmlSummary($"Gets a {_model.TypeName} by its primary key with the navigations the comma-separated paths name. Global query filters are applied, to the navigations too.");
+        XmlParam("id", "The entity's primary key.");
+        XmlParam("includes", "The include paths, comma-separated: a navigation's name, or a dotted path through several.");
+        XmlParam("ct", "Cancellation token.");
+        XmlReturns("The entity if found (and not filtered), null otherwise.");
+
+        var parameters = new List<MethodParameter>
+        {
+            new("global::System.Guid", "id"),
+            new("string", "includes"),
+            new("global::System.Threading.CancellationToken", "ct") { DefaultValue = "default" }
+        };
+
+        Method("GetByIdIncludingAsync", () =>
+        {
+            AppendLine("var query = Query();");
+            AppendLine("foreach (var path in includes.Split(',', global::System.StringSplitOptions.RemoveEmptyEntries | global::System.StringSplitOptions.TrimEntries))");
+            Block(() => AppendLine(
+                "query = global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.Include(query, path);"));
+            AppendLine();
+            AppendLine("return global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions"
+                       + ".FirstOrDefaultAsync(query, e => e.PersistenceId.Equals(id), ct);");
+        }, $"global::System.Threading.Tasks.Task<{entityType}?>", parameters);
     }
 
     private void RenderAdd(string entityType)

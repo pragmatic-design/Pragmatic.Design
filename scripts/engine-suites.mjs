@@ -84,6 +84,12 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Endpoints/TheInvoiceAsAPdfTests.cs')]: {
     engines: ['Documents'], reason: NO_NAVIGATION, follows: ['examples/showcase/src/Showcase.Billing/Invoices/Actions/DownloadInvoicePdfAction.cs'],
   },
+  // A read by key with navigations (#887): the documents engine keeps a relation as its key, so its repository refuses every include path.
+  [s('EntityPersistence/ARowReadWithItsNavigationsStaysInsideTheFiltersTests.cs')]: { engines: ['Documents'], reason: NO_NAVIGATION },
+  // Composes the document with DownloadInvoicePdfAction, from the invoice read with its lines through IIncludingReadRepository (#887).
+  [s('Endpoints/TheInvoiceInTheGuestsLanguageTests.cs')]: {
+    engines: ['Documents'], reason: NO_NAVIGATION, follows: ['examples/showcase/src/Showcase.Billing/Invoices/Actions/DownloadInvoicePdfAction.cs'],
+  },
   // POST /api/amenities/{id}/touch is CountAmenitiesAction, which injects the boundary's DbContext and counts through its entity set (#873).
   [s('CrossCutting/BoundaryKeyedServicesTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Amenities/Actions/CountAmenitiesAction.cs')] },
   [s('Endpoints/TheGridInItsOwnFormatTests.cs')]: {
@@ -139,8 +145,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   ...Object.fromEntries([
     // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
-    // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
-    'Endpoints/TheInvoiceInTheGuestsLanguageTests.cs',
   ].map((path) => [s(path), { engines: both, reason: TEST_ON_EF }])),
 };
 

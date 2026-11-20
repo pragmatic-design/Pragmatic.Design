@@ -899,7 +899,7 @@ public partial class AggregatePart
 
 ## Inventory.AggregatePart.Repository.g.cs
 public partial class AggregatePart
-    public partial class AggregatePart.Repository : IRepository<AggregatePart>, INavigationLoader<AggregatePart>, INavigationLinker<AggregatePart>, IBulkRepository<AggregatePart>
+    public partial class AggregatePart.Repository : IRepository<AggregatePart>, INavigationLoader<AggregatePart>, INavigationLinker<AggregatePart>, IBulkRepository<AggregatePart>, IIncludingReadRepository<AggregatePart>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AggregatePart> Set { get; }
         internal DbContext Context { get; }
@@ -907,6 +907,7 @@ public partial class AggregatePart
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<AggregatePart, TResult> query, CancellationToken ct = default)
         public Task<AggregatePart?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<AggregatePart?> GetByIdAsync(Guid id, Func<IQueryable<AggregatePart>, IQueryable<AggregatePart>> includes, CancellationToken ct = default)
+        public Task<AggregatePart?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(AggregatePart entity)
         public void AddRange(IEnumerable<AggregatePart> entities)
         public void Remove(AggregatePart entity)
@@ -963,7 +964,7 @@ public static class AttachmentExtensions
 
 ## Inventory.Attachment.Repository.g.cs
 public partial class Attachment
-    public partial class Attachment.Repository : IRepository<Attachment>, INavigationLoader<Attachment>, INavigationLinker<Attachment>, IBulkRepository<Attachment>
+    public partial class Attachment.Repository : IRepository<Attachment>, INavigationLoader<Attachment>, INavigationLinker<Attachment>, IBulkRepository<Attachment>, IIncludingReadRepository<Attachment>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Attachment> Set { get; }
         internal DbContext Context { get; }
@@ -971,6 +972,7 @@ public partial class Attachment
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Attachment, TResult> query, CancellationToken ct = default)
         public Task<Attachment?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Attachment?> GetByIdAsync(Guid id, Func<IQueryable<Attachment>, IQueryable<Attachment>> includes, CancellationToken ct = default)
+        public Task<Attachment?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Attachment entity)
         public void AddRange(IEnumerable<Attachment> entities)
         public void Remove(Attachment entity)
@@ -1023,7 +1025,7 @@ public partial class Auditable : ICreatable<Auditable>
 
 ## Inventory.Auditable.Repository.g.cs
 public partial class Auditable
-    public partial class Auditable.Repository : IRepository<Auditable>, INavigationLoader<Auditable>, INavigationLinker<Auditable>, IBulkRepository<Auditable>
+    public partial class Auditable.Repository : IRepository<Auditable>, INavigationLoader<Auditable>, INavigationLinker<Auditable>, IBulkRepository<Auditable>, IIncludingReadRepository<Auditable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Auditable> Set { get; }
         internal DbContext Context { get; }
@@ -1031,6 +1033,7 @@ public partial class Auditable
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Auditable, TResult> query, CancellationToken ct = default)
         public Task<Auditable?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Auditable?> GetByIdAsync(Guid id, Func<IQueryable<Auditable>, IQueryable<Auditable>> includes, CancellationToken ct = default)
+        public Task<Auditable?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Auditable entity)
         public void AddRange(IEnumerable<Auditable> entities)
         public void Remove(Auditable entity)
@@ -1082,7 +1085,7 @@ public partial class AuditableSoftDeleted : ICreatable<AuditableSoftDeleted>
 
 ## Inventory.AuditableSoftDeleted.Repository.g.cs
 public partial class AuditableSoftDeleted
-    public partial class AuditableSoftDeleted.Repository : IRepository<AuditableSoftDeleted>, INavigationLoader<AuditableSoftDeleted>, INavigationLinker<AuditableSoftDeleted>, IBulkRepository<AuditableSoftDeleted>
+    public partial class AuditableSoftDeleted.Repository : IRepository<AuditableSoftDeleted>, INavigationLoader<AuditableSoftDeleted>, INavigationLinker<AuditableSoftDeleted>, IBulkRepository<AuditableSoftDeleted>, IIncludingReadRepository<AuditableSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AuditableSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -1090,6 +1093,7 @@ public partial class AuditableSoftDeleted
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<AuditableSoftDeleted, TResult> query, CancellationToken ct = default)
         public Task<AuditableSoftDeleted?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<AuditableSoftDeleted?> GetByIdAsync(Guid id, Func<IQueryable<AuditableSoftDeleted>, IQueryable<AuditableSoftDeleted>> includes, CancellationToken ct = default)
+        public Task<AuditableSoftDeleted?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(AuditableSoftDeleted entity)
         public void AddRange(IEnumerable<AuditableSoftDeleted> entities)
         public void Remove(AuditableSoftDeleted entity)
@@ -1151,7 +1155,7 @@ public partial class Audited : ICreatable<Audited>
 
 ## Inventory.Audited.Repository.g.cs
 public partial class Audited
-    public partial class Audited.Repository : IRepository<Audited>, INavigationLoader<Audited>, INavigationLinker<Audited>, IBulkRepository<Audited>
+    public partial class Audited.Repository : IRepository<Audited>, INavigationLoader<Audited>, INavigationLinker<Audited>, IBulkRepository<Audited>, IIncludingReadRepository<Audited>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Audited> Set { get; }
         internal DbContext Context { get; }
@@ -1159,6 +1163,7 @@ public partial class Audited
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Audited, TResult> query, CancellationToken ct = default)
         public Task<Audited?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Audited?> GetByIdAsync(Guid id, Func<IQueryable<Audited>, IQueryable<Audited>> includes, CancellationToken ct = default)
+        public Task<Audited?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Audited entity)
         public void AddRange(IEnumerable<Audited> entities)
         public void Remove(Audited entity)
@@ -1206,7 +1211,7 @@ public partial class AuditedSoftDeleted : ICreatable<AuditedSoftDeleted>
 
 ## Inventory.AuditedSoftDeleted.Repository.g.cs
 public partial class AuditedSoftDeleted
-    public partial class AuditedSoftDeleted.Repository : IRepository<AuditedSoftDeleted>, INavigationLoader<AuditedSoftDeleted>, INavigationLinker<AuditedSoftDeleted>, IBulkRepository<AuditedSoftDeleted>
+    public partial class AuditedSoftDeleted.Repository : IRepository<AuditedSoftDeleted>, INavigationLoader<AuditedSoftDeleted>, INavigationLinker<AuditedSoftDeleted>, IBulkRepository<AuditedSoftDeleted>, IIncludingReadRepository<AuditedSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<AuditedSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -1214,6 +1219,7 @@ public partial class AuditedSoftDeleted
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<AuditedSoftDeleted, TResult> query, CancellationToken ct = default)
         public Task<AuditedSoftDeleted?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<AuditedSoftDeleted?> GetByIdAsync(Guid id, Func<IQueryable<AuditedSoftDeleted>, IQueryable<AuditedSoftDeleted>> includes, CancellationToken ct = default)
+        public Task<AuditedSoftDeleted?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(AuditedSoftDeleted entity)
         public void AddRange(IEnumerable<AuditedSoftDeleted> entities)
         public void Remove(AuditedSoftDeleted entity)
@@ -1272,7 +1278,7 @@ public partial class Bridged : ICreatable<Bridged>
 
 ## Inventory.Bridged.Repository.g.cs
 public partial class Bridged
-    public partial class Bridged.Repository : IRepository<Bridged>, INavigationLoader<Bridged>, INavigationLinker<Bridged>, IBulkRepository<Bridged>
+    public partial class Bridged.Repository : IRepository<Bridged>, INavigationLoader<Bridged>, INavigationLinker<Bridged>, IBulkRepository<Bridged>, IIncludingReadRepository<Bridged>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Bridged> Set { get; }
         internal DbContext Context { get; }
@@ -1280,6 +1286,7 @@ public partial class Bridged
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Bridged, TResult> query, CancellationToken ct = default)
         public Task<Bridged?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Bridged?> GetByIdAsync(Guid id, Func<IQueryable<Bridged>, IQueryable<Bridged>> includes, CancellationToken ct = default)
+        public Task<Bridged?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Bridged entity)
         public void AddRange(IEnumerable<Bridged> entities)
         public void Remove(Bridged entity)
@@ -1340,7 +1347,7 @@ public partial class CascadeChild
 
 ## Inventory.CascadeChild.Repository.g.cs
 public partial class CascadeChild
-    public partial class CascadeChild.Repository : IRepository<CascadeChild>, INavigationLoader<CascadeChild>, INavigationLinker<CascadeChild>, IBulkRepository<CascadeChild>
+    public partial class CascadeChild.Repository : IRepository<CascadeChild>, INavigationLoader<CascadeChild>, INavigationLinker<CascadeChild>, IBulkRepository<CascadeChild>, IIncludingReadRepository<CascadeChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeChild> Set { get; }
         internal DbContext Context { get; }
@@ -1348,6 +1355,7 @@ public partial class CascadeChild
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<CascadeChild, TResult> query, CancellationToken ct = default)
         public Task<CascadeChild?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<CascadeChild?> GetByIdAsync(Guid id, Func<IQueryable<CascadeChild>, IQueryable<CascadeChild>> includes, CancellationToken ct = default)
+        public Task<CascadeChild?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(CascadeChild entity)
         public void AddRange(IEnumerable<CascadeChild> entities)
         public void Remove(CascadeChild entity)
@@ -1409,7 +1417,7 @@ public partial class CascadeParent
 
 ## Inventory.CascadeParent.Repository.g.cs
 public partial class CascadeParent
-    public partial class CascadeParent.Repository : IRepository<CascadeParent>, INavigationLoader<CascadeParent>, INavigationLinker<CascadeParent>, IBulkRepository<CascadeParent>
+    public partial class CascadeParent.Repository : IRepository<CascadeParent>, INavigationLoader<CascadeParent>, INavigationLinker<CascadeParent>, IBulkRepository<CascadeParent>, IIncludingReadRepository<CascadeParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeParent> Set { get; }
         internal DbContext Context { get; }
@@ -1417,6 +1425,7 @@ public partial class CascadeParent
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<CascadeParent, TResult> query, CancellationToken ct = default)
         public Task<CascadeParent?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<CascadeParent?> GetByIdAsync(Guid id, Func<IQueryable<CascadeParent>, IQueryable<CascadeParent>> includes, CancellationToken ct = default)
+        public Task<CascadeParent?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(CascadeParent entity)
         public void AddRange(IEnumerable<CascadeParent> entities)
         public void Remove(CascadeParent entity)
@@ -1474,7 +1483,7 @@ public partial class CascadeSourceEntity : ICreatable<CascadeSourceEntity>
 
 ## Inventory.CascadeSourceEntity.Repository.g.cs
 public partial class CascadeSourceEntity
-    public partial class CascadeSourceEntity.Repository : IRepository<CascadeSourceEntity>, INavigationLoader<CascadeSourceEntity>, INavigationLinker<CascadeSourceEntity>, IBulkRepository<CascadeSourceEntity>
+    public partial class CascadeSourceEntity.Repository : IRepository<CascadeSourceEntity>, INavigationLoader<CascadeSourceEntity>, INavigationLinker<CascadeSourceEntity>, IBulkRepository<CascadeSourceEntity>, IIncludingReadRepository<CascadeSourceEntity>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeSourceEntity> Set { get; }
         internal DbContext Context { get; }
@@ -1482,6 +1491,7 @@ public partial class CascadeSourceEntity
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<CascadeSourceEntity, TResult> query, CancellationToken ct = default)
         public Task<CascadeSourceEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<CascadeSourceEntity?> GetByIdAsync(Guid id, Func<IQueryable<CascadeSourceEntity>, IQueryable<CascadeSourceEntity>> includes, CancellationToken ct = default)
+        public Task<CascadeSourceEntity?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(CascadeSourceEntity entity)
         public void AddRange(IEnumerable<CascadeSourceEntity> entities)
         public void Remove(CascadeSourceEntity entity)
@@ -1537,7 +1547,7 @@ public partial class CascadeTargetEntity
 
 ## Inventory.CascadeTargetEntity.Repository.g.cs
 public partial class CascadeTargetEntity
-    public partial class CascadeTargetEntity.Repository : IRepository<CascadeTargetEntity>, INavigationLoader<CascadeTargetEntity>, INavigationLinker<CascadeTargetEntity>, IBulkRepository<CascadeTargetEntity>
+    public partial class CascadeTargetEntity.Repository : IRepository<CascadeTargetEntity>, INavigationLoader<CascadeTargetEntity>, INavigationLinker<CascadeTargetEntity>, IBulkRepository<CascadeTargetEntity>, IIncludingReadRepository<CascadeTargetEntity>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<CascadeTargetEntity> Set { get; }
         internal DbContext Context { get; }
@@ -1545,6 +1555,7 @@ public partial class CascadeTargetEntity
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<CascadeTargetEntity, TResult> query, CancellationToken ct = default)
         public Task<CascadeTargetEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<CascadeTargetEntity?> GetByIdAsync(Guid id, Func<IQueryable<CascadeTargetEntity>, IQueryable<CascadeTargetEntity>> includes, CancellationToken ct = default)
+        public Task<CascadeTargetEntity?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(CascadeTargetEntity entity)
         public void AddRange(IEnumerable<CascadeTargetEntity> entities)
         public void Remove(CascadeTargetEntity entity)
@@ -1597,7 +1608,7 @@ public partial class ConcurrencyAware : ICreatable<ConcurrencyAware>
 
 ## Inventory.ConcurrencyAware.Repository.g.cs
 public partial class ConcurrencyAware
-    public partial class ConcurrencyAware.Repository : IRepository<ConcurrencyAware>, INavigationLoader<ConcurrencyAware>, INavigationLinker<ConcurrencyAware>, IBulkRepository<ConcurrencyAware>
+    public partial class ConcurrencyAware.Repository : IRepository<ConcurrencyAware>, INavigationLoader<ConcurrencyAware>, INavigationLinker<ConcurrencyAware>, IBulkRepository<ConcurrencyAware>, IIncludingReadRepository<ConcurrencyAware>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ConcurrencyAware> Set { get; }
         internal DbContext Context { get; }
@@ -1605,6 +1616,7 @@ public partial class ConcurrencyAware
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ConcurrencyAware, TResult> query, CancellationToken ct = default)
         public Task<ConcurrencyAware?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ConcurrencyAware?> GetByIdAsync(Guid id, Func<IQueryable<ConcurrencyAware>, IQueryable<ConcurrencyAware>> includes, CancellationToken ct = default)
+        public Task<ConcurrencyAware?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ConcurrencyAware entity)
         public void AddRange(IEnumerable<ConcurrencyAware> entities)
         public void Remove(ConcurrencyAware entity)
@@ -1659,7 +1671,7 @@ public partial class ContradictoryPart
 
 ## Inventory.ContradictoryPart.Repository.g.cs
 public partial class ContradictoryPart
-    public partial class ContradictoryPart.Repository : IRepository<ContradictoryPart>, INavigationLoader<ContradictoryPart>, INavigationLinker<ContradictoryPart>, IBulkRepository<ContradictoryPart>
+    public partial class ContradictoryPart.Repository : IRepository<ContradictoryPart>, INavigationLoader<ContradictoryPart>, INavigationLinker<ContradictoryPart>, IBulkRepository<ContradictoryPart>, IIncludingReadRepository<ContradictoryPart>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ContradictoryPart> Set { get; }
         internal DbContext Context { get; }
@@ -1667,6 +1679,7 @@ public partial class ContradictoryPart
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ContradictoryPart, TResult> query, CancellationToken ct = default)
         public Task<ContradictoryPart?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ContradictoryPart?> GetByIdAsync(Guid id, Func<IQueryable<ContradictoryPart>, IQueryable<ContradictoryPart>> includes, CancellationToken ct = default)
+        public Task<ContradictoryPart?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ContradictoryPart entity)
         public void AddRange(IEnumerable<ContradictoryPart> entities)
         public void Remove(ContradictoryPart entity)
@@ -1754,7 +1767,7 @@ public partial class DependentSide
 
 ## Inventory.DependentSide.Repository.g.cs
 public partial class DependentSide
-    public partial class DependentSide.Repository : IRepository<DependentSide>, INavigationLoader<DependentSide>, INavigationLinker<DependentSide>, IBulkRepository<DependentSide>
+    public partial class DependentSide.Repository : IRepository<DependentSide>, INavigationLoader<DependentSide>, INavigationLinker<DependentSide>, IBulkRepository<DependentSide>, IIncludingReadRepository<DependentSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<DependentSide> Set { get; }
         internal DbContext Context { get; }
@@ -1762,6 +1775,7 @@ public partial class DependentSide
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<DependentSide, TResult> query, CancellationToken ct = default)
         public Task<DependentSide?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<DependentSide?> GetByIdAsync(Guid id, Func<IQueryable<DependentSide>, IQueryable<DependentSide>> includes, CancellationToken ct = default)
+        public Task<DependentSide?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(DependentSide entity)
         public void AddRange(IEnumerable<DependentSide> entities)
         public void Remove(DependentSide entity)
@@ -1820,7 +1834,7 @@ public partial class EveryTrait : ICreatable<EveryTrait>
 
 ## Inventory.EveryTrait.Repository.g.cs
 public partial class EveryTrait
-    public partial class EveryTrait.Repository : IRepository<EveryTrait>, INavigationLoader<EveryTrait>, INavigationLinker<EveryTrait>, IBulkRepository<EveryTrait>
+    public partial class EveryTrait.Repository : IRepository<EveryTrait>, INavigationLoader<EveryTrait>, INavigationLinker<EveryTrait>, IBulkRepository<EveryTrait>, IIncludingReadRepository<EveryTrait>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<EveryTrait> Set { get; }
         internal DbContext Context { get; }
@@ -1828,6 +1842,7 @@ public partial class EveryTrait
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<EveryTrait, TResult> query, CancellationToken ct = default)
         public Task<EveryTrait?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<EveryTrait?> GetByIdAsync(Guid id, Func<IQueryable<EveryTrait>, IQueryable<EveryTrait>> includes, CancellationToken ct = default)
+        public Task<EveryTrait?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(EveryTrait entity)
         public void AddRange(IEnumerable<EveryTrait> entities)
         public void Remove(EveryTrait entity)
@@ -1890,7 +1905,7 @@ public partial class Faraway : ICreatable<Faraway>
 
 ## Inventory.Faraway.Repository.g.cs
 public partial class Faraway
-    public partial class Faraway.Repository : IRepository<Faraway>, INavigationLoader<Faraway>, INavigationLinker<Faraway>, IBulkRepository<Faraway>
+    public partial class Faraway.Repository : IRepository<Faraway>, INavigationLoader<Faraway>, INavigationLinker<Faraway>, IBulkRepository<Faraway>, IIncludingReadRepository<Faraway>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Faraway> Set { get; }
         internal DbContext Context { get; }
@@ -1898,6 +1913,7 @@ public partial class Faraway
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Faraway, TResult> query, CancellationToken ct = default)
         public Task<Faraway?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Faraway?> GetByIdAsync(Guid id, Func<IQueryable<Faraway>, IQueryable<Faraway>> includes, CancellationToken ct = default)
+        public Task<Faraway?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Faraway entity)
         public void AddRange(IEnumerable<Faraway> entities)
         public void Remove(Faraway entity)
@@ -1970,7 +1986,7 @@ public static class InheritanceBaseInheritanceConfiguration
 
 ## Inventory.InheritanceBase.Repository.g.cs
 public partial class InheritanceBase
-    public partial class InheritanceBase.Repository : IRepository<InheritanceBase>, INavigationLoader<InheritanceBase>, INavigationLinker<InheritanceBase>, IBulkRepository<InheritanceBase>
+    public partial class InheritanceBase.Repository : IRepository<InheritanceBase>, INavigationLoader<InheritanceBase>, INavigationLinker<InheritanceBase>, IBulkRepository<InheritanceBase>, IIncludingReadRepository<InheritanceBase>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<InheritanceBase> Set { get; }
         internal DbContext Context { get; }
@@ -1978,6 +1994,7 @@ public partial class InheritanceBase
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<InheritanceBase, TResult> query, CancellationToken ct = default)
         public Task<InheritanceBase?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<InheritanceBase?> GetByIdAsync(Guid id, Func<IQueryable<InheritanceBase>, IQueryable<InheritanceBase>> includes, CancellationToken ct = default)
+        public Task<InheritanceBase?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(InheritanceBase entity)
         public void AddRange(IEnumerable<InheritanceBase> entities)
         public void Remove(InheritanceBase entity)
@@ -2025,7 +2042,7 @@ public partial class InheritanceDerived : ICreatable<InheritanceDerived>
 
 ## Inventory.InheritanceDerived.Repository.g.cs
 public partial class InheritanceDerived
-    public new partial class InheritanceDerived.Repository : IRepository<InheritanceDerived>, INavigationLoader<InheritanceDerived>, INavigationLinker<InheritanceDerived>, IBulkRepository<InheritanceDerived>
+    public new partial class InheritanceDerived.Repository : IRepository<InheritanceDerived>, INavigationLoader<InheritanceDerived>, INavigationLinker<InheritanceDerived>, IBulkRepository<InheritanceDerived>, IIncludingReadRepository<InheritanceDerived>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<InheritanceDerived> Set { get; }
         internal DbContext Context { get; }
@@ -2033,6 +2050,7 @@ public partial class InheritanceDerived
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<InheritanceDerived, TResult> query, CancellationToken ct = default)
         public Task<InheritanceDerived?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<InheritanceDerived?> GetByIdAsync(Guid id, Func<IQueryable<InheritanceDerived>, IQueryable<InheritanceDerived>> includes, CancellationToken ct = default)
+        public Task<InheritanceDerived?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(InheritanceDerived entity)
         public void AddRange(IEnumerable<InheritanceDerived> entities)
         public void Remove(InheritanceDerived entity)
@@ -2129,7 +2147,7 @@ public sealed class LookupTableLookupCacheLoader : ILookupCacheLoader
 
 ## Inventory.LookupTable.Repository.g.cs
 public partial class LookupTable
-    public partial class LookupTable.Repository : IRepository<LookupTable>, INavigationLoader<LookupTable>, INavigationLinker<LookupTable>, IBulkRepository<LookupTable>
+    public partial class LookupTable.Repository : IRepository<LookupTable>, INavigationLoader<LookupTable>, INavigationLinker<LookupTable>, IBulkRepository<LookupTable>, IIncludingReadRepository<LookupTable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<LookupTable> Set { get; }
         internal DbContext Context { get; }
@@ -2137,6 +2155,7 @@ public partial class LookupTable
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<LookupTable, TResult> query, CancellationToken ct = default)
         public Task<LookupTable?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<LookupTable?> GetByIdAsync(Guid id, Func<IQueryable<LookupTable>, IQueryable<LookupTable>> includes, CancellationToken ct = default)
+        public Task<LookupTable?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(LookupTable entity)
         public void AddRange(IEnumerable<LookupTable> entities)
         public void Remove(LookupTable entity)
@@ -2184,7 +2203,7 @@ public partial class ManualAuditableProps : ICreatable<ManualAuditableProps>
 
 ## Inventory.ManualAuditableProps.Repository.g.cs
 public partial class ManualAuditableProps
-    public partial class ManualAuditableProps.Repository : IRepository<ManualAuditableProps>, INavigationLoader<ManualAuditableProps>, INavigationLinker<ManualAuditableProps>, IBulkRepository<ManualAuditableProps>
+    public partial class ManualAuditableProps.Repository : IRepository<ManualAuditableProps>, INavigationLoader<ManualAuditableProps>, INavigationLinker<ManualAuditableProps>, IBulkRepository<ManualAuditableProps>, IIncludingReadRepository<ManualAuditableProps>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualAuditableProps> Set { get; }
         internal DbContext Context { get; }
@@ -2192,6 +2211,7 @@ public partial class ManualAuditableProps
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ManualAuditableProps, TResult> query, CancellationToken ct = default)
         public Task<ManualAuditableProps?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ManualAuditableProps?> GetByIdAsync(Guid id, Func<IQueryable<ManualAuditableProps>, IQueryable<ManualAuditableProps>> includes, CancellationToken ct = default)
+        public Task<ManualAuditableProps?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ManualAuditableProps entity)
         public void AddRange(IEnumerable<ManualAuditableProps> entities)
         public void Remove(ManualAuditableProps entity)
@@ -2246,7 +2266,7 @@ public partial class ManualNavChild
 
 ## Inventory.ManualNavChild.Repository.g.cs
 public partial class ManualNavChild
-    public partial class ManualNavChild.Repository : IRepository<ManualNavChild>, INavigationLoader<ManualNavChild>, INavigationLinker<ManualNavChild>, IBulkRepository<ManualNavChild>
+    public partial class ManualNavChild.Repository : IRepository<ManualNavChild>, INavigationLoader<ManualNavChild>, INavigationLinker<ManualNavChild>, IBulkRepository<ManualNavChild>, IIncludingReadRepository<ManualNavChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualNavChild> Set { get; }
         internal DbContext Context { get; }
@@ -2254,6 +2274,7 @@ public partial class ManualNavChild
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ManualNavChild, TResult> query, CancellationToken ct = default)
         public Task<ManualNavChild?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ManualNavChild?> GetByIdAsync(Guid id, Func<IQueryable<ManualNavChild>, IQueryable<ManualNavChild>> includes, CancellationToken ct = default)
+        public Task<ManualNavChild?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ManualNavChild entity)
         public void AddRange(IEnumerable<ManualNavChild> entities)
         public void Remove(ManualNavChild entity)
@@ -2319,7 +2340,7 @@ public partial class ManualNavParent
 
 ## Inventory.ManualNavParent.Repository.g.cs
 public partial class ManualNavParent
-    public partial class ManualNavParent.Repository : IRepository<ManualNavParent>, INavigationLoader<ManualNavParent>, INavigationLinker<ManualNavParent>, IBulkRepository<ManualNavParent>
+    public partial class ManualNavParent.Repository : IRepository<ManualNavParent>, INavigationLoader<ManualNavParent>, INavigationLinker<ManualNavParent>, IBulkRepository<ManualNavParent>, IIncludingReadRepository<ManualNavParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualNavParent> Set { get; }
         internal DbContext Context { get; }
@@ -2327,6 +2348,7 @@ public partial class ManualNavParent
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ManualNavParent, TResult> query, CancellationToken ct = default)
         public Task<ManualNavParent?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ManualNavParent?> GetByIdAsync(Guid id, Func<IQueryable<ManualNavParent>, IQueryable<ManualNavParent>> includes, CancellationToken ct = default)
+        public Task<ManualNavParent?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ManualNavParent entity)
         public void AddRange(IEnumerable<ManualNavParent> entities)
         public void Remove(ManualNavParent entity)
@@ -2399,7 +2421,7 @@ public partial class ManualOwnerId
 
 ## Inventory.ManualOwnerId.Repository.g.cs
 public partial class ManualOwnerId
-    public partial class ManualOwnerId.Repository : IRepository<ManualOwnerId>, INavigationLoader<ManualOwnerId>, INavigationLinker<ManualOwnerId>, IBulkRepository<ManualOwnerId>
+    public partial class ManualOwnerId.Repository : IRepository<ManualOwnerId>, INavigationLoader<ManualOwnerId>, INavigationLinker<ManualOwnerId>, IBulkRepository<ManualOwnerId>, IIncludingReadRepository<ManualOwnerId>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualOwnerId> Set { get; }
         internal DbContext Context { get; }
@@ -2407,6 +2429,7 @@ public partial class ManualOwnerId
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ManualOwnerId, TResult> query, CancellationToken ct = default)
         public Task<ManualOwnerId?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ManualOwnerId?> GetByIdAsync(Guid id, Func<IQueryable<ManualOwnerId>, IQueryable<ManualOwnerId>> includes, CancellationToken ct = default)
+        public Task<ManualOwnerId?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ManualOwnerId entity)
         public void AddRange(IEnumerable<ManualOwnerId> entities)
         public void Remove(ManualOwnerId entity)
@@ -2455,7 +2478,7 @@ public partial class ManualPersistenceId : ICreatable<ManualPersistenceId>
 
 ## Inventory.ManualPersistenceId.Repository.g.cs
 public partial class ManualPersistenceId
-    public partial class ManualPersistenceId.Repository : IRepository<ManualPersistenceId>, INavigationLoader<ManualPersistenceId>, INavigationLinker<ManualPersistenceId>, IBulkRepository<ManualPersistenceId>
+    public partial class ManualPersistenceId.Repository : IRepository<ManualPersistenceId>, INavigationLoader<ManualPersistenceId>, INavigationLinker<ManualPersistenceId>, IBulkRepository<ManualPersistenceId>, IIncludingReadRepository<ManualPersistenceId>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ManualPersistenceId> Set { get; }
         internal DbContext Context { get; }
@@ -2463,6 +2486,7 @@ public partial class ManualPersistenceId
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ManualPersistenceId, TResult> query, CancellationToken ct = default)
         public Task<ManualPersistenceId?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ManualPersistenceId?> GetByIdAsync(Guid id, Func<IQueryable<ManualPersistenceId>, IQueryable<ManualPersistenceId>> includes, CancellationToken ct = default)
+        public Task<ManualPersistenceId?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ManualPersistenceId entity)
         public void AddRange(IEnumerable<ManualPersistenceId> entities)
         public void Remove(ManualPersistenceId entity)
@@ -2510,7 +2534,7 @@ public partial class NamedStateProperty : ICreatable<NamedStateProperty>
 
 ## Inventory.NamedStateProperty.Repository.g.cs
 public partial class NamedStateProperty
-    public partial class NamedStateProperty.Repository : IRepository<NamedStateProperty>, INavigationLoader<NamedStateProperty>, INavigationLinker<NamedStateProperty>, IBulkRepository<NamedStateProperty>
+    public partial class NamedStateProperty.Repository : IRepository<NamedStateProperty>, INavigationLoader<NamedStateProperty>, INavigationLinker<NamedStateProperty>, IBulkRepository<NamedStateProperty>, IIncludingReadRepository<NamedStateProperty>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<NamedStateProperty> Set { get; }
         internal DbContext Context { get; }
@@ -2518,6 +2542,7 @@ public partial class NamedStateProperty
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<NamedStateProperty, TResult> query, CancellationToken ct = default)
         public Task<NamedStateProperty?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<NamedStateProperty?> GetByIdAsync(Guid id, Func<IQueryable<NamedStateProperty>, IQueryable<NamedStateProperty>> includes, CancellationToken ct = default)
+        public Task<NamedStateProperty?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(NamedStateProperty entity)
         public void AddRange(IEnumerable<NamedStateProperty> entities)
         public void Remove(NamedStateProperty entity)
@@ -2577,7 +2602,7 @@ public partial class OptionalReference
 
 ## Inventory.OptionalReference.Repository.g.cs
 public partial class OptionalReference
-    public partial class OptionalReference.Repository : IRepository<OptionalReference>, INavigationLoader<OptionalReference>, INavigationLinker<OptionalReference>, IBulkRepository<OptionalReference>
+    public partial class OptionalReference.Repository : IRepository<OptionalReference>, INavigationLoader<OptionalReference>, INavigationLinker<OptionalReference>, IBulkRepository<OptionalReference>, IIncludingReadRepository<OptionalReference>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<OptionalReference> Set { get; }
         internal DbContext Context { get; }
@@ -2585,6 +2610,7 @@ public partial class OptionalReference
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<OptionalReference, TResult> query, CancellationToken ct = default)
         public Task<OptionalReference?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<OptionalReference?> GetByIdAsync(Guid id, Func<IQueryable<OptionalReference>, IQueryable<OptionalReference>> includes, CancellationToken ct = default)
+        public Task<OptionalReference?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(OptionalReference entity)
         public void AddRange(IEnumerable<OptionalReference> entities)
         public void Remove(OptionalReference entity)
@@ -2645,7 +2671,7 @@ public partial class Owned
 
 ## Inventory.Owned.Repository.g.cs
 public partial class Owned
-    public partial class Owned.Repository : IRepository<Owned>, INavigationLoader<Owned>, INavigationLinker<Owned>, IBulkRepository<Owned>
+    public partial class Owned.Repository : IRepository<Owned>, INavigationLoader<Owned>, INavigationLinker<Owned>, IBulkRepository<Owned>, IIncludingReadRepository<Owned>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Owned> Set { get; }
         internal DbContext Context { get; }
@@ -2653,6 +2679,7 @@ public partial class Owned
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Owned, TResult> query, CancellationToken ct = default)
         public Task<Owned?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Owned?> GetByIdAsync(Guid id, Func<IQueryable<Owned>, IQueryable<Owned>> includes, CancellationToken ct = default)
+        public Task<Owned?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Owned entity)
         public void AddRange(IEnumerable<Owned> entities)
         public void Remove(Owned entity)
@@ -2713,7 +2740,7 @@ public partial class OwnedAndScoped : IOwnershipAssignable
 
 ## Inventory.OwnedAndScoped.Repository.g.cs
 public partial class OwnedAndScoped
-    public partial class OwnedAndScoped.Repository : IRepository<OwnedAndScoped>, INavigationLoader<OwnedAndScoped>, INavigationLinker<OwnedAndScoped>, IBulkRepository<OwnedAndScoped>
+    public partial class OwnedAndScoped.Repository : IRepository<OwnedAndScoped>, INavigationLoader<OwnedAndScoped>, INavigationLinker<OwnedAndScoped>, IBulkRepository<OwnedAndScoped>, IIncludingReadRepository<OwnedAndScoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<OwnedAndScoped> Set { get; }
         internal DbContext Context { get; }
@@ -2721,6 +2748,7 @@ public partial class OwnedAndScoped
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<OwnedAndScoped, TResult> query, CancellationToken ct = default)
         public Task<OwnedAndScoped?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<OwnedAndScoped?> GetByIdAsync(Guid id, Func<IQueryable<OwnedAndScoped>, IQueryable<OwnedAndScoped>> includes, CancellationToken ct = default)
+        public Task<OwnedAndScoped?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(OwnedAndScoped entity)
         public void AddRange(IEnumerable<OwnedAndScoped> entities)
         public void Remove(OwnedAndScoped entity)
@@ -2779,7 +2807,7 @@ public partial class Person
 
 ## Inventory.Person.Repository.g.cs
 public partial class Person
-    public partial class Person.Repository : IRepository<Person>, INavigationLoader<Person>, INavigationLinker<Person>, IBulkRepository<Person>
+    public partial class Person.Repository : IRepository<Person>, INavigationLoader<Person>, INavigationLinker<Person>, IBulkRepository<Person>, IIncludingReadRepository<Person>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Person> Set { get; }
         internal DbContext Context { get; }
@@ -2787,6 +2815,7 @@ public partial class Person
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Person, TResult> query, CancellationToken ct = default)
         public Task<Person?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Person?> GetByIdAsync(Guid id, Func<IQueryable<Person>, IQueryable<Person>> includes, CancellationToken ct = default)
+        public Task<Person?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Person entity)
         public void AddRange(IEnumerable<Person> entities)
         public void Remove(Person entity)
@@ -2845,7 +2874,7 @@ public static class PlainDtoQueryExtensions
 
 ## Inventory.Plain.Repository.g.cs
 public partial class Plain
-    public partial class Plain.Repository : IRepository<Plain>, INavigationLoader<Plain>, INavigationLinker<Plain>, IBulkRepository<Plain>
+    public partial class Plain.Repository : IRepository<Plain>, INavigationLoader<Plain>, INavigationLinker<Plain>, IBulkRepository<Plain>, IIncludingReadRepository<Plain>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Plain> Set { get; }
         internal DbContext Context { get; }
@@ -2853,6 +2882,7 @@ public partial class Plain
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Plain, TResult> query, CancellationToken ct = default)
         public Task<Plain?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Plain?> GetByIdAsync(Guid id, Func<IQueryable<Plain>, IQueryable<Plain>> includes, CancellationToken ct = default)
+        public Task<Plain?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Plain entity)
         public void AddRange(IEnumerable<Plain> entities)
         public void Remove(Plain entity)
@@ -2969,7 +2999,7 @@ public partial class PrincipalSide
 
 ## Inventory.PrincipalSide.Repository.g.cs
 public partial class PrincipalSide
-    public partial class PrincipalSide.Repository : IRepository<PrincipalSide>, INavigationLoader<PrincipalSide>, INavigationLinker<PrincipalSide>, IBulkRepository<PrincipalSide>
+    public partial class PrincipalSide.Repository : IRepository<PrincipalSide>, INavigationLoader<PrincipalSide>, INavigationLinker<PrincipalSide>, IBulkRepository<PrincipalSide>, IIncludingReadRepository<PrincipalSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<PrincipalSide> Set { get; }
         internal DbContext Context { get; }
@@ -2977,6 +3007,7 @@ public partial class PrincipalSide
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<PrincipalSide, TResult> query, CancellationToken ct = default)
         public Task<PrincipalSide?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<PrincipalSide?> GetByIdAsync(Guid id, Func<IQueryable<PrincipalSide>, IQueryable<PrincipalSide>> includes, CancellationToken ct = default)
+        public Task<PrincipalSide?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(PrincipalSide entity)
         public void AddRange(IEnumerable<PrincipalSide> entities)
         public void Remove(PrincipalSide entity)
@@ -3067,7 +3098,7 @@ public partial class ReachesAcrossBoundary
 
 ## Inventory.ReachesAcrossBoundary.Repository.g.cs
 public partial class ReachesAcrossBoundary
-    public partial class ReachesAcrossBoundary.Repository : IRepository<ReachesAcrossBoundary>, INavigationLoader<ReachesAcrossBoundary>, INavigationLinker<ReachesAcrossBoundary>, IBulkRepository<ReachesAcrossBoundary>
+    public partial class ReachesAcrossBoundary.Repository : IRepository<ReachesAcrossBoundary>, INavigationLoader<ReachesAcrossBoundary>, INavigationLinker<ReachesAcrossBoundary>, IBulkRepository<ReachesAcrossBoundary>, IIncludingReadRepository<ReachesAcrossBoundary>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<ReachesAcrossBoundary> Set { get; }
         internal DbContext Context { get; }
@@ -3075,6 +3106,7 @@ public partial class ReachesAcrossBoundary
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<ReachesAcrossBoundary, TResult> query, CancellationToken ct = default)
         public Task<ReachesAcrossBoundary?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<ReachesAcrossBoundary?> GetByIdAsync(Guid id, Func<IQueryable<ReachesAcrossBoundary>, IQueryable<ReachesAcrossBoundary>> includes, CancellationToken ct = default)
+        public Task<ReachesAcrossBoundary?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(ReachesAcrossBoundary entity)
         public void AddRange(IEnumerable<ReachesAcrossBoundary> entities)
         public void Remove(ReachesAcrossBoundary entity)
@@ -3170,7 +3202,7 @@ public partial class RelationChild
 
 ## Inventory.RelationChild.Repository.g.cs
 public partial class RelationChild
-    public partial class RelationChild.Repository : IRepository<RelationChild>, INavigationLoader<RelationChild>, INavigationLinker<RelationChild>, IBulkRepository<RelationChild>
+    public partial class RelationChild.Repository : IRepository<RelationChild>, INavigationLoader<RelationChild>, INavigationLinker<RelationChild>, IBulkRepository<RelationChild>, IIncludingReadRepository<RelationChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationChild> Set { get; }
         internal DbContext Context { get; }
@@ -3178,6 +3210,7 @@ public partial class RelationChild
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RelationChild, TResult> query, CancellationToken ct = default)
         public Task<RelationChild?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RelationChild?> GetByIdAsync(Guid id, Func<IQueryable<RelationChild>, IQueryable<RelationChild>> includes, CancellationToken ct = default)
+        public Task<RelationChild?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RelationChild entity)
         public void AddRange(IEnumerable<RelationChild> entities)
         public void Remove(RelationChild entity)
@@ -3268,7 +3301,7 @@ public partial class RelationParent
 
 ## Inventory.RelationParent.Repository.g.cs
 public partial class RelationParent
-    public partial class RelationParent.Repository : IRepository<RelationParent>, INavigationLoader<RelationParent>, INavigationLinker<RelationParent>, IBulkRepository<RelationParent>
+    public partial class RelationParent.Repository : IRepository<RelationParent>, INavigationLoader<RelationParent>, INavigationLinker<RelationParent>, IBulkRepository<RelationParent>, IIncludingReadRepository<RelationParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationParent> Set { get; }
         internal DbContext Context { get; }
@@ -3276,6 +3309,7 @@ public partial class RelationParent
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RelationParent, TResult> query, CancellationToken ct = default)
         public Task<RelationParent?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RelationParent?> GetByIdAsync(Guid id, Func<IQueryable<RelationParent>, IQueryable<RelationParent>> includes, CancellationToken ct = default)
+        public Task<RelationParent?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RelationParent entity)
         public void AddRange(IEnumerable<RelationParent> entities)
         public void Remove(RelationParent entity)
@@ -3328,7 +3362,7 @@ public partial class RelationSide
 
 ## Inventory.RelationSide.Repository.g.cs
 public partial class RelationSide
-    public partial class RelationSide.Repository : IRepository<RelationSide>, INavigationLoader<RelationSide>, INavigationLinker<RelationSide>, IBulkRepository<RelationSide>
+    public partial class RelationSide.Repository : IRepository<RelationSide>, INavigationLoader<RelationSide>, INavigationLinker<RelationSide>, IBulkRepository<RelationSide>, IIncludingReadRepository<RelationSide>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RelationSide> Set { get; }
         internal DbContext Context { get; }
@@ -3336,6 +3370,7 @@ public partial class RelationSide
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RelationSide, TResult> query, CancellationToken ct = default)
         public Task<RelationSide?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RelationSide?> GetByIdAsync(Guid id, Func<IQueryable<RelationSide>, IQueryable<RelationSide>> includes, CancellationToken ct = default)
+        public Task<RelationSide?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RelationSide entity)
         public void AddRange(IEnumerable<RelationSide> entities)
         public void Remove(RelationSide entity)
@@ -3467,7 +3502,7 @@ public partial class RequiredIntoSoftDeleted
 
 ## Inventory.RequiredIntoSoftDeleted.Repository.g.cs
 public partial class RequiredIntoSoftDeleted
-    public partial class RequiredIntoSoftDeleted.Repository : IRepository<RequiredIntoSoftDeleted>, INavigationLoader<RequiredIntoSoftDeleted>, INavigationLinker<RequiredIntoSoftDeleted>, IBulkRepository<RequiredIntoSoftDeleted>
+    public partial class RequiredIntoSoftDeleted.Repository : IRepository<RequiredIntoSoftDeleted>, INavigationLoader<RequiredIntoSoftDeleted>, INavigationLinker<RequiredIntoSoftDeleted>, IBulkRepository<RequiredIntoSoftDeleted>, IIncludingReadRepository<RequiredIntoSoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RequiredIntoSoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -3475,6 +3510,7 @@ public partial class RequiredIntoSoftDeleted
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RequiredIntoSoftDeleted, TResult> query, CancellationToken ct = default)
         public Task<RequiredIntoSoftDeleted?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RequiredIntoSoftDeleted?> GetByIdAsync(Guid id, Func<IQueryable<RequiredIntoSoftDeleted>, IQueryable<RequiredIntoSoftDeleted>> includes, CancellationToken ct = default)
+        public Task<RequiredIntoSoftDeleted?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RequiredIntoSoftDeleted entity)
         public void AddRange(IEnumerable<RequiredIntoSoftDeleted> entities)
         public void Remove(RequiredIntoSoftDeleted entity)
@@ -3786,7 +3822,7 @@ public partial class RollUpChild
 
 ## Inventory.RollUpChild.Repository.g.cs
 public partial class RollUpChild
-    public partial class RollUpChild.Repository : IRepository<RollUpChild>, INavigationLoader<RollUpChild>, INavigationLinker<RollUpChild>, IBulkRepository<RollUpChild>
+    public partial class RollUpChild.Repository : IRepository<RollUpChild>, INavigationLoader<RollUpChild>, INavigationLinker<RollUpChild>, IBulkRepository<RollUpChild>, IIncludingReadRepository<RollUpChild>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RollUpChild> Set { get; }
         internal DbContext Context { get; }
@@ -3794,6 +3830,7 @@ public partial class RollUpChild
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RollUpChild, TResult> query, CancellationToken ct = default)
         public Task<RollUpChild?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RollUpChild?> GetByIdAsync(Guid id, Func<IQueryable<RollUpChild>, IQueryable<RollUpChild>> includes, CancellationToken ct = default)
+        public Task<RollUpChild?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RollUpChild entity)
         public void AddRange(IEnumerable<RollUpChild> entities)
         public void Remove(RollUpChild entity)
@@ -3846,7 +3883,7 @@ public partial class RollUpParent
 
 ## Inventory.RollUpParent.Repository.g.cs
 public partial class RollUpParent
-    public partial class RollUpParent.Repository : IRepository<RollUpParent>, INavigationLoader<RollUpParent>, INavigationLinker<RollUpParent>, IBulkRepository<RollUpParent>
+    public partial class RollUpParent.Repository : IRepository<RollUpParent>, INavigationLoader<RollUpParent>, INavigationLinker<RollUpParent>, IBulkRepository<RollUpParent>, IIncludingReadRepository<RollUpParent>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<RollUpParent> Set { get; }
         internal DbContext Context { get; }
@@ -3854,6 +3891,7 @@ public partial class RollUpParent
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<RollUpParent, TResult> query, CancellationToken ct = default)
         public Task<RollUpParent?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<RollUpParent?> GetByIdAsync(Guid id, Func<IQueryable<RollUpParent>, IQueryable<RollUpParent>> includes, CancellationToken ct = default)
+        public Task<RollUpParent?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(RollUpParent entity)
         public void AddRange(IEnumerable<RollUpParent> entities)
         public void Remove(RollUpParent entity)
@@ -3905,7 +3943,7 @@ public partial class Scoped : ICreatable<Scoped>
 
 ## Inventory.Scoped.Repository.g.cs
 public partial class Scoped
-    public partial class Scoped.Repository : IRepository<Scoped>, INavigationLoader<Scoped>, INavigationLinker<Scoped>, IBulkRepository<Scoped>
+    public partial class Scoped.Repository : IRepository<Scoped>, INavigationLoader<Scoped>, INavigationLinker<Scoped>, IBulkRepository<Scoped>, IIncludingReadRepository<Scoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Scoped> Set { get; }
         internal DbContext Context { get; }
@@ -3913,6 +3951,7 @@ public partial class Scoped
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Scoped, TResult> query, CancellationToken ct = default)
         public Task<Scoped?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Scoped?> GetByIdAsync(Guid id, Func<IQueryable<Scoped>, IQueryable<Scoped>> includes, CancellationToken ct = default)
+        public Task<Scoped?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Scoped entity)
         public void AddRange(IEnumerable<Scoped> entities)
         public void Remove(Scoped entity)
@@ -4005,7 +4044,7 @@ public partial class SelfReferencing
 
 ## Inventory.SelfReferencing.Repository.g.cs
 public partial class SelfReferencing
-    public partial class SelfReferencing.Repository : IRepository<SelfReferencing>, INavigationLoader<SelfReferencing>, INavigationLinker<SelfReferencing>, IBulkRepository<SelfReferencing>
+    public partial class SelfReferencing.Repository : IRepository<SelfReferencing>, INavigationLoader<SelfReferencing>, INavigationLinker<SelfReferencing>, IBulkRepository<SelfReferencing>, IIncludingReadRepository<SelfReferencing>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SelfReferencing> Set { get; }
         internal DbContext Context { get; }
@@ -4013,6 +4052,7 @@ public partial class SelfReferencing
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<SelfReferencing, TResult> query, CancellationToken ct = default)
         public Task<SelfReferencing?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<SelfReferencing?> GetByIdAsync(Guid id, Func<IQueryable<SelfReferencing>, IQueryable<SelfReferencing>> includes, CancellationToken ct = default)
+        public Task<SelfReferencing?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(SelfReferencing entity)
         public void AddRange(IEnumerable<SelfReferencing> entities)
         public void Remove(SelfReferencing entity)
@@ -4060,7 +4100,7 @@ public partial class SoftDeleted : ICreatable<SoftDeleted>
 
 ## Inventory.SoftDeleted.Repository.g.cs
 public partial class SoftDeleted
-    public partial class SoftDeleted.Repository : IRepository<SoftDeleted>, INavigationLoader<SoftDeleted>, INavigationLinker<SoftDeleted>, IBulkRepository<SoftDeleted>
+    public partial class SoftDeleted.Repository : IRepository<SoftDeleted>, INavigationLoader<SoftDeleted>, INavigationLinker<SoftDeleted>, IBulkRepository<SoftDeleted>, IIncludingReadRepository<SoftDeleted>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeleted> Set { get; }
         internal DbContext Context { get; }
@@ -4068,6 +4108,7 @@ public partial class SoftDeleted
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<SoftDeleted, TResult> query, CancellationToken ct = default)
         public Task<SoftDeleted?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<SoftDeleted?> GetByIdAsync(Guid id, Func<IQueryable<SoftDeleted>, IQueryable<SoftDeleted>> includes, CancellationToken ct = default)
+        public Task<SoftDeleted?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(SoftDeleted entity)
         public void AddRange(IEnumerable<SoftDeleted> entities)
         public void Remove(SoftDeleted entity)
@@ -4138,7 +4179,7 @@ public partial class SoftDeletedAndOwned
 
 ## Inventory.SoftDeletedAndOwned.Repository.g.cs
 public partial class SoftDeletedAndOwned
-    public partial class SoftDeletedAndOwned.Repository : IRepository<SoftDeletedAndOwned>, INavigationLoader<SoftDeletedAndOwned>, INavigationLinker<SoftDeletedAndOwned>, IBulkRepository<SoftDeletedAndOwned>
+    public partial class SoftDeletedAndOwned.Repository : IRepository<SoftDeletedAndOwned>, INavigationLoader<SoftDeletedAndOwned>, INavigationLinker<SoftDeletedAndOwned>, IBulkRepository<SoftDeletedAndOwned>, IIncludingReadRepository<SoftDeletedAndOwned>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeletedAndOwned> Set { get; }
         internal DbContext Context { get; }
@@ -4146,6 +4187,7 @@ public partial class SoftDeletedAndOwned
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<SoftDeletedAndOwned, TResult> query, CancellationToken ct = default)
         public Task<SoftDeletedAndOwned?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<SoftDeletedAndOwned?> GetByIdAsync(Guid id, Func<IQueryable<SoftDeletedAndOwned>, IQueryable<SoftDeletedAndOwned>> includes, CancellationToken ct = default)
+        public Task<SoftDeletedAndOwned?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(SoftDeletedAndOwned entity)
         public void AddRange(IEnumerable<SoftDeletedAndOwned> entities)
         public void Remove(SoftDeletedAndOwned entity)
@@ -4203,7 +4245,7 @@ public partial class SoftDeletedWithLogicKey : ICreatable<SoftDeletedWithLogicKe
 
 ## Inventory.SoftDeletedWithLogicKey.Repository.g.cs
 public partial class SoftDeletedWithLogicKey
-    public partial class SoftDeletedWithLogicKey.Repository : IRepository<SoftDeletedWithLogicKey>, INavigationLoader<SoftDeletedWithLogicKey>, INavigationLinker<SoftDeletedWithLogicKey>, IBulkRepository<SoftDeletedWithLogicKey>
+    public partial class SoftDeletedWithLogicKey.Repository : IRepository<SoftDeletedWithLogicKey>, INavigationLoader<SoftDeletedWithLogicKey>, INavigationLinker<SoftDeletedWithLogicKey>, IBulkRepository<SoftDeletedWithLogicKey>, IIncludingReadRepository<SoftDeletedWithLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<SoftDeletedWithLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -4211,6 +4253,7 @@ public partial class SoftDeletedWithLogicKey
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<SoftDeletedWithLogicKey, TResult> query, CancellationToken ct = default)
         public Task<SoftDeletedWithLogicKey?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<SoftDeletedWithLogicKey?> GetByIdAsync(Guid id, Func<IQueryable<SoftDeletedWithLogicKey>, IQueryable<SoftDeletedWithLogicKey>> includes, CancellationToken ct = default)
+        public Task<SoftDeletedWithLogicKey?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(SoftDeletedWithLogicKey entity)
         public void AddRange(IEnumerable<SoftDeletedWithLogicKey> entities)
         public void Remove(SoftDeletedWithLogicKey entity)
@@ -4276,7 +4319,7 @@ public partial class Tag
 
 ## Inventory.Tag.Repository.g.cs
 public partial class Tag
-    public partial class Tag.Repository : IRepository<Tag>, INavigationLoader<Tag>, INavigationLinker<Tag>, IBulkRepository<Tag>
+    public partial class Tag.Repository : IRepository<Tag>, INavigationLoader<Tag>, INavigationLinker<Tag>, IBulkRepository<Tag>, IIncludingReadRepository<Tag>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Tag> Set { get; }
         internal DbContext Context { get; }
@@ -4284,6 +4327,7 @@ public partial class Tag
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Tag, TResult> query, CancellationToken ct = default)
         public Task<Tag?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Tag?> GetByIdAsync(Guid id, Func<IQueryable<Tag>, IQueryable<Tag>> includes, CancellationToken ct = default)
+        public Task<Tag?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Tag entity)
         public void AddRange(IEnumerable<Tag> entities)
         public void Remove(Tag entity)
@@ -4335,7 +4379,7 @@ public partial class TaggedThing
 
 ## Inventory.TaggedThing.Repository.g.cs
 public partial class TaggedThing
-    public partial class TaggedThing.Repository : IRepository<TaggedThing>, INavigationLoader<TaggedThing>, INavigationLinker<TaggedThing>, IBulkRepository<TaggedThing>
+    public partial class TaggedThing.Repository : IRepository<TaggedThing>, INavigationLoader<TaggedThing>, INavigationLinker<TaggedThing>, IBulkRepository<TaggedThing>, IIncludingReadRepository<TaggedThing>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TaggedThing> Set { get; }
         internal DbContext Context { get; }
@@ -4343,6 +4387,7 @@ public partial class TaggedThing
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TaggedThing, TResult> query, CancellationToken ct = default)
         public Task<TaggedThing?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TaggedThing?> GetByIdAsync(Guid id, Func<IQueryable<TaggedThing>, IQueryable<TaggedThing>> includes, CancellationToken ct = default)
+        public Task<TaggedThing?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TaggedThing entity)
         public void AddRange(IEnumerable<TaggedThing> entities)
         public void Remove(TaggedThing entity)
@@ -4400,7 +4445,7 @@ public partial class TaggedThingTag
 
 ## Inventory.TaggedThingTag.Repository.g.cs
 public partial class TaggedThingTag
-    public partial class TaggedThingTag.Repository : IRepository<TaggedThingTag>, INavigationLoader<TaggedThingTag>, INavigationLinker<TaggedThingTag>, IBulkRepository<TaggedThingTag>
+    public partial class TaggedThingTag.Repository : IRepository<TaggedThingTag>, INavigationLoader<TaggedThingTag>, INavigationLinker<TaggedThingTag>, IBulkRepository<TaggedThingTag>, IIncludingReadRepository<TaggedThingTag>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TaggedThingTag> Set { get; }
         internal DbContext Context { get; }
@@ -4408,6 +4453,7 @@ public partial class TaggedThingTag
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TaggedThingTag, TResult> query, CancellationToken ct = default)
         public Task<TaggedThingTag?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TaggedThingTag?> GetByIdAsync(Guid id, Func<IQueryable<TaggedThingTag>, IQueryable<TaggedThingTag>> includes, CancellationToken ct = default)
+        public Task<TaggedThingTag?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TaggedThingTag entity)
         public void AddRange(IEnumerable<TaggedThingTag> entities)
         public void Remove(TaggedThingTag entity)
@@ -4462,7 +4508,7 @@ public partial class TemporalRow
 
 ## Inventory.TemporalRow.Repository.g.cs
 public partial class TemporalRow
-    public partial class TemporalRow.Repository : IRepository<TemporalRow>, INavigationLoader<TemporalRow>, INavigationLinker<TemporalRow>, IBulkRepository<TemporalRow>
+    public partial class TemporalRow.Repository : IRepository<TemporalRow>, INavigationLoader<TemporalRow>, INavigationLinker<TemporalRow>, IBulkRepository<TemporalRow>, IIncludingReadRepository<TemporalRow>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TemporalRow> Set { get; }
         internal DbContext Context { get; }
@@ -4470,6 +4516,7 @@ public partial class TemporalRow
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TemporalRow, TResult> query, CancellationToken ct = default)
         public Task<TemporalRow?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TemporalRow?> GetByIdAsync(Guid id, Func<IQueryable<TemporalRow>, IQueryable<TemporalRow>> includes, CancellationToken ct = default)
+        public Task<TemporalRow?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TemporalRow entity)
         public void AddRange(IEnumerable<TemporalRow> entities)
         public void Remove(TemporalRow entity)
@@ -4556,7 +4603,7 @@ public partial class TenantScoped : ICreatable<TenantScoped>
 
 ## Inventory.TenantScoped.Repository.g.cs
 public partial class TenantScoped
-    public partial class TenantScoped.Repository : IRepository<TenantScoped>, INavigationLoader<TenantScoped>, INavigationLinker<TenantScoped>, IBulkRepository<TenantScoped>
+    public partial class TenantScoped.Repository : IRepository<TenantScoped>, INavigationLoader<TenantScoped>, INavigationLinker<TenantScoped>, IBulkRepository<TenantScoped>, IIncludingReadRepository<TenantScoped>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TenantScoped> Set { get; }
         internal DbContext Context { get; }
@@ -4564,6 +4611,7 @@ public partial class TenantScoped
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TenantScoped, TResult> query, CancellationToken ct = default)
         public Task<TenantScoped?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TenantScoped?> GetByIdAsync(Guid id, Func<IQueryable<TenantScoped>, IQueryable<TenantScoped>> includes, CancellationToken ct = default)
+        public Task<TenantScoped?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TenantScoped entity)
         public void AddRange(IEnumerable<TenantScoped> entities)
         public void Remove(TenantScoped entity)
@@ -4619,7 +4667,7 @@ public static class TraitedBaseInheritanceConfiguration
 
 ## Inventory.TraitedBase.Repository.g.cs
 public partial class TraitedBase
-    public partial class TraitedBase.Repository : IRepository<TraitedBase>, INavigationLoader<TraitedBase>, INavigationLinker<TraitedBase>, IBulkRepository<TraitedBase>
+    public partial class TraitedBase.Repository : IRepository<TraitedBase>, INavigationLoader<TraitedBase>, INavigationLinker<TraitedBase>, IBulkRepository<TraitedBase>, IIncludingReadRepository<TraitedBase>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, ICurrentUser? currentUser = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TraitedBase> Set { get; }
         internal DbContext Context { get; }
@@ -4627,6 +4675,7 @@ public partial class TraitedBase
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TraitedBase, TResult> query, CancellationToken ct = default)
         public Task<TraitedBase?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TraitedBase?> GetByIdAsync(Guid id, Func<IQueryable<TraitedBase>, IQueryable<TraitedBase>> includes, CancellationToken ct = default)
+        public Task<TraitedBase?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TraitedBase entity)
         public void AddRange(IEnumerable<TraitedBase> entities)
         public void Remove(TraitedBase entity)
@@ -4688,7 +4737,7 @@ public partial class TraitedDerived : ICreatable<TraitedDerived>
 
 ## Inventory.TraitedDerived.Repository.g.cs
 public partial class TraitedDerived
-    public new partial class TraitedDerived.Repository : IRepository<TraitedDerived>, INavigationLoader<TraitedDerived>, INavigationLinker<TraitedDerived>, IBulkRepository<TraitedDerived>
+    public new partial class TraitedDerived.Repository : IRepository<TraitedDerived>, INavigationLoader<TraitedDerived>, INavigationLinker<TraitedDerived>, IBulkRepository<TraitedDerived>, IIncludingReadRepository<TraitedDerived>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TraitedDerived> Set { get; }
         internal DbContext Context { get; }
@@ -4696,6 +4745,7 @@ public partial class TraitedDerived
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TraitedDerived, TResult> query, CancellationToken ct = default)
         public Task<TraitedDerived?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TraitedDerived?> GetByIdAsync(Guid id, Func<IQueryable<TraitedDerived>, IQueryable<TraitedDerived>> includes, CancellationToken ct = default)
+        public Task<TraitedDerived?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TraitedDerived entity)
         public void AddRange(IEnumerable<TraitedDerived> entities)
         public void Remove(TraitedDerived entity)
@@ -4748,7 +4798,7 @@ public partial class TreeNode
 
 ## Inventory.TreeNode.Repository.g.cs
 public partial class TreeNode
-    public partial class TreeNode.Repository : IRepository<TreeNode>, INavigationLoader<TreeNode>, INavigationLinker<TreeNode>, IBulkRepository<TreeNode>
+    public partial class TreeNode.Repository : IRepository<TreeNode>, INavigationLoader<TreeNode>, INavigationLinker<TreeNode>, IBulkRepository<TreeNode>, IIncludingReadRepository<TreeNode>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TreeNode> Set { get; }
         internal DbContext Context { get; }
@@ -4756,6 +4806,7 @@ public partial class TreeNode
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TreeNode, TResult> query, CancellationToken ct = default)
         public Task<TreeNode?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TreeNode?> GetByIdAsync(Guid id, Func<IQueryable<TreeNode>, IQueryable<TreeNode>> includes, CancellationToken ct = default)
+        public Task<TreeNode?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TreeNode entity)
         public void AddRange(IEnumerable<TreeNode> entities)
         public void Remove(TreeNode entity)
@@ -4812,7 +4863,7 @@ public partial class TwoWaysToTheSameType
 
 ## Inventory.TwoWaysToTheSameType.Repository.g.cs
 public partial class TwoWaysToTheSameType
-    public partial class TwoWaysToTheSameType.Repository : IRepository<TwoWaysToTheSameType>, INavigationLoader<TwoWaysToTheSameType>, INavigationLinker<TwoWaysToTheSameType>, IBulkRepository<TwoWaysToTheSameType>
+    public partial class TwoWaysToTheSameType.Repository : IRepository<TwoWaysToTheSameType>, INavigationLoader<TwoWaysToTheSameType>, INavigationLinker<TwoWaysToTheSameType>, IBulkRepository<TwoWaysToTheSameType>, IIncludingReadRepository<TwoWaysToTheSameType>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<TwoWaysToTheSameType> Set { get; }
         internal DbContext Context { get; }
@@ -4820,6 +4871,7 @@ public partial class TwoWaysToTheSameType
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<TwoWaysToTheSameType, TResult> query, CancellationToken ct = default)
         public Task<TwoWaysToTheSameType?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<TwoWaysToTheSameType?> GetByIdAsync(Guid id, Func<IQueryable<TwoWaysToTheSameType>, IQueryable<TwoWaysToTheSameType>> includes, CancellationToken ct = default)
+        public Task<TwoWaysToTheSameType?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(TwoWaysToTheSameType entity)
         public void AddRange(IEnumerable<TwoWaysToTheSameType> entities)
         public void Remove(TwoWaysToTheSameType entity)
@@ -4880,7 +4932,7 @@ public partial class UntypedTemporalRow : ICreatable<UntypedTemporalRow>
 
 ## Inventory.UntypedTemporalRow.Repository.g.cs
 public partial class UntypedTemporalRow
-    public partial class UntypedTemporalRow.Repository : IRepository<UntypedTemporalRow>, INavigationLoader<UntypedTemporalRow>, INavigationLinker<UntypedTemporalRow>, IBulkRepository<UntypedTemporalRow>
+    public partial class UntypedTemporalRow.Repository : IRepository<UntypedTemporalRow>, INavigationLoader<UntypedTemporalRow>, INavigationLinker<UntypedTemporalRow>, IBulkRepository<UntypedTemporalRow>, IIncludingReadRepository<UntypedTemporalRow>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<UntypedTemporalRow> Set { get; }
         internal DbContext Context { get; }
@@ -4888,6 +4940,7 @@ public partial class UntypedTemporalRow
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<UntypedTemporalRow, TResult> query, CancellationToken ct = default)
         public Task<UntypedTemporalRow?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<UntypedTemporalRow?> GetByIdAsync(Guid id, Func<IQueryable<UntypedTemporalRow>, IQueryable<UntypedTemporalRow>> includes, CancellationToken ct = default)
+        public Task<UntypedTemporalRow?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(UntypedTemporalRow entity)
         public void AddRange(IEnumerable<UntypedTemporalRow> entities)
         public void Remove(UntypedTemporalRow entity)
@@ -4963,7 +5016,7 @@ public partial class Widget : ICreatable<Widget>
 
 ## Inventory.Widget.Repository.g.cs
 public partial class Widget
-    public partial class Widget.Repository : IRepository<Widget>, INavigationLoader<Widget>, INavigationLinker<Widget>, IBulkRepository<Widget>
+    public partial class Widget.Repository : IRepository<Widget>, INavigationLoader<Widget>, INavigationLinker<Widget>, IBulkRepository<Widget>, IIncludingReadRepository<Widget>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<Widget> Set { get; }
         internal DbContext Context { get; }
@@ -4971,6 +5024,7 @@ public partial class Widget
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Widget, TResult> query, CancellationToken ct = default)
         public Task<Widget?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<Widget?> GetByIdAsync(Guid id, Func<IQueryable<Widget>, IQueryable<Widget>> includes, CancellationToken ct = default)
+        public Task<Widget?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(Widget entity)
         public void AddRange(IEnumerable<Widget> entities)
         public void Remove(Widget entity)
@@ -5053,7 +5107,7 @@ public partial class WithCompositeLogicKey : ICreatable<WithCompositeLogicKey>
 
 ## Inventory.WithCompositeLogicKey.Repository.g.cs
 public partial class WithCompositeLogicKey
-    public partial class WithCompositeLogicKey.Repository : IRepository<WithCompositeLogicKey>, INavigationLoader<WithCompositeLogicKey>, INavigationLinker<WithCompositeLogicKey>, IBulkRepository<WithCompositeLogicKey>
+    public partial class WithCompositeLogicKey.Repository : IRepository<WithCompositeLogicKey>, INavigationLoader<WithCompositeLogicKey>, INavigationLinker<WithCompositeLogicKey>, IBulkRepository<WithCompositeLogicKey>, IIncludingReadRepository<WithCompositeLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithCompositeLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5061,6 +5115,7 @@ public partial class WithCompositeLogicKey
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithCompositeLogicKey, TResult> query, CancellationToken ct = default)
         public Task<WithCompositeLogicKey?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithCompositeLogicKey?> GetByIdAsync(Guid id, Func<IQueryable<WithCompositeLogicKey>, IQueryable<WithCompositeLogicKey>> includes, CancellationToken ct = default)
+        public Task<WithCompositeLogicKey?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithCompositeLogicKey entity)
         public void AddRange(IEnumerable<WithCompositeLogicKey> entities)
         public void Remove(WithCompositeLogicKey entity)
@@ -5113,7 +5168,7 @@ public partial class WithComputedDefault : ICreatable<WithComputedDefault>
 
 ## Inventory.WithComputedDefault.Repository.g.cs
 public partial class WithComputedDefault
-    public partial class WithComputedDefault.Repository : IRepository<WithComputedDefault>, INavigationLoader<WithComputedDefault>, INavigationLinker<WithComputedDefault>, IBulkRepository<WithComputedDefault>
+    public partial class WithComputedDefault.Repository : IRepository<WithComputedDefault>, INavigationLoader<WithComputedDefault>, INavigationLinker<WithComputedDefault>, IBulkRepository<WithComputedDefault>, IIncludingReadRepository<WithComputedDefault>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithComputedDefault> Set { get; }
         internal DbContext Context { get; }
@@ -5121,6 +5176,7 @@ public partial class WithComputedDefault
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithComputedDefault, TResult> query, CancellationToken ct = default)
         public Task<WithComputedDefault?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithComputedDefault?> GetByIdAsync(Guid id, Func<IQueryable<WithComputedDefault>, IQueryable<WithComputedDefault>> includes, CancellationToken ct = default)
+        public Task<WithComputedDefault?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithComputedDefault entity)
         public void AddRange(IEnumerable<WithComputedDefault> entities)
         public void Remove(WithComputedDefault entity)
@@ -5169,7 +5225,7 @@ public partial class WithEventfulStateMachine : ICreatable<WithEventfulStateMach
 
 ## Inventory.WithEventfulStateMachine.Repository.g.cs
 public partial class WithEventfulStateMachine
-    public partial class WithEventfulStateMachine.Repository : IRepository<WithEventfulStateMachine>, INavigationLoader<WithEventfulStateMachine>, INavigationLinker<WithEventfulStateMachine>, IBulkRepository<WithEventfulStateMachine>
+    public partial class WithEventfulStateMachine.Repository : IRepository<WithEventfulStateMachine>, INavigationLoader<WithEventfulStateMachine>, INavigationLinker<WithEventfulStateMachine>, IBulkRepository<WithEventfulStateMachine>, IIncludingReadRepository<WithEventfulStateMachine>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithEventfulStateMachine> Set { get; }
         internal DbContext Context { get; }
@@ -5177,6 +5233,7 @@ public partial class WithEventfulStateMachine
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithEventfulStateMachine, TResult> query, CancellationToken ct = default)
         public Task<WithEventfulStateMachine?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithEventfulStateMachine?> GetByIdAsync(Guid id, Func<IQueryable<WithEventfulStateMachine>, IQueryable<WithEventfulStateMachine>> includes, CancellationToken ct = default)
+        public Task<WithEventfulStateMachine?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithEventfulStateMachine entity)
         public void AddRange(IEnumerable<WithEventfulStateMachine> entities)
         public void Remove(WithEventfulStateMachine entity)
@@ -5235,7 +5292,7 @@ public sealed class WithGeneratedValueNumberValueGenerator : IDefaultValueGenera
 
 ## Inventory.WithGeneratedValue.Repository.g.cs
 public partial class WithGeneratedValue
-    public partial class WithGeneratedValue.Repository : IRepository<WithGeneratedValue>, INavigationLoader<WithGeneratedValue>, INavigationLinker<WithGeneratedValue>, IBulkRepository<WithGeneratedValue>
+    public partial class WithGeneratedValue.Repository : IRepository<WithGeneratedValue>, INavigationLoader<WithGeneratedValue>, INavigationLinker<WithGeneratedValue>, IBulkRepository<WithGeneratedValue>, IIncludingReadRepository<WithGeneratedValue>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithGeneratedValue> Set { get; }
         internal DbContext Context { get; }
@@ -5243,6 +5300,7 @@ public partial class WithGeneratedValue
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithGeneratedValue, TResult> query, CancellationToken ct = default)
         public Task<WithGeneratedValue?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithGeneratedValue?> GetByIdAsync(Guid id, Func<IQueryable<WithGeneratedValue>, IQueryable<WithGeneratedValue>> includes, CancellationToken ct = default)
+        public Task<WithGeneratedValue?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithGeneratedValue entity)
         public void AddRange(IEnumerable<WithGeneratedValue> entities)
         public void Remove(WithGeneratedValue entity)
@@ -5291,7 +5349,7 @@ public partial class WithInvariant : ICreatable<WithInvariant>
 
 ## Inventory.WithInvariant.Repository.g.cs
 public partial class WithInvariant
-    public partial class WithInvariant.Repository : IRepository<WithInvariant>, INavigationLoader<WithInvariant>, INavigationLinker<WithInvariant>, IBulkRepository<WithInvariant>
+    public partial class WithInvariant.Repository : IRepository<WithInvariant>, INavigationLoader<WithInvariant>, INavigationLinker<WithInvariant>, IBulkRepository<WithInvariant>, IIncludingReadRepository<WithInvariant>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithInvariant> Set { get; }
         internal DbContext Context { get; }
@@ -5299,6 +5357,7 @@ public partial class WithInvariant
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithInvariant, TResult> query, CancellationToken ct = default)
         public Task<WithInvariant?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithInvariant?> GetByIdAsync(Guid id, Func<IQueryable<WithInvariant>, IQueryable<WithInvariant>> includes, CancellationToken ct = default)
+        public Task<WithInvariant?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithInvariant entity)
         public void AddRange(IEnumerable<WithInvariant> entities)
         public void Remove(WithInvariant entity)
@@ -5347,7 +5406,7 @@ public partial class WithLogicKey : ICreatable<WithLogicKey>
 
 ## Inventory.WithLogicKey.Repository.g.cs
 public partial class WithLogicKey
-    public partial class WithLogicKey.Repository : IRepository<WithLogicKey>, INavigationLoader<WithLogicKey>, INavigationLinker<WithLogicKey>, IBulkRepository<WithLogicKey>
+    public partial class WithLogicKey.Repository : IRepository<WithLogicKey>, INavigationLoader<WithLogicKey>, INavigationLinker<WithLogicKey>, IBulkRepository<WithLogicKey>, IIncludingReadRepository<WithLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5355,6 +5414,7 @@ public partial class WithLogicKey
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithLogicKey, TResult> query, CancellationToken ct = default)
         public Task<WithLogicKey?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithLogicKey?> GetByIdAsync(Guid id, Func<IQueryable<WithLogicKey>, IQueryable<WithLogicKey>> includes, CancellationToken ct = default)
+        public Task<WithLogicKey?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithLogicKey entity)
         public void AddRange(IEnumerable<WithLogicKey> entities)
         public void Remove(WithLogicKey entity)
@@ -5406,7 +5466,7 @@ public partial class WithOrderedLogicKey : ICreatable<WithOrderedLogicKey>
 
 ## Inventory.WithOrderedLogicKey.Repository.g.cs
 public partial class WithOrderedLogicKey
-    public partial class WithOrderedLogicKey.Repository : IRepository<WithOrderedLogicKey>, INavigationLoader<WithOrderedLogicKey>, INavigationLinker<WithOrderedLogicKey>, IBulkRepository<WithOrderedLogicKey>
+    public partial class WithOrderedLogicKey.Repository : IRepository<WithOrderedLogicKey>, INavigationLoader<WithOrderedLogicKey>, INavigationLinker<WithOrderedLogicKey>, IBulkRepository<WithOrderedLogicKey>, IIncludingReadRepository<WithOrderedLogicKey>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithOrderedLogicKey> Set { get; }
         internal DbContext Context { get; }
@@ -5414,6 +5474,7 @@ public partial class WithOrderedLogicKey
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithOrderedLogicKey, TResult> query, CancellationToken ct = default)
         public Task<WithOrderedLogicKey?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithOrderedLogicKey?> GetByIdAsync(Guid id, Func<IQueryable<WithOrderedLogicKey>, IQueryable<WithOrderedLogicKey>> includes, CancellationToken ct = default)
+        public Task<WithOrderedLogicKey?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithOrderedLogicKey entity)
         public void AddRange(IEnumerable<WithOrderedLogicKey> entities)
         public void Remove(WithOrderedLogicKey entity)
@@ -5466,7 +5527,7 @@ public partial class WithPresets : ICreatable<WithPresets>
 
 ## Inventory.WithPresets.Repository.g.cs
 public partial class WithPresets
-    public partial class WithPresets.Repository : IRepository<WithPresets>, INavigationLoader<WithPresets>, INavigationLinker<WithPresets>, IBulkRepository<WithPresets>
+    public partial class WithPresets.Repository : IRepository<WithPresets>, INavigationLoader<WithPresets>, INavigationLinker<WithPresets>, IBulkRepository<WithPresets>, IIncludingReadRepository<WithPresets>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithPresets> Set { get; }
         internal DbContext Context { get; }
@@ -5474,6 +5535,7 @@ public partial class WithPresets
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithPresets, TResult> query, CancellationToken ct = default)
         public Task<WithPresets?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithPresets?> GetByIdAsync(Guid id, Func<IQueryable<WithPresets>, IQueryable<WithPresets>> includes, CancellationToken ct = default)
+        public Task<WithPresets?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithPresets entity)
         public void AddRange(IEnumerable<WithPresets> entities)
         public void Remove(WithPresets entity)
@@ -5532,7 +5594,7 @@ public partial class WithProjectable
 
 ## Inventory.WithProjectable.Repository.g.cs
 public partial class WithProjectable
-    public partial class WithProjectable.Repository : IRepository<WithProjectable>, INavigationLoader<WithProjectable>, INavigationLinker<WithProjectable>, IBulkRepository<WithProjectable>
+    public partial class WithProjectable.Repository : IRepository<WithProjectable>, INavigationLoader<WithProjectable>, INavigationLinker<WithProjectable>, IBulkRepository<WithProjectable>, IIncludingReadRepository<WithProjectable>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithProjectable> Set { get; }
         internal DbContext Context { get; }
@@ -5540,6 +5602,7 @@ public partial class WithProjectable
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithProjectable, TResult> query, CancellationToken ct = default)
         public Task<WithProjectable?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithProjectable?> GetByIdAsync(Guid id, Func<IQueryable<WithProjectable>, IQueryable<WithProjectable>> includes, CancellationToken ct = default)
+        public Task<WithProjectable?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithProjectable entity)
         public void AddRange(IEnumerable<WithProjectable> entities)
         public void Remove(WithProjectable entity)
@@ -5589,7 +5652,7 @@ public partial class WithStateMachine : ICreatable<WithStateMachine>
 
 ## Inventory.WithStateMachine.Repository.g.cs
 public partial class WithStateMachine
-    public partial class WithStateMachine.Repository : IRepository<WithStateMachine>, INavigationLoader<WithStateMachine>, INavigationLinker<WithStateMachine>, IBulkRepository<WithStateMachine>
+    public partial class WithStateMachine.Repository : IRepository<WithStateMachine>, INavigationLoader<WithStateMachine>, INavigationLinker<WithStateMachine>, IBulkRepository<WithStateMachine>, IIncludingReadRepository<WithStateMachine>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithStateMachine> Set { get; }
         internal DbContext Context { get; }
@@ -5597,6 +5660,7 @@ public partial class WithStateMachine
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithStateMachine, TResult> query, CancellationToken ct = default)
         public Task<WithStateMachine?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithStateMachine?> GetByIdAsync(Guid id, Func<IQueryable<WithStateMachine>, IQueryable<WithStateMachine>> includes, CancellationToken ct = default)
+        public Task<WithStateMachine?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithStateMachine entity)
         public void AddRange(IEnumerable<WithStateMachine> entities)
         public void Remove(WithStateMachine entity)
@@ -5650,7 +5714,7 @@ public partial class WithValueObject : ICreatable<WithValueObject>
 
 ## Inventory.WithValueObject.Repository.g.cs
 public partial class WithValueObject
-    public partial class WithValueObject.Repository : IRepository<WithValueObject>, INavigationLoader<WithValueObject>, INavigationLinker<WithValueObject>, IBulkRepository<WithValueObject>
+    public partial class WithValueObject.Repository : IRepository<WithValueObject>, INavigationLoader<WithValueObject>, INavigationLinker<WithValueObject>, IBulkRepository<WithValueObject>, IIncludingReadRepository<WithValueObject>
         public Repository(DbContext db, IUnitOfWork unitOfWork, IQueryFilterProvider? filterProvider = null, FilterMapComposer? filterMapComposer = null, ITenantContext? tenantContext = null, IQueryFilterToggle? filterToggle = null, TimeProvider? timeProvider = null, IEnumerable<RollUpRule>? rollUpRules = null, IQueryExecutor? executor = null)
         public DbSet<WithValueObject> Set { get; }
         internal DbContext Context { get; }
@@ -5658,6 +5722,7 @@ public partial class WithValueObject
         public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<WithValueObject, TResult> query, CancellationToken ct = default)
         public Task<WithValueObject?> GetByIdAsync(Guid id, CancellationToken ct = default)
         public Task<WithValueObject?> GetByIdAsync(Guid id, Func<IQueryable<WithValueObject>, IQueryable<WithValueObject>> includes, CancellationToken ct = default)
+        public Task<WithValueObject?> GetByIdIncludingAsync(Guid id, string includes, CancellationToken ct = default)
         public void Add(WithValueObject entity)
         public void AddRange(IEnumerable<WithValueObject> entities)
         public void Remove(WithValueObject entity)
