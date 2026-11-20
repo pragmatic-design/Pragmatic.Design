@@ -133,9 +133,13 @@ public sealed partial class DocUnitOfWork
         }
     }
 
+    /// <summary>MongoDB's code for a document its collection's validator refused.</summary>
+    private const int DocumentValidationFailure = 121;
+
     /// <summary>
     ///     A store's refusal of a write as Pragmatic's broken rule: a stale copy a <see cref="ConcurrencyError" />, a duplicate key (or, on Cosmos
-    ///     DB, a taken id of a new document) a conflict. Null for any other failure, which stays as it is.
+    ///     DB, a taken id of a new document) a conflict, a document the collection's validator refused a constraint error. Null for any other
+    ///     failure, which stays as it is.
     /// </summary>
     /// <remarks>
     ///     A duplicate carries the code its index declared (#728), asked of <paramref name="written" />: MongoDB names the index and only the
@@ -154,6 +158,10 @@ public sealed partial class DocUnitOfWork
                 var conflict = DbConflictError.UniqueViolation(type, field, index);
                 var code = written is IDeclaresUniqueErrorCodes declares ? declares.UniqueErrorCode(null, index) : null;
                 return new PersistenceRuleViolationException(code is null ? conflict : conflict with { DeclaredCode = code }, duplicate);
+            case MongoWriteException { Code: DocumentValidationFailure } invalid:
+                // The collection's validator refused the document (a temporal relation's range, #900): a broken rule, as the Sql engine
+                // classifies a check it fails (SqlRuleViolations).
+                return new PersistenceRuleViolationException(new DbConstraintError { ConstraintType = "Check", TableName = type, Details = invalid.Message }, invalid);
             case CosmosException { IsConflict: true } taken when added:
                 // The id is taken in its partition (or a unique key policy refused the document): Cosmos DB names no field.
                 return new PersistenceRuleViolationException(DbConflictError.UniqueViolation(type, null, null), taken);

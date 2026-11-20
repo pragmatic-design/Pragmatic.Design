@@ -57,7 +57,6 @@ const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine com
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
 const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
-const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does not refuse a second open stretch or an inverted one (#900)`;
 const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
@@ -198,14 +197,6 @@ export const ALLOWED_TEST_EXCLUSIONS = {
     file: s('EntityPersistence/SoftDeleteTests.cs'), engines: ['Sql'], reason: COMPILED_AT_CALL,
   },
 
-  // Written through the repository with no mutation, so only the store can refuse them: the documents engine's does not (#900). The
-  // history scope and the mutation's own check, in the same file, run there.
-  [test('EntityPersistence/TemporalRelationTests.cs', 'ASecondOpenStretch_IsRefusedByTheDatabase_EvenOutsideAMutation')]: {
-    file: s('EntityPersistence/TemporalRelationTests.cs'), engines: ['Documents'], reason: NO_DOC_TEMPORAL_REFUSAL,
-  },
-  [test('EntityPersistence/TemporalRelationTests.cs', 'AStretchEndingBeforeItBegins_IsRefusedByTheDatabase')]: {
-    file: s('EntityPersistence/TemporalRelationTests.cs'), engines: ['Documents'], reason: NO_DOC_TEMPORAL_REFUSAL,
-  },
 
   // A room type updated: UpdateRoomTypeMutation, which the documents engine refuses (PRAG3112) and the Catalog project leaves out there.
   [test('Endpoints/AutoIncludeTests.cs', 'AnUpdate_WhoseResponseFlattensANavigation_LoadsIt')]: {

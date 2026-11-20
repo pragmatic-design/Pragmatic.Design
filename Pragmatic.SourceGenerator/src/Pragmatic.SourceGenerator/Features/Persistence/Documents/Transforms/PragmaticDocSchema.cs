@@ -94,12 +94,12 @@ internal static class PragmaticDocSchema
     {
         var softDelete = PragmaticShape.Has(entity, "SoftDeleteAttribute") && model.Field("IsDeleted") is not null;
         var tenant = entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.MultiTenancy.ITenantEntity") && model.Field("TenantId") is not null;
-        var indexes = new List<(string Name, string[] Fields, bool Unique, string? Live)>();
+        var indexes = new List<(string Name, string[] Fields, bool Unique, string? Live, string? Null)>();
         void Index(string[] fields, bool unique = false, string? live = null)
         {
             var name = $"IX_{model.Collection}_{string.Join("_", fields)}";
             if (fields.Length > 0 && !indexes.Exists(i => i.Name == name))
-                indexes.Add((name, fields, unique, live));
+                indexes.Add((name, fields, unique, live, null));
         }
 
         // The domain key's unique index (#607), read by the rule the Sql engine and EF Core read it with: its parts in order, the tenant leading
@@ -119,6 +119,12 @@ internal static class PragmaticDocSchema
                                                         && kind.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => Equals(f.ConstantValue, scope))?.Name == "Global");
             Index(tenant && !global ? fields.Prepend("TenantId").ToArray() : fields.ToArray(), true, softDelete ? "IsDeleted" : null);
         }
+
+        // MaxActive = 1: one open stretch per parent, the Sql engine's IX_{Table}_{ParentKey}_Active, so a write past the mutation's check (the
+        // repository, the session) is refused by the store too (#900). Unique on the parent's key among the documents whose ValidTo is null.
+        var validTo = model.Field("ValidTo")?.Name;
+        if (Persistence.Transforms.EntityTransform.OneOpenStretchParentKey(entity) is { } parentKey && model.Field(parentKey) is { } parentField && validTo is not null)
+            indexes.Add(($"IX_{model.Collection}_{parentField.Name}_Active", [parentField.Name], true, null, validTo));
 
         if (softDelete)
             Index(["IsDeleted"]);
@@ -154,8 +160,12 @@ internal static class PragmaticDocSchema
         }
 
         var partition = "/" + (model.PartitionKey is { } p ? DocModel.JsonName(p) : "id");
-        var indexText = indexes.Select(i => $"new global::Pragmatic.Persistence.Documents.Schema.DocIndex({DocTypeEmitter.Literal(i.Name)}, [{string.Join(", ", i.Fields.Select(DocTypeEmitter.Literal))}]{(i.Unique ? ", Unique: true" : "")}{(i.Live is null ? "" : ", LiveField: " + DocTypeEmitter.Literal(i.Live))})");
-        return $"new global::Pragmatic.Persistence.Documents.Schema.DocCollectionSchema({DocTypeEmitter.Literal(model.Collection!)}, {DocTypeEmitter.Literal(partition)}, [{string.Join(", ", indexText)}], [{string.Join(", ", composites)}])";
+        var indexText = indexes.Select(i => $"new global::Pragmatic.Persistence.Documents.Schema.DocIndex({DocTypeEmitter.Literal(i.Name)}, [{string.Join(", ", i.Fields.Select(DocTypeEmitter.Literal))}]{(i.Unique ? ", Unique: true" : "")}{(i.Live is null ? "" : ", LiveField: " + DocTypeEmitter.Literal(i.Live))}{(i.Null is null ? "" : ", NullField: " + DocTypeEmitter.Literal(i.Null))})");
+        // A temporal relation's range, the Sql engine's CK_{Table}_ValidRange (#900): ValidTo null, or not before ValidFrom.
+        var ranges = PragmaticShape.Has(entity, "TemporalRelationAttribute") && model.Field("ValidFrom")?.Name is { } validFrom && validTo is not null
+            ? $", [new global::Pragmatic.Persistence.Documents.Schema.DocRange({DocTypeEmitter.Literal($"CK_{model.Collection}_ValidRange")}, {DocTypeEmitter.Literal(validFrom)}, {DocTypeEmitter.Literal(validTo)})]"
+            : "";
+        return $"new global::Pragmatic.Persistence.Documents.Schema.DocCollectionSchema({DocTypeEmitter.Literal(model.Collection!)}, {DocTypeEmitter.Literal(partition)}, [{string.Join(", ", indexText)}], [{string.Join(", ", composites)}]{ranges})";
     }
 
     /// <summary>Pragmatic's <c>DeriveRootNamespace</c>, as the Sql engine's <c>DefaultSchema</c> uses it.</summary>

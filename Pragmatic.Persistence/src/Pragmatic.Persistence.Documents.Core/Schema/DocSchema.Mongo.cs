@@ -48,12 +48,25 @@ public static partial class DocSchema
                     w.Write("name", index.Name);
                     if (index.Unique)
                         w.Write("unique", true);
-                    if (index.LiveField is { } live)
+                    if (index.LiveField is not null || index.NullField is not null)
                     {
                         w.StartDocument("partialFilterExpression");
-                        w.StartDocument(live);
-                        w.Write("$eq", false);
-                        w.EndDocument();
+                        if (index.LiveField is { } live)
+                        {
+                            w.StartDocument(live);
+                            w.Write("$eq", false);
+                            w.EndDocument();
+                        }
+
+                        // A null stored as null (the engine writes it, never leaves the field out): $type, which a partial filter takes on
+                        // every supported server, where an equality with null is refused there.
+                        if (index.NullField is { } open)
+                        {
+                            w.StartDocument(open);
+                            w.Write("$type", "null");
+                            w.EndDocument();
+                        }
+
                         w.EndDocument();
                     }
 
@@ -62,16 +75,20 @@ public static partial class DocSchema
                 }, ct).ConfigureAwait(false);
                 changes.Add(new DocSchemaChange(collection.Collection, index.Name, outcome));
             }
+
+            if (collection.Ranges is { Count: > 0 } ranges)
+                changes.AddRange(await EnsureMongoRangesAsync(client, session.Database, collection.Collection, ranges, ct).ConfigureAwait(false));
         }
 
         return new DocSchemaReport(changes);
     }
 
-    /// <summary>An index as <c>listIndexes</c> reports it: its key's fields in order, unique, the live field of its partial filter.</summary>
-    private sealed record MongoIndex(List<string> Fields, bool Unique, string? LiveField)
+    /// <summary>An index as <c>listIndexes</c> reports it: its key's fields in order, unique, the live and the null field of its partial filter.</summary>
+    private sealed record MongoIndex(List<string> Fields, bool Unique, string? LiveField, string? NullField)
     {
         public bool Matches(DocIndex declared)
-            => Fields.SequenceEqual(declared.Fields, StringComparer.Ordinal) && Unique == declared.Unique && LiveField == declared.LiveField;
+            => Fields.SequenceEqual(declared.Fields, StringComparer.Ordinal) && Unique == declared.Unique && LiveField == declared.LiveField
+               && NullField == declared.NullField;
     }
 
     private static async Task<Dictionary<string, MongoIndex>> ExistingIndexesAsync(MongoClient client, string database, string collection, CancellationToken ct)
@@ -95,10 +112,22 @@ public static partial class DocSchema
                 if (!index.TryGetString("name", out var name) || !index.TryGetDocument("key", out var key))
                     continue;
                 var unique = index.TryGetBoolean("unique", out var u) && u;
-                string? live = null;
-                if (index.TryGetDocument("partialFilterExpression", out var filter) && filter.Names() is [var field])
-                    live = field; // the one shape this schema writes: { field: { $eq: false } }
-                indexes[name] = new MongoIndex(key.Names(), unique, live);
+                string? live = null, open = null;
+                if (index.TryGetDocument("partialFilterExpression", out var filter))
+                {
+                    // The two shapes this schema writes: { field: { $eq: false } } and { field: { $type: "null" } }.
+                    foreach (var field in filter.Names())
+                    {
+                        if (!filter.TryGetDocument(field, out var condition))
+                            continue;
+                        if (condition.TryGetString("$type", out var type) && type == "null")
+                            open = field;
+                        else if (condition.TryGetBoolean("$eq", out var equals) && !equals)
+                            live = field;
+                    }
+                }
+
+                indexes[name] = new MongoIndex(key.Names(), unique, live, open);
             }
         }
 

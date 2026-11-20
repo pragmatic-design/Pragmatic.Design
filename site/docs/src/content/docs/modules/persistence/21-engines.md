@@ -98,7 +98,9 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
 - **Documents engine.** A boundary gets the generated `{Boundary}DocSchema`: its collections, their indexes, their
   Cosmos DB partition keys and composite indexes. A Pragmatic host applies it at start through the boundary's
   session. What the backend cannot apply stops the start, and so does a boundary whose session nothing
-  registered: the message names the `Add{Boundary}Persistence` call that is missing.
+  registered: the message names the `Add{Boundary}Persistence` call that is missing. A refusal the backend has no
+  means for and the mutation's check holds (a temporal relation's on Cosmos DB) is reported as `MutationOnly`, and
+  does not stop it.
 
 ## What is the same
 
