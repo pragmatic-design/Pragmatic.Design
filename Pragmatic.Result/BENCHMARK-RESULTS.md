@@ -21,6 +21,14 @@ disassembly (`twins-2_ResultBenchmarks-asm.md`) but not the times: there, a row 
 same instructions read up to 38% apart, and several rows changed sign between runs (`twins-1_*`, `twins-2_*`,
 `twins-3-launches_*`). On the runner the same pair reads level.
 
+⚠️ **The table below predates #890.** Until then every row that stores reloaded its arrays from `this` on each
+element: the JIT cannot hoist a field load past a store to the heap. What those reloads cost depended on where
+the GC put the benchmark object against the sink, so the heap layout moved the rows that store. On the
+development machine, one more 16 KB array in the class moved `CreateSuccess` and its twin by about 35%, and
+by no more than the run-to-run noise once the loops read their arrays into locals. The rows that only read were
+never affected. The ratios of the rows that store are the runner's from before the change, and are to be read
+again from its next run.
+
 ## The twins
 
 A row walks 1,024 inputs (every fourth a failure); its twin walks the same inputs written as hand-written code

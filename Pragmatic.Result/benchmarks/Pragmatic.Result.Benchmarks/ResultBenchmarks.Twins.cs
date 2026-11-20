@@ -65,16 +65,18 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_CreateSuccess()
     {
+        var (sink, values) = (_tupleSink, _values);
         for (var i = 0; i < Batch; i++)
-            _tupleSink[i] = (_values[i], null);
+            sink[i] = (values[i], null);
     }
 
     /// <summary>Twin of <see cref="CreateFailure" /> and <see cref="CreateFailure_Implicit" />.</summary>
     [Benchmark]
     public void Twin_CreateFailure()
     {
+        var sink = _tupleSink;
         for (var i = 0; i < Batch; i++)
-            _tupleSink[i] = (0, BenchmarkError.Instance);
+            sink[i] = (0, BenchmarkError.Instance);
     }
 
     /// <summary>Twin of <see cref="IsSuccess_Check" />.</summary>
@@ -116,10 +118,11 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_Map()
     {
+        var (sink, tuples) = (_stringTupleSink, _tuples);
         for (var i = 0; i < Batch; i++)
         {
-            var result = _tuples[i];
-            _stringTupleSink[i] = result.Error is null ? (result.Value.ToString(), null) : (null, result.Error);
+            var result = tuples[i];
+            sink[i] = result.Error is null ? (result.Value.ToString(), null) : (null, result.Error);
         }
     }
 
@@ -127,10 +130,11 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_MapChained()
     {
+        var (sink, tuples) = (_stringTupleSink, _tuples);
         for (var i = 0; i < Batch; i++)
         {
-            var result = _tuples[i];
-            _stringTupleSink[i] = result.Error is null ? ((result.Value * 2 + 10).ToString(), null) : (null, result.Error);
+            var result = tuples[i];
+            sink[i] = result.Error is null ? ((result.Value * 2 + 10).ToString(), null) : (null, result.Error);
         }
     }
 
@@ -138,10 +142,11 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_Bind()
     {
+        var (sink, tuples) = (_tupleSink, _tuples);
         for (var i = 0; i < Batch; i++)
         {
-            var result = _tuples[i];
-            _tupleSink[i] = result.Error is null ? (result.Value * 2, null) : (0, result.Error);
+            var result = tuples[i];
+            sink[i] = result.Error is null ? (result.Value * 2, null) : (0, result.Error);
         }
     }
 
@@ -149,32 +154,36 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_VoidSuccess()
     {
+        var sink = _errorSink;
         for (var i = 0; i < Batch; i++)
-            _errorSink[i] = null;
+            sink[i] = null;
     }
 
     /// <summary>Twin of <see cref="VoidResult_Failure" />.</summary>
     [Benchmark]
     public void Twin_VoidFailure()
     {
+        var sink = _errorSink;
         for (var i = 0; i < Batch; i++)
-            _errorSink[i] = BenchmarkError.Instance;
+            sink[i] = BenchmarkError.Instance;
     }
 
     /// <summary>Twin of <see cref="Maybe_CreateSome" />.</summary>
     [Benchmark]
     public void Twin_MaybeSome()
     {
+        var (sink, values) = (_maybeTupleSink, _values);
         for (var i = 0; i < Batch; i++)
-            _maybeTupleSink[i] = (true, _values[i]);
+            sink[i] = (true, values[i]);
     }
 
     /// <summary>Twin of <see cref="Maybe_CreateNone" />.</summary>
     [Benchmark]
     public void Twin_MaybeNone()
     {
+        var sink = _maybeTupleSink;
         for (var i = 0; i < Batch; i++)
-            _maybeTupleSink[i] = (false, 0);
+            sink[i] = (false, 0);
     }
 
     /// <summary>Twin of <see cref="Maybe_GetValueOrDefault" /> and <see cref="Maybe_Match" />.</summary>
@@ -195,8 +204,9 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Twin_MultiSuccess()
     {
+        var (sink, values) = (_multiTupleSink, _values);
         for (var i = 0; i < Batch; i++)
-            _multiTupleSink[i] = (_values[i], null, null);
+            sink[i] = (values[i], null, null);
     }
 
     /// <summary>Twin of <see cref="MultiError_Match" />.</summary>

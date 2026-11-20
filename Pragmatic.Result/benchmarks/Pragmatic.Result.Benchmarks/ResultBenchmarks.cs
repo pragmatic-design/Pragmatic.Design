@@ -18,6 +18,14 @@ namespace Pragmatic.Result.Benchmarks;
 ///         drop. A row's mean is the cost of <see cref="Batch" /> operations.
 ///     </para>
 ///     <para>
+///         ⚠️ <b>A loop that stores reads its arrays into locals first.</b> Written as <c>_sink[i] = … _values[i]</c>, it reloaded
+///         both fields from <c>this</c> on every iteration: the JIT cannot hoist a field load past a store to the heap, which might be
+///         to <c>this</c>. What those reloads cost depended on where <c>this</c> sat relative to the sink, so the heap layout decided
+///         the row: one more 16 KB array allocated by the class, and nothing else, moved <c>CreateSuccess</c> and its twin by about
+///         30% (#847, #890). With locals the loop reloads nothing, and the rows stay put. A loop that only reads has no store to block
+///         the hoist.
+///     </para>
+///     <para>
 ///         <see cref="Setup" /> runs every benchmark once and stops the run unless each computed what it
 ///         says (<see cref="VerifyEachComputesWhatItSays" />).
 ///     </para>
@@ -89,29 +97,33 @@ public partial class ResultBenchmarks
     [Benchmark(Baseline = true)]
     public void CreateSuccess()
     {
+        var (sink, values) = (_resultSink, _values);
         for (var i = 0; i < Batch; i++)
-            _resultSink[i] = Result<int, BenchmarkError>.Success(_values[i]);
+            sink[i] = Result<int, BenchmarkError>.Success(values[i]);
     }
 
     [Benchmark]
     public void CreateFailure()
     {
+        var sink = _resultSink;
         for (var i = 0; i < Batch; i++)
-            _resultSink[i] = Result<int, BenchmarkError>.Failure(BenchmarkError.Instance);
+            sink[i] = Result<int, BenchmarkError>.Failure(BenchmarkError.Instance);
     }
 
     [Benchmark]
     public void CreateSuccess_Implicit()
     {
+        var (sink, values) = (_resultSink, _values);
         for (var i = 0; i < Batch; i++)
-            _resultSink[i] = _values[i];
+            sink[i] = values[i];
     }
 
     [Benchmark]
     public void CreateFailure_Implicit()
     {
+        var sink = _resultSink;
         for (var i = 0; i < Batch; i++)
-            _resultSink[i] = BenchmarkError.Instance;
+            sink[i] = BenchmarkError.Instance;
     }
 
     // ── Access ──
@@ -158,22 +170,25 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Map_SingleTransform()
     {
+        var (sink, results) = (_stringSink, _results);
         for (var i = 0; i < Batch; i++)
-            _stringSink[i] = _results[i].Map(v => v.ToString());
+            sink[i] = results[i].Map(v => v.ToString());
     }
 
     [Benchmark]
     public void Map_ChainedTransforms()
     {
+        var (sink, results) = (_stringSink, _results);
         for (var i = 0; i < Batch; i++)
-            _stringSink[i] = _results[i].Map(v => v * 2).Map(v => v + 10).Map(v => v.ToString());
+            sink[i] = results[i].Map(v => v * 2).Map(v => v + 10).Map(v => v.ToString());
     }
 
     [Benchmark]
     public void Bind_SingleOperation()
     {
+        var (sink, results) = (_resultSink, _results);
         for (var i = 0; i < Batch; i++)
-            _resultSink[i] = _results[i].Bind(v => Result<int, BenchmarkError>.Success(v * 2));
+            sink[i] = results[i].Bind(v => Result<int, BenchmarkError>.Success(v * 2));
     }
 
     // ── VoidResult ──
@@ -181,15 +196,17 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void VoidResult_Success()
     {
+        var sink = _voidSink;
         for (var i = 0; i < Batch; i++)
-            _voidSink[i] = VoidResult<BenchmarkError>.Success();
+            sink[i] = VoidResult<BenchmarkError>.Success();
     }
 
     [Benchmark]
     public void VoidResult_Failure()
     {
+        var sink = _voidSink;
         for (var i = 0; i < Batch; i++)
-            _voidSink[i] = VoidResult<BenchmarkError>.Failure(BenchmarkError.Instance);
+            sink[i] = VoidResult<BenchmarkError>.Failure(BenchmarkError.Instance);
     }
 
     // ── Maybe ──
@@ -197,15 +214,17 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void Maybe_CreateSome()
     {
+        var (sink, values) = (_maybeSink, _values);
         for (var i = 0; i < Batch; i++)
-            _maybeSink[i] = Maybe<int>.Some(_values[i]);
+            sink[i] = Maybe<int>.Some(values[i]);
     }
 
     [Benchmark]
     public void Maybe_CreateNone()
     {
+        var sink = _maybeSink;
         for (var i = 0; i < Batch; i++)
-            _maybeSink[i] = Maybe<int>.None();
+            sink[i] = Maybe<int>.None();
     }
 
     [Benchmark]
@@ -231,8 +250,9 @@ public partial class ResultBenchmarks
     [Benchmark]
     public void MultiError_CreateSuccess()
     {
+        var (sink, values) = (_multiSink, _values);
         for (var i = 0; i < Batch; i++)
-            _multiSink[i] = Result<int, BenchmarkError, BenchmarkError2>.Success(_values[i]);
+            sink[i] = Result<int, BenchmarkError, BenchmarkError2>.Success(values[i]);
     }
 
     [Benchmark]
