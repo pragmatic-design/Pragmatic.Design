@@ -188,7 +188,17 @@ internal static class RepositoryFeature
         if (entity.IsTemporalRelation)
         {
             if (!isEfCore)
+            {
+                // [GenerateTimeline] on an engine (#898): the same GetTimelineAsync EF Core's AdvancedFeature writes, over the repository.
+                if (entity.HasGenerateTimeline)
+                {
+                    var timeline = new EngineTimelineTemplate(entity).RenderOutput();
+                    if (!timeline.IsEmpty)
+                        context.AddSource(timeline);
+                }
+
                 return;
+            }
 
             var temporalTemplate = new TemporalQueryExtensionsTemplate(entity);
             var artifact = temporalTemplate.RenderOutput();

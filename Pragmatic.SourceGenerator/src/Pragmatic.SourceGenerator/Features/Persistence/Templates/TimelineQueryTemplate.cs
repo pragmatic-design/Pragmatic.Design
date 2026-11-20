@@ -78,15 +78,46 @@ internal sealed class TimelineQueryTemplate : CSharpTemplate
 
         AppendLine();
 
+        // The engine-neutral read (#898): the same method on the Sql and documents engines (EngineTimelineTemplate), here over the CTE.
+        XmlSummary(GetTimelineAsyncSummary(_model.TypeName));
+        XmlParam("repository", "The entity's read repository: the generated Repository, over the boundary's DbContext.");
+        XmlParam("filters", "The request's filter toggle. Unread here: the CTE is raw SQL and goes around the query filters.");
+        XmlParam("ct", "Cancels the read.");
+        XmlReturns("One entry per validity period, ordered by ValidFrom.");
+        AppendLine($"public static global::System.Threading.Tasks.Task<global::System.Collections.Generic.List<{_model.TypeName}TimelineEntry>> GetTimelineAsync(");
+        AppendLine($"    this global::Pragmatic.Persistence.Repository.IReadRepository<{entityType}> repository,");
+        AppendLine("    global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle filters,");
+        AppendLine("    global::System.Threading.CancellationToken ct = default)");
+        Block(() =>
+        {
+            AppendLine($"if (repository is not {entityType}.Repository efCore)");
+            AppendLine($"    throw new global::System.InvalidOperationException(\"GetTimelineAsync reads {_model.TypeName}'s timeline through its generated EF Core repository; this one is \" + repository.GetType().Name + \".\");");
+            AppendLine("return global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(efCore.Context.GetTimeline(), ct);");
+        });
+
+        AppendLine();
+
         // Generate the timeline entry record
         XmlSummary($"Timeline entry for <see cref=\"{_model.TypeName}\"/> with LAG/LEAD columns.");
         AppendLine($"public sealed record {_model.TypeName}TimelineEntry");
         Block(() =>
         {
-            AppendLine("public global::System.DateTimeOffset ValidFrom { get; init; }");
-            AppendLine("public global::System.DateTimeOffset? ValidTo { get; init; }");
-            AppendLine("public global::System.DateTimeOffset? PreviousValidTo { get; init; }");
-            AppendLine("public global::System.DateTimeOffset? NextValidFrom { get; init; }");
+            foreach (var member in EntryMembers)
+                AppendLine(member);
         });
     }
+
+    /// <summary>The entry's members, written by this template and by <see cref="EngineTimelineTemplate" />: one entry type on every engine.</summary>
+    internal static readonly string[] EntryMembers =
+    [
+        "public global::System.DateTimeOffset ValidFrom { get; init; }",
+        "public global::System.DateTimeOffset? ValidTo { get; init; }",
+        "public global::System.DateTimeOffset? PreviousValidTo { get; init; }",
+        "public global::System.DateTimeOffset? NextValidFrom { get; init; }",
+    ];
+
+    /// <summary>The summary of <c>GetTimelineAsync</c>, the same on every engine.</summary>
+    internal static string GetTimelineAsyncSummary(string typeName)
+        => $"Gets the timeline of <see cref=\"{typeName}\"/> on every engine: each validity period with the end of the one before and the "
+           + "start of the one after, partitioned by the parent, ordered by ValidFrom.";
 }

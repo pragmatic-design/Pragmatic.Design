@@ -381,6 +381,19 @@ var timeline = await dbContext.GetTimeline().ToListAsync(ct);
 var gaps = timeline.Where(e => e.ValidTo is not null && e.NextValidFrom > e.ValidTo);
 ```
 
+**On every engine** the same class also has `GetTimelineAsync` over the entity's read repository, with the same entry
+type, so code that reads a timeline does not depend on the engine:
+
+```csharp
+var timeline = await staffAssignments.GetTimelineAsync(filters, ct); // IReadRepository<StaffAssignment>, IQueryFilterToggle
+```
+
+- **EF Core** runs the CTE above.
+- **The Sql and documents engines** read the periods through the repository with the temporal filter lifted (the
+  entity's `IncludeHistory`), and link them in memory: per parent, ordered by `ValidFrom`, the same four instants. One
+  entry per period comes back either way, so the window computed in memory moves no more rows than one computed
+  by the database. Unlike the raw CTE, the caller's other filters (tenant, owner, scopes) still apply there.
+
 Three things follow from how it is built (a `LAG`/`LEAD` CTE executed through `SqlQueryRaw`):
 
 - it reads the **whole** table, partitioned by the temporal parent's FK when the entity has one; there

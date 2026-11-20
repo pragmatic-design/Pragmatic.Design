@@ -94,10 +94,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Real gaps (#898, #899): [GenerateTimeline] is generated on EF Core only, as an extension of the DbContext; and a temporal
-         relation's point-in-time read and auto-close exist only as IQueryable extensions, which the engines do not serve. -->
+    <!-- A real gap (#899): a temporal relation's point-in-time read and auto-close exist only as IQueryable extensions, which the
+         engines do not serve. -->
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalQueryExtensionsTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TheTimelineOfARoleTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
