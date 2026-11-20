@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The generated setters: the bound-rule test writes a guest's address past the mutation, which no operation does (#878). -->
+    <InternalsVisibleTo Include="Showcase.Sql.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Showcase.Catalog.Sql\Showcase.Catalog.Sql.csproj" />
     <ProjectReference Include="..\Showcase.Accounts.Sql\Showcase.Accounts.Sql.csproj" />
   </ItemGroup>

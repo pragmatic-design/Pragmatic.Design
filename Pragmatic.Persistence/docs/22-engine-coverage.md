@@ -15,25 +15,21 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **596** | 670 | 26 | 3 |
-| Documents | **536** | 670 | 32 | 43 |
+| Sql | **606** | 670 | 23 | 3 |
+| Documents | **546** | 670 | 29 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**7 test files, 17 test methods**, left out on both engines because the test itself reads or prepares rows through
+**3 test files, 6 test methods**, left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
 
 | File | Test methods |
 |---|---|
-| `Authorization/ThePackageEntitiesHaveATableTests.cs` | 5 |
-| `Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs` | 2 |
 | `CrossCutting/SagaPersistenceTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
 | `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
-| `Queries/SpecificationCompositionTests.cs` | 2 |
-| `Validation/WhenTheExpensiveRuleRunsTests.cs` | 2 |
 
 ## 2. EF Core only: read through an IQueryable
 
@@ -136,6 +132,7 @@ no serializable transaction, so concurrent adds can cross it.
 
 **The test is of a mechanism of the EF Core provider**, which the engines do not have by construction:
 
+- `Authorization/ThePackagesColumnLengthsTests.cs` (both), 1 test methods
 - `CrossCutting/DeclaredSpecificationQueryableTests.cs` (both), 1 test methods
 - `CrossCutting/LocalizedFieldProjectionTests.cs` (both), 1 test methods
 - `CrossCutting/ReadAccessSetTests.cs` (both), 1 test methods

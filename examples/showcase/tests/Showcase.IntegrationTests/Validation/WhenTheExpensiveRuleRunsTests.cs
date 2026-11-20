@@ -1,9 +1,12 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
 using Showcase.Booking;
+using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
 namespace Showcase.IntegrationTests.Validation;
@@ -21,8 +24,8 @@ namespace Showcase.IntegrationTests.Validation;
 ///     <para>
 ///         ⚠️ <b>The skip is the half that is hard to see.</b> "The rule refuses a duplicate" is
 ///         satisfied just as well by a rule that runs on every write, so the second test puts the
-///         guest in a state the rule rejects — writing the duplicate address <b>straight into the
-///         table</b>, past the mutation — and then changes the phone. It goes through only because
+///         guest in a state the rule rejects — writing the duplicate address <b>through the
+///         repository</b>, past the mutation and its validators — and then changes the phone. It goes through only because
 ///         <c>Email</c> is not among the modified properties. Asserting that a <i>valid</i> update
 ///         succeeds would prove nothing: it succeeds either way.
 ///     </para>
@@ -88,13 +91,21 @@ public class WhenTheExpensiveRuleRunsTests(PostgresFixture fixture) : Integratio
         return (created.GetProperty("id").GetGuid(), email);
     }
 
+    /// <summary>
+    ///     Writes the address through the repository and the unit of work, which run no validator: only the mutation's pipeline does. The
+    ///     row filters are lifted because outside a request there is no caller to own the row.
+    /// </summary>
     private async Task ForceEmailAsync(Guid guestId, string email)
     {
+        using var tenant = TenantScope.BeginScope("test-tenant");
         using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(BookingBoundary));
+        using var filters = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
 
-        await db.Database.ExecuteSqlAsync(
-            $"""UPDATE "Guests" SET "Email" = {email} WHERE "PersistenceId" = {guestId}""");
+        var guests = scope.ServiceProvider.GetRequiredService<IRepository<Guest>>();
+        var guest = await guests.GetByIdAsync(guestId) ?? throw new InvalidOperationException($"no guest {guestId}");
+        guest.SetEmail(email);
+        guests.Update(guest);
+        await scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(BookingBoundary)).SaveChangesAsync();
     }
 
     private async Task<string?> StoredEmailAsync(Guid guestId)
