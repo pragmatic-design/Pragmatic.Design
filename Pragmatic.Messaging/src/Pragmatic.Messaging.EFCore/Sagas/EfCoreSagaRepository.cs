@@ -68,6 +68,15 @@ public sealed partial class EfCoreSagaRepository<TSaga, TState>(
     }
 
     /// <inheritdoc />
+    public async Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default)
+        => await dbContext.Set<SagaInstance>()
+            .AsNoTracking()
+            .Where(s => s.Id == sagaId && s.SagaType == SagaTypeName)
+            .Select(s => (SagaStatus?)s.Status)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+
+    /// <inheritdoc />
     public Task SaveAsync(TSaga saga, CancellationToken ct = default)
         => SaveCoreAsync(saga, timeoutAt: null, applyTimeout: false, executedStepName: null, ct);
 

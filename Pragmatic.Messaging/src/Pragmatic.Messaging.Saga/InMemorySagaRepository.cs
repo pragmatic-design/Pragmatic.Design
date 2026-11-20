@@ -17,7 +17,8 @@ public sealed class InMemorySagaRepository<TSaga>(
     private readonly ConcurrentDictionary<Guid, TSaga> _sagas = new();
     private readonly ConcurrentDictionary<string, Guid> _correlationIndex = new();
     private readonly ConcurrentDictionary<Guid, DateTimeOffset> _timeouts = new();
-    private readonly ConcurrentDictionary<Guid, byte> _timedOut = new();
+    // The terminal status the orchestrator ended a saga in (timed out, compensated, faulted). A completed one is read off the saga itself.
+    private readonly ConcurrentDictionary<Guid, SagaStatus> _ended = new();
     private readonly ConcurrentDictionary<Guid, ConcurrentQueue<string>> _steps = new();
 
     /// <inheritdoc />
@@ -37,6 +38,16 @@ public sealed class InMemorySagaRepository<TSaga>(
     }
 
     /// <inheritdoc />
+    public Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default)
+    {
+        if (!_sagas.TryGetValue(sagaId, out var saga))
+            return Task.FromResult<SagaStatus?>(null);
+        if (_ended.TryGetValue(sagaId, out var ended))
+            return Task.FromResult<SagaStatus?>(ended);
+        return Task.FromResult<SagaStatus?>(completedAccessor(saga) is null ? SagaStatus.Active : SagaStatus.Completed);
+    }
+
+    /// <inheritdoc />
     public Task SaveAsync(TSaga saga, CancellationToken ct = default)
     {
         var id = idAccessor(saga);
@@ -47,6 +58,8 @@ public sealed class InMemorySagaRepository<TSaga>(
 
         _sagas[id] = saga;
         _correlationIndex[correlationId] = id;
+        // A save sets the status from the saga again, as the durable stores' saves do: Active, or Completed.
+        _ended.TryRemove(id, out _);
 
         return Task.CompletedTask;
     }
@@ -61,6 +74,7 @@ public sealed class InMemorySagaRepository<TSaga>(
         // State + deadline updated together (atomic) — mirrors the EF repo's single-commit save.
         _sagas[id] = saga;
         _correlationIndex[correlationId] = id;
+        _ended.TryRemove(id, out _);
         if (timeoutAt is null)
             _timeouts.TryRemove(id, out _);
         else
@@ -123,7 +137,23 @@ public sealed class InMemorySagaRepository<TSaga>(
     public Task MarkTimedOutAsync(Guid sagaId, CancellationToken ct = default)
     {
         _timeouts.TryRemove(sagaId, out _);
-        _timedOut[sagaId] = 1;
+        _ended[sagaId] = SagaStatus.TimedOut;
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Kept, as the durable stores keep it, so <see cref="GetStatusAsync" /> tells a compensated saga from a completed one.</remarks>
+    public Task MarkCompensatedAsync(Guid sagaId, CancellationToken ct = default)
+    {
+        _timeouts.TryRemove(sagaId, out _);
+        _ended[sagaId] = SagaStatus.Compensated;
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task MarkFaultedAsync(Guid sagaId, string error, CancellationToken ct = default)
+    {
+        _ended[sagaId] = SagaStatus.Faulted;
         return Task.CompletedTask;
     }
 
@@ -131,5 +161,5 @@ public sealed class InMemorySagaRepository<TSaga>(
     public int Count => _sagas.Count;
 
     /// <summary>True if the saga has been marked timed-out. Exposed for tests / diagnostics.</summary>
-    public bool IsTimedOut(Guid sagaId) => _timedOut.ContainsKey(sagaId);
+    public bool IsTimedOut(Guid sagaId) => _ended.TryGetValue(sagaId, out var status) && status == SagaStatus.TimedOut;
 }

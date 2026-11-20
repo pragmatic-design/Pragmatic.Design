@@ -19,6 +19,8 @@ internal sealed class RepositoryThatFailsOneStep<TSaga>(ISagaRepository<TSaga> i
 
     public Task<TSaga?> FindByIdAsync(Guid id, CancellationToken ct = default) => inner.FindByIdAsync(id, ct);
 
+    public Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default) => inner.GetStatusAsync(sagaId, ct);
+
     public Task SaveAsync(TSaga saga, CancellationToken ct = default) => inner.SaveAsync(saga, ct);
 
     public Task SaveWithTimeoutAsync(TSaga saga, DateTimeOffset? timeoutAt, CancellationToken ct = default)

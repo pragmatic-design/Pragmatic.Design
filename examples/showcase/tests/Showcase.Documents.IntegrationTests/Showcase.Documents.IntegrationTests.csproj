@@ -118,10 +118,6 @@
     <Compile Remove="..\Showcase.IntegrationTests\DomainActions\BoundaryDbConnectionTests.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Test code bound to EF Core: the status a saga ends in is read from EF Core's tables, since ISagaRepository has no read of it (#884). -->
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\SagaPersistenceTests.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- Names a type the generator puts in the assembly's namespace (Showcase.Booking.ApiRoutes): an engine copy is another assembly, so it does not compile here. Not a gap. -->

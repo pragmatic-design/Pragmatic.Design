@@ -51,6 +51,45 @@ public class InMemorySagaRepositoryTests
     }
 
     [Fact]
+    public async Task GetStatusAsync_ReadsTheStatusEachEndLeavesTheSagaIn()
+    {
+        var repo = CreateRepository();
+        (await repo.GetStatusAsync(Guid.NewGuid())).Should().BeNull("no saga has that id");
+
+        var active = CreateSaga();
+        var completed = CreateSaga(completedAt: DateTimeOffset.UtcNow);
+        var compensated = CreateSaga();
+        var timedOut = CreateSaga();
+        var faulted = CreateSaga();
+        foreach (var saga in new[] { active, completed, compensated, timedOut, faulted })
+            await repo.SaveAsync(saga);
+
+        await repo.MarkCompensatedAsync(compensated.Id);
+        await repo.MarkTimedOutAsync(timedOut.Id);
+        await repo.MarkFaultedAsync(faulted.Id, "the step threw");
+
+        (await repo.GetStatusAsync(active.Id)).Should().Be(SagaStatus.Active);
+        (await repo.GetStatusAsync(completed.Id)).Should().Be(SagaStatus.Completed);
+        (await repo.GetStatusAsync(compensated.Id)).Should().Be(SagaStatus.Compensated);
+        (await repo.GetStatusAsync(timedOut.Id)).Should().Be(SagaStatus.TimedOut);
+        (await repo.GetStatusAsync(faulted.Id)).Should().Be(SagaStatus.Faulted);
+    }
+
+    /// <summary>A save sets the status from the saga again, as the durable stores' saves do.</summary>
+    [Fact]
+    public async Task GetStatusAsync_AfterASave_ReadsTheSagaAgain()
+    {
+        var repo = CreateRepository();
+        var saga = CreateSaga();
+        await repo.SaveAsync(saga);
+        await repo.MarkFaultedAsync(saga.Id, "the step threw");
+
+        await repo.SaveAsync(saga);
+
+        (await repo.GetStatusAsync(saga.Id)).Should().Be(SagaStatus.Active);
+    }
+
+    [Fact]
     public async Task SaveAsync_UpdatesExistingSaga()
     {
         var repo = CreateRepository();

@@ -61,6 +61,17 @@ public sealed partial class SqlSagaRepository<TSaga, TState>(
     }
 
     /// <inheritdoc />
+    public async Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default)
+    {
+        var row = tenantContext is null
+            ? await session.Query<SagaInstanceRow>().FirstOrDefaultAsync((r, a) => r.Id == a.Id && r.SagaType == a.Type, (Id: sagaId, Type: SagaType), ct).ConfigureAwait(false)
+            : await session.Query<SagaInstanceRow>()
+                .FirstOrDefaultAsync((r, a) => r.Id == a.Id && r.SagaType == a.Type && r.TenantId == a.Tenant, (Id: sagaId, Type: SagaType, Tenant: Tenant), ct)
+                .ConfigureAwait(false);
+        return row is null ? null : (SagaStatus)row.Status;
+    }
+
+    /// <inheritdoc />
     public Task SaveAsync(TSaga saga, CancellationToken ct = default) => SaveCoreAsync(saga, null, applyTimeout: false, null, null, ct);
 
     /// <inheritdoc />

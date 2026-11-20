@@ -44,6 +44,9 @@ public sealed class RacingSagaRepository : ISagaRepository<TwoAcknowledgementsSa
     public Task<TwoAcknowledgementsSaga?> FindByIdAsync(Guid id, CancellationToken ct = default)
         => FindByCorrelationAsync("", ct);
 
+    public Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default)
+        => Task.FromResult<SagaStatus?>(_document is null ? null : Faulted ? SagaStatus.Faulted : SagaStatus.Active);
+
     public Task SaveAsync(TwoAcknowledgementsSaga saga, CancellationToken ct = default)
     {
         if (_document is not null)
