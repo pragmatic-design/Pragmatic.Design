@@ -137,8 +137,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Migrations/MigrationRunnerE2ETests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
 
   ...Object.fromEntries([
-    // The status a saga ends in is read from EF Core's tables: ISagaRepository has no read of it on the engines (#884).
-    'CrossCutting/SagaPersistenceTests.cs',
     // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
     // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).

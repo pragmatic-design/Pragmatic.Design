@@ -20,19 +20,18 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **606** | 670 | 23 | 3 |
-| Documents | **546** | 670 | 29 | 43 |
+| Sql | **609** | 670 | 22 | 3 |
+| Documents | **549** | 670 | 28 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**3 test files, 6 test methods**, left out on both engines because the test itself reads or prepares rows through
+**2 test files, 3 test methods**, left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
 
 | File | Test methods |
 |---|---|
-| `CrossCutting/SagaPersistenceTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
 | `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
 

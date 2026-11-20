@@ -398,6 +398,30 @@ public class EfCoreSagaRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetStatusAsync_ReadsTheStatusEachEndLeavesTheSagaIn()
+    {
+        (await _repository.GetStatusAsync(Guid.NewGuid())).Should().BeNull("no saga has that id");
+
+        var active = CreateSaga(correlationId: "status-active");
+        var completed = CreateSaga(correlationId: "status-completed", completedAt: DateTimeOffset.UtcNow);
+        var compensated = CreateSaga(correlationId: "status-compensated");
+        var timedOut = CreateSaga(correlationId: "status-timed-out");
+        var faulted = CreateSaga(correlationId: "status-faulted");
+        foreach (var saga in new[] { active, completed, compensated, timedOut, faulted })
+            await _repository.SaveAsync(saga);
+
+        await _repository.MarkCompensatedAsync(compensated.Id);
+        await _repository.MarkTimedOutAsync(timedOut.Id);
+        await _repository.MarkFaultedAsync(faulted.Id, "the step threw");
+
+        (await _repository.GetStatusAsync(active.Id)).Should().Be(SagaStatus.Active);
+        (await _repository.GetStatusAsync(completed.Id)).Should().Be(SagaStatus.Completed);
+        (await _repository.GetStatusAsync(compensated.Id)).Should().Be(SagaStatus.Compensated);
+        (await _repository.GetStatusAsync(timedOut.Id)).Should().Be(SagaStatus.TimedOut);
+        (await _repository.GetStatusAsync(faulted.Id)).Should().Be(SagaStatus.Faulted);
+    }
+
+    [Fact]
     public async Task FindByCorrelationAsync_ExistingSaga_ReturnsSaga()
     {
         var saga = CreateSaga(correlationId: "corr-42");

@@ -13,6 +13,17 @@ public interface ISagaRepository<TSaga> where TSaga : class
     /// <summary>Finds a saga by its unique ID.</summary>
     Task<TSaga?> FindByIdAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    ///     The status the saga is in: <see cref="SagaStatus.Active" /> while it runs, or the terminal one the orchestrator ended it in
+    ///     (<see cref="SagaStatus.Completed" />, <see cref="SagaStatus.Compensated" />, <see cref="SagaStatus.TimedOut" />,
+    ///     <see cref="SagaStatus.Faulted" />); null when the store holds no saga of this type with that ID.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="FindByIdAsync" /> answers the saga's own state, which says nothing of how it ended, and <see cref="GetActiveAsync" />
+    ///     only whether it still runs. This is the read that tells a compensated saga from a completed one without going around the store.
+    /// </remarks>
+    Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default);
+
     /// <summary>Saves (insert or update) a saga instance.</summary>
     Task SaveAsync(TSaga saga, CancellationToken ct = default);
 

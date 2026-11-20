@@ -60,6 +60,15 @@ public sealed partial class DocSagaRepository<TSaga, TState>(
     }
 
     /// <inheritdoc />
+    public async Task<SagaStatus?> GetStatusAsync(Guid sagaId, CancellationToken ct = default)
+    {
+        var document = await session.Query<SagaInstanceDocument>()
+            .FirstOrDefaultAsync((d, a) => d.Id == a.Id && d.SagaType == a.Type && d.TenantId == a.Tenant, (Id: sagaId, Type: SagaType, Tenant: Tenant), ct)
+            .ConfigureAwait(false);
+        return document is null ? null : (SagaStatus)document.Status;
+    }
+
+    /// <inheritdoc />
     public Task SaveAsync(TSaga saga, CancellationToken ct = default) => SaveCoreAsync(saga, null, applyTimeout: false, null, null, ct);
 
     /// <inheritdoc />

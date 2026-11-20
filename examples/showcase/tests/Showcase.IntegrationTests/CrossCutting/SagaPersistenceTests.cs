@@ -1,24 +1,20 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Messaging;
-using Pragmatic.Messaging.EFCore.Sagas;
 using Pragmatic.Messaging.Saga;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Testing.Assertions;
-using Showcase.Booking.Entities;
 using Showcase.Booking.Reservations.Sagas;
 using Showcase.IntegrationTests.Infrastructure;
 
 namespace Showcase.IntegrationTests.CrossCutting;
 
 /// <summary>
-///     What the saga orchestrator leaves in the store when a saga ends without completing, read from EF Core's tables.
+///     What the saga orchestrator leaves in the store when a saga ends without completing, read through the store's own repository.
 /// </summary>
 /// <remarks>
-///     The status a saga ends in (compensated, timed out) is the store's, and <see cref="ISagaRepository{TSaga}" /> has no read of it: on
-///     the engines the row is read only by queries their generator compiles. So these read <c>__SagaInstances</c> through EF Core and run
-///     on EF Core only, until the repository reads the status on every store (#884). The rest of the saga's flow is
-///     <see cref="SagaFlowTests" />, which runs on every engine (#873).
+///     The status a saga ends in (compensated, timed out) is read through <see cref="ISagaRepository{TSaga}.GetStatusAsync" /> (#884), so
+///     these run on every engine: EF Core's store, the Sql engine's and the documents engine's. The rest of the saga's flow is
+///     <see cref="SagaFlowTests" />.
 /// </remarks>
 public class SagaPersistenceTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
@@ -63,22 +59,19 @@ public class SagaPersistenceTests(PostgresFixture fixture) : IntegrationTestBase
         saga!.State.Should().NotBe(CheckInState.RoomAssigned,
             "the declared NextState must not overwrite the handler's rejection — the invalid guest must not advance");
 
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        var instance = await db.Set<SagaInstance>().AsNoTracking().FirstOrDefaultAsync(s => s.Id == saga.Id);
-        instance.Should().NotBeNull("the saga instance must be persisted");
-        instance!.Status.Should().Be(SagaStatus.Compensated,
+        (await repo.GetStatusAsync(saga.Id)).Should().Be(SagaStatus.Compensated,
             "a rejected step must run compensation and leave the saga Compensated, not Active");
     }
 
     [Fact]
-    public void SagaRepository_IsEfCoreBacked_NotInMemory()
+    public void SagaRepository_IsDurable_NotInMemory()
     {
-        // BookingBoundary is [EnableSagaPersistence]: the SG wires EfCoreSagaRepository (durable) rather
-        // than the in-memory default, which is what lets saga state survive a process restart.
+        // BookingBoundary is [EnableSagaPersistence]: the SG wires the store of the boundary's engine (EF Core's, the Sql engine's or the
+        // documents engine's) rather than the in-memory default, which is what lets saga state survive a process restart.
         using var scope = Services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ISagaRepository<CheckInSaga>>();
 
-        repo.Should().BeOfType<EfCoreSagaRepository<CheckInSaga, CheckInState>>();
+        repo.Should().NotBeOfType<InMemorySagaRepository<CheckInSaga>>();
     }
 
     [Fact]
@@ -113,15 +106,11 @@ public class SagaPersistenceTests(PostgresFixture fixture) : IntegrationTestBase
         foreach (var r in runners)
             await r.RunDueTimeoutsAsync(DateTimeOffset.UtcNow, default);
 
-        // EF-backed saga: the timeout outcome is persisted. Verify the __SagaInstances row was marked
-        // TimedOut (Orchestrator.HandleTimeoutAsync → MarkTimedOutAsync) directly against the database.
+        // The timeout outcome is persisted: read in a scope of its own, the saga is marked TimedOut
+        // (Orchestrator.HandleTimeoutAsync → MarkTimedOutAsync).
         using var verifyScope = Services.CreateScope();
-        var db = verifyScope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        var instance = await db.Set<SagaInstance>()
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == saga.Id);
-        instance.Should().NotBeNull("the saga must be persisted in __SagaInstances");
-        instance!.Status.Should().Be(SagaStatus.TimedOut,
+        var stored = verifyScope.ServiceProvider.GetRequiredService<ISagaRepository<CheckInSaga>>();
+        (await stored.GetStatusAsync(saga.Id)).Should().Be(SagaStatus.TimedOut,
             "the timeout runner should have invoked Orchestrator.HandleTimeoutAsync → MarkTimedOutAsync");
     }
 

@@ -8,7 +8,8 @@ namespace PragmaticSagas.Tests;
 /// <summary>
 ///     <see cref="StaySaga" /> through the orchestrator and the repository the generated <c>AddPragmaticSagas</c> registers, on the engine of the
 ///     provider's boundary: the same scenario on every database. Each delivery is a scope of its own, as a message handler's is. What the
-///     repository's interface does not say (the status, the deadline, the step rows, the outbox) is read from the store by the suite.
+///     repository's interface does not say (the deadline, the step rows, the outbox) is read from the store by the suite; the status is read
+///     both ways, through <see cref="ISagaRepository{TSaga}.GetStatusAsync" /> and from the store, and the two must agree.
 /// </summary>
 /// <param name="provider">The application: the boundary's session, <c>AddPragmaticSagas</c>, <paramref name="bus" />.</param>
 /// <param name="bus">The bus the saga publishes to where a message does not go through the outbox (a compensation).</param>
@@ -29,11 +30,14 @@ public sealed class SagaScenario(IServiceProvider provider, SagaBus bus, Func<Gu
         Assert.Equal(StayState.Confirmed, confirmed.State);
         Assert.Equal(["WhenBooked", "WhenConfirmed"], (await RecordedStepsAsync(confirmed.Id)).Order(StringComparer.Ordinal));
         Assert.Equal((SagaStatus.Active, true), await instance(confirmed.Id)); // the confirmation's window is open
+        Assert.Equal(SagaStatus.Active, await StatusAsync(confirmed.Id));
+        Assert.Null(await StatusAsync(Guid.NewGuid())); // no such saga
 
         await DeliverAsync(new GuestCheckedIn(stay));
         var done = await FindAsync(stay);
         Assert.Equal((StayState.Done, true), (done.State, done.CompletedAt is not null));
         Assert.Equal((SagaStatus.Completed, false), await instance(done.Id));
+        Assert.Equal(SagaStatus.Completed, await StatusAsync(done.Id));
         Assert.Equal(3, await steps(done.Id));
         // The boundary is [EnableOutbox]: each step's message went to its outbox, in the step's save, and none to the bus.
         Assert.Equal(3, await outbox(stay.ToString()));
@@ -59,6 +63,7 @@ public sealed class SagaScenario(IServiceProvider provider, SagaBus bus, Func<Gu
         }
 
         Assert.Equal((SagaStatus.TimedOut, false), await instance(saga.Id));
+        Assert.Equal(SagaStatus.TimedOut, await StatusAsync(saga.Id));
         // Seeded from the saga's state: its stay, and the required Reason the saga does not have left at its default.
         Assert.Contains(bus.Published, m => m is CancelStay { Reason: null } cancel && cancel.StayId == stay);
         Assert.DoesNotContain(await ActiveAsync(), s => s.Id == saga.Id);
@@ -74,6 +79,7 @@ public sealed class SagaScenario(IServiceProvider provider, SagaBus bus, Func<Gu
 
         Assert.Equal(StayState.Booked, saga.State);
         Assert.Equal((SagaStatus.Compensated, false), await instance(saga.Id));
+        Assert.Equal(SagaStatus.Compensated, await StatusAsync(saga.Id));
         Assert.Equal(["WhenBooked"], await RecordedStepsAsync(saga.Id));
     }
 
@@ -128,6 +134,12 @@ public sealed class SagaScenario(IServiceProvider provider, SagaBus bus, Func<Gu
     {
         await using var scope = provider.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<ISagaRepository<StaySaga>>().GetExecutedStepNamesAsync(sagaId);
+    }
+
+    private async Task<SagaStatus?> StatusAsync(Guid sagaId)
+    {
+        await using var scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ISagaRepository<StaySaga>>().GetStatusAsync(sagaId);
     }
 
     private async Task<IReadOnlyList<StaySaga>> ActiveAsync()
