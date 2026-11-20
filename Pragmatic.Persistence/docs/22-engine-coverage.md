@@ -20,7 +20,7 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 ## 1. Not measured: the test is bound to EF Core
 
-**13 test files, 47 test methods** (and 1 source they share), left out on both engines because the test itself reads or prepares rows through
+**10 test files, 25 test methods**, left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -35,10 +35,6 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 | `DomainActions/SharedDatabaseTransactionTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
 | `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
-| `Jobs/JobExecutionEndToEndTests.cs` | 2 |
-| `Jobs/JobLeaseIntegrationTests.cs` | 19 |
-| `Jobs/JobsDbContext.cs` | 0 |
-| `Jobs/WhatRunsAfterTheJobFinishesTests.cs` | 1 |
 | `Queries/SpecificationCompositionTests.cs` | 2 |
 | `Validation/WhenTheExpensiveRuleRunsTests.cs` | 2 |
 
@@ -111,6 +107,13 @@ its exclusion goes when the issue closes.
 
 - `EntityPersistence/TemporalRelationTests.cs`: `ASecondOpenStretch_IsRefusedByTheDatabase_EvenOutsideAMutation` (Documents)
 - `EntityPersistence/TemporalRelationTests.cs`: `AStretchEndingBeforeItBegins_IsRefusedByTheDatabase` (Documents)
+
+**the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)**
+
+- `Jobs/JobExecutionEndToEndTests.cs` (both), 2 test methods
+- `Jobs/JobLeaseIntegrationTests.cs` (both), 19 test methods
+- `Jobs/JobsDbContext.cs` (both), 0 test methods
+- `Jobs/WhatRunsAfterTheJobFinishesTests.cs` (both), 1 test methods
 
 **the engines have no [Lookup] cache (#881)**
 
