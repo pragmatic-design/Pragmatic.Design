@@ -35,7 +35,12 @@ internal static class EntityShapeArtifacts
             yield return new ScopedPropertyTemplate(entity).RenderOutput();
         // The check a mutation's invoker makes on a create, through specifications every engine serves (#512).
         if (entity.IsTemporalRelation)
+        {
             yield return new TemporalConstraintsTemplate(entity).RenderOutput();
+            // The point-in-time read and the auto-close in their repository form (#899), for the same reason.
+            yield return new TemporalSpecificationsTemplate(entity).RenderOutput();
+            yield return new TemporalAutoCloseTemplate(entity).RenderOutput();
+        }
     }
 
     /// <summary>

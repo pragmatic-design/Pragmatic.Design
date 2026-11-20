@@ -4555,6 +4555,10 @@ public static partial class TemporalRowSpecifications
     public static Specification<TemporalRow> ById(Guid id)
     public static IQueryable<TemporalRow> ById(this IQueryable<TemporalRow> query, Guid id)
 
+## Inventory.TemporalRow.TemporalAutoClose.g.cs
+public partial class TemporalRow
+    public static async Task<List<TemporalRow>> AutoClosePreviousAsync(IRepository<TemporalRow> repository, IQueryFilterToggle filters, DateTimeOffset closedAt, Guid parentId, CancellationToken ct = default)
+
 ## Inventory.TemporalRow.TemporalConstraints.g.cs
 public partial class TemporalRow
     public async Task<TemporalOverlapError?> ValidateTemporalConstraintsAsync(IReadRepository<TemporalRow> existing, CancellationToken ct = default)
@@ -4577,6 +4581,11 @@ public partial class TemporalRow
 ## Inventory.TemporalRow.TemporalHistoryScope.g.cs
 public partial class TemporalRow
     public static IDisposable IncludeHistory(IQueryFilterToggle filters)
+
+## Inventory.TemporalRow.TemporalSpecifications.g.cs
+public static partial class TemporalRowSpecifications
+    public static Specification<TemporalRow> ActiveAt(DateTimeOffset instant)
+    public static Specification<TemporalRow> ForPlain(Guid parentId)
 
 ## Inventory.TemporalRow.TemporalValidation.g.cs
 public partial class TemporalRow
@@ -4980,6 +4989,10 @@ public static partial class UntypedTemporalRowSpecifications
     public static Specification<UntypedTemporalRow> ById(Guid id)
     public static IQueryable<UntypedTemporalRow> ById(this IQueryable<UntypedTemporalRow> query, Guid id)
 
+## Inventory.UntypedTemporalRow.TemporalAutoClose.g.cs
+public partial class UntypedTemporalRow
+    public static async Task<List<UntypedTemporalRow>> AutoClosePreviousAsync(IRepository<UntypedTemporalRow> repository, IQueryFilterToggle filters, DateTimeOffset closedAt, CancellationToken ct = default)
+
 ## Inventory.UntypedTemporalRow.TemporalConstraints.g.cs
 public partial class UntypedTemporalRow
     public async Task<TemporalOverlapError?> ValidateTemporalConstraintsAsync(IReadRepository<UntypedTemporalRow> existing, CancellationToken ct = default)
@@ -5000,6 +5013,10 @@ public partial class UntypedTemporalRow
 ## Inventory.UntypedTemporalRow.TemporalHistoryScope.g.cs
 public partial class UntypedTemporalRow
     public static IDisposable IncludeHistory(IQueryFilterToggle filters)
+
+## Inventory.UntypedTemporalRow.TemporalSpecifications.g.cs
+public static partial class UntypedTemporalRowSpecifications
+    public static Specification<UntypedTemporalRow> ActiveAt(DateTimeOffset instant)
 
 ## Inventory.UntypedTemporalRow.TemporalValidation.g.cs
 public partial class UntypedTemporalRow

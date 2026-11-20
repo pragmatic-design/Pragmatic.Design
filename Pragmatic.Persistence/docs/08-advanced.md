@@ -31,7 +31,7 @@ public partial class UserRole
 | Setting | Generated Method | What It Does |
 |---------|-----------------|-------------|
 | `MaxActive > 0` | `ValidateTemporalConstraintsAsync(repository)`, and on EF Core `ValidateTemporalConstraints(existing)` | Checks how many records are currently active. Returns a `TemporalOverlapError` if the limit is exceeded. |
-| `MaxActive == 1` | `AutoClosePrevious(existing, closedAt)` (EF Core) | Finds the currently active record, sets its `ValidTo` to `closedAt`, and returns the modified records so you can save them. |
+| `MaxActive == 1` | `AutoClosePreviousAsync(repository, filters, closedAt)`, and on EF Core `AutoClosePrevious(existing, closedAt)` | Finds the stretches still open at `closedAt`, sets their `ValidTo` to `closedAt`, and returns the modified records so you can save them. The repository form reads inside the history scope and hands them to the repository as updated. |
 | `AllowOverlap = false` | Overlap check in both | Checks if the new record's validity period overlaps with any existing record. |
 
 A create mutation calls `ValidateTemporalConstraintsAsync` before it persists, on every engine: it reads the existing records through the
@@ -83,6 +83,21 @@ public static class UserRoleTemporalExtensions
     public static IQueryable<UserRole> ActiveForUser(this IQueryable<UserRole> query, Guid parentId);
 }
 ```
+
+They compose onto an `IQueryable`, so they are EF Core's. **On every engine** the same reads are specifications in
+`{Type}Specifications`, and the auto-close takes the repository:
+
+```csharp
+// Who held it at an instant: the past is read inside the history scope, since the filter keeps only what is active now.
+List<UserRole> then;
+using (UserRole.IncludeHistory(filters))
+    then = await roles.FindAsync(UserRoleSpecifications.ForUser(userId) & UserRoleSpecifications.ActiveAt(instant), ct);
+
+// Close what is open, a stretch not begun yet included, then save through the unit of work.
+var closed = await UserRole.AutoClosePreviousAsync(roles, filters, DateTimeOffset.UtcNow, userId, ct);
+```
+
+`Active()` needs no specification on an engine: a read outside the history scope is already the active rows.
 
 ### Automatic Query Filter
 
