@@ -75,6 +75,49 @@ public class InMemorySagaRepositoryTests
         (await repo.GetStatusAsync(faulted.Id)).Should().Be(SagaStatus.Faulted);
     }
 
+    /// <summary>
+    ///     A saga the orchestrator ended (compensated, timed out, faulted) is not active, though it has no <c>CompletedAt</c>: the durable
+    ///     stores read <c>Status == Active</c>, and the in-memory one answers the same (#909).
+    /// </summary>
+    [Fact]
+    public async Task GetActiveAsync_LeavesOutASagaTheOrchestratorEnded()
+    {
+        var repo = CreateRepository();
+        var active = CreateSaga();
+        var compensated = CreateSaga();
+        var timedOut = CreateSaga();
+        var faulted = CreateSaga();
+        foreach (var saga in new[] { active, compensated, timedOut, faulted })
+            await repo.SaveAsync(saga);
+
+        await repo.MarkCompensatedAsync(compensated.Id);
+        await repo.MarkTimedOutAsync(timedOut.Id);
+        await repo.MarkFaultedAsync(faulted.Id, "the step threw");
+
+        (await repo.GetActiveAsync()).Select(s => s.Id).Should().BeEquivalentTo([active.Id],
+            "only the saga still running is active; the control is that one");
+    }
+
+    /// <summary>
+    ///     A faulted saga keeps its deadline (only a timeout or a compensation clears it), and once that passes it is not handed to the
+    ///     timeout runner again: it ended (#909).
+    /// </summary>
+    [Fact]
+    public async Task GetDueForTimeoutAsync_LeavesOutAFaultedSagaWhoseDeadlinePassed()
+    {
+        var repo = CreateRepository();
+        var active = CreateSaga();
+        var faulted = CreateSaga();
+        var deadline = DateTimeOffset.UtcNow.AddMinutes(-1);
+        await repo.SaveWithTimeoutAsync(active, deadline);
+        await repo.SaveWithTimeoutAsync(faulted, deadline);
+
+        await repo.MarkFaultedAsync(faulted.Id, "the step threw");
+
+        (await repo.GetDueForTimeoutAsync(DateTimeOffset.UtcNow)).Select(s => s.Id).Should().BeEquivalentTo([active.Id],
+            "the active saga past its deadline is due, the control; the faulted one is not");
+    }
+
     /// <summary>A save sets the status from the saga again, as the durable stores' saves do.</summary>
     [Fact]
     public async Task GetStatusAsync_AfterASave_ReadsTheSagaAgain()
