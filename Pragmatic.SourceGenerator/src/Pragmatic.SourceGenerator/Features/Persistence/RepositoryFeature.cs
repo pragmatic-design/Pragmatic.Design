@@ -92,7 +92,26 @@ internal static class RepositoryFeature
             GeneratePersistenceMetadata(ctx, entities, detectedFeatures, isDebug);
         });
 
-        return entitiesWithFeaturesAndDebug.Select(static (input, _) => LocalPersistenceRegistrations(input));
+        return entitiesWithFeaturesAndDebug.Combine(traitProvider)
+            .Select(static (input, _) => new EquatableArray<Composition.Models.MetadataEntry>(
+                LocalPersistenceRegistrations(input.Left).AsImmutableArray().AddRange(LocalTraitRepositories(input.Left.Left.Features, input.Right))));
+    }
+
+    /// <summary>
+    ///     EF Core's repositories of the trait children a host declares itself (#888), handed to Composition as the trait metadata the host
+    ///     reads them from in a referenced module: the attribute is emitted into this same compilation and can never be read back off it.
+    /// </summary>
+    private static ImmutableArray<Composition.Models.MetadataEntry> LocalTraitRepositories(
+        DetectedFeatures features, ImmutableArray<Traits.Models.TraitEntityInfo> traitEntities)
+    {
+        if (traitEntities.IsDefaultOrEmpty || !features.HasComposition || !Traits.TraitFeature.EfCoreRepositories(features))
+            return ImmutableArray<Composition.Models.MetadataEntry>.Empty;
+
+        return ImmutableArray.Create(
+            Composition.Models.HostLocalRegistration.CreatePayload(
+                Composition.MetadataCategoryIds.TraitEntities,
+                "1.0",
+                new Traits.Templates.TraitEntityMetadataTemplate(traitEntities, "", efCoreRepositories: true).BuildJson()));
     }
 
     /// <summary>

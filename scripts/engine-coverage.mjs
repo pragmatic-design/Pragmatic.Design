@@ -158,7 +158,7 @@ export function coveragePage(read, suiteFiles) {
   const copyNamespace = files.filter(([, a]) => a.reason === SUITE_REASONS.COPY_NAMESPACE).sort(([x], [y]) => x.localeCompare(y));
   const compiledAtCall = tests.filter(([, a]) => a.reason === SUITE_REASONS.COMPILED_AT_CALL);
   const onSql = files.filter(([, a]) => a.reason === SUITE_REASONS.TEST_ON_SQL).map(([path]) => path).sort();
-  const replaced = files.filter(([, a]) => [SUITE_REASONS.REPLACED, SUITE_REASONS.REPLACED_FIXTURE, SUITE_REASONS.REPLACED_ROWS, SUITE_REASONS.REPLACED_COMMITS].includes(a.reason));
+  const replaced = files.filter(([, a]) => [SUITE_REASONS.REPLACED, SUITE_REASONS.REPLACED_FIXTURE, SUITE_REASONS.REPLACED_COMMITS].includes(a.reason));
   const wiring = modules.filter(([, a]) => a.reason === PROJECT_REASONS.HOST_WIRING).map(([path]) => path);
   add(
     '',

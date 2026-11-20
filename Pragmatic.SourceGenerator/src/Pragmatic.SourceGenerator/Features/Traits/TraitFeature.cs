@@ -51,6 +51,8 @@ internal static class TraitFeature
             GenerateCommentEntity(ctx, model);
             GenerateCommentEntityConfig(ctx, model);
             GenerateParentNavigation(ctx, model);
+            ctx.AddSource(TraitRepositories.Repository(model.CommentTypeName, model.ParentNamespace, model.BoundaryFullTypeName,
+                model.BoundaryName, isSoftDelete: true, detectedFeatures.EfCoreProvider, $"[HasComments] on {model.ParentTypeName}"));
 
             // Action classes (Execute body) — Invoker + SetDependencies come from ActionsFeature
             if (detectedFeatures.HasActions)
@@ -83,12 +85,12 @@ internal static class TraitFeature
         });
 
         // Aggregate: validation + metadata generation
-        var commentsWithRootNs = allComments.Combine(
-            context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global"));
+        var rootNamespace = context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global");
+        var commentsWithRootNs = allComments.Combine(rootNamespace).Combine(features);
 
-        context.RegisterSourceOutputSafe(commentsWithRootNs, static (ctx, pair) =>
+        context.RegisterSourceOutputSafe(commentsWithRootNs, static (ctx, input) =>
         {
-            var (models, rootNs) = pair;
+            var ((models, rootNs), detectedFeatures) = input;
 
             foreach (var model in models)
             {
@@ -108,7 +110,7 @@ internal static class TraitFeature
             {
                 var infos = models.Select(CommentEntityInfo).ToImmutableArray();
 
-                var metadataTemplate = new TraitEntityMetadataTemplate(infos, rootNs);
+                var metadataTemplate = new TraitEntityMetadataTemplate(infos, rootNs, efCoreRepositories: EfCoreRepositories(detectedFeatures));
                 var artifact = metadataTemplate.RenderOutput();
                 if (!artifact.IsEmpty)
                     ctx.AddSource(artifact);
@@ -253,16 +255,17 @@ internal static class TraitFeature
 
                 GenerateTagEntity(ctx, model);
                 GenerateTagEntityConfig(ctx, model);
+                ctx.AddSource(TraitRepositories.Repository(model.TagTypeName, model.ParentNamespace, model.BoundaryFullTypeName,
+                    model.BoundaryName, isSoftDelete: false, detectedFeatures.EfCoreProvider, $"[HasTags] on {model.ParentTypeName}"));
             }
         });
 
         // Tag validation + metadata
-        var tagsWithRootNs = allTags.Combine(
-            context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global"));
+        var tagsWithRootNs = allTags.Combine(rootNamespace).Combine(features);
 
-        context.RegisterSourceOutputSafe(tagsWithRootNs, static (ctx, pair) =>
+        context.RegisterSourceOutputSafe(tagsWithRootNs, static (ctx, input) =>
         {
-            var (models, rootNs) = pair;
+            var ((models, rootNs), detectedFeatures) = input;
 
             foreach (var model in models)
             {
@@ -294,7 +297,7 @@ internal static class TraitFeature
                     infos.Add(TagJunctionEntityInfo(m));
                 }
 
-                var metadataTemplate = new TraitEntityMetadataTemplate(infos.ToImmutable(), rootNs, "TagEntities");
+                var metadataTemplate = new TraitEntityMetadataTemplate(infos.ToImmutable(), rootNs, "TagEntities", EfCoreRepositories(detectedFeatures));
                 var artifact = metadataTemplate.RenderOutput();
                 if (!artifact.IsEmpty)
                     ctx.AddSource(artifact);
@@ -396,6 +399,8 @@ internal static class TraitFeature
             GenerateNoteEntity(ctx, model);
             GenerateNoteEntityConfig(ctx, model);
             GenerateParentNoteNavigation(ctx, model);
+            ctx.AddSource(TraitRepositories.Repository(model.NoteTypeName, model.ParentNamespace, model.BoundaryFullTypeName,
+                model.BoundaryName, isSoftDelete: true, detectedFeatures.EfCoreProvider, $"[HasNotes] on {model.ParentTypeName}"));
 
             if (detectedFeatures.HasActions)
             {
@@ -417,12 +422,11 @@ internal static class TraitFeature
         });
 
         // Note validation + metadata
-        var notesWithRootNs = allNotes.Combine(
-            context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global"));
+        var notesWithRootNs = allNotes.Combine(rootNamespace).Combine(features);
 
-        context.RegisterSourceOutputSafe(notesWithRootNs, static (ctx, pair) =>
+        context.RegisterSourceOutputSafe(notesWithRootNs, static (ctx, input) =>
         {
-            var (models, rootNs) = pair;
+            var ((models, rootNs), detectedFeatures) = input;
             foreach (var model in models)
             {
                 if (model.ResourceSegment is null)
@@ -434,7 +438,7 @@ internal static class TraitFeature
             {
                 var infos = models.Select(NoteEntityInfo).ToImmutableArray();
 
-                var metadataTemplate = new TraitEntityMetadataTemplate(infos, rootNs, "NoteEntities");
+                var metadataTemplate = new TraitEntityMetadataTemplate(infos, rootNs, "NoteEntities", EfCoreRepositories(detectedFeatures));
                 var artifact = metadataTemplate.RenderOutput();
                 if (!artifact.IsEmpty)
                     ctx.AddSource(artifact);
@@ -539,6 +543,8 @@ internal static class TraitFeature
             GenerateAttachmentEntity(ctx, model);
             GenerateAttachmentEntityConfig(ctx, model);
             GenerateParentAttachmentNavigation(ctx, model);
+            ctx.AddSource(TraitRepositories.Repository(model.AttachmentTypeName, model.ParentNamespace, model.BoundaryFullTypeName,
+                model.BoundaryName, isSoftDelete: true, detectedFeatures.EfCoreProvider, $"[HasAttachments] on {model.ParentTypeName}"));
 
             if (detectedFeatures.HasActions)
             {
@@ -569,11 +575,10 @@ internal static class TraitFeature
                 GenerateAttachmentPurgeJob(ctx, model);
         });
 
-        var attachmentWithRootNs = allAttachments.Combine(
-            context.CompilationProvider.Select(static (c, _) => c.AssemblyName ?? "Global"));
-        context.RegisterSourceOutputSafe(attachmentWithRootNs, static (ctx, pair) =>
+        var attachmentWithRootNs = allAttachments.Combine(rootNamespace).Combine(features);
+        context.RegisterSourceOutputSafe(attachmentWithRootNs, static (ctx, input) =>
         {
-            var (models, rootNs) = pair;
+            var ((models, rootNs), detectedFeatures) = input;
             foreach (var model in models)
                 if (model.ResourceSegment is null)
                     ctx.ReportDiagnostic(TraitDiagnostics.TraitRequiresResource, model.Location, model.ParentTypeName, "HasAttachments");
@@ -581,7 +586,7 @@ internal static class TraitFeature
             if (models.Length > 0)
             {
                 var infos = models.Select(AttachmentEntityInfo).ToImmutableArray();
-                var template = new TraitEntityMetadataTemplate(infos, rootNs, "AttachmentEntities");
+                var template = new TraitEntityMetadataTemplate(infos, rootNs, "AttachmentEntities", EfCoreRepositories(detectedFeatures));
                 var artifact = template.RenderOutput();
                 if (!artifact.IsEmpty)
                     ctx.AddSource(artifact);
@@ -714,6 +719,13 @@ internal static class TraitFeature
                         .Select(static m => m.Value).Distinct().ToImmutableArray())),
         };
     }
+
+    /// <summary>
+    ///     Whether this compilation generates EF Core's repositories of the trait children (<see cref="TraitRepositories" />): exactly when it
+    ///     generates the children for EF Core, the branch every per-trait output above takes.
+    /// </summary>
+    internal static bool EfCoreRepositories(DetectedFeatures features)
+        => !TraitEngineChildren.Apply(features) && features.HasPersistenceEFCore;
 
     /// <summary>
     ///     Reports PRAG2600 for a trait applied to a class that is not an entity.
