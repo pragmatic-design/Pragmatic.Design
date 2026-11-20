@@ -175,7 +175,9 @@ illegal → 409, for operations declaring `[TransitionsTo<TState>]`), and a type
   state reached by walking the entity's other declared transitions (`PRAG2363` when none reaches it). An
   entity nothing creates over HTTP (raised by an event, written by a message handler) is brought into
   its initial state by `PragmaticContractHost.ArrangeFor = async (entity, client) => …` returning its id;
-  without it the contract fails naming what to set. Nothing is skipped.
+  without it the contract fails naming what to set. Nothing is skipped. `ArrangeFor` is asked first
+  even when a create exists (`null` keeps the create); a create that moves the record itself declares
+  where it lands with `[TransitionsTo<TState>(X)]`, and the walk starts from `X`.
 - `ShouldBeRejected()` accepts any 4xx; assert `ShouldHaveStatus(HttpStatusCode.Forbidden)` when the
   claim is specifically 403.
 

@@ -182,16 +182,31 @@ public static class PragmaticContractHost
                + "the creates the shape can carry, which is most of them.");
 
     /// <summary>
-    ///     How the application brings an entity that is not created over HTTP into its initial state, for
-    ///     the state-transition contracts: given the entity's name and the client of its boundary, create
-    ///     one and return its id — or <c>null</c> for an entity it does not arrange.
+    ///     How the application brings an entity into its initial state (the enum's <c>[InitialState]</c>), for the state-transition
+    ///     contracts: given the entity's name and the client of its boundary, create one and return its id — or <c>null</c> for an entity
+    ///     it does not arrange.
     /// </summary>
     /// <remarks>
-    ///     An entity that only ever comes into being as a consequence — an invoice a confirmed booking
-    ///     raises, a verification a case asks for — has no create route for the generator to call. The
-    ///     generated contract is a real test, and this is the one thing it cannot write itself.
+    ///     <para>
+    ///         An entity that only ever comes into being as a consequence — an invoice a confirmed booking raises, a verification a case
+    ///         asks for — has no create route for the generator to call. The generated contract is a real test, and this is the one thing
+    ///         it cannot write itself.
+    ///     </para>
+    ///     <para>
+    ///         It is asked first even when there is a create route (#917): a create that moves the record in its own body (a report
+    ///         submitted as it is created) leaves it in another state, and the application answering for the entity is how it says so.
+    ///         Returning <c>null</c> keeps the create. A create that declares the state it lands in (<c>[TransitionsTo&lt;TState&gt;(X)]</c>)
+    ///         is walked from there instead, and this is not asked for it.
+    ///     </para>
     /// </remarks>
     public static Func<string, HttpClient, Task<string?>>? ArrangeFor { get; set; }
+
+    /// <summary>
+    ///     The id of an <paramref name="entity" /> in its initial state when the application arranges it (<see cref="ArrangeFor" />), or
+    ///     <c>null</c>: the generated contract then creates it over HTTP.
+    /// </summary>
+    public static async Task<string?> ArrangedAsync(string entity, HttpClient client)
+        => ArrangeFor is null ? null : await ArrangeFor(entity, client).ConfigureAwait(false);
 
     /// <summary>
     ///     The id of an <paramref name="entity" /> in its initial state, from <see cref="ArrangeFor" />.

@@ -65,6 +65,7 @@ internal static class CrudCreateExtractor
         if (fields.Length == 0)
             return (null, "nothing travels in its body, so there is no create request to build");
 
+        var (landingState, landingEnum) = StateTransitionExtractor.DeclaredTarget(endpointType);
         return (new CrudCreateModel
         {
             Boundary = endpoint.Boundary,
@@ -75,7 +76,9 @@ internal static class CrudCreateExtractor
             IsTenantScoped = entity!.AllInterfaces.Any(i => i.Name == "ITenantEntity"),
             EntityTypeName = entity.Name,
             CanSynthesizeBody = canSynthesizeBody,
-            IsDomainActionCreate = isDomainActionCreate
+            IsDomainActionCreate = isDomainActionCreate,
+            LandingState = landingState,
+            LandingStateEnum = landingEnum
         }, null);
     }
 
