@@ -58,6 +58,9 @@ internal static partial class SqlInterceptorGenerator
             var served = AllTypes(compilation.GlobalNamespace).Where(t => t.DeclaringSyntaxReferences.Length > 0 && PragmaticShape.IsPragmaticEntity(t) && engines.Serves(t, PragmaticEngine.Sql)).ToList();
             served.AddRange(ShapeDeclaredEntities(compilation, shaped, shapeTrees).Where(t => engines.Serves(t, PragmaticEngine.Sql))); // a trait's child (TraitEngineChildren)
             shapes.AddRange(PragmaticRegistration.Sql.For(compilation, served)); // each boundary's unit of work and repositories, keyed by the boundary
+            foreach (var audited in PragmaticRegistration.Sql.AuditedWithoutTrail(compilation, served))
+                spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.AuditedWithoutTrail, audited.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
+                    audited.Name, PragmaticPermissions.BoundaryOf(audited)!.Name));
             var loads = CompiledLoads(spc, compilation, engines);
             foreach (var entity in served)
             {

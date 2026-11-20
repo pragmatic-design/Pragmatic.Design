@@ -85,6 +85,9 @@ internal static partial class DocumentGenerator
 
             foreach (var registration in PragmaticRegistration.Documents.For(compilation, entities))
                 AddText(registration); // each boundary's unit of work and repositories, keyed by the boundary
+            foreach (var audited in PragmaticRegistration.Documents.AuditedWithoutTrail(compilation, entities))
+                diagnostics.Add(Diagnostic.Create(DocDiagnostics.AuditedWithoutTrail, audited.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
+                    audited.Name, PragmaticPermissions.BoundaryOf(audited)!.Name));
             foreach (var entity in entities)
             {
                 // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, and a symbol of

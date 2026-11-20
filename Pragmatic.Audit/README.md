@@ -92,7 +92,9 @@ a framework-prefixed table for being absent from the desired schema.
 ## On the Sql and documents engines
 
 A boundary the Sql or documents engine persists audits its `[Audited]` entities with the same attribute;
-its project references `Pragmatic.Audit.Engines`. The generated `Add{Boundary}Persistence` registers, for
+its project references `Pragmatic.Audit.Engines`. Without the reference the build fails on the entity
+(`PRAG3041` on the Sql engine, `PRAG3114` on the documents engine): the host would still register the trail's
+reader, and every read would answer an empty trail. The generated `Add{Boundary}Persistence` registers, for
 that boundary only, the phase that turns each write into an entry in the same save:
 
 | | Sql engine | Documents engine |

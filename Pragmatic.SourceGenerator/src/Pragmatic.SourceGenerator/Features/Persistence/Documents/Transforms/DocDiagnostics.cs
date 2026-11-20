@@ -124,6 +124,20 @@ internal static class DocDiagnostics
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    ///     An error: an <c>[Audited]</c> entity of a boundary the documents engine serves, in a project that does not reference
+    ///     Pragmatic.Audit.Engines. The boundary's <c>Add{Boundary}Persistence</c> registers the save phase that writes the trail only where the
+    ///     project sees it, while the host registers the trail's reader regardless: the build would succeed and every read of the trail answer
+    ///     empty (#901). PRAG3041 on the Sql engine.
+    /// </summary>
+    public static readonly DiagnosticDescriptor AuditedWithoutTrail = new(
+        "PRAG3114",
+        "An [Audited] entity on the documents engine has no trail to write to",
+        "{0} is [Audited] and its boundary {1} is persisted by the documents engine, but this project does not reference Pragmatic.Audit.Engines: no save writes its trail, and every read of the trail answers empty. Reference Pragmatic.Audit.Engines from this project.",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     /// <summary>Information: the call site's query as the generator wrote it (shown with -p:PragmaticCensus=true promoted, or in the IDE).</summary>
     public static readonly DiagnosticDescriptor Translated = new(
         "PRAG3199",

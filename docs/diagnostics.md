@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **495** |
-| Distinct IDs | **495** |
+| Declared descriptors | **497** |
+| Distinct IDs | **497** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -694,7 +694,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG2915`.
 
-### Persistence.Sql: 37 in use · range `PRAG3000`–`PRAG3099`
+### Persistence.Sql: 38 in use · range `PRAG3000`–`PRAG3099`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -734,13 +734,14 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG3038` | `SagaUniquenessLeftOut` | Warning | The active sagas' unique index is left out on a database without partial indexes |
 | `PRAG3039` | `OpenStretchUniquenessLeftOut` | Warning | One open stretch per parent is left out on a database without partial indexes |
 | `PRAG3040` | `MySqlRowTooWide` | Warning | A table's row is wider than MySQL allows |
+| `PRAG3041` | `AuditedWithoutTrail` | Error | An [Audited] entity on the Sql engine has no trail to write to |
 | `PRAG3099` | `Translated` | Hidden | LINQ call site translated to SQL |
 
-*Free inside the used span:* `PRAG3017`, `PRAG3018`, `PRAG3019`, `PRAG3020`, `PRAG3041`, `PRAG3042`, `PRAG3043`, `PRAG3044`, `PRAG3045`, `PRAG3046`, `PRAG3047`, `PRAG3048`, `PRAG3049`, `PRAG3050`, `PRAG3051`, `PRAG3052`, `PRAG3053`, `PRAG3054`, `PRAG3055`, `PRAG3056`, `PRAG3057`, `PRAG3058`, `PRAG3059`, `PRAG3060`, `PRAG3061`, `PRAG3062`, `PRAG3063`, `PRAG3064`, `PRAG3065`, `PRAG3066`, `PRAG3067`, `PRAG3068`, `PRAG3069`, `PRAG3070`, `PRAG3071`, `PRAG3072`, `PRAG3073`, `PRAG3074`, `PRAG3075`, `PRAG3076`, `PRAG3077`, `PRAG3078`, `PRAG3079`, `PRAG3080`, `PRAG3081`, `PRAG3082`, `PRAG3083`, `PRAG3084`, `PRAG3085`, `PRAG3086`, `PRAG3087`, `PRAG3088`, `PRAG3089`, `PRAG3090`, `PRAG3091`, `PRAG3092`, `PRAG3093`, `PRAG3094`, `PRAG3095`, `PRAG3096`, `PRAG3097`, `PRAG3098`.
+*Free inside the used span:* `PRAG3017`, `PRAG3018`, `PRAG3019`, `PRAG3020`, `PRAG3042`, `PRAG3043`, `PRAG3044`, `PRAG3045`, `PRAG3046`, `PRAG3047`, `PRAG3048`, `PRAG3049`, `PRAG3050`, `PRAG3051`, `PRAG3052`, `PRAG3053`, `PRAG3054`, `PRAG3055`, `PRAG3056`, `PRAG3057`, `PRAG3058`, `PRAG3059`, `PRAG3060`, `PRAG3061`, `PRAG3062`, `PRAG3063`, `PRAG3064`, `PRAG3065`, `PRAG3066`, `PRAG3067`, `PRAG3068`, `PRAG3069`, `PRAG3070`, `PRAG3071`, `PRAG3072`, `PRAG3073`, `PRAG3074`, `PRAG3075`, `PRAG3076`, `PRAG3077`, `PRAG3078`, `PRAG3079`, `PRAG3080`, `PRAG3081`, `PRAG3082`, `PRAG3083`, `PRAG3084`, `PRAG3085`, `PRAG3086`, `PRAG3087`, `PRAG3088`, `PRAG3089`, `PRAG3090`, `PRAG3091`, `PRAG3092`, `PRAG3093`, `PRAG3094`, `PRAG3095`, `PRAG3096`, `PRAG3097`, `PRAG3098`.
 
 *Range exhausted.*
 
-### Persistence.Documents: 14 in use · range `PRAG3100`–`PRAG3199`
+### Persistence.Documents: 15 in use · range `PRAG3100`–`PRAG3199`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -757,9 +758,10 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG3111` | `LoadIncludeNotSupported` | Error | A load with Include of a Pragmatic entity on the documents engine |
 | `PRAG3112` | `MutationNavigationsNotSupported` | Error | A mutation of a Pragmatic entity on the documents engine loads or writes navigations |
 | `PRAG3113` | `FilteredUniqueNotSupported` | Warning | A filtered [Unique] on the documents engine is unique over every document |
+| `PRAG3114` | `AuditedWithoutTrail` | Error | An [Audited] entity on the documents engine has no trail to write to |
 | `PRAG3199` | `Translated` | Hidden | Translated to a document query |
 
-*Free inside the used span:* `PRAG3114`, `PRAG3115`, `PRAG3116`, `PRAG3117`, `PRAG3118`, `PRAG3119`, `PRAG3120`, `PRAG3121`, `PRAG3122`, `PRAG3123`, `PRAG3124`, `PRAG3125`, `PRAG3126`, `PRAG3127`, `PRAG3128`, `PRAG3129`, `PRAG3130`, `PRAG3131`, `PRAG3132`, `PRAG3133`, `PRAG3134`, `PRAG3135`, `PRAG3136`, `PRAG3137`, `PRAG3138`, `PRAG3139`, `PRAG3140`, `PRAG3141`, `PRAG3142`, `PRAG3143`, `PRAG3144`, `PRAG3145`, `PRAG3146`, `PRAG3147`, `PRAG3148`, `PRAG3149`, `PRAG3150`, `PRAG3151`, `PRAG3152`, `PRAG3153`, `PRAG3154`, `PRAG3155`, `PRAG3156`, `PRAG3157`, `PRAG3158`, `PRAG3159`, `PRAG3160`, `PRAG3161`, `PRAG3162`, `PRAG3163`, `PRAG3164`, `PRAG3165`, `PRAG3166`, `PRAG3167`, `PRAG3168`, `PRAG3169`, `PRAG3170`, `PRAG3171`, `PRAG3172`, `PRAG3173`, `PRAG3174`, `PRAG3175`, `PRAG3176`, `PRAG3177`, `PRAG3178`, `PRAG3179`, `PRAG3180`, `PRAG3181`, `PRAG3182`, `PRAG3183`, `PRAG3184`, `PRAG3185`, `PRAG3186`, `PRAG3187`, `PRAG3188`, `PRAG3189`, `PRAG3190`, `PRAG3191`, `PRAG3192`, `PRAG3193`, `PRAG3194`, `PRAG3195`, `PRAG3196`, `PRAG3197`, `PRAG3198`.
+*Free inside the used span:* `PRAG3115`, `PRAG3116`, `PRAG3117`, `PRAG3118`, `PRAG3119`, `PRAG3120`, `PRAG3121`, `PRAG3122`, `PRAG3123`, `PRAG3124`, `PRAG3125`, `PRAG3126`, `PRAG3127`, `PRAG3128`, `PRAG3129`, `PRAG3130`, `PRAG3131`, `PRAG3132`, `PRAG3133`, `PRAG3134`, `PRAG3135`, `PRAG3136`, `PRAG3137`, `PRAG3138`, `PRAG3139`, `PRAG3140`, `PRAG3141`, `PRAG3142`, `PRAG3143`, `PRAG3144`, `PRAG3145`, `PRAG3146`, `PRAG3147`, `PRAG3148`, `PRAG3149`, `PRAG3150`, `PRAG3151`, `PRAG3152`, `PRAG3153`, `PRAG3154`, `PRAG3155`, `PRAG3156`, `PRAG3157`, `PRAG3158`, `PRAG3159`, `PRAG3160`, `PRAG3161`, `PRAG3162`, `PRAG3163`, `PRAG3164`, `PRAG3165`, `PRAG3166`, `PRAG3167`, `PRAG3168`, `PRAG3169`, `PRAG3170`, `PRAG3171`, `PRAG3172`, `PRAG3173`, `PRAG3174`, `PRAG3175`, `PRAG3176`, `PRAG3177`, `PRAG3178`, `PRAG3179`, `PRAG3180`, `PRAG3181`, `PRAG3182`, `PRAG3183`, `PRAG3184`, `PRAG3185`, `PRAG3186`, `PRAG3187`, `PRAG3188`, `PRAG3189`, `PRAG3190`, `PRAG3191`, `PRAG3192`, `PRAG3193`, `PRAG3194`, `PRAG3195`, `PRAG3196`, `PRAG3197`, `PRAG3198`.
 
 *Range exhausted.*
 
