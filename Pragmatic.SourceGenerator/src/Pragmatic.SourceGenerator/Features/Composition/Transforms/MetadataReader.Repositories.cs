@@ -25,6 +25,12 @@ internal static partial class MetadataReader
         foreach (var assembly in assemblies)
             foreach (var entry in assembly.Entries)
             {
+                if (entry.Category == MetadataCategoryIds.TraitEntities)
+                {
+                    AddTraitRepositories(entry, assembly.AssemblyName, repositories);
+                    continue;
+                }
+
                 // MetadataCategory.Persistence = 10
                 if (entry.Category != MetadataCategoryIds.Persistence)
                     continue;
@@ -89,6 +95,45 @@ internal static partial class MetadataReader
             }
 
         return methods.ToImmutable();
+    }
+
+    /// <summary>
+    ///     EF Core's repositories of a module's trait children (#888), from its trait metadata: an array of the children, each EF Core's
+    ///     repository of which declares its <c>repositoryType</c>. A child with none (the tag link, or any child on an engine's compilation,
+    ///     whose boundary registers its own) is skipped.
+    /// </summary>
+    private static void AddTraitRepositories(
+        MetadataEntry entry, string assemblyName, ImmutableArray<DiscoveredRepositoryInfo>.Builder repositories)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(entry.JsonData);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return;
+
+            foreach (var child in doc.RootElement.EnumerateArray())
+            {
+                var repositoryType = GetStringOrNull(child, "repositoryType");
+                var typeName = GetStringOrNull(child, "typeName");
+                if (string.IsNullOrEmpty(repositoryType) || string.IsNullOrEmpty(typeName))
+                    continue;
+
+                var ns = GetStringOrNull(child, "namespace");
+                var boundaryName = GetStringOrNull(child, "boundaryName");
+                repositories.Add(new DiscoveredRepositoryInfo
+                {
+                    EntityType = string.IsNullOrEmpty(ns) ? typeName! : $"{ns}.{typeName}",
+                    IdType = "System.Guid",
+                    RepositoryType = repositoryType!,
+                    BoundaryName = string.IsNullOrEmpty(boundaryName) ? null : boundaryName,
+                    SourceAssembly = assemblyName
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Pragmatic.SG] Failed to parse trait metadata from {assemblyName}: {ex.Message}");
+        }
     }
 
     private static DiscoveredRepositoryInfo? ParseRepositoryFromJson(JsonElement element, string assemblyName)

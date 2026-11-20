@@ -35,7 +35,6 @@ export function engineOf(path) {
 
 const REPLACED = 'replaced by the engine suite\'s own file: the engine host takes its content root and connection strings differently';
 const REPLACED_FIXTURE = 'replaced by the engine suite\'s own fixture, under the name every test takes';
-const REPLACED_ROWS = 'replaced by the engine suites\' own file: it reads through EF Core\'s DbContext what the engines read through the repository';
 const REPLACED_COMMITS = 'replaced by each engine suite\'s own file: it counts a boundary\'s saves through EF Core\'s DbContext, which the engines '
   + 'count through a save phase of the boundary';
 const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects leave out on the engines';
@@ -64,7 +63,7 @@ const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does no
 const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS, REPLACED_COMMITS, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -74,8 +73,6 @@ const catalog = (path) => `examples/showcase/src/Showcase.Catalog/${path}`;
 export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Infrastructure/ShowcaseWebFactory.cs')]: { engines: both, reason: REPLACED },
   [s('Infrastructure/PostgresFixture.cs')]: { engines: ['Documents'], reason: REPLACED_FIXTURE },
-  // Read through EF Core's DbContext, since EF Core registers no repository for a trait's entity (#888); the engines' copy reads through it.
-  [s('Infrastructure/AttachmentRows.cs')]: { engines: both, reason: REPLACED_ROWS },
   // CommitCountTests' counter: the DbContext's SavingChanges on EF Core; on each engine a save phase keyed by the boundary.
   [s('Infrastructure/CommitCounter.cs')]: { engines: both, reason: REPLACED_COMMITS },
 

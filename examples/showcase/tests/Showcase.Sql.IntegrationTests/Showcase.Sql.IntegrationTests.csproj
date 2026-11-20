@@ -30,12 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Replaced, not left out: an attachment row read and backdated through the repository (AttachmentRows.cs beside this project), since
-         EF Core's copy reads through its DbContext: EF Core registers no repository for a trait's entity (#888). -->
-    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\AttachmentRows.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Replaced, not left out: a boundary's saves counted through a save phase keyed by the boundary (CommitCounter.cs beside this
          project), since EF Core's copy counts its DbContext's SavingChanges. -->
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\CommitCounter.cs" />

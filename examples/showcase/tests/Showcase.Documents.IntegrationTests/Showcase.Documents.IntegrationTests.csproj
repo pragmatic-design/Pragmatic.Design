@@ -24,20 +24,16 @@
     <Compile Include="..\..\..\shared\Testing\*.cs" LinkBase="Shared\Testing" />
     <!-- The engine hosts' factory, one file for both. -->
     <Compile Include="..\Showcase.Sql.IntegrationTests\ShowcaseWebFactory.cs" Link="ShowcaseWebFactory.cs" />
-    <!-- The engines' attachment rows, through the repository: one file for both (#888). -->
-    <Compile Include="..\Showcase.Sql.IntegrationTests\AttachmentRows.cs" Link="AttachmentRows.cs" />
     <!-- The MongoDB wait every suite that starts the server shares: a server that exits fails at once, with its log. -->
     <Compile Include="..\..\..\..\Pragmatic.Persistence\tests\Pragmatic.Persistence.Documents.Core.Tests\LoggedUnlessExited.cs" Link="Shared\LoggedUnlessExited.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Replaced, not left out: the factory, as on the Sql host, and the database fixture, over MongoDB under the name every test takes
-         (PostgresFixture.cs beside this project); the attachment rows, through the repository as on the Sql host (#888); and a boundary's
-         saves, counted through a save phase keyed by the boundary (CommitCounter.cs beside this project), since EF Core's copy counts its
-         DbContext's SavingChanges. -->
+         (PostgresFixture.cs beside this project); and a boundary's saves, counted through a save phase keyed by the boundary
+         (CommitCounter.cs beside this project), since EF Core's copy counts its DbContext's SavingChanges. -->
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\ShowcaseWebFactory.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\PostgresFixture.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\AttachmentRows.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\CommitCounter.cs" />
   </ItemGroup>
 

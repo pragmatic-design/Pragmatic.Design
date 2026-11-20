@@ -20,8 +20,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **612** | 672 | 21 | 3 |
-| Documents | **549** | 672 | 29 | 43 |
+| Sql | **612** | 672 | 20 | 3 |
+| Documents | **549** | 672 | 28 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -164,5 +164,4 @@ generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.
 - `examples/showcase/src/Showcase.Host/Engine/ShowcaseEngine.EfCore.cs` (both)
 - `Infrastructure/ShowcaseWebFactory.cs` (both)
 - `Infrastructure/PostgresFixture.cs` (Documents)
-- `Infrastructure/AttachmentRows.cs` (both)
 - `Infrastructure/CommitCounter.cs` (both)

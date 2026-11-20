@@ -13,17 +13,35 @@ internal sealed class RepositoryTemplate : CSharpTemplate
     private readonly EntityMetadataModel _model;
     private readonly string _repositoryClassName;
     private readonly EfCoreProvider _provider;
+    private readonly bool _bulk;
+    private readonly string _trigger;
+    private readonly string _key;
 
-    public RepositoryTemplate(EntityMetadataModel model, EfCoreProvider provider = EfCoreProvider.Generic)
+    /// <param name="model">The entity.</param>
+    /// <param name="provider">The EF Core provider, for the bulk SQL.</param>
+    /// <param name="bulk">
+    ///     Whether the repository is also an <c>IBulkRepository</c>. False for a trait's child (#888): its model is built from the trait, not
+    ///     from the entity's symbol, so it has no columns, and a bulk insert over none would write rows with nothing in them.
+    /// </param>
+    /// <param name="trigger">What generated it, for the file's header.</param>
+    /// <param name="key">
+    ///     The mapped key member a read by key filters on. <c>PersistenceId</c> on an entity; <c>Id</c> on a trait's child, whose model maps
+    ///     <c>Id</c> and ignores <c>PersistenceId</c>, its alias, which EF Core then cannot translate.
+    /// </param>
+    public RepositoryTemplate(
+        EntityMetadataModel model, EfCoreProvider provider = EfCoreProvider.Generic, bool bulk = true, string? trigger = null, string key = "PersistenceId")
     {
         _model = model;
         _provider = provider;
+        _bulk = bulk;
+        _key = key;
+        _trigger = trigger ?? $"[Entity] on {model.TypeName}";
         _repositoryClassName = "Repository";
     }
 
     protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";
     protected override string? SourceInfo => $"{_model.TypeName} from {_model.Namespace}";
-    protected override string? TriggerInfo => $"[Entity] on {_model.TypeName}";
+    protected override string? TriggerInfo => _trigger;
 
     public override Artifact RenderOutput()
     {
@@ -82,12 +100,14 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             // And the same for choosing which rows a navigation points at, from their keys alone:
             // attaching one means writing to the change tracker, which needs the context too.
             $"global::Pragmatic.Persistence.Repository.INavigationLinker<{entityType}>",
-            // The set-based writes, declared where there is no EF Core.
-            $"global::Pragmatic.Persistence.Repository.IBulkRepository<{entityType}>",
             // A read by key with navigations named by path, the form the Sql engine's repository serves too (#887): code that loads an
             // aggregate with its children outside a generated operation writes one call on every engine.
             $"global::Pragmatic.Persistence.Repository.IIncludingReadRepository<{entityType}>"
         };
+
+        // The set-based writes, declared where there is no EF Core. Before IIncludingReadRepository, where they have always been listed.
+        if (_bulk)
+            interfaces.Insert(interfaces.Count - 1, $"global::Pragmatic.Persistence.Repository.IBulkRepository<{entityType}>");
 
         XmlSummary(
             $"Repository for {_model.TypeName} entity. Provides CRUD operations and query methods.");
@@ -136,8 +156,9 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         AppendLine("private readonly global::Pragmatic.Persistence.Query.Executors.IQueryExecutor? _executor;");
 
         // True when a roll-up rule targets this entity as its child: bulk delete must then use the
-        // tracked path so the RollUpInterceptor recomputes parent aggregates.
-        AppendLine("private readonly bool _participatesInRollUp;");
+        // tracked path so the RollUpInterceptor recomputes parent aggregates. Read by the bulk delete only.
+        if (_bulk)
+            AppendLine("private readonly bool _participatesInRollUp;");
 
         // ⚠️ The clock is unconditional, and ICurrentUser is not. Every repository builds a
         // FilterContext, and FilterContext.Now is `required` precisely so that the instant a read
@@ -221,18 +242,21 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         }
 
         // Bulk operations
-        AppendLine();
-        RenderBulkDescriptor(entityType);
-        AppendLine();
-        RenderBulkUpdateAsync(entityType);
-        AppendLine();
-        RenderBulkDeleteAsync(entityType);
-        AppendLine();
-        RenderBulkInsertAsync(entityType);
-        AppendLine();
-        RenderBulkUpsertAsync(entityType);
-        AppendLine();
-        RenderUpsertAsync(entityType);
+        if (_bulk)
+        {
+            AppendLine();
+            RenderBulkDescriptor(entityType);
+            AppendLine();
+            RenderBulkUpdateAsync(entityType);
+            AppendLine();
+            RenderBulkDeleteAsync(entityType);
+            AppendLine();
+            RenderBulkInsertAsync(entityType);
+            AppendLine();
+            RenderBulkUpsertAsync(entityType);
+            AppendLine();
+            RenderUpsertAsync(entityType);
+        }
 
         AppendLine();
         RenderSaveChangesAsync();
@@ -326,9 +350,14 @@ internal sealed class RepositoryTemplate : CSharpTemplate
 
     // _participatesInRollUp = any registered roll-up rule has this entity as its child type.
     private void RenderRollUpParticipationAssignment()
-        => AppendLine(
+    {
+        if (!_bulk)
+            return;
+
+        AppendLine(
             "_participatesInRollUp = rollUpRules != null && global::System.Linq.Enumerable.Any(rollUpRules, "
             + $"static r => r.ChildType == typeof(global::{_model.FullTypeName}));");
+    }
 
     /// <summary>
     ///     Gets the type used as keyed DI service key.
@@ -560,7 +589,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
 
         Method("GetByIdAsync", () =>
         {
-            AppendLine($"return ApplyFilters(Set).FirstOrDefaultAsync(e => e.PersistenceId.Equals(id), ct);");
+            AppendLine($"return ApplyFilters(Set).FirstOrDefaultAsync(e => e.{_key}.Equals(id), ct);");
         }, $"global::System.Threading.Tasks.Task<{entityType}?>", parameters);
     }
 
@@ -581,7 +610,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         Block(() =>
         {
             AppendLine("var query = includes(ApplyFilters(Set));");
-            AppendLine("return query.FirstOrDefaultAsync(e => e.PersistenceId.Equals(id), ct);");
+            AppendLine($"return query.FirstOrDefaultAsync(e => e.{_key}.Equals(id), ct);");
         });
     }
 
@@ -612,7 +641,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
                 "query = global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.Include(query, path);"));
             AppendLine();
             AppendLine("return global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions"
-                       + ".FirstOrDefaultAsync(query, e => e.PersistenceId.Equals(id), ct);");
+                       + $".FirstOrDefaultAsync(query, e => e.{_key}.Equals(id), ct);");
         }, $"global::System.Threading.Tasks.Task<{entityType}?>", parameters);
     }
 
@@ -986,7 +1015,7 @@ internal sealed class RepositoryTemplate : CSharpTemplate
             Comment("Discarded: what matters is the fix-up onto the tracked instance, not the value.");
             AppendLine(
                 "_ = await global::Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions"
-                + ".FirstOrDefaultAsync(query, e => e.PersistenceId.Equals(entity.PersistenceId), ct)"
+                + $".FirstOrDefaultAsync(query, e => e.{_key}.Equals(entity.{_key}), ct)"
                 + ".ConfigureAwait(false);");
             AppendLine();
             AppendLine("return 1;");
