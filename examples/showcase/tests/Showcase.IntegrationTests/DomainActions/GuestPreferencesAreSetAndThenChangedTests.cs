@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Persistence.Repository;
-using Pragmatic.Specification;
 using Pragmatic.Testing.Assertions;
 using Showcase.Booking.Entities;
 using Showcase.IntegrationTests.Infrastructure;
@@ -48,7 +47,7 @@ public class GuestPreferencesAreSetAndThenChangedTests(PostgresFixture fixture) 
         using var scope = Services.CreateScope();
         var rows = await scope.ServiceProvider
             .GetRequiredService<IReadRepository<GuestPreferences>>()
-            .FindAsync(Spec<GuestPreferences>.Where(p => p.GuestId == guestId));
+            .FindAsync(GuestPreferencesSpecifications.OfGuest(guestId));
 
         var stored = rows.Should().ContainSingle("one guest, one row of preferences").Which;
         stored.PreferredRoomType.Should().Be("Double");

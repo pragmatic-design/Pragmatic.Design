@@ -20,12 +20,12 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **590** | 670 | 27 | 3 |
-| Documents | **530** | 670 | 33 | 43 |
+| Sql | **596** | 670 | 26 | 3 |
+| Documents | **536** | 670 | 32 | 43 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**10 test files, 25 test methods**, left out on both engines because the test itself reads or prepares rows through
+**7 test files, 17 test methods**, left out on both engines because the test itself reads or prepares rows through
 EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
 exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
 A test that then fails on an engine is a real gap, with an issue of its own.
@@ -35,9 +35,6 @@ A test that then fails on an engine is a real gap, with an issue of its own.
 | `Authorization/ThePackageEntitiesHaveATableTests.cs` | 5 |
 | `Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs` | 2 |
 | `CrossCutting/SagaPersistenceTests.cs` | 3 |
-| `DomainActions/CommitCountTests.cs` | 4 |
-| `DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs` | 1 |
-| `DomainActions/SharedDatabaseTransactionTests.cs` | 3 |
 | `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
 | `Endpoints/TheInvoiceInTheGuestsLanguageTests.cs` | 1 |
 | `Queries/SpecificationCompositionTests.cs` | 2 |
@@ -147,6 +144,7 @@ no serializable transaction, so concurrent adds can cross it.
 - `CrossCutting/DeclaredSpecificationQueryableTests.cs` (both), 1 test methods
 - `CrossCutting/LocalizedFieldProjectionTests.cs` (both), 1 test methods
 - `CrossCutting/ReadAccessSetTests.cs` (both), 1 test methods
+- `DomainActions/BoundaryDbConnectionTests.cs` (both), 2 test methods
 
 **The test names a type the generator puts in the assembly's namespace**, and an engine copy of a module is another assembly:
 
@@ -170,3 +168,4 @@ generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.
 - `Infrastructure/ShowcaseWebFactory.cs` (both)
 - `Infrastructure/PostgresFixture.cs` (Documents)
 - `Infrastructure/AttachmentRows.cs` (both)
+- `Infrastructure/CommitCounter.cs` (both)

@@ -32,10 +32,13 @@
 
   <ItemGroup>
     <!-- Replaced, not left out: the factory, as on the Sql host, and the database fixture, over MongoDB under the name every test takes
-         (PostgresFixture.cs beside this project); and the attachment rows, through the repository as on the Sql host (#888). -->
+         (PostgresFixture.cs beside this project); the attachment rows, through the repository as on the Sql host (#888); and a boundary's
+         saves, counted through a save phase keyed by the boundary (CommitCounter.cs beside this project), since EF Core's copy counts its
+         DbContext's SavingChanges. -->
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\ShowcaseWebFactory.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\PostgresFixture.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\AttachmentRows.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\Infrastructure\CommitCounter.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,9 +64,6 @@
          feature it exercises runs on the engine; the test's own code does not. -->
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\ThePackageEntitiesHaveATableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Authorization\WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\CommitCountTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\GuestPreferencesAreSetAndThenChangedTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\SharedDatabaseTransactionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheInvoiceInTheGuestsLanguageTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Queries\SpecificationCompositionTests.cs" />
@@ -113,10 +113,11 @@
     <!-- EF Core's own mechanisms, which the engines do not have by construction: the set [ReadAccess] adds to the reading boundary's
          context (the reader reads through the owner's repository there), and the queryable extension of a declared specification (they
          read through their own query model, not an IQueryable), and a DTO's projection translated to SQL through EF Core's value
-         converter (the same). -->
+         converter (the same); and whether two boundaries' DbContexts share a DbConnection. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\DeclaredSpecificationQueryableTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LocalizedFieldProjectionTests.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ReadAccessSetTests.cs" />
+    <Compile Remove="..\Showcase.IntegrationTests\DomainActions\BoundaryDbConnectionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

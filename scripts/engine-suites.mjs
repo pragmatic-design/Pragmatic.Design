@@ -36,6 +36,8 @@ export function engineOf(path) {
 const REPLACED = 'replaced by the engine suite\'s own file: the engine host takes its content root and connection strings differently';
 const REPLACED_FIXTURE = 'replaced by the engine suite\'s own fixture, under the name every test takes';
 const REPLACED_ROWS = 'replaced by the engine suites\' own file: it reads through EF Core\'s DbContext what the engines read through the repository';
+const REPLACED_COMMITS = 'replaced by each engine suite\'s own file: it counts a boundary\'s saves through EF Core\'s DbContext, which the engines '
+  + 'count through a save phase of the boundary';
 const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects leave out on the engines';
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
@@ -62,7 +64,7 @@ const NO_DOC_TEMPORAL_REFUSAL = `${REAL_GAP}the documents engine's store does no
 const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS,EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_ROWS, REPLACED_COMMITS, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -74,6 +76,8 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('Infrastructure/PostgresFixture.cs')]: { engines: ['Documents'], reason: REPLACED_FIXTURE },
   // Read through EF Core's DbContext, since EF Core registers no repository for a trait's entity (#888); the engines' copy reads through it.
   [s('Infrastructure/AttachmentRows.cs')]: { engines: both, reason: REPLACED_ROWS },
+  // CommitCountTests' counter: the DbContext's SavingChanges on EF Core; on each engine a save phase keyed by the boundary.
+  [s('Infrastructure/CommitCounter.cs')]: { engines: both, reason: REPLACED_COMMITS },
 
   [s('Endpoints/GridSearchTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')] },
   // GET /api/invoices/{id}/pdf is DownloadInvoicePdfAction, which loads the invoice with its lines: refused on the documents engine (#874).
@@ -96,6 +100,9 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // A DTO's projection, composed onto an IQueryable and translated to SQL through EF Core's value converter. The rest of the localized
   // field's round trip, in LocalizedFieldTests, runs on the engines.
   [s('CrossCutting/LocalizedFieldProjectionTests.cs')]: { engines: both, reason: EF_PROVIDER },
+  // Whether two boundaries' DbContexts share a DbConnection, which UseTransaction needs. That each boundary has a unit of work of its own,
+  // in SharedDatabaseTransactionTests, runs on the engines.
+  [s('DomainActions/BoundaryDbConnectionTests.cs')]: { engines: both, reason: EF_PROVIDER },
 
   // The route constants by their full name, Showcase.Booking.ApiRoutes: on an engine copy the generator names them after that assembly, and
   // the file would not compile there. The typed client tests, in TypedClientTests, run on the engines.
@@ -131,9 +138,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
     'Authorization/WhoTheRowBelongsToWhenSomebodyElseTypedItTests.cs',
     // The status a saga ends in is read from EF Core's tables: ISagaRepository has no read of it on the engines (#884).
     'CrossCutting/SagaPersistenceTests.cs',
-    'DomainActions/CommitCountTests.cs',
-    'DomainActions/GuestPreferencesAreSetAndThenChangedTests.cs',
-    'DomainActions/SharedDatabaseTransactionTests.cs',
     // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
     'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
     // Composes the PDF from the invoice with its lines, read through EF Core: EF Core does not implement IIncludingReadRepository (#887).
