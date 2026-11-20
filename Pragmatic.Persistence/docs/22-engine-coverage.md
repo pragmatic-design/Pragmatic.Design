@@ -16,7 +16,7 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
 | Sql | **619** | 677 | 19 | 3 |
-| Documents | **556** | 677 | 27 | 43 |
+| Documents | **558** | 677 | 27 | 41 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -91,11 +91,6 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
-
-**the documents engine's store does not refuse a second open stretch or an inverted one (#900)**
-
-- `EntityPersistence/TemporalRelationTests.cs`: `ASecondOpenStretch_IsRefusedByTheDatabase_EvenOutsideAMutation` (Documents)
-- `EntityPersistence/TemporalRelationTests.cs`: `AStretchEndingBeforeItBegins_IsRefusedByTheDatabase` (Documents)
 
 **the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)**
 

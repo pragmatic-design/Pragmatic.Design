@@ -42,6 +42,15 @@ With `MaxActive = 1` the schema also holds the rule: a unique index on the paren
 repository or the session. On the Sql engine over MySQL or Oracle, which have no partial index, the index is left out
 and `PRAG3039` says so: there the mutation's check is the only guard.
 
+Every temporal relation's schema also refuses a stretch that ends before it begins (`CK_{Table}_ValidRange`: `ValidTo`
+null, or not before `ValidFrom`). On the documents engine both rules are MongoDB's too:
+- the open stretch is a unique index on the parent key, partial on the documents whose `ValidTo` is null;
+- the range is the collection's validator.
+
+A write the store refuses is a broken rule: the open stretch a `DbConflictError`, the range a `DbConstraintError`.
+Cosmos DB has no filtered unique key and validates no content, so its schema report lists both as `MutationOnly`. The
+mutation's check is the guard there, and the host starts, as with `PRAG3039`.
+
 ### Example: Assigning a New Role
 
 ```csharp

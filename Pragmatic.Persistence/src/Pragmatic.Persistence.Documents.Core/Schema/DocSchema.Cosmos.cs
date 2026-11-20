@@ -20,11 +20,25 @@ public static partial class DocSchema
             var uniqueKeys = new List<string[]>();
             foreach (var index in collection.Indexes.Where(i => i.Unique))
             {
+                // A unique key has no filter, so one open stretch per key cannot be a key: the mutation's check holds it (#900).
+                if (index.NullField is not null)
+                {
+                    changes.Add(new DocSchemaChange(collection.Collection, index.Name, DocSchemaOutcome.MutationOnly,
+                        $"a unique key cannot be limited to the documents where {index.NullField} is null: one open stretch per key is held by the mutation's check only"));
+                    continue;
+                }
+
                 if (UniqueKeyOf(index, collection.PartitionKeyPath, out var why) is { } paths)
                     uniqueKeys.Add(paths);
                 else
                     changes.Add(new DocSchemaChange(collection.Collection, index.Name, DocSchemaOutcome.NotApplied, why));
             }
+
+            // Cosmos DB validates no document's content: a range holds through the mutation's check only, as a partial index does on the Sql
+            // engine over MySQL or Oracle (PRAG3039).
+            foreach (var range in collection.Ranges ?? [])
+                changes.Add(new DocSchemaChange(collection.Collection, range.Name, DocSchemaOutcome.MutationOnly,
+                    $"Cosmos DB validates no document's content: {range.To} not before {range.From} is held by the mutation's check only"));
 
             var link = $"dbs/{session.Database}/colls/{collection.Collection}";
             var found = await client.SendAsync(HttpMethod.Get, "colls", link, link, null, null, ct: ct, accepted: HttpStatusCode.NotFound).ConfigureAwait(false);
