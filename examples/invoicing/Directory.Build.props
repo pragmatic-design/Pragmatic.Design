@@ -2,6 +2,19 @@
   <!-- A Directory.Build.props here stops MSBuild's upward search, so the root one is imported by hand. -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
 
+  <!-- The application on both releases Pragmatic supports (#923): its suite runs once per target, so a .NET 11 regression an application
+       would see is caught here. The root props set the single TargetFramework, which would make the SDK build one target only. -->
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- On net11.0 the language an application created on .NET 11 gets by default, so the generator emits for a C# 15 consumer there; the
+       repository pins 14 (Directory.Build.props), which is what keeps every other project on net10.0's language. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <LangVersion>15</LangVersion>
+  </PropertyGroup>
+
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

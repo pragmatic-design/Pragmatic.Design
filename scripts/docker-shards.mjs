@@ -17,6 +17,7 @@ export const DOCKER_SHARDS = [
   // ~398 s
   [
     'TimeOff.IntegrationTests', //            6m 11s
+    // On net10.0 and net11.0 since #923: 32s for both runs on a developer machine (2026-11-21), 25s for one on the runner before.
     'Invoicing.IntegrationTests', //            25s
     'Pragmatic.Configuration.Redis.Tests', //    2s
     // Five databases (PostgreSQL, SQL Server with full-text, MySQL, Oracle, SQLite): 3m 28s on a developer machine
