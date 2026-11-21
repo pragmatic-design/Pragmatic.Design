@@ -5,7 +5,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MANIFESTS, setVersion, versionProblems } from './skills-version.mjs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { MANIFESTS, readDocuments, setVersion, versionProblems } from './skills-version.mjs';
 
 const SKILL = 'marketplace/plugins/pragmatic-design/skills/pragmatic-use-x/SKILL.md';
 const OTHER = 'marketplace/plugins/pragmatic-design/skills/pragmatic-ecosystem/references/packages.md';
@@ -73,6 +76,9 @@ for (const note of [
   '<!-- New after alpha.1: on a local feed until the next release -->',
   // Wrapped where the prose wraps: the note starts on the line where "not in" is.
   'reference `Pragmatic.Audit.Engines` (not in\n1.0.0-alpha.1). The boundary\'s saves write the entries',
+  // The docs write versions in backticks everywhere else (#927).
+  'None of these is in `1.0.0-alpha.1`: they ship later.',
+  'they ship in the release after `1.0.0-alpha.1`.',
 ]) {
   test(`set refuses while a skill says something is not in the current version: ${note}`, () => {
     const withNote = files();
@@ -92,6 +98,41 @@ test('a note in the documentation the site publishes refuses set too, and the do
 
   const { changed } = setVersion(files(), '1.0.0-alpha.2', { tagExists: () => true, documents: new Map([[doc, 'nothing pending\n']]) });
   assert.equal(changed.has(doc), false);
+});
+
+// The root README and the site's hand-written pages carry notes too; the site's generated copies of docs/ and the
+// module docs are left out, since their sources are read already (#927).
+test('the documents set reads are the root README, docs/, module docs and the hand-written site pages', () => {
+  const root = mkdtempSync(join(tmpdir(), 'skills-version-'));
+  const write = (path, text = 'x\n') => {
+    mkdirSync(join(root, path, '..'), { recursive: true });
+    writeFileSync(join(root, path), text);
+  };
+  try {
+    write('README.md');
+    write('docs/howto/guide.md');
+    write('Pragmatic.Result/README.md');
+    write('Pragmatic.Result/docs/concepts.md');
+    write('site/docs/public/llms.txt');
+    write('site/docs/src/content/docs/getting-started/installation.md');
+    write('site/docs/src/content/docs/reference/versioning.md');
+    write('site/docs/src/content/docs/source-generator/how-it-works.md');
+    write('site/docs/src/content/docs/guides/guide.md');
+    write('site/docs/src/content/docs/modules/result/concepts.md');
+
+    assert.deepEqual([...readDocuments(root).keys()].sort(), [
+      'Pragmatic.Result/README.md',
+      'Pragmatic.Result/docs/concepts.md',
+      'README.md',
+      'docs/howto/guide.md',
+      'site/docs/public/llms.txt',
+      'site/docs/src/content/docs/getting-started/installation.md',
+      'site/docs/src/content/docs/reference/versioning.md',
+      'site/docs/src/content/docs/source-generator/how-it-works.md',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('the notes about an unreleased feature do not fail the check: before the release they are true', () => {

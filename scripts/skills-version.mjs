@@ -92,9 +92,10 @@ export function unreleasedNotes(files, version) {
   const full = escapeRegExp(version);
   const short = escapeRegExp(version.replace(/^\d+\.\d+\.\d+-/, ''));
   // `\s+` before the version and not a space: prose wraps, and "(not in" may end a line the version starts.
+  // The version may sit in backticks, as the docs write it everywhere else.
   const notes = [
-    new RegExp(`\\b(?:not|neither|none)\\b[^\\n]{0,80}?\\bin\\s+${full}\\b`, 'gi'),
-    new RegExp(`\\bafter\\s+(?:${full}|${short})\\b`, 'gi'),
+    new RegExp(`\\b(?:not|neither|none)\\b[^\\n]{0,80}?\\bin\\s+\`?${full}\\b`, 'gi'),
+    new RegExp(`\\bafter\\s+\`?(?:${full}|${short})\\b`, 'gi'),
   ];
 
   const found = [];
@@ -169,16 +170,25 @@ function readMarketplace(root) {
   return files;
 }
 
-/** The documentation the site publishes: each module's README and docs/, and the repository's docs/. */
-function readDocuments(root) {
+/**
+ * The documentation the site publishes: the root README, the repository's docs/, each module's README and docs/, and
+ * the site's hand-written pages. The site's `modules/` and `guides/` are copies of docs already read, so they stay out.
+ */
+export function readDocuments(root) {
   const files = new Map();
+  const add = (full) => files.set(relative(root, full).replaceAll('\\', '/'), readFileSync(full, 'utf8'));
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
       const full = join(dir, name);
       if (statSync(full).isDirectory()) walk(full);
-      else if (name.endsWith('.md')) files.set(relative(root, full).replaceAll('\\', '/'), readFileSync(full, 'utf8'));
+      else if (name.endsWith('.md')) add(full);
     }
   };
+  for (const path of ['README.md', 'site/docs/public/llms.txt']) if (existsSync(join(root, path))) add(join(root, path));
+  for (const section of ['getting-started', 'reference', 'source-generator']) {
+    const dir = join(root, 'site', 'docs', 'src', 'content', 'docs', section);
+    if (existsSync(dir)) walk(dir);
+  }
   for (const name of readdirSync(root)) {
     if (name === 'docs') walk(join(root, name));
     else if (name.startsWith('Pragmatic.') && statSync(join(root, name)).isDirectory()) {

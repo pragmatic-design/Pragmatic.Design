@@ -367,8 +367,8 @@ and the same generator; both releases are supported by Microsoft until 2028-11-1
   breaking change of ours.
 
 [Choosing .NET 10 or .NET 11](docs/howto/choose-dotnet-version.md) says how to start on either, how
-to move, and which of this is in which release: on 1.0.0-alpha.4 an application on .NET 11 still
-meets four issues that are fixed since.
+to move, and which of this is in which release: four issues an application meets on .NET 11 are
+fixed, and the fixes are not in 1.0.0-alpha.4.
 
 Then pick your way in:
 
