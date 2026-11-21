@@ -90,7 +90,8 @@ rather than passed on. These four are fixed in 1.0.0-alpha.5; a project on 1.0.0
 
 ## What .NET 11 adds for an application
 
-All of them since 1.0.0-alpha.5.
+All of them since 1.0.0-alpha.5, except the `net11.0` build of every package, which is since
+1.0.0-alpha.6 (in 1.0.0-alpha.5, four packages had one).
 
 - **A C# 15 union as the error type** ([#837](https://github.com/pragmatic-design/Pragmatic.Design/issues/837),
   [#865](https://github.com/pragmatic-design/Pragmatic.Design/issues/865),
