@@ -3,7 +3,7 @@ title: "Local NuGet Server"
 description: "The released packages are on nuget.org, and an"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/local-nuget-server.md
 sidebar:
-  order: 7
+  order: 8
 ---
 The released packages are on [nuget.org](https://www.nuget.org/profiles/Pragmatic.Design), and an
 application that uses them needs none of this. This guide is for consuming a build that is not

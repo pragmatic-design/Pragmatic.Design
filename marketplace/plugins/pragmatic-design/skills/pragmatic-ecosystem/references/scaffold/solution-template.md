@@ -63,6 +63,9 @@ as a key such as `validation.required` and nothing else.
 }
 ```
 
+For a `net11.0` application, `"version": "11.0.100"` here and `<TargetFramework>net11.0</TargetFramework>`
+below; nothing else in the template changes ([../dotnet-version.md](../dotnet-version.md) says which to pick).
+
 ⚠ `latestFeature`, and the band floor rather than the exact build you happen to have. Pinning
 `10.0.201` with `latestPatch` does **not** roll forward to an installed `10.0.302`: a patch roll
 stays inside its feature band.

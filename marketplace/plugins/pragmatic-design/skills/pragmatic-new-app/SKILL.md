@@ -16,7 +16,9 @@ Use this for an external consumer application that uses Pragmatic.Design package
 1. If the requirements are not fully specified, ask before scaffolding: the bounded contexts, who
    calls the API (step 4), whether rows belong to a tenant, and which of storage, documents, email and
    a clock the application needs; each is a package and a host line. `pragmatic-choose-modules` maps
-   the answers to modules.
+   the answers to modules. The .NET release is not a question to ask: the one the user names, else
+   `net10.0` (`../pragmatic-ecosystem/references/dotnet-version.md`, which also says the two lines that
+   change for `net11.0`).
 2. Read `../pragmatic-ecosystem/references/scaffold/solution-template.md` and lay down the **full
    best-practice structure** (do NOT create a single minimal project): `.slnx`, `global.json`,
    `Directory.Build.props`, `Directory.Packages.props` (CPM), `NuGet.config`, `.gitignore`,
@@ -74,7 +76,7 @@ Split the app into a **boundary library** and a **web host** with different pack
 - `Pragmatic.Identity.AspNetCore`, unless the host declares `[AnonymousHost]` (requirement 5)
 - `Pragmatic.Endpoints.OpenApi` (the contract, requirement 6) and `Scalar.AspNetCore` (its reference
   UI, in Development)
-- The EF provider matching Pragmatic's EF Core major (`.NET 10 → EF Core 10`), so `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.*`
+- The EF provider matching Pragmatic's EF Core major, EF Core 10 on `net10.0` and on `net11.0` alike, so `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.*`
 - `Pragmatic.SourceGenerator` as analyzer
 
 **Integration test project**: a plain `ProjectReference` to the host (the Testing generator reads the

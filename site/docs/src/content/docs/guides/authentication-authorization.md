@@ -3,7 +3,7 @@ title: "Authentication & Authorization"
 description: "Practical entry point for common questions."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/authentication-authorization.md
 sidebar:
-  order: 3
+  order: 4
 ---
 Practical entry point for common questions.
 

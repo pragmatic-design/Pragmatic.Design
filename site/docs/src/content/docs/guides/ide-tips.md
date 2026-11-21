@@ -3,7 +3,7 @@ title: "IDE Tips"
 description: "> Workarounds and best practices for working with Source Generators in the monorepo."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/ide-tips.md
 sidebar:
-  order: 9
+  order: 10
 ---
 > Workarounds and best practices for working with Source Generators in the monorepo.
 

@@ -5,7 +5,7 @@ Entry point for coding agents. Humans should start at [README.md](README.md) and
 
 ## What this is
 
-A .NET 10 framework built as a monorepo of independent modules, held together by one source
+A framework for .NET 10 and .NET 11, built as a monorepo of independent modules, held together by one source
 generator. Roughly 350 projects, 158 of which ship as packages (what `scripts/publish-local.mjs`
 pushes to the feed). Solutions use the `.slnx` format, not `.sln`.
 

@@ -3,7 +3,7 @@ title: "Consuming Generated Docs"
 description: "The source generator emits **living documentation** as compile-time `const` strings: a glossary, a C4"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/consuming-generated-docs.md
 sidebar:
-  order: 8
+  order: 9
 ---
 The source generator emits **living documentation** as compile-time `const` strings: a glossary, a C4
 container diagram, and an AsyncAPI event contract. They are always in sync with the code (no annotations,

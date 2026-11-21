@@ -19,6 +19,7 @@
   <Folder Name="/docs/howto/">
     <File Path="docs/howto/aot-and-trimming.md" />
     <File Path="docs/howto/authentication-authorization.md" />
+    <File Path="docs/howto/choose-dotnet-version.md" />
     <File Path="docs/howto/consuming-generated-docs.md" />
     <File Path="docs/howto/diagnostics-troubleshooting.md" />
     <File Path="docs/howto/ide-tips.md" />
