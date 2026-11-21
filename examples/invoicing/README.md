@@ -51,15 +51,20 @@ lifetime and signature are all validated for real, against no network.
 node scripts/check.mjs --tier docker --only Invoicing.IntegrationTests   # from the repository root
 ```
 
-**173 passed and none skipped**, in 22–30 seconds. ⚠️ Consecutive runs have read 22.3s, 22.3s, 23.2s
-and 32.5s — the last one while other container suites were competing for the same Docker — so the count
-is the number to rely on and the duration is the machine's. A single decimal quoted from one run would
+**348 passed and none skipped: 174 on `net10.0` and the same 174 on `net11.0`.** The application
+targets both releases Pragmatic supports (`Directory.Build.props`), at C# 15 on `net11.0`, so the suite
+runs once per target, and `TheRuntimeTheSuiteRunsOn` asserts each run is on its own runtime. It took
+31.9 seconds for both on a developer machine (2026-11-21). ⚠️ Earlier single-target runs read 22.3s,
+22.3s, 23.2s and 32.5s — the last one while other container suites were competing for the same Docker —
+so the count is the number to rely on and the duration is the machine's. On `net11.0` the application
+keeps EF Core 10, as Pragmatic's EF Core packages do; EF Core 11, and the other reference applications
+on `net11.0`, are not what this suite measures. A single decimal quoted from one run would
 be a precision this suite does not have. Each test boots the real host and talks HTTP to it:
 PostgreSQL in a container, a signed token as a client would send, no test-only authentication anywhere.
 The suite is part of the gate's docker tier — `<RequiresDocker>true</RequiresDocker>` is the whole
 registration — and CI runs that tier on ubuntu.
 
-**117 of those 173 tests are hand-written and 56 are generated** — the contract tests
+**118 of those 174 tests are hand-written and 56 are generated** — the contract tests
 `Pragmatic.Testing.SourceGenerator` writes from the endpoints (24 + 20 authorization contracts for the
 two boundaries, 3 + 3 CRUD, 6 state-transition), counted as the `FactAttribute` occurrences in
 `obj/Debug/net10.0/generated/Pragmatic.Testing.SourceGenerator/` **after a rebuild** — an incremental

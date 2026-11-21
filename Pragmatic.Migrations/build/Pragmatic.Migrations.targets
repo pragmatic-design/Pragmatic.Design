@@ -24,9 +24,11 @@
     <PragmaticSchemaSnapshotDir Condition="'$(PragmaticSchemaSnapshotDir)' == ''">$(MSBuildProjectDirectory)\schema</PragmaticSchemaSnapshotDir>
   </PropertyGroup>
 
+  <!-- Per target framework (#925): a host that targets several has an outer build too, which runs Build with no TargetPath of its own,
+       and the CLI was handed an empty assembly path there. Each inner build writes the snapshot of its own assembly. -->
   <Target Name="GeneratePragmaticSchemaSnapshot"
           AfterTargets="Build"
-          Condition="'$(PragmaticSchemaSnapshot)' == 'true'">
+          Condition="'$(PragmaticSchemaSnapshot)' == 'true' AND '$(IsCrossTargetingBuild)' != 'true'">
     <Message Importance="high"
              Text="Pragmatic.Migrations: writing schema snapshot to $(PragmaticSchemaSnapshotDir)" />
     <!-- ContinueOnError: the snapshot is a review aid, not a build output. A missing global tool
