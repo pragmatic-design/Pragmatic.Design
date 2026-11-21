@@ -239,6 +239,14 @@ internal static class TraitCompilationHarness
             Add(Path.Combine(runtimeDir, bcl));
         }
 
+        // .NET 11 moved the Microsoft.Extensions abstractions (DependencyInjection, Logging, Options, Configuration,
+        // Hosting) into Microsoft.NETCore.App: a net11.0 build no longer copies them to the output directory, and the
+        // ASP.NET Core framework directory below no longer carries them. Without this the set held them only when an
+        // earlier test had loaded them into the process, so the compile tests passed in the full run and failed run
+        // alone or in another order (#935: 29 of them in the alpha.6 release run). On net10.0 the directory has none.
+        foreach (var dll in Directory.EnumerateFiles(runtimeDir, "Microsoft.Extensions*.dll"))
+            Add(dll);
+
         // ASP.NET Core shared framework — the generated trait endpoint + DI-registration code
         // references Microsoft.AspNetCore.* and Microsoft.Extensions.*. The test host already
         // loads the AspNetCore.App framework (see runtimeconfig), so harvest those assemblies
