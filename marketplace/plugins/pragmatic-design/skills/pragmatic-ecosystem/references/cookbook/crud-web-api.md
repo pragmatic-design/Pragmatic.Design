@@ -12,7 +12,7 @@ Build in order. Run `dotnet build` after each main step.
 
 ## 0. Prerequisites
 
-- .NET 10 SDK, local PostgreSQL (or `docker run -p 5432:5432 -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=myapp postgres:17`).
+- .NET 11 SDK (or the .NET 10 SDK, with `net10.0` wherever this page writes `net11.0`), local PostgreSQL (or `docker run -p 5432:5432 -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=myapp postgres:17`).
 - NuGet feed: the packages are on nuget.org as prereleases; see `../nuget-feed.md` only to consume unreleased builds from a local BaGetter.
 
 ## 1. Project layout
@@ -64,24 +64,24 @@ that are not released yet.
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.4" />
+    <PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.5" />
     <!-- ⚠ required: [Endpoint] generates Microsoft.AspNetCore.* code INTO this assembly -->
-    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.4" />
+    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.5" />
     <!-- ⚠ required: entity infrastructure (IEntity.PersistenceId) is generated here, needs EFCore types -->
-    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
       <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -432,7 +432,7 @@ document the errors it returns.
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -440,21 +440,21 @@ document the errors it returns.
     <ProjectReference Include="..\MyApp.Sales\MyApp.Sales.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.4" />
+    <PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.5" />
     <!-- ⚠ required: who calls. Users → this package; deliberately none → [AnonymousHost] instead.
          With neither, the build stops on PRAG1695. -->
-    <PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.4" />
-    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+    <PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.5" />
+    <PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
       <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <!-- ⚠ required: EFCore bundles no provider; match Pragmatic's EF Core major (.NET 10 → EF Core 10) -->
+    <!-- ⚠ required: EFCore bundles no provider; match Pragmatic's EF Core major (EF Core 10, on net10.0 and net11.0) -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.*" />
   </ItemGroup>
 </Project>
@@ -622,7 +622,7 @@ client.DefaultRequestHeaders.Authorization = new("Bearer", token.Token);
 </PropertyGroup>
 ```
 
-After `dotnet build`, read `obj/Debug/net10.0/generated/Pragmatic.SourceGenerator/...`.
+After `dotnet build`, read `obj/Debug/net11.0/generated/Pragmatic.SourceGenerator/...` (`net10.0` on that target).
 
 ⚠ **Do not redirect it with `CompilerGeneratedFilesOutputPath` in `Directory.Build.props`.** That file
 is imported before the SDK defines `$(BaseIntermediateOutputPath)`, so the obvious

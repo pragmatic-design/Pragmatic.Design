@@ -19,8 +19,8 @@ no `WHERE TenantId`; the framework adds it.
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.MultiTenancy" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.MultiTenancy.AspNetCore" Version="1.0.0-alpha.4" />  <!-- resolution middleware -->
+<PackageReference Include="Pragmatic.MultiTenancy" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.MultiTenancy.AspNetCore" Version="1.0.0-alpha.5" />  <!-- resolution middleware -->
 ```
 
 `Pragmatic.MultiTenancy` goes on the boundary library that marks tenant entities,

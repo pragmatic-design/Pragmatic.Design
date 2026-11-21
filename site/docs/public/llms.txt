@@ -8,7 +8,7 @@
 > 45 modules, version 1.0.0-alpha.
 
 Key facts for building an app:
-- Target `net10.0` (LTS) or `net11.0` (STS, C# 15): the same packages and generator on both. Keep the project's target when it has one, and use the one the user names. Otherwise a new project takes `net10.0`: four issues on `net11.0` are fixed and not in 1.0.0-alpha.4. Details: /guides/choose-dotnet-version/.
+- Target `net10.0` (LTS) or `net11.0` (STS, C# 15): the same packages and generator on both. Keep the project's target when it has one, and use the one the user names (`net10.0` is a full choice). Otherwise a new project takes `net11.0` when an 11.0 SDK is installed. Details: /guides/choose-dotnet-version/.
 - Two project shapes: a **boundary library** (entities, mutations, queries, actions) and a **web host**.
 - A boundary library that declares `[Endpoint]` must reference `Pragmatic.Endpoints.AspNetCore`, and for entity infrastructure also `Pragmatic.Persistence.EFCore`.
 - Entities live in the `{Boundary}.Entities` namespace (the generator derives the host database root namespace from it), each with `[Entity]` and `: IEntity`.

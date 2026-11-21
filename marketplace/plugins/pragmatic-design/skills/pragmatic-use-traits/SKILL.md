@@ -19,10 +19,10 @@ you don't write.
 ## Packages (add the trait you need)
 
 ```xml
-<PackageReference Include="Pragmatic.Comments" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Tags" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Attachments" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Notes" Version="1.0.0-alpha.4" />
+<PackageReference Include="Pragmatic.Comments" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Tags" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Attachments" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Notes" Version="1.0.0-alpha.5" />
 ```
 
 The SG detects the attributes automatically, with no extra DI wiring.

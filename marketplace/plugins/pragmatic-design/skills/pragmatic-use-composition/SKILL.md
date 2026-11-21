@@ -20,9 +20,9 @@ For structuring into modules/boundaries and architectural decisions: `pragmatic-
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.4" />   <!-- attributes -->
-<PackageReference Include="Pragmatic.Composition" Version="1.0.0-alpha.4" />    <!-- host runtime -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.5" />   <!-- attributes -->
+<PackageReference Include="Pragmatic.Composition" Version="1.0.0-alpha.5" />    <!-- host runtime -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

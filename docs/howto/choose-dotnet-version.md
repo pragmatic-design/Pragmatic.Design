@@ -17,7 +17,7 @@ so staying on .NET 10 costs no support window: a reason to move is what .NET 11 
 
 ## What is supported
 
-- **The packages target `net10.0`**, and four also ship (not in 1.0.0-alpha.4) a `net11.0` build, which NuGet picks for an
+- **The packages target `net10.0`**, and since 1.0.0-alpha.5 four also ship a `net11.0` build, which NuGet picks for an
   application on .NET 11: `Pragmatic.Configuration`, `Pragmatic.Documents.Templates`,
   `Pragmatic.Endpoints.OpenApi` and `Pragmatic.Result.AspNetCore`. Every other package is the `net10.0`
   build on either target. The `pragmatic-migrate` tool also runs on either runtime, so the schema
@@ -35,12 +35,12 @@ so staying on .NET 10 costs no support window: a reason to move is what .NET 11 
 ## Which to choose
 
 - **A project that already targets one keeps it.** Nothing in Pragmatic asks you to move.
-- **A new project:** either. On 1.0.0-alpha.4, `net10.0`, unless you need what .NET 11 adds and can
-  live with the four issues below until the next release: they are fixed, and the fixes are not in
-  1.0.0-alpha.4. From the release that carries them, the newest SDK you have installed.
+- **A new project:** either, and both are first-class. `net11.0` gets what .NET 11 adds (below);
+  `net10.0` is the LTS release, supported until the same day, with every Pragmatic feature except the
+  C# 15 union. Without a reason to pick, `net11.0`.
 
-The agent skills follow the same order: the project's target, then the one you ask for, then this
-default.
+The agent skills follow the same order: the project's target, then the one you ask for, then
+`net11.0` when an 11.0 SDK is installed (`net10.0` otherwise).
 
 ## Starting a project
 
@@ -66,8 +66,8 @@ Change `TargetFramework` to `net11.0` and build with the .NET 11 SDK. The langua
 it, unless the project pins `LangVersion`. No Pragmatic API changes.
 
 .NET 11 changes some runtime behaviour Pragmatic depends on. Each one found is absorbed in the packages
-rather than passed on. These four are fixed, and the fixes are not in 1.0.0-alpha.4: on that release
-they still apply.
+rather than passed on. These four are fixed in 1.0.0-alpha.5; a project on 1.0.0-alpha.4 and
+`net11.0` still meets them, and moving its packages to 1.0.0-alpha.5 removes them:
 
 - an application that references `Microsoft.AspNetCore.OpenApi` 11 (which brings `Microsoft.OpenApi` 3)
   gets a 500 from a runtime OpenAPI document with Pragmatic's transformers (`AddResultTypeSupport()`,
@@ -83,7 +83,7 @@ they still apply.
 
 ## What .NET 11 adds for an application
 
-None of these is in 1.0.0-alpha.4: they ship in the release that follows it.
+All of them since 1.0.0-alpha.5.
 
 - **A C# 15 union as the error type** ([#837](https://github.com/pragmatic-design/Pragmatic.Design/issues/837),
   [#865](https://github.com/pragmatic-design/Pragmatic.Design/issues/865),

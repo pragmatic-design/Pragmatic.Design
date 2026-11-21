@@ -3,7 +3,7 @@
 [![CI](https://github.com/pragmatic-design/Pragmatic.Design/actions/workflows/ci.yml/badge.svg)](https://github.com/pragmatic-design/Pragmatic.Design/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/vpre/Pragmatic.SourceGenerator?label=nuget&logo=nuget)](https://www.nuget.org/profiles/Pragmatic.Design)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/pragmatic-design/Pragmatic.Design/badge)](https://scorecard.dev/viewer/?uri=github.com/pragmatic-design/Pragmatic.Design)
-[![.NET](https://img.shields.io/badge/.NET-10.0-512bd4)](https://dotnet.microsoft.com)
+[![.NET](https://img.shields.io/badge/.NET-10.0%20%7C%2011.0-512bd4)](docs/howto/choose-dotnet-version.md)
 [![License: MIT + PolyForm SB](https://img.shields.io/badge/license-MIT%20%2B%20PolyForm%20SB-blue.svg)](docs/LICENSING.md)
 [![Preview](https://img.shields.io/badge/status-1.0.0--alpha-ffe088)](docs/ROADMAP.md)
 
@@ -367,8 +367,7 @@ and the same generator; both releases are supported by Microsoft until 2028-11-1
   breaking change of ours.
 
 [Choosing .NET 10 or .NET 11](docs/howto/choose-dotnet-version.md) says how to start on either, how
-to move, and which of this is in which release: four issues an application meets on .NET 11 are
-fixed, and the fixes are not in 1.0.0-alpha.4.
+to move, and what changed with 1.0.0-alpha.5, the first release that carries all of the above.
 
 Then pick your way in:
 
