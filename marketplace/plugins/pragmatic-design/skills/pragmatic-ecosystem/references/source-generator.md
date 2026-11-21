@@ -7,7 +7,7 @@ This file is for agents that can inspect or modify the Pragmatic monorepo. Consu
 For external apps, add:
 
 ```xml
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

@@ -5,8 +5,8 @@ Use these package groups when building an app without Pragmatic source access.
 ## Minimal Foundation
 
 ```xml
-<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.4" />
+<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.5" />
 ```
 
 ## Source Generator Analyzer
@@ -14,7 +14,7 @@ Use these package groups when building an app without Pragmatic source access.
 Use for packages that rely on generated code:
 
 ```xml
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
@@ -30,17 +30,17 @@ Split into a **boundary library** and a **web host** (different package sets). F
 **Boundary library** (entities, mutations, queries, actions):
 
 ```xml
-<PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.4" />  <!-- required for [Endpoint] -->
-<PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.4" />     <!-- required for entity infra -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.Abstractions" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Ensure" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Mapping" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.5" />  <!-- required for [Endpoint] -->
+<PackageReference Include="Pragmatic.Persistence" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.5" />     <!-- required for entity infra -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
@@ -49,20 +49,20 @@ Split into a **boundary library** and a **web host** (different package sets). F
 **Web host** (SDK `Microsoft.NET.Sdk.Web`):
 
 ```xml
-<PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.4" />  <!-- UseI18N -->
+<PackageReference Include="Pragmatic.Composition.Host" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Endpoints.AspNetCore" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Result.AspNetCore" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Persistence.EFCore" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Internationalization.AspNetCore" Version="1.0.0-alpha.5" />  <!-- UseI18N -->
 <!-- who calls: users → Identity.AspNetCore; deliberately none → [AnonymousHost] instead (else PRAG1695) -->
-<PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.4" />  <!-- /openapi/v1.json -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.Identity.AspNetCore" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Endpoints.OpenApi" Version="1.0.0-alpha.5" />  <!-- /openapi/v1.json -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
-<!-- EF provider, matching Pragmatic's EF Core major (.NET 10 → EF Core 10) -->
+<!-- EF provider, matching Pragmatic's EF Core major (EF Core 10, on net10.0 and net11.0) -->
 <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.*" />
 ```
 
@@ -87,7 +87,7 @@ Add only when needed:
 
 ```xml
 <PropertyGroup>
-  <TargetFramework>net10.0</TargetFramework>
+  <TargetFramework>net11.0</TargetFramework> <!-- or net10.0: references/dotnet-version.md -->
   <Nullable>enable</Nullable>
   <ImplicitUsings>enable</ImplicitUsings>
 </PropertyGroup>

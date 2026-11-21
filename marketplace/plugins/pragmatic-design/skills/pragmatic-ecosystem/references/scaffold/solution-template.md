@@ -59,11 +59,11 @@ as a key such as `validation.required` and nothing else.
 
 ```json
 {
-  "sdk": { "version": "10.0.100", "rollForward": "latestFeature" }
+  "sdk": { "version": "11.0.100", "rollForward": "latestFeature" }
 }
 ```
 
-For a `net11.0` application, `"version": "11.0.100"` here and `<TargetFramework>net11.0</TargetFramework>`
+For a `net10.0` application, `"version": "10.0.100"` here and `<TargetFramework>net10.0</TargetFramework>`
 below; nothing else in the template changes ([../dotnet-version.md](../dotnet-version.md) says which to pick).
 
 ⚠ `latestFeature`, and the band floor rather than the exact build you happen to have. Pinning
@@ -75,7 +75,7 @@ stays inside its feature band.
 ```xml
 <Project>
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -120,7 +120,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- One exact version for every Pragmatic package: an alpha can change its API, and a float would
          take the next one on the next restore. Upgrade by changing this line. -->
-    <PragmaticVersion>1.0.0-alpha.4</PragmaticVersion>
+    <PragmaticVersion>1.0.0-alpha.5</PragmaticVersion>
   </PropertyGroup>
 
   <ItemGroup><!-- Pragmatic.Design (1.0.0-alpha) -->
@@ -146,7 +146,7 @@ manifest, but no smoke publishes it Native AOT yet.
     <PackageVersion Include="Pragmatic.Testing.SourceGenerator" Version="$(PragmaticVersion)" />
   </ItemGroup>
 
-  <ItemGroup><!-- EF provider: match Pragmatic's EF Core major (.NET 10 -> EF Core 10) -->
+  <ItemGroup><!-- EF provider: match Pragmatic's EF Core major (EF Core 10, on net10.0 and net11.0) -->
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 

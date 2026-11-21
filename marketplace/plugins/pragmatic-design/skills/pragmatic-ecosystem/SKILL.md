@@ -34,7 +34,7 @@ Dense attribute-first references; read the one matching the module in scope:
 ## Rules
 
 - Build consumer projects from package contracts and examples, not monorepo internals.
-- Target `net10.0` or `net11.0`: keep the project's target, use the one the user names, otherwise `net10.0`. The packages are the same on both; [references/dotnet-version.md](references/dotnet-version.md) says what differs and what is not in 1.0.0-alpha.4.
+- Target `net10.0` or `net11.0`: keep the project's target, use the one the user names, otherwise `net11.0` when an 11.0 SDK is installed. The packages are the same on both; [references/dotnet-version.md](references/dotnet-version.md) says what differs.
 - Enable nullable/implicit usings unless the user's project says otherwise. With implicit usings the Pragmatic packages referenced directly bring their own namespaces: do not write those `using` lines (details in [references/packages.md](references/packages.md)).
 - Use NuGet `PackageReference`; avoid `ProjectReference` in external apps.
 - Add `Pragmatic.SourceGenerator` as an analyzer package when the selected Pragmatic package needs generated code and does not bring the analyzer transitively. Keep `PrivateAssets="all"` on it (`dotnet add package` writes it), or a test project referencing the host generates the host a second time.

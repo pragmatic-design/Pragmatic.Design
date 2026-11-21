@@ -17,8 +17,8 @@ Use this for an external consumer application that uses Pragmatic.Design package
    calls the API (step 4), whether rows belong to a tenant, and which of storage, documents, email and
    a clock the application needs; each is a package and a host line. `pragmatic-choose-modules` maps
    the answers to modules. The .NET release is not a question to ask: the one the user names, else
-   `net10.0` (`../pragmatic-ecosystem/references/dotnet-version.md`, which also says the two lines that
-   change for `net11.0`).
+   `net11.0` when an 11.0 SDK is installed, else `net10.0`
+   (`../pragmatic-ecosystem/references/dotnet-version.md`, which also says the two lines that differ).
 2. Read `../pragmatic-ecosystem/references/scaffold/solution-template.md` and lay down the **full
    best-practice structure** (do NOT create a single minimal project): `.slnx`, `global.json`,
    `Directory.Build.props`, `Directory.Packages.props` (CPM), `NuGet.config`, `.gitignore`,
