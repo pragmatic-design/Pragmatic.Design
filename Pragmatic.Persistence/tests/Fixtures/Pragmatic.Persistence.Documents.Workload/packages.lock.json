@@ -42,48 +42,6 @@
           "Pragmatic.Persistence.Sql.Core": "[1.0.0, )"
         }
       }
-    },
-    "net11.0": {
-      "Microsoft.NET.ILLink.Tasks": {
-        "type": "Direct",
-        "requested": "[11.0.0, )",
-        "resolved": "11.0.0",
-        "contentHash": "gK2aq4XvChj5kvozpPHrkfKkr7zc5Z4xoTrJb4GPZzDEPMlCk0TX632bwY3LsWcX2UVcVRQBBGzsBGC2lq6YhA=="
-      },
-      "MinVer": {
-        "type": "Direct",
-        "requested": "[6.0.0, )",
-        "resolved": "6.0.0",
-        "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
-      },
-      "pragmatic.persistence.documents.core": {
-        "type": "Project",
-        "dependencies": {
-          "Pragmatic.Persistence.Documents.Cosmos": "[1.0.0, )",
-          "Pragmatic.Persistence.Documents.Mongo": "[1.0.0, )"
-        }
-      },
-      "pragmatic.persistence.documents.cosmos": {
-        "type": "Project"
-      },
-      "pragmatic.persistence.documents.mongo": {
-        "type": "Project"
-      },
-      "pragmatic.persistence.expressions": {
-        "type": "Project"
-      },
-      "pragmatic.persistence.sql.core": {
-        "type": "Project",
-        "dependencies": {
-          "Pragmatic.Persistence.Expressions": "[1.0.0, )"
-        }
-      },
-      "pragmatic.persistence.workload": {
-        "type": "Project",
-        "dependencies": {
-          "Pragmatic.Persistence.Sql.Core": "[1.0.0, )"
-        }
-      }
     }
   }
 }

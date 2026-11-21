@@ -334,13 +334,15 @@
   </PropertyGroup>
 
   <!-- Every package ships net10.0 and net11.0 (#931): an application on either restores a build made for it, and
-       nuget.org lists both. Only the libraries under a Pragmatic.* module folder are packages; the applications
-       under examples/ keep one target, set by their own Directory.Build.props when they want another. The net11.0
-       build is compiled with runtime async, the shape the first multi-targeted packages were measured in (#850).
-       scripts/package-targets.mjs refuses a packed package that misses either target. -->
+       nuget.org lists both. The packages are the libraries under a module's src/ folder. A library under its tests/
+       (a fixture a suite builds, the storage conformance base) keeps one target: a test that runs MSBuild on a
+       fixture reads the build of one target, and a cross-targeting fixture gives it the outer build, which has none.
+       The applications under examples/ keep one target too, set by their own Directory.Build.props when they want
+       another. The net11.0 build is compiled with runtime async, the shape the first multi-targeted packages were
+       measured in (#850). scripts/package-targets.mjs refuses a packed package that misses either target. -->
   <!-- A *.CodeFixers project falls in the runtime-library bucket above but runs in the IDE's compiler, as an analyzer
        does: it stays on the netstandard2.0 it sets for itself. -->
-  <PropertyGroup Condition="'$(IsRuntimeLib)' == 'true' AND $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)Pragmatic.')) AND !$(MSBuildProjectName.EndsWith('.CodeFixers'))">
+  <PropertyGroup Condition="'$(IsRuntimeLib)' == 'true' AND $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)Pragmatic.')) AND ($(MSBuildProjectDirectory.Contains('\src\')) OR $(MSBuildProjectDirectory.Contains('/src/'))) AND !$(MSBuildProjectName.EndsWith('.CodeFixers'))">
     <TargetFramework></TargetFramework>
     <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <Features Condition="'$(TargetFramework)' == 'net11.0'">$(Features);runtime-async=on</Features>
