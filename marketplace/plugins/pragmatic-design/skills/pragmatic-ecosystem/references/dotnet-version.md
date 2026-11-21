@@ -7,10 +7,10 @@ An application targets `net10.0` (LTS) or `net11.0` (STS). Both are supported by
 
 1. **The project already has a target**: keep it. Read `TargetFramework` in the project files or in
    `Directory.Build.props`; never move a project from one release to the other unless asked.
-2. **The user names one**: use it.
-3. **Neither**: `net10.0`. Four issues an application meets on `net11.0` are fixed and the fixes are
-   not in 1.0.0-alpha.4 (listed below); once the skills name the release after it, the default is the
-   newest SDK the user has installed (`dotnet --version`).
+2. **The user names one**: use it. `net10.0` is a full choice, not a fallback: the LTS release, with
+   every Pragmatic feature except the C# 15 one below.
+3. **Neither**: `net11.0`, when `dotnet --list-sdks` shows an 11.0 SDK. Without one, `net10.0`, and
+   say why in one line: the project can move later by changing two lines.
 
 ## What changes between the two
 
@@ -30,26 +30,17 @@ not reference anything different for it.
 Moving an existing project: change `TargetFramework` and the `global.json` version, then build. A
 project that pins `LangVersion` keeps its language.
 
-## Not in 1.0.0-alpha.4
-
-On 1.0.0-alpha.4, an application on `net11.0` meets these, each fixed since:
-
-- with `Microsoft.AspNetCore.OpenApi` 11 referenced (it brings `Microsoft.OpenApi` 3), a runtime
-  OpenAPI document with `AddResultTypeSupport()` or `AddPragmaticOpenApi()` answers 500; keep that
-  package at `10.0.*`. The compile-time document `MapPragmaticOpenApi` serves is not affected;
-- a background service that fails once the host runs leaves the host up and answering 503, instead of
-  exiting;
-- a `double` stored where the documents engine expects a `decimal` reads back differently;
-- with the schema snapshot turned on (`<PragmaticSchemaSnapshot>true</PragmaticSchemaSnapshot>`, off
-  by default), the build warns that the snapshot was not regenerated: `pragmatic-migrate` cannot load
-  `System.Runtime 11.0.0.0`.
-
-What `net11.0` adds is not in 1.0.0-alpha.4 either:
+## What `net11.0` adds
 
 - a C# 15 union as an operation's error type,
   `public partial union PlaceOrderError(NotFoundError, ConflictError) : IError;`, beside the
   arities `Result<T, E1, E2>` that stay valid on both targets (`pragmatic-use-foundation`);
-- the `net11.0` builds of the four packages above.
+- the `net11.0` builds of the four packages above; the OpenAPI ones are built against
+  `Microsoft.OpenApi` 3, so `Microsoft.AspNetCore.OpenApi` 11 works with `AddResultTypeSupport()` and
+  `AddPragmaticOpenApi()`.
+
+A project on an older Pragmatic release and `net11.0` may meet issues fixed since (the guide lists
+them): move its `Pragmatic.*` packages to the version these skills name.
 
 The full page, with the measurements and the issues: the guide *Choosing .NET 10 or .NET 11*
 (`docs/howto/choose-dotnet-version.md`, published under `/guides/choose-dotnet-version/`).

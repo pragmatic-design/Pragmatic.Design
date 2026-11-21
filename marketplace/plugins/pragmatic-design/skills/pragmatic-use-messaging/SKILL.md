@@ -20,11 +20,11 @@ For scheduled/recurring jobs use `pragmatic-use-jobs` instead.
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Messaging" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Messaging.EFCore" Version="1.0.0-alpha.4" />     <!-- transactional outbox -->
-<PackageReference Include="Pragmatic.Messaging.Channels" Version="1.0.0-alpha.4" />   <!-- in-process transport -->
-<PackageReference Include="Pragmatic.Messaging.RabbitMQ" Version="1.0.0-alpha.4" />   <!-- distributed transport -->
-<PackageReference Include="Pragmatic.Messaging.Saga" Version="1.0.0-alpha.4" />       <!-- workflow -->
+<PackageReference Include="Pragmatic.Messaging" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Messaging.EFCore" Version="1.0.0-alpha.5" />     <!-- transactional outbox -->
+<PackageReference Include="Pragmatic.Messaging.Channels" Version="1.0.0-alpha.5" />   <!-- in-process transport -->
+<PackageReference Include="Pragmatic.Messaging.RabbitMQ" Version="1.0.0-alpha.5" />   <!-- distributed transport -->
+<PackageReference Include="Pragmatic.Messaging.Saga" Version="1.0.0-alpha.5" />       <!-- workflow -->
 ```
 
 Always add `Pragmatic.SourceGenerator` as an analyzer. Namespaces: `Pragmatic.Messaging`, `Pragmatic.Messaging.Attributes`, `Pragmatic.Messaging.Saga`, and `Pragmatic.Resilience.Attributes` for `[Retry]`, `[Timeout]` and `[CircuitBreaker]`.

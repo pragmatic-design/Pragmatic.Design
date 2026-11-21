@@ -19,9 +19,9 @@ For cross-boundary event reactions use `pragmatic-use-messaging`. Jobs and Messa
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Jobs" Version="1.0.0-alpha.4" />
-<PackageReference Include="Pragmatic.Jobs.EFCore" Version="1.0.0-alpha.4" />     <!-- DB store + distributed lock -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.4">
+<PackageReference Include="Pragmatic.Jobs" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Jobs.EFCore" Version="1.0.0-alpha.5" />     <!-- DB store + distributed lock -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>
@@ -192,7 +192,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 #### On the Sql and documents engines
 
-`Pragmatic.Jobs.Engines` (not in 1.0.0-alpha.4) is the same store on Pragmatic's own engines. The same `[EnableJobPersistence]` puts
+`Pragmatic.Jobs.Engines` is the same store on Pragmatic's own engines. The same `[EnableJobPersistence]` puts
 `__Jobs` and `__RecurringJobs` in the engine's schema (or the two collections on MongoDB and Cosmos DB), and the boundary's generated
 `Add{Boundary}Persistence` hands its session to the store; the boundary library references `Pragmatic.Jobs.Engines` (**PRAG2508** names it
 otherwise). The host chooses the store:

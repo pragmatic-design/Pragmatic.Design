@@ -19,7 +19,7 @@ difference.
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.4" />
+<PackageReference Include="Pragmatic.Migrations" Version="1.0.0-alpha.5" />
 <!-- plus the driver, in the HOST project -->
 <PackageReference Include="Npgsql" Version="9.*" />
 ```
