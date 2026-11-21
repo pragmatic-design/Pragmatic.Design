@@ -226,13 +226,14 @@ public sealed partial class SqlPlan<T> : ISqlPlan
 
     /// <summary>
     ///     The prepared command of this plan in the session, values bound and each string parameter fitted to its value: a long one is not
-    ///     compared by its prefix (<see cref="SqlParameterFit.FitReused" />).
+    ///     compared by its prefix (<see cref="SqlParameterFit.FitReused" />), nor sent as one by a statement prepared before it came
+    ///     (<see cref="SqlSession.Runnable" />, #920).
     /// </summary>
     private DbCommand Command(in SqlQuery<T> query)
     {
         var command = Bound(query);
         SqlParameterFit.FitReused(command.Parameters, query.Session.Dialect);
-        return command;
+        return query.Session.Runnable(command);
     }
 
     /// <summary>The prepared command of this plan in the session, values bound; a plan with IN lists builds one per call where the list expands.</summary>
@@ -249,7 +250,7 @@ public sealed partial class SqlPlan<T> : ISqlPlan
             var sql = Sql(session);
             command = Create(session, sql, query);
             if (Preparable && session.Prepares(sql))
-                command.Prepare();
+                session.Prepare(command);
             session.Keep(Id, command);
         }
 
@@ -267,7 +268,7 @@ public sealed partial class SqlPlan<T> : ISqlPlan
         if (!session.Prepares(sql))
             return false;
         var command = Create(session, sql, default);
-        await command.PrepareAsync(ct).ConfigureAwait(false);
+        await session.PrepareAsync(command, ct).ConfigureAwait(false);
         session.Keep(Id, command);
         return true;
     }

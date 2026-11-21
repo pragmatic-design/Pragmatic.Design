@@ -97,7 +97,7 @@ public sealed partial class SqlPlan<T>
             // A PostgreSQL array types itself from its value, an untyped predicate value is bound as it comes: neither is prepared ahead.
             var typed = values is null || values.TrueForAll(v => v.Kind != SqlParamKind.Unknown);
             if (Preparable && typed && !(variant.Values[2] && session.Dialect == SqlDialect.PostgreSql) && session.Prepares(sql))
-                command.Prepare();
+                session.Prepare(command);
             session.Keep(Id, mask, values is null ? null : sql, command);
         }
 
