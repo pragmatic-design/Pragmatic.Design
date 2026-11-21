@@ -63,10 +63,12 @@ export function failureLines(out, { cap = TERMINAL_CAP } = {}) {
   const lines = out.split(/\r?\n/);
 
   return failedTestNames(out).map((name) => {
-    // The FIRST such line, not the last: the stack trace names the test too, and anchoring on it
-    // lands among the frames where no message follows.
-    const at = lines.findIndex((l) =>
-      l.includes(name) && !l.startsWith('[xUnit.net') && !/^\s+at\s/.test(l));
+    // The FIRST such line after the test's `[FAIL]` marker, not the last: the stack trace names the test
+    // too, and anchoring on it lands among the frames where no message follows. After the marker, and not
+    // from the top: on a suite with two targets the same name is printed PASSED first (#935).
+    const failAt = lines.findIndex((l) => l.startsWith('[xUnit.net') && l.includes(name) && l.includes('[FAIL]'));
+    const at = lines.findIndex((l, i) =>
+      i > failAt && l.includes(name) && !l.startsWith('[xUnit.net') && !/^\s+at\s/.test(l));
     if (at < 0) return name;
 
     const reason = lines
@@ -114,19 +116,56 @@ function isOutcomeLine(line) {
 export function failureDetails(out, { maxLines = DETAIL_LINES } = {}) {
   const lines = out.split(/\r?\n/);
 
-  return failedTestNames(out).map((test) => {
-    const at = lines.findIndex((l) => l.includes(test) && isOutcomeLine(l));
-    if (at < 0) return { test, detail: null };
+  // ⚠️ One name can have several outcome lines: a suite on two target frameworks runs each test once per
+  // target (#931), so a test green on net10.0 and red on net11.0 is printed PASSED first. Taking the first
+  // outcome line with the name took the pass, whose block is empty or the run's summary, and every detail
+  // came back null in the alpha.6 release run (#935). The failure's outcome line is the first with the
+  // name AFTER its `[FAIL]` marker, which the runner prints in every locale.
+  const failures = [];
+  lines.forEach((line, i) => {
+    const m = line.match(/^\[xUnit\.net[^\]]*\]\s+(\S+)\s+\[FAIL\]/);
+    if (m) failures.push({ test: m[1], failAt: i });
+  });
+
+  return failures.map(({ test, failAt }) => {
+    const target = targetAt(lines, failAt);
+    const at = lines.findIndex((l, i) => i > failAt && l.includes(test) && isOutcomeLine(l));
+    if (at < 0) return { test, target, detail: null };
 
     const end = lines.findIndex((l, i) => i > at && isOutcomeLine(l));
     const stop = end < 0 ? lines.length : end;
+    const detail = lines.slice(at + 1, Math.min(stop, at + 1 + maxLines)).join('\n').replace(/\s+$/, '');
 
-    const detail = lines.slice(at + 1, Math.min(stop, at + 1 + maxLines))
-      .join('\n')
-      .replace(/\s+$/, '');
-
-    return { test, detail: detail.length > 0 ? detail : null };
+    return { test, target, detail: detail.length > 0 ? detail : null };
   });
+}
+
+/**
+ * The target framework of the test run a line belongs to, from the run's own header: `dotnet test` on a
+ * project with several targets runs them one after the other, each under a line naming its assembly
+ * and `(.NETCoreApp,Version=v11.0)`, in any locale. Null when the output has no such header.
+ */
+function targetAt(lines, at) {
+  for (let i = at; i >= 0; i--) {
+    const m = lines[i].match(/\(\.NETCoreApp,Version=v(\d+\.\d+)\)/);
+    if (m) return `net${m[1]}`;
+  }
+  return null;
+}
+
+/**
+ * Whether a suite's output is a build that failed, rather than a test run.
+ *
+ * ⚠️ A compiler error in the output is not enough: a test that compiles generated code asserts on the
+ * errors it finds and prints them in its failure message, `error CS0234` and all. Read that way, 29
+ * failed tests of `Pragmatic.SourceGenerator.Tests` were reported as `BUILD` in the alpha.6 release run
+ * (#935), and the console said nothing of which tests or why. A run that printed its test counts got
+ * as far as running tests: its failures are tests.
+ */
+export function buildFailed(out) {
+  const ranTests = /^\s*(?:Totale test|Total tests):\s+\d+/m.test(out)
+    || /(?:Non superati|Failed):\s+\d+[.,]\s+(?:Superati|Passed):\s+\d+/.test(out);
+  return !ranTests && /error (CS|MSB|NETSDK)\d+/.test(out);
 }
 
 /** Lines of a suite's output kept when its failure has no name. The end of the run, where the summary is. */
