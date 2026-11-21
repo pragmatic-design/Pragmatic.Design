@@ -14,7 +14,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  record, prune, failedTestNames, failureDetails, failureLines, unnamedFailureTail, abortedRun, KEEP,
+  record, prune, failedTestNames, failureDetails, failureLines, unnamedFailureTail, abortedRun, buildFailed, KEEP,
   TERMINAL_CAP, UNNAMED_TAIL_LINES,
 } from './lib/failure-record.mjs';
 
@@ -233,7 +233,7 @@ test('the detail is capped, so one runaway stack cannot be the whole record', ()
 
 test('a green run has no details, and a build failure has no detail to find', () => {
   assert.deepEqual(failureDetails(''), []);
-  assert.deepEqual(failureDetails('[xUnit.net 00:00:00.01]     A.B.C [FAIL]'), [{ test: 'A.B.C', detail: null }]);
+  assert.deepEqual(failureDetails('[xUnit.net 00:00:00.01]     A.B.C [FAIL]'), [{ test: 'A.B.C', target: null, detail: null }]);
 });
 
 // ── A failure the runner counts but does not name (#118) ─────────────────────────────
@@ -325,4 +325,45 @@ test('the aborted reading does not depend on the line endings the runner used', 
 test('a run that finished, red or green, is not aborted', () => {
   assert.deepEqual(abortedRun(RED), { aborted: false, running: [] });
   assert.deepEqual(abortedRun(RED_SECONDS), { aborted: false, running: [] });
+});
+
+/**
+ * A third real capture: one suite on two targets, green on net10.0 and red on net11.0 (#935).
+ *
+ * ⚠️ The same test name is in the output twice, PASSED first. Captured from the source generator's
+ * compile tests with the harness as it was before #936, which failed them on net11.0 only: the record
+ * of the alpha.6 release run that failed on them kept a null detail for every one of its 25 names,
+ * and the console called the suite BUILD because the messages are compiler errors.
+ */
+const RED_TWO_TARGETS = readFileSync(
+  new URL('./fixtures/dotnet-test-red-two-targets-it-IT.txt', import.meta.url), 'utf-8');
+
+test('a test that passed on one target and failed on the other is recorded with the failure, not the pass', () => {
+  const details = failureDetails(RED_TWO_TARGETS);
+
+  assert.equal(details.length, 6);
+  for (const { test: name, detail } of details) {
+    assert.ok(detail, `${name} has a detail`);
+    assert.match(detail, /CS0234/, `${name}'s detail is its failure message`);
+  }
+});
+
+test('the terminal line of a test red on its second target carries the reason, not the pass', () => {
+  for (const line of failureLines(RED_TWO_TARGETS))
+    assert.match(line, / — .*Exception/, `${line.slice(0, 80)} has its reason`);
+});
+
+test('the detail names the target the test failed on', () => {
+  for (const { test: name, target } of failureDetails(RED_TWO_TARGETS))
+    assert.equal(target, 'net11.0', `${name} failed on net11.0`);
+});
+
+test('a run that printed its test counts is not a build failure, whatever its messages say', () => {
+  assert.equal(buildFailed(RED_TWO_TARGETS), false);
+  assert.equal(buildFailed(RED), false);
+});
+
+test('a run with a compiler error and no test counts is a build failure', () => {
+  const noTests = 'C:\\repo\\Some.Tests\\Thing.cs(12,5): error CS1002: ; expected [C:\\repo\\Some.Tests\\Some.Tests.csproj]\n';
+  assert.equal(buildFailed(noTests), true);
 });

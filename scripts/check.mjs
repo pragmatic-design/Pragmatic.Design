@@ -61,7 +61,7 @@ import { execSync, spawnSync } from 'node:child_process';
 import { runAsync, runPool } from './lib/spawn-async.mjs';
 import { acquire as acquireRunLock, describeHolder } from './lib/run-lock.mjs';
 import {
-  record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail, abortedRun,
+  record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail, abortedRun, buildFailed,
 } from './lib/failure-record.mjs';
 import { TESTCONTAINERS_LABEL, ownTestHosts } from './lib/gate-ownership.mjs';
 import { measureCoverage } from './lib/example-coverage.mjs';
@@ -294,7 +294,7 @@ function parseTestOutput(out) {
     failed: count('Non superati|Failed') + (abort.aborted ? Math.max(abort.running.length, 1) : 0),
     skipped: count('Ignorati|Skipped'),
     noTests: /Nessun test|No test is available/i.test(out),
-    buildError: /error (CS|MSB|NETSDK)\d+/.test(out),
+    buildError: buildFailed(out),
     failures: [...abortFailures, ...parseFailedTests(out)],
   };
 }
