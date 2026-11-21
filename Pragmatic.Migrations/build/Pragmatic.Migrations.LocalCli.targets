@@ -21,9 +21,17 @@
                       ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
 
+  <!-- The CLI built for the host's own target (#925): it loads the host's assembly, so a net11.0 host needs the net11.0 CLI. Any other
+       target takes the net10.0 one. -->
+  <PropertyGroup>
+    <_PragmaticMigrateCliFramework>net10.0</_PragmaticMigrateCliFramework>
+    <_PragmaticMigrateCliFramework Condition="'$(TargetFramework)' == 'net11.0'">net11.0</_PragmaticMigrateCliFramework>
+  </PropertyGroup>
+
   <Target Name="UseTheMigrateCliBuiltFromSource" BeforeTargets="GeneratePragmaticSchemaSnapshot">
     <MSBuild Projects="$(_PragmaticMigrateCliProject)" Targets="GetTargetPath"
-             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained">
+             Properties="TargetFramework=$(_PragmaticMigrateCliFramework)"
+             RemoveProperties="RuntimeIdentifier;SelfContained">
       <Output TaskParameter="TargetOutputs" PropertyName="_PragmaticMigrateCliPath" />
     </MSBuild>
     <PropertyGroup>
