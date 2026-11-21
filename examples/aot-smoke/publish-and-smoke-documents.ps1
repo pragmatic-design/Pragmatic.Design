@@ -3,6 +3,8 @@
 # warning an error, starts MongoDB 9 in Docker with a root user, runs the native binary against it, and asserts MONGO-AOT-OK. The
 # container is removed whatever happens. Requires the platform native toolchain and Docker: without either it fails, it does not pass.
 $ErrorActionPreference = 'Stop'
+# The target this run publishes on (#931): the gate sets PragmaticAotSmokeTarget for its net11.0 pass, MSBuild reads it as a property.
+$smokeTarget = if ($env:PragmaticAotSmokeTarget) { $env:PragmaticAotSmokeTarget } else { 'net10.0' }
 
 # The ILC link step shells out to vswhere to find the MSVC linker; see publish-and-smoke.ps1.
 if ($IsWindows -or $env:OS -eq 'Windows_NT') {
@@ -22,7 +24,7 @@ if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.DocumentsMongo.exe' } else { 'Pragmatic.Aot.DocumentsMongo' }
 $exe = Get-ChildItem -Recurse -Path (Join-Path $PSScriptRoot 'Pragmatic.Aot.DocumentsMongo/bin') -Filter $exeName |
-    Where-Object { $_.FullName -match 'publish' } | Select-Object -First 1
+    Where-Object { $_.FullName -match 'publish' -and $_.FullName -match "[\\/]$smokeTarget[\\/]" } | Select-Object -First 1
 if (-not $exe) { throw "Native binary not found" }
 
 $user = 'root'

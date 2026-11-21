@@ -49,6 +49,8 @@ public class ConsumerPlatformTests
         ConsumerPlatformDetector.Detect(csharp13).LanguageVersion.Should().Be(1300);
     }
 
+    // The System.Text.Json the suite runs on is 10 in its net10.0 build only (#931).
+#if !NET11_0_OR_GREATER
     [Fact]
     public void System_Text_Json_10_has_no_typed_GetTypeInfo()
     {
@@ -59,6 +61,7 @@ public class ConsumerPlatformTests
             "the negative case is about the System.Text.Json the tests run on");
         ConsumerPlatformDetector.Detect(withJson10).HasJsonTypeInfoOfT.Should().BeFalse();
     }
+#endif
 
     [Fact]
     public void A_compilation_without_System_Text_Json_has_the_baseline()

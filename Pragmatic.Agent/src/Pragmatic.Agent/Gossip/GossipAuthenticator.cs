@@ -44,7 +44,7 @@ internal sealed class GossipAuthenticator
 
     /// <summary>
     ///     Verifies a framed datagram and returns the inner payload when the MAC matches.
-    ///     Uses <see cref="CryptographicOperations.FixedTimeEquals"/> for a constant-time compare.
+    ///     Uses <see cref="CryptographicOperations.FixedTimeEquals(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/> for a constant-time compare.
     ///     Returns <see langword="false"/> (and a default span) for any datagram that is too short or
     ///     whose tag does not verify — the caller MUST drop it.
     /// </summary>

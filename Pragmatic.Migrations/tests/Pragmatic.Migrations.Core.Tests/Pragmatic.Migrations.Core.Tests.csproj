@@ -12,7 +12,6 @@
        scenarios and their container fixtures. -->
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Pragmatic.Migrations.Core.Tests</RootNamespace>

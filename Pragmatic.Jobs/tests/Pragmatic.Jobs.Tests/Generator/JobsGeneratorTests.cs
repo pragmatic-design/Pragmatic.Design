@@ -167,6 +167,10 @@ public class JobsGeneratorTests : JobsGeneratorTestBase
         await Verify(sources);
     }
 
+    // Its snapshot is the net10.0 output (the cast); RunGenerator compiles against the suite's own references, so it
+    // runs in the net10.0 build only (#931). The net11.0 output is pinned beside it, against .NET 11's references
+    // named explicitly (TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests).
+#if !NET11_0_OR_GREATER
     [Fact]
     public async Task OneOffJob_WithParameters_GeneratesInvokerAndRegistry()
     {
@@ -204,6 +208,7 @@ public class JobsGeneratorTests : JobsGeneratorTestBase
 
         await Verify(sources);
     }
+#endif
 
     [Fact]
     public void Job_WithPriorityAndMaxConcurrency_ExposesThemInTheRegistry()

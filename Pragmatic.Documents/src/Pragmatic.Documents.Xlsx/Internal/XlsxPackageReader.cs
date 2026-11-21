@@ -338,6 +338,13 @@ internal static class XlsxPackageReader
 
     private static void GuardEntrySize(ZipArchiveEntry entry)
     {
+        // An entry the archive marks as encrypted is refused before it is opened (#931). The runtimes disagree on what
+        // opening it does: .NET 10 ignores the flag and reads the bytes as they are, .NET 11 throws a
+        // NotSupportedException for a method it does not know. Neither is an outcome the reader declares.
+        if (entry.IsEncrypted)
+            throw new InvalidOperationException(
+                $"XLSX entry '{entry.FullName}' is encrypted, which the reader does not read.");
+
         // ZipArchiveEntry.Length is the uncompressed size (available for read-mode archives)
         if (entry.Length > MaxEntryBytes)
             throw new InvalidOperationException(

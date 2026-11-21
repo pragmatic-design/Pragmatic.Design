@@ -76,6 +76,7 @@ import { cpus } from 'node:os';
 import { supplyChain } from './supply-chain.mjs';
 import { nativeNameMismatch, packageId, packagesWrittenSince, packedSince } from './lib/packed-packages.mjs';
 import { zipEntries } from './package-markdown-links.mjs';
+import { REQUIRED_TARGETS, targetProblems } from './package-targets.mjs';
 import { skillCoverage, BUDGET as SKILL_BUDGET } from './skill-coverage.mjs';
 import { silentDrops, BUDGET as SILENT_BUDGET } from './silent-drops.mjs';
 import { hostProvidedContracts, BUDGET as CONTRACTS_BUDGET } from './host-provided-contracts.mjs';
@@ -244,11 +245,12 @@ function changedModules() {
  * non-zero exit reported a perfectly good build as FAIL with "0 error markers". `spawnError` is kept
  * separate from the exit code so an infrastructure failure can never be read as a compile failure.
  */
-function run(cmd, cmdArgs) {
+function run(cmd, cmdArgs, env = undefined) {
   const r = spawnSync(cmd, cmdArgs, {
     encoding: 'utf8',
     shell: process.platform === 'win32',
     maxBuffer: 512 * 1024 * 1024,
+    env: env ? { ...process.env, ...env } : undefined,
   });
   return {
     code: r.status ?? (r.error ? -1 : 1),
@@ -639,6 +641,16 @@ function onlyPragmaticPackagesArePacked() {
     console.log(bad(`FAIL — native assets a platform cannot load by the P/Invoke name`));
     for (const [id, mismatch] of misnamed) console.log(`    ${id}: ${mismatch}`);
     console.log('    Pack each native file as X.dll / libX.so / libX.dylib, X being the [LibraryImport] name.');
+    return false;
+  }
+
+  // Every package on every target an application can have (#931).
+  const narrowed = targetProblems(new Map(packagesWrittenSince('artifacts/build/package', lastBuildStartedAt)
+    .map((file) => [basename(file), [...zipEntries(readFileSync(file)).keys()]])));
+  if (narrowed.length > 0) {
+    console.log(bad(`FAIL — ${narrowed.length} package(s) miss a target of ${REQUIRED_TARGETS.join(', ')}`));
+    for (const line of narrowed) console.log(`    ${line}`);
+    console.log('    Directory.Build.props gives every package under Pragmatic.* both: a project-level <TargetFramework> narrows it.');
     return false;
   }
   console.log(`${ok('ok')} ${dim(`(${ids.length} packages)`)}`);
@@ -1231,12 +1243,17 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-messaging.ps1',
   ];
 
+  // Every smoke on every target a package ships (#931): the net11.0 pass publishes the net11.0 build of each package,
+  // compiled with runtime async, through the AOT compiler. The scripts read the target from the environment
+  // (examples/aot-smoke/Directory.Build.props).
   let good = true;
+  for (const target of REQUIRED_TARGETS)
   for (const script of scripts) {
-    process.stdout.write(`  ${basename(script)} … `);
+    process.stdout.write(`  ${basename(script)} on ${target} … `);
     // Windows PowerShell on Windows; PowerShell 7 elsewhere, where only pwsh exists (#825: the smokes run on Linux in CI).
     const shell = process.platform === 'win32' ? 'powershell' : 'pwsh';
-    const { code, out, spawnError } = run(shell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script]);
+    const { code, out, spawnError } = run(shell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script],
+      { PragmaticAotSmokeTarget: target });
 
     if (spawnError) {
       console.log(bad(`COULD NOT RUN — ${spawnError}`));
@@ -1336,6 +1353,10 @@ async function runSuites(projects, { parallel, containerTier = false, poolSize =
     const { out } = await runAsync('dotnet',
       ['test', proj, '--nologo', '-v', 'q', '--logger', 'console;verbosity=detailed',
         '--no-build', ...ARTIFACTS,
+        // One target after the other (#931). A suite on net10.0 and net11.0 otherwise starts both test hosts at once,
+        // and the pool's eight suites become sixteen processes: the generator suites, each holding Roslyn and a
+        // reference set, ran the machine out of memory (OutOfMemoryException in Endpoints, Mapping and Jobs).
+        '-p:TestTfmsInParallel=false',
         // An engine copy of the Showcase suite leaves its listed tests out of the run (engine-suites.mjs); nothing for any other suite.
         ...suiteFilter(proj),
         '--blame-hang-timeout', HANG_TIMEOUT, '--blame-hang-dump-type', 'none',
@@ -2847,6 +2868,7 @@ function sourceChecks() {
     && nodeTestCases('scripts/csharp15-forms.test.mjs', 'the C# 15 check finds each form and not its escaped spelling')
     && nodeTestCases('scripts/build-warnings.test.mjs', 'a build warning counts once, whatever the target')
     && nodeTestCases('scripts/test-counts.test.mjs', 'every target of a test project is counted')
+    && nodeTestCases('scripts/package-targets.test.mjs', 'the package-targets check refuses a package on one target')
     && contractsRatchetReadsWhatItClaims()
     && suiteRunnerOverlaps()
     && silentDropRuleHolds()

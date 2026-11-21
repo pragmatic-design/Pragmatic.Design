@@ -111,6 +111,40 @@
         "resolved": "10.0.10",
         "contentHash": "5wu/GrYVd8mG2DVUw3vFJzF+O336TyTGg/Kmcgw9bfwYhCoFiV5lR5QeEmKecJyrW4W54nMfD3p3589E8a7czQ=="
       }
+    },
+    "net11.0": {
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "gK2aq4XvChj5kvozpPHrkfKkr7zc5Z4xoTrJb4GPZzDEPMlCk0TX632bwY3LsWcX2UVcVRQBBGzsBGC2lq6YhA=="
+      },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[6.0.0, )",
+        "resolved": "6.0.0",
+        "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
+      },
+      "pragmatic.abstractions": {
+        "type": "Project"
+      },
+      "pragmatic.ensure": {
+        "type": "Project"
+      },
+      "pragmatic.internationalization": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Ensure": "[1.0.0, )"
+        }
+      },
+      "pragmatic.result": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Abstractions": "[1.0.0, )",
+          "Pragmatic.Internationalization": "[1.0.0, )"
+        }
+      }
     }
   }
 }

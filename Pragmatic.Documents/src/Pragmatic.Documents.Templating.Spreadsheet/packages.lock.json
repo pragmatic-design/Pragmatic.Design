@@ -36,6 +36,42 @@
           "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
         }
       }
+    },
+    "net11.0": {
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "gK2aq4XvChj5kvozpPHrkfKkr7zc5Z4xoTrJb4GPZzDEPMlCk0TX632bwY3LsWcX2UVcVRQBBGzsBGC2lq6YhA=="
+      },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[6.0.0, )",
+        "resolved": "6.0.0",
+        "contentHash": "+/SsmiySsXJlvQLCGBqaZKNVt3s/Y/HbAdwtop7Km2CnuZbaScoqkWJEBQ5Cy9ebkn6kCYKrHsXgwrFdTgcb3g=="
+      },
+      "pragmatic.documents.csv": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      },
+      "pragmatic.documents.ooxml": {
+        "type": "Project"
+      },
+      "pragmatic.documents.spreadsheet": {
+        "type": "Project"
+      },
+      "pragmatic.documents.templating": {
+        "type": "Project"
+      },
+      "pragmatic.documents.xlsx": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Documents.Ooxml": "[1.0.0, )",
+          "Pragmatic.Documents.Spreadsheet": "[1.0.0, )"
+        }
+      }
     }
   }
 }

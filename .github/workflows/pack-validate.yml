@@ -181,6 +181,12 @@ jobs:
           fi
           echo "All $(ls *.nupkg | grep -v symbols | wc -l) packages validated"
 
+      # Every package ships net10.0 and net11.0 (#931). Read from the packed files: a project-level
+      # <TargetFramework> narrows what MSBuild packs without a word.
+      - name: Every package on every target framework
+        if: steps.change.outputs.scope != 'docs'
+        run: node scripts/package-targets.mjs ./artifacts
+
       - name: List produced packages
         if: steps.change.outputs.scope != 'docs'
         run: ls -la ./artifacts

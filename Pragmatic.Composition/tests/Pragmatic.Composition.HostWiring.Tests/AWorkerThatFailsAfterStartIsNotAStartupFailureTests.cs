@@ -115,6 +115,10 @@ public sealed partial class AWorkerThatFailsAfterStartIsNotAStartupFailureTests
         run.Output.Should().NotContain("maintenance mode", "startup had succeeded:\n" + run.Output);
     }
 
+    // The 10-runtime cases compile in the suite's net10.0 build only (#931): the probe host is compiled against the
+    // suite's own references, and in the net11.0 build those are .NET 11's, which the 10 runtime cannot load. The
+    // net10.0 build runs both runtimes, the 11 one by rolling forward, so nothing goes unrun.
+#if !NET11_0_OR_GREATER
     /// <summary>The control: on .NET 10 the host stops and the process exits by itself, as it always did.</summary>
     [Fact]
     public async Task OnTheTenRuntime_TheHostStopsAndTheProcessExitsCleanly()
@@ -127,13 +131,16 @@ public sealed partial class AWorkerThatFailsAfterStartIsNotAStartupFailureTests
         run.Output.Should().Contain(WorkerFailure, "the host logs the worker's failure");
         run.Output.Should().NotContain("maintenance mode");
     }
+#endif
 
     /// <summary>
     ///     What the <c>catch</c> is for, on each runtime: a hosted service that fails to start puts the host in
     ///     maintenance, and the maintenance app answers 503 where the host was told to listen.
     /// </summary>
     [Theory]
+#if !NET11_0_OR_GREATER
     [InlineData(false, "runtime 10.")]
+#endif
     [InlineData(true, "runtime 11.")]
     public async Task AStartupFailure_StillServesTheMaintenancePage(bool rollForwardToLatestMajor, string runtime)
     {

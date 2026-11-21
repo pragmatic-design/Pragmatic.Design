@@ -95,4 +95,29 @@ public class XlsxReaderDanglingPartTests
 
         act.Should().Throw<Exception>().Where(e => e is InvalidDataException or XmlException);
     }
+
+    /// <summary>
+    ///     An entry the archive marks as encrypted is refused as the reader refuses any package it cannot read. On .NET 11
+    ///     opening it throws a <see cref="NotSupportedException" /> ("The entry's encryption method is not supported"),
+    ///     which none of the reader's declared outcomes is; the property test found it on damaged bytes (#931).
+    /// </summary>
+    [Fact]
+    public void Read_EntryMarkedEncrypted_IsRefused()
+    {
+        var package = XlsxPackages.Package(new Dictionary<string, string>
+        {
+            ["xl/workbook.xml"] = XlsxPackages.Workbook("<sheet name=\"A\" r:id=\"rId1\"/>"),
+            ["xl/_rels/workbook.xml.rels"] = XlsxPackages.WorkbookRelationships(
+                "<Relationship Id=\"rId1\" Target=\"worksheets/sheet1.xml\"/>"),
+            ["xl/worksheets/sheet1.xml"] = XlsxPackages.Worksheet(Sheet),
+            ["xl/sharedStrings.xml"] = "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"/>",
+        });
+        var encrypted = XlsxPackages.MarkEncrypted(package, "xl/sharedStrings.xml");
+
+        var act = () => XlsxReader.Read(encrypted);
+
+        act.Should().Throw<Exception>().Where(e =>
+            e is InvalidDataException
+            || (e is InvalidOperationException && e.Message.StartsWith("XLSX ", StringComparison.Ordinal)));
+    }
 }

@@ -3,6 +3,9 @@
   <!-- Pragmatic's declarations ([Entity], [Relation.*], the traits) on the documents engine, end to end, on MongoDB and on Cosmos DB: the
        shape Persistence declares, the documents' readers and writers, the chains bound on the shape, the filter families, the unit of work. -->
   <PropertyGroup>
+    <!-- One target: a container suite runs on net10.0 only, and the hermetic suites run on both (#931). -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <!-- Starts Testcontainers (a MongoDB replica set, the Cosmos DB emulator): scripts/check.mjs runs these one at a time. -->
     <RequiresDocker>true</RequiresDocker>
     <IsTestProject>true</IsTestProject>

@@ -70,6 +70,8 @@ public class TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests : JobsGenera
         await Verify(registry);
     }
 
+    // RunGenerator compiles against the suite's own references, which are .NET 10's in the net10.0 build only (#931).
+#if !NET11_0_OR_GREATER
     [Fact]
     public void A_consumer_on_net10_keeps_the_cast_it_has_today()
     {
@@ -78,6 +80,7 @@ public class TheInvokerReadsTypedMetadataWhereTheConsumerHasItTests : JobsGenera
         invoker.Should().Contain(CastRead);
         invoker.Should().NotContain(TypedRead);
     }
+#endif
 
     /// <summary>
     ///     The assemblies a job's invoker names, minus the ones the net11.0 reference set brings itself

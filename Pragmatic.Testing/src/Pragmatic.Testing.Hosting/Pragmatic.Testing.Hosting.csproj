@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <Description>Test factory for a Pragmatic worker host (PragmaticApp.RunWorkerAsync): builds the host from its entry point, exposes its services, starts and stops it, with the test's service overrides — the generic-host counterpart of WebApplicationFactory.</Description>
     <PackageTags>testing;hosting;worker;jobs;pragmatic</PackageTags>
   </PropertyGroup>
