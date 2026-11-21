@@ -444,6 +444,7 @@ const GUIDES_OUT = join(__dirname, "..", "docs", "src", "content", "docs", "guid
 const GUIDES_SRC = join(ROOT, "docs", "howto");
 const GUIDE_ORDER = [
   ["showcase-walkthrough.md", "Showcase Walkthrough"],
+  ["choose-dotnet-version.md", "Choosing .NET 10 or .NET 11"],
   ["monorepo-structure.md", "Monorepo Structure"],
   ["authentication-authorization.md", "Authentication & Authorization"],
   ["migrations-concurrent-development.md", "Migrations in Team Development"],

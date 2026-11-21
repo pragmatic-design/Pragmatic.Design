@@ -3,7 +3,7 @@ title: "Security Hardening"
 description: "A guide to securing an application built with Pragmatic.Design. It covers the security model of every relevant module and the actions that fall to the consumer."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/security-hardening.md
 sidebar:
-  order: 5
+  order: 6
 ---
 A guide to securing an application built with Pragmatic.Design. It covers the security model of every relevant module and the actions that fall to the consumer.
 

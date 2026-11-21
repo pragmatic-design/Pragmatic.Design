@@ -132,7 +132,7 @@ that maps each module to a database via `[Include<TModule, TDatabase>]`; otherwi
 public sealed class HostModule;
 ```
 
-Also add the EF provider matching Pragmatic's EF Core major (`.NET 10 → EF Core 10`):
+Also add the EF provider matching Pragmatic's EF Core major, EF Core 10 on `net10.0` and on `net11.0` alike:
 `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.*` (`Pragmatic.Persistence.EFCore` bundles none).
 The SG then generates the DbContext and registers it. Multiple databases? Declare multiple
 `PragmaticDatabase` markers and route modules to each via `[Include<,>]`.

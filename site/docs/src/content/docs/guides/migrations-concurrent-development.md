@@ -3,7 +3,7 @@ title: "Migrations in Team Development"
 description: "How `Pragmatic.Migrations` behaves when several developers work in parallel on different branches and then merge. Read the Pragmatic.Migrations README first."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/migrations-concurrent-development.md
 sidebar:
-  order: 4
+  order: 5
 ---
 How `Pragmatic.Migrations` behaves when several developers work in parallel on different branches and then merge. Read [the Pragmatic.Migrations README](/modules/migrations/overview/) first.
 

@@ -16,7 +16,7 @@
 
 **Describe your domain. One source generator writes the application around it.**
 
-Pragmatic.Design is a .NET 10 framework for line-of-business software. You write what is specific to
+Pragmatic.Design is a framework for line-of-business software on .NET 10 and .NET 11. You write what is specific to
 your business: entities, the operations on them, the rules they obey. A single incremental source
 generator writes what is not: persistence, HTTP endpoints, validation, authorization, events, caching,
 DI wiring, OpenAPI. Two companion generators go further, and write a typed HTTP client for your API and
@@ -349,18 +349,26 @@ dotnet add package Pragmatic.SourceGenerator --prerelease
 To try changes that are not released yet, a clone can pack itself into a
 [local feed](docs/howto/local-nuget-server.md).
 
-**Which .NET.** The packages target .NET 10, the LTS release.
-- **An application on .NET 11 uses them as they are.** A consumer application on `net11.0` builds
-  against them and its tests pass, with EF Core 10 or with EF Core 11, whose PostgreSQL provider is
-  still a release candidate. The repository's own gate also runs on the .NET 11 SDK in CI.
-- **Known issues on .NET 11, being fixed:**
-  - a runtime OpenAPI document with Pragmatic's transformers ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832));
-  - a background service that fails once the host is running ([#839](https://github.com/pragmatic-design/Pragmatic.Design/issues/839));
-  - a `double` stored where the documents engine expects a `decimal` ([#831](https://github.com/pragmatic-design/Pragmatic.Design/issues/831)).
-- **Every .NET release Microsoft supports is supported, with the same public API on each.** A target
-  is added when it ships and removed when its support ends, so moving your application from one to
-  the next is never a breaking change of ours. Taking advantage of what .NET 11 and C# 15 add is part of
-  the [road to the beta](docs/ROADMAP.md).
+**Which .NET.** An application targets `net10.0` (LTS) or `net11.0` (STS), with the same packages
+and the same generator; both releases are supported by Microsoft until 2028-11-14.
+- **Measured in CI on every pull request:** the gate also runs on the .NET 11 SDK
+  ([#830](https://github.com/pragmatic-design/Pragmatic.Design/issues/830)), and the Invoicing
+  reference application runs its suite on `net10.0` and on `net11.0`, at C# 15 there
+  ([#923](https://github.com/pragmatic-design/Pragmatic.Design/issues/923)).
+- **On .NET 11 an application also gets** a C# 15 union as the error type of an operation
+  ([#865](https://github.com/pragmatic-design/Pragmatic.Design/issues/865),
+  [#866](https://github.com/pragmatic-design/Pragmatic.Design/issues/866)), and a `net11.0` build of
+  the packages where it was measured to pay
+  ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832),
+  [#850](https://github.com/pragmatic-design/Pragmatic.Design/issues/850)).
+- **Every .NET release Microsoft supports is supported, with the same public API on each**
+  ([#836](https://github.com/pragmatic-design/Pragmatic.Design/issues/836)). A target is added when it
+  ships and removed when its support ends, so moving your application from one to the next is never a
+  breaking change of ours.
+
+[Choosing .NET 10 or .NET 11](docs/howto/choose-dotnet-version.md) says how to start on either, how
+to move, and which of this is in which release: on 1.0.0-alpha.4 an application on .NET 11 still
+meets four issues that are fixed since.
 
 Then pick your way in:
 

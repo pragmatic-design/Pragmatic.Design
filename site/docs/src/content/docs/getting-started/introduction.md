@@ -5,7 +5,7 @@ description: What Pragmatic Design is, why it exists, and who it's for.
 
 **Describe your domain. One source generator writes the application around it.**
 
-**Pragmatic Design** is a .NET 10 framework for line-of-business software. You write what is specific to your business (entities, the operations on them, the rules they obey) and a single incremental source generator writes what is not: persistence, HTTP endpoints, validation, authorization, events, caching, DI wiring, OpenAPI. It generates **plain C# you can read**, it **refuses at compile time** what would fail at runtime, and the code it writes into your project **is yours**. The generated wiring uses no runtime reflection; EF Core, where you use it, keeps its own runtime behaviour.
+**Pragmatic Design** is a framework for line-of-business software on .NET 10 and .NET 11. You write what is specific to your business (entities, the operations on them, the rules they obey) and a single incremental source generator writes what is not: persistence, HTTP endpoints, validation, authorization, events, caching, DI wiring, OpenAPI. It generates **plain C# you can read**, it **refuses at compile time** what would fail at runtime, and the code it writes into your project **is yours**. The generated wiring uses no runtime reflection; EF Core, where you use it, keeps its own runtime behaviour.
 
 :::note[v1.0.0-alpha]
 A core set is stable: Abstractions, Ensure, Result, Specification, Mapping, Validation, Temporal, Storage and the core of Persistence. The other modules, the Platform layer (Agent, Gateway) among them, are functional or in preview, and APIs may still change before the 1.0 release. **New here? Start with [Installation](/getting-started/installation/) to write the code yourself, or [Build with an agent](/getting-started/with-an-agent/) to have a coding agent write it.**
@@ -111,7 +111,7 @@ You probably don't want it (yet) if:
 
 - you need a framework that hides all the plumbing behind a single decorator
 - you depend on an ecosystem that is not first-class here yet
-- you can't run .NET 10
+- you can't run .NET 10 or .NET 11
 
 ## Status
 

@@ -1,7 +1,7 @@
 # pragmatic-design: agent skills plugin
 
 Skills for building **line-of-business** applications with the **Pragmatic.Design** NuGet
-packages on .NET 10.
+packages on .NET 10 and .NET 11.
 
 Pragmatic.Design is an **attribute-first, code-generation** .NET ecosystem: you decorate classes
 and properties with attributes, and a unified source generator produces entities, repositories,
@@ -46,7 +46,8 @@ together: copying one skill without `pragmatic-ecosystem` leaves those links poi
 
 ## Notes
 
-- Target for consumer projects: `.NET 10`, `PackageReference` (never `ProjectReference`).
+- Target for consumer projects: `net10.0` or `net11.0` (`pragmatic-ecosystem/references/dotnet-version.md`
+  says which), `PackageReference` (never `ProjectReference`).
 - The skills cite the Pragmatic.Design repository examples (`examples/showcase/`) as an optional
   reference: useful only if you have access to that repository, never required to use the skills.
 - Version aligned with `.claude-plugin/plugin.json`. Codex reads the same manifest.

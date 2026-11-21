@@ -1,11 +1,13 @@
 ---
 title: Installation
-description: Install Pragmatic Design into a .NET 10 project and get the source generator running.
+description: Install Pragmatic Design into a .NET 10 or .NET 11 project and get the source generator running.
 ---
 
 ## Prerequisites
 
-- **.NET 10 SDK** or later (C# 14 support required)
+- **.NET 10 SDK** or later for a `net10.0` project, the **.NET 11 SDK** for a `net11.0` one. The
+  packages are the same on both; [Choosing .NET 10 or .NET 11](/guides/choose-dotnet-version/) says
+  what differs and how to move a project from one to the other.
 - An IDE with Roslyn / source-generator support: Rider, Visual Studio 2022+, or VS Code with the C# Dev Kit
 
 ## One-minute quick start

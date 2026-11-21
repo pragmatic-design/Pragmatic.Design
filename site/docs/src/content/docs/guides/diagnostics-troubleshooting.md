@@ -3,7 +3,7 @@ title: "Diagnostics & Troubleshooting"
 description: "> Complete reference for all PRAG diagnostics emitted by the Pragmatic source generators and analyzers."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/diagnostics-troubleshooting.md
 sidebar:
-  order: 10
+  order: 11
 ---
 > Complete reference for all PRAG diagnostics emitted by the Pragmatic source generators and analyzers.
 

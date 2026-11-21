@@ -3,7 +3,7 @@ title: "Monorepo Structure"
 description: "> Onboarding guide for new developers joining Pragmatic.Design."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/monorepo-structure.md
 sidebar:
-  order: 2
+  order: 3
 ---
 > Onboarding guide for new developers joining Pragmatic.Design.
 

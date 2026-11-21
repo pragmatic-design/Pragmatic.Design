@@ -3,7 +3,7 @@ title: "Native AOT & Trimming"
 description: "The actual state of Native AOT / trimming compatibility across the Pragmatic.Design ecosystem, and what to expect."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/docs/howto/aot-and-trimming.md
 sidebar:
-  order: 6
+  order: 7
 ---
 The actual state of Native AOT / trimming compatibility across the Pragmatic.Design ecosystem, and what to expect.
 
