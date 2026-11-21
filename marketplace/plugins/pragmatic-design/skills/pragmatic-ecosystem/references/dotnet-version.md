@@ -23,8 +23,7 @@ An application targets `net10.0` (LTS) or `net11.0` (STS). Both are supported by
 | Generated files | `obj/Debug/net10.0/generated/` | `obj/Debug/net11.0/generated/` |
 
 Nothing else: the same `PackageReference` lines, the same `Program.cs`, the same attributes. Every
-package ships a `net10.0` and a `net11.0` build (not in 1.0.0-alpha.5, where four did and the rest
-gave a `net11.0` project their `net10.0` build), and NuGet picks the one the project targets; do not
+package ships a `net10.0` and a `net11.0` build, and NuGet picks the one the project targets; do not
 reference anything different for it.
 
 Moving an existing project: change `TargetFramework` and the `global.json` version, then build. A
@@ -35,7 +34,7 @@ project that pins `LangVersion` keeps its language.
 - a C# 15 union as an operation's error type,
   `public partial union PlaceOrderError(NotFoundError, ConflictError) : IError;`, beside the
   arities `Result<T, E1, E2>` that stay valid on both targets (`pragmatic-use-foundation`);
-- every package's `net11.0` build, compiled against .NET 11 (not in 1.0.0-alpha.5); the OpenAPI ones are built against
+- every package's `net11.0` build, compiled against .NET 11; the OpenAPI ones are built against
   `Microsoft.OpenApi` 3, so `Microsoft.AspNetCore.OpenApi` 11 works with `AddResultTypeSupport()` and
   `AddPragmaticOpenApi()`.
 

@@ -27,18 +27,18 @@ Keep them apart: a unit suite that needs Docker stops being run.
 ```xml
 <!-- integration test project -->
 <ProjectReference Include="..\..\src\MyApp.Host\MyApp.Host.csproj" />
-<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Testing.SourceGenerator" Version="1.0.0-alpha.5" PrivateAssets="all" />
+<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Testing.SourceGenerator" Version="1.0.0-alpha.6" PrivateAssets="all" />
 <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
 <PackageReference Include="Testcontainers.PostgreSql" />
 
 <!-- unit test project: mocks and comparers are separate generators, opt in to each -->
-<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Testing.Mocking.SourceGenerator" Version="1.0.0-alpha.5" PrivateAssets="all" />
-<PackageReference Include="Pragmatic.Testing.Comparers.SourceGenerator" Version="1.0.0-alpha.5" PrivateAssets="all" />
+<PackageReference Include="Pragmatic.Testing" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Testing.Mocking.SourceGenerator" Version="1.0.0-alpha.6" PrivateAssets="all" />
+<PackageReference Include="Pragmatic.Testing.Comparers.SourceGenerator" Version="1.0.0-alpha.6" PrivateAssets="all" />
 
 <!-- worker host test project (no HTTP): the factory below -->
-<PackageReference Include="Pragmatic.Testing.Hosting" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Testing.Hosting" Version="1.0.0-alpha.6" />
 ```
 
 Module harnesses, only where used: `Pragmatic.Temporal.Testing` (`TestClock`),

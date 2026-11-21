@@ -18,11 +18,11 @@ delivery tracking + background dispatch are handled for you. Add a channel witho
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Notifications" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Notifications.Webhook" Version="1.0.0-alpha.5" />  <!-- optional -->
-<PackageReference Include="Pragmatic.Notifications.Slack" Version="1.0.0-alpha.5" />    <!-- optional -->
-<PackageReference Include="Pragmatic.Notifications.Sms" Version="1.0.0-alpha.5" />      <!-- optional -->
-<PackageReference Include="Pragmatic.Notifications.EFCore" Version="1.0.0-alpha.5" />   <!-- optional -->
+<PackageReference Include="Pragmatic.Notifications" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Notifications.Webhook" Version="1.0.0-alpha.6" />  <!-- optional -->
+<PackageReference Include="Pragmatic.Notifications.Slack" Version="1.0.0-alpha.6" />    <!-- optional -->
+<PackageReference Include="Pragmatic.Notifications.Sms" Version="1.0.0-alpha.6" />      <!-- optional -->
+<PackageReference Include="Pragmatic.Notifications.EFCore" Version="1.0.0-alpha.6" />   <!-- optional -->
 ```
 
 The SMTP channel is part of `Pragmatic.Notifications`. There is **no** `Pragmatic.Notifications.Email`

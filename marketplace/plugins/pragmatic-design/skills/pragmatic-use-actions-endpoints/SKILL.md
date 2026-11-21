@@ -20,11 +20,11 @@ For entities/queries/repositories: `pragmatic-use-persistence`. For DI/host: `pr
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.5" />        <!-- if you validate input -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
+<PackageReference Include="Pragmatic.Actions" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Endpoints" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Result" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Validation" Version="1.0.0-alpha.6" />        <!-- if you validate input -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.6">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

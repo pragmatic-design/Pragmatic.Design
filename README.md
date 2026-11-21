@@ -358,16 +358,16 @@ and the same generator; both releases are supported by Microsoft until 2028-11-1
 - **On .NET 11 an application also gets** a C# 15 union as the error type of an operation
   ([#865](https://github.com/pragmatic-design/Pragmatic.Design/issues/865),
   [#866](https://github.com/pragmatic-design/Pragmatic.Design/issues/866)), and a `net11.0` build of
-  the packages where it was measured to pay
-  ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832),
-  [#850](https://github.com/pragmatic-design/Pragmatic.Design/issues/850)).
+  every package, tested on .NET 11 and published Native AOT on it
+  ([#931](https://github.com/pragmatic-design/Pragmatic.Design/issues/931)).
 - **Every .NET release Microsoft supports is supported, with the same public API on each**
   ([#836](https://github.com/pragmatic-design/Pragmatic.Design/issues/836)). A target is added when it
   ships and removed when its support ends, so moving your application from one to the next is never a
   breaking change of ours.
 
 [Choosing .NET 10 or .NET 11](docs/howto/choose-dotnet-version.md) says how to start on either, how
-to move, and what changed with 1.0.0-alpha.5, the first release that carries all of the above.
+to move, and which release carries what: the .NET 11 fixes and the C# 15 union since 1.0.0-alpha.5,
+a `net11.0` build of every package since 1.0.0-alpha.6.
 
 Then pick your way in:
 

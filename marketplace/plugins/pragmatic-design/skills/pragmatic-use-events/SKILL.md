@@ -19,9 +19,9 @@ For **cross-boundary** or **durable/async** reactions (another service, a queue,
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Events" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.Events.EFCore" Version="1.0.0-alpha.5" />   <!-- EF interceptor + outbox -->
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
+<PackageReference Include="Pragmatic.Events" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.Events.EFCore" Version="1.0.0-alpha.6" />   <!-- EF interceptor + outbox -->
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.6">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

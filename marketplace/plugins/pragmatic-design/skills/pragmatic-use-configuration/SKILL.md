@@ -14,14 +14,14 @@ applications need only the first; reach for the second when a value must change 
 ## Packages
 
 ```xml
-<PackageReference Include="Pragmatic.Configuration" Version="1.0.0-alpha.5" />
-<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.5">
+<PackageReference Include="Pragmatic.Configuration" Version="1.0.0-alpha.6" />
+<PackageReference Include="Pragmatic.SourceGenerator" Version="1.0.0-alpha.6">
   <IncludeAssets>analyzers; build; buildtransitive</IncludeAssets><PrivateAssets>all</PrivateAssets>
 </PackageReference>
 <!-- runtime backends, one per store you use -->
-<PackageReference Include="Pragmatic.Configuration.Database" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Configuration.Database" Version="1.0.0-alpha.6" />
 <!-- admin actions over the store -->
-<PackageReference Include="Pragmatic.Configuration.Management" Version="1.0.0-alpha.5" />
+<PackageReference Include="Pragmatic.Configuration.Management" Version="1.0.0-alpha.6" />
 ```
 
 ## Compile-time binding
