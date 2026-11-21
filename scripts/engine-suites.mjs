@@ -37,6 +37,8 @@ const REPLACED = 'replaced by the engine suite\'s own file: the engine host take
 const REPLACED_FIXTURE = 'replaced by the engine suite\'s own fixture, under the name every test takes';
 const REPLACED_COMMITS = 'replaced by each engine suite\'s own file: it counts a boundary\'s saves through EF Core\'s DbContext, which the engines '
   + 'count through a save phase of the boundary';
+const REPLACED_JOB_STORE = 'replaced by each engine suite\'s own file: the job suites\' store is EF Core\'s over a DbContext of the test\'s own, '
+  + 'and the engine\'s over the Booking boundary\'s session on each engine';
 const EF_ONLY = 'EF Core only (#363): it exercises a feature the module projects leave out on the engines';
 const NO_NAVIGATION = 'refused by the documents engine by design (#479): it exercises an operation the module projects leave out there';
 const TEST_ON_EF = 'test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through EF Core';
@@ -57,10 +59,9 @@ const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine com
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
 const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
 const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
-const NO_JOB_STORE = `${REAL_GAP}the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, REPLACED_JOB_STORE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -121,14 +122,10 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // (TemporalRelationTests) and the timeline (#898).
   [s('EntityPersistence/TemporalQueryExtensionsTests.cs')]: { engines: both, reason: EF_PROVIDER },
 
-  // Measured by #876. All four exercise EfCoreJobStore itself, through a DbContext of the test's own: what they test is the durable store,
-  // and the engines have none yet.
-  ...Object.fromEntries([
-    'Jobs/JobExecutionEndToEndTests.cs',
-    'Jobs/JobLeaseIntegrationTests.cs',
-    'Jobs/JobsDbContext.cs',
-    'Jobs/WhatRunsAfterTheJobFinishesTests.cs',
-  ].map((path) => [s(path), { engines: both, reason: NO_JOB_STORE }])),
+  // The job suites' store (#904): EF Core's over a DbContext of the test's own, the engine's over the Booking boundary's session. The
+  // three suites that use it run on every engine.
+  [s('Jobs/JobStoreUnderTest.cs')]: { engines: both, reason: REPLACED_JOB_STORE },
+  [s('Jobs/JobsDbContext.cs')]: { engines: both, reason: REPLACED_JOB_STORE },
 
   [s('EntityPersistence/OneToOneUniquenessTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('EntityPersistence/TheFeeHierarchyIsOneTableTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },

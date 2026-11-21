@@ -941,6 +941,12 @@
           "Pragmatic.Temporal": "[1.0.0, )"
         }
       },
+      "pragmatic.jobs.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Jobs": "[1.0.0, )"
+        }
+      },
       "pragmatic.logging": {
         "type": "Project",
         "dependencies": {
@@ -1284,6 +1290,7 @@
           "Pragmatic.Internationalization": "[1.0.0, )",
           "Pragmatic.Internationalization.Engines": "[1.0.0, )",
           "Pragmatic.Jobs": "[1.0.0, )",
+          "Pragmatic.Jobs.Engines": "[1.0.0, )",
           "Pragmatic.Mapping": "[1.0.0, )",
           "Pragmatic.Messaging": "[1.0.0, )",
           "Pragmatic.Messaging.Engines": "[1.0.0, )",

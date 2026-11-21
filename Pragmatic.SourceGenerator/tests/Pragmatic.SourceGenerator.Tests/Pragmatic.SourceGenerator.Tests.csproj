@@ -108,6 +108,15 @@
                       LogicalName="ISagaInstanceRecord.cs" Link="Features\Persistence\ISagaInstanceRecord.cs" />
     <EmbeddedResource Include="..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\ISagaStepRecord.cs"
                       LogicalName="ISagaStepRecord.cs" Link="Features\Persistence\ISagaStepRecord.cs" />
+    <!-- Pragmatic.Jobs.Engines' rows, compared with EF Core's __Jobs and __RecurringJobs the same way. -->
+    <EmbeddedResource Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\Sql\JobRow.cs"
+                      LogicalName="JobRow.cs" Link="Features\Persistence\JobRow.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\Sql\RecurringJobRow.cs"
+                      LogicalName="RecurringJobRow.cs" Link="Features\Persistence\RecurringJobRow.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\IJobRecord.cs"
+                      LogicalName="IJobRecord.cs" Link="Features\Persistence\IJobRecord.cs" />
+    <EmbeddedResource Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\IRecurringJobRecord.cs"
+                      LogicalName="IRecurringJobRecord.cs" Link="Features\Persistence\IRecurringJobRecord.cs" />
   </ItemGroup>
 
 </Project>

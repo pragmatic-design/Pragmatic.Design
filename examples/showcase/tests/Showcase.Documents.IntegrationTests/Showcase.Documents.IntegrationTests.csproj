@@ -62,12 +62,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- A real gap (#904): the durable job store exists on EF Core only. These exercise EfCoreJobStore itself, through a DbContext of
-         the test's own; the engines have no store for them to run against. -->
-    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobExecutionEndToEndTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobLeaseIntegrationTests.cs" />
+    <!-- Replaced, not left out (#904): the job suites' store, EF Core's over a DbContext of the test's own there, the engine's over the
+         Booking boundary's session here (JobStoreUnderTest.cs beside this project). -->
+    <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobStoreUnderTest.cs" />
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobsDbContext.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Jobs\WhatRunsAfterTheJobFinishesTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

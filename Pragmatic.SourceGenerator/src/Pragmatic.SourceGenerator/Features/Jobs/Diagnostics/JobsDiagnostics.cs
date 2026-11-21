@@ -71,23 +71,27 @@ internal static class JobsDiagnostics
         + "Id = \"...\" on the others, so the id an operator sees is one somebody chose.");
 
     /// <summary>
-    ///     PRAG2508: <c>[EnableJobPersistence]</c> on a boundary in a compilation with no
-    ///     <c>Pragmatic.Jobs.EFCore</c> to supply the two configurations.
+    ///     PRAG2508: <c>[EnableJobPersistence]</c> on a boundary in a compilation with no job store
+    ///     package of the boundary's engine: Pragmatic.Jobs.EFCore on EF Core, Pragmatic.Jobs.Engines
+    ///     on the Sql and documents engines ({1}).
     /// </summary>
     /// <remarks>
-    ///     The generated context names <c>JobEntityTypeConfiguration</c> and
-    ///     <c>RecurringJobEntityTypeConfiguration</c>, which live in that package. Without it the
-    ///     attribute maps nothing — and a <c>jobs.UseEfCore()</c> then fails at startup against tables
-    ///     that were never created.
+    ///     On EF Core the generated context names <c>JobEntityTypeConfiguration</c> and
+    ///     <c>RecurringJobEntityTypeConfiguration</c>, which live in that package; on an engine the rows
+    ///     are Pragmatic.Jobs.Engines' own. Without the package the attribute maps nothing — and the
+    ///     durable store then fails against tables that were never created.
     /// </remarks>
     public static readonly DiagnosticDescriptor JobPersistenceWithoutEfCore = DiagnosticFactory.Warning(
         "PRAG2508",
-        "[EnableJobPersistence] requires Pragmatic.Jobs.EFCore",
+        "[EnableJobPersistence] requires the job store package of the boundary's engine",
         "Boundary '{0}' is marked [EnableJobPersistence] but this project does not reference "
-        + "Pragmatic.Jobs.EFCore, so __Jobs and __RecurringJobs are not mapped and no migration creates "
+        + "{1}, so __Jobs and __RecurringJobs are not mapped and no migration creates "
         + "them (the attribute is a no-op)",
-        "Reference Pragmatic.Jobs.EFCore, whose two IEntityTypeConfiguration the generated DbContext "
-        + "applies — then jobs.UseEfCore() has the tables it refuses to run without.");
+        "Reference the job store package of the boundary's engine in the boundary project: "
+        + "Pragmatic.Jobs.EFCore on EF Core (the generated DbContext applies its two "
+        + "IEntityTypeConfiguration), Pragmatic.Jobs.Engines on the Sql and documents engines (the "
+        + "engine's schema holds the two tables, and the generated Add{Boundary}Persistence hands the "
+        + "boundary's session to the store).");
 
     /// <summary>
     ///     PRAG2509: more than one boundary carries <c>[EnableJobPersistence]</c>.

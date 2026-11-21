@@ -1,15 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Npgsql;
+using Pragmatic.Documents.Markup;
+using Pragmatic.Internationalization.Context;
+using Pragmatic.Internationalization.Providers;
 using Pragmatic.Jobs;
-using Pragmatic.Jobs.EFCore;
-using Pragmatic.Jobs.EFCore.Extensions;
 using Pragmatic.Jobs.Extensions;
 using Pragmatic.Notifications.Testing;
 using Pragmatic.Testing.Assertions;
-using Showcase.Booking;
 using Showcase.Booking.Infrastructure.Jobs;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -24,7 +22,7 @@ namespace Showcase.IntegrationTests.Jobs;
 ///         The whole claim is about a row that appears without a caller, so the test schedules
 ///         <c>NoShowDetectionJob</c> under a correlation id of its own and then looks for a
 ///         <c>ReleaseNoShowRoomsJob</c> carrying that same id — the processor copies it from the job
-///         it continues. Scoping by correlation matters: this database is shared with the other job
+///         it continues. Scoping by correlation matters: the store is shared with the other job
 ///         suites, which enqueue the same types.
 ///     </para>
 ///     <para>
@@ -36,15 +34,9 @@ namespace Showcase.IntegrationTests.Jobs;
 /// </remarks>
 public class WhatRunsAfterTheJobFinishesTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
-    // The same database the other durable-pipeline suite uses: the schema is created once, and the
-    // rows of the two are told apart by correlation id.
-    private const string JobsDatabase = "showcase_jobs_e2e";
-
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
-    private string JobsConnectionString =>
-        new NpgsqlConnectionStringBuilder(Fixture.AppConnectionString) { Database = JobsDatabase }
-            .ConnectionString;
+    private JobStoreUnderTest JobStore => new(Fixture);
 
     [Fact]
     public async Task TheDeclaredContinuation_IsEnqueuedWhenTheJobCompletes_AndNothingFollowsAJobWithout()
@@ -83,14 +75,15 @@ public class WhatRunsAfterTheJobFinishesTests(PostgresFixture fixture) : Integra
         // Its own declared budget, not the two attempts of the job that triggered it.
         release!.MaxAttempts.Should().Be(3, "the continuation carries the [Retry] declared on itself");
 
-        // The control: the reminder declares no continuation, and its run ends with itself.
-        await WaitForAsync(j => j.CorrelationId == alone && j.Status == JobStatus.Completed);
+        // The control: the reminder declares no continuation, and its run ends with itself. It has to have run: a reminder that failed to
+        // start is followed by nothing whatever the declaration says.
+        var controlRan = await WaitForAsync(j => j.CorrelationId == alone && j.Status == JobStatus.Completed);
+        controlRan.Should().NotBeNull("the control has to complete, or that nothing follows it says nothing about the declaration");
 
-        await using var context = CreateDbContext();
-        var followedTheControl = await context.Set<JobInstance>().AsNoTracking()
+        var followedTheControl = (await JobStore.AllJobsAsync())
             .Where(j => j.CorrelationId == alone)
             .Select(j => j.JobType)
-            .ToListAsync();
+            .ToList();
 
         followedTheControl.Should().ContainSingle(
             "a job with no [Continuation<T>] is followed by nothing — otherwise the assertion above "
@@ -104,9 +97,7 @@ public class WhatRunsAfterTheJobFinishesTests(PostgresFixture fixture) : Integra
         var deadline = DateTime.UtcNow + Timeout;
         while (DateTime.UtcNow < deadline)
         {
-            await using var context = CreateDbContext();
-            var rows = await context.Set<JobInstance>().AsNoTracking().ToListAsync();
-            var match = rows.FirstOrDefault(predicate);
+            var match = (await JobStore.AllJobsAsync()).FirstOrDefault(predicate);
             if (match is not null)
                 return match;
 
@@ -116,60 +107,33 @@ public class WhatRunsAfterTheJobFinishesTests(PostgresFixture fixture) : Integra
         return null;
     }
 
-    private JobsDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<JobsDbContext>().UseNpgsql(JobsConnectionString).Options;
-        return new JobsDbContext(options);
-    }
-
     private async Task<IHost> StartHostAsync()
     {
-        await EnsureSchemaAsync();
-
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder();
         builder.Logging.ClearProviders();
 
         var services = builder.Services;
-
-        services.AddDbContext<JobsDbContext>(o => o.UseNpgsql(JobsConnectionString), ServiceLifetime.Scoped);
-        services.AddScoped<DbContext>(sp => sp.GetRequiredService<JobsDbContext>());
+        await JobStore.AddToAsync(services);
         // The reminder job's dependency. The repository's own harness rather than a stub of this
         // suite's: it records what was sent, so a case here could assert it instead of ignoring it.
         services.AddNotificationTestHarness();
+        // ⚠️ And its other two, as JobExecutionEndToEndTests registers them: without the templates the reminder could not be activated,
+        // so the control failed on every attempt and the wait for it ran out in silence, measured at a minute a run.
+        services.AddSingleton<IStringLocalizer>(new StringLocalizer(new InMemoryLocalizationProvider(), new I18NOptions()));
+        services.AddPdxTemplates(templates => templates.FromAssemblyOf<Showcase.Booking.BookingModule>());
 
         services.AddPragmaticJobs(jobs =>
         {
             jobs.WithWorkerCount(2);
             jobs.WithPollingInterval(1);
-            jobs.UseEfCore();
-            jobs.UseEfCorePersistence();
+            JobStoreUnderTest.Use(jobs);
         });
 
-        services.AddDiscoveredJobs();
+        JobStoreUnderTest.AddBookingJobs(services);
         services.AddJobProcessingServices();
 
         var host = builder.Build();
         await host.StartAsync();
         return host;
     }
-
-    private async Task EnsureSchemaAsync()
-    {
-        await using (var admin = new NpgsqlConnection(Fixture.AppConnectionString))
-        {
-            await admin.OpenAsync();
-            await using var cmd = admin.CreateCommand();
-            cmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{JobsDatabase}';";
-            if (await cmd.ExecuteScalarAsync() is null)
-            {
-                cmd.CommandText = $"CREATE DATABASE {JobsDatabase};";
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
-
-        var options = new DbContextOptionsBuilder<JobsDbContext>().UseNpgsql(JobsConnectionString).Options;
-        await using var context = new JobsDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-    }
-
 }

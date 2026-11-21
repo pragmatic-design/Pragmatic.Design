@@ -20,8 +20,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **619** | 677 | 19 | 3 |
-| Documents | **558** | 677 | 27 | 41 |
+| Sql | **641** | 677 | 17 | 3 |
+| Documents | **580** | 677 | 25 | 41 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -97,13 +97,6 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
-**the durable job store exists on EF Core only, and the engines have none for these tests to run against (#904)**
-
-- `Jobs/JobExecutionEndToEndTests.cs` (both), 2 test methods
-- `Jobs/JobLeaseIntegrationTests.cs` (both), 19 test methods
-- `Jobs/JobsDbContext.cs` (both), 0 test methods
-- `Jobs/WhatRunsAfterTheJobFinishesTests.cs` (both), 1 test methods
-
 **the engines have no [Lookup] cache (#881)**
 
 - `CrossCutting/ALookupWriteReloadsTheCacheTests.cs` (both), 3 test methods
@@ -153,3 +146,5 @@ generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.
 - `Infrastructure/ShowcaseWebFactory.cs` (both)
 - `Infrastructure/PostgresFixture.cs` (Documents)
 - `Infrastructure/CommitCounter.cs` (both)
+- `Jobs/JobStoreUnderTest.cs` (both)
+- `Jobs/JobsDbContext.cs` (both)

@@ -191,6 +191,25 @@ internal static partial class SqlInterceptorGenerator
         };
 
     /// <summary>
+    ///     The job store's queue with EF Core's four indexes (<c>JobEntityTypeConfiguration</c>): the poll (status, then priority and schedule),
+    ///     the lease cleanup, the correlation lookup, and the retention purge.
+    /// </summary>
+    private static TableSchemaModel WithJobIndexes(TableSchemaModel table)
+        => table with
+        {
+            Indexes = table.Indexes
+                .Append(new IndexSchemaModel($"IX_{table.Name}_Status_Priority_ScheduledFor", ["Status", "Priority", "ScheduledFor"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_Status_LeaseExpiresAt", ["Status", "LeaseExpiresAt"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_CorrelationId", ["CorrelationId"], false, null))
+                .Append(new IndexSchemaModel($"IX_{table.Name}_CompletedAt", ["CompletedAt"], false, null))
+                .ToEquatableArray(),
+        };
+
+    /// <summary>The job store's schedules with EF Core's index (<c>RecurringJobEntityTypeConfiguration</c>): the enabled ones by their next occurrence.</summary>
+    private static TableSchemaModel WithRecurringJobIndexes(TableSchemaModel table)
+        => table with { Indexes = table.Indexes.Append(new IndexSchemaModel($"IX_{table.Name}_IsEnabled_NextExecutionAt", ["IsEnabled", "NextExecutionAt"], false, null)).ToEquatableArray() };
+
+    /// <summary>
     ///     The Messaging outbox's table with EF Core's two indexes (<c>OutboxEntityTypeConfiguration</c>): the one the claim reads (pending, past
     ///     its backoff, re-claimable, oldest first) and the correlation lookup.
     /// </summary>

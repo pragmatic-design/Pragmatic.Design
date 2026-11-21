@@ -59,6 +59,12 @@ internal static class PragmaticDocSchema
             // [StoresNotifications]: the notification records' collection, as Pragmatic.Notifications.Engines describes it.
             if (boundary is not null && PragmaticRegistration.StoresNotifications(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineNotificationStore) is not null)
                 collections.Add("global::Pragmatic.Notifications.Engines.Documents.NotificationDocument.Schema");
+            // [EnableJobPersistence]: the job store's queue and schedules, as Pragmatic.Jobs.Engines describes them.
+            if (boundary is not null && PragmaticRegistration.EnablesJobPersistence(boundary) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineJobStore) is not null)
+            {
+                collections.Add("global::Pragmatic.Jobs.Engines.Documents.JobDocument.Schema");
+                collections.Add("global::Pragmatic.Jobs.Engines.Documents.RecurringJobDocument.Schema");
+            }
             // [Audited]: the trail's three collections, beside the boundary's audited entities, as Pragmatic.Audit.Engines describes them.
             if (group.Any(PragmaticRegistration.IsAudited) && compilation.GetTypeByMetadataName(PragmaticRegistration.EngineAuditTrail) is not null)
             {

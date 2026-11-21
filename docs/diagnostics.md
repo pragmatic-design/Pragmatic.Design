@@ -614,7 +614,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG2505` | `ContinuationMustBeJob` | Error | Continuation must be a job |
 | `PRAG2506` | `ContinuationCycleDetected` | Error | Continuation cycle detected |
 | `PRAG2507` | `RecurringScheduleNeedsAnId` | Error | A second schedule has to name itself |
-| `PRAG2508` | `JobPersistenceWithoutEfCore` | Warning | [EnableJobPersistence] requires Pragmatic.Jobs.EFCore |
+| `PRAG2508` | `JobPersistenceWithoutEfCore` | Warning | [EnableJobPersistence] requires the job store package of the boundary's engine |
 | `PRAG2509` | `JobPersistenceOnMoreThanOneBoundary` | Error | [EnableJobPersistence] must mark exactly one boundary |
 
 *First free after the last used:* `PRAG2510`.

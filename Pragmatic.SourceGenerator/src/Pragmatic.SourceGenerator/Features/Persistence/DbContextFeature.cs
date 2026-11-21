@@ -419,14 +419,17 @@ internal static class DbContextFeature
         });
 
         // Diagnostics for [EnableJobPersistence] (single-owner __Jobs/__RecurringJobs), the same pair:
-        // - PRAG2508: no-op unless the project references Pragmatic.Jobs.EFCore;
+        // - PRAG2508: no-op unless the project references the job store package of the boundary's
+        //   engine: Pragmatic.Jobs.EFCore on EF Core, Pragmatic.Jobs.Engines on the Sql and documents engines;
         // - PRAG2509: more than one boundary carries it (the job store is a single store).
         var enableJobPersistenceSites = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 AttributeNames.EnableJobPersistence,
                 predicate: static (node, _) => node is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax,
                 transform: static (attrCtx, _) =>
-                    (Name: attrCtx.TargetSymbol.Name, Location: LocationInfo.From(attrCtx.TargetNode.GetLocation())))
+                    (Name: attrCtx.TargetSymbol.Name, Location: LocationInfo.From(attrCtx.TargetNode.GetLocation()),
+                     NamedEngine: attrCtx.TargetSymbol is INamedTypeSymbol boundary ? PersistenceEngineMarker.NamedOn(boundary) : null,
+                     HasEnginesStore: attrCtx.SemanticModel.Compilation.GetTypeByMetadataName(Sql.Transforms.PragmaticRegistration.EngineJobStore) is not null))
             .Collect()
             .Combine(features);
 
@@ -435,11 +438,12 @@ internal static class DbContextFeature
             var (sites, feats) = pair;
             foreach (var site in sites)
             {
-                if (!feats.HasJobsEFCore)
+                var onEngines = PersistenceEngineMarker.EngineOf(site.NamedEngine, feats) is PersistenceEngineMarker.Sql or PersistenceEngineMarker.Documents;
+                if (!(onEngines ? site.HasEnginesStore : feats.HasJobsEFCore))
                     ctx.ReportDiagnostic(Diagnostic.Create(
                         Jobs.Diagnostics.JobsDiagnostics.JobPersistenceWithoutEfCore,
                         site.Location?.ToLocation() ?? Location.None,
-                        site.Name));
+                        site.Name, onEngines ? "Pragmatic.Jobs.Engines" : "Pragmatic.Jobs.EFCore"));
 
                 if (sites.Length > 1)
                     ctx.ReportDiagnostic(Diagnostic.Create(

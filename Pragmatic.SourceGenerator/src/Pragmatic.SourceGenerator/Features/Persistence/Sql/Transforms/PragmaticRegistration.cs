@@ -29,6 +29,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         "global::Pragmatic.Messaging.Engines.Sql.SqlMessagingOutboxExtensions.AddSqlMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Sql.SqlAuditExtensions.AddSqlAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Sql.SqlNotificationStoreExtensions.AddSqlNotificationStore",
+        "global::Pragmatic.Jobs.Engines.Sql.SqlJobStoreExtensions.AddSqlJobStore",
         "SqlPersistence", "Pragmatic.Persistence.Sql"), userLookup: "SqlReadRepository");
 
     public static readonly PragmaticRegistration Documents = new(new(
@@ -38,6 +39,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         "global::Pragmatic.Messaging.Engines.Documents.DocMessagingOutboxExtensions.AddDocMessagingOutbox",
         "global::Pragmatic.Audit.Engines.Documents.DocAuditExtensions.AddDocAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Documents.DocNotificationStoreExtensions.AddDocNotificationStore",
+        "global::Pragmatic.Jobs.Engines.Documents.DocJobStoreExtensions.AddDocJobStore",
         "DocPersistence", "Pragmatic.Persistence.Documents"), userLookup: "DocReadRepository");
 
     /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
@@ -58,6 +60,16 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
 
     /// <summary>The notification store on the engines (Pragmatic.Notifications.Engines), by the type the generator recognises it by: its Sql row.</summary>
     internal const string EngineNotificationStore = "Pragmatic.Notifications.Engines.Sql.NotificationRow";
+
+    /// <summary>The job store on the engines (Pragmatic.Jobs.Engines), by the type the generator recognises it by: its Sql job row.</summary>
+    internal const string EngineJobStore = "Pragmatic.Jobs.Engines.Sql.JobRow";
+
+    /// <summary>The job store's recurring definitions on the Sql engine, beside the jobs.</summary>
+    internal const string EngineRecurringJobRow = "Pragmatic.Jobs.Engines.Sql.RecurringJobRow";
+
+    /// <summary>True when <paramref name="boundary" /> carries <c>[EnableJobPersistence]</c> (Pragmatic.Jobs'): its database holds the job store.</summary>
+    internal static bool EnablesJobPersistence(INamedTypeSymbol boundary)
+        => boundary.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == AttributeNames.EnableJobPersistence);
 
     /// <summary>The audit trail on the engines (Pragmatic.Audit.Engines), by the type the generator recognises it by: its Sql entry row.</summary>
     internal const string EngineAuditTrail = "Pragmatic.Audit.Engines.Sql.AuditEntryRow";
@@ -95,6 +107,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         var messagingOutbox = compilation.GetTypeByMetadataName(EngineMessagingOutbox) is not null;
         var auditTrail = compilation.GetTypeByMetadataName(EngineAuditTrail) is not null;
         var notificationStore = compilation.GetTypeByMetadataName(EngineNotificationStore) is not null;
+        var jobStore = compilation.GetTypeByMetadataName(EngineJobStore) is not null;
         var multiTenancy = compilation.GetTypeByMetadataName(MultiTenancyOptions) is not null;
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
@@ -117,6 +130,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
                 notificationStore && StoresNotifications(boundary),
                 multiTenancy)
             {
+                JobStore = jobStore && EnablesJobPersistence(boundary),
                 UserLookups = userLookup is null
                     ? EquatableArray<string>.Empty
                     : group.Select(p => p.Entity).Where(e => Identity.Transforms.UserEntityTransform.MatchPropertyOf(e) is not null)

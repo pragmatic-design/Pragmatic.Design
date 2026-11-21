@@ -190,6 +190,22 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 `UseEfCore()` without `UseEfCorePersistence()` fails at startup with an explicit message instead of falling back to in-memory.
 
+#### On the Sql and documents engines
+
+`Pragmatic.Jobs.Engines` (not in 1.0.0-alpha.4) is the same store on Pragmatic's own engines. The same `[EnableJobPersistence]` puts
+`__Jobs` and `__RecurringJobs` in the engine's schema (or the two collections on MongoDB and Cosmos DB), and the boundary's generated
+`Add{Boundary}Persistence` hands its session to the store; the boundary library references `Pragmatic.Jobs.Engines` (**PRAG2508** names it
+otherwise). The host chooses the store:
+
+```csharp
+using Pragmatic.Jobs.Engines.Sql;        // or Pragmatic.Jobs.Engines.Documents
+
+app.UseJobs(jobs => jobs.UseSqlPersistence());          // or jobs.UseDocumentsPersistence()
+```
+
+The lease and the recurring claim are one conditional update each, so one worker takes a job and one host enqueues a tick on every
+database. Without a boundary marked `[EnableJobPersistence]` the first use of the store fails naming the attribute.
+
 ### 7. Retention
 
 `JobsOptions.RetentionDays` (default 30) and `PurgeBatchSize` (default 1000): terminal jobs older than the window are deleted periodically. `RetentionDays = 0` disables purging; note that job rows keep their serialized parameters, which often carry personal data, so disabling retention keeps that payload forever.

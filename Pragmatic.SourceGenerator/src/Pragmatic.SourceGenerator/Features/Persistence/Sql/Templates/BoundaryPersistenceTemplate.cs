@@ -99,6 +99,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"        {e.NotificationStore}<{model.BoundaryType}>(services);");
         }
 
+        if (model.JobStore)
+        {
+            AppendLine($"        // [EnableJobPersistence]: {name}'s session is the job store's, which the host chooses (jobs.Use*Persistence()).");
+            AppendLine($"        {e.JobStore}<{model.BoundaryType}>(services);");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();

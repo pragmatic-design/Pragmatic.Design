@@ -10,6 +10,7 @@
   </Folder>
   <Project Path="src/Pragmatic.Jobs/Pragmatic.Jobs.csproj" />
   <Project Path="src/Pragmatic.Jobs.EFCore/Pragmatic.Jobs.EFCore.csproj" />
+  <Project Path="src/Pragmatic.Jobs.Engines/Pragmatic.Jobs.Engines.csproj" />
   <Project Path="tests/Pragmatic.Jobs.Tests/Pragmatic.Jobs.Tests.csproj" />
   <Project Path="samples/Pragmatic.Jobs.Samples/Pragmatic.Jobs.Samples.csproj" />
 </Solution>
