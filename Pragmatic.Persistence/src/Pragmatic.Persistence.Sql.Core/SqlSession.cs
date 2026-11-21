@@ -132,7 +132,7 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
             var (sql, kinds) = build(Dialect);
             command = FreshCommand(sql, kinds);
             if (Array.IndexOf(kinds, SqlParamKind.Unknown) < 0 && Array.IndexOf(kinds, SqlParamKind.List) < 0 && (Dialect != SqlDialect.PostgreSql || Array.IndexOf(kinds, SqlParamKind.Array) < 0) && Prepares(sql))
-                command.Prepare(); // a list (an array parameter on PostgreSQL) types itself from its value: not prepared ahead
+                Prepare(command); // a list (an array parameter on PostgreSQL) types itself from its value: not prepared ahead
             _batches[key] = command;
         }
 
@@ -302,7 +302,7 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
             ConfigureCommand?.Invoke(command);
             command.Transaction = Transaction;
             if (preparable && Prepares(sql))
-                command.Prepare();
+                Prepare(command);
             Keep(planId, command);
         }
 

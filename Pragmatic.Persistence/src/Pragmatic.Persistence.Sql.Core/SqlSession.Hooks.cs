@@ -12,6 +12,7 @@ public sealed partial class SqlSession
     internal async Task<int> RunAsync(DbCommand command, string origin, CancellationToken ct)
     {
         Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
+        command = Runnable(command);
         if (Hooks is null)
             return await NonQueryAsync(command, ct).ConfigureAwait(false);
         var started = Begin(command, origin);
@@ -31,6 +32,7 @@ public sealed partial class SqlSession
     internal async Task<object?> ScalarAsync(DbCommand command, string origin, CancellationToken ct)
     {
         Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
+        command = Runnable(command);
         if (Hooks is null)
             return await command.ExecuteScalarAsync(ct).ConfigureAwait(false);
         var started = Begin(command, origin);
@@ -51,6 +53,7 @@ public sealed partial class SqlSession
     internal async Task<DbDataReader> ReadAsync(DbCommand command, string origin, CancellationToken ct)
     {
         Planning.SqlParameterFit.Widen(command.Parameters, Dialect);
+        command = Runnable(command);
         if (Hooks is null)
             return await command.ExecuteReaderAsync(ct).ConfigureAwait(false);
         var started = Begin(command, origin);
