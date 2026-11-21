@@ -111,6 +111,9 @@ internal static partial class SqlInterceptorGenerator
         // [EnableSagaPersistence]: the instances, then their steps, which reference them.
         ModuleTable(PragmaticRegistration.EngineSagaStore, PragmaticRegistration.EnablesSagaPersistence, table => WithSagaInstanceIndexes(table, dialect));
         ModuleTable(PragmaticRegistration.EngineSagaStepRow, PragmaticRegistration.EnablesSagaPersistence, WithSagaStepKeys);
+        // [EnableJobPersistence]: the queue and the schedules, always together.
+        ModuleTable(PragmaticRegistration.EngineJobStore, PragmaticRegistration.EnablesJobPersistence, WithJobIndexes);
+        ModuleTable(PragmaticRegistration.EngineRecurringJobRow, PragmaticRegistration.EnablesJobPersistence, WithRecurringJobIndexes);
 
         // [Audited]: the trail's three tables in each database that holds an audited entity, as EF Core's schema puts them there.
         var auditedDatabases = new HashSet<string>(served.Where(PragmaticRegistration.IsAudited).Select(t => DatabaseOf(t)!), StringComparer.Ordinal);

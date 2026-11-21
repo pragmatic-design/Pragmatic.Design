@@ -42,4 +42,8 @@ namespace Showcase.Booking;
 // per package in SchemaMetadataTransform — so the first half alone still failed with
 // `relation "__Notifications" does not exist`, measured on this suite.
 [StoresNotifications]
+// The durable job store's tables (__Jobs, __RecurringJobs) live here too, on every engine (#904): the reminders and the no-show sweep are
+// Booking's jobs. The host still runs on the in-memory stores; the tables are what a host choosing the durable store needs, and what the
+// job suites run their store against.
+[Pragmatic.Jobs.Attributes.EnableJobPersistence]
 public partial class BookingBoundary;

@@ -3498,6 +3498,203 @@
       "checkConstraints": []
     },
     {
+      "name": "__Jobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "uuid",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Status",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ScheduledFor",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Priority",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "StartedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CompletedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Error",
+          "sqlType": "varchar(4096)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "Attempt",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MaxAttempts",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeaseExpiresAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LeasedBy",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationJobType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ContinuationParametersJson",
+          "sqlType": "text",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CorrelationId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CreatedAt",
+          "sqlType": "timestamptz",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___Jobs_CompletedAt",
+          "columns": [
+            "CompletedAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_CorrelationId",
+          "columns": [
+            "CorrelationId"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_LeaseExpiresAt",
+          "columns": [
+            "Status",
+            "LeaseExpiresAt"
+          ],
+          "isUnique": false,
+          "filter": null
+        },
+        {
+          "name": "IX___Jobs_Status_Priority_ScheduledFor",
+          "columns": [
+            "Status",
+            "Priority",
+            "ScheduledFor"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
       "name": "__Notifications",
       "schemaName": "public",
       "columns": [
@@ -3652,6 +3849,113 @@
           "name": "IX___Notifications_TenantId",
           "columns": [
             "TenantId"
+          ],
+          "isUnique": false,
+          "filter": null
+        }
+      ],
+      "foreignKeys": [],
+      "checkConstraints": []
+    },
+    {
+      "name": "__RecurringJobs",
+      "schemaName": "public",
+      "columns": [
+        {
+          "name": "Id",
+          "sqlType": "varchar(256)",
+          "isNullable": false,
+          "isPrimaryKey": true,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "JobType",
+          "sqlType": "varchar(512)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "CronExpression",
+          "sqlType": "varchar(128)",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParametersJson",
+          "sqlType": "varchar(65535)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "ParameterType",
+          "sqlType": "varchar(512)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "LastExecutedAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "NextExecutionAt",
+          "sqlType": "timestamptz",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "IsEnabled",
+          "sqlType": "boolean",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TenantId",
+          "sqlType": "varchar(128)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "TimeZoneId",
+          "sqlType": "varchar(64)",
+          "isNullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        },
+        {
+          "name": "MisfirePolicy",
+          "sqlType": "integer",
+          "isNullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null,
+          "renamedFrom": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "IX___RecurringJobs_IsEnabled_NextExecutionAt",
+          "columns": [
+            "IsEnabled",
+            "NextExecutionAt"
           ],
           "isUnique": false,
           "filter": null
@@ -3904,5 +4208,5 @@
   "databaseName": "ShowcaseAppDatabase",
   "providerName": "PostgreSql",
   "configKey": "ConnectionStrings:App",
-  "hash": "37617aeecf02"
+  "hash": "716935cc273f"
 }

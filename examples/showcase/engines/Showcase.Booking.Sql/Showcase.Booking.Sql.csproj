@@ -48,6 +48,8 @@
     <!-- The outbox on this engine, in place of Pragmatic.Messaging.EFCore. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Messaging\src\Pragmatic.Messaging.Engines\Pragmatic.Messaging.Engines.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <!-- The durable job store on this engine, in place of Pragmatic.Jobs.EFCore (#904): [EnableJobPersistence]'s tables and session. -->
+    <ProjectReference Include="..\..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\Pragmatic.Jobs.Engines.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
     <ProjectReference Include="..\..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />

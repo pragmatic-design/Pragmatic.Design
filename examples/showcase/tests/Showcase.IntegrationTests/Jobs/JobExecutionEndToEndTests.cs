@@ -1,19 +1,14 @@
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 using Pragmatic.Documents.Markup;
 using Pragmatic.Internationalization.Context;
 using Pragmatic.Internationalization.Providers;
 using Pragmatic.Jobs;
 using Pragmatic.Jobs.Extensions;
-using Pragmatic.Jobs.EFCore;
-using Pragmatic.Jobs.EFCore.Extensions;
 using Pragmatic.Notifications;
 using Pragmatic.Notifications.Testing;
-using Showcase.Booking;
 using Showcase.Booking.Infrastructure.Jobs;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -21,83 +16,30 @@ namespace Showcase.IntegrationTests.Jobs;
 
 /// <summary>
 ///     Drives the real background pipeline — <c>JobProcessorService</c> and
-///     <c>RecurringJobSchedulerService</c> running as hosted services over <see cref="EfCoreJobStore"/>
-///     on real PostgreSQL — end to end.
+///     <c>RecurringJobSchedulerService</c> running as hosted services over the durable store
+///     (<see cref="JobStoreUnderTest" />: EF Core's, or the engine's) — end to end.
 /// </summary>
 /// <remarks>
 ///     The Showcase host itself runs jobs on the in-memory stores, so nothing else exercises the
 ///     durable path where a scheduled job is picked up by a background worker, dispatched through the
 ///     generated <c>IJobTypeRegistry</c>, executed, and marked terminal in the database. This builds a
-///     host with EF Core persistence over a dedicated database in the shared container to cover it.
+///     host with the durable store to cover it.
 /// </remarks>
 public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
-    private const string JobsDatabase = "showcase_jobs_e2e";
-
-    private static readonly SemaphoreSlim SchemaGate = new(1, 1);
-    private static bool _schemaReady;
-
     // A background worker completing a job is inherently asynchronous: poll rather than sleep a
     // fixed amount, so the test is as fast as the pipeline and still tolerant of a slow CI box.
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
-    private string JobsConnectionString =>
-        new NpgsqlConnectionStringBuilder(Fixture.AppConnectionString) { Database = JobsDatabase }
-            .ConnectionString;
-
-    private async Task EnsureSchemaAsync()
-    {
-        if (_schemaReady)
-            return;
-
-        await SchemaGate.WaitAsync();
-        try
-        {
-            if (_schemaReady)
-                return;
-
-            await using (var admin = new NpgsqlConnection(Fixture.AppConnectionString))
-            {
-                await admin.OpenAsync();
-                await using var cmd = admin.CreateCommand();
-                cmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{JobsDatabase}';";
-                if (await cmd.ExecuteScalarAsync() is null)
-                {
-                    cmd.CommandText = $"CREATE DATABASE {JobsDatabase};";
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
-
-            var options = new DbContextOptionsBuilder<JobsDbContext>().UseNpgsql(JobsConnectionString).Options;
-            await using var context = new JobsDbContext(options);
-            await context.Database.EnsureCreatedAsync();
-
-            _schemaReady = true;
-        }
-        finally
-        {
-            SchemaGate.Release();
-        }
-    }
-
-    private JobsDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<JobsDbContext>().UseNpgsql(JobsConnectionString).Options;
-        return new JobsDbContext(options);
-    }
+    private JobStoreUnderTest JobStore => new(Fixture);
 
     private async Task<IHost> StartHostAsync(NotificationTestHarness notifications)
     {
-        await EnsureSchemaAsync();
-
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder();
         builder.Logging.ClearProviders();
 
         var services = builder.Services;
-
-        services.AddDbContext<JobsDbContext>(o => o.UseNpgsql(JobsConnectionString), ServiceLifetime.Scoped);
-        // EfCoreJobStore takes the base DbContext type — forward it to the concrete one.
-        services.AddScoped<DbContext>(sp => sp.GetRequiredService<JobsDbContext>());
+        await JobStore.AddToAsync(services);
 
         // The dependency of SendCheckInReminderJob; records the send so the test can observe that the
         // job actually ran, not merely that its row flipped to Completed. The harness instance is the
@@ -115,13 +57,12 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
         {
             jobs.WithWorkerCount(2);
             jobs.WithPollingInterval(1);
-            jobs.UseEfCore();
-            jobs.UseEfCorePersistence();
+            JobStoreUnderTest.Use(jobs);
         });
 
         // The real generated registration for the Booking assembly: registers the job classes,
         // swaps in the generated PragmaticJobTypeRegistry and exposes the recurring provider.
-        services.AddDiscoveredJobs();
+        JobStoreUnderTest.AddBookingJobs(services);
 
         services.AddJobProcessingServices();
 
@@ -154,10 +95,9 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
         sent!.Recipient.EmailAddress.Should().Be("guest@example.com");
 
         // And the durable state reflects a clean completion.
-        await using var context = CreateDbContext();
-        var stored = await context.Set<JobInstance>().AsNoTracking().FirstAsync(j => j.Id == jobId);
-        stored.Status.Should().Be(JobStatus.Completed);
-        stored.CompletedAt.Should().NotBeNull();
+        var stored = await WaitForAsync(jobId, j => j.Status == JobStatus.Completed);
+        stored.Should().NotBeNull("the processor marks the job it ran complete in the store");
+        stored!.CompletedAt.Should().NotBeNull();
         stored.LeasedBy.Should().BeNull();
 
         await host.StopAsync();
@@ -171,8 +111,9 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
 
         // The scheduler registers the declared "no-show-detection" definition at startup, seeding
         // its next occurrence from the cron ("0 * * * *") — the next top-of-the-hour, which a
-        // real-time test cannot wait for. Force it due with a direct update once it exists: seeding
-        // via UpsertAsync would not work, because it deliberately preserves an existing schedule.
+        // real-time test cannot wait for. Force it due once it exists: seeding via UpsertAsync would
+        // not work, because it deliberately preserves an existing schedule.
+        var forcedAt = DateTimeOffset.UtcNow;
         await ForceDefinitionDueAsync("no-show-detection");
 
         // The scheduler claims the due definition and enqueues a NoShowDetectionJob instance, which the
@@ -181,12 +122,10 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
         JobInstance? executed = null;
         while (DateTime.UtcNow < deadline)
         {
-            await using var context = CreateDbContext();
-            executed = await context.Set<JobInstance>()
-                .AsNoTracking()
-                .Where(j => j.JobType == typeof(NoShowDetectionJob).FullName && j.Status == JobStatus.Completed)
+            executed = (await JobStore.AllJobsAsync())
+                .Where(j => j.JobType == typeof(NoShowDetectionJob).FullName && j.Status == JobStatus.Completed && j.CreatedAt >= forcedAt.AddSeconds(-5))
                 .OrderByDescending(j => j.CompletedAt)
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
             if (executed is not null)
                 break;
             await Task.Delay(1000);
@@ -194,13 +133,12 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
 
         if (executed is null)
         {
-            await using var diag = CreateDbContext();
-            var def = await diag.Set<RecurringJobDefinition>().AsNoTracking()
-                .FirstOrDefaultAsync(d => d.Id == "no-show-detection");
-            var instances = await diag.Set<JobInstance>().AsNoTracking()
+            await using var diag = await JobStore.OpenAsync();
+            var def = await diag.Recurring.GetAsync("no-show-detection");
+            var instances = (await JobStore.AllJobsAsync())
                 .Where(j => j.JobType == typeof(NoShowDetectionJob).FullName)
                 .Select(j => new { j.Status, j.ScheduledFor, j.Error })
-                .ToListAsync();
+                .ToList();
             var detail = $"def: NextExec={def?.NextExecutionAt:o} enabled={def?.IsEnabled}; " +
                          $"instances=[{string.Join(", ", instances.Select(i => $"{i.Status}@{i.ScheduledFor:o} err={i.Error}"))}]";
             executed.Should().NotBeNull(
@@ -211,22 +149,39 @@ public class JobExecutionEndToEndTests(PostgresFixture fixture) : IntegrationTes
     }
 
     // Waits for the scheduler to have registered the declared definition, then moves its next
-    // occurrence into the past with a direct update so the very next poll finds it due.
+    // occurrence into the past so the very next poll finds it due.
     private async Task ForceDefinitionDueAsync(string id)
     {
         var deadline = DateTime.UtcNow + Timeout;
         while (DateTime.UtcNow < deadline)
         {
-            await using var context = CreateDbContext();
-            var updated = await context.Set<RecurringJobDefinition>()
-                .Where(d => d.Id == id)
-                .ExecuteUpdateAsync(s => s.SetProperty(d => d.NextExecutionAt, DateTimeOffset.UtcNow.AddMinutes(-1)));
-            if (updated > 0)
+            await using var stores = await JobStore.OpenAsync();
+            if (await stores.Recurring.GetAsync(id) is { } definition)
+            {
+                await stores.Recurring.UpdateNextExecutionAsync(id, DateTimeOffset.UtcNow.AddMinutes(-1),
+                    definition.LastExecutedAt ?? DateTimeOffset.UtcNow.AddHours(-1));
                 return;
+            }
+
             await Task.Delay(500);
         }
 
         throw new InvalidOperationException($"Recurring definition '{id}' was never registered by the scheduler.");
+    }
+
+    /// <summary>The job <paramref name="jobId" /> once it matches <paramref name="predicate" />, read through the store; null at the timeout.</summary>
+    private async Task<JobInstance?> WaitForAsync(Guid jobId, Func<JobInstance, bool> predicate)
+    {
+        var deadline = DateTime.UtcNow + Timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            await using var stores = await JobStore.OpenAsync();
+            if (await stores.Jobs.GetAsync(jobId) is { } job && predicate(job))
+                return job;
+            await Task.Delay(250);
+        }
+
+        return null;
     }
 
     /// <summary>

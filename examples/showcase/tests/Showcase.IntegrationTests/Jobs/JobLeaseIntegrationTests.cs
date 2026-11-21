@@ -1,86 +1,23 @@
 using Pragmatic.Testing.Assertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
-using Npgsql;
 using Pragmatic.Jobs;
-using Pragmatic.Jobs.EFCore;
-using Pragmatic.Temporal.Clock;
 using Showcase.IntegrationTests.Infrastructure;
 
 namespace Showcase.IntegrationTests.Jobs;
 
 /// <summary>
-///     Exercises the lease protocol of <see cref="EfCoreJobStore"/> against real PostgreSQL.
+///     Exercises the lease protocol of the durable job store against a real database: <c>EfCoreJobStore</c> on EF Core, the engine's own
+///     store on each engine (<see cref="JobStoreUnderTest" />, #904).
 /// </summary>
 /// <remarks>
-///     Every one of these paths goes through <c>ExecuteUpdateAsync</c>, which the SQLite-based unit
-///     suite cannot run, so those tests are skipped there. This is the store's whole purpose —
-///     distributed execution without duplicates — so it is covered here on the provider it targets,
-///     including a genuinely parallel acquisition race.
+///     Every one of these paths is a conditional update, which the SQLite-based unit suite cannot run against EF Core, so those tests are
+///     skipped there. This is the store's whole purpose — distributed execution without duplicates — so it is covered here on the database it
+///     targets, including a genuinely parallel acquisition race.
 /// </remarks>
 public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
 {
     private static readonly TimeSpan Lease = TimeSpan.FromMinutes(5);
 
-    // A dedicated database in the same container: the Showcase database already exists, so
-    // EnsureCreated would be a no-op there and never create the job tables.
-    private const string JobsDatabase = "showcase_jobs_lease_tests";
-
-    private static readonly SemaphoreSlim SchemaGate = new(1, 1);
-    private static bool _schemaReady;
-
-    private string JobsConnectionString =>
-        new NpgsqlConnectionStringBuilder(Fixture.AppConnectionString) { Database = JobsDatabase }
-            .ConnectionString;
-
-    private JobsDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<JobsDbContext>()
-            .UseNpgsql(JobsConnectionString)
-            .Options;
-        return new JobsDbContext(options);
-    }
-
-    private async Task EnsureSchemaAsync()
-    {
-        if (_schemaReady)
-            return;
-
-        await SchemaGate.WaitAsync();
-        try
-        {
-            if (_schemaReady)
-                return;
-
-            await using (var admin = new NpgsqlConnection(Fixture.AppConnectionString))
-            {
-                await admin.OpenAsync();
-                await using var cmd = admin.CreateCommand();
-                cmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{JobsDatabase}';";
-                if (await cmd.ExecuteScalarAsync() is null)
-                {
-                    cmd.CommandText = $"CREATE DATABASE {JobsDatabase};";
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
-
-            await using var context = CreateDbContext();
-            await context.Database.EnsureCreatedAsync();
-
-            _schemaReady = true;
-        }
-        finally
-        {
-            SchemaGate.Release();
-        }
-    }
-
-    private async Task<(EfCoreJobStore Store, JobsDbContext Context)> CreateStoreAsync()
-    {
-        await EnsureSchemaAsync();
-        var context = CreateDbContext();
-        return (new EfCoreJobStore(context, SystemClock.Instance, NullLogger<EfCoreJobStore>.Instance), context);
-    }
+    private JobStoreUnderTest JobStore => new(Fixture);
 
     private static async Task<JobInstance> EnqueueAsync(IJobStore store)
     {
@@ -98,8 +35,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task TryAcquireLeaseAsync_WhenUnleased_SucceedsAndMarksRunning()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
 
         var acquired = await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
@@ -115,8 +52,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task TryAcquireLeaseAsync_WhenHeldByAnotherWorker_Fails()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -132,9 +69,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
         // A single-threaded test cannot surface a claim race: uniqueness defects only appear under
         // a genuinely parallel gate, each contender on its own connection.
         const int workers = 16;
-        var (setupStore, setupContext) = await CreateStoreAsync();
-        await using var __ = setupContext;
-        var job = await EnqueueAsync(setupStore);
+        await using var setup = await JobStore.OpenAsync();
+        var job = await EnqueueAsync(setup.Jobs);
 
         using var barrier = new Barrier(workers);
 
@@ -142,10 +78,9 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
         // that starves the pool for every other test in the process while it grows to fit them.
         var tasks = Enumerable.Range(0, workers).Select(i => Task.Factory.StartNew(async () =>
         {
-            await using var context = CreateDbContext();
-            var store = new EfCoreJobStore(context, SystemClock.Instance, NullLogger<EfCoreJobStore>.Instance);
+            await using var stores = await JobStore.OpenAsync().ConfigureAwait(false);
             barrier.SignalAndWait();
-            return await store.TryAcquireLeaseAsync(job.Id, $"worker-{i}", Lease).ConfigureAwait(false);
+            return await stores.Jobs.TryAcquireLeaseAsync(job.Id, $"worker-{i}", Lease).ConfigureAwait(false);
         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap());
 
         var results = await Task.WhenAll(tasks);
@@ -158,8 +93,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     {
         // MarkCompletedAsync clears LeasedBy. If the acquire predicate does not also exclude
         // terminal states, a completed job is re-acquired and executed a second time.
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
         await store.MarkCompletedAsync(job.Id, "worker-a");
@@ -173,8 +108,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task TryAcquireLeaseAsync_WhenCancelled_Fails()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.MarkCancelledAsync(job.Id);
 
@@ -186,8 +121,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task MarkCompletedAsync_ByNonHolder_DoesNotCompleteTheJob()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -200,8 +135,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task RenewLeaseAsync_ByHolder_ExtendsExpiry()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", TimeSpan.FromMinutes(1));
         var before = (await store.GetAsync(job.Id))!.LeaseExpiresAt;
@@ -214,8 +149,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task RenewLeaseAsync_ByNonHolder_DoesNotExtend()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", TimeSpan.FromMinutes(1));
         var before = (await store.GetAsync(job.Id))!.LeaseExpiresAt;
@@ -228,8 +163,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task ReleaseExpiredLeasesAsync_ReturnsOrphanedJobToPendingAndCountsAnAttempt()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "crashed-worker", TimeSpan.FromSeconds(1));
 
@@ -246,8 +181,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task ReleaseExpiredLeasesAsync_WhenAttemptsExhausted_FailsTheJob()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = new JobInstance
         {
             Id = Guid.NewGuid(),
@@ -267,8 +202,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task ReleaseExpiredLeasesAsync_DoesNotTouchLiveLease()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", TimeSpan.FromMinutes(30));
 
@@ -282,8 +217,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task ReleaseLeaseAsync_ReturnsJobToPendingWithoutCountingAnAttempt()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -297,8 +232,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task MarkCompletedAsync_SetsTerminalStateAndClearsLease()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -313,8 +248,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task MarkFailedAsync_BelowMaxAttempts_ReschedulesWithBackoff()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -331,8 +266,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task MarkFailedAsync_AtMaxAttempts_MarksPermanentlyFailed()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
         var job = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(job.Id, "worker-a", Lease);
 
@@ -348,8 +283,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task PurgeTerminalAsync_RemovesOldTerminalJobsOnly()
     {
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
 
         var completed = await EnqueueAsync(store);
         await store.TryAcquireLeaseAsync(completed.Id, "worker-a", Lease);
@@ -369,8 +304,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     {
         // DateTimeOffset comparison in the polling predicate is the other thing SQLite cannot
         // validate: it compares timestamps lexicographically as text.
-        var (store, context) = await CreateStoreAsync();
-        await using var _ = context;
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Jobs;
 
         var due = await EnqueueAsync(store);
         var future = new JobInstance
@@ -396,9 +331,8 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task RecurringStore_GetDueAsync_ReturnsEnabledDueDefinitionsOnly()
     {
-        await EnsureSchemaAsync();
-        await using var context = CreateDbContext();
-        var store = new EfCoreRecurringJobStore(context);
+        await using var stores = await JobStore.OpenAsync();
+        var store = stores.Recurring;
 
         var now = DateTimeOffset.UtcNow;
         var dueId = $"due-{Guid.NewGuid():N}";
@@ -421,14 +355,15 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
     [Fact]
     public async Task RecurringStore_TryClaimDueAsync_OnlyOneHostWinsATick()
     {
-        await EnsureSchemaAsync();
         var id = $"claim-{Guid.NewGuid():N}";
         var occurrence = DateTimeOffset.UtcNow.AddMinutes(-1);
 
-        await using (var setup = CreateDbContext())
+        DateTimeOffset? stored;
+        await using (var setup = await JobStore.OpenAsync())
         {
-            var setupStore = new EfCoreRecurringJobStore(setup);
-            await setupStore.UpsertAsync(Definition(id, occurrence));
+            await setup.Recurring.UpsertAsync(Definition(id, occurrence));
+            // The occurrence as the store holds it, which is what a host reads off GetDueAsync and claims with.
+            stored = (await setup.Recurring.GetAsync(id))!.NextExecutionAt;
         }
 
         const int hosts = 8;
@@ -437,10 +372,9 @@ public class JobLeaseIntegrationTests(PostgresFixture fixture) : IntegrationTest
         // A dedicated thread per contender, for the reason given in the lease test above.
         var tasks = Enumerable.Range(0, hosts).Select(_ => Task.Factory.StartNew(async () =>
         {
-            await using var context = CreateDbContext();
-            var store = new EfCoreRecurringJobStore(context);
+            await using var stores = await JobStore.OpenAsync().ConfigureAwait(false);
             barrier.SignalAndWait();
-            return await store.TryClaimDueAsync(id, occurrence, occurrence.AddHours(1), occurrence)
+            return await stores.Recurring.TryClaimDueAsync(id, stored, occurrence.AddHours(1), occurrence)
                 .ConfigureAwait(false);
         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap());
 

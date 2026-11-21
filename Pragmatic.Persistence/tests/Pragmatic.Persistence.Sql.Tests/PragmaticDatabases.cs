@@ -95,6 +95,17 @@ public sealed class PragmaticDatabases : IAsyncLifetime
         return new SqlSession(connection, dialect) { Filters = filters };
     }
 
+    /// <summary>
+    ///     Another session on the dialect's database, on a connection of its own and with nothing emptied: a second caller racing the first, as
+    ///     a second worker would. Not on SQLite, whose in-memory database is the connection's own.
+    /// </summary>
+    public SqlSession AnotherSession(SqlDialect dialect)
+    {
+        if (dialect == SqlDialect.Sqlite)
+            throw new ArgumentException("An in-memory SQLite database is its connection's own: there is no second connection to it.", nameof(dialect));
+        return new SqlSession(Open(dialect), dialect);
+    }
+
     private string ConnectionString(SqlDialect dialect, string? database = null) => dialect switch
     {
         SqlDialect.PostgreSql => _postgres!.GetConnectionString(),
@@ -160,7 +171,7 @@ public sealed class PragmaticDatabasesCollection : ICollectionFixture<PragmaticD
 /// <summary>The tables of the test entities (DefaultSchema's), children before parents: the order a session empties them in.</summary>
 internal static class PragmaticSchema
 {
-    public static readonly string[] Tables = ["Parts", "Suppliers", "DeskLamps", "Desks","__EventOutbox", "__OutboxMessages", "__Notifications", "__SagaSteps", "__SagaInstances", "Charges", "Extras","__AuditEntries", "__AuditSegments", "__AuditPrunedRanges","Categories","ReviewComments","PropertyNotes", "PropertyTagLinks", "PropertyTags", "PropertyAttachments", "BookingRequests", "Bookings", "Guests", "StaffAssignments", "DeskDuties", "KeyHolders","PropertyAmenities", "Reviews", "Reservations", "RoomTypes", "Amenities", "Properties", "Vouchers", "SupportCases", "Statements"];
+    public static readonly string[] Tables = ["Parts", "Suppliers", "DeskLamps", "Desks","__EventOutbox", "__OutboxMessages", "__Notifications", "__Jobs", "__RecurringJobs", "__SagaSteps", "__SagaInstances", "Charges", "Extras","__AuditEntries", "__AuditSegments", "__AuditPrunedRanges","Categories","ReviewComments","PropertyNotes", "PropertyTagLinks", "PropertyTags", "PropertyAttachments", "BookingRequests", "Bookings", "Guests", "StaffAssignments", "DeskDuties", "KeyHolders","PropertyAmenities", "Reviews", "Reservations", "RoomTypes", "Amenities", "Properties", "Vouchers", "SupportCases", "Statements"];
 
     public static string Quote(SqlDialect dialect, string name) => dialect == SqlDialect.SqlServer ? "[" + name + "]" : "\"" + name + "\"";
 }

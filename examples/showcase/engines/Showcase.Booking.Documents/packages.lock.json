@@ -362,6 +362,12 @@
           "Pragmatic.Temporal": "[1.0.0, )"
         }
       },
+      "pragmatic.jobs.engines": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Jobs": "[1.0.0, )"
+        }
+      },
       "pragmatic.mapping": {
         "type": "Project",
         "dependencies": {

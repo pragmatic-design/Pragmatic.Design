@@ -57,6 +57,8 @@
     <!-- The notification store on the engine: its table in the schema of a [StoresNotifications] boundary (DialectSchemas), and its four
          operations on each database. -->
     <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Pragmatic.Notifications.Engines.csproj" />
+    <!-- The job store on the engine (#904): JobStoreTests leases, claims and purges through it on each database. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\Pragmatic.Jobs.Engines.csproj" />
     <!-- The saga store on the engine (Pragmatic.Messaging.Engines, above): StaySaga, its boundary and their generated registration, run on
          each database. In an assembly of their own: a boundary here would claim the suite's entities. -->
     <ProjectReference Include="..\Fixtures\SagaFixture.Sql\SagaFixture.Sql.csproj" />

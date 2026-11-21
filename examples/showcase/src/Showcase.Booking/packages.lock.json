@@ -385,6 +385,14 @@
           "Pragmatic.Temporal": "[1.0.0, )"
         }
       },
+      "pragmatic.jobs.efcore": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
+          "Pragmatic.Jobs": "[1.0.0, )"
+        }
+      },
       "pragmatic.mapping": {
         "type": "Project",
         "dependencies": {

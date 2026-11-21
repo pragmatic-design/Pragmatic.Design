@@ -50,6 +50,8 @@
     <ProjectReference Include="..\..\..\Pragmatic.Internationalization\src\Pragmatic.Internationalization\Pragmatic.Internationalization.csproj" />
     <!-- The notification store on the engine: its collection and its four operations on both stores (NotificationStoreTests). -->
     <ProjectReference Include="..\..\..\Pragmatic.Notifications\src\Pragmatic.Notifications.Engines\Pragmatic.Notifications.Engines.csproj" />
+    <!-- The job store on the engine (#904): JobStoreTests leases, claims and purges through it on each store. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Jobs\src\Pragmatic.Jobs.Engines\Pragmatic.Jobs.Engines.csproj" />
     <!-- The saga store on the engine: StaySaga, its boundary and their generated registration (an assembly of their own), run on both stores
          (SagaStoreTests). -->
     <ProjectReference Include="..\Fixtures\SagaFixture.Documents\SagaFixture.Documents.csproj" />

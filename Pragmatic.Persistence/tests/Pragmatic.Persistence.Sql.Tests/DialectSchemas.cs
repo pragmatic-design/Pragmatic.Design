@@ -52,6 +52,12 @@ internal static class DialectSchemas
     /// </summary>
     private const string SagasBoundary = "namespace PragmaticSagas.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Messaging.Attributes.EnableSagaPersistence] public sealed partial class StaysBoundary; }";
 
+    /// <summary>
+    ///     A boundary with [EnableJobPersistence], which claims no entity either: the job store's tables (<c>__Jobs</c>, <c>__RecurringJobs</c>,
+    ///     Pragmatic.Jobs.Engines' rows), which <see cref="JobStoreTests" /> leases, claims and purges on each database.
+    /// </summary>
+    private const string JobsBoundary = "namespace PragmaticEntities.Tests { [Pragmatic.Actions.Attributes.Boundary] [Pragmatic.Jobs.Attributes.EnableJobPersistence] public sealed partial class RosterBoundary; }";
+
     private static readonly ConcurrentDictionary<SqlDialect, SchemaVersion> Schemas = new();
 
     /// <summary>The database's schema on <paramref name="dialect" />.</summary>
@@ -61,7 +67,7 @@ internal static class DialectSchemas
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest)
             .WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", "Pragmatic.Persistence.Sql.Generated")]);
-        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("OnSoftDeleteEntities.cs"), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
+        var compilation = CSharpCompilation.Create("SchemaHost", new[] { Entities(), Resource("OnSoftDeleteEntities.cs"), Resource("ReferencedModule.Supplier.cs"), Resource("ReferencedModule.Part.cs"), Resource("ReferencedModule.ListedOnly.cs"), Resource("ReferencedModule.SupplierStatuses.cs"), Host, SqlBridge, OutboxBoundary, StaffImport, NotificationsBoundary, SagasBoundary, JobsBoundary, DriverProbe(dialect) }.Select(s => CSharpSyntaxTree.ParseText(s, parseOptions)),
             References([typeof(global::Pragmatic.Persistence.Entity.EntityAttribute), typeof(global::Pragmatic.MultiTenancy.ITenantEntity),
                 typeof(global::Pragmatic.Validation.Attributes.MaxLengthAttribute),
                 typeof(global::Pragmatic.Events.IDomainEvent), typeof(SchemaVersion), typeof(SqlSession),
@@ -78,7 +84,8 @@ internal static class DialectSchemas
                 typeof(global::Pragmatic.Composition.Attributes.ModuleAttribute), typeof(global::Pragmatic.Authorization.Management.AuthorizationManagementPackage),
                 typeof(global::Pragmatic.Authorization.Management.Engines.Sql.DynamicRoleRow),
                 typeof(global::Pragmatic.Notifications.Attributes.StoresNotificationsAttribute), typeof(global::Pragmatic.Notifications.Engines.Sql.NotificationRow),
-                typeof(global::Pragmatic.Messaging.Attributes.EnableSagaPersistenceAttribute), typeof(global::Pragmatic.Messaging.Engines.Sql.SagaInstanceRow)]),
+                typeof(global::Pragmatic.Messaging.Attributes.EnableSagaPersistenceAttribute), typeof(global::Pragmatic.Messaging.Engines.Sql.SagaInstanceRow),
+                typeof(global::Pragmatic.Jobs.Attributes.EnableJobPersistenceAttribute), typeof(global::Pragmatic.Jobs.Engines.Sql.JobRow)]),
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, nullableContextOptions: NullableContextOptions.Enable));
         CSharpGeneratorDriver.Create(new generator::Pragmatic.SourceGenerator.PragmaticSourceGenerator()).WithUpdatedParseOptions(parseOptions)
             .RunGeneratorsAndUpdateCompilation(compilation, out var generated, out _);

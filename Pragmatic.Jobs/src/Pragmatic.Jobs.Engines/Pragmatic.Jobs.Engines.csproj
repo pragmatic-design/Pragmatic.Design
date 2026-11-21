@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The durable job store (__Jobs, __RecurringJobs) on Pragmatic's Sql and documents engines, beside Pragmatic.Jobs.EFCore: the lease, the recurring claim and the purge over the session of the [EnableJobPersistence] boundary.</Description>
+    <PackageTags>jobs;scheduling;background;sql;documents;mongodb;cosmosdb</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- The stores' own chains (the lease, the claim, the purge) are translated by the generator here, into this assembly. -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Sql.Generated;Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Jobs\Pragmatic.Jobs.csproj" />
+    <!-- The engines' bridges, private as in Pragmatic.Notifications.Engines: an application brings the bridge of the engine it uses. The Sql
+         store's types never touch the documents engine's and the other way round, so the bridge the application lacks is never loaded. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Sql\Pragmatic.Persistence.Sql.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" PrivateAssets="all" />
+    <!-- The rows and the documents are the engines' own types: the generator describes them in this assembly, which is the one that declares them. -->
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

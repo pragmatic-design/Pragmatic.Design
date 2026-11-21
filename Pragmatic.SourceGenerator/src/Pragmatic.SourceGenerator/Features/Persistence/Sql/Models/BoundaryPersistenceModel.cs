@@ -14,6 +14,12 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
 internal sealed record BoundaryPersistenceModel(string Hint, string? Namespace, string BoundaryName, string BoundaryType, EngineRegistrationModel Engine, EquatableArray<string> EntityTypes,
     bool EventOutbox, bool MessagingOutbox, bool AuditedEntities, bool NotificationStore, bool MultiTenancy)
 {
+    /// <summary>
+    ///     True when the boundary is <c>[EnableJobPersistence]</c> and Pragmatic.Jobs.Engines is referenced: its session is handed to the job store,
+    ///     which the host chooses (<c>UseSqlPersistence()</c>, <c>UseDocumentsPersistence()</c>).
+    /// </summary>
+    public bool JobStore { get; init; }
+
     /// <summary>The boundary's <c>[PragmaticUser]</c> entities, each registered as its <c>IUserLookup&lt;TUser&gt;</c> (#593).</summary>
     public EquatableArray<string> UserLookups { get; init; } = EquatableArray<string>.Empty;
 

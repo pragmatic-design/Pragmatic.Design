@@ -659,6 +659,7 @@
   </Folder>
   <Folder Name="/Pragmatic.Jobs/">
     <Project Path="Pragmatic.Jobs/src/Pragmatic.Jobs.EFCore/Pragmatic.Jobs.EFCore.csproj" />
+    <Project Path="Pragmatic.Jobs/src/Pragmatic.Jobs.Engines/Pragmatic.Jobs.Engines.csproj" />
     <Project Path="Pragmatic.Jobs/src/Pragmatic.Jobs/Pragmatic.Jobs.csproj" />
   </Folder>
   <Folder Name="/Pragmatic.Logging/">

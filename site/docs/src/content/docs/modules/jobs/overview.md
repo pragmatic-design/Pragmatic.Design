@@ -47,7 +47,8 @@ AOT-safe type registry (no `Type.GetType`), the recurring definitions, and metad
 
 ```bash
 dotnet add package Pragmatic.Jobs
-dotnet add package Pragmatic.Jobs.EFCore       # optional: durable, distributed job store
+dotnet add package Pragmatic.Jobs.EFCore       # optional: durable, distributed job store on EF Core
+dotnet add package Pragmatic.Jobs.Engines      # or the same store on the Sql and documents engines
 dotnet add package Pragmatic.SourceGenerator    # the unified analyzer
 ```
 
@@ -86,8 +87,9 @@ Enable processing in the host with `app.UseJobs(jobs => jobs.WithWorkerCount(2))
   `JobsOptions.MisfireThreshold`: `RunOnce` (default) runs it once then resumes, `Skip` jumps straight
   to the next future occurrence.
 - **`[Continuation<T>]`**: continuation chains, enqueued after the job completes successfully.
-- **EF Core persistence**: durable jobs with **lease-based distributed locking** (one worker per job
-  across instances), plus automatic retention of finished jobs.
+- **Durable persistence** on EF Core, the Sql engine and the documents engine: durable jobs with
+  **lease-based distributed locking** (one worker per job across instances), plus automatic retention
+  of finished jobs.
 - **Messaging bridge**: `Pragmatic.Messaging.Jobs` for scheduled message delivery.
 
 ## Durable persistence
@@ -113,10 +115,30 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 If `UseEfCore()` is set but no durable store is registered, the processor fails at startup with an
 actionable message rather than running on the in-memory store.
 
+### On the Sql and documents engines
+
+`Pragmatic.Jobs.Engines` is the same store on Pragmatic's own engines. Mark the boundary whose database
+holds the queue `[EnableJobPersistence]`, as on EF Core: the engine's schema then has `__Jobs` and
+`__RecurringJobs` (EF Core's tables, column for column, or the two collections on MongoDB and Cosmos DB),
+and the boundary's generated `Add{Boundary}Persistence` hands its session to the store. The host chooses
+the store:
+
+```csharp
+app.UseJobs(jobs => jobs.UseSqlPersistence());        // SqlJobStore + SqlRecurringJobStore
+app.UseJobs(jobs => jobs.UseDocumentsPersistence());  // DocJobStore + DocRecurringJobStore
+```
+
+The lease and the recurring claim are one conditional update each, so of many workers one takes a job
+and of many hosts one enqueues a tick, on every database (measured on PostgreSQL, SQL Server, MySQL,
+Oracle, MongoDB and Cosmos DB). On the documents engine a filter compares a field with a value, not with
+another field, so an expired lease is released by a compare-and-swap on the attempt it read, which two
+sweepers cannot count twice. Without a boundary marked `[EnableJobPersistence]`, the first use of the
+store fails naming the attribute.
+
 ## Status
 
-**Functional** within 1.0.0-alpha: recurring and delayed jobs, retry and timeout, continuations, EF Core
-persistence, and distributed locking. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
+**Functional** within 1.0.0-alpha: recurring and delayed jobs, retry and timeout, continuations, durable
+persistence on EF Core and on the Sql and documents engines, and distributed locking. See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
 
 | [Concepts](/modules/jobs/concepts/) | Job types, scheduler/store model, the invoker pipeline, continuation chains, distributed locking |
 | [Getting Started](/modules/jobs/getting-started/) | Your first recurring and delayed jobs, host wiring |

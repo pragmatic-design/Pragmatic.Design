@@ -189,6 +189,7 @@ include the module's part:
 | Saga store (`__SagaInstances`, `__SagaSteps`) | `Pragmatic.Messaging.EFCore` | `Pragmatic.Messaging.Engines` | `[EnableSagaPersistence]` on the boundary: its generated saga registration adds the repository of its engine; on MySQL and Oracle the active sagas' unique index is left out (`PRAG3038`) |
 | Audit trail | `Pragmatic.Audit.EFCore` | `Pragmatic.Audit.Engines` | `[Audited]` on an entity |
 | Notification records (`__Notifications`) | `Pragmatic.Notifications.EFCore` | `Pragmatic.Notifications.Engines` | `[StoresNotifications]` on the boundary: its generated registration adds the store of its engine |
+| Durable job store (`__Jobs`, `__RecurringJobs`) | `Pragmatic.Jobs.EFCore` | `Pragmatic.Jobs.Engines` | `[EnableJobPersistence]` on the boundary: its generated registration hands its session to the store, and the host chooses the store (`jobs.UseSqlPersistence()`, `jobs.UseDocumentsPersistence()`) |
 | Subject registry | `Pragmatic.Privacy.EFCore` | `Pragmatic.Privacy.Engines` | `[DataSubject]` on an entity |
 | Per-subject keys (`__SubjectKeys`) | `Pragmatic.Cryptography.EFCore` | `Pragmatic.Cryptography.Engines` | `[DataSubject]` on an entity, beside the registry |
 | Roles, permissions and assignments | `Pragmatic.Authorization.Management.EFCore` | `Pragmatic.Authorization.Management.Engines` | `[UsePackage<AuthorizationManagementPackage, TBoundary>]` on a module: in that boundary's database |

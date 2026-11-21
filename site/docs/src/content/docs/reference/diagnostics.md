@@ -582,7 +582,7 @@ Reported by the analyzer where a `[LoggerMessage]` method is written. A method w
 | `PRAG2505` | Error | A `[Continuation<T>]` target does not implement `IJob` or `IJob<T>`. |
 | `PRAG2506` | Error | The continuation chain contains a cycle. Remove one `[ContinueWith<T>]`. |
 | `PRAG2507` | Error | A job declares more than one `[RecurringJob]` and a second schedule has no `Id`: the default is derived from the class name and both schedules would take it. Give the later ones an explicit `Id`. |
-| `PRAG2508` | Warning | A boundary is marked `[EnableJobPersistence]` and its project does not reference `Pragmatic.Jobs.EFCore`, whose two `IEntityTypeConfiguration` the generated `DbContext` applies, so `__Jobs` and `__RecurringJobs` are mapped nowhere and no migration creates them. Reference the package. |
+| `PRAG2508` | Warning | A boundary is marked `[EnableJobPersistence]` and its project does not reference the job store package of its engine: `Pragmatic.Jobs.EFCore` on EF Core, whose two `IEntityTypeConfiguration` the generated `DbContext` applies, or `Pragmatic.Jobs.Engines` on the Sql and documents engines, whose rows the engine's schema holds. So `__Jobs` and `__RecurringJobs` are mapped nowhere and nothing creates them. Reference the package the message names. |
 | `PRAG2509` | Error | More than one boundary is marked `[EnableJobPersistence]`. The job store is a single store (a lease taken in one database says nothing about a queue in another), so one boundary hosts `__Jobs` and `__RecurringJobs`. |
 
 ### Traits and Resource: `PRAG2600-2651`
