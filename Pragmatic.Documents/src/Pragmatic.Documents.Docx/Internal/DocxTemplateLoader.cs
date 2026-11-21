@@ -37,6 +37,13 @@ internal sealed class DocxTemplateLoader
         var entry = zip.GetEntry(path);
         if (entry is null) return null;
 
+        // Before Open(): the runtimes disagree on an entry marked encrypted. .NET 10 ignores the flag and reads the
+        // bytes as styles; .NET 11 throws NotSupportedException for a method it does not know (#932). The loader
+        // reads no encrypted template, so it says so the same way on both.
+        if (entry.IsEncrypted)
+            throw new InvalidOperationException(
+                $"DOCX template entry '{path}' is encrypted, which the loader does not read.");
+
         // Reject before allocation. entry.Length is the uncompressed size recorded in the central
         // directory — a malicious template can lie about it, so we also enforce the cap during copy.
         if (entry.Length > MaxEntryBytes)
