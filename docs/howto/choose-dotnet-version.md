@@ -17,10 +17,12 @@ so staying on .NET 10 costs no support window: a reason to move is what .NET 11 
 
 ## What is supported
 
-- **The packages target `net10.0`**, and since 1.0.0-alpha.5 four also ship a `net11.0` build, which NuGet picks for an
-  application on .NET 11: `Pragmatic.Configuration`, `Pragmatic.Documents.Templates`,
-  `Pragmatic.Endpoints.OpenApi` and `Pragmatic.Result.AspNetCore`. Every other package is the `net10.0`
-  build on either target. The `pragmatic-migrate` tool also runs on either runtime, so the schema
+- **Every package ships a `net10.0` and a `net11.0` build** since 1.0.0-alpha.6, and NuGet picks the
+  one the application targets ([#931](https://github.com/pragmatic-design/Pragmatic.Design/issues/931)).
+  In 1.0.0-alpha.5 four did (`Pragmatic.Configuration`, `Pragmatic.Documents.Templates`,
+  `Pragmatic.Endpoints.OpenApi`, `Pragmatic.Result.AspNetCore`), and the others gave a `net11.0`
+  application their `net10.0` build. The generators and analyzers run in the compiler and stay
+  `netstandard2.0`. The `pragmatic-migrate` tool also runs on either runtime, so the schema
   snapshot of a `net11.0` host is regenerated on every build
   ([#925](https://github.com/pragmatic-design/Pragmatic.Design/issues/925)).
 - **One public API on every target.** Package validation fails the build of a package whose targets
@@ -97,11 +99,13 @@ All of them since 1.0.0-alpha.5.
 
   The generator implements `IError` by delegating to the case the union holds, and an endpoint
   documents each case with its own status. See [Result's concepts](../../Pragmatic.Result/docs/concepts.md).
-- **A `net11.0` build of four packages.** Built with Runtime Async, the configuration binder
-  allocates 2,216 B per call instead of 2,720 B, and resolving a document template is 21–34% faster
+- **A `net11.0` build of every package**, compiled against .NET 11 with Runtime Async (#931). Where it
+  was measured it pays: the configuration binder allocates 2,216 B per call instead of 2,720 B, and
+  resolving a document template is 21–34% faster
   ([#850](https://github.com/pragmatic-design/Pragmatic.Design/issues/850)); the OpenAPI packages are
   built against `Microsoft.OpenApi` 3, which ASP.NET Core 11 brings
-  ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832)).
+  ([#832](https://github.com/pragmatic-design/Pragmatic.Design/issues/832)). The other packages were not
+  benchmarked on their own.
 - **The generated JSON code on System.Text.Json 11.** The typed `GetTypeInfo<T>()` where the project has
   it, and unions described by the generated context
   ([#834](https://github.com/pragmatic-design/Pragmatic.Design/issues/834),

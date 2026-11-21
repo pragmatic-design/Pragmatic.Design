@@ -9,4 +9,12 @@
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
   </PropertyGroup>
 
+  <!-- The target every smoke publishes on: net10.0, or what PragmaticAotSmokeTarget names (#931). The gate's aot tier
+       runs the smokes once per target, setting it in the environment, which MSBuild reads as a property, so the
+       net11.0 build of every package goes through the AOT compiler as well. A property of its own: a global
+       TargetFramework would reach every referenced project, the netstandard2.0 generators included. -->
+  <PropertyGroup>
+    <PragmaticAotSmokeTarget Condition="'$(PragmaticAotSmokeTarget)' == ''">net10.0</PragmaticAotSmokeTarget>
+  </PropertyGroup>
+
 </Project>

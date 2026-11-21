@@ -3,9 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Both releases (#925): the snapshot loads the host's assembly into this process, and a host built for net11.0 needs the 11 runtime
-         to be loaded. Packed as a tool with both, the SDK runs the build its runtime supports. -->
-    <TargetFramework></TargetFramework>
-    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+         to be loaded. Packed as a tool with both, the SDK runs the build its runtime supports. The two targets
+         come from Directory.Build.props (#931). -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>pragmatic-migrate</ToolCommandName>
     <Description>Interactive CLI for Pragmatic.Migrations: schema diff, preview, apply with rich terminal UX.</Description>

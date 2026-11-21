@@ -13,7 +13,6 @@
        decision (it changes which tier covers them) and is not done here. -->
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Pragmatic.Messaging.Core.Tests</RootNamespace>

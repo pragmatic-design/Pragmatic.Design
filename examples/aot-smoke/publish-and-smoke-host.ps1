@@ -5,6 +5,8 @@
 # caller, an anonymous one and one without the permission. Its exit code is the number of checks that failed. Requires the platform native
 # toolchain (on Windows: a VS C++ workload / Developer environment).
 $ErrorActionPreference = 'Stop'
+# The target this run publishes on (#931): the gate sets PragmaticAotSmokeTarget for its net11.0 pass, MSBuild reads it as a property.
+$smokeTarget = if ($env:PragmaticAotSmokeTarget) { $env:PragmaticAotSmokeTarget } else { 'net10.0' }
 
 # The ILC link step shells out to vswhere to find the MSVC linker; see publish-and-smoke.ps1.
 if ($IsWindows -or $env:OS -eq 'Windows_NT') {
@@ -47,7 +49,7 @@ if ($warnings.Count -lt $budget) {
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.Host.exe' } else { 'Pragmatic.Aot.Host' }
 $exe = Get-ChildItem -Recurse -Path (Join-Path $PSScriptRoot 'Pragmatic.Aot.Host/bin') -Filter $exeName |
-    Where-Object { $_.FullName -match 'publish' } | Select-Object -First 1
+    Where-Object { $_.FullName -match 'publish' -and $_.FullName -match "[\\/]$smokeTarget[\\/]" } | Select-Object -First 1
 if (-not $exe) { throw "Native binary not found" }
 
 Write-Host "Running $($exe.FullName)..."

@@ -3,10 +3,7 @@
   <PropertyGroup>
     <!-- net11.0 as well (#850): built for it, with runtime-async, resolving a template is 21-34% faster for an application on net11.0
          (TemplateRenderBenchmarks.Resolve_*, measured in both run orders against this package on net10.0 only). The public API is the
-         same on both (#836). -->
-    <TargetFramework></TargetFramework>
-    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
-    <Features Condition="'$(TargetFramework)' == 'net11.0'">$(Features);runtime-async=on</Features>
+         same on both (#836). Both targets and runtime-async come from Directory.Build.props (#931). -->
     <Description>Document template types and resolver: template with bindings to resolved DocumentModel.</Description>
     <PackageTags>template;document;binding;resolver</PackageTags>
     <NoWarn>$(NoWarn);CA2007;CA1822</NoWarn>

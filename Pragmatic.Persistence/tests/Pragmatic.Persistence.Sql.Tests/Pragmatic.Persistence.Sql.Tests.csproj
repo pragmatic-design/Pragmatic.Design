@@ -4,6 +4,9 @@
        databases: the shape Persistence declares, the chains bound on it, the filter families, the unit of work, the rows written and read
        back. -->
   <PropertyGroup>
+    <!-- One target: a container suite runs on net10.0 only, and the hermetic suites run on both (#931). -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <!-- Starts Testcontainers (PostgreSQL, SQL Server, MySQL, Oracle; SQLite in process): scripts/check.mjs runs these one at a time. -->
     <RequiresDocker>true</RequiresDocker>
     <IsTestProject>true</IsTestProject>

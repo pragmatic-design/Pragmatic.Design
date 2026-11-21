@@ -107,7 +107,11 @@ public sealed partial class TheInvokeEndpointReadsTypedMetadataOnElevenTests
 
     [Theory]
     [InlineData(11, true, "runtime 11.", TypedRead, CastRead)]
+    // No frameworkMajor compiles against the suite's own references, which are .NET 10's in its net10.0 build only
+    // (#931); the net11.0 build's are .NET 11's, the row above.
+#if !NET11_0_OR_GREATER
     [InlineData(null, false, "runtime 10.", CastRead, TypedRead)]
+#endif
     public async Task AnInvokeRequest_IsReadAndAnswered(int? frameworkMajor, bool rollForwardToLatestMajor, string runtime, string written, string notWritten)
     {
         var name = $"{RunProbePrefix}{Guid.NewGuid():N}";

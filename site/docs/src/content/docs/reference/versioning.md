@@ -20,7 +20,7 @@ exact package versions and read the per-module `CHANGELOG.md` before upgrading.
 | Component | Target framework | Notes |
 |-----------|------------------|-------|
 | Your application | **net10.0** or **net11.0** | Both supported by Microsoft until 2028-11-14; the same public API on each. |
-| Runtime libraries & generated code | **net10.0**, and **net11.0** for four packages | NuGet picks the `net11.0` build for a `net11.0` application. |
+| Runtime libraries & generated code | **net10.0** and **net11.0** | Every package ships both; NuGet picks the one the application targets. |
 | Source generators / analyzers | **netstandard2.0** | Required by Roslyn; runs inside the compiler regardless of your app's TFM. |
 | SDK used to build the repository | **11.0.100** (`rollForward: feature`) | See `global.json`; it builds the `net10.0` targets as well. |
 | C# language version | **14** on `net10.0`, **15** on `net11.0` | The SDK's default for the target; the generator writes for the version the project uses. |
@@ -29,7 +29,7 @@ A `net10.0` application needs the .NET 10 SDK or later and the .NET 10 runtime; 
 `net11.0` one needs the .NET 11 SDK and runtime. The generators target
 `netstandard2.0` only so they load in the compiler; this does not change your
 app's runtime requirement. [Choosing .NET 10 or .NET 11](/guides/choose-dotnet-version/)
-says which package ships a `net11.0` build and what is in which release.
+says what each target gets and what is in which release.
 
 ## Database providers
 

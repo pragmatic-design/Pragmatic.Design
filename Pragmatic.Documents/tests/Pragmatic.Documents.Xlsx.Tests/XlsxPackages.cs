@@ -39,6 +39,24 @@ internal static class XlsxPackages
     ///     its data as it is: the archive then says the entry is smaller than what it inflates to.
     /// </summary>
     public static byte[] DeclareUncompressedSize(byte[] zip, string name, uint size)
+        => PatchHeaders(zip, name, (copy, header, isLocal) =>
+            BinaryPrimitives.WriteUInt32LittleEndian(copy.AsSpan(header + (isLocal ? 22 : 24)), size));
+
+    /// <summary>
+    ///     Sets the "encrypted" bit of the general-purpose flag in the local and the central header of
+    ///     <paramref name="name" />, leaving its data as it is: the archive then says the entry is encrypted with a method
+    ///     it does not name.
+    /// </summary>
+    public static byte[] MarkEncrypted(byte[] zip, string name)
+        => PatchHeaders(zip, name, (copy, header, isLocal) =>
+        {
+            var flagAt = header + (isLocal ? 6 : 8);
+            BinaryPrimitives.WriteUInt16LittleEndian(copy.AsSpan(flagAt),
+                (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(copy.AsSpan(flagAt)) | 0x0001));
+        });
+
+    /// <summary>Applies <paramref name="patch" /> to the local and the central header of <paramref name="name" />, in a copy.</summary>
+    private static byte[] PatchHeaders(byte[] zip, string name, Action<byte[], int, bool> patch)
     {
         var copy = (byte[])zip.Clone();
         var nameBytes = Encoding.UTF8.GetBytes(name);
@@ -47,18 +65,19 @@ internal static class XlsxPackages
         for (var at = 0; at + 46 <= copy.Length; at++)
         {
             var signature = BinaryPrimitives.ReadUInt32LittleEndian(copy.AsSpan(at));
-            var (nameAt, sizeAt) = signature switch
+            var nameAt = signature switch
             {
-                0x04034b50 => (at + 30, at + 22), // local file header
-                0x02014b50 => (at + 46, at + 24), // central directory header
-                _ => (-1, -1),
+                0x04034b50 => at + 30, // local file header
+                0x02014b50 => at + 46, // central directory header
+                _ => -1,
             };
             if (nameAt < 0 || nameAt + nameBytes.Length > copy.Length) continue;
 
-            var nameLength = BinaryPrimitives.ReadUInt16LittleEndian(copy.AsSpan(signature == 0x04034b50 ? at + 26 : at + 28));
+            var isLocal = signature == 0x04034b50;
+            var nameLength = BinaryPrimitives.ReadUInt16LittleEndian(copy.AsSpan(isLocal ? at + 26 : at + 28));
             if (nameLength != nameBytes.Length || !copy.AsSpan(nameAt, nameLength).SequenceEqual(nameBytes)) continue;
 
-            BinaryPrimitives.WriteUInt32LittleEndian(copy.AsSpan(sizeAt), size);
+            patch(copy, at, isLocal);
             patched++;
         }
 

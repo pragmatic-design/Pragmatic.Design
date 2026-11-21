@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- One target: a container suite runs on net10.0 only, and the hermetic suites run on both (#931). -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <!-- Starts Testcontainers: scripts/check.mjs runs these one at a time (see docs/TESTING.md). -->
     <RequiresDocker>true</RequiresDocker>
     <NoWarn>$(NoWarn);CA2007</NoWarn>

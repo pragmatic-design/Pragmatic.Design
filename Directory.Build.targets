@@ -61,7 +61,10 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackCompanionAnalyzers</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <Target Name="PackCompanionAnalyzers">
+  <!-- The analyzer goes under analyzers/, the same file whatever the target: a package on two targets (#931) asks
+       for it from each inner build, and the second copy is NU5118. The first target of the list adds it. -->
+  <Target Name="PackCompanionAnalyzers"
+          Condition="'$(TargetFrameworks)' == '' OR $(TargetFrameworks.StartsWith('$(TargetFramework)'))">
     <ItemGroup>
       <_CompanionAnalyzerProject Include="@(ProjectReference)"
                                  Condition="'%(ProjectReference.PackAsCompanionAnalyzer)' == 'true'" />

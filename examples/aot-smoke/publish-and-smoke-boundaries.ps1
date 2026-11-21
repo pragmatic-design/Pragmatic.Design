@@ -4,6 +4,8 @@
 # native binary against it, and asserts BOUNDARIES-AOT-OK (the binary's exit code is the number of checks that failed). The container is
 # removed whatever happens. Requires the platform native toolchain and Docker: without either it fails, it does not pass.
 $ErrorActionPreference = 'Stop'
+# The target this run publishes on (#931): the gate sets PragmaticAotSmokeTarget for its net11.0 pass, MSBuild reads it as a property.
+$smokeTarget = if ($env:PragmaticAotSmokeTarget) { $env:PragmaticAotSmokeTarget } else { 'net10.0' }
 
 # The ILC link step shells out to vswhere to find the MSVC linker; see publish-and-smoke.ps1.
 if ($IsWindows -or $env:OS -eq 'Windows_NT') {
@@ -23,7 +25,7 @@ if ($LASTEXITCODE -ne 0) { throw "AOT publish failed" }
 
 $exeName = if ($rid -like 'win-*') { 'Pragmatic.Aot.Boundaries.exe' } else { 'Pragmatic.Aot.Boundaries' }
 $exe = Get-ChildItem -Recurse -Path (Join-Path $PSScriptRoot 'Pragmatic.Aot.Boundaries/bin') -Filter $exeName |
-    Where-Object { $_.FullName -match 'publish' } | Select-Object -First 1
+    Where-Object { $_.FullName -match 'publish' -and $_.FullName -match "[\\/]$smokeTarget[\\/]" } | Select-Object -First 1
 if (-not $exe) { throw "Native binary not found" }
 
 $user = 'root'
