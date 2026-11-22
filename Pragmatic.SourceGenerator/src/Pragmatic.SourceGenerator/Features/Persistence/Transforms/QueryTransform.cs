@@ -203,7 +203,33 @@ internal static class QueryTransform
                                       && ReturnsDtoParser.MapsFromAnEntity(responseDto)
                 ? responseDto.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                 : null,
+            IsCacheable = targetSymbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Caching.Attributes.CacheableAttribute"),
+            CacheByCaller = joins.Length > 0 || HasCallerDependentFilters(entityType),
         };
+    }
+
+    /// <summary>
+    ///     Whether the entity declares a filter that reads the caller: an owner (<c>[HasOwner]</c>), access scopes (<c>[HasAccessScopes]</c>), or
+    ///     a <c>[VisibleWhen&lt;TRule&gt;]</c> whose rule is permission-based (<c>IPermissionBasedFilter</c>), on it or a base type. What EF
+    ///     Core's executor finds registered for the entity at run time, read from the declaration.
+    /// </summary>
+    private static bool HasCallerDependentFilters(ITypeSymbol entityType)
+    {
+        for (var current = entityType as INamedTypeSymbol; current is not null; current = current.BaseType)
+        {
+            foreach (var attribute in current.GetAttributes())
+            {
+                if (attribute.AttributeClass is not { } type)
+                    continue;
+                if (type.Name is "HasOwnerAttribute" or "HasAccessScopesAttribute")
+                    return true;
+                if (type is { Name: "VisibleWhenAttribute", TypeArguments.Length: 1 } && type.TypeArguments[0].AllInterfaces.Any(i =>
+                        i.ToDisplayString() == "Pragmatic.Persistence.Query.Filters.IPermissionBasedFilter"))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

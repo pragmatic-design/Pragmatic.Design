@@ -15,8 +15,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **651** | 678 | 14 | 2 |
-| Documents | **588** | 678 | 22 | 42 |
+| Sql | **652** | 678 | 14 | 1 |
+| Documents | **589** | 678 | 22 | 41 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -86,10 +86,7 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
-**the engines read a [Cacheable] query past its cache (#882)**
-
-- `CrossCutting/CachingIntegrationTests.cs`: `CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase` (both)
-
+None found yet.
 
 ## 5. The smaller kinds
 

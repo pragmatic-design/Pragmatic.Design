@@ -59,7 +59,6 @@ const COMPILED_AT_CALL ='a bulk write the test calls itself: the Sql engine comp
  * with that issue, not before.
  */
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
-const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
 export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, REPLACED_JOB_STORE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL, NO_TRANSACTION };
@@ -197,11 +196,6 @@ export const ALLOWED_TEST_EXCLUSIONS = {
     test('CrossCutting/ALookupWriteReloadsTheCacheTests.cs', method),
     { file: s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs'), engines: ['Documents'], reason: NO_TRANSACTION },
   ])),
-
-  // The one caching test only a cache can pass: on the engines the read goes to the database (#882). The five others run there.
-  [test('CrossCutting/CachingIntegrationTests.cs', 'CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase')]: {
-    file: s('CrossCutting/CachingIntegrationTests.cs'), engines: both, reason: NO_QUERY_CACHE,
-  },
 
   // Six racers for a guest's last tag slot: on the documents engine more than one can take it, as decided. The sequential limit and the
   // idempotent re-add, in the same file, still run there.

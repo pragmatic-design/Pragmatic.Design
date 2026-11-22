@@ -479,6 +479,19 @@ internal sealed record QueryModel
     /// </summary>
     public bool ReadsThroughRepository { get; init; }
 
+    /// <summary>
+    ///     True when the query carries <c>[Cacheable]</c>: on the Sql and documents engines its read goes through its cache (#882), as EF
+    ///     Core's executor reads it.
+    /// </summary>
+    public bool IsCacheable { get; init; }
+
+    /// <summary>
+    ///     True when which rows the query returns depends on the caller, so a cached answer is the caller's own: the entity declares an owner,
+    ///     access scopes or a permission-based visibility rule, or the query joins a set filtered for the caller. EF Core decides the same at
+    ///     run time from the query's expression; on the engines the declaration is all there is, and it is known here.
+    /// </summary>
+    public bool CacheByCaller { get; init; }
+
     /// <summary>Whether the result type is mapped after the rows arrive rather than projected.</summary>
     /// <remarks>
     ///     ⚠️ Declared on the attribute, never inferred from the result type. A DTO without
