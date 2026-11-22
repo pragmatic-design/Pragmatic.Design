@@ -36,8 +36,8 @@ test('an exclusion allowed on the documents engine only is reported on the Sql o
 });
 
 test('an allowed exclusion the project does not take is reported: the list has gone stale', () => {
-  const problems = engineSuiteProblems([sqlSuite('', `${SUITE_DIR}/Endpoints/GridSearchTests.cs`)], read);
-  assert.deepEqual(problems, [`${SUITE_DIR}/Endpoints/GridSearchTests.cs is allowed out of the Sql suite and ${SQL} compiles it: take it off the list, or out of the project`]);
+  const problems = engineSuiteProblems([sqlSuite('', `${SUITE_DIR}/Endpoints/TheGridInItsOwnFormatTests.cs`)], read);
+  assert.deepEqual(problems, [`${SUITE_DIR}/Endpoints/TheGridInItsOwnFormatTests.cs is allowed out of the Sql suite and ${SQL} compiles it: take it off the list, or out of the project`]);
 });
 
 test('an exclusion with no comment saying why is reported', () => {
@@ -86,7 +86,7 @@ test('the count is the EF Core suite\'s methods, those compiled on the engine an
   const onSql = Object.values(ALLOWED_TEST_EXCLUSIONS).filter((a) => a.engines.includes('Sql'));
   const byName = [...new Set(onSql.map((a) => a.file))];
   const declared = byName.reduce((sum, file) => sum + 1 + named(file).length, 0);
-  const files = [`${SUITE_DIR}/Endpoints/GridSearchTests.cs`, `${SUITE_DIR}/Endpoints/CommentEndpointTests.cs`, ...byName];
+  const files = [`${SUITE_DIR}/Endpoints/TheGridInItsOwnFormatTests.cs`, `${SUITE_DIR}/Endpoints/CommentEndpointTests.cs`, ...byName];
   const suite = sqlSuite();
   const readAll = (path) => (path === SQL ? suite.text : read(path));
   assert.deepEqual(suiteCount(SQL, files, readAll), {

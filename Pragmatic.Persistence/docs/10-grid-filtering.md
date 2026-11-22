@@ -141,24 +141,24 @@ public partial class GridSearchOrdersEndpoint : Endpoint<PagedResult<OrderDto>>
 
     public override async Task<Result<PagedResult<OrderDto>>> HandleAsync(CancellationToken ct = default)
     {
-        var query = _orders.Query().AsNoTracking();
+        // Source-generated: the filters, the sorts and the page, read through the repository with the total.
+        var page = await Filter.LoadAsync(_orders, ct).ConfigureAwait(false);
 
-        // The total: the filters alone, with no sort and no paging.
-        var totalCount = await query.Where(Filter.ToSpecification().ToExpression()).CountAsync(ct).ConfigureAwait(false);
-
-        var items = await Filter.Apply(query)  // Source-generated: filters, sort, then the page
-            .Select(OrderDto.Projection!)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-
-        return PagedResult<OrderDto>.Success(items, totalCount, Filter.Page, Filter.PageSize);
+        return PagedResult<OrderDto>.Success([.. page.Items.Select(OrderDto.Selector)], page.TotalCount, page.Page, page.PageSize);
     }
 }
 ```
 
-`Apply` ends with the page (`Skip`/`Take` from `Page` and `PageSize`). Counting what it returns counts one page, and
-paging it again leaves every page after the first empty. The total comes from `ToSpecification()`, which carries the
-filters and nothing else.
+`LoadAsync` calls `IReadRepository<T>.PageAsync` with `ToSpecification()`, `ToOrdering()` and the page. It is the same
+call on EF Core, the Sql engine and the documents engine, so an endpoint written this way compiles wherever the entity is
+persisted. On an engine, the repository orders by a key it compiled for each member a `[GridFilter]` of the entity sorts
+by. A sort through a navigation has no key: the generator reports it (`PRAG3034` on the Sql engine, `PRAG3109` on the
+documents engine), and an ordering that names it is refused.
+
+`Apply(IQueryable<T>)` is still generated on EF Core, for a query you compose yourself. It ends with the page
+(`Skip`/`Take` from `Page` and `PageSize`): counting what it returns counts one page, and paging it again leaves every
+page after the first empty. Count with `ToSpecification()`, which carries the filters and nothing else. On an engine,
+`Apply` is refused: there is no `IQueryable` to apply it to.
 
 ### `[Filterable]` Attribute
 

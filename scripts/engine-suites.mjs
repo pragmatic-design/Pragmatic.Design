@@ -74,7 +74,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // CommitCountTests' counter: the DbContext's SavingChanges on EF Core; on each engine a save phase keyed by the boundary.
   [s('Infrastructure/CommitCounter.cs')]: { engines: both, reason: REPLACED_COMMITS },
 
-  [s('Endpoints/GridSearchTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')] },
   // GET /api/invoices/{id}/pdf is DownloadInvoicePdfAction, which loads the invoice with its lines: refused on the documents engine (#874).
   [s('Endpoints/TheInvoiceAsAPdfTests.cs')]: {
     engines: ['Documents'], reason: NO_NAVIGATION, follows: ['examples/showcase/src/Showcase.Billing/Invoices/Actions/DownloadInvoicePdfAction.cs'],
@@ -87,9 +86,9 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   },
   // POST /api/amenities/{id}/touch is CountAmenitiesAction, which injects the boundary's DbContext and counts through its entity set (#873).
   [s('CrossCutting/BoundaryKeyedServicesTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Amenities/Actions/CountAmenitiesAction.cs')] },
+  // POST /api/properties/devexpress composes an IQueryable over the repository (#947).
   [s('Endpoints/TheGridInItsOwnFormatTests.cs')]: {
-    engines: both, reason: EF_ONLY,
-    follows: [catalog('Properties/Endpoints/DevExpressSearchPropertiesEndpoint.cs'), catalog('Properties/Endpoints/GridSearchPropertiesEndpoint.cs')],
+    engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/DevExpressSearchPropertiesEndpoint.cs')],
   },
 
   // The set [ReadAccess] adds to the reading boundary's DbContext, and its tenant filter. On the engines the reader reads through the

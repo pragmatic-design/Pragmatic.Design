@@ -39,6 +39,10 @@ internal sealed class UserRepository(UserDbContext context) : IReadRepository<Ap
         IQuery<AppUser, TResult> query, CancellationToken ct = default) where TResult : class
         => throw new NotSupportedException("The culture suite only reads through Query().");
 
+    public Task<PagedResult<AppUser>> PageAsync(ISpecification<AppUser> spec, Pragmatic.Persistence.Query.Ordering<AppUser> ordering, int page, int pageSize,
+        CancellationToken ct = default)
+        => throw new NotSupportedException("The culture suite only reads through Query().");
+
     public Task<PagedResult<TResult>> RunAsync<TResult>(
         IPagedQuery<AppUser, TResult> query, CancellationToken ct = default) where TResult : class
         => throw new NotSupportedException("The culture suite only reads through Query().");

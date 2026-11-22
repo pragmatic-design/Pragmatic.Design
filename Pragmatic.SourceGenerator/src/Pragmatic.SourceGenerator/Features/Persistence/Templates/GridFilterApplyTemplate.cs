@@ -8,23 +8,30 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 ///     Template for generating the GridFilter Apply method.
 ///     Generates filtering, sorting, and paging logic with dynamic operator support.
 /// </summary>
-internal sealed class GridFilterApplyTemplate : CSharpTemplate
+internal sealed partial class GridFilterApplyTemplate : CSharpTemplate
 {
     private readonly GridFilterModel _model;
+    private readonly GridFilterEngineModel? _engine;
 
-    public GridFilterApplyTemplate(GridFilterModel model)
+    /// <param name="model">The grid filter.</param>
+    /// <param name="engine">
+    ///     The Sql or documents engine the entity is on, or null for EF Core. On an engine <c>Apply</c> is refused (the engine reads no
+    ///     <c>IQueryable</c>) and the rest is the same text: the engine compiles the specification's leaves where this writes them.
+    /// </param>
+    public GridFilterApplyTemplate(GridFilterModel model, GridFilterEngineModel? engine = null)
     {
         _model = model;
+        _engine = engine;
     }
 
-    protected override string? GeneratorName => "Pragmatic.SourceGenerator/Persistence";
+    protected override string? GeneratorName => _engine?.Package ?? "Pragmatic.SourceGenerator/Persistence";
     protected override string? SourceInfo => $"{_model.TypeName} from {_model.Namespace}";
     protected override string? TriggerInfo => $"[GridFilter] on {_model.TypeName}";
 
     public override Artifact RenderOutput()
     {
         return new Artifact(
-            VirtualFolderHints.ForType(_model.TypeName, "GridFilter", _model.Namespace),
+            VirtualFolderHints.ForType(_model.TypeName, _engine?.Artifact ?? "GridFilter", _model.Namespace),
             ToSourceText());
     }
 
@@ -67,12 +74,28 @@ internal sealed class GridFilterApplyTemplate : CSharpTemplate
 
     private void RenderBody()
     {
-        RenderApplyMethod();
+        if (_engine is null)
+            RenderApplyMethod();
+        else
+            RenderRefusedApply();
 
-        if (_model.HasFilterable || _model.FilterGroups.Length > 0)
+        // LoadAsync reads the filters as a specification, so a paged filter has one even with no filterable property.
+        if (_model.HasFilterable || _model.FilterGroups.Length > 0 || _model.HasPaging)
         {
             AppendLine();
             RenderToSpecificationMethod();
+        }
+
+        if (_model.HasSortable || _model.HasPaging)
+        {
+            AppendLine();
+            RenderToOrderingMethod();
+        }
+
+        if (_model.HasPaging)
+        {
+            AppendLine();
+            RenderLoadAsyncMethod();
         }
     }
 

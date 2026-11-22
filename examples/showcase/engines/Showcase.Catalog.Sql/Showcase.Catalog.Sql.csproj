@@ -21,11 +21,10 @@
     <InternalsVisibleTo Include="Showcase.Sql.IntegrationTests" />
   </ItemGroup>
 
-  <!-- EF Core only, by the owner's list (#363): the boundary's DbContext, and the two grids that take an IQueryable. -->
+  <!-- EF Core only, by the owner's list (#363): the boundary's DbContext, and the DevExpress grid, which takes an IQueryable (#947). -->
   <ItemGroup>
     <Compile Remove="..\..\src\Showcase.Catalog\Amenities\Actions\CountAmenitiesAction.cs" />
     <Compile Remove="..\..\src\Showcase.Catalog\Properties\Endpoints\DevExpressSearchPropertiesEndpoint.cs" />
-    <Compile Remove="..\..\src\Showcase.Catalog\Properties\Endpoints\GridSearchPropertiesEndpoint.cs" />
   </ItemGroup>
 
   <ItemGroup>

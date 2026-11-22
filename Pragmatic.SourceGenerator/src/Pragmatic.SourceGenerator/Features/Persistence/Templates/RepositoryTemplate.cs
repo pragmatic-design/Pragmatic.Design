@@ -8,7 +8,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 ///     Template for generating {EntityName}Repository class.
 ///     Repository provides CRUD operations, GetByLogicKey, and extension points.
 /// </summary>
-internal sealed class RepositoryTemplate : CSharpTemplate
+internal sealed partial class RepositoryTemplate : CSharpTemplate
 {
     private readonly EntityMetadataModel _model;
     private readonly string _repositoryClassName;
@@ -224,6 +224,9 @@ internal sealed class RepositoryTemplate : CSharpTemplate
         AppendLine();
 
         RenderCountAsync(entityType);
+        AppendLine();
+
+        RenderPageAsync(entityType);
         AppendLine();
 
         RenderExistsAsync(entityType);

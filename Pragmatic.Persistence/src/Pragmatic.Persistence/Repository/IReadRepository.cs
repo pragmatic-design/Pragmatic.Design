@@ -1,4 +1,5 @@
 using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Query;
 using Pragmatic.Persistence.Query.Interfaces;
 using Pragmatic.Persistence.Query.Results;
 using Pragmatic.Specification;
@@ -52,6 +53,27 @@ public interface IReadRepository<TEntity>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The first matching entity or null.</returns>
     Task<TEntity?> FirstOrDefaultAsync(ISpecification<TEntity> spec, CancellationToken ct = default);
+
+    /// <summary>
+    ///     Reads one page of the entities matching a specification, in an ordering, with the total of the matches.
+    /// </summary>
+    /// <param name="spec">The specification to match.</param>
+    /// <param name="ordering">The keys to sort by; <see cref="Ordering{T}.Unordered" /> for none.</param>
+    /// <param name="page">The page to read, 1-based.</param>
+    /// <param name="pageSize">How many rows a page holds.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The page's rows, and the count of every row the specification matches.</returns>
+    /// <remarks>
+    ///     The read every engine serves for a sort chosen at runtime (a <c>[GridFilter]</c>'s <c>LoadAsync</c>), inside the same filters as
+    ///     <see cref="FindAsync" />. On the Sql and documents engines a key is a member the generator compiled a key for (a grid filter's
+    ///     sort of this entity); another one is refused with <see cref="NotSupportedException" />.
+    /// </remarks>
+    Task<PagedResult<TEntity>> PageAsync(
+        ISpecification<TEntity> spec,
+        Ordering<TEntity> ordering,
+        int page,
+        int pageSize,
+        CancellationToken ct = default);
 
     /// <summary>
     ///     Gets a queryable for advanced query scenarios that cannot be expressed via

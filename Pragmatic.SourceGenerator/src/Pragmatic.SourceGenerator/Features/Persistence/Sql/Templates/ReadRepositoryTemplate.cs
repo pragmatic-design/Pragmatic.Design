@@ -9,7 +9,7 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Sql.Templates;
 ///     Pragmatic's <c>IReadRepository&lt;T&gt;</c> and <c>IRepository&lt;T&gt;</c> for a Pragmatic entity on the Sql engine, nested in its partial
 ///     class, as source with chains on <c>SqlQuery&lt;T&gt;</c>: the generator binds and intercepts them like the application's own chains.
 /// </summary>
-internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharpTemplate
+internal sealed partial class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharpTemplate
 {
     private const string Task = "global::System.Threading.Tasks.Task";
     private const string Token = "global::System.Threading.CancellationToken ct = default";
@@ -65,6 +65,7 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine($"        public async {Task}<{type}?> FirstOrDefaultAsync({Spec}<{type}> spec, {Token})");
         AppendLine($"            => await session.Query<{type}>().{Matching}.FirstOrDefaultAsync(ct);");
         AppendLine();
+        RenderPageAsync();
         AppendLine($"        /// <summary>Not served by the Sql engine: an IQueryable is EF Core's surface. Write the chain on session.Query&lt;{model.EntityName}&gt;(), or declare the read.</summary>");
         AppendLine($"        public global::System.Linq.IQueryable<{type}> Query()");
         AppendLine($"            => throw new global::System.NotSupportedException(\"The Sql engine does not serve IReadRepository<{model.EntityName}>.Query(): an IQueryable is EF Core's surface. Write the chain on SqlSession.Query<{model.EntityName}>(), or declare the read ([Query], a specification).\");");
@@ -287,6 +288,10 @@ internal sealed class ReadRepositoryTemplate(ReadRepositoryModel model) : CSharp
         AppendLine($"        public {Task}<int> CountAsync({Spec}<{type}> spec, {Token}) => _read.CountAsync(spec, ct);");
         AppendLine();
         AppendLine($"        public {Task}<bool> ExistsAsync({Spec}<{type}> spec, {Token}) => _read.ExistsAsync(spec, ct);");
+        AppendLine();
+        // A page is read, not loaded for a change, as a declared query's result: its rows are not tracked.
+        AppendLine($"        public {Task}<global::Pragmatic.Persistence.Query.Results.PagedResult<{type}>> PageAsync({Spec}<{type}> spec, global::Pragmatic.Persistence.Query.Ordering<{type}> ordering, int page, int pageSize, {Token})");
+        AppendLine("            => _read.PageAsync(spec, ordering, page, pageSize, ct);");
         AppendLine();
         AppendLine($"        public async {Task}<{type}?> FirstOrDefaultAsync({Spec}<{type}> spec, {Token})");
         AppendLine("            => await _read.FirstOrDefaultAsync(spec, ct) is { } row ? unitOfWork.Attach(row) : null;");

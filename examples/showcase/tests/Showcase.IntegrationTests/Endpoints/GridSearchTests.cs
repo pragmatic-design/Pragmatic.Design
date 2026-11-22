@@ -222,6 +222,87 @@ public class GridSearchTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         Names(second).Should().Equal([$"{tag}-3"], "the second page holds the third match");
     }
 
+    /// <summary>
+    ///     Each text operator keeps exactly the rows it names, and the total counts them (#946: on every engine).
+    /// </summary>
+    [Fact]
+    public async Task GridSearch_EachTextOperator_KeepsExactlyTheRowsItNames()
+    {
+        var tag = $"GS-O{Guid.NewGuid():N}"[..12];
+        await CreatePropertyAsync($"{tag}-Lake-View", "Como", 3);
+        await CreatePropertyAsync($"{tag}-Old-Mill", "Como", 3);
+        await CreatePropertyAsync($"{tag}-Lake-Mill", "Como", 3);
+
+        async Task<string> Search(string name, string op)
+        {
+            var response = await PostAsync("/api/properties/grid", new
+            {
+                filter = new { search = tag, name, nameOperator = op, nameSort = "Ascending", page = 1, pageSize = 10 }
+            });
+            response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
+            return Page(await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions));
+        }
+
+        (await Search("Lake", "Contains")).Should().Be($"{tag}-Lake-Mill, {tag}-Lake-View of 2");
+        (await Search($"{tag}-Old", "StartsWith")).Should().Be($"{tag}-Old-Mill of 1");
+        (await Search("Mill", "EndsWith")).Should().Be($"{tag}-Lake-Mill, {tag}-Old-Mill of 2");
+    }
+
+    /// <summary>
+    ///     Two sorts: by name ascending, then by stars descending within a name (#946: on every engine).
+    /// </summary>
+    /// <remarks>Two properties share a name, so the second key decides between them: a second sort that was dropped would leave them in either order.</remarks>
+    [Fact]
+    public async Task GridSearch_TwoSorts_OrderByTheFirstThenTheSecond()
+    {
+        var tag = $"GS-S{Guid.NewGuid():N}"[..12];
+        await CreatePropertyAsync($"{tag}-B", "Pisa", 3);
+        await CreatePropertyAsync($"{tag}-A", "Pisa", 2);
+        await CreatePropertyAsync($"{tag}-A", "Pisa", 5);
+
+        var response = await PostAsync("/api/properties/grid", new
+        {
+            filter = new { name = tag, nameOperator = "StartsWith", nameSort = "Ascending", starRatingSort = "Descending", page = 1, pageSize = 10 }
+        });
+
+        response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var rows = json.GetProperty("items").EnumerateArray().Select(i => (i.GetProperty("name").GetString(), i.GetProperty("starRating").GetInt32())).ToList();
+        rows.Should().Equal([($"{tag}-A", 5), ($"{tag}-A", 2), ($"{tag}-B", 3)]);
+    }
+
+    /// <summary>
+    ///     The entity's filters still apply to a grid search: another tenant's property and a deactivated one are not found, nor counted (#946).
+    /// </summary>
+    /// <remarks>The control is the same search by the property's own tenant, which finds it: without it, a search that found nothing would pass.</remarks>
+    [Fact]
+    public async Task GridSearch_ARowTheCallerMayNotSee_IsNeitherReturnedNorCounted()
+    {
+        var tag = $"GS-V{Guid.NewGuid():N}"[..12];
+        using var owner = CreateClientAs("grid-owner", "Grid Owner", "tenant-grid-a");
+        using var stranger = CreateClientAs("grid-stranger", "Grid Stranger", "tenant-grid-b");
+        var created = await owner.PostAsJsonAsync("/api/properties", new { code = $"GV-{Guid.NewGuid():N}"[..12], name = $"{tag}-Theirs", city = "Bari", country = "IT", starRating = 4 }, JsonOptions);
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var deactivated = await owner.PostAsJsonAsync("/api/properties", new { code = $"GV-{Guid.NewGuid():N}"[..12], name = $"{tag}-Closed", city = "Bari", country = "IT", starRating = 4 }, JsonOptions);
+        deactivated.StatusCode.Should().Be(HttpStatusCode.Created);
+        var closedId = (await deactivated.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetGuid();
+        (await owner.PutAsJsonAsync($"/api/properties/{closedId}", new { id = closedId, isActive = false }, JsonOptions)).IsSuccessStatusCode.Should().BeTrue();
+
+        async Task<string> Search(HttpClient client)
+        {
+            var response = await client.PostAsJsonAsync("/api/properties/grid", new { filter = new { name = tag, nameOperator = "StartsWith", page = 1, pageSize = 10 } }, JsonOptions);
+            response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
+            return Page(await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions));
+        }
+
+        (await Search(owner)).Should().Be($"{tag}-Theirs of 1", "its own tenant finds the active property, and not the deactivated one");
+        (await Search(stranger)).Should().Be(" of 0", "another tenant finds neither");
+    }
+
+    /// <summary>A page as one string: its names in order, then its total.</summary>
+    private static string Page(JsonElement page)
+        => string.Join(", ", page.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("name").GetString())) + " of " + page.GetProperty("totalCount").GetInt32();
+
     // =========================================================================
     // Helpers
     // =========================================================================

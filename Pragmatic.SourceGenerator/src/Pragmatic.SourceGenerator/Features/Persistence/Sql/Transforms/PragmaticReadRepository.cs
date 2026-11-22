@@ -30,7 +30,8 @@ internal static class PragmaticReadRepository
     ///     <paramref name="includeSets" /> are the sets of paths the invokers read the entity with (a <c>[LoadEntity]</c>'s, <see cref="LoadIncludes" />;
     ///     a mutation's load): one read per key.
     /// </summary>
-    public static (string Hint, string Source)? For(INamedTypeSymbol entity, INamedTypeSymbol shapedEntity, IReadOnlyList<PragmaticQuery> queries, IEnumerable<IReadOnlyList<string>> includeSets)
+    public static (string Hint, string Source)? For(INamedTypeSymbol entity, INamedTypeSymbol shapedEntity, IReadOnlyList<PragmaticQuery> queries, IEnumerable<IReadOnlyList<string>> includeSets,
+        IEnumerable<string>? sortMembers = null)
     {
         if (!entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"))
             return null;
@@ -53,9 +54,25 @@ internal static class PragmaticReadRepository
                 .ToEquatableArray(),
             AutocompleteReads.Of(entity),
             DerivesFromAnEntity(entity),
-            Identity.Transforms.UserEntityTransform.MatchPropertyOf(entity));
+            Identity.Transforms.UserEntityTransform.MatchPropertyOf(entity),
+            PageKeysOf(entity, sortMembers ?? []));
         return (model.Hint, new ReadRepositoryTemplate(model).ToSourceText().ToString());
     }
+
+    /// <summary>
+    ///     <c>PageAsync</c>'s keys: the entity's key first (the fallback), then each member a grid filter sorts by whose column the entity's
+    ///     table holds. A member through a navigation has no key, and an ordering naming it is refused (<see cref="Unkeyed" />).
+    /// </summary>
+    private static EquatableArray<PageOrderKeyModel> PageKeysOf(INamedTypeSymbol entity, IEnumerable<string> sortMembers)
+        => new[] { "PersistenceId" }.Concat(sortMembers.Where(m => Unkeyed(entity, m) is null)).Distinct()
+            .Select(member => new PageOrderKeyModel(member, member.Replace('.', '_'), PragmaticQuery.OrderKeyDialects(PragmaticQuery.ColumnOf(entity, member)).ToEquatableArray()))
+            .ToEquatableArray();
+
+    /// <summary>Why <paramref name="member" /> has no key of <paramref name="entity" />'s table, or null when it has one.</summary>
+    internal static string? Unkeyed(INamedTypeSymbol entity, string member)
+        => PragmaticQuery.ColumnOf(entity, member).Contains('.')
+            ? $"the sort on {member}, through a navigation the Sql engine does not order by (an ordering that names it is refused)"
+            : null;
 
     /// <summary>
     ///     True when <paramref name="entity" /> derives from another Pragmatic entity (a hierarchy's derived type): that entity has the members the

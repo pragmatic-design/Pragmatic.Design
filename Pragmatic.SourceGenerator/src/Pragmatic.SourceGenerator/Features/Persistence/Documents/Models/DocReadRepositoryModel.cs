@@ -13,6 +13,9 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Documents.Models;
 /// <param name="Autocompletes">The entity's <c>[Autocomplete]</c> properties, a read each.</param>
 /// <param name="HidesBase">A hierarchy's derived type: its repositories hide the base entity's (#539).</param>
 /// <param name="UserMatch">A <c>[PragmaticUser]</c>: the read repository is its <c>IUserLookup&lt;TUser&gt;</c>, matching this member path (#594).</param>
+/// <param name="PageKeys">
+///     <c>PageAsync</c>'s keys (#946): the document's key, the fallback, then one per member a grid filter of the entity sorts by.
+/// </param>
 internal sealed record DocReadRepositoryModel(
     string Hint,
     string? Namespace,
@@ -23,4 +26,5 @@ internal sealed record DocReadRepositoryModel(
     bool SoftDelete,
     EquatableArray<string> Autocompletes,
     bool HidesBase = false,
-    string? UserMatch = null);
+    string? UserMatch = null,
+    EquatableArray<Sql.Models.PageOrderKeyModel> PageKeys = default);
