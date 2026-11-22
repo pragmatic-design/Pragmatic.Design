@@ -33,13 +33,11 @@ public partial class GridSearchPropertiesEndpoint : Endpoint<PagedResult<Propert
         // down twice and enforced wherever somebody remembered.
         var baseQuery = _properties.Query().AsNoTracking();
 
-        var query = Filter.Apply(baseQuery);
+        // The total counts the filters alone (ToSpecification: no sort, no paging). Apply pages already, so the
+        // rows are its result as it is: counted, it was one page; paged again, the second page was empty.
+        var totalCount = await baseQuery.Where(Filter.ToSpecification().ToExpression()).CountAsync(ct).ConfigureAwait(false);
 
-        var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
-
-        var items = await query
-            .Skip((Filter.Page - 1) * Filter.PageSize)
-            .Take(Filter.PageSize)
+        var items = await Filter.Apply(baseQuery)
             .Select(PropertySummaryDto.Projection!)
             .ToListAsync(ct)
             .ConfigureAwait(false);

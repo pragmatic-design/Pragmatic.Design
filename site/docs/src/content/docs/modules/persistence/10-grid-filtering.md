@@ -147,13 +147,11 @@ public partial class GridSearchOrdersEndpoint : Endpoint<PagedResult<OrderDto>>
     public override async Task<Result<PagedResult<OrderDto>>> HandleAsync(CancellationToken ct = default)
     {
         var query = _orders.Query().AsNoTracking();
-        query = Filter.Apply(query);  // Source-generated, type-safe
 
-        var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
+        // The total: the filters alone, with no sort and no paging.
+        var totalCount = await query.Where(Filter.ToSpecification().ToExpression()).CountAsync(ct).ConfigureAwait(false);
 
-        var items = await query
-            .Skip((Filter.Page - 1) * Filter.PageSize)
-            .Take(Filter.PageSize)
+        var items = await Filter.Apply(query)  // Source-generated: filters, sort, then the page
             .Select(OrderDto.Projection!)
             .ToListAsync(ct)
             .ConfigureAwait(false);
@@ -162,6 +160,10 @@ public partial class GridSearchOrdersEndpoint : Endpoint<PagedResult<OrderDto>>
     }
 }
 ```
+
+`Apply` ends with the page (`Skip`/`Take` from `Page` and `PageSize`). Counting what it returns counts one page, and
+paging it again leaves every page after the first empty. The total comes from `ToSpecification()`, which carries the
+filters and nothing else.
 
 ### `[Filterable]` Attribute
 
