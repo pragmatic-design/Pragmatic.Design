@@ -603,6 +603,7 @@ internal static partial class OpenApiJsonGenerator
     ///     The success envelope a paged <c>[Query]</c> endpoint answers with. It mirrors the serialised
     ///     shape of <c>PagedResult&lt;T&gt;</c> minus <c>error</c>: a failed query is turned into a 400
     ///     <c>application/problem+json</c> by the generated handler, so it never appears in a 2xx body.
+    ///     <c>IsSuccess</c> and <c>IsFailure</c> are not serialized, so they are not listed either.
     /// </summary>
     private static void RenderPagedEnvelopeSchemas(MetadataJsonBuilder b, SchemaCatalog catalog)
     {
@@ -621,7 +622,7 @@ internal static partial class OpenApiJsonGenerator
 
             foreach (var scalar in new[] { "totalCount", "page", "pageSize", "totalPages", "skip" })
                 b.Property(scalar).StartObject().Property("type").Value("integer").EndObject();
-            foreach (var flag in new[] { "isSuccess", "isFailure", "hasPreviousPage", "hasNextPage" })
+            foreach (var flag in new[] { "hasPreviousPage", "hasNextPage" })
                 b.Property(flag).StartObject().Property("type").Value("boolean").EndObject();
 
             b.EndObject(); // properties
