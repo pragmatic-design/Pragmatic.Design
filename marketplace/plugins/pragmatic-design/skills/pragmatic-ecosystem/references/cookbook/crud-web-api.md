@@ -193,6 +193,10 @@ answer never puts the entity on the wire, and an update or a delete that declare
 boundary member returns the entity either way. Once the read of step 7-bis
 exists at `api/orders/{id}`, the 201 also carries `Location: /api/orders/{id}`.
 
+**The `api/` segment is a convention, not a requirement.** A route is served as written, and nothing
+is added in front of it: `[Endpoint(HttpVerb.Post, "orders")]` answers at `/orders`. The examples
+here keep `api/`; whichever you choose, use it on every route of the application.
+
 ## 7. Query: `Orders/Queries/SearchOrdersQuery.cs`
 
 ```csharp
@@ -256,9 +260,19 @@ public partial class OrderDto
 }
 ```
 
-With `Paged = true` the query endpoint returns a paged result (`items`, `totalCount`, `page`,
-`pageSize`, `totalPages`). Without it, a list query answers a bare JSON array (`[{…}, {…}]`), every
-row there is: fine for a short list, and a client written against one shape breaks on the other.
+With `Paged = true` the query endpoint returns a paged result with exactly these members: `items`,
+`totalCount`, `page`, `pageSize`, `totalPages`, `hasPreviousPage`, `hasNextPage` and `skip` (the
+offset of the page's first row). The outcome is the status code, not a member. Without `Paged`, a list
+query answers a bare JSON array (`[{…}, {…}]`), every row there is: fine for a short list, and a client
+written against one shape breaks on the other.
+
+A query with nothing to filter or sort declares no member at all, paged or not:
+
+```csharp
+[Query<Category, CategoryDto>(Paged = true)]
+[Endpoint(HttpVerb.Get, "api/categories")]
+public partial class ListCategoriesQuery;
+```
 
 ### Do not hand-write a version into the route
 
@@ -552,7 +566,7 @@ dotnet run --project src/MyApp.Host
 
 Available endpoints:
 
-- `POST /api/orders`: create order → `201` with the created entity.
+- `POST /api/orders`: create order → `201` with `{"id": "…"}` (§6).
 - `GET  /api/orders?orderNumber=...&minTotal=...&page=1&pageSize=20`: paged search → `200`.
 - `POST /api/orders/adjust-total`: custom action → `201`, or `404` (`NOT_FOUND`) if the id is unknown.
 

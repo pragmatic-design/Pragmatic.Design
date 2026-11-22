@@ -389,6 +389,34 @@ await PragmaticApp.RunAsync(args, app =>
 Do not add `public partial class Program;` for `WebApplicationFactory<Program>`: since .NET 10 the Web SDK
 generates it (`PublicProgramSourceGenerator`).
 
+### A host with no users: `[AnonymousHost]`
+
+When nobody signs in (a tool on a LAN, a kiosk, a service behind a proxy that authenticates), the
+skeleton above loses everything that says who is calling:
+
+- **Host csproj:** drop `Pragmatic.Identity.AspNetCore`, and `Pragmatic.MultiTenancy.AspNetCore` unless
+  a module has a tenant entity.
+- **`HostModule.cs`:** add `[AnonymousHost]` (from `Pragmatic.Composition.Attributes`) next to the
+  `[Include<…>]` attributes. Without it the build stops on PRAG1695.
+- **`ContractAppFixture.cs`:** drop the `X-Tenant-Id` line.
+
+```csharp
+using Pragmatic.Composition.Hosting;
+using Pragmatic.Internationalization;
+using Pragmatic.Migrations.Extensions;
+
+await PragmaticApp.RunAsync(args, app =>
+{
+    app.UseI18N(i18n => i18n.LocalizeProblemDetails());
+    app.UsePragmaticMigrations();
+}).ConfigureAwait(false);
+```
+
+No `UseDevelopmentIdentity`, no `UseAuthorization`, no `UseMultiTenancy`, and none of their `using`s.
+With no endpoint requiring authorization, the host starts in every environment, so the test factory's
+`Development` is a choice here, not a requirement. `[AnonymousHost]` drops only the default: an
+endpoint that declares `[RequirePermission]` on its own still needs something that authenticates.
+
 ## Host: the API contract  (no code: the generated host publishes it)
 
 With `Pragmatic.Endpoints.OpenApi` referenced, the generated host serves the document the generator
@@ -653,6 +681,11 @@ public sealed class TheContractTestsRanAtAll
 
 The second test fails on its first run and prints what is uncovered: read the list, and paste it in.
 Reads have no generated contract, so they are the ones a hand-written test covers.
+
+Each line is `"{verb} /{route} {operation}"`: the verb in capitals, the route as `[Endpoint]` declares
+it (with an `[EndpointGroup]` prefix in front) and **with a leading slash** even when the attribute has
+none, then the class name (less a trailing `Endpoint`). `[Endpoint(HttpVerb.Get, "visits")]` on `ListVisitsQuery` is
+`"GET /visits ListVisitsQuery"`.
 
 `WebApplicationFactory` runs the host inside the test process, so it cannot prove that the data
 survives a restart: there is no process to kill. For that (the service killed and started again, the
