@@ -70,11 +70,17 @@ public sealed class PagedResult<T, TError> where TError : IError
     /// <summary>
     ///     Whether the result represents a successful query.
     /// </summary>
+    /// <remarks>
+    ///     Not serialized: on the wire the outcome is the status code, and a success's body is the page.
+    ///     A round trip reads it back from <see cref="Error"/>.
+    /// </remarks>
+    [JsonIgnore]
     public bool IsSuccess => _error is null;
 
     /// <summary>
     ///     Whether the result represents a failed query.
     /// </summary>
+    [JsonIgnore]
     public bool IsFailure => !IsSuccess;
 
     /// <summary>
@@ -252,9 +258,11 @@ public sealed class PagedResult<T>
     }
 
     /// <inheritdoc cref="PagedResult{T,TError}.IsSuccess"/>
+    [JsonIgnore]
     public bool IsSuccess => _inner.IsSuccess;
 
     /// <inheritdoc cref="PagedResult{T,TError}.IsFailure"/>
+    [JsonIgnore]
     public bool IsFailure => _inner.IsFailure;
 
     /// <inheritdoc cref="PagedResult{T,TError}.Items"/>
