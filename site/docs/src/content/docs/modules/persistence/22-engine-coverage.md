@@ -20,19 +20,13 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **641** | 677 | 17 | 3 |
-| Documents | **580** | 677 | 25 | 41 |
+| Sql | **643** | 677 | 16 | 3 |
+| Documents | **582** | 677 | 24 | 41 |
 
 ## 1. Not measured: the test is bound to EF Core
 
-**1 test files, 2 test methods**, left out on both engines because the test itself reads or prepares rows through
-EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these
-exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary's repositories, or the session.
-A test that then fails on an engine is a real gap, with an issue of its own.
-
-| File | Test methods |
-|---|---|
-| `Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs` | 2 |
+None. Every test once left out because it read or prepared rows through EF Core (owner decision, 2026-11-06) is written through
+the engine-neutral surface now, the boundary's repositories or the session, and runs on the engines (#819).
 
 ## 2. EF Core only: read through an IQueryable
 

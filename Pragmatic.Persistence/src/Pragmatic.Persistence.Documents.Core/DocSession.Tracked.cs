@@ -51,12 +51,17 @@ public sealed partial class DocSession
     ///     MongoDB: the fields of <paramref name="mask" /> set (<see cref="IDocumentTracked{TSelf}.WriteSet" />), the document matched by its key and,
     ///     versioned, at the version the object holds, which moves on by one. No document matched: <see cref="DocConcurrencyException" />.
     /// </summary>
-    public async Task UpdateFieldsAsync<T>(T entity, ulong mask, CancellationToken ct = default) where T : IDocumentTracked<T>
+    public Task UpdateFieldsAsync<T>(T entity, ulong mask, CancellationToken ct = default) where T : IDocumentTracked<T>
     {
         if (Cosmos is not null)
             throw new NotSupportedException("Cosmos DB replaces a document whole: use ReplaceTrackedAsync.");
         if (mask == 0 && !T.Versioned)
-            return; // nothing to set
+            return Task.CompletedTask; // nothing to set
+        return CommitHooks is null ? UpdateFieldsCoreAsync(entity, mask, ct) : ObservedAsync(One(entity, DocWriteKind.Update), () => UpdateFieldsCoreAsync(entity, mask, ct));
+    }
+
+    private async Task UpdateFieldsCoreAsync<T>(T entity, ulong mask, CancellationToken ct) where T : IDocumentTracked<T>
+    {
         var version = T.Versioned ? T.GetVersion(entity) : 0;
         var reply = await RunAsync(w =>
         {
@@ -88,13 +93,18 @@ public sealed partial class DocSession
     ///     <see cref="DocConcurrencyException" />). Without one (an object never read here) the replace checks the version first, as
     ///     <see cref="ReplaceAsync{T}" /> does.
     /// </summary>
-    public async Task ReplaceTrackedAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
+    public Task ReplaceTrackedAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
     {
         if (Cosmos is null)
             throw new NotSupportedException("MongoDB sets the changed fields: use UpdateFieldsAsync.");
+        return CommitHooks is null ? ReplaceTrackedCoreAsync(entity, ct) : ObservedAsync(One(entity!, DocWriteKind.Update), () => ReplaceTrackedCoreAsync(entity, ct));
+    }
+
+    private async Task ReplaceTrackedCoreAsync<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
+    {
         if (ETagOf(entity!) is not { } etag)
         {
-            await ReplaceAsync(entity, ct).ConfigureAwait(false);
+            await ReplaceCoreAsync(entity, ct).ConfigureAwait(false);
             return;
         }
 
@@ -119,11 +129,14 @@ public sealed partial class DocSession
     ///     The document deleted; on Cosmos DB with <c>If-Match</c> on the etag the session keeps (a document changed since: refused, versioned or not),
     ///     without one as <see cref="DeleteAsync{T}" />.
     /// </summary>
-    public async Task DeleteTrackedAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
+    public Task DeleteTrackedAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
+        => CommitHooks is null ? DeleteTrackedCoreAsync(entity, ct) : ObservedAsync(One(entity!, DocWriteKind.Delete), () => DeleteTrackedCoreAsync(entity, ct));
+
+    private async Task DeleteTrackedCoreAsync<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
     {
         if (Cosmos is null || ETagOf(entity!) is not { } etag)
         {
-            await DeleteAsync(entity, ct).ConfigureAwait(false);
+            await DeleteCoreAsync(entity, ct).ConfigureAwait(false);
             return;
         }
 

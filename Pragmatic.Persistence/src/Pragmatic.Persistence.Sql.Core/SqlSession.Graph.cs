@@ -51,11 +51,13 @@ public sealed partial class SqlSession
             if (map.SoftDeleteCascade)
                 SoftCascade(batch, map, null, kinds, key, at);
             batch.AddWrite(writer, root, writer.SoftDeleteItemAt(root, Dialect, at), before: true, after: false);
+            batch.Note(root, SqlWriteKind.Update);
         }
         else
         {
             Cascade(batch, map, null, kinds, key);
             batch.AddWrite(writer, root, writer.DeleteItem(root, Dialect), before: true, after: false);
+            batch.Note(root, SqlWriteKind.Delete); // the rows under it are deleted by their parent's key, as a set: no entity names them
         }
 
         await batch.ExecuteAsync(ct).ConfigureAwait(false);
@@ -69,9 +71,15 @@ public sealed partial class SqlSession
         visited.Add(tracking);
         var writer = map.WriterFor(row);
         if (tracking.IsNew)
+        {
             batch.AddWrite(writer, row, writer.InsertItem(row, batch.Session.Dialect), before: false, after: true);
+            batch.Note(row, SqlWriteKind.Insert);
+        }
         else if (writer.SaveItem(row, batch.Session.Dialect) is { } save)
+        {
             batch.AddWrite(writer, row, save, before: writer.SaveMovesRollUps(row), after: writer.SaveMovesRollUps(row));
+            batch.Note(row, SqlWriteKind.Update);
+        }
 
         // A new row's collections are all its children to insert (there are no orphans to look for); a stored row's, those it says changed.
         foreach (var name in tracking.IsNew ? map.Collections.Select(c => c.Property) : tracking.CollectionsModified)

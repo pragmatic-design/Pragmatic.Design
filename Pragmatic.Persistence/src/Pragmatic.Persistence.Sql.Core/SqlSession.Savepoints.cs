@@ -4,12 +4,18 @@ namespace Pragmatic.Persistence.Sql;
 public sealed partial class SqlSession
 {
     /// <summary>Sets a savepoint in the open transaction (<c>SAVE TRANSACTION</c> on SQL Server, <c>SAVEPOINT</c> elsewhere).</summary>
-    public Task SavepointAsync(string name, CancellationToken ct = default)
-        => RunSavepointAsync(Dialect == SqlDialect.SqlServer ? "SAVE TRANSACTION " : "SAVEPOINT ", name, ct);
+    public async Task SavepointAsync(string name, CancellationToken ct = default)
+    {
+        await RunSavepointAsync(Dialect == SqlDialect.SqlServer ? "SAVE TRANSACTION " : "SAVEPOINT ", name, ct).ConfigureAwait(false);
+        MarkSavepoint(name);
+    }
 
     /// <summary>Undoes what the transaction did since the savepoint, which stays set.</summary>
-    public Task RollbackToSavepointAsync(string name, CancellationToken ct = default)
-        => RunSavepointAsync(Dialect == SqlDialect.SqlServer ? "ROLLBACK TRANSACTION " : "ROLLBACK TO SAVEPOINT ", name, ct);
+    public async Task RollbackToSavepointAsync(string name, CancellationToken ct = default)
+    {
+        await RunSavepointAsync(Dialect == SqlDialect.SqlServer ? "ROLLBACK TRANSACTION " : "ROLLBACK TO SAVEPOINT ", name, ct).ConfigureAwait(false);
+        RolledBackToSavepoint(name);
+    }
 
     private async Task RunSavepointAsync(string verb, string name, CancellationToken ct)
     {

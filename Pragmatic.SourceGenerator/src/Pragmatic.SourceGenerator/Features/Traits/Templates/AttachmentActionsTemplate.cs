@@ -457,9 +457,16 @@ internal sealed partial class AttachmentActionsTemplate : CSharpTemplate
                 // answer arrives. Deleting the blob then leaves a committed row pointing at nothing, so
                 // ask the database before undoing the write.
                 AppendLine("if (await AttachmentCommittedAsync(attachment.Id, ct).ConfigureAwait(false))");
-                IncreaseIndent();
-                AppendLine("return attachment.Id;");
-                DecreaseIndent();
+                Block(() =>
+                {
+                    // Committed, but the save that wrote it threw: the tracker may still hold the row as new (a write that was its own
+                    // commit, with no transaction around it), and the action's closing save would insert it a second time. Forgotten
+                    // here, the row stays what the database has.
+                    AppendLine(_engine
+                        ? "_unitOfWork.Detach(attachment);"
+                        : "_db.Entry(attachment).State = global::Microsoft.EntityFrameworkCore.EntityState.Detached;");
+                    AppendLine("return attachment.Id;");
+                });
                 AppendLine();
                 RenderDeleteThumbnailIfWritten();
                 AppendLine("await _storage.DeleteAsync(storageUri, ct).ConfigureAwait(false);");

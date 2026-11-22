@@ -46,7 +46,11 @@ public sealed class DocTransaction : IAsyncDisposable, IDisposable
         ObjectDisposedException.ThrowIf(_finished, this);
         if (_started)
             await EndAsync("commitTransaction", useAsync: true, ct).ConfigureAwait(false);
+        // Taken before the session forgets the transaction, reported after it has: an observer that throws is a commit that happened and
+        // answered an error, with the transaction finished and nothing left to abort.
+        var written = _session.TakeUncommitted();
         await FinishAsync(useAsync: true, ct).ConfigureAwait(false);
+        _session.Committed(written);
     }
 
     public Task RollbackAsync(CancellationToken ct = default) => RollbackCoreAsync(useAsync: true, ct).AsTask();

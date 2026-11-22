@@ -78,6 +78,27 @@ services.AddArchiveBoundaryPersistence((sp, filters) =>
   Core): a tenant's entity written with no tenant resolved is refused with `TenantNotResolvedException`.
 - In a Pragmatic host the call goes in the `configure` callback of `PragmaticApp.RunAsync`, or anywhere the
   host's services are registered.
+- Every `ICommitObserver` registered in DI is attached to the session the factory returns (`SqlCommitObservers.Attach`,
+  `DocCommitObservers.Attach`), so it sees every write the request makes through it, including a transaction an
+  operation opens on the session itself.
+
+## Seeing what was committed
+
+`ICommitObserver` (Pragmatic.Persistence) sees the entities a boundary writes, on all three engines. EF Core reaches it
+through an interceptor the generated `DbContext` registration adds when an observer is registered, and the engines
+through their sessions. `Writing` runs before the write; throwing from it refuses the write, and nothing is written.
+`Committed` runs after the commit that carried the entries succeeded, before the caller sees it; throwing from it is what a
+lost acknowledgement looks like. A write outside a transaction is its own commit. A write inside one is reported at its
+commit, never after a rollback, and a rollback to a savepoint forgets what was written after it.
+
+```csharp
+services.AddSingleton<ICommitObserver, LookupReloader>();
+```
+
+- The entries are entities with their state (`Added`, `Modified`, `Deleted`), never statements: a set-based update or
+  delete names no entity and is not reported. A `[SoftDelete]` row's delete is reported as the update it is.
+- On EF Core the savepoints are followed as a stack, because its transaction events do not name them: a rollback goes
+  back to the latest savepoint still set.
 
 ## Schema
 

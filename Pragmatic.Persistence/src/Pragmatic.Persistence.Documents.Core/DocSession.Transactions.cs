@@ -21,7 +21,10 @@ public sealed partial class DocSession
     internal void Ended(DocTransaction transaction)
     {
         if (ReferenceEquals(Transaction, transaction))
+        {
             Transaction = null;
+            _uncommitted = null; // aborted, or taken already by the commit: never reported from here
+        }
     }
 
     /// <summary>A command on the session's database, in the open transaction when there is one.</summary>

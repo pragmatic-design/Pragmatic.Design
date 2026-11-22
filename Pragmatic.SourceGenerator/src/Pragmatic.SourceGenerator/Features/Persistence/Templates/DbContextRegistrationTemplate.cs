@@ -297,6 +297,12 @@ internal sealed class DbContextRegistrationTemplate : CSharpTemplate
             Comment("DI-registered interceptors (e.g. DB-per-tenant connection routing, MT-H2) — no-op when none registered");
             AppendLine("options.AddInterceptors(sp.GetServices<global::Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor>());");
 
+            // Last, so an observer sees the entries as every interceptor above left them (a soft delete already its update). The same
+            // ICommitObserver the engines' sessions report to: one interface, three engines.
+            AppendLine();
+            Comment("Commit observers (ICommitObserver) — no interceptor when none is registered");
+            AppendLine("options.AddInterceptors(global::Pragmatic.Persistence.EFCore.Interceptors.CommitObserverInterceptor.For(sp.GetServices<global::Pragmatic.Persistence.Repository.ICommitObserver>()));");
+
             AppendLine("});");
             AppendLine();
 

@@ -40,10 +40,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
         // The toggle the filters below read, and the application's code switches filters off through (IgnoreFilter): on EF Core the boundary's
         // query filter registration adds it, and a host whose boundaries an engine persists has none of that.
         AppendLine("        global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddScoped<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle, global::Pragmatic.Persistence.Query.Filters.QueryFilterToggle>(services);");
-        AppendLine($"        {Services}.AddKeyedScoped<{e.Session}>(services, {key}, (sp, _) => session(sp, new {e.BridgeFilters}(");
+        // The request's ICommitObservers on the session it opens: every write through it is seen, the unit of work's and the ones that commit on
+        // the session itself (an upload's own transaction, a job store's).
+        AppendLine($"        {Services}.AddKeyedScoped<{e.Session}>(services, {key}, (sp, _) => {e.CommitObservers}(session(sp, new {e.BridgeFilters}(");
         AppendLine("            Get<global::Pragmatic.Identity.ICurrentUser>(sp), Get<global::Pragmatic.MultiTenancy.ITenantContext>(sp), Get<global::Pragmatic.Authorization.IUserScopeResolver>(sp),");
         AppendLine("            Get<global::Pragmatic.Persistence.Query.Filters.IQueryFilterToggle>(sp), Get<global::Pragmatic.Persistence.Query.Filters.QueryFilterOptions>(sp), Get<global::System.TimeProvider>(sp),");
-        AppendLine("            All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp))));");
+        AppendLine("            All<global::Pragmatic.Persistence.Scopes.DataScopeRule>(sp))), All<global::Pragmatic.Persistence.Repository.ICommitObserver>(sp)));");
         // The application's RequireTenant, as EF Core's registration hands it to the tenant interceptor: without it a tenant's entity would be
         // written with no tenant resolved where the application requires one. Options nobody configured are the options' own defaults (the
         // secure one: required), read from the class rather than restated here. Without Pragmatic.MultiTenancy there is no option to read.
