@@ -172,12 +172,17 @@ internal sealed partial class PragmaticGrid
             Fields.ToEquatableArray(),
             Withheld.ToEquatableArray(),
             load,
-            ordering);
+            ordering,
+            // LoadAsync(repository) reads through the entity's generated repository, which exists for an IEntity only.
+            Entity.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"));
         return (model.Hint, new GridAdapterTemplate(model).ToSourceText().ToString());
     }
 
     /// <summary>The properties a compiled order key is built for: the sortable fields', then the entity's key, the ordering's fallback.</summary>
-    internal IEnumerable<string> OrderKeyColumns() => Fields.Where(f => f.Sortable).Select(f => f.Property).Append("PersistenceId").Distinct();
+    internal IEnumerable<string> OrderKeyColumns() => SortProperties().Append("PersistenceId").Distinct();
+
+    /// <summary>The properties the adapter sorts by: the members its <c>LoadAsync(repository)</c> orders a page by, each a key of the repository.</summary>
+    internal IEnumerable<string> SortProperties() => Fields.Where(f => f.Sortable).Select(f => f.Property);
 
     /// <summary>
     ///     The operator names a <c>[GridField(AllowedOperators)]</c> restriction covers, with their aliases, as Pragmatic's template expands them:

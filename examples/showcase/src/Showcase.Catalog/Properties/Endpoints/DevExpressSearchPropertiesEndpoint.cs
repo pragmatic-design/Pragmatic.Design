@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Pragmatic.Persistence.Query.Adapters;
 using Pragmatic.Persistence.Query.Results;
 using Showcase.Catalog.Infrastructure.Grids;
@@ -52,28 +51,19 @@ public partial class DevExpressSearchPropertiesEndpoint : Endpoint<PagedResult<P
 
     public override async Task<Result<PagedResult<PropertySummaryDto>>> HandleAsync(CancellationToken ct = default)
     {
-        var skip = LoadOptions.Skip ?? 0;
-        var take = LoadOptions.Take ?? 20;
-        var page = (skip / take) + 1;
+        // A grid that sends no Take gets a page of twenty, as this endpoint always answered.
+        var options = LoadOptions.Take is not null
+            ? LoadOptions
+            : new DevExpressLoadOptions { Filter = LoadOptions.Filter, Sort = LoadOptions.Sort, Skip = LoadOptions.Skip, Take = 20 };
 
         // The active-only filter is gone from here too — the entity carries it. What is left is what
         // this endpoint is actually about: an external grid format, translated by generated code.
         //
-        // Counted without the page, because the total is what the grid puts under its pager while Skip
-        // and Take are the page itself. The adapter applies both, so the count runs against the same
-        // request with neither.
-        var counted = ThePropertyGrid.Apply(
-            _properties.Query().AsNoTracking(),
-            new DevExpressLoadOptions { Filter = LoadOptions.Filter });
+        // LoadAsync reads the page through the repository with the filter's total — the count without
+        // the page, which is what the grid puts under its pager — and compiles on every engine the
+        // entity can be persisted on (#947): an IQueryable is EF Core's alone.
+        var page = await ThePropertyGrid.LoadAsync(_properties, options, ct).ConfigureAwait(false);
 
-        var totalCount = await counted.CountAsync(ct).ConfigureAwait(false);
-
-        var items = await ThePropertyGrid
-            .Apply(_properties.Query().AsNoTracking(), LoadOptions)
-            .Select(PropertySummaryDto.Projection!)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-
-        return PagedResult<PropertySummaryDto>.Success(items, totalCount, page, take);
+        return PagedResult<PropertySummaryDto>.Success([.. page.Items.Select(PropertySummaryDto.Selector)], page.TotalCount, page.Page, page.PageSize);
     }
 }

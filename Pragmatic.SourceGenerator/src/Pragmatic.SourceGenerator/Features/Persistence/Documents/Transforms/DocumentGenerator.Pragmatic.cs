@@ -74,12 +74,21 @@ internal static partial class DocumentGenerator
             var queries = DeclaredQueries(compilation, declared, models, diagnostics, AddText);
             foreach (var schema in PragmaticDocSchema.For(compilation, entities, models, queries.Select(q => q.Query).ToList()))
                 Add(new DocSchemaTemplate(schema).RenderOutput()); // each boundary's collections, indexes and Cosmos DB containers (DocSchema)
-            foreach (var grid in PragmaticGrid.Read(compilation, PragmaticEngine.Documents))
+            var grids = PragmaticGrid.Read(compilation, PragmaticEngine.Documents);
+            foreach (var grid in grids)
             {
                 if (!models.TryGetValue(grid.Entity.ToDisplayString(), out var model))
                     continue;
                 foreach (var omitted in grid.Omitted)
                     diagnostics.Add(Diagnostic.Create(DocDiagnostics.GridPartlyCompiled, grid.Type.Locations.FirstOrDefault() ?? Location.None, grid.Type.Name, omitted));
+                // Its LoadAsync(repository) orders a page through the repository's keys (#947): a property the document does not store as a
+                // scalar has none, and an ordering that names it is refused.
+                foreach (var property in grid.SortProperties())
+                {
+                    if (DocReadRepository.Unkeyed(model, property) is { } why)
+                        diagnostics.Add(Diagnostic.Create(DocDiagnostics.GridPartlyCompiled, grid.Type.Locations.FirstOrDefault() ?? Location.None, grid.Type.Name, why));
+                }
+
                 written.Add(AddText(DocGrids.Source(grid, model))); // its LoadAsync's chains are bound and intercepted with the application's
             }
 
@@ -108,7 +117,8 @@ internal static partial class DocumentGenerator
                 // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, and a symbol of
                 // one compilation is never equal to the same type's symbol of another.
                 var own = queries.Where(q => q.Query.Entity.ToDisplayString() == entity.ToDisplayString()).ToList();
-                var sortMembers = gridFilters.Where(f => f.Entity.ToDisplayString() == entity.ToDisplayString()).SelectMany(f => f.SortMembers);
+                var sortMembers = gridFilters.Where(f => f.Entity.ToDisplayString() == entity.ToDisplayString()).SelectMany(f => f.SortMembers)
+                    .Concat(grids.Where(g => g.Entity.ToDisplayString() == entity.ToDisplayString()).SelectMany(g => g.SortProperties()));
                 if (DocReadRepository.For(entity, own, models.TryGetValue(entity.ToDisplayString(), out var document) ? document : null, sortMembers) is { } repository)
                     written.Add(Add(new DocReadRepositoryTemplate(repository).RenderOutput())); // its chains are bound and intercepted with the application's
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Execution.DocHierarchy.KeysAsync") is { } hierarchy)

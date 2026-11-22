@@ -135,6 +135,9 @@ These work on every engine, from the same declarations:
   `IReadRepository<T>.PageAsync` with the total. The engine compiles a sort key for each member a grid filter of the
   entity sorts by; a sort through a navigation is reported (`PRAG3034`, `PRAG3109`) and refused. `Apply(IQueryable)`
   is EF Core's;
+- a `[GridAdapter<T>]`'s `LoadAsync(repository, options)`: a DevExpress request's filter tree, sort and page, read
+  through the same `PageAsync`, with a sort key compiled for each column the adapter sorts on. `Skip` must be a
+  multiple of a positive `Take` (`GridFilterRejection.NotAPage` otherwise). Its `Apply(IQueryable)` is EF Core's;
 - the caches (`Pragmatic.Persistence.Caching`): a `[Lookup]` entity's cache, preloaded and reloaded after a committed
   write, and a `[Cacheable]` query read through its cache, by one rule. The stack comes from the query's category,
   the key is partitioned by tenant, filter mode and lifted filters, and a failure is never cached. An answer is the

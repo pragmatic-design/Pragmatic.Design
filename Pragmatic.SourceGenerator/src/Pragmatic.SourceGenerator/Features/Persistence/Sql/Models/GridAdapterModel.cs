@@ -18,4 +18,5 @@ internal sealed record GridAdapterModel(
     EquatableArray<GridFieldModel> Fields,
     EquatableArray<string> Withheld,
     GridLoadModel Load,
-    GridOrderingModel Ordering);
+    GridOrderingModel Ordering,
+    bool HasRepository);

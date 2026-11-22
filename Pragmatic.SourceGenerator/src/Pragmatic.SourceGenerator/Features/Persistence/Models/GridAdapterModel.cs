@@ -16,6 +16,12 @@ internal sealed record GridAdapterModel
     public required GridFrameworkFlags Framework { get; init; }
     public required bool SupportNestedFilters { get; init; }
     public required bool SupportGrouping { get; init; }
+
+    /// <summary>
+    ///     Whether the entity is an <c>IEntity</c>, so it has an <c>IReadRepository&lt;T&gt;</c> for <c>LoadAsync</c> to read through. A grid
+    ///     over another type (a projection, a fuzz target) keeps <c>Apply</c> only.
+    /// </summary>
+    public bool HasRepository { get; init; }
     public required EquatableArray<GridFieldModel> Fields { get; init; }
     public required EquatableArray<string> ExcludedProperties { get; init; }
 

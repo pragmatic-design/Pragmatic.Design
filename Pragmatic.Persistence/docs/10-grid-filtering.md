@@ -393,8 +393,20 @@ class itself**, one per framework asked for by `Framework`:
 public partial class OrderGridAdapter
 {
     public static IQueryable<Order> Apply(IQueryable<Order> query, DevExpressLoadOptions options);
+    public static Task<PagedResult<Order>> LoadAsync(IReadRepository<Order> repository, DevExpressLoadOptions options, CancellationToken ct = default);
     public static IQueryable<Order> Apply(IQueryable<Order> query, PrimeNGLazyLoadEvent lazyEvent);
 }
+```
+
+`LoadAsync` reads the DevExpress request through the entity's repository (`PageAsync`), with the filter's
+total, and is the call that compiles on every engine: the Sql and documents engines read no `IQueryable`,
+so an endpoint written with `LoadAsync` runs wherever the entity is persisted. `Skip` and `Take` are read
+as one page: a `Take` that is not positive, or a `Skip` that is not a multiple of it, is refused with
+`GridFilterRejection.NotAPage` (a 400), since the page around `Skip` would hold rows the grid did not ask
+for.
+
+```csharp
+var page = await OrderGridAdapter.LoadAsync(_orders, loadOptions, ct);
 ```
 
 **`[GenerateGridBridge]`**, on the **entity**, generates the canonical bridge: the typed `switch` on

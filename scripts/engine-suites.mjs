@@ -86,10 +86,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   },
   // POST /api/amenities/{id}/touch is CountAmenitiesAction, which injects the boundary's DbContext and counts through its entity set (#873).
   [s('CrossCutting/BoundaryKeyedServicesTests.cs')]: { engines: both, reason: EF_ONLY, follows: [catalog('Amenities/Actions/CountAmenitiesAction.cs')] },
-  // POST /api/properties/devexpress composes an IQueryable over the repository (#947).
-  [s('Endpoints/TheGridInItsOwnFormatTests.cs')]: {
-    engines: both, reason: EF_ONLY, follows: [catalog('Properties/Endpoints/DevExpressSearchPropertiesEndpoint.cs')],
-  },
 
   // The set [ReadAccess] adds to the reading boundary's DbContext, and its tenant filter. On the engines the reader reads through the
   // owning boundary's repository: there is no second set to filter.

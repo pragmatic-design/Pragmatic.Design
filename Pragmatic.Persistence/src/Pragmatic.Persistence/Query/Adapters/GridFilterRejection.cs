@@ -16,4 +16,11 @@ public enum GridFilterRejection
 
     /// <summary>The value is not one the field can be compared with: of another type, past its range, or missing.</summary>
     UnusableValue,
+
+    /// <summary>
+    ///     The rows asked for are not one page: a read through <c>IReadRepository&lt;T&gt;.PageAsync</c> needs a
+    ///     positive <c>Take</c> and a <c>Skip</c> that is a multiple of it. Reading the page that contains
+    ///     <c>Skip</c> instead would answer with rows the grid did not ask for.
+    /// </summary>
+    NotAPage,
 }

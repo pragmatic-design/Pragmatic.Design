@@ -36,10 +36,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- EF Core only (#363): the DevExpress grid (#947) and the amenity count read through an IQueryable, and the module projects leave
-         them out on the engines. -->
+    <!-- EF Core only (#363): the amenity count reads through an IQueryable, and the module projects leave it out on the engines. -->
     <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\BoundaryKeyedServicesTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\TheGridInItsOwnFormatTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

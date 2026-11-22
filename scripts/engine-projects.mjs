@@ -25,8 +25,6 @@ export const PROJECT_REASONS = { EF_ONLY, NO_NAVIGATION, HOST_WIRING };
 /** The files a module project may leave out, the engines it may leave each out on, and why. Paths from the repository's root. */
 export const ALLOWED_EXCLUSIONS = {
   'examples/showcase/src/Showcase.Catalog/Amenities/Actions/CountAmenitiesAction.cs': { engines: ['Sql', 'Documents'], reason: EF_ONLY },
-  'examples/showcase/src/Showcase.Catalog/Properties/Endpoints/DevExpressSearchPropertiesEndpoint.cs': { engines: ['Sql', 'Documents'], reason: EF_ONLY },
-  'examples/showcase/src/Showcase.Catalog/Properties/Endpoints/GridSearchPropertiesEndpoint.cs': { engines: ['Sql', 'Documents'], reason: EF_ONLY },
   'examples/showcase/src/Showcase.Catalog/Properties/Mutations/DeletePropertyMutation.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3112)' },
   'examples/showcase/src/Showcase.Catalog/Properties/Mutations/RestorePropertyMutation.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3112)' },
   'examples/showcase/src/Showcase.Catalog/RoomTypes/Mutations/UpdateRoomTypeMutation.cs': { engines: ['Documents'], reason: NO_NAVIGATION + ' (PRAG3112)' },

@@ -60,6 +60,7 @@ internal static class GridAdapterTransform
             Framework = framework,
             SupportNestedFilters = supportNestedFilters,
             SupportGrouping = supportGrouping,
+            HasRepository = entityType.AllInterfaces.Any(i => i.ToDisplayString() == "Pragmatic.Persistence.Entity.IEntity"),
             Fields = fields,
             ExcludedProperties = excludedProperties,
             WithheldProperties = GetAllProperties(entityType)

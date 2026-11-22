@@ -2988,6 +2988,7 @@ public partial class PlainFilter
 ## Inventory.PlainGridAdapter.GridAdapter.g.cs
 public partial class PlainGridAdapter
     public static IQueryable<Plain> Apply(IQueryable<Plain> query, DevExpressLoadOptions options)
+    public static Task<PagedResult<Plain>> LoadAsync(IReadRepository<Plain> repository, DevExpressLoadOptions options, CancellationToken ct = default)
     public static IQueryable<Plain> Apply(IQueryable<Plain> query, PrimeNGLazyLoadEvent lazyEvent)
     private sealed class PlainGridAdapter.ParameterReplacer : ExpressionVisitor
         public ParameterReplacer(ParameterExpression oldParam, ParameterExpression newParam)

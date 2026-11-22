@@ -179,13 +179,106 @@ public class TheGridInItsOwnFormatTests(PostgresFixture fixture) : IntegrationTe
         items[0].GetProperty("starRating").GetInt32().Should().Be(5);
     }
 
-    private async Task<JsonElement> RowsAsync(object loadOptions)
+    /// <summary>An or of two clauses keeps the rows of either, and nothing else.</summary>
+    [Fact]
+    public async Task AnOrOfTwoCities_KeepsTheRowsOfEither()
+    {
+        var first = $"Or1{Guid.NewGuid():N}"[..12];
+        var second = $"Or2{Guid.NewGuid():N}"[..12];
+        await SeedPropertyAsync(first, starRating: 2);
+        await SeedPropertyAsync(second, starRating: 4);
+        await SeedPropertyAsync($"Or3{Guid.NewGuid():N}"[..12], starRating: 3);
+
+        var items = await RowsAsync(new
+        {
+            filter = new object[] { new object[] { "city", "=", first }, "or", new object[] { "city", "=", second } },
+            sort = new[] { new { selector = "stars", desc = false } },
+            skip = 0,
+            take = 50
+        });
+
+        Stars(items).Should().Be("2,4", "the two cities named, and not the third");
+    }
+
+    /// <summary>
+    ///     Each comparison keeps exactly the rows it names, among three of one city with two, three and four stars.
+    /// </summary>
+    /// <remarks>
+    ///     The rows are named by their stars, in the grid's own sort: a comparison that kept every row, or one read the other way round,
+    ///     answers with another list.
+    /// </remarks>
+    [Fact]
+    public async Task EachComparison_KeepsExactlyTheRowsItNames()
+    {
+        var city = $"Cmp{Guid.NewGuid():N}"[..12];
+        foreach (var stars in new[] { 2, 3, 4 })
+            await SeedPropertyAsync(city, starRating: stars);
+
+        var kept = new List<string>();
+        foreach (var op in new[] { ">", ">=", "<", "<=", "<>" })
+        {
+            var stars = Stars(await RowsAsync(new
+            {
+                filter = new object[] { new object[] { "city", "=", city }, "and", new object[] { "stars", op, 3 } },
+                sort = new[] { new { selector = "stars", desc = false } },
+                skip = 0,
+                take = 50
+            }));
+            kept.Add($"{op} {stars}");
+        }
+
+        string.Join("; ", kept).Should().Be("> 4; >= 3,4; < 2; <= 2,3; <> 2,4");
+    }
+
+    /// <summary>
+    ///     Skip and Take are the page, and the total is the filter's count without it: the second page of two holds the third row of a
+    ///     descending sort, under a total of three.
+    /// </summary>
+    [Fact]
+    public async Task TheSecondPage_HoldsTheRowsPastTheFirst_UnderTheFiltersTotal()
+    {
+        var city = $"Pag{Guid.NewGuid():N}"[..12];
+        foreach (var stars in new[] { 2, 3, 4 })
+            await SeedPropertyAsync(city, starRating: stars);
+
+        var page = await PageAsync(new
+        {
+            filter = new object[] { "city", "=", city },
+            sort = new[] { new { selector = "stars", desc = true } },
+            skip = 2,
+            take = 2
+        });
+
+        Stars(page.GetProperty("items")).Should().Be("2", "four and three are the first page of a descending sort");
+        page.GetProperty("totalCount").GetInt32().Should().Be(3, "the total counts the filter's rows, not the page's");
+        page.GetProperty("page").GetInt32().Should().Be(2);
+    }
+
+    /// <summary>
+    ///     Rows that are not one page are refused with a 400: the page around them would answer with rows the grid did not ask for.
+    /// </summary>
+    /// <remarks>The control is the case above: a Skip that is a multiple of Take is read.</remarks>
+    [Fact]
+    public async Task ASkipThatIsNotAPage_IsRefused()
+    {
+        var response = await PostAsync(Grid, new { loadOptions = new { skip = 1, take = 2 } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("not one page");
+    }
+
+    private static string Stars(JsonElement items)
+        => string.Join(",", items.EnumerateArray().Select(i => i.GetProperty("starRating").GetInt32()));
+
+    private async Task<JsonElement> RowsAsync(object loadOptions) => (await PageAsync(loadOptions)).GetProperty("items");
+
+    private async Task<JsonElement> PageAsync(object loadOptions)
     {
         var response = await PostAsync(Grid, new { loadOptions });
 
         response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
 
-        return (await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("items");
+        return await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
     }
 
     private async Task SeedPropertyAsync(string city, int starRating)
