@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
 
-namespace Pragmatic.Persistence.EFCore.Repository;
+namespace Pragmatic.Persistence.Caching;
 
 /// <summary>
 ///     Keeps the lookup caches in step with the set of tenants.

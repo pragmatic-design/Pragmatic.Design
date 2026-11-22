@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.MultiTenancy;
 
-namespace Pragmatic.Persistence.EFCore.Repository;
+namespace Pragmatic.Persistence.Caching;
 
 /// <summary>
 ///     Which tenants a lookup cache has to be preloaded for.

@@ -455,6 +455,13 @@
           "Pragmatic.Validation": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.caching": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
       "pragmatic.persistence.efcore": {
         "type": "Project",
         "dependencies": {
@@ -467,6 +474,7 @@
           "Pragmatic.Caching": "[1.0.0, )",
           "Pragmatic.Mapping.EFCore": "[0.1.0-preview, )",
           "Pragmatic.Persistence": "[1.0.0, )",
+          "Pragmatic.Persistence.Caching": "[1.0.0, )",
           "Pragmatic.Result.EFCore": "[1.0.0, )"
         }
       },

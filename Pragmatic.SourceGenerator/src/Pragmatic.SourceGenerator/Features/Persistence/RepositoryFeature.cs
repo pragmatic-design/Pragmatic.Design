@@ -144,7 +144,8 @@ internal static class RepositoryFeature
             Composition.Models.HostLocalRegistration.CreatePayload(
                 Composition.MetadataCategoryIds.Persistence,
                 MetadataSchemaVersions.Persistence,
-                new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, detectedFeatures)).BuildJson()));
+                new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, detectedFeatures),
+                    e => PersistenceEngineMarker.HasEngine(e, detectedFeatures)).BuildJson()));
     }
 
     // =========================================================================
@@ -287,7 +288,8 @@ internal static class RepositoryFeature
         if (validEntities.Length == 0)
             return;
 
-        var template = new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, features));
+        var template = new PersistenceMetadataTemplate(validEntities, isDebug, e => PersistenceEngineMarker.IsEfCore(e, features),
+            e => PersistenceEngineMarker.HasEngine(e, features));
         var artifact = template.RenderOutput();
         if (!artifact.IsEmpty)
             context.AddSource(artifact);

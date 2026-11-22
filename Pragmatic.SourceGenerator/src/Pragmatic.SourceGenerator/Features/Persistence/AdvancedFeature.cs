@@ -19,6 +19,7 @@ internal static class AdvancedFeature
     public static void Register(
         IncrementalGeneratorInitializationContext context,
         IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> entitiesWithFeatures,
+        IncrementalValueProvider<(ImmutableArray<EntityMetadataModel> Entities, DetectedFeatures Features)> allEntitiesWithFeatures,
         IncrementalValueProvider<DetectedFeatures> features)
     {
         // [Inheritance(Strategy)] → OnModelCreating configuration
@@ -97,12 +98,13 @@ internal static class AdvancedFeature
             GenerateLoadingProfile(ctx, pair.Left);
         });
 
-        // Lookup / Dynamic Enums — cross-reference [Lookup] entities and their consumers
-        context.RegisterSourceOutputSafe(entitiesWithFeatures, (ctx, pair) =>
+        // Lookup / Dynamic Enums — cross-reference [Lookup] entities and their consumers, on every engine (#881): only the loader's read
+        // depends on which one persists the entity, so every entity of the compilation, not EF Core's alone.
+        context.RegisterSourceOutputSafe(allEntitiesWithFeatures, (ctx, pair) =>
         {
-            if (!pair.Features.HasPersistenceEFCore)
+            if (!PersistenceEngineMarker.AnyReferenced(pair.Features))
                 return;
-            GenerateLookupNavigations(ctx, pair.Entities);
+            GenerateLookupNavigations(ctx, pair.Entities, pair.Features);
         });
     }
 
@@ -209,12 +211,15 @@ internal static class AdvancedFeature
 
     private static void GenerateLookupNavigations(
         SourceProductionContext context,
-        ImmutableArray<EntityMetadataModel> entities)
+        ImmutableArray<EntityMetadataModel> entities,
+        DetectedFeatures features)
     {
         if (entities.Length == 0)
             return;
 
-        var lookups = entities.Where(e => e.IsValid && e is { IsLookup: true, IsFromReference: false }).ToImmutableArray();
+        // An engine this compilation references persists the lookup: its loader reads through that engine.
+        var lookups = entities.Where(e => e.IsValid && e is { IsLookup: true, IsFromReference: false } && PersistenceEngineMarker.HasEngine(e, features))
+            .ToImmutableArray();
         if (lookups.Length == 0)
             return;
 
@@ -266,7 +271,7 @@ internal static class AdvancedFeature
 
         foreach (var lookup in lookups)
         {
-            var loaderTemplate = new LookupCacheLoaderTemplate(lookup);
+            var loaderTemplate = new LookupCacheLoaderTemplate(lookup, PersistenceEngineMarker.IsEfCore(lookup, features));
             var loaderArtifact = loaderTemplate.RenderOutput();
             if (!loaderArtifact.IsEmpty)
                 context.AddSource(loaderArtifact);

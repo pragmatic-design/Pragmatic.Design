@@ -8,14 +8,25 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 ///     Generates a per-entity ILookupCacheLoader implementation for a [Lookup] entity.
 ///     The loader queries all records from the DB and populates the in-memory cache at startup.
 /// </summary>
+/// <remarks>
+///     The read is the only part that depends on the engine: EF Core's boundary <c>DbContext</c>, or on the Sql and documents engines the
+///     entity's <c>IReadRepository&lt;T&gt;</c>, which their <c>Add{Boundary}Persistence</c> registers (#881). The rest is
+///     <c>Pragmatic.Persistence.Caching</c>'s, the same on all three.
+/// </remarks>
 internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
 {
+    private const string Caching = "global::Pragmatic.Persistence.Caching";
+
     private readonly EntityMetadataModel _model;
     private readonly string _loaderClassName;
+    private readonly bool _efCore;
 
-    public LookupCacheLoaderTemplate(EntityMetadataModel model)
+    /// <param name="model">The [Lookup] entity.</param>
+    /// <param name="efCore">True when EF Core persists it in this compilation; false when the Sql or documents engine does.</param>
+    public LookupCacheLoaderTemplate(EntityMetadataModel model, bool efCore = true)
     {
         _model = model;
+        _efCore = efCore;
         _loaderClassName = NamingHelper.AppendSuffix(_model.TypeName, "LookupCacheLoader");
     }
 
@@ -38,7 +49,8 @@ internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
         AddUsing("System.Linq");
         AddUsing("System.Threading");
         AddUsing("System.Threading.Tasks");
-        AddUsing("Microsoft.EntityFrameworkCore");
+        if (_efCore)
+            AddUsing("Microsoft.EntityFrameworkCore");
         AddUsing("Microsoft.Extensions.DependencyInjection");
 
         if (!string.IsNullOrEmpty(_model.Namespace) && _model.Namespace != "<global namespace>")
@@ -53,13 +65,13 @@ internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
         XmlSummary($"Preloads all {_model.TypeName} records into the in-memory lookup cache at startup.");
 
         Class(_loaderClassName, () => RenderBody(entityType, idType),
-            interfaces: ["global::Pragmatic.Persistence.EFCore.Repository.ILookupCacheLoader"],
+            interfaces: [$"{Caching}.ILookupCacheLoader"],
             modifiers: new ClassModifiers { Sealed = true });
     }
 
     private void RenderBody(string entityType, string idType)
     {
-        var cacheType = $"global::Pragmatic.Persistence.EFCore.Repository.LookupCache<{entityType}, {idType}>";
+        var cacheType = $"{Caching}.LookupCache<{entityType}, {idType}>";
         var cacheInterfaceType = $"global::Pragmatic.Persistence.Entity.ILookupCache<{entityType}, {idType}>";
 
         XmlSummary("Loads all records from the database into the cache and registers with the resolver.");
@@ -70,7 +82,7 @@ internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
             // filter fails closed — a tenant-scoped lookup would load zero rows, and zero rows looks
             // like a lookup table nobody has filled yet. The helper is also where
             // "the store knows no tenants" is said out loud instead of passing for success.
-            AppendLine($"var tenants = await global::Pragmatic.Persistence.EFCore.Repository.LookupPreload"
+            AppendLine($"var tenants = await {Caching}.LookupPreload"
                        + $".TenantsToLoadAsync(serviceProvider, {(_model.IsTenantEntity ? "true" : "false")}, "
                        + $"\"{_model.TypeName}\", ct).ConfigureAwait(false);");
             AppendLine();
@@ -166,20 +178,30 @@ internal sealed class LookupCacheLoaderTemplate : CSharpTemplate
             AppendLine();
             AppendLine("using var scope = serviceProvider.CreateScope();");
 
-            // Resolve DbContext — use keyed DI if boundary is known, otherwise resolve directly
-            if (!string.IsNullOrEmpty(_model.BoundaryTypeFullName))
+            if (!_efCore)
             {
-                var boundaryType = _model.BoundaryTypeFullName!.StartsWith("global::", StringComparison.Ordinal)
-                    ? _model.BoundaryTypeFullName
-                    : $"global::{_model.BoundaryTypeFullName}";
-                AppendLine($"var db = scope.ServiceProvider.GetRequiredKeyedService<global::Microsoft.EntityFrameworkCore.DbContext>(typeof({boundaryType}));");
+                // The engine's repository of the entity, with the filters of a read in this scope (the tenant declared above, the soft
+                // delete), as EF Core's Set<T>() below reads it.
+                AppendLine($"var items = await scope.ServiceProvider.GetRequiredService<global::Pragmatic.Persistence.Repository.IReadRepository<{entityType}>>()");
+                AppendLine($"    .FindAsync(global::Pragmatic.Specification.Spec<{entityType}>.True, ct).ConfigureAwait(false);");
             }
             else
             {
-                AppendLine("var db = scope.ServiceProvider.GetRequiredService<global::Microsoft.EntityFrameworkCore.DbContext>();");
-            }
+                // Resolve DbContext — use keyed DI if boundary is known, otherwise resolve directly
+                if (!string.IsNullOrEmpty(_model.BoundaryTypeFullName))
+                {
+                    var boundaryType = _model.BoundaryTypeFullName!.StartsWith("global::", StringComparison.Ordinal)
+                        ? _model.BoundaryTypeFullName
+                        : $"global::{_model.BoundaryTypeFullName}";
+                    AppendLine($"var db = scope.ServiceProvider.GetRequiredKeyedService<global::Microsoft.EntityFrameworkCore.DbContext>(typeof({boundaryType}));");
+                }
+                else
+                {
+                    AppendLine("var db = scope.ServiceProvider.GetRequiredService<global::Microsoft.EntityFrameworkCore.DbContext>();");
+                }
 
-            AppendLine($"var items = await db.Set<{entityType}>().AsNoTracking().ToListAsync(ct).ConfigureAwait(false);");
+                AppendLine($"var items = await db.Set<{entityType}>().AsNoTracking().ToListAsync(ct).ConfigureAwait(false);");
+            }
             AppendLine();
             // ⚠️ The registered singleton when the lookup is shared, a fresh cache per tenant when
             // it is not. Loading a second tenant into the singleton would overwrite the first,

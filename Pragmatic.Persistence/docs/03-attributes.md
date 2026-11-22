@@ -384,20 +384,26 @@ public static class CatalogLookupCacheRegistrationExtensions
 }
 ```
 
-⚠️ **Call it.** `Add{Prefix}LookupCaches()` is generated, not wired; call it from your `IStartupStep`,
-as the Showcase does. Skip the call and there is no `ILookupCache<T, TId>` in the container and no
-preload: the attribute looks applied and does nothing. `{Prefix}` is the identifier derived from the
-common namespace of the lookup entities, so an assembly whose lookups all sit under `Showcase.*`
+A Pragmatic host calls `Add{Prefix}LookupCaches()` itself: the assembly's persistence metadata names it.
+Outside a Pragmatic host, call it from your own registration. `{Prefix}` is the identifier derived from
+the common namespace of the lookup entities, so an assembly whose lookups all sit under `Showcase.*`
 generates `AddShowcaseLookupCaches()`.
+
+The cache, the preload and the reload are `Pragmatic.Persistence.Caching`'s, the same on every engine.
+Only the loader's read depends on the engine. On EF Core it is the boundary's `DbContext`. On the Sql and
+documents engines it is the entity's `IReadRepository<T>`, which the boundary's `Add{Boundary}Persistence`
+registers.
 
 The preload runs in `LookupPreloadHostedService` at startup, sequentially, and **fails fast**: a loader
 that throws stops the application rather than leaving a half-filled cache to surface later as scattered
 `KeyNotFoundException`s.
 
-A write to a lookup entity reloads its cache once it commits: `LookupCacheReloadInterceptor`, registered
-by the same method, reloads at the save when it ran in no transaction and at the commit when it ran in
-one, and a rolled-back write reloads nothing. A tenant-scoped lookup reloads the writing tenant's cache
-only.
+A write to a lookup entity reloads its cache once it commits. `LookupCacheReloadObserver`, registered by
+the same method, is an `ICommitObserver`, so every engine calls it after the commit that carried the write:
+- on EF Core, at the save when it ran in no transaction and at the commit when it ran in one;
+- on the Sql and documents engines, at the session's commit.
+
+A rolled-back write reloads nothing. A tenant-scoped lookup reloads the writing tenant's cache only.
 
 The other instances of the host hear the write through the cache's invalidation broadcast. The reload
 also invalidates the tag `pragmatic:lookup:{Entity}` through `ICacheStack`, and with

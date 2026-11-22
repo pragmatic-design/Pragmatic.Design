@@ -25,8 +25,21 @@ public class LookupCacheRegistrationTemplateTests
         var lookups = BuildLookups();
         var source = Render(lookups);
 
-        source.Should().Contain("AddSingleton<global::Pragmatic.Persistence.Entity.ILookupCache<global::Sales.Category, global::Guid>>");
-        source.Should().Contain("LookupCache<global::Sales.Category, global::Guid>()");
+        source.Should().Contain("TryAddSingleton<global::Pragmatic.Persistence.Entity.ILookupCache<global::Sales.Category, global::Guid>>(services, "
+            + "new global::Pragmatic.Persistence.Caching.LookupCache<global::Sales.Category, global::Guid>())");
+    }
+
+    /// <summary>
+    ///     Every registration is a TryAdd: on the engines each boundary's <c>Add{Boundary}Persistence</c> calls the method (#881), and a
+    ///     second loader would reload every lookup write twice.
+    /// </summary>
+    [Fact]
+    public void RenderOutput_RegistersNothingTwice()
+    {
+        var source = Render(BuildLookups());
+
+        source.Should().NotContain("services.AddSingleton<");
+        source.Should().Contain("ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Caching.ILookupCacheLoader, global::Sales.CategoryLookupCacheLoader>()");
     }
 
     [Fact]
@@ -37,8 +50,8 @@ public class LookupCacheRegistrationTemplateTests
             BuildEntity("Sales", "Country", "int"));
         var source = Render(lookups);
 
-        source.Should().Contain("categoryCache");
-        source.Should().Contain("countryCache");
+        source.Should().Contain("ILookupCache<global::Sales.Category, global::Guid>");
+        source.Should().Contain("ILookupCache<global::Sales.Country, ");
     }
 
     /// <summary>
@@ -55,8 +68,22 @@ public class LookupCacheRegistrationTemplateTests
         var source = Render(ImmutableArray.Create(TenantScoped(BuildEntity("Sales", "Region", "int"))));
 
         source.Should().Contain(
-            "AddSingleton<global::Pragmatic.MultiTenancy.ITenantLifecycleObserver, "
-            + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheTenantObserver>();");
+            "ServiceDescriptor.Singleton<global::Pragmatic.MultiTenancy.ITenantLifecycleObserver, "
+            + "global::Pragmatic.Persistence.Caching.LookupCacheTenantObserver>());");
+    }
+
+    /// <summary>
+    ///     The reload after a committed write is a commit observer, which EF Core's context and the engines' sessions both call (#881), and
+    ///     no EF Core interceptor.
+    /// </summary>
+    [Fact]
+    public void TheReload_IsACommitObserver_NotAnEfCoreInterceptor()
+    {
+        var source = Render(BuildLookups());
+
+        source.Should().Contain("ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Repository.ICommitObserver, "
+            + "global::Pragmatic.Persistence.Caching.LookupCacheReloadObserver>()");
+        source.Should().NotContain("EntityFrameworkCore");
     }
 
     /// <summary>The control: lookups that are all shared register no observer at all.</summary>

@@ -1,6 +1,6 @@
 using Pragmatic.Caching;
 
-namespace Pragmatic.Persistence.EFCore.Repository;
+namespace Pragmatic.Persistence.Caching;
 
 /// <summary>
 ///     Reloads a <c>[Lookup]</c> entity's cache on this node when another node broadcast that it reloaded its own (#763).
@@ -8,7 +8,7 @@ namespace Pragmatic.Persistence.EFCore.Repository;
 /// <remarks>
 ///     <para>
 ///         The lookup caches are in memory, one per process, and no broadcast reaches them by itself: the writer's
-///         <see cref="LookupCacheReloadInterceptor" /> reloads its own and invalidates <see cref="LookupCacheInvalidationTag" />, and this
+///         <see cref="LookupCacheReloadObserver" /> reloads its own and invalidates <see cref="LookupCacheInvalidationTag" />, and this
 ///         hears the tag on every other node.
 ///     </para>
 ///     <para>

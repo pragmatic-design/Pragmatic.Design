@@ -1,9 +1,10 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.MultiTenancy;
 using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Query.Filters;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
-using Showcase.Catalog;
 using Showcase.Catalog.Entities;
 using Showcase.IntegrationTests.Infrastructure;
 
@@ -65,9 +66,10 @@ public class LookupCacheTests(PostgresFixture fixture) : IntegrationTestBase(fix
     /// </summary>
     /// <remarks>
     ///     <c>Property.Category</c> is <c>[NotMapped]</c> and reads <c>LookupResolver</c>, so this is a
-    ///     statement about the cache and not about EF: an entity loaded <c>AsNoTracking</c> with no
-    ///     <c>Include</c> has no way to materialise a related row, and the instance it hands back is
-    ///     reference-identical to the one the cache holds.
+    ///     statement about the cache and not about the engine: an entity read by key, with no navigation
+    ///     asked for, has no way to materialise a related row, and the instance it hands back is
+    ///     reference-identical to the one the cache holds. Read through the repository, so the same file
+    ///     runs on EF Core, Sql and documents.
     /// </remarks>
     [Fact]
     public async Task TheGeneratedNavigation_ResolvesTheRowThroughTheCache()
@@ -82,17 +84,7 @@ public class LookupCacheTests(PostgresFixture fixture) : IntegrationTestBase(fix
             categoryId = SeededCategories.BeachResortId
         });
 
-        var id = created.GetProperty("id").GetGuid();
-
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-
-        // IgnoreQueryFilters: outside a request there is no ambient tenant, and Property is an
-        // ITenantEntity — the row is there, the filter is not the subject.
-        var property = await db.Set<Property>()
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .FirstAsync(p => p.PersistenceId == id);
+        var property = await ReadAsync(created.GetProperty("id").GetGuid());
 
         property.CategoryId.Should().Be(SeededCategories.BeachResortId,
             "the mutation carried the foreign key through");
@@ -120,15 +112,7 @@ public class LookupCacheTests(PostgresFixture fixture) : IntegrationTestBase(fix
             starRating = 3
         });
 
-        var id = created.GetProperty("id").GetGuid();
-
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-
-        var property = await db.Set<Property>()
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .FirstAsync(p => p.PersistenceId == id);
+        var property = await ReadAsync(created.GetProperty("id").GetGuid());
 
         property.CategoryId.Should().BeNull();
         property.Category.Should().BeNull("a null FK resolves to nothing, not to the first cached row");
@@ -153,5 +137,19 @@ public class LookupCacheTests(PostgresFixture fixture) : IntegrationTestBase(fix
         var get = () => Cache.Get(absent);
         get.Should().Throw<KeyNotFoundException>(
             "a missing lookup id is an error, not a silent null");
+    }
+
+    /// <summary>The property by its key, through the boundary's repository.</summary>
+    /// <remarks>
+    ///     Under the suite's tenant, with the query filters lifted: outside a request there is no ambient
+    ///     tenant, and Property is an ITenantEntity. The row is there; the filter is not the subject.
+    /// </remarks>
+    private async Task<Property> ReadAsync(Guid id)
+    {
+        using var tenant = TenantScope.BeginScope("test-tenant");
+        using var scope = Services.CreateScope();
+        using var all = scope.ServiceProvider.GetRequiredService<IQueryFilterToggle>().DisableAll();
+        var property = await scope.ServiceProvider.GetRequiredService<IReadRepository<Property>>().GetByIdAsync(id);
+        return property ?? throw new InvalidOperationException($"no property {id}");
     }
 }

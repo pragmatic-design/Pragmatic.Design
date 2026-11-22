@@ -1,4 +1,4 @@
-namespace Pragmatic.Persistence.EFCore.Repository;
+namespace Pragmatic.Persistence.Caching;
 
 /// <summary>
 ///     Marker interface for lookup cache loaders.
@@ -27,7 +27,7 @@ public interface ILookupCacheLoader
     Task LoadForTenantAsync(IServiceProvider serviceProvider, string tenantId, CancellationToken ct);
 
     /// <summary>The <c>[Lookup]</c> entity this loader fills the cache of.</summary>
-    /// <remarks>How <see cref="LookupCacheReloadInterceptor" /> finds the loader of an entity a save wrote (#734).</remarks>
+    /// <remarks>How <see cref="LookupCacheReloadObserver" /> finds the loader of an entity a save wrote (#734).</remarks>
     Type EntityType { get; }
 
     /// <summary>

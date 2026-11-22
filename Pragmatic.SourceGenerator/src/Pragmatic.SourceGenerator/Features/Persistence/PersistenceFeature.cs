@@ -156,7 +156,7 @@ internal static class PersistenceFeature
 
         var (derivedQueryEndpoints, queryModels, derivedEngineSources) = QueryFeature.Register(context, features, platform, resourceQueries: resourceQueries);
         ProjectionFeature.Register(context, efEntitiesProvider, features);
-        AdvancedFeature.Register(context, entitiesWithFeatures, features);
+        AdvancedFeature.Register(context, entitiesWithFeatures, shapeEntitiesWithFeatures, features);
         var (persistedStores, efCoreSchemas) = DbContextFeature.Register(context, efEntitiesProvider, features, localTraitEntities);
 
         // TPH/TPT/TPC derived type setters — generates SetX() for properties declared on derived types.

@@ -1,6 +1,6 @@
 using Pragmatic.Persistence.Entity;
 
-namespace Pragmatic.Persistence.EFCore.Repository;
+namespace Pragmatic.Persistence.Caching;
 
 /// <summary>
 ///     In-memory lookup cache backed by a dictionary.

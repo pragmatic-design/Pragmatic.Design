@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
-using Pragmatic.Persistence.EFCore.Repository;
+using Pragmatic.Persistence.Caching;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Testing.Assertions;
 using Xunit;

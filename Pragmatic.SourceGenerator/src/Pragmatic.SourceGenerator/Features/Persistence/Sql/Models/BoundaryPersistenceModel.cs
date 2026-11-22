@@ -25,4 +25,10 @@ internal sealed record BoundaryPersistenceModel(string Hint, string? Namespace, 
 
     /// <summary>The nested read repository that is the lookup (<c>SqlReadRepository</c>), built over the boundary's session.</summary>
     public string? UserLookupRepository { get; init; }
+
+    /// <summary>
+    ///     The assembly's <c>Add{Prefix}LookupCaches</c>, fully qualified, when the boundary has a <c>[Lookup]</c> entity (#881); null otherwise. An
+    ///     engine's module carries no persistence metadata for a host to read the registration from, so its boundary's registration calls it.
+    /// </summary>
+    public string? LookupRegistration { get; init; }
 }

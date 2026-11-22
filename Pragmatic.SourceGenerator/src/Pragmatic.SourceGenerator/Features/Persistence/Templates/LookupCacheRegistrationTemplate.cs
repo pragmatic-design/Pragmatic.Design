@@ -11,6 +11,8 @@ namespace Pragmatic.SourceGenerator.Features.Persistence.Templates;
 /// </summary>
 internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
 {
+    private const string Caching = "global::Pragmatic.Persistence.Caching";
+
     private readonly ImmutableArray<EntityMetadataModel> _lookups;
 
     public LookupCacheRegistrationTemplate(ImmutableArray<EntityMetadataModel> lookups) =>
@@ -121,6 +123,10 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
             modifiers: new MethodModifiers { IsStatic = true });
     }
 
+    private const string TryAdd = "global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions";
+
+    // Idempotent, every line of it: on the engines each boundary's Add{Boundary}Persistence calls it (#881), so an assembly with two boundaries
+    // over lookups calls it twice, and a second cache, loader or observer would be a second reload of every write.
     private void RenderRegistrationBody()
     {
         Comment("Register lookup caches as singletons");
@@ -128,11 +134,10 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         {
             var entityType = $"global::{lookup.FullTypeName}";
             var idType = GetFullIdType(lookup.IdType);
-            var cacheType = $"global::Pragmatic.Persistence.EFCore.Repository.LookupCache<{entityType}, {idType}>";
+            var cacheType = $"{Caching}.LookupCache<{entityType}, {idType}>";
             var interfaceType = $"global::Pragmatic.Persistence.Entity.ILookupCache<{entityType}, {idType}>";
 
-            AppendLine($"var {ToCamelCase(lookup.TypeName)}Cache = new {cacheType}();");
-            AppendLine($"services.AddSingleton<{interfaceType}>({ToCamelCase(lookup.TypeName)}Cache);");
+            AppendLine($"{TryAdd}.TryAddSingleton<{interfaceType}>(services, new {cacheType}());");
         }
 
         AppendLine();
@@ -141,18 +146,21 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         {
             var loaderClassName = NamingHelper.AppendSuffix(lookup.TypeName, "LookupCacheLoader");
             var loaderType = $"global::{lookup.Namespace}.{loaderClassName}";
-            AppendLine($"services.AddSingleton<global::Pragmatic.Persistence.EFCore.Repository.ILookupCacheLoader, {loaderType}>();");
+            AppendLine($"{TryAdd}.TryAddEnumerable(services, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<{Caching}.ILookupCacheLoader, {loaderType}>());");
         }
 
         AppendLine();
         Comment("Register hosted service for preloading caches at startup");
-        AppendLine("services.AddHostedService<global::Pragmatic.Persistence.EFCore.Repository.LookupPreloadHostedService>();");
+        AppendLine($"services.AddHostedService<{Caching}.LookupPreloadHostedService>();");
 
-        // A committed write to a lookup reloads its cache (#734). The boundary's context adds every IInterceptor the container holds.
+        // A committed write to a lookup reloads its cache (#734), on every engine (#881): EF Core's context and the engines' sessions call the
+        // container's commit observers. Once per container whichever assembly registers it: the observer holds every loader, so a second
+        // one would reload each lookup twice.
         AppendLine();
         Comment("Reload a lookup's cache after a committed write to it");
-        AppendLine("services.AddSingleton<global::Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor, "
-                   + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheReloadInterceptor>();");
+        AppendLine("global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services, "
+                   + "global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Persistence.Repository.ICommitObserver, "
+                   + $"{Caching}.LookupCacheReloadObserver>());");
 
         // The other nodes' reloads, heard through a distributed invalidation broadcast (#763). Once per container whichever assembly
         // registers it: the observer holds every loader, so a second one would reload each lookup twice.
@@ -160,7 +168,7 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         Comment("Reload a lookup when another node broadcasts that it reloaded its own");
         AppendLine("global::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(services, "
                    + "global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.Caching.ICacheInvalidationObserver, "
-                   + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheInvalidationObserver>());");
+                   + $"{Caching}.LookupCacheInvalidationObserver>());");
 
         // Only when a lookup is tenant-scoped. The preload enumerates the tenants known at startup
         // and stops there, so a tenant created afterwards has no cache — but a lookup with one cache
@@ -171,8 +179,8 @@ internal sealed class LookupCacheRegistrationTemplate : CSharpTemplate
         {
             AppendLine();
             Comment("Follow the tenant lifecycle — a tenant created after startup needs its caches loaded");
-            AppendLine("services.AddSingleton<global::Pragmatic.MultiTenancy.ITenantLifecycleObserver, "
-                       + "global::Pragmatic.Persistence.EFCore.Repository.LookupCacheTenantObserver>();");
+            AppendLine($"{TryAdd}.TryAddEnumerable(services, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton<global::Pragmatic.MultiTenancy.ITenantLifecycleObserver, "
+                       + $"{Caching}.LookupCacheTenantObserver>());");
         }
 
         AppendLine();

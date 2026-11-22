@@ -13,6 +13,7 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
 {
     private readonly ImmutableArray<EntityMetadataModel> _entities;
     private readonly ImmutableArray<EntityMetadataModel> _efCoreEntities;
+    private readonly ImmutableArray<EntityMetadataModel> _lookups;
     private readonly bool _indent;
 
     /// <param name="entities">Every entity the module persists, whichever engine stores it: the host learns the module's entities here.</param>
@@ -21,13 +22,19 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
     ///     Which of them EF Core stores; all of them when null. Only those carry a <c>repositoryType</c>, and only those reach the query filters'
     ///     and the lookup caches' registrations: an engine's repository is registered by its boundary's <c>Add{Boundary}Persistence</c>.
     /// </param>
+    /// <param name="hasEngine">
+    ///     Which of them an engine this compilation references persists; all of them when null. The lookup caches are registered for those,
+    ///     on every engine (#881), as <c>AdvancedFeature</c> emits them.
+    /// </param>
     public PersistenceMetadataTemplate(
         ImmutableArray<EntityMetadataModel> entities,
         bool indent,
-        System.Func<EntityMetadataModel, bool>? isEfCore = null)
+        System.Func<EntityMetadataModel, bool>? isEfCore = null,
+        System.Func<EntityMetadataModel, bool>? hasEngine = null)
     {
         _entities = entities;
         _efCoreEntities = isEfCore is null ? entities : entities.Where(isEfCore).ToImmutableArray();
+        _lookups = (hasEngine is null ? entities : entities.Where(hasEngine)).Where(e => e is { IsLookup: true, IsFromReference: false }).ToImmutableArray();
         _indent = indent;
     }
 
@@ -81,8 +88,7 @@ internal sealed class PersistenceMetadataTemplate : CSharpTemplate
         // the method is generated per assembly and called by nothing inside a host: no
         // ILookupCache<T, TId> in the container, no loader, no preload — and the documentation had
         // turned that into an instruction to the reader instead of a defect.
-        var lookupRegistration = LookupCacheRegistrationTemplate.RegistrationMethodFor(
-            _efCoreEntities.Where(e => e is { IsLookup: true, IsFromReference: false }).ToImmutableArray());
+        var lookupRegistration = LookupCacheRegistrationTemplate.RegistrationMethodFor(_lookups);
         if (lookupRegistration is null)
             builder.PropertyNull("lookupRegistrationMethod");
         else

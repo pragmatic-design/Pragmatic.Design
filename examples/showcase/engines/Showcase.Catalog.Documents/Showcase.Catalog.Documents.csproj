@@ -16,6 +16,11 @@
     <AdditionalFiles Include="..\..\src\Showcase.Catalog\translations\*.json" LinkBase="translations" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- A Category's setters are internal and no mutation writes one: the lookup reload test writes it through them (#881). -->
+    <InternalsVisibleTo Include="Showcase.Documents.IntegrationTests" />
+  </ItemGroup>
+
   <!-- EF Core only, by the owner's list (#363): the boundary's DbContext, and the two grids that take an IQueryable. -->
   <ItemGroup>
     <Compile Remove="..\..\src\Showcase.Catalog\Amenities\Actions\CountAmenitiesAction.cs" />

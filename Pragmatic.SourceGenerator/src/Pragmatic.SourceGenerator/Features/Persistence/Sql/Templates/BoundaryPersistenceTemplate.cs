@@ -107,6 +107,12 @@ internal sealed class BoundaryPersistenceTemplate(BoundaryPersistenceModel model
             AppendLine($"        {e.JobStore}<{model.BoundaryType}>(services);");
         }
 
+        if (model.LookupRegistration is not null)
+        {
+            AppendLine($"        // [Lookup]: the caches of the assembly's lookups, their preload and their reload after a commit (idempotent: each boundary calls it).");
+            AppendLine($"        global::{model.LookupRegistration}(services);");
+        }
+
         AppendLine("        return services;");
         AppendLine("    }");
         AppendLine();

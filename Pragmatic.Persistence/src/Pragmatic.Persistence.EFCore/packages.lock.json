@@ -245,6 +245,14 @@
           "Pragmatic.Validation": "[1.0.0, )"
         }
       },
+      "pragmatic.persistence.caching": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.10, )",
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
+        }
+      },
       "pragmatic.redaction": {
         "type": "Project",
         "dependencies": {
@@ -570,6 +578,13 @@
           "Pragmatic.Result": "[1.0.0, )",
           "Pragmatic.Specification": "[1.0.0, )",
           "Pragmatic.Validation": "[1.0.0, )"
+        }
+      },
+      "pragmatic.persistence.caching": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Caching": "[1.0.0, )",
+          "Pragmatic.Persistence": "[1.0.0, )"
         }
       },
       "pragmatic.redaction": {

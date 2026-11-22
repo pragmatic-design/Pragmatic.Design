@@ -402,6 +402,9 @@ public class GeneratedSurfaceInventoryTests
             "Pragmatic.Mapping.EFCore",
             "Pragmatic.Validation",
             "Pragmatic.Caching",
+            // A [Lookup]'s loader and registration name its cache, preload and reload, which every engine shares (#881). A module gets it
+            // through its engine's package, as Pragmatic.Mapping.EFCore above.
+            "Pragmatic.Persistence.Caching",
             "Pragmatic.Events",
             "Pragmatic.Audit",
             "Pragmatic.Audit.EFCore",

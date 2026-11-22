@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.Persistence.Entity;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Testing.Assertions;
 using Showcase.Catalog;
 using Showcase.Catalog.Entities;
@@ -14,12 +14,13 @@ namespace Showcase.IntegrationTests.CrossCutting;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Written through the boundary's context and <c>SaveChanges</c>, the save every mutation's unit of work ends in: the Showcase
-///         has no mutation that writes a <see cref="Category" />. The reload is the context's interceptor, so the save is what it hears.
+///         Written through the boundary's repository and unit of work, the save every mutation ends in: the Showcase has no mutation that
+///         writes a <see cref="Category" />. The reload is a commit observer every engine calls (#881), so the same file runs on EF Core,
+///         Sql and documents.
 ///     </para>
 ///     <para>
-///         The transaction cases are the control: a reload at the save would read, through a context of its own, a row its transaction
-///         has not committed, and a rolled-back row must never reach the cache.
+///         The transaction cases are the control: a reload at the save would read, through a scope of its own, a row its transaction has
+///         not committed, and a rolled-back row must never reach the cache.
 ///     </para>
 /// </remarks>
 public class ALookupWriteReloadsTheCacheTests(PostgresFixture fixture) : IntegrationTestBase(fixture)
@@ -33,10 +34,9 @@ public class ALookupWriteReloadsTheCacheTests(PostgresFixture fixture) : Integra
     public async Task ACategoryAddedWhileTheHostRuns_IsInTheCacheAfterTheSave()
     {
         using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        var id = Add(db, "Glamping");
+        var id = Add(scope, "Glamping");
 
-        await db.SaveChangesAsync();
+        await UnitOfWork(scope).SaveChangesAsync();
 
         Cache.TryGet(id, out var cached).Should().BeTrue("the save committed the row, and the cache is reloaded after a commit");
         cached!.Name.Should().StartWith("Glamping");
@@ -47,52 +47,58 @@ public class ALookupWriteReloadsTheCacheTests(PostgresFixture fixture) : Integra
     public async Task ACategoryAddedInATransaction_IsInTheCacheOnceItCommits()
     {
         using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
+        var unitOfWork = UnitOfWork(scope);
 
-        // The host's retrying strategy runs a user transaction as one retriable unit, as the unit of work does.
-        await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        // Inside ExecuteAsync: a retrying strategy runs a user transaction as one retriable unit (IUnitOfWork.BeginTransactionAsync).
+        await unitOfWork.ExecuteAsync(async ct =>
         {
-            await using var transaction = await db.Database.BeginTransactionAsync();
-            var id = Add(db, "Agriturismo");
+            await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+            var id = Add(scope, "Agriturismo");
 
-            await db.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync(ct);
             Cache.TryGet(id, out _).Should().BeFalse("the row is not committed: a reload now would not see it");
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(ct);
             Cache.TryGet(id, out var cached).Should().BeTrue("the commit reloads the cache");
             cached!.Name.Should().StartWith("Agriturismo");
+            return true;
         });
     }
 
     [Fact]
     public async Task ACategoryRolledBack_NeverReachesTheCache()
     {
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
         var id = Guid.Empty;
-        await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        using (var scope = Services.CreateScope())
         {
-            await using var transaction = await db.Database.BeginTransactionAsync();
-            id = Add(db, "Rolled back");
-            await db.SaveChangesAsync();
-            await transaction.RollbackAsync();
-        });
+            var unitOfWork = UnitOfWork(scope);
+            await unitOfWork.ExecuteAsync(async ct =>
+            {
+                await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+                id = Add(scope, "Rolled back");
+                await unitOfWork.SaveChangesAsync(ct);
+                await transaction.RollbackAsync(ct);
+                return true;
+            });
+        }
 
         // A later committed write of another category reloads the cache from the table: the rolled-back row is not in it.
         using var later = Services.CreateScope();
-        var other = later.ServiceProvider.GetRequiredKeyedService<DbContext>(typeof(CatalogBoundary));
-        var committed = Add(other, "Masseria");
-        await other.SaveChangesAsync();
+        var committed = Add(later, "Masseria");
+        await UnitOfWork(later).SaveChangesAsync();
 
         Cache.TryGet(committed, out _).Should().BeTrue();
         Cache.TryGet(id, out _).Should().BeFalse("a rolled-back row is in no table, so in no cache");
     }
 
-    private static Guid Add(DbContext db, string name)
+    private static IUnitOfWork UnitOfWork(IServiceScope scope)
+        => scope.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(CatalogBoundary));
+
+    private static Guid Add(IServiceScope scope, string name)
     {
-        var category = new Category();
-        db.Set<Category>().Add(category);
-        db.Entry(category).Property(nameof(Category.Name)).CurrentValue = $"{name} {Guid.NewGuid():N}"[..(name.Length + 9)];
+        var category = Category.Create();
+        category.SetName($"{name} {Guid.NewGuid():N}"[..(name.Length + 9)]);
+        scope.ServiceProvider.GetRequiredService<IRepository<Category>>().Add(category);
         return category.PersistenceId;
     }
 }
