@@ -219,6 +219,17 @@ internal sealed record QueryModel
     public bool RedundantPagingRequest { get; init; }
 
     /// <summary>
+    ///     The mapped key member a paged query orders by when nothing else orders it (#938); null when there is
+    ///     none to order by, or the query's order is decided elsewhere.
+    /// </summary>
+    /// <remarks>
+    ///     Without an order <c>Skip</c>/<c>Take</c> are not stable: two requests for one page can return different
+    ///     rows. The key is the one order every entity has. It is the mapped member (<c>PersistenceId</c> behind
+    ///     the generated <c>Id</c> alias), because the alias is unmapped and EF Core cannot translate it.
+    /// </remarks>
+    public string? FallbackOrderKey { get; init; }
+
+    /// <summary>
     ///     The Page property (if exists).
     /// </summary>
     public QueryPropertyModel? PageProperty => Properties.FirstOrDefault(p => p.IsPageProperty);
