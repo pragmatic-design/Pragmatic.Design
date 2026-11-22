@@ -225,6 +225,10 @@ public partial class SearchOrdersQuery
 `Paged = true` generates `Page = 1` and `PageSize = 20`. Write them by hand only to change the
 defaults; declaring both the option and the properties is **PRAG0727**.
 
+A page is always read in an order: the `[Sort]` defaults the query declares, and the entity's key when
+no sort applies. A paged query with no `[Sort]` pages by the key and says so with **PRAG0746** (info);
+add a `[Sort]` with a `DefaultDirection` to page in another order.
+
 ⚠️ **When the rule already exists as a `Specification<T>`, this class is the long way round.**
 `[Query]` on the static member derives the query from it; the class form is for a read that composes
 several filters, a sort and a projection, which is what this one does.

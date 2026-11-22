@@ -10,8 +10,8 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 | | |
 |---|---|
-| Declared descriptors | **497** |
-| Distinct IDs | **497** |
+| Declared descriptors | **498** |
+| Distinct IDs | **498** |
 | Collisions | **0** |
 | IDs outside the declared ranges | **0** |
 
@@ -282,7 +282,7 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 
 *First free after the last used:* `PRAG0691`.
 
-### Persistence.Query: 49 in use · range `PRAG0700`–`PRAG0799`
+### Persistence.Query: 50 in use · range `PRAG0700`–`PRAG0799`
 
 | ID | Symbol | Severity | Title |
 |---|---|---|---|
@@ -331,12 +331,11 @@ What each diagnostic means and how to fix it is on the [diagnostics reference](.
 | `PRAG0743` | `EntityHasNoPersistenceEngine` | Error | The entity's boundary names no persistence engine |
 | `PRAG0744` | `PersistenceEngineNotReferenced` | Error | The boundary names a persistence engine that is not referenced |
 | `PRAG0745` | `RelationBetweenEngines` | Error | A relation between entities on different engines keeps only the key |
+| `PRAG0746` | `PagedByTheKey` | Info | A paged query with no sort pages in the order of the key |
 | `PRAG0747` | `TenantBindingCannotBeGenerated` | Error | The [FromTenant] binding cannot be generated |
 | `PRAG0748` | `EmptyGroupsOnACompositeKey` | Error | IncludeEmpty needs a single group key |
 | `PRAG0749` | `EmptyGroupsOnAKeyNotAProjectedEnum` | Error | IncludeEmpty needs an enum key the view carries |
 | `PRAG0750` | `EmptyGroupMemberHasNoValue` | Error | An empty group has no value for this member |
-
-*Free inside the used span:* `PRAG0746`.
 
 *First free after the last used:* `PRAG0751`.
 

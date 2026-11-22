@@ -287,7 +287,8 @@ public partial class SearchOrdersQuery
 
 **`Paged = true` writes the paging surface**: `Page = 1`, `PageSize = 20`. Write them by hand only
 to change the defaults; declaring both is **PRAG0727**, because the generated half cannot add a member
-the author already wrote.
+the author already wrote. A page is read in the order of the `[Sort]` defaults, or of the entity's key
+when no sort applies (**PRAG0746**, info, on a paged query with no `[Sort]`): pages stay stable.
 
 Generates `Apply(IQueryable<Order>)` with conditional filters, sort, paging, and `Projection: Expression<Func<Order,OrderSummary>>` (auto-generated if fields match; otherwise add `[MapFrom<Order>]` on `OrderSummary`; see `pragmatic-use-foundation`).
 

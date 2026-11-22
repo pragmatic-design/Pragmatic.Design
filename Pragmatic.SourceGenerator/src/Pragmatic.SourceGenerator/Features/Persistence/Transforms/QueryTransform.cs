@@ -119,6 +119,16 @@ internal static class QueryTransform
         // not emitted — it was an EF Core exception at the first request.
         var (eagerLoadPaths, eagerLoadProblems) = Actions.Transforms.IncludePaths.EagerLoads(targetSymbol, entityType);
 
+        var gridRequests = ExtractGridRequests(targetSymbol, ct);
+        var resultIsAggregateView = resultType.GetAttributes().Any(
+            a => a.AttributeClass?.Name == "QueryViewAttribute");
+        var fallbackOrderKey = QueryFallbackOrder.KeyFor(
+            entityType,
+            isPaged: properties.Any(p => p.IsPageProperty) && properties.Any(p => p.IsPageSizeProperty),
+            hasGridRequests: gridRequests.Length > 0,
+            hasBaseQuery: baseQuery is not null,
+            resultIsAggregateView);
+
         return new QueryModel
         {
             Namespace = targetSymbol.ContainingNamespace.ToDisplayString(),
@@ -149,7 +159,7 @@ internal static class QueryTransform
             ClockBindings = ClockBindingTransform.Extract(targetSymbol),
             TenantBindings = TenantBindingTransform.Extract(targetSymbol),
             FeatureGates = FeatureGateTransform.Extract(targetSymbol),
-            GridRequests = ExtractGridRequests(targetSymbol, ct),
+            GridRequests = gridRequests,
             EntityDeclaresGridBridge = entityType.GetAttributes().Any(
                 a => a.AttributeClass?.ToDisplayString() == GenerateGridBridgeAttributeName),
             BoundaryTypeName = Core.QueryShapeReader.BoundaryOf(entityType),
@@ -160,8 +170,7 @@ internal static class QueryTransform
             IsSingle = Core.QueryShapeReader.IsSingle(attribute),
             MapsInMemory = Core.QueryShapeReader.MapsInMemory(attribute),
             // The result declares the grouping; the query only has to hand the set over.
-            ResultIsAggregateView = resultType.GetAttributes().Any(
-                a => a.AttributeClass?.Name == "QueryViewAttribute"),
+            ResultIsAggregateView = resultIsAggregateView,
             // Read by the view's own transform, so the query and the view agree on whether WithEmptyGroups exists.
             ResultCompletesEmptyGroups = resultType is INamedTypeSymbol view
                 && QueryViewTransform.Of(view, context.SemanticModel.Compilation) is { CompletesEmptyGroups: true },
@@ -173,6 +182,7 @@ internal static class QueryTransform
             ExplicitPermission = Actions.Transforms.ActionTransform.ParseExplicitPermission(targetSymbol, context.SemanticModel.Compilation),
             GeneratesPaging = generatesPaging,
             RedundantPagingRequest = pagingIsRequested && declaresPaging,
+            FallbackOrderKey = fallbackOrderKey,
             // Both halves of the declaration, resolved later: a permission is often a constant this
             // same generator writes, and the catalog that binds it is built after this transform runs.
             RequiredPermissions = declaredPermissions,

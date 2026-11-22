@@ -358,10 +358,24 @@ internal sealed partial class QueryApplyTemplate : CSharpTemplate
         }
 
         // Generate sorting
-        if (_model.HasSorting)
+        var rendersSorts = _model.HasSorting && _model.SortProperties.Any();
+        if (rendersSorts)
         {
             Comment("Apply sorting");
             RenderSortingLogic();
+            AppendLine();
+        }
+
+        // A page is read in an order (#938): without one Skip/Take are not stable, and two requests for the
+        // same page can return different rows. When no sort applied, the key orders it.
+        if (_model.FallbackOrderKey is { } key)
+        {
+            Comment("A page is read in an order: the key, when no sort applied");
+            var orderByKey = $"query = query.OrderBy(e => e.{key});";
+            if (rendersSorts)
+                If("isFirstSort", () => AppendLine(orderByKey));
+            else
+                AppendLine(orderByKey);
             AppendLine();
         }
 

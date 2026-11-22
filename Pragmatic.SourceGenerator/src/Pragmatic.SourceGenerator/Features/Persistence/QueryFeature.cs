@@ -606,6 +606,13 @@ internal static class QueryFeature
                 model.Location?.ToLocation(), model.TypeName));
         }
 
+        // PRAG0746: the order a page is read in, said where the query is written (#938).
+        if (model is { FallbackOrderKey: { } key, HasSorting: false })
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                QueryOrderingDiagnostics.PagedByTheKey, model.Location?.ToLocation(), model.TypeName, key));
+        }
+
         ReportUnrenderableFilters(context, model);
 
         var template = new QueryApplyTemplate(model);
