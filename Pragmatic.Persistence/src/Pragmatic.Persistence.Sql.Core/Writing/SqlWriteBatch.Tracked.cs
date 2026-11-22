@@ -13,6 +13,7 @@ public sealed partial class SqlWriteBatch
         var writer = SqlSnapshots.WriterOf(row);
         AddWrite(writer, row, writer.InsertItemAsIs(row, Session.Dialect), before: false, after: true);
         Rows++;
+        Note(row, SqlWriteKind.Insert);
         return this;
     }
 
@@ -25,6 +26,7 @@ public sealed partial class SqlWriteBatch
         var moves = writer.ColumnsMoveRollUps(columns);
         AddWrite(writer, row, writer.ColumnsItem(row, columns, Session.Dialect), before: moves, after: moves);
         Rows++;
+        Note(row, SqlWriteKind.Update);
         return this;
     }
 
@@ -36,6 +38,7 @@ public sealed partial class SqlWriteBatch
             throw new InvalidOperationException($"{row.GetType().Name} is [SoftDelete]: a unit of work marks the row deleted (an update of its flags), it does not delete it.");
         AddWrite(writer, row, writer.HardDeleteItem(row, Session.Dialect), before: true, after: false);
         Rows++;
+        Note(row, SqlWriteKind.Delete);
         return this;
     }
 

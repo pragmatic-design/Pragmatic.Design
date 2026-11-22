@@ -55,13 +55,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Test code bound to EF Core (owner decision, 2026-11-06): the test itself reads or prepares rows through a DbContext, EF Core's
-         nested repositories, or references a project built over the EF Core modules (the Blazor client, its routes). The
-         feature it exercises runs on the engine; the test's own code does not. -->
-    <Compile Remove="..\Showcase.IntegrationTests\Endpoints\AnUploadWhoseCommitIsNotAcknowledgedTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Replaced, not left out (#904): the job suites' store, EF Core's over a DbContext of the test's own there, the engine's over the
          Booking boundary's session here (JobStoreUnderTest.cs beside this project). -->
     <Compile Remove="..\Showcase.IntegrationTests\Jobs\JobStoreUnderTest.cs" />

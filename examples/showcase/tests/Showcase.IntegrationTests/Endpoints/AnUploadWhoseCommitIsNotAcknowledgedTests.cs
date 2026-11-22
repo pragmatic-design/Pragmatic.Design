@@ -1,12 +1,9 @@
-using System.Collections.Concurrent;
-using System.Data.Common;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Pragmatic.Persistence.Repository;
 using Pragmatic.Storage;
 using Pragmatic.Testing.Assertions;
 using Showcase.Booking.Entities;
@@ -27,10 +24,10 @@ namespace Showcase.IntegrationTests.Endpoints;
 ///         <c>verifySucceeded</c> for exactly that.
 ///     </para>
 ///     <para>
-///         The loss is simulated by an interceptor on the attachment insert: after the transaction that
-///         carried it commits, or right after the statement when EF runs it without one. The control
-///         refuses the insert before it runs, which is a commit that genuinely did not happen: there the
-///         upload must still fail and leave no row.
+///         The loss is simulated by an <see cref="ICommitObserver" />, which every engine calls after the
+///         commit that carried the attachment and before the upload sees it. The control refuses the insert
+///         before it runs, which is a commit that genuinely did not happen: there the upload must still fail
+///         and leave no row. One file for EF Core, Sql and documents: the observer is the engines' common seam.
 ///     </para>
 /// </remarks>
 [Collection(IntegrationTestCollection.Name)]
@@ -48,11 +45,7 @@ public sealed class AnUploadWhoseCommitIsNotAcknowledgedTests(PostgresFixture fi
 
     public Task InitializeAsync()
     {
-        _factory = new ShowcaseWebFactory(fixture, extraServices: services =>
-        {
-            services.AddSingleton<IInterceptor>(new AttachmentInsertFault.Commands(_fault));
-            services.AddSingleton<IInterceptor>(new AttachmentInsertFault.Transactions(_fault));
-        });
+        _factory = new ShowcaseWebFactory(fixture, extraServices: services => services.AddSingleton<ICommitObserver>(_fault));
 
         _client = _factory.CreateClient();
         _client.DefaultRequestHeaders.Add("X-Tenant-Id", "test-tenant");
@@ -83,11 +76,12 @@ public sealed class AnUploadWhoseCommitIsNotAcknowledgedTests(PostgresFixture fi
             $"the row committed, so the upload happened — answering an error would invite a second one: {body}");
 
         var attachmentId = JsonSerializer.Deserialize<Guid>(body, JsonOptions);
-        var storageUri = await StorageUriOf(attachmentId);
-        storageUri.Should().NotBeNull("the row is there: the commit did happen");
+        attachmentId.Should().Be(_fault.Attachment!.Value, "the row the observer saw committed is the one the upload answers");
+        var row = await AttachmentRows.FindAsync(_factory.Services, attachmentId);
+        row.Should().NotBeNull("the row is there: the commit did happen");
 
         var storage = _factory.Services.GetRequiredService<IFileStorage>();
-        (await storage.ExistsAsync(ToUri(storageUri!))).Should().BeTrue(
+        (await storage.ExistsAsync(ToUri(row!.StorageUri))).Should().BeTrue(
             "and the file it points at is still there — deleting it would leave a row naming nothing");
     }
 
@@ -108,7 +102,8 @@ public sealed class AnUploadWhoseCommitIsNotAcknowledgedTests(PostgresFixture fi
 
         _fault.Fired.Should().Be(1, "the insert was refused before it ran");
         response.IsSuccessStatusCode.Should().BeFalse("nothing was committed, so nothing was uploaded");
-        (await RowsFor(reservationId)).Should().Be(0);
+        (await AttachmentRows.FindAsync(_factory.Services, _fault.Attachment!.Value)).Should().BeNull(
+            "the row the observer refused was never written");
     }
 
     private static string AttachmentsUrl(Guid reservationId) =>
@@ -126,26 +121,6 @@ public sealed class AnUploadWhoseCommitIsNotAcknowledgedTests(PostgresFixture fi
     // As IFileStorage.SaveAsync says to read a stored URI back. Trying UriKind.Absolute first made
     // "/files/…" the absolute file:///files/… on Linux, which the disk storage refuses as foreign.
     private static Uri ToUri(string value) => new(value, UriKind.RelativeOrAbsolute);
-
-    private async Task<string?> StorageUriOf(Guid attachmentId)
-    {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        return await db.Set<ReservationAttachment>()
-            .IgnoreQueryFilters()
-            .Where(a => a.Id == attachmentId)
-            .Select(a => a.StorageUri)
-            .SingleOrDefaultAsync();
-    }
-
-    private async Task<int> RowsFor(Guid reservationId)
-    {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        return await db.Set<ReservationAttachment>()
-            .IgnoreQueryFilters()
-            .CountAsync(a => a.ReservationId == reservationId);
-    }
 
     private async Task<JsonElement> PostJson(string url, object body)
     {
@@ -187,104 +162,47 @@ public sealed class AnUploadWhoseCommitIsNotAcknowledgedTests(PostgresFixture fi
         RefuseTheInsert
     }
 
-    /// <summary>Fails the attachment insert, before it runs or after it has committed.</summary>
-    private sealed class AttachmentInsertFault
+    /// <summary>Fails the attachment insert, before it is written or after it has committed.</summary>
+    private sealed class AttachmentInsertFault : ICommitObserver
     {
-        private readonly ConcurrentDictionary<DbTransaction, byte> _carryingTheInsert = new();
         private int _fired;
 
         public volatile FaultMode Mode;
 
         public int Fired => _fired;
 
-        private static bool IsTheInsert(DbCommand command)
-            => command.CommandText.Contains("INSERT INTO \"ReservationAttachment", StringComparison.Ordinal);
+        /// <summary>The attachment the fault fired on.</summary>
+        public Guid? Attachment { get; private set; }
 
-        private Exception Fire(string what)
+        public void Writing(IReadOnlyList<CommitEntry> entries)
         {
+            if (Mode == FaultMode.RefuseTheInsert && TheInsert(entries) is { } attachment)
+                throw Fire(attachment, "Simulated refusal of the attachment insert.");
+        }
+
+        public void Committed(IReadOnlyList<CommitEntry> entries)
+        {
+            if (Mode == FaultMode.LoseTheAcknowledgement && TheInsert(entries) is { } attachment)
+                throw Fire(attachment, "Simulated loss of the commit's acknowledgement.");
+        }
+
+        private static ReservationAttachment? TheInsert(IReadOnlyList<CommitEntry> entries)
+        {
+            foreach (var entry in entries)
+            {
+                if (entry is { State: CommitEntryState.Added, Entity: ReservationAttachment attachment })
+                    return attachment;
+            }
+
+            return null;
+        }
+
+        private InvalidOperationException Fire(ReservationAttachment attachment, string what)
+        {
+            Mode = FaultMode.None;
+            Attachment = attachment.Id;
             Interlocked.Increment(ref _fired);
             return new InvalidOperationException(what);
-        }
-
-        private void Refuse(DbCommand command)
-        {
-            if (Mode == FaultMode.RefuseTheInsert && IsTheInsert(command))
-            {
-                Mode = FaultMode.None;
-                throw Fire("Simulated refusal of the attachment insert.");
-            }
-        }
-
-        private void AfterTheInsert(DbCommand command)
-        {
-            if (Mode != FaultMode.LoseTheAcknowledgement || !IsTheInsert(command))
-                return;
-
-            // Inside a transaction the loss is the commit's acknowledgement; without one the statement
-            // committed on its own, and losing its answer is the same failure.
-            if (command.Transaction is { } transaction)
-            {
-                _carryingTheInsert[transaction] = 0;
-                return;
-            }
-
-            Mode = FaultMode.None;
-            throw Fire("Simulated loss of the acknowledgement of an autocommitted insert.");
-        }
-
-        private void AfterTheCommit(DbTransaction transaction)
-        {
-            if (_carryingTheInsert.TryRemove(transaction, out _))
-            {
-                Mode = FaultMode.None;
-                throw Fire("Simulated loss of the commit's acknowledgement.");
-            }
-        }
-
-        public sealed class Commands(AttachmentInsertFault fault) : DbCommandInterceptor
-        {
-            public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
-                DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
-                CancellationToken cancellationToken = default)
-            {
-                fault.Refuse(command);
-                return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
-            }
-
-            public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
-                DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
-                CancellationToken cancellationToken = default)
-            {
-                fault.Refuse(command);
-                return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
-            }
-
-            public override ValueTask<DbDataReader> ReaderExecutedAsync(
-                DbCommand command, CommandExecutedEventData eventData, DbDataReader result,
-                CancellationToken cancellationToken = default)
-            {
-                fault.AfterTheInsert(command);
-                return base.ReaderExecutedAsync(command, eventData, result, cancellationToken);
-            }
-
-            public override ValueTask<int> NonQueryExecutedAsync(
-                DbCommand command, CommandExecutedEventData eventData, int result,
-                CancellationToken cancellationToken = default)
-            {
-                fault.AfterTheInsert(command);
-                return base.NonQueryExecutedAsync(command, eventData, result, cancellationToken);
-            }
-        }
-
-        public sealed class Transactions(AttachmentInsertFault fault) : DbTransactionInterceptor
-        {
-            public override Task TransactionCommittedAsync(
-                DbTransaction transaction, TransactionEndEventData eventData,
-                CancellationToken cancellationToken = default)
-            {
-                fault.AfterTheCommit(transaction);
-                return base.TransactionCommittedAsync(transaction, eventData, cancellationToken);
-            }
         }
     }
 }

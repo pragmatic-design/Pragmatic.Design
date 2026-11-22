@@ -30,7 +30,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         "global::Pragmatic.Audit.Engines.Sql.SqlAuditExtensions.AddSqlAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Sql.SqlNotificationStoreExtensions.AddSqlNotificationStore",
         "global::Pragmatic.Jobs.Engines.Sql.SqlJobStoreExtensions.AddSqlJobStore",
-        "SqlPersistence", "Pragmatic.Persistence.Sql"), userLookup: "SqlReadRepository");
+        "SqlPersistence", "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlCommitObservers.Attach"), userLookup: "SqlReadRepository");
 
     public static readonly PragmaticRegistration Documents = new(new(
         "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Filters.IDocFilters", "global::Pragmatic.Persistence.Documents.PragmaticDocFilters",
@@ -40,7 +40,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         "global::Pragmatic.Audit.Engines.Documents.DocAuditExtensions.AddDocAuditedEntities",
         "global::Pragmatic.Notifications.Engines.Documents.DocNotificationStoreExtensions.AddDocNotificationStore",
         "global::Pragmatic.Jobs.Engines.Documents.DocJobStoreExtensions.AddDocJobStore",
-        "DocPersistence", "Pragmatic.Persistence.Documents"), userLookup: "DocReadRepository");
+        "DocPersistence", "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocCommitObservers.Attach"), userLookup: "DocReadRepository");
 
     /// <summary>The event outbox on the engines (Pragmatic.Events.Engines), by the type the generator recognises it by: its drainer's contract.</summary>
     internal const string EngineEventOutbox = "Pragmatic.Events.Engines.IEngineEventOutboxDrainer`1";

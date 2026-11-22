@@ -18,8 +18,16 @@ public sealed partial class SqlWriteBatch
     private static readonly Regex ParameterName = new(@"@p(\d+)", RegexOptions.Compiled);
     private const string Savepoint = "pragmatic_write_batch";
     private readonly List<SqlWriteItem> _items = [];
+    private List<SqlWrittenRow>? _written; // the rows, for the session's CommitHooks; null when it has none
 
     internal SqlWriteBatch(SqlSession session) => Session = session;
+
+    /// <summary>A row this batch writes, reported to the session's <see cref="SqlSession.CommitHooks" /> (one entry per row, not per table).</summary>
+    internal void Note(object row, SqlWriteKind kind)
+    {
+        if (Session.CommitHooks is not null)
+            (_written ??= []).Add(new SqlWrittenRow(row, kind));
+    }
 
     public SqlSession Session { get; }
 
@@ -36,6 +44,7 @@ public sealed partial class SqlWriteBatch
         for (var part = writer.Part; part is not null; part = part.Part)
             AddWrite(part, row!, part.InsertItem(row!, Session.Dialect), before: false, after: true); // each level's table after the one above (a foreign key may tie them)
         Rows++;
+        Note(row!, SqlWriteKind.Insert);
         return this;
     }
 
@@ -55,7 +64,11 @@ public sealed partial class SqlWriteBatch
         }
 
         if (written)
+        {
             Rows++;
+            Note(row, row.IsNew ? SqlWriteKind.Insert : SqlWriteKind.Update);
+        }
+
         return this;
     }
 
@@ -66,6 +79,7 @@ public sealed partial class SqlWriteBatch
         for (var part = writer.Part; part is not null; part = part.Part)
             AddWrite(part, row!, part.UpdateItem(row!, Session.Dialect), before: true, after: true);
         Rows++;
+        Note(row!, SqlWriteKind.Update);
         return this;
     }
 
@@ -76,12 +90,14 @@ public sealed partial class SqlWriteBatch
         {
             AddWrite(chain[0], row!, chain[0].DeleteItem(row!, Session.Dialect), before: true, after: false); // [SoftDelete]: the root's row marked, the parts kept
             Rows++;
+            Note(row!, SqlWriteKind.Update);
             return this;
         }
 
         for (var i = chain.Count - 1; i >= 0; i--)
             AddWrite(chain[i], row!, chain[i].DeleteItem(row!, Session.Dialect), before: true, after: false); // the deepest table's row first, the root's last (a foreign key may tie them)
         Rows++;
+        Note(row!, SqlWriteKind.Delete);
         return this;
     }
 
@@ -133,6 +149,8 @@ public sealed partial class SqlWriteBatch
     {
         if (_items.Count == 0)
             return;
+        if (_written is not null)
+            Session.Writing(_written); // before anything runs: a refusal writes nothing
         var dialect = Session.Dialect;
         var variable = false;
         foreach (var item in _items)
@@ -231,6 +249,9 @@ public sealed partial class SqlWriteBatch
                     await by.ReadGeneratedAsync(Session, rows, ct).ConfigureAwait(false); // per writer, in lots, after the command (its reader closed), in the batch's transaction
             }
 
+            // Written: committed now when the single statement ran on its own, at the commit of the batch's or the caller's transaction otherwise.
+            if (_written is not null)
+                Session.Wrote(_written);
             own?.Commit();
         }
         catch when (savepoint)

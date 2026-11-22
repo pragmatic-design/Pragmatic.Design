@@ -131,11 +131,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   [s('EntityPersistence/TheFeeHierarchyIsOneTableTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationPipelineTests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
   [s('Migrations/MigrationRunnerE2ETests.cs')]: { engines: ['Documents'], reason: TEST_ON_SQL },
-
-  ...Object.fromEntries([
-    // Loses a commit's acknowledgement through EF Core's interceptors: the engines have no such seam yet (#889).
-    'Endpoints/AnUploadWhoseCommitIsNotAcknowledgedTests.cs',
-  ].map((path) => [s(path), { engines: both, reason: TEST_ON_EF }])),
 };
 
 /**

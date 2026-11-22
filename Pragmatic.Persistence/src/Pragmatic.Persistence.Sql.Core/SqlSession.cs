@@ -144,19 +144,39 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
 
     // Through the root of a table-per-concrete-type hierarchy (its map dispatches), each row goes to its own type's writer, in a write batch.
 
-    public Task InsertAsync<T>(T row, CancellationToken ct = default) => Dispatches<T>() ? Through(b => b.Insert(row), ct) : Writer<T>().InsertAsync(this, row, ct);
+    // A write through the entity's writer is reported to CommitHooks here; one through a write batch, by the batch.
+
+    public Task InsertAsync<T>(T row, CancellationToken ct = default)
+    {
+        if (Dispatches<T>())
+            return Through(b => b.Insert(row), ct);
+        return CommitHooks is null ? Writer<T>().InsertAsync(this, row, ct) : ObservedAsync([new(row!, SqlWriteKind.Insert)], () => Writer<T>().InsertAsync(this, row, ct));
+    }
 
     /// <summary>Inserts the rows in multi-row batches; returns how many the database counted. Its own name: an overload on IReadOnlyList would lose to InsertAsync&lt;List&lt;T&gt;&gt;.</summary>
-    public Task<int> InsertManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) => Dispatches<T>() ? ThroughMany(rows, static (b, r) => b.Insert(r), ct) : Writer<T>().InsertAsync(this, rows, ct);
+    public Task<int> InsertManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default)
+    {
+        if (Dispatches<T>())
+            return ThroughMany(rows, static (b, r) => b.Insert(r), ct);
+        return CommitHooks is null ? Writer<T>().InsertAsync(this, rows, ct) : ObservedAsync(Rows(rows, SqlWriteKind.Insert), () => Writer<T>().InsertAsync(this, rows, ct));
+    }
 
-    public Task UpdateAsync<T>(T row, CancellationToken ct = default) => Dispatches<T>() ? Through(b => b.Update(row), ct) : Writer<T>().UpdateAsync(this, row, ct);
+    public Task UpdateAsync<T>(T row, CancellationToken ct = default)
+    {
+        if (Dispatches<T>())
+            return Through(b => b.Update(row), ct);
+        return CommitHooks is null ? Writer<T>().UpdateAsync(this, row, ct) : ObservedAsync([new(row!, SqlWriteKind.Update)], () => Writer<T>().UpdateAsync(this, row, ct));
+    }
 
     /// <summary>
     ///     Inserts the row or, when its key is already there, updates it (at the object's version, when it has one). Through the root of a
     ///     hierarchy the row's own type's writer; a row of a table-per-type hierarchy is two upserts, the root's table then the derived one's,
     ///     neither or both (in a transaction of their own, or a savepoint in the caller's).
     /// </summary>
-    public async Task UpsertAsync<T>(T row, CancellationToken ct = default)
+    public Task UpsertAsync<T>(T row, CancellationToken ct = default)
+        => CommitHooks is null ? UpsertCoreAsync(row, ct) : ObservedAsync([new(row!, SqlWriteKind.Update)], () => UpsertCoreAsync(row, ct));
+
+    private async Task UpsertCoreAsync<T>(T row, CancellationToken ct)
     {
         if (!Dispatches<T>() && Writer<T>() is { Part: null } plain)
         {
@@ -192,10 +212,19 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
         }
     }
 
-    public Task DeleteAsync<T>(T row, CancellationToken ct = default) => Dispatches<T>() ? Through(b => b.Delete(row), ct) : Writer<T>().DeleteAsync(this, row, ct);
+    public Task DeleteAsync<T>(T row, CancellationToken ct = default)
+    {
+        if (Dispatches<T>())
+            return Through(b => b.Delete(row), ct);
+        if (CommitHooks is null)
+            return Writer<T>().DeleteAsync(this, row, ct);
+        var kind = SqlEntityMap<T>.Current.Writer is { SoftDeletes: true } ? SqlWriteKind.Update : SqlWriteKind.Delete; // a [SoftDelete] row is marked, not removed
+        return ObservedAsync([new(row!, kind)], () => Writer<T>().DeleteAsync(this, row, ct));
+    }
 
     /// <summary>Brings a soft-deleted row back (a [SoftDelete] entity): IsDeleted false, DeletedAt/By cleared, at its version.</summary>
-    public Task RestoreAsync<T>(T row, CancellationToken ct = default) => Writer<T>().RestoreAsync(this, row, ct);
+    public Task RestoreAsync<T>(T row, CancellationToken ct = default)
+        => CommitHooks is null ? Writer<T>().RestoreAsync(this, row, ct) : ObservedAsync([new(row!, SqlWriteKind.Update)], () => Writer<T>().RestoreAsync(this, row, ct));
 
     /// <summary>
     ///     Writes what the entity says changed (<see cref="IChangeTracking" />, the repository's contract): a new row is inserted, a
@@ -205,14 +234,24 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
     public async Task<bool> SaveAsync<T>(T row, CancellationToken ct = default) where T : class, IChangeTracking
     {
         if (!Dispatches<T>())
-            return await Writer<T>().SaveAsync(this, row, ct).ConfigureAwait(false);
+        {
+            return CommitHooks is null
+                ? await Writer<T>().SaveAsync(this, row, ct).ConfigureAwait(false)
+                : await ObservedAsync(Saved([row]), () => Writer<T>().SaveAsync(this, row, ct)).ConfigureAwait(false);
+        }
+
         var batch = WriteBatch().Save(row);
         await batch.ExecuteAsync(ct).ConfigureAwait(false);
         return batch.Count > 0;
     }
 
     /// <summary>The same for many rows, in as few round trips as their shapes allow (runs of the same columns, one command each); returns how many were written.</summary>
-    public Task<int> SaveManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) where T : class, IChangeTracking => Dispatches<T>() ? ThroughMany(rows, static (b, r) => b.Save(r), ct) : Writer<T>().SaveAsync(this, rows, ct);
+    public Task<int> SaveManyAsync<T>(IReadOnlyList<T> rows, CancellationToken ct = default) where T : class, IChangeTracking
+    {
+        if (Dispatches<T>())
+            return ThroughMany(rows, static (b, r) => b.Save(r), ct);
+        return CommitHooks is null ? Writer<T>().SaveAsync(this, rows, ct) : ObservedAsync(Saved(rows), () => Writer<T>().SaveAsync(this, rows, ct));
+    }
 
     /// <summary>Links the two rows through a many-to-many side (<c>[ManyToMany]</c>, named by its collection property): one row of the join table.</summary>
     public Task LinkAsync<TParent, TChild>(TParent parent, string collection, TChild child, CancellationToken ct = default) => Through(b => b.Link(parent, collection, child), ct);
@@ -345,14 +384,27 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
 
         public override System.Data.IsolationLevel IsolationLevel => inner.IsolationLevel;
 
+        // The rows written in the transaction are reported after the commit and the session's state are settled: an observer that throws
+        // there is a commit that happened and answered an error, and the session is already out of the transaction.
         public override void Commit()
         {
-            inner.Commit();
+            try
+            {
+                inner.Commit();
+            }
+            catch
+            {
+                session.Ended(committed: false); // not known to have committed: never reported as committed
+                throw;
+            }
+
             session.Transaction = null;
+            session.Ended(committed: true);
         }
 
         public override void Rollback()
         {
+            session.Ended(committed: false);
             inner.Rollback();
             session.Transaction = null;
         }
@@ -360,15 +412,31 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
         // Savepoints: the provider's, the session's commands stay in the transaction.
         public override bool SupportsSavepoints => inner.SupportsSavepoints;
 
-        public override void Save(string savepointName) => inner.Save(savepointName);
+        public override void Save(string savepointName)
+        {
+            inner.Save(savepointName);
+            session.MarkSavepoint(savepointName);
+        }
 
-        public override void Rollback(string savepointName) => inner.Rollback(savepointName);
+        public override void Rollback(string savepointName)
+        {
+            inner.Rollback(savepointName);
+            session.RolledBackToSavepoint(savepointName);
+        }
 
         public override void Release(string savepointName) => inner.Release(savepointName);
 
-        public override Task SaveAsync(string savepointName, CancellationToken cancellationToken = default) => inner.SaveAsync(savepointName, cancellationToken);
+        public override async Task SaveAsync(string savepointName, CancellationToken cancellationToken = default)
+        {
+            await inner.SaveAsync(savepointName, cancellationToken).ConfigureAwait(false);
+            session.MarkSavepoint(savepointName);
+        }
 
-        public override Task RollbackAsync(string savepointName, CancellationToken cancellationToken = default) => inner.RollbackAsync(savepointName, cancellationToken);
+        public override async Task RollbackAsync(string savepointName, CancellationToken cancellationToken = default)
+        {
+            await inner.RollbackAsync(savepointName, cancellationToken).ConfigureAwait(false);
+            session.RolledBackToSavepoint(savepointName);
+        }
 
         public override Task ReleaseAsync(string savepointName, CancellationToken cancellationToken = default) => inner.ReleaseAsync(savepointName, cancellationToken);
 
@@ -376,6 +444,8 @@ public sealed partial class SqlSession : IDisposable, IAsyncDisposable
         {
             if (disposing)
             {
+                if (ReferenceEquals(session.Transaction, inner))
+                    session.Ended(committed: false); // disposed open: rolled back
                 inner.Dispose();
                 session.Transaction = null;
             }

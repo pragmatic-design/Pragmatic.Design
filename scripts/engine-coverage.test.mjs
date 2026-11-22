@@ -28,8 +28,9 @@ test('the counts on the page are the ones the gate reports', () => {
 });
 
 test('a test added to a file left out moves the page: the count is read from the source, not written on it', () => {
-  const [onEf] = Object.entries(ALLOWED_FILE_EXCLUSIONS).find(([, a]) => a.reason === SUITE_REASONS.TEST_ON_EF);
-  const one = (path) => (path === onEf ? '[Fact] public void A() {}' : null);
-  const two = (path) => (path === onEf ? '[Fact] public void A() {}\n[Fact] public void B() {}' : null);
+  // A file the page counts the methods of: one EF Core only, which stays left out whatever kind 1 holds.
+  const [leftOut] = Object.entries(ALLOWED_FILE_EXCLUSIONS).find(([, a]) => a.reason === SUITE_REASONS.EF_ONLY);
+  const one = (path) => (path === leftOut ? '[Fact] public void A() {}' : null);
+  const two = (path) => (path === leftOut ? '[Fact] public void A() {}\n[Fact] public void B() {}' : null);
   assert.notEqual(coveragePage(one, []), coveragePage(two, []));
 });

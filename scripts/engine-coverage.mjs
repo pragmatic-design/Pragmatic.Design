@@ -71,19 +71,24 @@ export function coveragePage(read, suiteFiles) {
   const onEfMethods = onEf.reduce((sum, path) => sum + methodsOf(path), 0);
   const onEfTestFiles = onEf.filter((path) => methodsOf(path) > 0).length;
   const others = onEf.length - onEfTestFiles;
-  add(
-    '',
-    '## 1. Not measured: the test is bound to EF Core',
-    '',
-    `**${onEfTestFiles} test files, ${onEfMethods} test methods**${others > 0 ? ` (and ${others} source they share)` : ''}, left out on both engines because the test itself reads or prepares rows through`,
-    'EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these',
-    'exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary\'s repositories, or the session.',
-    'A test that then fails on an engine is a real gap, with an issue of its own.',
-    '',
-    '| File | Test methods |',
-    '|---|---|',
-    ...onEf.map((path) => `| \`${suitePath(path)}\` | ${methodsOf(path)} |`),
-  );
+  add('', '## 1. Not measured: the test is bound to EF Core', '');
+  if (onEf.length === 0) {
+    add(
+      'None. Every test once left out because it read or prepared rows through EF Core (owner decision, 2026-11-06) is written through',
+      'the engine-neutral surface now, the boundary\'s repositories or the session, and runs on the engines (#819).',
+    );
+  } else {
+    add(
+      `**${onEfTestFiles} test files, ${onEfMethods} test methods**${others > 0 ? ` (and ${others} source they share)` : ''}, left out on both engines because the test itself reads or prepares rows through`,
+      'EF Core, not because the engines are known to lack the feature (owner decision, 2026-11-06). Whether the engines support what these',
+      'exercise is unknown until each file is rewritten through the engine-neutral surface: the boundary\'s repositories, or the session.',
+      'A test that then fails on an engine is a real gap, with an issue of its own.',
+      '',
+      '| File | Test methods |',
+      '|---|---|',
+      ...onEf.map((path) => `| \`${suitePath(path)}\` | ${methodsOf(path)} |`),
+    );
+  }
 
   // 2. EF Core only.
   const efOnlyModules = modules.filter(([, a]) => a.reason === PROJECT_REASONS.EF_ONLY).map(([path]) => path).sort();

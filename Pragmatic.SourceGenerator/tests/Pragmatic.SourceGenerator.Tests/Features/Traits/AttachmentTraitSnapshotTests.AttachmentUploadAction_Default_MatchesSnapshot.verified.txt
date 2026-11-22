@@ -115,7 +115,10 @@ public sealed partial class UploadReservationAttachmentAction : DomainAction<Gui
         catch
         {
             if (await AttachmentCommittedAsync(attachment.Id, ct).ConfigureAwait(false))
+            {
+                _db.Entry(attachment).State = global::Microsoft.EntityFrameworkCore.EntityState.Detached;
                 return attachment.Id;
+            }
             
             await _storage.DeleteAsync(storageUri, ct).ConfigureAwait(false);
             throw;

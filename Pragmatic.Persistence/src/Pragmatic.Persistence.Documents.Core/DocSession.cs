@@ -58,22 +58,45 @@ public sealed partial class DocSession
         Filters = filters;
     }
 
+    // The public writes are reported to CommitHooks; the *CoreAsync forms are the writes themselves, which another public write falls back to
+    // without being reported twice.
+
     public Task InsertAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T> => InsertManyAsync([entity], ct);
 
     /// <summary>New documents: on MongoDB in batches of 1000 per <c>insert</c> (ordered: a refused one stops its batch, <see cref="MongoWriteException" />); on Cosmos DB one request each (a taken id: <see cref="CosmosException" /> 409).</summary>
     public Task InsertManyAsync<T>(IReadOnlyList<T> entities, CancellationToken ct = default) where T : IDocumentEntity<T>
-        => Cosmos is not null ? CosmosInsertManyAsync(entities, ct) : MongoInsertManyAsync(entities, ct);
+    {
+        if (CommitHooks is null)
+            return InsertManyCoreAsync(entities, ct);
+        ArgumentNullException.ThrowIfNull(entities);
+        var documents = new DocWrittenDocument[entities.Count];
+        for (var i = 0; i < entities.Count; i++)
+            documents[i] = new DocWrittenDocument(entities[i], DocWriteKind.Insert);
+        return ObservedAsync(documents, () => InsertManyCoreAsync(entities, ct));
+    }
 
     /// <summary>The stored document replaced by <paramref name="entity" />; versioned: only the version it holds, then one more.</summary>
     public Task ReplaceAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
-        => Cosmos is not null ? CosmosReplaceAsync(entity, upsert: false, ct) : MongoReplaceAsync(entity, ct);
+        => CommitHooks is null ? ReplaceCoreAsync(entity, ct) : ObservedAsync(One(entity!, DocWriteKind.Update), () => ReplaceCoreAsync(entity, ct));
 
     /// <summary>Inserted when the key is new, replaced when it is there; versioned: replaced only at the version the object holds (a stale copy is refused).</summary>
     public Task UpsertAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
-        => Cosmos is not null ? CosmosReplaceAsync(entity, upsert: true, ct) : MongoUpsertAsync(entity, ct);
+        => CommitHooks is null ? UpsertCoreAsync(entity, ct) : ObservedAsync(One(entity!, DocWriteKind.Update), () => UpsertCoreAsync(entity, ct));
 
     /// <summary>The stored document deleted; versioned: only at the version the object holds.</summary>
     public Task DeleteAsync<T>(T entity, CancellationToken ct = default) where T : IDocumentEntity<T>
+        => CommitHooks is null ? DeleteCoreAsync(entity, ct) : ObservedAsync(One(entity!, DocWriteKind.Delete), () => DeleteCoreAsync(entity, ct));
+
+    private Task InsertManyCoreAsync<T>(IReadOnlyList<T> entities, CancellationToken ct) where T : IDocumentEntity<T>
+        => Cosmos is not null ? CosmosInsertManyAsync(entities, ct) : MongoInsertManyAsync(entities, ct);
+
+    private Task ReplaceCoreAsync<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
+        => Cosmos is not null ? CosmosReplaceAsync(entity, upsert: false, ct) : MongoReplaceAsync(entity, ct);
+
+    private Task UpsertCoreAsync<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
+        => Cosmos is not null ? CosmosReplaceAsync(entity, upsert: true, ct) : MongoUpsertAsync(entity, ct);
+
+    private Task DeleteCoreAsync<T>(T entity, CancellationToken ct) where T : IDocumentEntity<T>
         => Cosmos is not null ? CosmosDeleteAsync(entity, ct) : MongoDeleteAsync(entity, ct);
 
     internal MongoClient MongoClient => Mongo ?? throw new InvalidOperationException("The session is on Cosmos DB.");
