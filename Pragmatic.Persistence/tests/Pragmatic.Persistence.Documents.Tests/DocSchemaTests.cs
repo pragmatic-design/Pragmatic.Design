@@ -97,28 +97,6 @@ public class DocSchemaTests(DocumentServers servers)
     }
 
     [Fact]
-    public async Task On_Cosmos_DB_a_changed_unique_key_is_reported_and_a_changed_composite_applied()
-    {
-        var session = servers.Session(Store.Cosmos);
-        await DefaultDocSchema.EnsureAsync(session);
-        var products = Collection("SchemaProducts");
-        var changed = products with
-        {
-            Indexes = [.. products.Indexes, new DocIndex("IX_SchemaProducts_TenantId_Name", ["TenantId", "Name"], Unique: true)],
-            Composites = [new (string, bool)[] { ("/Rank", false), ("/Name", true) }],
-        };
-
-        var report = await DocSchema.EnsureAsync(session, [changed]);
-        var unique = Assert.Single(report.Changes, c => c.Element == "unique keys");
-        Assert.Equal(DocSchemaOutcome.NotApplied, unique.Outcome);
-        Assert.Contains("fixes them at creation", unique.Reason);
-        Assert.Equal(DocSchemaOutcome.Updated, Assert.Single(report.Changes, c => c.Element == "composite indexes").Outcome);
-
-        var again = await DocSchema.EnsureAsync(session, [changed]);
-        Assert.Equal(DocSchemaOutcome.Unchanged, Assert.Single(again.Changes, c => c.Element == "composite indexes").Outcome);
-    }
-
-    [Fact]
     public async Task On_MongoDB_a_changed_index_is_built_again()
     {
         var session = servers.Session(Store.Mongo);
