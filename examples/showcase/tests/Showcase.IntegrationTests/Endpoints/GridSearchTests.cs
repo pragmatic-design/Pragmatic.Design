@@ -186,6 +186,42 @@ public class GridSearchTests(PostgresFixture fixture) : IntegrationTestBase(fixt
             "Page size 2 should return at most 2 items");
     }
 
+    /// <summary>
+    ///     The total is every match, and a later page has its rows (#949).
+    /// </summary>
+    /// <remarks>
+    ///     The generated <c>Apply</c> already pages: an endpoint that counted what it returned and paged it again
+    ///     answered a total of one page and an empty second page. The test above, page 1 of rows it does not
+    ///     name, could not see either.
+    /// </remarks>
+    [Fact]
+    public async Task GridSearch_MoreMatchesThanOnePage_CountsThemAll_AndServesTheNextPage()
+    {
+        var tag = $"GS-P{Guid.NewGuid():N}"[..12];
+        for (var i = 1; i <= 3; i++)
+            await CreatePropertyAsync($"{tag}-{i}", "Turin", 3);
+
+        async Task<JsonElement> Page(int page)
+        {
+            var response = await PostAsync("/api/properties/grid", new
+            {
+                filter = new { name = tag, nameOperator = "StartsWith", nameSort = "Ascending", page, pageSize = 2 }
+            });
+            response.StatusCode.Should().BeOneOf([HttpStatusCode.OK, HttpStatusCode.Created]);
+            return await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        }
+
+        static List<string?> Names(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("name").GetString())];
+
+        var first = await Page(1);
+        var second = await Page(2);
+
+        first.GetProperty("totalCount").GetInt32().Should().Be(3, "three properties match, though a page holds two");
+        Names(first).Should().Equal([$"{tag}-1", $"{tag}-2"]);
+        second.GetProperty("totalCount").GetInt32().Should().Be(3);
+        Names(second).Should().Equal([$"{tag}-3"], "the second page holds the third match");
+    }
+
     // =========================================================================
     // Helpers
     // =========================================================================

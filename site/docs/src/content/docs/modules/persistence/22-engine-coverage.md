@@ -20,8 +20,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **643** | 677 | 16 | 3 |
-| Documents | **582** | 677 | 24 | 41 |
+| Sql | **643** | 678 | 16 | 3 |
+| Documents | **582** | 678 | 24 | 41 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -43,7 +43,7 @@ here, is the owner's decision, per feature (#819).
 | Suite file | Test methods | Follows from |
 |---|---|---|
 | `CrossCutting/BoundaryKeyedServicesTests.cs` | 1 | `CountAmenitiesAction.cs` |
-| `Endpoints/GridSearchTests.cs` | 6 | `GridSearchPropertiesEndpoint.cs` |
+| `Endpoints/GridSearchTests.cs` | 7 | `GridSearchPropertiesEndpoint.cs` |
 | `Endpoints/TheGridInItsOwnFormatTests.cs` | 6 | `DevExpressSearchPropertiesEndpoint.cs`, `GridSearchPropertiesEndpoint.cs` |
 
 ## 3. By design on the documents engine: a relation is kept as a key

@@ -383,7 +383,11 @@ public partial class GetMyBalancesQuery
 - **Target**: `partial class`. Designed for UI grids with operator selection.
 - **Property pattern**: `string? Name` + `StringOperator? NameOperator` (operator chosen at runtime).
 - **`[Filterable(Operators = FilterOps.String|Range|...)]`** on the property.
-- **Generates**: `Apply(IQueryable<T>)` with a switch on the runtime operator. Page/PageSize built-in.
+- **Generates**: `Apply(IQueryable<T>)` with a switch on the runtime operator, then the sort, then the page
+  (`Skip`/`Take` from `Page`/`PageSize`); and `ToSpecification()`, the filters alone.
+- **Count with `ToSpecification()`, read the rows with `Apply`**: `query.Where(filter.ToSpecification().ToExpression()).CountAsync()`
+  is the total, `filter.Apply(query)` is the page. Counting `Apply`'s result counts one page, and paging it again
+  empties every page after the first.
 
 ## `[FilterDto<TEntity>]`
 
