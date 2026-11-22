@@ -75,6 +75,10 @@ internal static partial class SqlInterceptorGenerator
                 }
             }
 
+            // The grid adapters (#947) read through PageAsync as well: the properties they sort by are keys of the repository too. A path through a
+            // navigation is not one of their fields (PragmaticGrid omits it), so each has a column of the entity's table.
+            var grids = PragmaticGrid.Read(compilation, PragmaticEngine.Sql);
+
             foreach (var entity in served)
             {
                 // The sets of paths the invokers read the entity with: its [LoadEntity]s here, and the mutations' loads (EngineReadModel).
@@ -86,7 +90,8 @@ internal static partial class SqlInterceptorGenerator
                 // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, its entity
                 // too, and a symbol of one compilation is never equal to the same type's symbol of another.
                 var ofEntity = declared.Where(q => q.Entity.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == entityName).ToList();
-                var sortMembers = gridFilters.Where(f => SymbolEqualityComparer.Default.Equals(f.Entity, entity)).SelectMany(f => f.SortMembers);
+                var sortMembers = gridFilters.Where(f => SymbolEqualityComparer.Default.Equals(f.Entity, entity)).SelectMany(f => f.SortMembers)
+                    .Concat(grids.Where(g => SymbolEqualityComparer.Default.Equals(g.Entity, entity)).SelectMany(g => g.SortProperties()));
                 if (PragmaticReadRepository.For(entity, asShaped, ofEntity, includeSets, sortMembers) is { } repository)
                     repositories.Add(repository);
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
@@ -94,7 +99,7 @@ internal static partial class SqlInterceptorGenerator
             }
 
             // Their grid adapters (PragmaticGrid), whose LoadAsync is a chain bound and intercepted the same way.
-            foreach (var grid in PragmaticGrid.Read(compilation, PragmaticEngine.Sql))
+            foreach (var grid in grids)
             {
                 repositories.Add(grid.Source());
                 foreach (var omitted in grid.Omitted)

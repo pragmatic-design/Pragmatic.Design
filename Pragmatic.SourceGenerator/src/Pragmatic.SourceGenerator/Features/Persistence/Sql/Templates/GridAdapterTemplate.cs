@@ -41,6 +41,8 @@ internal sealed partial class GridAdapterTemplate(GridAdapterModel model) : CSha
         AppendLine("    }");
         AppendLine();
         RenderLoad();
+        if (model.HasRepository)
+            RenderRepositoryLoad();
         RenderParse();
         RenderClause();
         foreach (var field in model.Fields.Where(f => f.Filterable))

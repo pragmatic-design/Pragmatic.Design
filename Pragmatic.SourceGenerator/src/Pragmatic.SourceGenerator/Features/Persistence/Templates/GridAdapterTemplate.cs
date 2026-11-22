@@ -52,6 +52,11 @@ internal sealed partial class GridAdapterTemplate : CSharpTemplate
         {
             RenderDevExpressApply();
             AppendLine();
+            if (_model.HasRepository)
+            {
+                RenderDevExpressLoad();
+                AppendLine();
+            }
         }
 
         // Generate PrimeNG adapter

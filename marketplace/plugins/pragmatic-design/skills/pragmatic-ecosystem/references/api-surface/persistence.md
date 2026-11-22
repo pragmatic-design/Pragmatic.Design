@@ -394,7 +394,8 @@ public partial class GetMyBalancesQuery
   - `Apply(IQueryable<T>)`: filters, sort and page on an `IQueryable`. It is EF Core's alone, and refused on an engine.
 - **On EF Core, with `Apply`**: count with `query.Where(filter.ToSpecification().ToExpression()).CountAsync()`. `Apply`
   already pages, so counting its result counts one page, and paging it again empties every page after the first.
-- **On an engine**, the repository has a compiled key for each member a `[GridFilter]` of the entity sorts by. A sort
+- **On an engine**, the repository has a compiled key for each member a `[GridFilter]` of the entity sorts by, and
+  for each column a `[GridAdapter<T>]` of it sorts on. A sort
   through a navigation has none: it is reported (`PRAG3034`/`PRAG3109`) and an ordering naming it is refused.
 
 ## `IReadRepository<T>.PageAsync(spec, ordering, page, pageSize, ct)`
@@ -495,6 +496,10 @@ For a front-end grid (DevExpress, PrimeNG) that sends its filter/sort/group stat
   field, no reflection. It is generated anyway for an entity with a `[GridFilter<T>]` DTO.
 - `[GridAdapter<TEntity>(Framework = GridFramework.DevExpress | PrimeNG, SupportNestedFilters,
   SupportGrouping)]` on a class generates the translation from that grid's JSON to the canonical request.
+  For DevExpress it generates `Apply(IQueryable<T>, DevExpressLoadOptions)` (EF Core only) and
+  `LoadAsync(IReadRepository<T>, DevExpressLoadOptions, ct)`, the page and its total through `PageAsync`,
+  which compiles on every engine. `Skip` must be a multiple of a positive `Take`: anything else is refused
+  (`GridFilterRejection.NotAPage`, a 400).
 - `[GridField("customerName", Property = "Customer.Name", Filterable, Sortable, Groupable,
   AllowedOperators = …)]` maps a JSON field to a property path; `[GridExclude("Secret")]` takes back a
   property `[Filterable]` exposed.

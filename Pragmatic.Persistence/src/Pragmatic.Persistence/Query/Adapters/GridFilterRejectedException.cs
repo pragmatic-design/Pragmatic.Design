@@ -30,6 +30,8 @@ public sealed class GridFilterRejectedException : InvalidOperationException
                 $"The operator '{@operator}' cannot be applied to the field '{field}'.",
             GridFilterRejection.UnusableValue =>
                 $"The value given for the field '{field}' cannot be compared with it.",
+            GridFilterRejection.NotAPage =>
+                "The rows asked for are not one page: Take must be positive and Skip a multiple of it.",
             _ => "The grid filter is not a clause, a group of clauses or a negation.",
         })
     {
