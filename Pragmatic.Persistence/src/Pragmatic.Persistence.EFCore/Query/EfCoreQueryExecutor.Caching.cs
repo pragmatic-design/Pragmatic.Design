@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Caching;
 using Pragmatic.Identity;
+using Pragmatic.Persistence.Caching;
 using Pragmatic.Persistence.EFCore.Diagnostics;
 using Pragmatic.Persistence.Query.Executors;
 using Pragmatic.Persistence.Query.Filters;
@@ -35,18 +36,7 @@ public sealed partial class EfCoreQueryExecutor
     ///     namespace the entry was never written to.
     /// </remarks>
     private ICacheStack? ResolveCacheStack(ICacheable? cacheable)
-    {
-        if (cacheable is null)
-            return null;
-
-        // The resolver owns both decisions: which stack the category routes to, and whether query
-        // caching is on at all — that is where CachingOptions.EnableQueryCaching is read, so setting it
-        // to false turns caching off for every [Cacheable] query.
-        if (_cacheStackResolver is not null)
-            return _cacheStackResolver.ForQuery(cacheable.CacheCategory);
-
-        return _cacheStack;
-    }
+        => cacheable is null ? null : QueryCache.StackFor(cacheable, _cacheStackResolver, _cacheStack); // the rule every engine shares (#882)
 
     /// <summary>
     ///     A non-paged read through the query's cache when it declares one, exactly as the paged reads are:
@@ -73,36 +63,15 @@ public sealed partial class EfCoreQueryExecutor
         if (stack is null || cacheable is null)
             return await read(cancellationToken).ConfigureAwait(false);
 
-        return await stack.GetOrSetAsync(
-            BuildCacheKey<TEntity>(cacheable.GetCacheKey(), ReachesAFilteredCollection(compose(), query)),
-            async ct2 =>
-            {
-                var result = await read(ct2).ConfigureAwait(false);
-                return isFailure(result)
-                    ? CacheFactoryResult<T>.DoNotCache(result)
-                    : CacheFactoryResult<T>.Cache(result);
-            },
-            cacheable.GetCacheOptions(),
+        return await QueryCache.ThroughAsync(
+            stack, BuildCacheKey<TEntity>(cacheable.GetCacheKey(), ReachesAFilteredCollection(compose(), query)), cacheable, read, isFailure,
             cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     ///     A single-row read through the query's cache: the row is what is cached, never the
-    ///     <see cref="Result{T}" /> around it.
+    ///     <see cref="Result{T}" /> around it (<see cref="QueryCache.ThroughSingleAsync{T}" />).
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         The cache serializes what it keeps, and a <see cref="Result{T}" /> does not serialize — its
-    ///         <c>Value</c> and <c>Error</c> each throw on the side they are not. So the row goes in, and
-    ///         the answer is rebuilt around it. A failure (the row not found) is returned as it came and
-    ///         not cached: a row created afterwards is found by the next read.
-    ///     </para>
-    ///     <para>
-    ///         ⚠️ When another caller's read was the one that ran and it found nothing, this caller is handed
-    ///         the "do not cache" placeholder rather than that caller's failure; it reads for itself then,
-    ///         because a null it did not produce is not an answer.
-    ///     </para>
-    /// </remarks>
     private async Task<Result<T>> ThroughTheCacheSingleAsync<TEntity, T>(
         object query,
         Func<Expression> compose,
@@ -118,25 +87,9 @@ public sealed partial class EfCoreQueryExecutor
         if (stack is null || cacheable is null)
             return await read(cancellationToken).ConfigureAwait(false);
 
-        Result<T>? failure = null;
-        var row = await stack.GetOrSetAsync<T?>(
-            BuildCacheKey<TEntity>(cacheable.GetCacheKey(), ReachesAFilteredCollection(compose(), query)),
-            async ct2 =>
-            {
-                var result = await read(ct2).ConfigureAwait(false);
-                if (result.IsSuccess)
-                    return CacheFactoryResult<T?>.Cache(result.Value);
-
-                failure = result;
-                return CacheFactoryResult<T?>.DoNotCache(null);
-            },
-            cacheable.GetCacheOptions(),
+        return await QueryCache.ThroughSingleAsync(
+            stack, BuildCacheKey<TEntity>(cacheable.GetCacheKey(), ReachesAFilteredCollection(compose(), query)), cacheable, read,
             cancellationToken).ConfigureAwait(false);
-
-        if (row is not null)
-            return row;
-
-        return failure ?? await read(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -153,55 +106,9 @@ public sealed partial class EfCoreQueryExecutor
     /// </param>
     internal string BuildCacheKey<TEntity>(string rawKey, bool reachesFilteredCollection = false)
         where TEntity : class
-    {
-        var mode = _filterToggle?.CurrentMode ?? FilterMode.Normal;
-        var disabled = _filterToggle?.GetDisabledFilterTypes();
-        var hasPermissionFilters = reachesFilteredCollection || HasPermissionBasedFilters<TEntity>();
-
-        // Read once per key, not once per executor: the tenant can change inside the scope.
-        var tenantPrefix = TenantCachePrefix;
-
-        // Fast path: no tenant, no toggle, no permission filters → return raw key
-        if (tenantPrefix is null
-            && mode == FilterMode.Normal
-            && (disabled is null || disabled.Count == 0)
-            && !hasPermissionFilters)
-        {
-            return rawKey;
-        }
-
-        var sb = new StringBuilder();
-        if (tenantPrefix is not null)
-            sb.Append(tenantPrefix);
-
-        sb.Append("m:").Append((int)mode).Append(':');
-
-        if (disabled is not null && disabled.Count > 0)
-        {
-            sb.Append("d:");
-            foreach (var t in disabled.OrderBy(t => t.FullName, StringComparer.Ordinal))
-                sb.Append(t.FullName).Append(',');
-            sb.Append(':');
-        }
-
-        // Partition by user when permission-based filters for this entity are
-        // registered. Two users in the same tenant can legitimately see
-        // different rows, so sharing cache would leak data.
-        if (hasPermissionFilters && _currentUser is { IsAuthenticated: true })
-        {
-            sb.Append("u:").Append(_currentUser.Id).Append(':');
-
-            // Under delegation the same subject can hold different authority depending on who is
-            // acting, and a permission-based filter reads that authority to decide whether to apply
-            // its bypass. Partitioning by the subject alone would hand one delegation the rows
-            // computed for another — the very leak the user partition above exists to prevent, one
-            // level in. Absent a delegation nothing is appended, so existing keys are unchanged.
-            sb.Append(DelegatedAuthorityKey.For(_currentUser));
-        }
-
-        sb.Append(rawKey);
-        return sb.ToString();
-    }
+        // The tenant is read once per key, not once per executor: it can change inside the scope. The rule is QueryCache's, the same on
+        // every engine (#882); what EF Core decides here is whether the read depends on the caller.
+        => QueryCache.KeyFor(rawKey, TenantId, _filterToggle, reachesFilteredCollection || HasPermissionBasedFilters<TEntity>(), _currentUser);
 
     /// <summary>
     ///     Whether the navigation filters rewrite a collection the composed query reads — an

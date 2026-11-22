@@ -131,6 +131,11 @@ These work on every engine, from the same declarations:
   and a required navigation never hides the row reading it for those. A declared `[Join<T>]` reads its side through
   every filter;
 - declared queries (`[Query]`), the generated actions and endpoints, and `[LoadEntity]` loads;
+- the caches (`Pragmatic.Persistence.Caching`): a `[Lookup]` entity's cache, preloaded and reloaded after a committed
+  write, and a `[Cacheable]` query read through its cache, by one rule. The stack comes from the query's category,
+  the key is partitioned by tenant, filter mode and lifted filters, and a failure is never cached. An answer is the
+  caller's own when the entity declares an owner, access scopes or a permission-based `[VisibleWhen]`, or the query
+  joins. EF Core decides that from the query's expression; the engines decide it from the declaration;
 - a `[TemporalRelation]`'s constraints (`MaxActive`, no overlap), which a create mutation checks against the records already written,
   through the repository's specifications; with `MaxActive = 1` the schema's partial unique index on the parent key too, left out
   on MySQL and Oracle (`PRAG3039`);

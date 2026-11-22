@@ -209,7 +209,21 @@ internal sealed partial class QueryInvokerTemplate : CSharpTemplate
         AppendLine("var repository = global::Microsoft.Extensions.DependencyInjection"
                    + ".ServiceProviderServiceExtensions.GetRequiredService<"
                    + $"global::Pragmatic.Persistence.Repository.IReadRepository<{entity}>>(_services);");
-        AppendLine("var answer = await repository.RunAsync(q, cancellationToken).ConfigureAwait(false);");
+        if (_model.IsCacheable)
+        {
+            // [Cacheable] (#882): through the query's cache, by the rule EF Core's executor reads it by. Whether the answer is the caller's
+            // own is the entity's declaration, known here; a failed page is never cached.
+            var isFailure = _model.IsPaged ? "static a => a.IsFailure" : "static _ => false";
+            AppendLine("var answer = await global::Pragmatic.Persistence.Caching.QueryCache.ReadAsync(");
+            IncreaseIndent();
+            AppendLine($"_services, q, {(_model.CacheByCaller ? "true" : "false")}, token => repository.RunAsync(q, token), {isFailure}, cancellationToken).ConfigureAwait(false);");
+            DecreaseIndent();
+        }
+        else
+        {
+            AppendLine("var answer = await repository.RunAsync(q, cancellationToken).ConfigureAwait(false);");
+        }
+
         AppendLine();
 
         var result = $"global::Pragmatic.Result.Result<{answer}, global::Pragmatic.Result.IError>";

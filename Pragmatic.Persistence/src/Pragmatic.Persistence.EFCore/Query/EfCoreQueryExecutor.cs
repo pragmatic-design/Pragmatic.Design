@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Pragmatic.Caching;
 using Pragmatic.Identity;
+using Pragmatic.Persistence.Caching;
 using Pragmatic.Persistence.EFCore.Diagnostics;
 using Pragmatic.Persistence.Query.Executors;
 using Pragmatic.Persistence.Query.Filters;
@@ -74,8 +75,6 @@ public sealed partial class EfCoreQueryExecutor : IQueryExecutor
     /// </remarks>
     private string? TenantId => _tenantContext?.TenantId is { Length: > 0 } tid ? tid : null;
 
-    /// <summary>The cache-key prefix for the current tenant, or null when none is resolved.</summary>
-    private string? TenantCachePrefix => TenantId is { } tid ? $"t:{tid}:" : null;
     private readonly ILogger<EfCoreQueryExecutor> _logger;
 
     /// <summary>
@@ -156,19 +155,14 @@ public sealed partial class EfCoreQueryExecutor : IQueryExecutor
 
         if (stack is not null && cacheable is not null)
         {
-            return await stack.GetOrSetAsync(
+            // Never cache a failed query: a transient timeout would otherwise be served for the whole duration.
+            return await QueryCache.ThroughAsync(
+                stack,
                 BuildCacheKey<TEntity>(cacheable.GetCacheKey(),
                     ReachesAFilteredCollection(query.Apply(PrepareSource(source, query)).Expression, query)),
-                // Never cache a failed query — a transient timeout/connection blip would
-                // otherwise be served for the whole TTL, turning a one-off into a prolonged outage.
-                async ct2 =>
-                {
-                    var result = await ExecutePagedInternalAsync(query, source, ct2).ConfigureAwait(false);
-                    return result.IsFailure
-                        ? CacheFactoryResult<PagedResult<TEntity>>.DoNotCache(result)
-                        : CacheFactoryResult<PagedResult<TEntity>>.Cache(result);
-                },
-                cacheable.GetCacheOptions(),
+                cacheable,
+                ct2 => ExecutePagedInternalAsync(query, source, ct2),
+                static result => result.IsFailure,
                 cancellationToken).ConfigureAwait(false);
         }
 
@@ -189,18 +183,12 @@ public sealed partial class EfCoreQueryExecutor : IQueryExecutor
 
         if (stack is not null && cacheable is not null)
         {
-            return await stack.GetOrSetAsync(
-                BuildCacheKey<TEntity>(cacheable.GetCacheKey(),
-                    ReachesAFilteredCollection(Composed(query, source), query)),
-                // Never cache a failed query (see the non-projected overload above).
-                async ct2 =>
-                {
-                    var result = await ExecutePagedProjectedInternalAsync(query, source, ct2).ConfigureAwait(false);
-                    return result.IsFailure
-                        ? CacheFactoryResult<PagedResult<TResult>>.DoNotCache(result)
-                        : CacheFactoryResult<PagedResult<TResult>>.Cache(result);
-                },
-                cacheable.GetCacheOptions(),
+            return await QueryCache.ThroughAsync(
+                stack,
+                BuildCacheKey<TEntity>(cacheable.GetCacheKey(), ReachesAFilteredCollection(Composed(query, source), query)),
+                cacheable,
+                ct2 => ExecutePagedProjectedInternalAsync(query, source, ct2),
+                static result => result.IsFailure,
                 cancellationToken).ConfigureAwait(false);
         }
 
