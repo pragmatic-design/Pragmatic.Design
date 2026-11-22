@@ -37,6 +37,15 @@ internal static class GridFilterTransform
         if (!IsPartialType(context.TargetNode))
             return null;
 
+        return FromSymbol(targetSymbol, entityType, ct);
+    }
+
+    /// <summary>
+    ///     The model of a partial grid filter <paramref name="targetSymbol" /> over <paramref name="entityType" />: the same model the EF Core
+    ///     half is written from, read by an engine for the half it writes (#946).
+    /// </summary>
+    public static GridFilterModel FromSymbol(INamedTypeSymbol targetSymbol, INamedTypeSymbol entityType, CancellationToken ct)
+    {
         // Extract properties
         var properties = ExtractProperties(targetSymbol, ct);
 
@@ -219,7 +228,7 @@ internal static class GridFilterTransform
            && name.StartsWith(prefix, StringComparison.Ordinal)
            && char.IsUpper(name[prefix.Length]);
 
-    private static bool IsPartialType(SyntaxNode node)
+    internal static bool IsPartialType(SyntaxNode node)
     {
         return node switch
         {

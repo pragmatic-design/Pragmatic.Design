@@ -82,6 +82,8 @@ public class AListOfRowsIsCheckedRowByRowTests : ActionsGeneratorTestBase
             public IQueryable<Employee> Query() => throw new NotSupportedException();
             public Task<IReadOnlyList<TResult>> RunAsync<TResult>(IQuery<Employee, TResult> query, CancellationToken ct = default)
                 where TResult : class => throw new NotSupportedException();
+            public Task<PagedResult<Employee>> PageAsync(ISpecification<Employee> spec, Pragmatic.Persistence.Query.Ordering<Employee> ordering, int page, int pageSize, CancellationToken ct = default)
+                => throw new NotSupportedException();
             public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Employee, TResult> query, CancellationToken ct = default)
                 where TResult : class => throw new NotSupportedException();
         }

@@ -386,11 +386,23 @@ public partial class GetMyBalancesQuery
 - **Target**: `partial class`. Designed for UI grids with operator selection.
 - **Property pattern**: `string? Name` + `StringOperator? NameOperator` (operator chosen at runtime).
 - **`[Filterable(Operators = FilterOps.String|Range|...)]`** on the property.
-- **Generates**: `Apply(IQueryable<T>)` with a switch on the runtime operator, then the sort, then the page
-  (`Skip`/`Take` from `Page`/`PageSize`); and `ToSpecification()`, the filters alone.
-- **Count with `ToSpecification()`, read the rows with `Apply`**: `query.Where(filter.ToSpecification().ToExpression()).CountAsync()`
-  is the total, `filter.Apply(query)` is the page. Counting `Apply`'s result counts one page, and paging it again
-  empties every page after the first.
+- **Generates**:
+  - `LoadAsync(IReadRepository<T>, ct)`: the page and its total through `IReadRepository<T>.PageAsync`. It is the
+    same call on EF Core, the Sql engine and the documents engine, so write this one;
+  - `ToSpecification()`: the filters alone;
+  - `ToOrdering()`: the sorts, as an `Ordering<T>`;
+  - `Apply(IQueryable<T>)`: filters, sort and page on an `IQueryable`. It is EF Core's alone, and refused on an engine.
+- **On EF Core, with `Apply`**: count with `query.Where(filter.ToSpecification().ToExpression()).CountAsync()`. `Apply`
+  already pages, so counting its result counts one page, and paging it again empties every page after the first.
+- **On an engine**, the repository has a compiled key for each member a `[GridFilter]` of the entity sorts by. A sort
+  through a navigation has none: it is reported (`PRAG3034`/`PRAG3109`) and an ordering naming it is refused.
+
+## `IReadRepository<T>.PageAsync(spec, ordering, page, pageSize, ct)`
+
+- A page of the rows a specification matches, in an `Ordering<T>`, with the total. It runs inside the same filters
+  as `FindAsync`.
+- `Ordering<T>.Unordered.Then("Member", e => e.Member, descending)`: each key carries its member's name, which the
+  engines read, and its expression, which EF Core reads.
 
 ## `[FilterDto<TEntity>]`
 

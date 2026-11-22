@@ -84,6 +84,8 @@ public class AnActionValidatesTheEntityItChangedTests : ActionsGeneratorTestBase
             public IQueryable<Product> Query() => throw new NotSupportedException();
             public Task<IReadOnlyList<TResult>> RunAsync<TResult>(IQuery<Product, TResult> query, CancellationToken ct = default)
                 where TResult : class => throw new NotSupportedException();
+            public Task<PagedResult<Product>> PageAsync(ISpecification<Product> spec, Pragmatic.Persistence.Query.Ordering<Product> ordering, int page, int pageSize, CancellationToken ct = default)
+                => throw new NotSupportedException();
             public Task<PagedResult<TResult>> RunAsync<TResult>(IPagedQuery<Product, TResult> query, CancellationToken ct = default)
                 where TResult : class => throw new NotSupportedException();
         }

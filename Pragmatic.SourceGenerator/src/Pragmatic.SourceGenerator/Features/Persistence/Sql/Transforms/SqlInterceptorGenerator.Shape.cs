@@ -62,6 +62,19 @@ internal static partial class SqlInterceptorGenerator
                 spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.AuditedWithoutTrail, audited.Locations.FirstOrDefault(l => l.IsInSource) ?? Location.None,
                     audited.Name, PragmaticPermissions.BoundaryOf(audited)!.Name));
             var loads = CompiledLoads(spc, compilation, engines);
+            // The grid filters (#946): their half is a shape (its specification's leaves compiled with the others'), and the members they sort by
+            // are keys of their entity's repository, which PageAsync maps an ordering to.
+            var gridFilters = PragmaticGridFilter.Read(compilation, PragmaticEngine.Sql, spc.CancellationToken);
+            foreach (var filter in gridFilters)
+            {
+                shapes.Add(filter.SourceText(new("Pragmatic.Persistence.Sql", "Sql engine", "SqlGridFilter")));
+                foreach (var member in filter.SortMembers)
+                {
+                    if (PragmaticReadRepository.Unkeyed(filter.Entity, member) is { } why)
+                        spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.GridPartlyCompiled, ReportableLocation(filter.Type, compilation), filter.Type.Name, why));
+                }
+            }
+
             foreach (var entity in served)
             {
                 // The sets of paths the invokers read the entity with: its [LoadEntity]s here, and the mutations' loads (EngineReadModel).
@@ -73,7 +86,8 @@ internal static partial class SqlInterceptorGenerator
                 // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, its entity
                 // too, and a symbol of one compilation is never equal to the same type's symbol of another.
                 var ofEntity = declared.Where(q => q.Entity.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == entityName).ToList();
-                if (PragmaticReadRepository.For(entity, asShaped, ofEntity, includeSets) is { } repository)
+                var sortMembers = gridFilters.Where(f => SymbolEqualityComparer.Default.Equals(f.Entity, entity)).SelectMany(f => f.SortMembers);
+                if (PragmaticReadRepository.For(entity, asShaped, ofEntity, includeSets, sortMembers) is { } repository)
                     repositories.Add(repository);
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Sql", "global::Pragmatic.Persistence.Sql.SqlSession", "global::Pragmatic.Persistence.Sql.Functions.SqlHierarchy.KeysAsync") is { } hierarchy)
                     repositories.Add(hierarchy); // its chains are bound and intercepted, as a repository's

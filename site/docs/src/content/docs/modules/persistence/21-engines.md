@@ -136,6 +136,10 @@ These work on every engine, from the same declarations:
   and a required navigation never hides the row reading it for those. A declared `[Join<T>]` reads its side through
   every filter;
 - declared queries (`[Query]`), the generated actions and endpoints, and `[LoadEntity]` loads;
+- a `[GridFilter]`'s `LoadAsync(repository)`: its filters, its sorts and its page, read through
+  `IReadRepository<T>.PageAsync` with the total. The engine compiles a sort key for each member a grid filter of the
+  entity sorts by; a sort through a navigation is reported (`PRAG3034`, `PRAG3109`) and refused. `Apply(IQueryable)`
+  is EF Core's;
 - the caches (`Pragmatic.Persistence.Caching`): a `[Lookup]` entity's cache, preloaded and reloaded after a committed
   write, and a `[Cacheable]` query read through its cache, by one rule. The stack comes from the query's category,
   the key is partitioned by tenant, filter mode and lifted filters, and a failure is never cached. An answer is the

@@ -19,4 +19,6 @@ internal sealed record ReadRepositoryModel(
     EquatableArray<LinkNavigationModel> Collections,
     EquatableArray<string> Autocompletes,
     bool HidesBase = false,
-    string? UserMatch = null);
+    string? UserMatch = null,
+    // PageAsync's keys (#946): the entity's key, the fallback, then one per member a grid filter of the entity sorts by.
+    EquatableArray<PageOrderKeyModel> PageKeys = default);

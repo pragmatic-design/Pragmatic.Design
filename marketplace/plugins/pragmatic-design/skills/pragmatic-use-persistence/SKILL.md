@@ -306,7 +306,7 @@ the task needs one of these:
 
 ### 7. GridFilter (runtime operator selection)
 
-Use when the user selects the operator from the UI:
+Use when the user selects the operator from the UI. Read it with `await Filter.LoadAsync(repository, ct)`, the page and its total on every engine; `Apply(IQueryable)` is EF Core's alone:
 
 ```csharp
 [GridFilter<Order>]

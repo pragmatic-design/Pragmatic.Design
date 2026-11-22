@@ -83,6 +83,21 @@ internal static partial class DocumentGenerator
                 written.Add(AddText(DocGrids.Source(grid, model))); // its LoadAsync's chains are bound and intercepted with the application's
             }
 
+            // The grid filters (#946): their half is a shape (its specification's leaves compiled with the others'), and the members they sort by
+            // are keys of their entity's repository, which PageAsync maps an ordering to.
+            var gridFilters = PragmaticGridFilter.Read(compilation, PragmaticEngine.Documents, spc.CancellationToken);
+            foreach (var filter in gridFilters)
+            {
+                AddText(filter.SourceText(new("Pragmatic.Persistence.Documents", "documents engine", "DocGridFilter")));
+                if (!models.TryGetValue(filter.Entity.ToDisplayString(), out var model))
+                    continue;
+                foreach (var member in filter.SortMembers)
+                {
+                    if (DocReadRepository.Unkeyed(model, member) is { } why)
+                        diagnostics.Add(Diagnostic.Create(DocDiagnostics.GridPartlyCompiled, SqlInterceptorGenerator.ReportableLocation(filter.Type, compilation), filter.Type.Name, why));
+                }
+            }
+
             foreach (var registration in PragmaticRegistration.Documents.For(compilation, entities))
                 AddText(registration); // each boundary's unit of work and repositories, keyed by the boundary
             foreach (var audited in PragmaticRegistration.Documents.AuditedWithoutTrail(compilation, entities))
@@ -93,7 +108,8 @@ internal static partial class DocumentGenerator
                 // By name: a query a shape file declares (a trait's list query, a [Resource]'s read) is of the shaped compilation, and a symbol of
                 // one compilation is never equal to the same type's symbol of another.
                 var own = queries.Where(q => q.Query.Entity.ToDisplayString() == entity.ToDisplayString()).ToList();
-                if (DocReadRepository.For(entity, own) is { } repository)
+                var sortMembers = gridFilters.Where(f => f.Entity.ToDisplayString() == entity.ToDisplayString()).SelectMany(f => f.SortMembers);
+                if (DocReadRepository.For(entity, own, models.TryGetValue(entity.ToDisplayString(), out var document) ? document : null, sortMembers) is { } repository)
                     written.Add(Add(new DocReadRepositoryTemplate(repository).RenderOutput())); // its chains are bound and intercepted with the application's
                 if (PragmaticHierarchy.For(entity, "Pragmatic.Persistence.Documents", "global::Pragmatic.Persistence.Documents.DocSession", "global::Pragmatic.Persistence.Documents.Execution.DocHierarchy.KeysAsync") is { } hierarchy)
                     written.Add(AddText(hierarchy)); // [GenerateHierarchy]: its chains too
