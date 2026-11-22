@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Pragmatic.SourceGenerator.Features.Persistence.Sql.Models;
@@ -109,6 +110,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         var notificationStore = compilation.GetTypeByMetadataName(EngineNotificationStore) is not null;
         var jobStore = compilation.GetTypeByMetadataName(EngineJobStore) is not null;
         var multiTenancy = compilation.GetTypeByMetadataName(MultiTenancyOptions) is not null;
+        var lookupRegistration = LookupRegistrationOf(compilation, entities);
         // By name, not by symbol: a trait's child the engine persists comes from the compilation with the shape, its boundary with it
         // (SqlInterceptorGenerator.ShapeDeclaredEntities), and is registered with the boundary's other entities all the same.
         foreach (var group in entities.Select(e => (Entity: e, Boundary: PragmaticPermissions.BoundaryOf(e) as INamedTypeSymbol)).Where(p => p.Boundary is not null)
@@ -136,6 +138,7 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
                     : group.Select(p => p.Entity).Where(e => Identity.Transforms.UserEntityTransform.MatchPropertyOf(e) is not null)
                         .Select(e => e.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).OrderBy(t => t, System.StringComparer.Ordinal).ToEquatableArray(),
                 UserLookupRepository = userLookup,
+                LookupRegistration = group.Any(p => IsLookup(p.Entity)) ? lookupRegistration : null,
             };
             sources.Add((model.Hint, new BoundaryPersistenceTemplate(model).ToSourceText().ToString()));
         }
@@ -157,6 +160,34 @@ internal sealed class PragmaticRegistration(EngineRegistrationModel engine, stri
         return entities.Where(e => IsAudited(e) && PragmaticPermissions.BoundaryOf(e) is INamedTypeSymbol boundary
                                    && boundary.ContainingAssembly?.Name == compilation.Assembly.Name)
             .OrderBy(e => e.ToDisplayString(), System.StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>True when <paramref name="entity" /> carries <c>[Lookup]</c> (Pragmatic.Persistence's): its rows are cached in memory.</summary>
+    internal static bool IsLookup(INamedTypeSymbol entity)
+        => entity.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Persistence.Entity.LookupAttribute");
+
+    /// <summary>
+    ///     The <c>Add{Prefix}LookupCaches</c> the generator writes for this assembly's <c>[Lookup]</c> entities (<c>AdvancedFeature</c>), by the
+    ///     same rule that names it there: the namespaces of the lookups. Null when the assembly declares none.
+    /// </summary>
+    /// <remarks>
+    ///     ASSUMPTION: the lookups named here are the ones the engine serves in this assembly. <c>AdvancedFeature</c> names the method from every
+    ///     lookup of the compilation that an engine persists, which is the same set unless one assembly splits its lookups across two engines.
+    /// </remarks>
+    private static string? LookupRegistrationOf(Compilation compilation, IEnumerable<INamedTypeSymbol> entities)
+    {
+        var lookups = entities.Where(e => SymbolEqualityComparer.Default.Equals(e.ContainingAssembly, compilation.Assembly) && IsLookup(e))
+            .Select(e => new Persistence.Models.EntityMetadataModel
+            {
+                TypeName = e.Name,
+                FullTypeName = e.ToDisplayString(),
+                Namespace = e.ContainingNamespace.ToDisplayString(),
+                IdType = "System.Guid", // not read: the method's name comes from the namespaces alone
+                IsLookup = true,
+                IsValid = true,
+            })
+            .ToImmutableArray();
+        return Persistence.Templates.LookupCacheRegistrationTemplate.RegistrationMethodFor(lookups);
     }
 
     /// <summary>True when <paramref name="boundary" /> carries <c>[EnableEventOutbox]</c> (Pragmatic.Events'): its saves write their events to an outbox.</summary>

@@ -31,6 +31,8 @@
          Pragmatic.Result.EFCore.<Provider> sharpens it. -->
     <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result.EFCore\Pragmatic.Result.EFCore.csproj" />
     <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+    <!-- The [Lookup] cache, its preload and its reload: the generated loader of an EF Core entity names them (#881). -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Caching\Pragmatic.Persistence.Caching.csproj" />
   </ItemGroup>
 
   <!-- The generator, for the log call sites. It also writes what it writes for every assembly that runs it. -->

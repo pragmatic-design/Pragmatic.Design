@@ -49,7 +49,9 @@ const COPY_NAMESPACE = 'names a type the generator puts in the assembly\'s names
   + 'so the same type has another name there; not a gap';
 const LIMIT_BEST_EFFORT = 'a per-entity limit is best effort on the documents engine (owner decision, 2026-10-26, #397): counted before the write, '
   + 'with no serializable transaction, so concurrent adds can cross it';
-const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine compiles one where it is called, and the test assembly is not one its '
+const NO_TRANSACTION = 'a transaction the test opens: the documents host\'s MongoDB is standalone and runs none, so the unit of work refuses it; '
+  + 'what a commit and an abort report on that engine is tested on a replica set (DocCommitHooksTests)';
+const COMPILED_AT_CALL ='a bulk write the test calls itself: the Sql engine compiles one where it is called, and the test assembly is not one its '
   + 'generator runs on; the bulk write is tested where it is compiled (Pragmatic.Persistence.Sql.Tests, BulkWritesTests), not a gap';
 
 /**
@@ -57,11 +59,10 @@ const COMPILED_AT_CALL = 'a bulk write the test calls itself: the Sql engine com
  * with that issue, not before.
  */
 const REAL_GAP = 'a real gap, which its issue implements on the engines: ';
-const NO_LOOKUP_CACHE = `${REAL_GAP}the engines have no [Lookup] cache (#881)`;
 const NO_QUERY_CACHE = `${REAL_GAP}the engines read a [Cacheable] query past its cache (#882)`;
 
 /** The reasons an exclusion gives, by name: what the coverage page (engine-coverage.mjs) sorts the exclusions by. */
-export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, REPLACED_JOB_STORE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL };
+export const SUITE_REASONS = { REPLACED, REPLACED_FIXTURE, REPLACED_COMMITS, REPLACED_JOB_STORE, EF_ONLY, EF_PROVIDER, NO_NAVIGATION, TEST_ON_EF, TEST_ON_SQL, LIMIT_BEST_EFFORT, REAL_GAP, COPY_NAMESPACE, COMPILED_AT_CALL, NO_TRANSACTION };
 
 const both = ['Sql', 'Documents'];
 const s = (path) => `${SUITE_DIR}/${path}`;
@@ -111,11 +112,6 @@ export const ALLOWED_FILE_EXCLUSIONS = {
   // The route constants by their full name, Showcase.Booking.ApiRoutes: on an engine copy the generator names them after that assembly, and
   // the file would not compile there. The typed client tests, in TypedClientTests, run on the engines.
   [s('Endpoints/ApiRoutesConstantsTests.cs')]: { engines: both, reason: COPY_NAMESPACE },
-
-  // The lookup cache, measured missing on both engines by InfrastructureTests (#873). These two exercise it whole: filled at startup,
-  // and reloaded by a write.
-  [s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
-  [s('CrossCutting/LookupCacheTests.cs')]: { engines: both, reason: NO_LOOKUP_CACHE },
 
   // The temporal query extensions compose onto an IQueryable, which the engines do not read through. Their repository form, in
   // TemporalRepositoryFormTests (#899), runs there, as do the history scope, the constraints and the database's refusals
@@ -195,10 +191,12 @@ export const ALLOWED_TEST_EXCLUSIONS = {
     file: s('Endpoints/AutoIncludeTests.cs'), engines: ['Documents'], reason: NO_NAVIGATION, follows: [catalog('RoomTypes/Mutations/UpdateRoomTypeMutation.cs')],
   },
 
-  // The lookup cache's registration: missing on both engines (#881). The five other tests of the file run there.
-  [test('CrossCutting/InfrastructureTests.cs', 'LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered')]: {
-    file: s('CrossCutting/InfrastructureTests.cs'), engines: both, reason: NO_LOOKUP_CACHE,
-  },
+  // A lookup write inside a transaction, committed or rolled back: the documents host's MongoDB is standalone and runs no transaction, so
+  // the unit of work refuses to begin one. The write with no transaction, in the same file, runs there.
+  ...Object.fromEntries(['ACategoryAddedInATransaction_IsInTheCacheOnceItCommits', 'ACategoryRolledBack_NeverReachesTheCache'].map((method) => [
+    test('CrossCutting/ALookupWriteReloadsTheCacheTests.cs', method),
+    { file: s('CrossCutting/ALookupWriteReloadsTheCacheTests.cs'), engines: ['Documents'], reason: NO_TRANSACTION },
+  ])),
 
   // The one caching test only a cache can pass: on the engines the read goes to the database (#882). The five others run there.
   [test('CrossCutting/CachingIntegrationTests.cs', 'CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase')]: {

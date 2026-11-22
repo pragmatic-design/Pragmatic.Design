@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Pragmatic.Persistence.Caching</RootNamespace>
+    <Description>The caches of Pragmatic's persistence that no engine owns: a [Lookup] entity's in-memory cache, its preload at startup and per tenant, and its reload after a committed write, shared by EF Core and the Sql and documents engines.</Description>
+    <PackageTags>pragmatic;persistence;caching;lookup</PackageTags>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- [LoggerMessage] is Pragmatic's: the preload and the reload log through generated call sites. -->
+    <PragmaticLogCallSites>true</PragmaticLogCallSites>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <!-- ICacheStack: a reload is told to the other nodes by invalidating the lookup's tag. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Caching\src\Pragmatic.Caching\Pragmatic.Caching.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The startup preload is a hosted service. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+
+</Project>

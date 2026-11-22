@@ -70,12 +70,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- A real gap (#881): the engines have no [Lookup] cache. These two exercise it whole, filled at startup and reloaded by a write. -->
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\ALookupWriteReloadsTheCacheTests.cs" />
-    <Compile Remove="..\Showcase.IntegrationTests\CrossCutting\LookupCacheTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- EF Core's own mechanism: a temporal relation's query extensions compose onto an IQueryable, which the engines do not read
          through. Their repository form (TemporalRepositoryFormTests, #899) runs here. -->
     <Compile Remove="..\Showcase.IntegrationTests\EntityPersistence\TemporalQueryExtensionsTests.cs" />

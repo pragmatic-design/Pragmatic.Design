@@ -2,7 +2,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pragmatic.MultiTenancy;
-using Pragmatic.Persistence.EFCore.Repository;
+using Pragmatic.Persistence.Caching;
+using Pragmatic.Persistence.EFCore.Interceptors;
 using Pragmatic.Persistence.Entity;
 using Pragmatic.Testing.Assertions;
 using Xunit;
@@ -124,8 +125,8 @@ public sealed class TenantCreatedWhileRunningTests : IAsyncLifetime
     ///     A row a tenant writes reaches that tenant's cache once the save commits, and no other tenant's (#734).
     /// </summary>
     /// <remarks>
-    ///     The context is the only one built with <see cref="LookupCacheReloadInterceptor" />: on the container's, the seed above would
-    ///     load the caches before the cases that measure a cache without the signal.
+    ///     The context is the only one built with <see cref="LookupCacheReloadObserver" /> (through EF Core's commit observer interceptor): on
+    ///     the container's, the seed above would load the caches before the cases that measure a cache without the signal.
     /// </remarks>
     [Fact]
     public async Task ARowATenantWrites_ReachesThatTenantsCacheOnly()
@@ -138,7 +139,7 @@ public sealed class TenantCreatedWhileRunningTests : IAsyncLifetime
         {
             var options = new DbContextOptionsBuilder<RegionContext>()
                 .UseSqlite(_connection)
-                .AddInterceptors(new LookupCacheReloadInterceptor(_services, _services.GetServices<ILookupCacheLoader>()))
+                .AddInterceptors(CommitObserverInterceptor.For([new LookupCacheReloadObserver(_services, _services.GetServices<ILookupCacheLoader>())]))
                 .Options;
             using var db = new RegionContext(options);
             db.Regions.Add(new Region { Id = 2, Name = "South (A)", TenantId = "tenant-a" });
@@ -264,7 +265,8 @@ public sealed class TenantCreatedWhileRunningTests : IAsyncLifetime
         }
     }
 
-    private sealed class Region
+    // A tenant's entity, as Pragmatic recognises one: the reload reads the written row's tenant through ITenantEntity.
+    private sealed class Region : ITenantEntity
     {
         public int Id { get; set; }
 

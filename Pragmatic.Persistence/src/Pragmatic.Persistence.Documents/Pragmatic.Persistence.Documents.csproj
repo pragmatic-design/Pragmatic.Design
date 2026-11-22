@@ -11,6 +11,8 @@
     <ProjectReference Include="..\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
     <!-- What every engine's bridge shares: the filter decision, the save's phases, the scope rule registry, the grid page. -->
     <ProjectReference Include="..\Pragmatic.Persistence.Engines\Pragmatic.Persistence.Engines.csproj" />
+    <!-- The [Lookup] cache, its preload and its reload, which the generated loader of an entity on this engine names (#881). -->
+    <ProjectReference Include="..\Pragmatic.Persistence.Caching\Pragmatic.Persistence.Caching.csproj" />
     <!-- Captured: the values a specification's lambda captured, read by the code the generator writes for it. -->
     <ProjectReference Include="..\Pragmatic.Persistence.Expressions\Pragmatic.Persistence.Expressions.csproj" />
     <!-- Pragmatic's contracts the engine serves: the filters and their toggle, the repositories, the unit of work, the scopes. -->

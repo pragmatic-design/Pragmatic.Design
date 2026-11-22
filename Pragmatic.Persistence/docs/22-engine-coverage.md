@@ -15,8 +15,8 @@ relations kept as keys are revisited with that goal, rather than kept as exclusi
 
 | Engine | Test methods run | Of the EF Core suite's | Files left out | Single tests left out |
 |---|---|---|---|---|
-| Sql | **643** | 678 | 16 | 3 |
-| Documents | **582** | 678 | 24 | 41 |
+| Sql | **651** | 678 | 14 | 2 |
+| Documents | **588** | 678 | 22 | 42 |
 
 ## 1. Not measured: the test is bound to EF Core
 
@@ -86,12 +86,6 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
-**the engines have no [Lookup] cache (#881)**
-
-- `CrossCutting/ALookupWriteReloadsTheCacheTests.cs` (both), 3 test methods
-- `CrossCutting/LookupCacheTests.cs` (both), 4 test methods
-- `CrossCutting/InfrastructureTests.cs`: `LookupCache_TheDeclaredLookup_HasItsCacheAndPreloadRegistered` (both)
-
 **the engines read a [Cacheable] query past its cache (#882)**
 
 - `CrossCutting/CachingIntegrationTests.cs`: `CacheableQuery_ServesAReadThatNoLongerMatchesTheDatabase` (both)
@@ -121,6 +115,12 @@ no serializable transaction, so concurrent adds can cross it.
 generator runs on. The bulk write is tested where it is compiled, in `Pragmatic.Persistence.Sql.Tests`:
 
 - `EntityPersistence/SoftDeleteTests.cs`: `BulkDeleteThroughTheRepository_InsideASuspendedScope_DeletesTheRow` (Sql)
+
+**The test opens a transaction**, and the documents host's MongoDB is standalone: it runs none, and the unit of work refuses to
+begin one. What a commit and an abort report on that engine is tested on a replica set, in `DocCommitHooksTests`:
+
+- `CrossCutting/ALookupWriteReloadsTheCacheTests.cs`: `ACategoryAddedInATransaction_IsInTheCacheOnceItCommits` (Documents)
+- `CrossCutting/ALookupWriteReloadsTheCacheTests.cs`: `ACategoryRolledBack_NeverReachesTheCache` (Documents)
 
 **The test reads or migrates PostgreSQL itself**, and the documents host has none:
 

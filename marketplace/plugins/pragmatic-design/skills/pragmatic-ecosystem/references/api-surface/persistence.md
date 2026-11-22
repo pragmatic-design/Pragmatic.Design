@@ -274,6 +274,9 @@ For what a format cannot express:
 
 - **Target**: small "lookup table" classes (countries, statuses).
 - **Generates**: `ILookupCache<T, TId>` with in-memory cache; implicit navigations on entities that have a FK `{Type}Id`.
+- **On every engine**: EF Core, Sql and documents. The cache, its startup preload and its reload after a committed write are
+  `Pragmatic.Persistence.Caching`'s, referenced by each engine's package; only the loader's read is the engine's. A Pragmatic host
+  registers it from the module's metadata, with nothing to call.
 
 ## `[Inheritance(InheritanceStrategy.TPH | TPT | TPC, DiscriminatorColumn = "Type")]`
 

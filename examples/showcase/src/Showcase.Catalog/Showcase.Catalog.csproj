@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Showcase.Tests" />
+    <!-- A Category's setters are internal and no mutation writes one: the lookup reload test writes it through them, on every engine. -->
+    <InternalsVisibleTo Include="Showcase.IntegrationTests" />
   </ItemGroup>
 
   <!-- Pragmatic Runtime References -->

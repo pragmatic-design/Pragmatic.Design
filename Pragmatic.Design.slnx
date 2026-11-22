@@ -723,6 +723,7 @@
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql.SqlClient/Pragmatic.Persistence.Sql.SqlClient.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Sql/Pragmatic.Persistence.Sql.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Engines/Pragmatic.Persistence.Engines.csproj" />
+    <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Caching/Pragmatic.Persistence.Caching.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Core/Pragmatic.Persistence.Documents.Core.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Mongo/Pragmatic.Persistence.Documents.Mongo.csproj" />
     <Project Path="Pragmatic.Persistence/src/Pragmatic.Persistence.Documents.Cosmos/Pragmatic.Persistence.Documents.Cosmos.csproj" />
