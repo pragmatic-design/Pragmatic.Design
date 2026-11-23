@@ -27,6 +27,21 @@ test('the counts on the page are the ones the gate reports', () => {
   }
 });
 
+test('kind 2 carries the owner\'s decision, not an open question', () => {
+  const page = expectedPage(root);
+  const kindTwo = page.slice(page.indexOf('## 2.'), page.indexOf('## 3.'));
+  assert.ok(!kindTwo.includes('**Open:**'), 'section 2 still says the choice is open');
+  assert.ok(kindTwo.includes('2026-11-22'), 'section 2 does not date the owner\'s decision');
+  for (const issue of ['#946', '#947']) assert.ok(kindTwo.includes(issue), `section 2 does not name ${issue}, the grid on the engines`);
+});
+
+test('kind 4 lists a gap no suite test exercises, with its issue', () => {
+  const page = expectedPage(root);
+  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
+  assert.ok(!kindFour.includes('None found yet'), 'section 4 says no gap was found');
+  assert.ok(kindFour.includes('`FullJoin`') && kindFour.includes('#962'), 'section 4 does not name the .NET 11 operators and their issue');
+});
+
 test('a test added to a file left out moves the page: the count is read from the source, not written on it', () => {
   // A file the page counts the methods of: one EF Core only, which stays left out whatever kind 1 holds.
   const [leftOut] = Object.entries(ALLOWED_FILE_EXCLUSIONS).find(([, a]) => a.reason === SUITE_REASONS.EF_ONLY);

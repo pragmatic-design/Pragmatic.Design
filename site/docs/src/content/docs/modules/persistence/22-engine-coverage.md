@@ -31,8 +31,9 @@ the engine-neutral surface now, the boundary's repositories or the session, and 
 ## 2. EF Core only: read through an IQueryable
 
 The engines read through their own query model, not `IQueryable`, so these module files are left out on both (#363), and the suite
-files that exercise them with them. **Open:** whether the engines get a query model for these, or they stay EF Core only and say so
-here, is the owner's decision, per feature (#819).
+files that exercise them with them. The owner decided each feature on 2026-11-22 (#819). The grid filter search and the generated
+DevExpress grid adapter, once listed here, run on the engines (#946, #947). `CountAmenitiesAction` stays EF Core only: it injects
+the boundary's `DbContext`, which is EF Core's by construction.
 
 | Module file | Engines |
 |---|---|
@@ -87,7 +88,8 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
-None found yet.
+**The .NET 11 query operators** (#962): EF Core 11 translates `FullJoin`, `LeftJoin` and `RightJoin` on `Queryable`, and `MaxBy`/`MinBy`; neither engine recognises their BCL signatures yet. No test of the suite uses them, so no exclusion lists them.
+
 
 ## 5. The smaller kinds
 
