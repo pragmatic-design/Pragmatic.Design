@@ -146,6 +146,8 @@ internal sealed partial class PlanBuilder
 
             case "Join":
             case "LeftJoin":
+            case "RightJoin":
+            case "FullJoin":
                 return AddJoin(step, model);
 
             case "Fragment":

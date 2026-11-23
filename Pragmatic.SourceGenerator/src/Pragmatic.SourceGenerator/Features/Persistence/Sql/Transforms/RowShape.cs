@@ -90,14 +90,21 @@ internal sealed class ColumnRow : RowShape
 /// <summary>A join prepared but not yet in the statement: a GroupJoin's group, joined when the SelectMany that follows names it.</summary>
 internal sealed class PendingJoin
 {
-    public PendingJoin(EntityModel entity, string alias, string source, List<string> on, bool derived)
+    public PendingJoin(EntityModel entity, string alias, string source, List<string> on, bool derived, List<string>? innerFilters = null)
     {
         Entity = entity;
         Alias = alias;
         Source = source;
         On = on;
         Derived = derived;
+        InnerFilters = innerFilters ?? [];
     }
+
+    /// <summary>
+    ///     The inner chain's filters and rules as they stand in <see cref="On" /> (each parenthesised): empty when they are inside a derived
+    ///     table. A RIGHT or FULL join keeps the inner rows that match nothing, so it needs them where the ON clause cannot drop a row.
+    /// </summary>
+    public List<string> InnerFilters { get; }
 
     public EntityModel Entity { get; }
 
@@ -110,7 +117,10 @@ internal sealed class PendingJoin
 
     public bool Derived { get; }
 
-    public string Join(bool left) => $"{(left ? "LEFT" : "INNER")} JOIN {Source} {Alias} ON {string.Join(" AND ", On)}";
+    public string Join(bool left) => Join(left ? "LEFT" : "INNER", On);
+
+    /// <summary>The join of a <paramref name="kind" /> (INNER, LEFT, RIGHT, FULL) on the conditions given.</summary>
+    public string Join(string kind, IEnumerable<string> on) => $"{kind} JOIN {Source} {Alias} ON {string.Join(" AND ", on)}";
 }
 
 /// <summary>The group of a GroupJoin: not a value, a join waiting for the SelectMany that reads it.</summary>

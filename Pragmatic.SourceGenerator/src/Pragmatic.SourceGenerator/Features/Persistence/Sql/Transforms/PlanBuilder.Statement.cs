@@ -28,6 +28,8 @@ internal sealed partial class PlanBuilder
     /// </summary>
     private string Statement(SqlDialect dialect, string selectList, bool keysOnly = false)
     {
+        if (RendersFullJoinOnMySql(dialect))
+            return FullJoinOnMySql(selectList);
         if (_members is not null && IsFlatCompound(dialect))
             return (_hoisted is not null && _parent is null ? WithClause(dialect) : "") + Compound(dialect); // the set operation without a wrapper: ORDER BY and paging on the compound itself; its members' Withs first
         if (_parent is not null && _perParentTake is { } take)

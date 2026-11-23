@@ -83,7 +83,7 @@ suite's tests that call them: **38 single tests** in 20 files, and 3 files whole
 What measuring kind 1 found missing on an engine: the feature, not the test. Each gap has an issue that implements it there, and
 its exclusion goes when the issue closes.
 
-**The .NET 11 query operators** (#962): EF Core 11 translates `FullJoin`, `LeftJoin` and `RightJoin` on `Queryable`, and `MaxBy`/`MinBy`; neither engine recognises their BCL signatures yet. No test of the suite uses them, so no exclusion lists them.
+**The .NET 11 query operators** (#962): EF Core translates `LeftJoin`, `RightJoin` and `FullJoin`, and `MaxByAsync`/`MinByAsync`. The Sql engine compiles the three joins (`RightJoin` and `FullJoin` since #968, emulated on MySQL); still missing are `MaxByAsync`/`MinByAsync` on the Sql engine (#969) and on the documents engine (#971), and `LeftJoin`, `RightJoin` and `FullJoin` on the documents engine (#970). No test of the suite uses them, so no exclusion lists them.
 
 
 ## 5. The smaller kinds

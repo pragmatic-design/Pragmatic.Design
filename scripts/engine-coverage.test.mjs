@@ -42,6 +42,14 @@ test('kind 4 lists a gap no suite test exercises, with its issue', () => {
   assert.ok(kindFour.includes('`FullJoin`') && kindFour.includes('#962'), 'section 4 does not name the .NET 11 operators and their issue');
 });
 
+test('kind 4 no longer lists the outer joins as missing on the Sql engine, and names what is still missing', () => {
+  const page = expectedPage(root);
+  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
+  assert.ok(!kindFour.includes('neither engine'), 'section 4 still says neither engine has the operators');
+  assert.ok(kindFour.includes('The Sql engine compiles the three joins'), 'section 4 does not say the Sql engine compiles the outer joins');
+  for (const issue of ['#969', '#970', '#971']) assert.ok(kindFour.includes(issue), `section 4 does not name ${issue}, a part still missing`);
+});
+
 test('a test added to a file left out moves the page: the count is read from the source, not written on it', () => {
   // A file the page counts the methods of: one EF Core only, which stays left out whatever kind 1 holds.
   const [leftOut] = Object.entries(ALLOWED_FILE_EXCLUSIONS).find(([, a]) => a.reason === SUITE_REASONS.EF_ONLY);
