@@ -36,7 +36,7 @@ public sealed class AnsweringThroughTheGeneratedWriter(PostgresFixture database)
         }));
         var id = created.GetProperty("id").GetGuid();
 
-        using var writers = new WritersObserved();
+        using var writers = new WritersObserved(Services);
         var response = await accountant.GetAsync($"api/customers/{id}");
         var body = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
