@@ -82,6 +82,13 @@ internal static partial class SqlInterceptorGenerator
             }
         }
 
+        var extremeBy = PlanBuilder.IsExtremeBy(name);
+        if (extremeBy && !builder.AddExtremeBy(name, terminal, terminalMethod, model))
+        {
+            Shape(builder.StepError ?? $"the key of {name} is outside the translated subset");
+            return;
+        }
+
         if (predicateTerminal && !builder.AddPredicate(model, (LambdaExpressionSyntax)arguments[0].Expression))
         {
             Shape($"the terminal's predicate is outside the translated subset: {builder.LastError ?? "see the diagnostics on it"}");
@@ -94,7 +101,7 @@ internal static partial class SqlInterceptorGenerator
             return;
         }
 
-        if (!builder.AddRules(where, diagnostics) || !builder.TryFinish(name, terminalMethod, arguments, model, where, diagnostics))
+        if (!builder.AddRules(where, diagnostics) || !builder.TryFinish(extremeBy ? "FirstOrDefaultAsync" : name, terminalMethod, arguments, model, where, diagnostics))
             return;
         if (builder.IsAnonymous)
         {

@@ -177,6 +177,14 @@ public static class Outside
         var outerNavigation = await session.Query<Order>().RightJoin(session.Query<Customer>(), o => o.CustomerId, c => c.Id, (o, c) => new { Who = o.Customer!.Name, c.Name }).ToListAsync();
         _ = outerNavigation;
 
+        // PRAG3001: System.Linq's MaxBy runs the query synchronously; the translated terminal is MaxByAsync.
+        var largest = session.Query<Order>().MaxBy(o => o.Total);
+        _ = largest;
+
+        // PRAG3001: MaxByAsync orders the rows the chain selects, so a Take before it would page them in another order.
+        var pagedLargest = await session.Query<Order>().Take(10).MaxByAsync(o => o.Total);
+        _ = pagedLargest;
+
         // PRAG3001: an Include on a joined row (the loader works on the entity's rows).
         var includeAfterJoin = await session.Query<Order>().Join(session.Query<Customer>(), o => o.CustomerId, c => c.Id, (o, c) => new { Order = o, Customer = c }).Include(x => x.Order.Lines).ToListAsync();
         _ = includeAfterJoin;

@@ -40,6 +40,15 @@ public readonly partial struct SqlQuery<T>
 
     public ValueTask<T?> FirstOrDefaultAsync<TArg>(Func<T, TArg, bool> predicate, TArg arg, CancellationToken ct = default) => throw NotTranslated(nameof(FirstOrDefaultAsync));
 
+    /// <summary>
+    ///     The row with the largest <paramref name="key" />, or default when no row matches: the chain ordered by the key, descending, then
+    ///     by the entity's key, so rows that tie on the key read the same row every time; one row, as EF Core's <c>MaxByAsync</c>.
+    /// </summary>
+    public ValueTask<T?> MaxByAsync<TKey>(Func<T, TKey> key, CancellationToken ct = default) => throw NotTranslated(nameof(MaxByAsync));
+
+    /// <summary>The row with the smallest <paramref name="key" />, or default when no row matches; ties as <see cref="MaxByAsync{TKey}" />.</summary>
+    public ValueTask<T?> MinByAsync<TKey>(Func<T, TKey> key, CancellationToken ct = default) => throw NotTranslated(nameof(MinByAsync));
+
     public ValueTask<T> FirstAsync(CancellationToken ct = default) => throw NotTranslated(nameof(FirstAsync));
 
     public ValueTask<T> SingleAsync(CancellationToken ct = default) => throw NotTranslated(nameof(SingleAsync));

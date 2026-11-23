@@ -90,6 +90,8 @@ public class DiagnosticsTests(TestDatabases databases)
         Assert.Contains("an outer join reads the columns of a side that may be missing as null: cast the member to its nullable type ((decimal?)o.Total)", output);
         Assert.Contains("?)c.CreatedAt)", output); // a RIGHT JOIN's outer row may be missing too
         Assert.Contains("a RightJoin's result selector reads the columns of the two rows, not a navigation of a side that may be missing", output);
+        Assert.Contains("'MaxBy' is not in the translated subset: it runs the query synchronously; use MaxByAsync on the chain typed SqlQuery<T>", output);
+        Assert.Contains("MaxByAsync orders the rows the chain selects and reads the first: a Skip, Take, Distinct or cursor before it would page rows in another order", output);
         Assert.Contains("Include and Project work on the entity's rows: put them before the join", output); // an Include on a joined row
         Assert.Contains("'OpenAndBig' cannot be generated: a declared chain does not call another declared chain", output);
         Assert.Contains("'minimum' is a value from outside the lambda", output); // a capture inside a subquery's lambda

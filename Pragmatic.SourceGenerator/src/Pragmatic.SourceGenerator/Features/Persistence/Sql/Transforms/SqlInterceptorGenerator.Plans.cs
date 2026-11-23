@@ -47,6 +47,15 @@ internal static partial class SqlInterceptorGenerator
             return false; // otherwise reported at the operator's own call site
         }
 
+        // MaxByAsync/MinByAsync: an ordering by the key and the entity's key, then FirstOrDefaultAsync's plan.
+        var extremeBy = PlanBuilder.IsExtremeBy(name);
+        if (extremeBy && !builder.AddExtremeBy(name, call.Invocation, call.Method, call.Model))
+        {
+            if (builder.StepError is { } why)
+                diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedMethod, where, name, why));
+            return false;
+        }
+
         if (predicateTerminal)
             ReportConstantPredicate(call.Model, (LambdaExpressionSyntax)arguments[0].Expression, diagnostics);
         if (predicateTerminal && !builder.AddPredicate(call.Model, (LambdaExpressionSyntax)arguments[0].Expression))
@@ -86,7 +95,7 @@ internal static partial class SqlInterceptorGenerator
             return false;
         }
 
-        if (!builder.AddRules(where, diagnostics) || !builder.TryFinish(deferred ?? name, call.Method, arguments, call.Model, where, diagnostics))
+        if (!builder.AddRules(where, diagnostics) || !builder.TryFinish(deferred ?? (extremeBy ? "FirstOrDefaultAsync" : name), call.Method, arguments, call.Model, where, diagnostics))
             return false;
 
         var planType = builder.PlanType($"Plan_{index}");
@@ -121,6 +130,8 @@ internal static partial class SqlInterceptorGenerator
         }
         else if (name == "ShapeAsync")
             source.Add(Terminal(returnType, $"ShapeAsync_{index}", typeParameters, [receiver, "global::Pragmatic.Persistence.Sql.Shapes.SqlShape shape", token], $"{planType}.Instance.ShapeAsync(q, shape, ct)"));
+        else if (extremeBy)
+            source.Add(Terminal(returnType, $"{name}_{index}", "", [receiver, $"Func<{builder.ChainElement}, {call.Method.TypeArguments[0].ToDisplayString(Annotated)}> key", token], $"{planType}.Instance.{execute}(q, ct)"));
         else if (name == "SyncAsync")
             source.Add(Terminal(returnType, $"SyncAsync_{index}", "", [receiver, $"global::System.Collections.Generic.IReadOnlyList<{builder.ChainElement}> rows", token], $"{planType}.Instance.SyncAsync(q, rows, ct)"));
         else if (predicateTerminal || setTerminal || returning || insertSelect)

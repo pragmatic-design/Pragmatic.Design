@@ -134,7 +134,7 @@ internal static partial class SqlInterceptorGenerator
 
         /// <summary>A cheap syntactic gate before binding: System.Linq and EF Core operator names a chain typed IQueryable&lt;T&gt; could bind to.</summary>
         private static bool ForeignCandidate(string name)
-            => name is "Skip" or "Take" or "ToList" or "ToArray" or "First" or "FirstOrDefault" or "Single" or "SingleOrDefault" or "Count" or "Any" or "Distinct" or "GroupBy" or "Include" or "AsNoTracking" or "ToDictionaryAsync" or "Sum" or "Max" or "Min" or "Average" or "All" or "Last" or "LastOrDefault" or "Reverse" or "Join" or "SelectMany" or "Concat" or "Union" or "Except" or "Intersect";
+            => name is "Skip" or "Take" or "ToList" or "ToArray" or "First" or "FirstOrDefault" or "Single" or "SingleOrDefault" or "Count" or "Any" or "Distinct" or "GroupBy" or "Include" or "AsNoTracking" or "ToDictionaryAsync" or "Sum" or "Max" or "Min" or "MaxBy" or "MinBy" or "Average" or "All" or "Last" or "LastOrDefault" or "Reverse" or "Join" or "SelectMany" or "Concat" or "Union" or "Except" or "Intersect";
 
         private static ITypeSymbol? ElementOf(ITypeSymbol? type)
         {
