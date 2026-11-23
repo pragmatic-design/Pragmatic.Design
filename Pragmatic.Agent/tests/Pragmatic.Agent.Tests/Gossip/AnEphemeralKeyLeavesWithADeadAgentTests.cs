@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Sockets;
 using Pragmatic.Agent.Gossip;
 using Pragmatic.Agent.KV;
 using Pragmatic.Testing.Assertions;
@@ -64,7 +62,7 @@ public sealed class AnEphemeralKeyLeavesWithADeadAgentTests
 
     private static async Task<(List<ClusterManager> Managers, string[] Ids)> ClusterAsync(KvStore[] stores)
     {
-        var hubPort = FreeUdpPort();
+        var hubPort = 0;
         var managers = new List<ClusterManager>();
         var ids = new string[stores.Length];
         for (var i = 0; i < stores.Length; i++)
@@ -73,7 +71,7 @@ public sealed class AnEphemeralKeyLeavesWithADeadAgentTests
             var config = new ClusterConfig
             {
                 AgentId = ids[i],
-                GossipPort = i == 0 ? hubPort : FreeUdpPort(),
+                GossipPort = 0,
                 BindAddress = "127.0.0.1",
                 SharedKey = SharedKey,
                 Discovery = "static",
@@ -83,6 +81,7 @@ public sealed class AnEphemeralKeyLeavesWithADeadAgentTests
             var manager = new ClusterManager(config, stores[i]);
             await manager.StartAsync();
             managers.Add(manager);
+            if (i == 0) hubPort = manager.GossipPort;
         }
 
         return (managers, ids);
@@ -93,12 +92,5 @@ public sealed class AnEphemeralKeyLeavesWithADeadAgentTests
         var deadline = DateTime.UtcNow.AddSeconds(20);
         while (!condition() && DateTime.UtcNow < deadline)
             await Task.Delay(50);
-    }
-
-    private static int FreeUdpPort()
-    {
-        using var socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
     }
 }

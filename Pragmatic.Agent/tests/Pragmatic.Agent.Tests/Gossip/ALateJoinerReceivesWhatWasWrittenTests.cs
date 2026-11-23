@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Sockets;
 using Pragmatic.Agent.Gossip;
 using Pragmatic.Agent.KV;
 using Pragmatic.Testing.Assertions;
@@ -19,10 +17,10 @@ public sealed class ALateJoinerReceivesWhatWasWrittenTests
     public async Task AKeyWrittenBeforeTheJoin_ReachesTheJoiner()
     {
         var (early, middle, late) = (new KvStore(), new KvStore(), new KvStore());
-        var earlyPort = FreeUdpPort();
-        using var first = new ClusterManager(Config("early", earlyPort, peers: []), early);
+        using var first = new ClusterManager(Config("early", peers: []), early);
         await first.StartAsync();
-        using var second = new ClusterManager(Config("middle", FreeUdpPort(), peers: [$"127.0.0.1:{earlyPort}"]), middle);
+        var earlyPort = first.GossipPort;
+        using var second = new ClusterManager(Config("middle", peers: [$"127.0.0.1:{earlyPort}"]), middle);
         await second.StartAsync();
 
         early.Set("gateway/instances/orders/a", "http://a");
@@ -31,7 +29,7 @@ public sealed class ALateJoinerReceivesWhatWasWrittenTests
         // can only have it from a state exchange.
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        using var third = new ClusterManager(Config("late", FreeUdpPort(), peers: [$"127.0.0.1:{earlyPort}"]), late);
+        using var third = new ClusterManager(Config("late", peers: [$"127.0.0.1:{earlyPort}"]), late);
         await third.StartAsync();
         await UntilAsync(() => late.Get("gateway/instances/orders/a") is not null);
 
@@ -45,20 +43,13 @@ public sealed class ALateJoinerReceivesWhatWasWrittenTests
             await Task.Delay(50);
     }
 
-    private static ClusterConfig Config(string id, int port, List<string> peers) => new()
+    private static ClusterConfig Config(string id, List<string> peers) => new()
     {
         AgentId = $"{id}-{Guid.NewGuid():N}",
-        GossipPort = port,
+        GossipPort = 0,
         BindAddress = "127.0.0.1",
         SharedKey = SharedKey,
         Discovery = "static",
         Peers = peers,
     };
-
-    private static int FreeUdpPort()
-    {
-        using var socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
-    }
 }

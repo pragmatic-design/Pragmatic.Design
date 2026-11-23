@@ -83,6 +83,12 @@ internal sealed partial class SwimProtocol : IDisposable
 
     public MembershipTable Membership => _membership;
 
+    /// <summary>
+    ///     The UDP port the protocol bound, once started: the configured one, or the one the system chose
+    ///     when that was 0. The port a peer joins this Agent at.
+    /// </summary>
+    public int BoundPort => (_udp?.Client.LocalEndPoint as IPEndPoint)?.Port ?? 0;
+
     /// <summary>Number of gossip datagrams dropped for failing HMAC authentication.</summary>
     public long DroppedUnauthenticatedCount => Interlocked.Read(ref _droppedUnauthenticated);
 
