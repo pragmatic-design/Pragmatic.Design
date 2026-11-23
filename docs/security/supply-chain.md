@@ -42,8 +42,6 @@ from there; a Dependabot alert for the same advisory is dismissed with the same 
   citationberg and reached only through bibliographies, citations and highlighted code, which the
   renderer cannot produce; and the unmaintained notices of crates Typst depends on.
 - `Pragmatic.Imaging/native/pragmatic-imaging/osv-scanner.toml`: paste, a compile-time macro.
-- `site/osv-scanner.toml`: http-cache-semantics, which matters to a shared HTTP cache, while both sites
-  are built to static files.
 
 ## Releases
 
