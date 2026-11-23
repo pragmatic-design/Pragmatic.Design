@@ -54,7 +54,6 @@ clusterConfig.AgentId = paths.GetOrCreateAgentId();
 
 Console.WriteLine($"Pragmatic Agent v0.1.0 [{clusterConfig.AgentId}]");
 Console.WriteLine(paths.ToString());
-Console.WriteLine($"Gossip: :{clusterConfig.GossipPort} ({clusterConfig.Discovery})");
 
 // Secret encryption (auto-detects key from env or file). Built BEFORE the KV store because the
 // store owns at-rest encryption for secret/* keys: this guarantees secrets are ciphertext on disk
@@ -72,6 +71,10 @@ Console.WriteLine($"KV loaded: {kvStore.GetAll().Count} entries (secrets: {(secr
 // Start gossip cluster
 using var cluster = new ClusterManager(clusterConfig, kvStore);
 await cluster.StartAsync().ConfigureAwait(false);
+
+// The port bound, not the one asked for: with --port 0 the system chooses it, and this line is how a
+// caller that started several Agents on one machine learns where each can be joined.
+Console.WriteLine($"Gossip port: {cluster.GossipPort} (bound on {clusterConfig.BindAddress}, {clusterConfig.Discovery})");
 
 // Start socket server (KvStore owns secret encryption now, so the handler needs only the store)
 var handler = new AgentMessageHandler(kvStore, clusterConfig.AgentId);

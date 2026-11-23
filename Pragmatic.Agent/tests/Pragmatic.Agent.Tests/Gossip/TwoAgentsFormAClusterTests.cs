@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Sockets;
 using Pragmatic.Agent.Gossip;
 using Pragmatic.Agent.KV;
 using Pragmatic.Testing.Assertions;
@@ -65,18 +63,17 @@ public sealed class TwoAgentsFormAClusterTests
     /// <summary>The first Agent alone, the second joining it; disposed together.</summary>
     private static async Task<IDisposable> ClusterAsync(KvStore first, KvStore second, string? sharedKey)
     {
-        var firstPort = FreeUdpPort();
-        var peer = new ClusterManager(Config("first", firstPort, sharedKey, peers: []), first);
+        var peer = new ClusterManager(Config("first", sharedKey, peers: []), first);
         await peer.StartAsync();
-        var joiner = new ClusterManager(Config("second", FreeUdpPort(), sharedKey, peers: [$"127.0.0.1:{firstPort}"]), second);
+        var joiner = new ClusterManager(Config("second", sharedKey, peers: [$"127.0.0.1:{peer.GossipPort}"]), second);
         await joiner.StartAsync();
         return new Both(peer, joiner);
     }
 
-    private static ClusterConfig Config(string id, int port, string? sharedKey, List<string> peers) => new()
+    private static ClusterConfig Config(string id, string? sharedKey, List<string> peers) => new()
     {
         AgentId = $"{id}-{Guid.NewGuid():N}",
-        GossipPort = port,
+        GossipPort = 0,
         BindAddress = "127.0.0.1",
         SharedKey = sharedKey,
         Discovery = "static",
@@ -88,13 +85,6 @@ public sealed class TwoAgentsFormAClusterTests
         var deadline = DateTime.UtcNow + (within ?? TimeSpan.FromSeconds(10));
         while (!condition() && DateTime.UtcNow < deadline)
             await Task.Delay(50);
-    }
-
-    private static int FreeUdpPort()
-    {
-        using var socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
     }
 
     private sealed class Both(IDisposable first, IDisposable second) : IDisposable

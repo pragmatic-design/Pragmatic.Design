@@ -1,6 +1,5 @@
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
+using System.Globalization;
 using System.Text;
 
 namespace Warehouse.IntegrationTests.Infrastructure;
@@ -13,7 +12,8 @@ namespace Warehouse.IntegrationTests.Infrastructure;
 ///         A process and not an object in this one: the daemon's server, store and handler are internal
 ///         to its executable, so the only Agent a suite can run is the real one. Each has a socket, a data
 ///         directory and a gossip port of its own, which is what several machines would give several
-///         Agents — here they share one machine, so the suite hands them out.
+///         Agents — here they share one machine, so the suite hands out the socket and the directory, and
+///         each Agent chooses its gossip port and says which.
 ///     </para>
 ///     <para>
 ///         Ready when the daemon says so — the line it prints once it listens — rather than after a
@@ -23,6 +23,9 @@ namespace Warehouse.IntegrationTests.Infrastructure;
 internal sealed class AgentDaemon : IAsyncDisposable
 {
     private const string ReadyLine = "Agent ready";
+
+    /// <summary>What the daemon prints, before its ready line, with the gossip port it bound.</summary>
+    private const string GossipPortLine = "Gossip port: ";
 
     private readonly Process _process;
     private readonly StringBuilder _output;
@@ -81,13 +84,13 @@ internal sealed class AgentDaemon : IAsyncDisposable
         start.ArgumentList.Add(socketPath);
         start.ArgumentList.Add("--data-dir");
         start.ArgumentList.Add(dataDirectory);
-        // On loopback, each on a port of its own: several Agents on one machine must not take each other's
-        // gossip port. They find each other through the peer they are given, not by discovery.
-        var gossipPort = FreeUdpPort();
+        // On loopback, on a port the Agent chooses and reports: a port picked here would be free only until
+        // another Agent, or another suite on the machine, took it before this one bound it. They find each
+        // other through the peer they are given, at the port it reported, not by discovery.
         start.ArgumentList.Add("--bind");
         start.ArgumentList.Add("127.0.0.1");
         start.ArgumentList.Add("--port");
-        start.ArgumentList.Add(gossipPort.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        start.ArgumentList.Add("0");
         start.ArgumentList.Add("--gossip-key");
         start.ArgumentList.Add(gossipKey);
         if (peer is not null)
@@ -97,6 +100,7 @@ internal sealed class AgentDaemon : IAsyncDisposable
         }
 
         var output = new StringBuilder();
+        var gossipPort = 0;
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var process = new Process { StartInfo = start, EnableRaisingEvents = true };
 
@@ -104,6 +108,14 @@ internal sealed class AgentDaemon : IAsyncDisposable
         {
             if (line.Data is null) return;
             lock (output) output.AppendLine(line.Data);
+            if (line.Data.StartsWith(GossipPortLine, StringComparison.Ordinal))
+            {
+                var digits = line.Data.AsSpan(GossipPortLine.Length);
+                var end = digits.IndexOf(' ');
+                if (int.TryParse(end < 0 ? digits : digits[..end], NumberStyles.None, CultureInfo.InvariantCulture, out var port))
+                    Volatile.Write(ref gossipPort, port);
+            }
+
             if (line.Data.Contains(ReadyLine, StringComparison.Ordinal)) ready.TrySetResult();
         };
         process.ErrorDataReceived += (_, line) =>
@@ -128,7 +140,15 @@ internal sealed class AgentDaemon : IAsyncDisposable
                 $"The Agent '{name}' did not say it was ready within 30s:{Environment.NewLine}{Text(output)}");
         }
 
-        return new AgentDaemon(name, socketPath, gossipPort, dataDirectory, process, output);
+        var reported = Volatile.Read(ref gossipPort);
+        if (reported == 0)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new InvalidOperationException(
+                $"The Agent '{name}' was ready without reporting the gossip port it bound:{Environment.NewLine}{Text(output)}");
+        }
+
+        return new AgentDaemon(name, socketPath, reported, dataDirectory, process, output);
     }
 
     /// <summary>What the daemon printed, for a failure message.</summary>
@@ -157,13 +177,5 @@ internal sealed class AgentDaemon : IAsyncDisposable
     private static string Text(StringBuilder output)
     {
         lock (output) return output.ToString();
-    }
-
-    /// <summary>A UDP port nothing holds at this moment.</summary>
-    private static int FreeUdpPort()
-    {
-        using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
     }
 }

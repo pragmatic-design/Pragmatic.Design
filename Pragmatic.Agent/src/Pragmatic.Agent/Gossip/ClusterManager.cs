@@ -19,6 +19,12 @@ internal sealed class ClusterManager(ClusterConfig config, KvStore kvStore) : ID
     /// <summary>The SWIM protocol instance (for direct access to membership).</summary>
     public SwimProtocol Protocol => _swim;
 
+    /// <summary>
+    ///     The gossip port bound by <see cref="StartAsync" />. With <see cref="ClusterConfig.GossipPort" /> 0 the
+    ///     system chooses it, so several Agents on one machine never race for a port picked in advance.
+    /// </summary>
+    public int GossipPort => _swim.BoundPort;
+
     /// <summary>Gets alive cluster members.</summary>
     public IReadOnlyList<ClusterMember> AliveMembers => _swim.Membership.GetAliveMembers();
 

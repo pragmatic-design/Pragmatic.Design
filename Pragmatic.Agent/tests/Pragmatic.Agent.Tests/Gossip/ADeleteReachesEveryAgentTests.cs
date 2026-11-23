@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Sockets;
 using Pragmatic.Agent.Gossip;
 using Pragmatic.Agent.KV;
 using Pragmatic.Testing.Assertions;
@@ -46,14 +44,14 @@ public sealed class ADeleteReachesEveryAgentTests
 
     private static async Task<List<ClusterManager>> ClusterAsync(KvStore[] stores)
     {
-        var hubPort = FreeUdpPort();
+        var hubPort = 0;
         var managers = new List<ClusterManager>();
         for (var i = 0; i < stores.Length; i++)
         {
             var config = new ClusterConfig
             {
                 AgentId = $"agent-{i}-{Guid.NewGuid():N}",
-                GossipPort = i == 0 ? hubPort : FreeUdpPort(),
+                GossipPort = 0,
                 BindAddress = "127.0.0.1",
                 SharedKey = SharedKey,
                 Discovery = "static",
@@ -62,6 +60,7 @@ public sealed class ADeleteReachesEveryAgentTests
             var manager = new ClusterManager(config, stores[i]);
             await manager.StartAsync();
             managers.Add(manager);
+            if (i == 0) hubPort = manager.GossipPort;
         }
 
         return managers;
@@ -72,12 +71,5 @@ public sealed class ADeleteReachesEveryAgentTests
         var deadline = DateTime.UtcNow.AddSeconds(15);
         while (!condition() && DateTime.UtcNow < deadline)
             await Task.Delay(50);
-    }
-
-    private static int FreeUdpPort()
-    {
-        using var socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
     }
 }

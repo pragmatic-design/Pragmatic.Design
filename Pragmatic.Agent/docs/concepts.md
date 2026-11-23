@@ -97,6 +97,8 @@ Multiple Agents form a cluster through **SWIM-based gossip**:
 
 An Agent joins with `--peers host:port`; the peer learns it from the datagram it sends, so an Agent bound to `0.0.0.0` does not need to know its own address. Replication needs the same `--gossip-key` on every Agent: without one, an Agent applies nothing it hears.
 
+The gossip port is `--port` (9900 by default). With `--port 0` the system chooses a free one, and the daemon prints the port it bound, before its ready line: `Gossip port: 50123 (bound on 127.0.0.1, static)`. Several Agents on one machine, as in a test suite, should start this way and join each other at the reported port: a port chosen beforehand by the caller is free only until somebody else takes it.
+
 A client can write a key as **ephemeral** (`AgentConnection.KvSetEphemeralAsync`): the Agent deletes it when that client disconnects. It is for what describes a running process and must not outlive it, such as the route and address an instance announces to the gateway. The roster entry an instance registers behaves the same way.
 
 The key also dies with the Agent that holds the client. The write records that Agent's id, and the id gossips with the key. When the membership declares an Agent dead, every other Agent deletes the keys it owned, so an instance whose machine is lost leaves the rotation within the suspect timeout (5 s by default) plus a gossip round. An Agent that restarts drops the ephemeral keys it had saved to disk, because no client of the previous process is connected to it. ⚠️ A partition can declare dead an Agent that is still running. Its clients' keys are then deleted, and an instance announces again only when its rotation changes.
