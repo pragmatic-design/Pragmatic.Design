@@ -29,7 +29,7 @@ public sealed class AnsweringThroughTheSerializerWhenTheOptionsChanged(PostgresF
             addressCountry = "IT",
         }));
 
-        using var writers = new WritersObserved();
+        using var writers = new WritersObserved(Services);
         var read = await ReadJsonAsync(await accountant.GetAsync($"api/customers/{created.GetProperty("id").GetGuid()}"));
 
         writers.Seen.Should().Contain("serializer").And.NotContain("generated");
