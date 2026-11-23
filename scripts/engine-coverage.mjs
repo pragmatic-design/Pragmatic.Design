@@ -28,6 +28,15 @@ const isNoNavigation = (reason) => reason.startsWith(PROJECT_REASONS.NO_NAVIGATI
 const engines = (list) => (list.length === ENGINES.length ? 'both' : list.join(', '));
 
 /**
+ * Real gaps that no exclusion records, because no test of the Showcase suite uses the feature: written here by hand, each with the
+ * issue that implements it on the engines, and removed when that issue closes.
+ */
+const GAPS_NO_SUITE_TEST_EXERCISES = [
+  '**The .NET 11 query operators** (#962): EF Core 11 translates `FullJoin`, `LeftJoin` and `RightJoin` on `Queryable`, and ' +
+    '`MaxBy`/`MinBy`; neither engine recognises their BCL signatures yet. No test of the suite uses them, so no exclusion lists them.',
+];
+
+/**
  * The page, as Markdown.
  *
  * @param {(path: string) => string | null} read a source's text by its path from the root; null when there is no such file
@@ -98,8 +107,9 @@ export function coveragePage(read, suiteFiles) {
     '## 2. EF Core only: read through an IQueryable',
     '',
     'The engines read through their own query model, not `IQueryable`, so these module files are left out on both (#363), and the suite',
-    'files that exercise them with them. **Open:** whether the engines get a query model for these, or they stay EF Core only and say so',
-    'here, is the owner\'s decision, per feature (#819).',
+    'files that exercise them with them. The owner decided each feature on 2026-11-22 (#819). The grid filter search and the generated',
+    'DevExpress grid adapter, once listed here, run on the engines (#946, #947). `CountAmenitiesAction` stays EF Core only: it injects',
+    'the boundary\'s `DbContext`, which is EF Core\'s by construction.',
     '',
     '| Module file | Engines |',
     '|---|---|',
@@ -147,7 +157,8 @@ export function coveragePage(read, suiteFiles) {
     'its exclusion goes when the issue closes.',
     '',
   );
-  if (gapReasons.length === 0) add('None found yet.');
+  if (gapReasons.length === 0 && GAPS_NO_SUITE_TEST_EXERCISES.length === 0) add('None found yet.');
+  for (const gap of GAPS_NO_SUITE_TEST_EXERCISES) add(gap, '');
   for (const reason of gapReasons) {
     add(`**${reason.slice(SUITE_REASONS.REAL_GAP.length)}**`, '');
     for (const [path, a] of gapFiles.filter(([, a]) => a.reason === reason).sort(([x], [y]) => x.localeCompare(y)))
