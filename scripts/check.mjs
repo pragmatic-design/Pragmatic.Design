@@ -63,7 +63,7 @@ import { acquire as acquireRunLock, describeHolder } from './lib/run-lock.mjs';
 import {
   record as recordFailureRun, failureDetails, failureLines, unnamedFailureTail, abortedRun, buildFailed,
 } from './lib/failure-record.mjs';
-import { TESTCONTAINERS_LABEL, ownTestHosts } from './lib/gate-ownership.mjs';
+import { TESTCONTAINERS_LABEL, ownLeftovers, processListing } from './lib/gate-ownership.mjs';
 import { measureCoverage } from './lib/example-coverage.mjs';
 import {
   COVERAGE_REASONS, PACKAGE_REASONS, reasonsWithMissingProofs,
@@ -2346,11 +2346,13 @@ function everyModuleHasALicense() {
  * artifacts/build, and the next clean build fails with MSB3061 on a project nobody touched. That
  * was mistaken for the isolation being enough — it is not, the two problems are different.
  *
- * Only test hosts. MSBuild nodes and VBCSCompiler are reusable build infrastructure; killing those
- * each run would slow every build and could cut off a compile in progress.
+ * Test hosts, and what a suite started that runs out of the gate's output, like the Agent daemons
+ * (#965): `ownLeftovers` in lib/gate-ownership.mjs. MSBuild nodes and VBCSCompiler are reusable
+ * build infrastructure and do not run from there; killing those each run would slow every build and
+ * could cut off a compile in progress.
  */
 function clearOrphanedTestHosts() {
-  const mine = ownTestHostPids();
+  const mine = ownLeftoverPids();
 
   for (const { pid, name } of mine) {
     const kill = process.platform === 'win32'
@@ -2361,7 +2363,8 @@ function clearOrphanedTestHosts() {
 }
 
 /**
- * Test hosts whose command line names this repository — the only ones this gate may kill.
+ * Test hosts whose command line names this repository, and `dotnet` processes running out of the
+ * gate's output — the only ones this gate may kill.
  *
  * ⚠️ Not `taskkill /IM testhost.exe /F`: that is every test host on the machine, including the one
  * an IDE started a second earlier on somebody else's solution — calling them "orphaned" establishes
@@ -2372,20 +2375,17 @@ function clearOrphanedTestHosts() {
  * ⚠️ It reads the command line and not the parent: the hosts worth clearing are left over from an
  * earlier run whose parent is already gone, so "descends from me" would find none of them.
  */
-function ownTestHostPids() {
-  const names = ['testhost', 'vstest.console'];
-  const listing = process.platform === 'win32'
-    ? run('powershell', ['-NoProfile', '-Command',
-        "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'testhost|vstest.console' } " +
-        "| ForEach-Object { \"$($_.ProcessId)`t$($_.Name)`t$($_.CommandLine)\" }"])
-    : run('ps', ['-eo', 'pid=,comm=,args=']);
+function ownLeftoverPids() {
+  const listing = processListing('^(testhost|vstest.console|dotnet)');
 
-  if (listing.code !== 0) return [];
+  if (listing.code !== 0) {
+    console.log(`  ${bad('!')} could not list processes (exit ${listing.code}): ${dim('what an earlier run left running is not cleared')}`);
+    return [];
+  }
 
-  return ownTestHosts(listing.out, {
+  return ownLeftovers(listing.out, {
     windows: process.platform === 'win32',
     repoRoot: process.cwd(),
-    names,
   });
 }
 

@@ -10,6 +10,7 @@
  * Ownership is read from two things that are actually available: the label Testcontainers writes on
  * what it creates, and the repository path on a test host's command line.
  */
+import { spawnSync } from 'node:child_process';
 
 /**
  * The label Testcontainers puts on every container and volume it creates.
@@ -31,10 +32,9 @@ export const TESTCONTAINERS_LABEL = 'org.testcontainers.version';
 export function ownedByThisRepo(commandLine, repoRoot) {
   if (!commandLine || !repoRoot) return false;
 
-  const here = repoRoot.toLowerCase();
-  const haystack = commandLine.toLowerCase();
+  const slashes = (text) => text.toLowerCase().replace(/\\/g, '/');
 
-  return haystack.includes(here) || haystack.includes(here.replace(/\\/g, '/'));
+  return slashes(commandLine).includes(slashes(repoRoot));
 }
 
 /**
@@ -56,6 +56,55 @@ export function parseProcessLine(line, { windows, names }) {
   if (!names.includes(name)) return null;
 
   return { pid, name, commandLine: parts.slice(2).join(' ') };
+}
+
+/**
+ * The processes whose image name matches `pattern`, one row each: tab-separated `pid, name, command
+ * line` on Windows, `ps -eo pid=,comm=,args=` elsewhere (`parseProcessLine` reads both).
+ *
+ * ⚠️ Spawned without a shell. Through `cmd.exe` — what check.mjs's `run` does on Windows — the
+ * PowerShell pipeline is cut at its first `|`, the query exits 255 and returns nothing, and a caller
+ * that reads "nothing" as "nothing left over" kills nothing: the gate's cleanup never cleared a single
+ * test host on Windows that way, which is how a daemon left running could fail two clean builds (#965).
+ *
+ * @returns {{ code: number, out: string }}
+ */
+export function processListing(pattern) {
+  const r = process.platform === 'win32'
+    ? spawnSync('powershell', ['-NoProfile', '-Command',
+        `Get-CimInstance Win32_Process | Where-Object { $_.Name -match '${pattern}' } `
+        + '| ForEach-Object { "$($_.ProcessId)`t$($_.Name)`t$($_.CommandLine)" }'], { encoding: 'utf8' })
+    : spawnSync('ps', ['-eo', 'pid=,comm=,args='], { encoding: 'utf8' });
+
+  return { code: r.status ?? -1, out: `${r.stdout ?? ''}` };
+}
+
+/**
+ * Where the gate builds to, from the repository's root: the isolated output (`--artifacts-path` in
+ * check.mjs) that nothing but the gate writes or runs from.
+ */
+export const GATE_OUTPUT = 'artifacts/build/';
+
+/**
+ * Every process in `listing` left over from an earlier run that this checkout may kill: its test
+ * hosts, and the `dotnet` processes running out of the gate's output.
+ *
+ * ⚠️ The second kind is what a suite starts itself — the Agent tests run the daemon as the executable
+ * it is in a deployment — and outlives a test host killed before it disposed of it, holding its DLLs
+ * so that the next clean build fails with MSB3061 on a project nobody touched (#965). Its image is
+ * `dotnet`, so the name does not tell it from a build somebody runs on this checkout; where it runs
+ * from does. Not the repository path: a `dotnet build` of the solution and an IDE's run out of `bin/`
+ * name it too, and neither is the gate's to stop.
+ */
+export function ownLeftovers(listing, { windows, repoRoot }) {
+  const output = `${repoRoot.replace(/[\\/]+$/, '')}/${GATE_OUTPUT}`;
+  const hosts = ownTestHosts(listing, { windows, repoRoot });
+  const started = (listing ?? '')
+    .split('\n')
+    .map((line) => parseProcessLine(line, { windows, names: ['dotnet'] }))
+    .filter((p) => p !== null && ownedByThisRepo(p.commandLine, output));
+
+  return [...hosts, ...started];
 }
 
 /**
