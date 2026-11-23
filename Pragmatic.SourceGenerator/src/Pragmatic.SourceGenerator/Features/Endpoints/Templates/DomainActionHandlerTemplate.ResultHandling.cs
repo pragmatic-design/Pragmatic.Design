@@ -58,7 +58,7 @@ internal sealed partial class DomainActionHandlerTemplate
 
                 if (hasVersionBodyProps)
                     foreach (var prop in version.BodyProperties)
-                        initProps.Add($"{prop.Name} = body.{prop.Name}");
+                        initProps.Add($"{prop.Name} = {prop.ReadFrom("body")}");
 
                 if (initProps.Count == 0)
                     AppendLine($"var action = new {_model.FullTypeName}();");
@@ -267,7 +267,7 @@ internal sealed partial class DomainActionHandlerTemplate
         else if (_model.NeedsBodyDto)
         {
             foreach (var prop in _model.BodyProperties)
-                initProps.Add($"{prop.Name} = body.{prop.Name}");
+                initProps.Add($"{prop.Name} = {prop.ReadFrom("body")}");
         }
 
         // Generate with or without object initializer
@@ -322,7 +322,8 @@ internal sealed partial class DomainActionHandlerTemplate
                 param.BindKind, IsRequired: false));
 
         if (hasVersionBodyProps)
-            parameters.Add(new BoundParameter($"{_model.Namespace}.{dtoName}", "body", BindingSource.Body));
+            parameters.Add(new BoundParameter($"{_model.Namespace}.{dtoName}", "body", BindingSource.Body,
+                ChecksPresence: version.BodyProperties.Any(p => p.IsPresenceChecked)));
 
         parameters.Add(new BoundParameter(invokerType, "invoker", BindingSource.Service));
         parameters.Add(new BoundParameter(

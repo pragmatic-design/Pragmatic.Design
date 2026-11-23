@@ -57,7 +57,7 @@ internal sealed partial class EndpointHandlerTemplate
             initProps.Add($"{_model.BodyProperties[0].Name} = {ToCamelCase(_model.BodyProperties[0].Name)}");
         else if (_model.NeedsBodyDto)
             foreach (var prop in _model.BodyProperties)
-                initProps.Add($"{prop.Name} = body.{prop.Name}");
+                initProps.Add($"{prop.Name} = {prop.ReadFrom("body")}");
 
         // Generate with or without object initializer
         if (initProps.Count == 0)

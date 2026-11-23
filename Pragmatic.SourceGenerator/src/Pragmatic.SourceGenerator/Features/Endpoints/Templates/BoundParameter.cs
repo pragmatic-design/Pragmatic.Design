@@ -55,6 +55,10 @@ internal enum BindingSource
 /// <param name="IsRequired">Whether an absent value is an error rather than a default.</param>
 /// <param name="DefaultValue">The literal used when the value is absent, if any.</param>
 /// <param name="ServiceKey">The key expression, for <see cref="BindingSource.KeyedService" />.</param>
+/// <param name="ChecksPresence">
+///     For a generated body record: whether it has <c>MissingRequiredMembers()</c>, which the binding calls
+///     after the read (#937).
+/// </param>
 internal sealed record BoundParameter(
     string TypeName,
     string Name,
@@ -63,4 +67,5 @@ internal sealed record BoundParameter(
     Models.BindKind Kind = Models.BindKind.Complex,
     bool IsRequired = true,
     string? DefaultValue = null,
-    string? ServiceKey = null);
+    string? ServiceKey = null,
+    bool ChecksPresence = false);

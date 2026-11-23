@@ -3515,7 +3515,8 @@ public partial class RenameWidgetMutation
 
 ## Inventory.RenameWidgetMutation.RequestBody.g.cs
 public partial record RenameWidgetMutationBody
-    public required string Name { get; init; }
+    public string? Name { get; init; }
+    public ValidationError MissingRequiredMembers()
 
 ## Inventory.RenameWidgetMutation.ValidationMetadata.g.cs
 public partial class RenameWidgetMutation : IActionValidationMetadata
@@ -3823,7 +3824,8 @@ public partial class RetouchRelationChildMutation
 
 ## Inventory.RetouchRelationChildMutation.RequestBody.g.cs
 public partial record RetouchRelationChildMutationBody
-    public required decimal Amount { get; init; }
+    public decimal? Amount { get; init; }
+    public ValidationError MissingRequiredMembers()
 
 ## Inventory.RetouchRelationChildMutation.ValidationMetadata.g.cs
 public partial class RetouchRelationChildMutation : IActionValidationMetadata

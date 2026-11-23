@@ -522,6 +522,11 @@ internal static partial class EndpointTransform
                 TypeName = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 IsRequired = p.IsRequired,
                 IsNullable = p.Type.NullableAnnotation == NullableAnnotation.Annotated,
+                IsValueType = p.Type.IsValueType && p.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T,
+                IsPresenceChecked = p.IsRequired
+                    && p.Type.NullableAnnotation != NullableAnnotation.Annotated
+                    && p.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T,
+                RequiredMessageKey = RequiredMessageKeyOf(p),
                 DefaultValueSyntax = InputPropertyHelpers.ExtractDefaultValueSyntax(p, compilation),
                 Summary = GetXmlDocSummary(p),
                 IsImplicit = !HasAnyBindingAttribute(p),
@@ -563,6 +568,15 @@ internal static partial class EndpointTransform
 
         return null;
     }
+
+    /// <summary>
+    ///     The message key the property's <c>[Required]</c> names, so a member the body leaves out is reported
+    ///     with the key the operation's own validator would use.
+    /// </summary>
+    private static string? RequiredMessageKeyOf(IPropertySymbol property)
+        => property.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == "Pragmatic.Validation.Attributes.RequiredAttribute")
+            ?.NamedArguments.FirstOrDefault(n => n.Key == "MessageKey").Value.Value as string;
 
     private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
         => type is INamedTypeSymbol { IsGenericType: true, Name: "Nullable", TypeArguments.Length: 1 } n

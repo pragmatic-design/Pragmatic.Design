@@ -414,7 +414,7 @@ internal static partial class EndpointTransform
             JsonContribution = Serialization.Models.JsonRootContribution.Merge(
                 Serialization.Models.JsonRootContribution.Merge(
                     Serialization.Models.JsonRootContribution.Merge(
-                        JsonBodyDtoShape.For(symbol, model),
+                        JsonBodyDtoShape.For(symbol, model, context.SemanticModel.Compilation),
                         JsonResponseShape.For(symbol)),
                     JsonComplexFilterShape.For(symbol)),
                 mutationKeyResponse?.Json),

@@ -86,8 +86,7 @@ internal static class BodyDtoValidationTransform
             IsEntity = false,
             Properties = validatedProperties,
             AllPropertyNames = bodyProperties.Select(p => p.Name).ToImmutableArray(),
-            AllPropertyTypes = bodyProperties.Select(p =>
-                p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToImmutableArray(),
+            AllPropertyTypes = bodyProperties.Select(p => BodyTypeOf(p.Symbol)).ToImmutableArray(),
             PropertyDependencies = EquatableArray<Models.PropertyDependencyModel>.Empty
         };
     }
@@ -219,8 +218,8 @@ internal static class BodyDtoValidationTransform
             builder.Add(new PropertyValidationModel
             {
                 PropertyName = prop.Name,
-                PropertyType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                IsNullable = isNullable,
+                PropertyType = BodyTypeOf(prop),
+                IsNullable = isNullable || IsPresenceChecked(prop),
                 IsString = isString,
                 // The model is built in two places: here and in ValidatableTransform. A field added
                 // to only one of them gives a false positive where the generated code goes through this one.
@@ -241,6 +240,25 @@ internal static class BodyDtoValidationTransform
         }
 
         return builder.ToImmutable();
+    }
+
+    /// <summary>
+    ///     Whether the body record declares this member nullable although the operation does not: a required
+    ///     member whose type does not admit null (BodyPropertyModel.IsPresenceChecked, #937).
+    /// </summary>
+    private static bool IsPresenceChecked(IPropertySymbol property)
+        => property.IsRequired
+           && property.Type.NullableAnnotation != NullableAnnotation.Annotated
+           && property.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T;
+
+    /// <summary>
+    ///     The member's type on the body record, which this validator is part of: a presence-checked value type
+    ///     is <c>T?</c> there, every other type is the operation's.
+    /// </summary>
+    private static string BodyTypeOf(IPropertySymbol property)
+    {
+        var declared = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return IsPresenceChecked(property) && property.Type.IsValueType ? declared + "?" : declared;
     }
 
     private static bool HasValidationAttributes(IPropertySymbol property, Compilation compilation)

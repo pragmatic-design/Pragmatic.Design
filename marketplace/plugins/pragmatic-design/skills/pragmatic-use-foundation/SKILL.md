@@ -132,6 +132,8 @@ refused the request without hours.
 A `required` string is checked as **non-empty**: `""` is refused with `validation.required`, before any
 attribute on the property runs. So `[NotWhiteSpace]` on a `required` string answers only for a value of
 spaces, with `validation.notwhitespace`; a test that sends `""` sees the first key, not the second.
+Over HTTP a `required` member left out of the body answers the same 422: `validation.required` (or the
+`[Required(MessageKey)]` key) under the member's wire name, a value type included, never a 400.
 
 ```csharp
 public partial class CreateUserRequest

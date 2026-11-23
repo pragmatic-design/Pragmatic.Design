@@ -279,7 +279,8 @@ internal sealed partial class EndpointHandlerTemplate
             else if (_model.NeedsBodyDto)
             {
                 parameters.Add(new BoundParameter(
-                    $"{_model.Namespace}.{_model.BodyDtoName}", "body", BindingSource.Body));
+                    $"{_model.Namespace}.{_model.BodyDtoName}", "body", BindingSource.Body,
+                    ChecksPresence: _model.BodyProperties.Any(p => p.IsPresenceChecked)));
             }
         }
 

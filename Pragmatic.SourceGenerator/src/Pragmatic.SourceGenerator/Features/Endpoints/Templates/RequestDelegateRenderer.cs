@@ -151,6 +151,19 @@ internal static class RequestDelegateRenderer
         // Cast rather than assign: for a value-type body `T?` is `Nullable<T>`, and the handler
         // declares `T`. The cast unwraps it and costs nothing for a reference type.
         line($"var {parameter.Name} = ({type}){read};");
+        if (!parameter.ChecksPresence)
+            return;
+
+        // Where the deserializer used to refuse a body missing a required member (#937): the same request now
+        // answers the operation's 422, one issue per member left out, through the writer every validation
+        // failure goes through, so its keys and its localized messages are the ones an empty member gets.
+        var missing = $"__missing_{parameter.Name}";
+        line($"var {missing} = {parameter.Name}.MissingRequiredMembers();");
+        line($"if ({missing}.IsFailure)");
+        line("{");
+        line($"    await global::Pragmatic.Endpoints.Extensions.ErrorExtensions.ToResult({missing}, httpContext).ExecuteAsync(httpContext).ConfigureAwait(false);");
+        line("    return;");
+        line("}");
     }
 
     /// <summary>

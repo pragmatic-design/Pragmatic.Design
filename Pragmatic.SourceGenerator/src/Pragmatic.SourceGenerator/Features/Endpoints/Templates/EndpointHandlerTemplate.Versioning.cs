@@ -36,7 +36,8 @@ internal sealed partial class EndpointHandlerTemplate
             // The handler keeps its shape; the RequestDelegate below binds its arguments and calls
             // it, because ASP.NET cannot bind a generated handler under AOT.
             var handlerVar = $"handler{version.BodyDtoSuffix}";
-            var parameters = BuildVersionedBoundParameters(dtoName, hasVersionBodyProps);
+            var parameters = BuildVersionedBoundParameters(dtoName, hasVersionBodyProps,
+                hasVersionBodyProps && version.BodyProperties.Any(p => p.IsPresenceChecked));
 
             AppendLine($"var {handlerVar} = async (");
             RequestDelegateRenderer.RenderSignature(parameters, AppendLine);
@@ -64,7 +65,7 @@ internal sealed partial class EndpointHandlerTemplate
 
                 if (hasVersionBodyProps)
                     foreach (var prop in version.BodyProperties)
-                        initProps.Add($"{prop.Name} = body.{prop.Name}");
+                        initProps.Add($"{prop.Name} = {prop.ReadFrom("body")}");
 
                 if (initProps.Count == 0)
                     AppendLine($"var endpoint = new {_model.FullTypeName}();");
@@ -152,7 +153,7 @@ internal sealed partial class EndpointHandlerTemplate
     }
 
     /// <summary>The parameters of one version's handler, and where each value comes from.</summary>
-    private List<BoundParameter> BuildVersionedBoundParameters(string dtoName, bool hasVersionBodyProps)
+    private List<BoundParameter> BuildVersionedBoundParameters(string dtoName, bool hasVersionBodyProps, bool checksPresence)
     {
         var parameters = new List<BoundParameter>();
 
@@ -169,7 +170,8 @@ internal sealed partial class EndpointHandlerTemplate
                 param.TypeName, param.Name, BindingSource.Query, param.Name, param.BindKind));
 
         if (hasVersionBodyProps)
-            parameters.Add(new BoundParameter($"{_model.Namespace}.{dtoName}", "body", BindingSource.Body));
+            parameters.Add(new BoundParameter($"{_model.Namespace}.{dtoName}", "body", BindingSource.Body,
+                ChecksPresence: checksPresence));
 
         foreach (var dep in _model.Dependencies)
             parameters.Add(DependencyParameter(dep, ToCamelCase(GetFieldNameWithoutUnderscore(dep.FieldName))));

@@ -438,7 +438,7 @@ public partial class CreateOrderEndpoint
             System.Threading.CancellationToken ct
         ) =>
         {
-            var action = new global::TestApp.Orders.CreateOrderEndpoint { CustomerId = body.CustomerId, Total = body.Total };
+            var action = new global::TestApp.Orders.CreateOrderEndpoint { CustomerId = body.CustomerId!, Total = body.Total!.Value };
             
             var __activity = System.Diagnostics.Activity.Current;
             if (__activity is not null)
@@ -488,6 +488,12 @@ public partial class CreateOrderEndpoint
                 return;
             }
             var body = (TestApp.Orders.CreateOrderEndpointBody)__read_body;
+            var __missing_body = body.MissingRequiredMembers();
+            if (__missing_body.IsFailure)
+            {
+                await global::Pragmatic.Endpoints.Extensions.ErrorExtensions.ToResult(__missing_body, httpContext).ExecuteAsync(httpContext).ConfigureAwait(false);
+                return;
+            }
             var invoker = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Pragmatic.Actions.Invoker.IDomainActionInvoker<global::TestApp.Orders.CreateOrderEndpoint, global::TestApp.Orders.OrderResponse>>(httpContext.RequestServices);
             var ct = httpContext.RequestAborted;
             
@@ -525,8 +531,21 @@ namespace TestApp.Orders;
 /// </summary>
 public partial record CreateOrderEndpointBody
 {
-    public required string CustomerId { get; init; }
-    public required decimal Total { get; init; }
+    public string? CustomerId { get; init; }
+    public decimal? Total { get; init; }
+    
+    /// <summary>
+    /// The required members this request left out, each reported as its required rule reports it.
+    /// </summary>
+    public global::Pragmatic.Validation.Types.ValidationError MissingRequiredMembers()
+    {
+        var error = global::Pragmatic.Validation.Types.ValidationError.Valid;
+        if (CustomerId is null)
+            error = error.WithFor(nameof(CustomerId), "validation.required");
+        if (Total is null)
+            error = error.WithFor(nameof(Total), "validation.required");
+        return error;
+    }
 }
 ,
   TestApp.Orders.CreateOrderEndpoint.Validator.g.cs:
@@ -596,6 +615,10 @@ public partial record CreateOrderEndpointBody : ISyncValidator
         }
         
         // Validate Total
+        if (Total is null)
+        {
+            error = error.WithFor(nameof(Total), "validation.required");
+        }
         
         return error;
     }
