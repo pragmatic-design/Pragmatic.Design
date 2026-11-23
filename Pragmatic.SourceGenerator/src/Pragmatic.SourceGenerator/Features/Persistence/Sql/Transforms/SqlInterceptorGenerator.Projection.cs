@@ -337,7 +337,7 @@ internal static partial class SqlInterceptorGenerator
 
                 if (!EntityModel.IsNullable(type) && (type.IsValueType || !anonymous))
                 {
-                    reason = $"a LEFT JOIN reads the inner row's columns as null: declare the member nullable ({(anonymous ? $"a cast, ({type.ToDisplayString()}?){expression}" : type.ToDisplayString() + "?")})";
+                    reason = $"an outer join reads the columns of a side that may be missing as null: declare the member nullable ({(anonymous ? $"a cast, ({type.ToDisplayString()}?){expression}" : type.ToDisplayString() + "?")})";
                     return false;
                 }
 

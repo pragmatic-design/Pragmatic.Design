@@ -21,18 +21,82 @@ internal sealed partial class PlanBuilder
 
     private bool AddJoin(SqlInterceptorGenerator.Step step, SemanticModel model)
     {
-        var left = step.Name == "LeftJoin";
+        // Which side may be missing from a row: the inner one (LEFT, FULL), the outer one (RIGHT, FULL).
+        var innerOptional = step.Name is "LeftJoin" or "FullJoin";
+        var outerOptional = step.Name is "RightJoin" or "FullJoin";
         var arguments = step.Invocation.ArgumentList.Arguments;
         if (arguments.Count != 4 || step.Method.TypeArguments.Length != 3 || arguments[3].Expression is not LambdaExpressionSyntax resultLambda
             || !SqlInterceptorGenerator.TryParameters(model, resultLambda, out var resultOuter, out var resultInner) || resultInner is null)
             return Refuse("a join takes the inner chain (written in place, starting at session.Query<TInner>()), the two key selectors and the result selector over both rows ((o, c) => new { o.Number, c.Name })");
-        var pending = PrepareJoin(step, model, left);
+        if (outerOptional && !CanLoseTheOuterRow())
+            return false;
+        var pending = PrepareJoin(step, model, innerOptional);
         if (pending is null)
             return false;
-        _joins.Add(pending.Join(left));
-        var translator = Bound(new LambdaTranslator(model, _entities, Row, resultOuter) { InlineConstants = true });
-        translator.WithJoined(resultInner, new EntityRow(pending.Entity, pending.Alias, left, pending.Derived), left);
-        return FinishJoinedRow(translator, resultLambda, step.Method.TypeArguments[2]);
+
+        var outerRow = Row;
+        if (outerOptional)
+        {
+            if (!JoinOuterOptional(pending, step.Name == "FullJoin"))
+                return false;
+            outerRow = new EntityRow(_entity, _alias, optional: true);
+        }
+        else
+            _joins.Add(pending.Join(innerOptional));
+
+        var translator = Bound(new LambdaTranslator(model, _entities, outerRow, resultOuter) { InlineConstants = true });
+        translator.WithJoined(resultInner, new EntityRow(pending.Entity, pending.Alias, innerOptional, pending.Derived), innerOptional);
+        if (!FinishJoinedRow(translator, resultLambda, step.Method.TypeArguments[2]))
+            return false;
+        // A navigation read off a side that may be missing would be joined after the outer join, and its INNER JOIN would drop the rows without that side.
+        if ((outerOptional && translator.Joins.Count > 0) || (outerOptional && innerOptional && translator.JoinedJoins.Count > 0))
+            return Refuse($"a {step.Name}'s result selector reads the columns of the two rows, not a navigation of a side that may be missing: join the navigation's entity in the chain of that side, or read it in a [Query]");
+        return true;
+    }
+
+    /// <summary>
+    ///     A RIGHT or FULL join may leave this chain's row out: it starts at the entity's own rows (not a previous join's, a set operation, a
+    ///     hand-written statement or a named query), and keeps no cursor or runtime-composed filter, whose text the join would have to repeat.
+    /// </summary>
+    private bool CanLoseTheOuterRow()
+    {
+        if (_rowOpen || _row is not (null or EntityRow) || _members is not null || _raw is not null || _rawFrom is not null || _cte is not null || _entity.KeyColumn is null)
+            return Refuse("a RIGHT or FULL join starts from the entity's own rows: one per chain, before any other join, on an entity with a key");
+        if (_cursorParameters is not null || _predicateSlots.Count > 0 || _orderings.Any(o => o.StartsWith("{dyn:", System.StringComparison.Ordinal)))
+            return Refuse("a RIGHT or FULL join does not follow After, Before, Matching or OrderedBy: filter with Where and order with OrderBy");
+        return true;
+    }
+
+    /// <summary>
+    ///     Joins with the outer row optional. This chain's filters and rules move into the ON clause, so a row that fails them matches nothing; a
+    ///     RIGHT join drops the inner rows that fail the inner chain's in the WHERE (its inner row is always there); a FULL join keeps each side's
+    ///     filters in the ON clause and, in the WHERE, applies each one unless that side is missing from the row (its key is null).
+    /// </summary>
+    private bool JoinOuterOptional(PendingJoin pending, bool full)
+    {
+        if (!ApplyRules(Location.None, null))
+            return false; // the rules pick the outer rows that may match: they go into the join with the chain's filters
+        var outerFilters = _predicates.Select(p => $"({p})").ToList();
+        _predicates.Clear();
+        var keys = pending.On.Take(pending.On.Count - pending.InnerFilters.Count);
+        if (!full)
+        {
+            _joins.Add(pending.Join("RIGHT", keys.Concat(outerFilters)));
+            _predicates.AddRange(pending.InnerFilters.Select(Unwrap));
+            return true;
+        }
+
+        if (pending.InnerFilters.Count > 0 && pending.Entity.KeyColumn is null)
+            return Refuse($"a FULL join tells an inner row that matched nothing by its key, and {pending.Entity.Type.Name} has none: filter the inner chain through a [Query] with a key");
+        MarkFullJoin();
+        _joins.Add(pending.Join("FULL", pending.On.Concat(outerFilters)));
+        if (outerFilters.Count > 0)
+            _predicates.Add($"{_alias}.\"{_entity.KeyColumn}\" IS NULL OR {string.Join(" AND ", outerFilters)}");
+        if (pending.InnerFilters.Count > 0)
+            _predicates.Add($"{new EntityRow(pending.Entity, pending.Alias).ColumnSql(pending.Entity.Columns.First(c => c.Column == pending.Entity.KeyColumn))} IS NULL OR {string.Join(" AND ", pending.InnerFilters)}");
+        return true;
+
+        static string Unwrap(string filter) => filter.Substring(1, filter.Length - 2);
     }
 
     /// <summary>A GroupJoin: the join prepared, the row's member for the group holding it until the SelectMany that reads it.</summary>
@@ -159,6 +223,7 @@ internal sealed partial class PlanBuilder
             on.Add($"{innerKey.Parts[i].Column} = {outerKey.Parts[i].Column}");
 
         string source;
+        var innerFilters = new List<string>();
         if (inner._cte is not null)
         {
             if (derived)
@@ -168,7 +233,7 @@ internal sealed partial class PlanBuilder
             }
 
             source = HoistWith(inner, alias); // the CTE by name; the filters after it in the join itself
-            on.AddRange(inner._predicates.Select(p => $"({p})"));
+            innerFilters.AddRange(inner._predicates.Select(p => $"({p})"));
         }
         else if (derived)
         {
@@ -181,10 +246,11 @@ internal sealed partial class PlanBuilder
         else
         {
             source = $"\"{innerEntity.Table}\"";
-            on.AddRange(inner._predicates.Select(p => $"({p})")); // the inner's own filter, in the join itself: a LEFT JOIN keeps the unmatched rows
+            innerFilters.AddRange(inner._predicates.Select(p => $"({p})")); // the inner's own filter, in the join itself: a LEFT JOIN keeps the unmatched rows
         }
 
-        return new PendingJoin(innerEntity, alias, source, on, derived);
+        on.AddRange(innerFilters);
+        return new PendingJoin(innerEntity, alias, source, on, derived, innerFilters);
     }
 
     /// <summary>The result selector as the shape of the row from here on: entities carried forward (never materialised between operators), values rendered; the reader built from it.</summary>

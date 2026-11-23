@@ -74,7 +74,7 @@ internal static partial class SqlInterceptorGenerator
             return;
         }
 
-        if (!SymbolEqualityComparer.Default.Equals((method.ReturnType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault(), entityType) && steps.All(s => s.Name is not ("Select" or "Project" or "Join" or "LeftJoin")))
+        if (!SymbolEqualityComparer.Default.Equals((method.ReturnType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault(), entityType) && steps.All(s => s.Name is not ("Select" or "Project" or "Join" or "LeftJoin" or "RightJoin" or "FullJoin")))
         {
             Shape("the chain returns the entity it starts from (a Select, a Project or a join changes the row type)");
             return;

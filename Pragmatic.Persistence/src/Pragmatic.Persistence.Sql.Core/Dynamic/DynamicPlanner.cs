@@ -146,7 +146,7 @@ internal static partial class DynamicPlanner
                 case "Distinct":
                     distinct = true;
                     break;
-                case "Union" or "Concat" or "Except" or "Intersect" or "Join" or "LeftJoin":
+                case "Union" or "Concat" or "Except" or "Intersect" or "Join" or "LeftJoin" or "RightJoin" or "FullJoin":
                     throw new NotSupportedException($"'{name}' is translated at compile time only: write the chain on SqlQuery<T> (var), with the other chain in place.");
                 case "OfType":
                     throw new NotSupportedException("'OfType' is translated at compile time only: at runtime start the chain from Query<TDerived>() instead.");

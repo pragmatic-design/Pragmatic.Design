@@ -38,13 +38,13 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>True when the compilation references the Sql engine's runtime: what every step checks before reading a symbol.</summary>
     private static bool UsesSql(Compilation compilation) => compilation.GetTypeByMetadataName(SqlSession) is not null;
 
-    private static readonly HashSet<string> Operators = ["Where", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "Select", "Project", "Include", "GroupBy", "After", "Before", "AsOf", "Matching", "OrderedBy", "Distinct", "Union", "Concat", "Except", "Intersect", "Join", "LeftJoin", "GroupJoin", "SelectMany", "OfType", "DistinctOn"];
+    private static readonly HashSet<string> Operators = ["Where", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "Select", "Project", "Include", "GroupBy", "After", "Before", "AsOf", "Matching", "OrderedBy", "Distinct", "Union", "Concat", "Except", "Intersect", "Join", "LeftJoin", "RightJoin", "FullJoin", "GroupJoin", "SelectMany", "OfType", "DistinctOn"];
 
     /// <summary>The set operations: their argument is a second chain on the same entity, a member of the statement.</summary>
     internal static bool IsSetOperation(string name) => name is "Union" or "Concat" or "Except" or "Intersect";
 
     /// <summary>The explicit joins: their first argument is a chain on another entity, joined under its own alias.</summary>
-    internal static bool IsJoin(string name) => name is "Join" or "LeftJoin" or "GroupJoin";
+    internal static bool IsJoin(string name) => name is "Join" or "LeftJoin" or "RightJoin" or "FullJoin" or "GroupJoin";
 
     /// <summary>The operators that open a joined row: the joins, and a SelectMany (its result selector is the row from there on).</summary>
     internal static bool OpensRow(string name) => IsJoin(name) || name == "SelectMany";

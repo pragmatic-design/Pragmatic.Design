@@ -116,6 +116,8 @@ internal sealed partial class PlanBuilder
     {
         if (_groupKey is not null)
             return Refuse("Distinct does not apply to groups");
+        if (_fullJoinAt >= 0 && _orderings.Count > 0)
+            return Refuse("Distinct after an ordered FullJoin is not compiled: MySQL's form of the join orders the union by values the DISTINCT does not select; order by projected members in a [Query], or drop the ordering");
         _distinct = true;
         return true;
     }

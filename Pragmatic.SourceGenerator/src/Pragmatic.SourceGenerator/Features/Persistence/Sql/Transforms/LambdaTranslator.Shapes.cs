@@ -145,7 +145,7 @@ internal sealed partial class LambdaTranslator
         {
             if (!EntityModel.IsNullable(type) && type.IsValueType)
             {
-                Fail(expression, $"a LEFT JOIN reads the inner row's columns as null: cast the member to its nullable type (({type.ToDisplayString()}?){expression})");
+                Fail(expression, $"an outer join reads the columns of a side that may be missing as null: cast the member to its nullable type (({type.ToDisplayString()}?){expression})");
                 return null;
             }
 

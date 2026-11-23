@@ -169,6 +169,14 @@ public static class Outside
         var notNullable = await session.Query<Customer>().LeftJoin(session.Query<Order>(), c => c.Id, o => o.CustomerId, (c, o) => new { c.Name, o.Total }).ToListAsync();
         _ = notNullable;
 
+        // PRAG3001: a RIGHT JOIN reads the outer row's columns as null where no outer row matched.
+        var outerNotNullable = await session.Query<Customer>().RightJoin(session.Query<Order>(), c => c.Id, o => o.CustomerId, (c, o) => new { c.CreatedAt, o.Number }).ToListAsync();
+        _ = outerNotNullable;
+
+        // PRAG3001: a navigation of the RIGHT JOIN's outer row would be an INNER JOIN after it, dropping the inner rows that matched nothing.
+        var outerNavigation = await session.Query<Order>().RightJoin(session.Query<Customer>(), o => o.CustomerId, c => c.Id, (o, c) => new { Who = o.Customer!.Name, c.Name }).ToListAsync();
+        _ = outerNavigation;
+
         // PRAG3001: an Include on a joined row (the loader works on the entity's rows).
         var includeAfterJoin = await session.Query<Order>().Join(session.Query<Customer>(), o => o.CustomerId, c => c.Id, (o, c) => new { Order = o, Customer = c }).Include(x => x.Order.Lines).ToListAsync();
         _ = includeAfterJoin;

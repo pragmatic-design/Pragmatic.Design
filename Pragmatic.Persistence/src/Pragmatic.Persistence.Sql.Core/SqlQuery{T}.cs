@@ -177,6 +177,18 @@ public readonly partial struct SqlQuery<T> : IOrderedQueryable<T>, IQueryProvide
     public SqlQuery<TResult> LeftJoin<TInner, TKey, TResult>(SqlQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(LeftJoin));
 
     /// <summary>
+    ///     A RIGHT JOIN: every row of the inner chain, this chain's columns null where none matches (declare the projected members nullable).
+    ///     This chain's filters and rules pick the rows that may match, in the ON clause; the inner chain's filters pick the rows kept.
+    /// </summary>
+    public SqlQuery<TResult> RightJoin<TInner, TKey, TResult>(SqlQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(RightJoin));
+
+    /// <summary>
+    ///     A FULL OUTER JOIN: the rows of both chains, paired where the keys match, the other side's columns null where they do not (declare the
+    ///     projected members of both sides nullable). Each chain's filters and rules pick its own rows. MySQL has no FULL JOIN: it is emulated there.
+    /// </summary>
+    public SqlQuery<TResult> FullJoin<TInner, TKey, TResult>(SqlQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(FullJoin));
+
+    /// <summary>
     ///     LINQ's GroupJoin, as the first half of a LEFT JOIN: the group is not a value, the <c>SelectMany</c> that follows
     ///     (<c>x => x.Group.DefaultIfEmpty()</c>: LEFT; <c>x => x.Group</c>: INNER) joins the inner row and names the result.
     /// </summary>
