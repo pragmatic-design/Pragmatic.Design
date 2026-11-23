@@ -12,7 +12,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TESTCONTAINERS_LABEL, ownTestHosts, ownedByThisRepo } from './lib/gate-ownership.mjs';
+import {
+  TESTCONTAINERS_LABEL, ownLeftovers, ownTestHosts, ownedByThisRepo, parseProcessLine, processListing,
+} from './lib/gate-ownership.mjs';
 
 const REPO = 'C:\\Pragmatic\\Pragmatic.Design';
 
@@ -52,6 +54,55 @@ test('a POSIX listing is read too', () => {
   const mine = ownTestHosts(listing, { windows: false, repoRoot: REPO });
 
   assert.deepEqual(mine.map((p) => p.pid), [4444]);
+});
+
+/**
+ * A suite can start processes of its own — the Agent tests start the daemon as the executable it is
+ * in a deployment — and a test host killed before it disposes them leaves them running out of the
+ * gate's output, which fails the next clean build with MSB3061 (#965). Their image is `dotnet`, not
+ * a test host, so ownership is read from where they run: the gate's isolated output.
+ */
+const daemonListing = [
+  `6666\tdotnet.exe\t"C:\\Program Files\\dotnet\\dotnet.exe" exec --runtimeconfig ${REPO}\\artifacts\\build\\bin\\Pragmatic.Agent.Tests\\debug_net10.0\\Pragmatic.Agent.Tests.runtimeconfig.json ${REPO}\\artifacts\\build\\bin\\Pragmatic.Agent.Tests\\debug_net10.0\\Pragmatic.Agent.dll start --port 0`,
+  `7777\tdotnet.exe\t"C:\\Program Files\\dotnet\\dotnet.exe" build ${REPO}\\Pragmatic.Design.slnx`,
+  `8888\tdotnet.exe\t"C:\\Program Files\\dotnet\\dotnet.exe" exec ${REPO}\\Pragmatic.Agent\\src\\Pragmatic.Agent\\bin\\Debug\\net10.0\\Pragmatic.Agent.dll start`,
+  '9999\tdotnet.exe\t"C:\\Program Files\\dotnet\\dotnet.exe" "C:\\Program Files\\dotnet\\sdk\\11.0.100\\MSBuild.dll" /nologo /nodemode:1 /nodeReuse:false',
+  `1111\ttesthost.exe\t"C:\\Program Files\\dotnet\\testhost.exe" --port 5000 ${REPO}\\artifacts\\build\\Some.Tests.dll`,
+].join('\n');
+
+test('a process a suite started, running out of the gate output, is a leftover of ours', () => {
+  const mine = ownLeftovers(daemonListing, { windows: true, repoRoot: REPO });
+
+  assert.ok(mine.some((p) => p.pid === 6666),
+    'the Agent daemon a killed test host left behind holds its DLLs and fails the next clean build');
+  assert.ok(mine.some((p) => p.pid === 1111), 'and the test hosts are still ours');
+});
+
+test('a dotnet process of this repository that does not run out of the gate output is left alone', () => {
+  const mine = ownLeftovers(daemonListing, { windows: true, repoRoot: REPO });
+
+  assert.ok(!mine.some((p) => p.pid === 7777), 'a build somebody started on this checkout');
+  assert.ok(!mine.some((p) => p.pid === 8888), 'an Agent run from the IDE output, bin/ and not artifacts/build');
+  assert.ok(!mine.some((p) => p.pid === 9999), 'an MSBuild node: reusable build infrastructure');
+});
+
+test('a POSIX leftover is read too', () => {
+  const listing = `4444 dotnet /usr/share/dotnet/dotnet exec ${REPO}/artifacts/build/bin/Pragmatic.Agent.Tests/debug_net10.0/Pragmatic.Agent.dll start`;
+
+  assert.deepEqual(ownLeftovers(listing, { windows: false, repoRoot: REPO }).map((p) => p.pid), [4444]);
+});
+
+/**
+ * ⚠️ Run, not read: the query once went through `cmd.exe`, which cut the PowerShell pipeline at its
+ * `|`, and every listing on Windows came back empty with exit 255 — a cleanup that cleared nothing,
+ * with nothing saying so (#965). The one process sure to be there is this one.
+ */
+test('the process listing finds a process that is running: this one', () => {
+  const listing = processListing('^node');
+
+  assert.equal(listing.code, 0, `the listing failed: ${listing.out}`);
+  const rows = listing.out.split('\n').map((line) => parseProcessLine(line, { windows: process.platform === 'win32', names: ['node'] }));
+  assert.ok(rows.some((p) => p?.pid === process.pid), `pid ${process.pid} is not in the listing`);
 });
 
 test('the separator leaning the other way still matches', () => {
