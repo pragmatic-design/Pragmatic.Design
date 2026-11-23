@@ -31,16 +31,16 @@ public class ValidationTests(PostgresFixture fixture) : IntegrationTestBase(fixt
     // =========================================================================
 
     /// <summary>
-    ///     A <c>required</c> member that does not arrive is a <b>binding</b> failure, not a validation one: 400.
+    ///     A <c>required</c> member that does not arrive is refused as one sent empty: 422, naming the member.
     /// </summary>
     /// <remarks>
-    ///     ⚠️ The distinction is not «which attribute would have refused it» but «did the value arrive?».
-    ///     <c>Name</c> is a <c>required string</c> on the mutation: without it, the object is not built
-    ///     and no validator runs. With a value present and wrong — see the other tests here — the
-    ///     response is 422.
+    ///     It was a 400 until #937, with the deserializer's text naming the generated body type: the
+    ///     <c>required</c> keyword on that record refused the request before any rule of the mutation could
+    ///     answer. The record checks the presence of those members itself now, and the answer is the
+    ///     mutation's own <c>validation.required</c>, under the member's name on the wire.
     /// </remarks>
     [Fact]
-    public async Task CreateProperty_MissingName_Returns400()
+    public async Task CreateProperty_MissingName_Returns422_NamingIt()
     {
         var body = new
         {
@@ -52,8 +52,12 @@ public class ValidationTests(PostgresFixture fixture) : IntegrationTestBase(fixt
         };
 
         var response = await PostAsync("/api/properties", body);
+        var text = await response.Content.ReadAsStringAsync();
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, "body was: {0}", text);
+        var errors = JsonDocument.Parse(text).RootElement.GetProperty("errors");
+        errors.EnumerateObject().Select(p => p.Name).Should().Equal("name");
+        errors.GetProperty("name")[0].GetString().Should().Be("validation.required");
     }
 
     [Fact]

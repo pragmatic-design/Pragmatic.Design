@@ -155,5 +155,8 @@ Two checks that the defaults are in, before calling the application done:
 - A request a rule refuses answers `422` with both `errors` (the keys) and `messages` (the
   sentences of `translations/en.json`). No `messages` at all means `LocalizeProblemDetails()` is
   missing, or the file's culture is not the one the request is answered in.
+  A body that leaves out a `required` member answers the same `422`, `validation.required` under the
+  member's name, as one that sends it empty. A `400` naming a `…Body` type means the packages predate
+  that.
 
 For analyzer/package validation, follow the consumer flow in `../pragmatic-ecosystem/references/verification.md`.

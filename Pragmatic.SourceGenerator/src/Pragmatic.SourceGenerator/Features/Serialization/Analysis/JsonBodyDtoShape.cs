@@ -30,11 +30,26 @@ internal static class JsonBodyDtoShape
     /// </summary>
     /// <param name="action">The endpoint/action type whose properties the bodies mirror.</param>
     /// <param name="endpoint">The endpoint model, which names the records and their property sets.</param>
-    public static JsonRootContribution? For(INamedTypeSymbol action, EndpointModel endpoint)
+    /// <param name="compilation">Builds <c>Nullable&lt;T&gt;</c> for a value type the record declares nullable.</param>
+    public static JsonRootContribution? For(INamedTypeSymbol action, EndpointModel endpoint, Compilation compilation)
     {
         var declared = PropertiesOf(action);
 
-        return Build(endpoint, (name, _) => declared.TryGetValue(name, out var p) ? p.Type : null);
+        return Build(endpoint, (name, property) => declared.TryGetValue(name, out var p) ? OnTheRecord(p.Type, property, compilation) : null);
+    }
+
+    /// <summary>
+    ///     The member's type as the record declares it: a required member the body checks for presence is nullable
+    ///     there (#937), and the context's typed setter has to take what the record's property is, or it fails at
+    ///     run time with a missing method.
+    /// </summary>
+    private static ITypeSymbol OnTheRecord(ITypeSymbol declared, BodyPropertyModel property, Compilation compilation)
+    {
+        if (!property.IsPresenceChecked)
+            return declared;
+        return declared.IsValueType
+            ? compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(declared)
+            : declared.WithNullableAnnotation(NullableAnnotation.Annotated);
     }
 
     /// <summary>
@@ -82,9 +97,10 @@ internal static class JsonBodyDtoShape
             if (properties.Count != variant.Properties.Length)
                 continue;
 
-            // The generated record reproduces `required`, which makes `new T()` a compile error
-            // (CS9035) even though the deserializer is about to set every one of them.
-            var needsUnsafeConstructor = variant.Properties.Any(static p => p.IsRequired);
+            // The generated record reproduces `required` (except on a member it checks for presence
+            // itself), which makes `new T()` a compile error (CS9035) even though the deserializer is
+            // about to set every one of them.
+            var needsUnsafeConstructor = variant.Properties.Any(static p => p.IsRequired && !p.IsPresenceChecked);
 
             if (!JsonShapeExtractor.TryExtractProjection(
                     $"global::{endpoint.Namespace}.{variant.Name}", properties, needsUnsafeConstructor,

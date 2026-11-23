@@ -270,13 +270,30 @@ public partial class CreateUserEndpoint : Endpoint<UserDto>
 }
 
 // Generated body DTO:
-// public sealed record CreateUserEndpointBody
+// public partial record CreateUserEndpointBody
 // {
-//     public required string Name { get; init; }
-//     public required string Email { get; init; }
+//     public string? Name { get; init; }
+//     public string? Email { get; init; }
 //     public string? Phone { get; init; }
+//
+//     public ValidationError MissingRequiredMembers() { … }   // Name, Email
 // }
 ```
+
+A `required` member is **not** `required` on the generated record, and its type is nullable there: a body
+that leaves it out is read, and `MissingRequiredMembers()`, called right after the read, refuses it with
+**422**, one issue per member, `validation.required` (or its `[Required(MessageKey)]`) under the member's
+wire name. That is the answer a member sent empty gets from the operation's own validation, so a client
+handles the two the same way, in the caller's language. A value type (`Guid`, `int`, `DateOnly`) is
+covered too, which the operation's validator cannot do: a non-nullable value has no "absent".
+
+The keyword stayed until #937, and the deserializer refused such a body with **400**, in its own words,
+naming the generated `…Body` type. Two cases keep the keyword, and that 400: a `required` member of a
+nullable type, where the contract is "sent, possibly null" and a null read back cannot tell; and the bodies a
+feature assembles itself rather than reading an operation you wrote (a `[Resource]`'s create, a trait's
+endpoints), whose members are described as type text and not as symbols. Only presence is checked
+here, so an empty value still reaches the operation's rules, after its permission check. The published
+contract is unchanged: its `required` list comes from the model, not from this record.
 
 ### Complex Body Types
 

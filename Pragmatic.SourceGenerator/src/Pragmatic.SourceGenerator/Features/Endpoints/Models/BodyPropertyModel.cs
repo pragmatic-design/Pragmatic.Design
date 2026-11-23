@@ -25,6 +25,37 @@ internal sealed record BodyPropertyModel
     /// </summary>
     public bool IsNullable { get; init; }
 
+    /// <summary>Whether the property's type is a value type that is not <c>Nullable&lt;T&gt;</c>.</summary>
+    public bool IsValueType { get; init; }
+
+    /// <summary>
+    ///     The message key of the property's <c>[Required]</c>, when it names one; otherwise the rule's default.
+    /// </summary>
+    public string? RequiredMessageKey { get; init; }
+
+    /// <summary>
+    ///     Whether the body checks this member's presence itself (#937): a <c>required</c> member whose type
+    ///     does not admit null. It is nullable on the body record, so a request that leaves it out is read,
+    ///     and refused as the member's <c>required</c> rule refuses it, rather than by the deserializer.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         A <c>required</c> member of a nullable type keeps the keyword: the contract there is «sent,
+    ///         possibly null», and a null read from the body cannot say whether it was sent.
+    ///     </para>
+    ///     <para>
+    ///         Set by the transform that reads the operation's symbols, which knows whether the type is a value
+    ///         type (<see cref="IsValueType" />); a body a feature assembles from type text (Resource CRUD,
+    ///         traits) leaves it false and keeps <c>required</c>, since a value type read as <c>T?</c> would
+    ///         reach the operation unwrapped wrongly.
+    ///     </para>
+    /// </remarks>
+    public bool IsPresenceChecked { get; init; }
+
+    /// <summary>The expression that reads this member from the body record into the operation.</summary>
+    public string ReadFrom(string body)
+        => !IsPresenceChecked ? $"{body}.{Name}" : IsValueType ? $"{body}.{Name}!.Value" : $"{body}.{Name}!";
+
     /// <summary>
     ///     The initializer written on the source property, copied onto the generated one.
     /// </summary>

@@ -514,7 +514,7 @@ public partial class UpdateUserEndpoint
             System.Threading.CancellationToken ct
         ) =>
         {
-            var endpoint = new global::TestApp.Users.UpdateUserEndpoint { Id = id, Name = body.Name, Email = body.Email };
+            var endpoint = new global::TestApp.Users.UpdateUserEndpoint { Id = id, Name = body.Name!, Email = body.Email! };
             
             endpoint.SetDependencies(repository);
             
@@ -568,6 +568,12 @@ public partial class UpdateUserEndpoint
                 return;
             }
             var body = (TestApp.Users.UpdateUserEndpointBody)__read_body;
+            var __missing_body = body.MissingRequiredMembers();
+            if (__missing_body.IsFailure)
+            {
+                await global::Pragmatic.Endpoints.Extensions.ErrorExtensions.ToResult(__missing_body, httpContext).ExecuteAsync(httpContext).ConfigureAwait(false);
+                return;
+            }
             var repository = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::TestApp.Users.IUserRepository>(httpContext.RequestServices);
             var ct = httpContext.RequestAborted;
             
@@ -603,8 +609,21 @@ namespace TestApp.Users;
 /// </summary>
 public partial record UpdateUserEndpointBody
 {
-    public required string Name { get; init; }
-    public required string Email { get; init; }
+    public string? Name { get; init; }
+    public string? Email { get; init; }
+    
+    /// <summary>
+    /// The required members this request left out, each reported as its required rule reports it.
+    /// </summary>
+    public global::Pragmatic.Validation.Types.ValidationError MissingRequiredMembers()
+    {
+        var error = global::Pragmatic.Validation.Types.ValidationError.Valid;
+        if (Name is null)
+            error = error.WithFor(nameof(Name), "validation.required");
+        if (Email is null)
+            error = error.WithFor(nameof(Email), "validation.required");
+        return error;
+    }
 }
 ,
   TestApp.Users.UpdateUserEndpoint.SetDependencies.g.cs:

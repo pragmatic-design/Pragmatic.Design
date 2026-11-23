@@ -105,7 +105,7 @@ internal sealed partial class MutationHandlerTemplate
         else if (_model.NeedsBodyDto)
         {
             foreach (var prop in _model.BodyProperties)
-                initProps.Add($"{prop.Name} = body.{prop.Name}");
+                initProps.Add($"{prop.Name} = {prop.ReadFrom("body")}");
         }
 
         // Generate with or without object initializer

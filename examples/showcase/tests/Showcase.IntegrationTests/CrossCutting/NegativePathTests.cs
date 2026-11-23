@@ -28,8 +28,8 @@ public class NegativePathTests(PostgresFixture fixture) : IntegrationTestBase(fi
         var response = await PostAsync("/api/reservations?api-version=1.0", new { });
 
         // No [required] on this mutation, so the empty body binds and the validators refuse it: 422.
-        // Where a required member does not arrive — CreateProperty_MissingName — the response is 400,
-        // because the object is not built at all.
+        // Where a required member does not arrive — CreateProperty_MissingName — the answer is a 422 too,
+        // from the body's presence check (#937).
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "an empty body binds here, and the validators are what refuse it");
 
@@ -215,25 +215,30 @@ public class NegativePathTests(PostgresFixture fixture) : IntegrationTestBase(fi
     }
 
     // =========================================================================
-    // 400: Create property with missing required fields
+    // 422: Create property with missing required fields
     // =========================================================================
 
+    /// <summary>
+    ///     The required members left out are named, each as its required rule names an empty one (#937).
+    /// </summary>
+    /// <remarks>
+    ///     It was a 400 with the deserializer's text until #937. <c>StarRating</c> is not among them: it is
+    ///     optional on the mutation, and the answer names only what the operation declares required.
+    /// </remarks>
     [Fact]
-    public async Task CreateProperty_MissingRequiredFields_Returns400()
+    public async Task CreateProperty_MissingRequiredFields_Returns422_NamingEach()
     {
-        // Only send code, missing name/city/country/starRating
+        // Only send code, missing name/city/country
         var response = await PostAsync("/api/properties", new
         {
             code = "NEG-001"
         });
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "Missing required fields should fail validation");
-
-        // The error response may not be JSON (e.g., developer exception page or plain text)
         var bodyString = await response.Content.ReadAsStringAsync();
-        bodyString.Should().NotBeNullOrWhiteSpace(
-            "Validation error response should include error details");
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, "body was: {0}", bodyString);
+        JsonDocument.Parse(bodyString).RootElement.GetProperty("errors").EnumerateObject()
+            .Select(p => p.Name).Order(StringComparer.Ordinal)
+            .Should().Equal("city", "country", "name");
     }
 
     // =========================================================================
