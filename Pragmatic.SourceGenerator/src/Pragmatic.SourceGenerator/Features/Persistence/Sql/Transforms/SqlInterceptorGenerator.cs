@@ -56,7 +56,7 @@ internal static partial class SqlInterceptorGenerator
     /// <summary>The deferred terminals, recorded on a <c>SqlBatch</c>, and the async twin whose plan they take.</summary>
     private static readonly Dictionary<string, string> BatchTerminals = new() { ["ToList"] = "ToListAsync", ["FirstOrDefault"] = "FirstOrDefaultAsync", ["Count"] = "CountAsync", ["Any"] = "AnyAsync" };
 
-    private static readonly HashSet<string> Terminals = ["ToList", "FirstOrDefault", "Count", "Any", "ToListAsync", "ToArrayAsync", "ShapeAsync", "AsAsyncEnumerable", "ToDictionaryAsync", "FirstOrDefaultAsync", "FirstAsync", "SingleAsync", "SingleOrDefaultAsync", "CountAsync", "AnyAsync", "SumAsync", "MinAsync", "MaxAsync", "AverageAsync", "ExecuteUpdateAsync", "ExecuteDeleteAsync", "ExecuteInsertAsync", "SyncAsync", "ToSql", "ToCommand"];
+    private static readonly HashSet<string> Terminals = ["ToList", "FirstOrDefault", "Count", "Any", "ToListAsync", "ToArrayAsync", "ShapeAsync", "AsAsyncEnumerable", "ToDictionaryAsync", "FirstOrDefaultAsync", "MaxByAsync", "MinByAsync", "FirstAsync", "SingleAsync", "SingleOrDefaultAsync", "CountAsync", "AnyAsync", "SumAsync", "MinAsync", "MaxAsync", "AverageAsync", "ExecuteUpdateAsync", "ExecuteDeleteAsync", "ExecuteInsertAsync", "SyncAsync", "ToSql", "ToCommand"];
 
     private static readonly HashSet<string> Aggregates = ["SumAsync", "MinAsync", "MaxAsync", "AverageAsync"];
 
@@ -224,6 +224,13 @@ internal static partial class SqlInterceptorGenerator
         var index = 0;
         foreach (var call in calls.Where(c => c is not null).Select(c => c!).OrderBy(c => c.Invocation.SyntaxTree.FilePath, StringComparer.Ordinal).ThenBy(c => c.Invocation.SpanStart))
         {
+            if (call.Foreign && call.Method.Name is "MaxBy" or "MinBy")
+            {
+                // System.Linq's MaxBy runs the query synchronously, which the provider refuses at runtime: the async terminal is the translated one.
+                diagnostics.Add(Diagnostic.Create(Diagnostics.UnsupportedMethod, call.Invocation.GetLocation(), call.Method.Name, $"it runs the query synchronously; use {call.Method.Name}Async on the chain typed SqlQuery<T>"));
+                continue;
+            }
+
             if (call.Foreign)
             {
                 diagnostics.Add(Diagnostic.Create(Diagnostics.ChainTypedAsQueryable, call.Invocation.GetLocation(), call.Method.Name, call.Method.ContainingType.ToDisplayString()));

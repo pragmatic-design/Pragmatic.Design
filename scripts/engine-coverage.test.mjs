@@ -46,8 +46,15 @@ test('kind 4 no longer lists the outer joins as missing on the Sql engine, and n
   const page = expectedPage(root);
   const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
   assert.ok(!kindFour.includes('neither engine'), 'section 4 still says neither engine has the operators');
-  assert.ok(kindFour.includes('The Sql engine compiles the three joins'), 'section 4 does not say the Sql engine compiles the outer joins');
-  for (const issue of ['#969', '#970', '#971']) assert.ok(kindFour.includes(issue), `section 4 does not name ${issue}, a part still missing`);
+  assert.ok(kindFour.includes('The Sql engine compiles all five'), 'section 4 does not say the Sql engine compiles the outer joins');
+  for (const issue of ['#970', '#971']) assert.ok(kindFour.includes(issue), `section 4 does not name ${issue}, a part still missing`);
+});
+
+test('kind 4 no longer lists MaxByAsync and MinByAsync as missing on the Sql engine', () => {
+  const page = expectedPage(root);
+  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
+  assert.ok(!kindFour.includes('#969'), 'section 4 still lists MaxByAsync/MinByAsync as missing on the Sql engine (#969)');
+  assert.ok(kindFour.includes('The Sql engine compiles all five'), 'section 4 does not say the Sql engine compiles MaxByAsync/MinByAsync');
 });
 
 test('a test added to a file left out moves the page: the count is read from the source, not written on it', () => {
