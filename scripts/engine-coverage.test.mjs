@@ -35,33 +35,13 @@ test('kind 2 carries the owner\'s decision, not an open question', () => {
   for (const issue of ['#946', '#947']) assert.ok(kindTwo.includes(issue), `section 2 does not name ${issue}, the grid on the engines`);
 });
 
-test('kind 4 lists a gap no suite test exercises, with its issue', () => {
+test('kind 4 no longer lists the .NET 11 operators: both engines compile all five', () => {
   const page = expectedPage(root);
   const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
-  assert.ok(!kindFour.includes('None found yet'), 'section 4 says no gap was found');
-  assert.ok(kindFour.includes('`FullJoin`') && kindFour.includes('#962'), 'section 4 does not name the .NET 11 operators and their issue');
-});
-
-test('kind 4 no longer lists the outer joins as missing on the Sql engine, and names what is still missing', () => {
-  const page = expectedPage(root);
-  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
-  assert.ok(!kindFour.includes('neither engine'), 'section 4 still says neither engine has the operators');
-  assert.ok(kindFour.includes('The Sql engine compiles all five'), 'section 4 does not say the Sql engine compiles the outer joins');
-  assert.ok(kindFour.includes('#971'), 'section 4 does not name #971, a part still missing');
-});
-
-test('kind 4 no longer lists the outer joins as missing on the documents engine', () => {
-  const page = expectedPage(root);
-  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
-  assert.ok(!kindFour.includes('#970'), 'section 4 still lists LeftJoin, RightJoin and FullJoin as missing on the documents engine (#970)');
-  assert.ok(kindFour.includes('the documents engine compiles the three outer joins'), 'section 4 does not say the documents engine compiles the outer joins');
-});
-
-test('kind 4 no longer lists MaxByAsync and MinByAsync as missing on the Sql engine', () => {
-  const page = expectedPage(root);
-  const kindFour = page.slice(page.indexOf('## 4.'), page.indexOf('## 5.'));
-  assert.ok(!kindFour.includes('#969'), 'section 4 still lists MaxByAsync/MinByAsync as missing on the Sql engine (#969)');
-  assert.ok(kindFour.includes('The Sql engine compiles all five'), 'section 4 does not say the Sql engine compiles MaxByAsync/MinByAsync');
+  for (const issue of ['#962', '#968', '#969', '#970', '#971'])
+    assert.ok(!kindFour.includes(issue), `section 4 still names ${issue}, a part of the .NET 11 operators closed on both engines`);
+  for (const operator of ['`FullJoin`', '`MaxByAsync`'])
+    assert.ok(!kindFour.includes(operator), `section 4 still lists ${operator} as a gap`);
 });
 
 test('a test added to a file left out moves the page: the count is read from the source, not written on it', () => {

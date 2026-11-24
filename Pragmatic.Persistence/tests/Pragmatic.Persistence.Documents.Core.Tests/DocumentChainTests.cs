@@ -154,6 +154,29 @@ public class DocumentChainTests(MongoServer mongo)
     }
 
     [Fact]
+    public async Task MaxBy_and_MinBy_read_the_document_with_the_extreme_key()
+    {
+        if (mongo.Unavailable is not null)
+            return;
+        var session = mongo.Session();
+        var customer = mongo.Seed.BusyCustomer.Id;
+        var mine = mongo.Orders.Where(o => o.CustomerId == customer && o.Status == OrderStatus.Open).ToList();
+        Assert.True(mine.Count > 2 && mine.Max(o => o.Total) != mine.Min(o => o.Total), "the data gives a maximum and a minimum that differ");
+
+        var highest = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id && o.Status == OrderStatus.Open, customer).MaxByAsync(o => o.Total);
+        var lowest = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id && o.Status == OrderStatus.Open, customer).MinByAsync(o => o.Total);
+        var earliest = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id, customer).MinByAsync(o => o.CreatedAt);
+        Assert.Equal(mine.Max(o => o.Total), highest!.Total);
+        Assert.Equal(mine.Min(o => o.Total), lowest!.Total);
+        Assert.Equal(mongo.Orders.Where(o => o.CustomerId == customer).Min(o => o.CreatedAt), earliest!.CreatedAt);
+        Assert.Contains(highest.Id, mine.Where(o => o.Total == highest.Total).Select(o => o.Id)); // a document the chain selects, not only its key
+
+        var again = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id && o.Status == OrderStatus.Open, customer).MaxByAsync(o => o.Total);
+        Assert.Equal(highest.Id, again!.Id); // the same document each time, the document's key breaking a tie
+        Assert.Null(await session.Query<OrderDocument>().Where(o => o.Number == "none").MaxByAsync(o => o.Total));
+    }
+
+    [Fact]
     public async Task The_outer_joins_keep_the_documents_unmatched_on_either_side()
     {
         if (mongo.Unavailable is not null)

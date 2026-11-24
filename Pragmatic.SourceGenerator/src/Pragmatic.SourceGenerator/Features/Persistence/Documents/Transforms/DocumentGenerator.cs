@@ -221,7 +221,7 @@ internal static partial class DocumentGenerator
                     ? $"{Execution}.JoinListAsync<{e}, {planner.JoinInner}, {planner.JoinKey}, {element}>({query}, Plan_{index}, Join_{index}, ct)"
                     : $"{Execution}.{(planner.Grouped ? "GroupListAsync" : planner.Unwound ? "UnwindListAsync" : "ToListAsync")}<{e}, {element}>({query}, Plan_{index}, ct)";
                 break;
-            case "FirstOrDefaultAsync":
+            case "FirstOrDefaultAsync" or "MaxByAsync" or "MinByAsync": // the two read the first of the chain the plan orders by their key
                 returns = $"global::System.Threading.Tasks.ValueTask<{element}{(generic || !call.Element.IsValueType ? (element.EndsWith("?", StringComparison.Ordinal) ? "" : "?") : "")}>";
                 invocation = $"{Execution}.FirstOrDefaultAsync<{e}, {element}>({query}, Plan_{index}, ct)";
                 break;

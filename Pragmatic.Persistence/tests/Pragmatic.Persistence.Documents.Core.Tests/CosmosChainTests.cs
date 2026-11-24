@@ -213,6 +213,22 @@ public class CosmosChainTests
     }
 
     [Fact]
+    public async Task MaxBy_and_MinBy_read_the_document_with_the_extreme_key_in_the_partition()
+    {
+        if (cosmos.Unavailable is not null)
+            return;
+        var session = cosmos.Session();
+        Assert.True(Mine.Count > 2 && Mine.Max(o => o.Total) != Mine.Min(o => o.Total), "the data gives a maximum and a minimum that differ");
+
+        var highest = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id, Customer).MaxByAsync(o => o.Total);
+        var earliest = await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id, Customer).MinByAsync(o => o.CreatedAt);
+        Assert.Equal(Mine.Max(o => o.Total), highest!.Total);
+        Assert.Contains(highest.Id, Mine.Where(o => o.Total == highest.Total).Select(o => o.Id));
+        Assert.Equal(Mine.Min(o => o.CreatedAt), earliest!.CreatedAt);
+        Assert.Null(await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id && o.Number == "none", Customer).MaxByAsync(o => o.Total));
+    }
+
+    [Fact]
     public async Task The_outer_joins_keep_the_documents_unmatched_on_either_side()
     {
         if (cosmos.Unavailable is not null)

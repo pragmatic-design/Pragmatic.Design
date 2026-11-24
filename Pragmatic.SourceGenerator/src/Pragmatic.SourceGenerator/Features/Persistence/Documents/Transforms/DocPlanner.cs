@@ -203,6 +203,12 @@ internal sealed partial class DocPlanner
             return;
         }
 
+        if (name is "MaxByAsync" or "MinByAsync")
+        {
+            ExtremeBy(name, lambda);
+            return;
+        }
+
         if (Commands.Contains(name))
         {
             Command(lambda);

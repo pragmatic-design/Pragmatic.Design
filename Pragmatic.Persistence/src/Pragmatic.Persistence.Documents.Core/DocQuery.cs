@@ -164,6 +164,16 @@ public readonly struct DocQuery<T>
 
     public ValueTask<TValue> MinAsync<TValue>(Func<T, TValue> selector, CancellationToken ct = default) => throw NotTranslated(nameof(MinAsync));
 
+    /// <summary>
+    ///     The document with the largest value of a field among those the chain selects, as EF Core's <c>MaxByAsync</c>: the chain ordered by the
+    ///     field, descending, in place of its ordering, then by the document's key, so documents that tie give the same one each time; none:
+    ///     <c>default</c>. Not after a Select, a Skip, a Take or a cursor.
+    /// </summary>
+    public ValueTask<T?> MaxByAsync<TKey>(Func<T, TKey> key, CancellationToken ct = default) => throw NotTranslated(nameof(MaxByAsync));
+
+    /// <summary>The document with the smallest value of a field, as <see cref="MaxByAsync{TKey}" /> reads the largest.</summary>
+    public ValueTask<T?> MinByAsync<TKey>(Func<T, TKey> key, CancellationToken ct = default) => throw NotTranslated(nameof(MinByAsync));
+
     /// <summary>The sum of a field among the documents (<c>$sum</c>); none: zero.</summary>
     public ValueTask<TValue> SumAsync<TValue>(Func<T, TValue> selector, CancellationToken ct = default) => throw NotTranslated(nameof(SumAsync));
 
