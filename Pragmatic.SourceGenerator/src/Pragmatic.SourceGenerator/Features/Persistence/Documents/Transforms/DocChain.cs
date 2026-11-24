@@ -41,9 +41,9 @@ internal sealed class DocCall
     public const string QueryType = "Pragmatic.Persistence.Documents.DocQuery<T>";
     public const string SessionType = "Pragmatic.Persistence.Documents.DocSession";
     public static readonly HashSet<string> Operators = ["Where", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "Select", "After", "GroupBy", "SelectMany", "Join", "LeftJoin", "RightJoin", "FullJoin", "Matching", "OrderedBy"];
-    public static readonly HashSet<string> Terminals = ["ToListAsync", "FirstOrDefaultAsync", "CountAsync", "AnyAsync", "MaxAsync", "MinAsync", "SumAsync", "ExecuteDeleteAsync", "ExecuteUpdateAsync"];
+    public static readonly HashSet<string> Terminals = ["ToListAsync", "FirstOrDefaultAsync", "CountAsync", "AnyAsync", "MaxAsync", "MinAsync", "SumAsync", "ExecuteDeleteAsync", "ExecuteUpdateAsync", "MaxByAsync", "MinByAsync"];
 
-    private DocCall(InvocationExpressionSyntax invocation, SemanticModel model, IMethodSymbol method, INamedTypeSymbol? entity, ITypeSymbol element, List<DocStep> before)
+    private DocCall(InvocationExpressionSyntax invocation, SemanticModel model, IMethodSymbol method, INamedTypeSymbol? entity, ITypeSymbol element, List<DocStep> before, bool paged)
     {
         Invocation = invocation;
         Model = model;
@@ -51,7 +51,11 @@ internal sealed class DocCall
         Entity = entity;
         Element = element;
         Before = before;
+        Paged = paged;
     }
+
+    /// <summary>True when a Skip or a Take comes before this call: they run as they are, so they are not among <see cref="Before" />.</summary>
+    public bool Paged { get; }
 
     public InvocationExpressionSyntax Invocation { get; }
 
@@ -91,27 +95,31 @@ internal sealed class DocCall
         var receiver = ((MemberAccessExpressionSyntax)invocation.Expression).Expression;
         var element = (model.GetTypeInfo(receiver, ct).Type as INamedTypeSymbol)?.TypeArguments.FirstOrDefault() ?? method.ContainingType.TypeArguments[0];
         var before = new List<DocStep>();
-        var entity = Walk(receiver, model, ct, before, 0);
-        return new DocCall(invocation, model, method, entity, element, entity is null ? [] : before);
+        var paging = new List<string>();
+        var entity = Walk(receiver, model, ct, before, 0, paging);
+        return new DocCall(invocation, model, method, entity, element, entity is null ? [] : before, paging.Count > 0);
     }
 
     /// <summary>A chain written as an argument (a Join's inner chain): its steps and its entity, or null.</summary>
-    public static INamedTypeSymbol? StepsOf(ExpressionSyntax chain, SemanticModel model, List<DocStep> steps) => Walk(chain, model, default, steps, 0);
+    public static INamedTypeSymbol? StepsOf(ExpressionSyntax chain, SemanticModel model, List<DocStep> steps) => Walk(chain, model, default, steps, 0, null);
 
-    /// <summary>Back to <c>session.Query&lt;T&gt;()</c> through parentheses, local variables and the DocQuery operators; the entity, or null.</summary>
-    private static INamedTypeSymbol? Walk(ExpressionSyntax receiver, SemanticModel model, CancellationToken ct, List<DocStep> steps, int depth)
+    /// <summary>
+    ///     Back to <c>session.Query&lt;T&gt;()</c> through parentheses, local variables and the DocQuery operators; the entity, or null. The Skips
+    ///     and Takes on the way are named in <paramref name="paging" /> when one is given.
+    /// </summary>
+    private static INamedTypeSymbol? Walk(ExpressionSyntax receiver, SemanticModel model, CancellationToken ct, List<DocStep> steps, int depth, List<string>? paging)
     {
         if (depth > 64)
             return null;
         switch (receiver)
         {
             case ParenthesizedExpressionSyntax paren:
-                return Walk(paren.Expression, model, ct, steps, depth + 1);
+                return Walk(paren.Expression, model, ct, steps, depth + 1, paging);
             case IdentifierNameSyntax identifier when model.GetSymbolInfo(identifier, ct).Symbol is ILocalSymbol local:
                 foreach (var reference in local.DeclaringSyntaxReferences)
                 {
                     if (reference.GetSyntax(ct) is VariableDeclaratorSyntax { Initializer.Value: { } initializer })
-                        return Walk(initializer, model, ct, steps, depth + 1);
+                        return Walk(initializer, model, ct, steps, depth + 1, paging);
                 }
 
                 return null;
@@ -122,9 +130,11 @@ internal sealed class DocCall
                     return method.TypeArguments[0] as INamedTypeSymbol;
                 if (container != QueryType)
                     return null;
-                var entity = Walk(access.Expression, model, ct, steps, depth + 1);
+                var entity = Walk(access.Expression, model, ct, steps, depth + 1, paging);
                 if (entity is not null && Operators.Contains(method.Name))
                     steps.Add(new DocStep(invocation, method));
+                else if (entity is not null && method.Name is "Skip" or "Take")
+                    paging?.Add(method.Name);
                 return entity;
             }
 

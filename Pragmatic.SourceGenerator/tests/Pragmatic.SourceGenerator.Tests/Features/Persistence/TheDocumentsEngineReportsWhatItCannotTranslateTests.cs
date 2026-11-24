@@ -138,6 +138,48 @@ public class TheDocumentsEngineReportsWhatItCannotTranslateTests
     }
 
     [Fact]
+    public void MaxByAndMinBy_AreTheChainOrderedByTheKeyThenTheDocumentsKey()
+    {
+        var result = Run(Model + """
+
+            public static class Reads
+            {
+                public static async Task Run(DocSession session)
+                {
+                    await session.Query<Item>().Where(i => i.Price > 1m).OrderBy(i => i.Name).MaxByAsync(i => i.Price);
+                    await session.Query<Item>().MinByAsync(i => i.At);
+                }
+            }
+            """);
+
+        Errors(result.Diagnostics).Should().BeEmpty();
+        GeneratorTestHelper.GetCompilationErrors(result).Select(d => d.ToString()).Should().BeEmpty();
+        var interceptors = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Single(s => s.Key == "_Infra.Documents.Interceptors.g.cs").Value;
+        interceptors.Should().Contain("static w => { w.Write(\"Price\", -1); w.Write(\"_id\", 1); }", "MaxByAsync orders by the key, descending, in place of the chain's OrderBy, then by the document's key");
+        interceptors.Should().Contain("static w => { w.Write(\"At\", 1); w.Write(\"_id\", 1); }", "MinByAsync orders by the key, ascending");
+    }
+
+    [Fact]
+    public void MaxByAfterATakeOrASelect_IsPrag3101()
+    {
+        var result = Run(Model + """
+
+            public static class Reads
+            {
+                public static async Task Run(DocSession session)
+                {
+                    await session.Query<Item>().Take(10).MaxByAsync(i => i.Price);
+                    await session.Query<Item>().Select(i => new { i.Name, i.Price }).MaxByAsync(i => i.Price);
+                }
+            }
+            """);
+
+        var messages = result.Diagnostics.Where(d => d.Id == "PRAG3101").Select(d => d.GetMessage()).ToList();
+        messages.Should().Contain(m => m.Contains("a Skip or a Take before it would page the documents in another order"));
+        messages.Should().Contain(m => m.Contains("MaxByAsync reads the documents themselves"));
+    }
+
+    [Fact]
     public void AnExpressionOutsideTheSubset_IsPrag3101()
     {
         var result = Run(Model + """
