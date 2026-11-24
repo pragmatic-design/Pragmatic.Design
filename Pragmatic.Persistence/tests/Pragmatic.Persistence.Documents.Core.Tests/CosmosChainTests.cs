@@ -211,4 +211,30 @@ public class CosmosChainTests
         Assert.Empty(await session.Query<OrderDocument>().Where((o, id) => o.CustomerId == id, Customer)
             .Join(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, "nowhere"), o => o.CustomerId, c => c.Id, (o, c) => new { o.Number, c.Name }).ToListAsync());
     }
+
+    [Fact]
+    public async Task The_outer_joins_keep_the_documents_unmatched_on_either_side()
+    {
+        if (cosmos.Unavailable is not null)
+            return;
+        var session = cosmos.Session();
+        var country = cosmos.Customers.First(c => c.Id == Customer).Country;
+        var expected = new OuterJoinRows(cosmos.Orders, cosmos.Customers, country);
+        Assert.True(expected.HasEveryKind, $"the data gives {expected.Pairs.Count} pairs, {expected.OrdersAlone.Count} orders and {expected.CustomersAlone.Count} customers alone");
+
+        var left = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .LeftJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { o.Number, Name = (string?)c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Left, OuterJoinRows.Sorted(left.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+
+        var right = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .RightJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { Number = (string?)o.Number, c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Right, OuterJoinRows.Sorted(right.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+
+        var full = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .FullJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { Number = (string?)o.Number, Name = (string?)c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Full, OuterJoinRows.Sorted(full.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+    }
 }

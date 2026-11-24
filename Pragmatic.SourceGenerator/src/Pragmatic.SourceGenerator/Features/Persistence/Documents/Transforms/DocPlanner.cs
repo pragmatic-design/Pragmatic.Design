@@ -96,7 +96,7 @@ internal sealed partial class DocPlanner
             return;
         }
 
-        if (step.Name == "Join")
+        if (DocCall.IsJoin(step.Name))
         {
             Join(step);
             return;

@@ -33,8 +33,8 @@ const engines = (list) => (list.length === ENGINES.length ? 'both' : list.join('
  */
 const GAPS_NO_SUITE_TEST_EXERCISES = [
   '**The .NET 11 query operators** (#962): EF Core translates `LeftJoin`, `RightJoin` and `FullJoin`, and `MaxByAsync`/`MinByAsync`. ' +
-    'The Sql engine compiles all five (the full join emulated on MySQL); still missing on the documents engine are ' +
-    '`MaxByAsync`/`MinByAsync` (#971) and `LeftJoin`, `RightJoin` and `FullJoin` (#970). No test of the suite uses them, so no ' +
+    'The Sql engine compiles all five (the full join emulated on MySQL), and the documents engine compiles the three outer joins; ' +
+    'still missing on the documents engine are `MaxByAsync`/`MinByAsync` (#971). No test of the suite uses them, so no ' +
     'exclusion lists them.',
 ];
 
