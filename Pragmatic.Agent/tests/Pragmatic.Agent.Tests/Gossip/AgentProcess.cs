@@ -88,6 +88,14 @@ internal sealed class AgentProcess : IAsyncDisposable
             RedirectStandardError = true,
             CreateNoWindow = true,
         };
+        // The daemon reads its secret key and its environment name from what it inherits, and other tests of this assembly set those in the
+        // test host for a moment (KvSecretProtectorTests): a daemon started then would read a key it refuses and exit before it is ready.
+        foreach (var name in start.Environment.Keys.ToList())
+        {
+            if (name.StartsWith("PRAGMATIC_AGENT_", StringComparison.OrdinalIgnoreCase) || name is "ASPNETCORE_ENVIRONMENT" or "DOTNET_ENVIRONMENT")
+                start.Environment.Remove(name);
+        }
+
         // The runtime configuration and dependencies of this test assembly, not the Agent's copies beside it:
         // the fuzz harness this project also references targets net10.0 only and carries the net10.0 Agent's
         // runtimeconfig.json, which can land in the net11.0 output and start a net11.0 build on the wrong runtime.
