@@ -152,4 +152,36 @@ public class DocumentChainTests(MongoServer mongo)
             .Skip(2).Take(15).ToListAsync();
         Assert.Equal(expected.Skip(2).Take(15), rows.Select(r => (r.Number, r.Name)));
     }
+
+    [Fact]
+    public async Task The_outer_joins_keep_the_documents_unmatched_on_either_side()
+    {
+        if (mongo.Unavailable is not null)
+            return;
+        var session = mongo.Session();
+        var country = mongo.Customers[0].Country;
+        var expected = new OuterJoinRows(mongo.Orders, mongo.Customers, country);
+        Assert.True(expected.HasEveryKind, $"the data gives {expected.Pairs.Count} pairs, {expected.OrdersAlone.Count} orders and {expected.CustomersAlone.Count} customers alone");
+
+        var left = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix)).OrderBy(o => o.Number)
+            .LeftJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { o.Number, Name = (string?)c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Left, OuterJoinRows.Sorted(left.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+        Assert.Equal(left.Select(r => r.Number).Order(StringComparer.Ordinal), left.Select(r => r.Number)); // the outer ordering kept
+
+        var right = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .RightJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { Number = (string?)o.Number, c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Right, OuterJoinRows.Sorted(right.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+
+        var full = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .FullJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { Number = (string?)o.Number, Name = (string?)c.Name })
+            .ToListAsync();
+        Assert.Equal(expected.Full, OuterJoinRows.Sorted(full.Select(r => OuterJoinRows.Row(r.Number, r.Name))));
+
+        var page = await session.Query<OrderDocument>().Where(o => o.Number.StartsWith(OuterJoinRows.Prefix))
+            .FullJoin(session.Query<CustomerDocument>().Where((c, k) => c.Country == k, country), o => o.CustomerId, c => c.Id, (o, c) => new { Number = (string?)o.Number, Name = (string?)c.Name })
+            .Skip(3).Take(expected.Full.Count - 4).ToListAsync();
+        Assert.Equal(expected.Full.Count - 4, page.Count); // Skip and Take page the joined rows, the unmatched ones of both sides among them
+    }
 }

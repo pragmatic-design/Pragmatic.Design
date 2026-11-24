@@ -32,7 +32,7 @@ internal sealed class DocStep
     public bool UsesSlot => TakesArg || Name is "Select" or "After" or "Matching" or "OrderedBy";
 
     /// <summary>The slots the step takes: a Join four (the inner chain, the two key selectors, the result selector), another one or none.</summary>
-    public int Slots => Name == "Join" ? 4 : UsesSlot ? 1 : 0;
+    public int Slots => DocCall.IsJoin(Name) ? 4 : UsesSlot ? 1 : 0;
 }
 
 /// <summary>A call on a <c>DocQuery&lt;T&gt;</c> with its chain walked back to <c>session.Query&lt;T&gt;()</c>.</summary>
@@ -40,7 +40,7 @@ internal sealed class DocCall
 {
     public const string QueryType = "Pragmatic.Persistence.Documents.DocQuery<T>";
     public const string SessionType = "Pragmatic.Persistence.Documents.DocSession";
-    public static readonly HashSet<string> Operators = ["Where", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "Select", "After", "GroupBy", "SelectMany", "Join", "Matching", "OrderedBy"];
+    public static readonly HashSet<string> Operators = ["Where", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "Select", "After", "GroupBy", "SelectMany", "Join", "LeftJoin", "RightJoin", "FullJoin", "Matching", "OrderedBy"];
     public static readonly HashSet<string> Terminals = ["ToListAsync", "FirstOrDefaultAsync", "CountAsync", "AnyAsync", "MaxAsync", "MinAsync", "SumAsync", "ExecuteDeleteAsync", "ExecuteUpdateAsync"];
 
     private DocCall(InvocationExpressionSyntax invocation, SemanticModel model, IMethodSymbol method, INamedTypeSymbol? entity, ITypeSymbol element, List<DocStep> before)
@@ -69,6 +69,9 @@ internal sealed class DocCall
     public List<DocStep> Before { get; }
 
     public string Name => Method.Name;
+
+    /// <summary>An explicit join of another collection's chain: the inner one, or an outer one that keeps a side's documents without a match.</summary>
+    public static bool IsJoin(string name) => name is "Join" or "LeftJoin" or "RightJoin" or "FullJoin";
 
     public bool IsTerminal => Terminals.Contains(Name);
 

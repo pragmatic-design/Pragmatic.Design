@@ -26,6 +26,10 @@ public static partial class DocExecution
         var outerKey = (Func<TOuter, TKey>)query.Slot(join.Slot + 1)!;
         var innerKey = (Func<TInner, TKey>)query.Slot(join.Slot + 2)!;
         var result = (Func<TOuter, TInner, TResult>)query.Slot(join.Slot + 3)!;
+        if (join.Kind != DocJoinKind.Inner)
+            return query.Session.Cosmos is not null
+                ? await CosmosOuterJoinAsync(query, plan, join, inner, outerKey, innerKey, ct).ConfigureAwait(false)
+                : await MongoOuterJoinAsync(query, plan, join, inner, ct).ConfigureAwait(false);
         if (query.Session.Cosmos is not null)
             return await CosmosJoinAsync(query, plan, join, inner, outerKey, innerKey, result, ct).ConfigureAwait(false);
 
@@ -110,30 +114,9 @@ public static partial class DocExecution
         foreach (var outer in outers)
             keys.Add(outerKey(outer));
 
-        var w = Json(out var buffer);
-        w.WriteStartObject();
-        var filters = query.Session.Filters;
-        var leaves = new List<(DocCompiledPredicate Leaf, object?[] Values, string Prefix)>();
-        w.WriteString("query", DocFamilies.CosmosText<TInner>(join.CosmosText + DocFamilies.AndMarker, filters, null, leaves)); // the joined side's families after its WHERE
-        w.WriteStartArray("parameters");
-        join.CosmosParameters?.Invoke(w, inner.SlotArray);
-        DocFamilies.CosmosParameters<TInner>(w, filters, leaves);
-        w.WriteStartObject();
-        w.WriteString("name", "@__keys");
-        w.WriteStartArray("value");
-        foreach (var key in keys)
-            WriteKey(w, key);
-        w.WriteEndArray();
-        w.WriteEndObject();
-        w.WriteEndArray();
-        w.WriteEndObject();
-        w.Flush();
-        var body = buffer.WrittenSpan.ToArray();
-
         var matches = new Dictionary<TKey, List<TInner>>();
-        await foreach (var document in query.Session.CosmosClient.QueryAsync(query.Session.Database, TInner.Collection, body, DocFamilies.Partition<TInner>(filters), null, ct).ConfigureAwait(false))
+        foreach (var each in await CosmosInnersAsync(query, join, inner, join.CosmosText + DocFamilies.AndMarker, keys, ct).ConfigureAwait(false))
         {
-            var each = TInner.ReadJson(document);
             var key = innerKey(each);
             if (!matches.TryGetValue(key, out var list))
                 matches[key] = list = [];
@@ -161,6 +144,44 @@ public static partial class DocExecution
         }
 
         return results;
+    }
+
+    /// <summary>
+    ///     The inner documents of a join on Cosmos DB, in the order they come: those <paramref name="text" /> selects (the inner chain's conditions
+    ///     and the joined side's families), and only those whose key is among <paramref name="keys" /> when there are keys (<c>@__keys</c>).
+    /// </summary>
+    private static async ValueTask<List<TInner>> CosmosInnersAsync<TResult, TInner, TKey>(DocQuery<TResult> query, DocJoin<TInner> join, DocQuery<TInner> inner, string text,
+        HashSet<TKey>? keys, CancellationToken ct)
+        where TInner : IDocumentEntity<TInner>
+    {
+        var w = Json(out var buffer);
+        w.WriteStartObject();
+        var filters = query.Session.Filters;
+        var leaves = new List<(DocCompiledPredicate Leaf, object?[] Values, string Prefix)>();
+        w.WriteString("query", DocFamilies.CosmosText<TInner>(text, filters, null, leaves));
+        w.WriteStartArray("parameters");
+        join.CosmosParameters?.Invoke(w, inner.SlotArray);
+        DocFamilies.CosmosParameters<TInner>(w, filters, leaves);
+        if (keys is not null)
+        {
+            w.WriteStartObject();
+            w.WriteString("name", "@__keys");
+            w.WriteStartArray("value");
+            foreach (var key in keys)
+                WriteKey(w, key);
+            w.WriteEndArray();
+            w.WriteEndObject();
+        }
+
+        w.WriteEndArray();
+        w.WriteEndObject();
+        w.Flush();
+        var body = buffer.WrittenSpan.ToArray();
+
+        var documents = new List<TInner>();
+        await foreach (var document in query.Session.CosmosClient.QueryAsync(query.Session.Database, TInner.Collection, body, DocFamilies.Partition<TInner>(filters), null, ct).ConfigureAwait(false))
+            documents.Add(TInner.ReadJson(document));
+        return documents;
     }
 
     /// <summary>A key as the documents' JSON holds it: a Guid as its text (the id's form), a number or a text as it is.</summary>

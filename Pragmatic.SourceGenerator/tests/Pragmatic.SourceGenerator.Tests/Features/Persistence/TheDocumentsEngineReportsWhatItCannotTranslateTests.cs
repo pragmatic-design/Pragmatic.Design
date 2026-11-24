@@ -69,6 +69,74 @@ public class TheDocumentsEngineReportsWhatItCannotTranslateTests
         result.Diagnostics.Count(d => d.Id == "PRAG3199").Should().Be(11, "one translated terminal per line above");
     }
 
+    private const string Stock = """
+
+        [Document("stocks")]
+        public sealed partial class Stock
+        {
+            [Key] public Guid Id { get; set; }
+            public Guid ItemId { get; set; }
+            public int Count { get; set; }
+            public string Place { get; set; } = "";
+        }
+        """;
+
+    [Fact]
+    public void TheOuterJoins_CompileWithTheMissingSideReadAsNull()
+    {
+        var result = Run(Model + Stock + """
+
+            public static class Reads
+            {
+                public static async Task Run(DocSession session)
+                {
+                    await session.Query<Item>().Where(i => i.Price > 1m).OrderBy(i => i.Name).LeftJoin(session.Query<Stock>(), i => i.Id, s => s.ItemId, (i, s) => new { i.Name, Count = (int?)s.Count, s.Place }).ToListAsync();
+                    await session.Query<Item>().RightJoin(session.Query<Stock>().Where(s => s.Count > 0), i => i.Id, s => s.ItemId, (i, s) => new { Name = i.Name, Price = (decimal?)i.Price, s.Count }).Take(5).ToListAsync();
+                    await session.Query<Item>().FullJoin(session.Query<Stock>(), i => i.Id, s => s.ItemId, (i, s) => new { Item = i, Stock = s, Place = s.Place }).Skip(1).ToListAsync();
+                }
+            }
+            """);
+
+        Errors(result.Diagnostics).Should().BeEmpty("each outer join above reads its missing side's members as nullable");
+        GeneratorTestHelper.GetCompilationErrors(result).Select(d => d.ToString()).Should().BeEmpty("the generated results compile");
+        var interceptors = GeneratorTestHelper.GetGeneratedSourcesAsDictionary(result).Single(s => s.Key == "_Infra.Documents.Interceptors.g.cs").Value;
+        interceptors.Should().Contain("Count = (int?)s?.Count", "the missing side is read through a null-conditional access");
+        interceptors.Should().Contain("Price = (decimal?)i?.Price", "a RightJoin's outer side may be missing");
+    }
+
+    [Fact]
+    public void AValueMemberOfTheSideThatMayBeMissing_NotNullable_IsPrag3101WithTheCast()
+    {
+        var result = Run(Model + Stock + """
+
+            public static class Reads
+            {
+                public static Task Run(DocSession session)
+                    => session.Query<Item>().LeftJoin(session.Query<Stock>(), i => i.Id, s => s.ItemId, (i, s) => new { i.Name, s.Count }).ToListAsync().AsTask();
+            }
+            """);
+
+        var errors = result.Diagnostics.Where(d => d.Id == "PRAG3101").ToList();
+        errors.Count.Should().Be(1);
+        errors[0].GetMessage().Should().Contain("((int?)s.Count)", "the remedy is the cast to the nullable type");
+    }
+
+    [Fact]
+    public void AnOrderingBeforeARightJoin_IsPrag3101()
+    {
+        var result = Run(Model + Stock + """
+
+            public static class Reads
+            {
+                public static Task Run(DocSession session)
+                    => session.Query<Item>().OrderBy(i => i.Name).RightJoin(session.Query<Stock>(), i => i.Id, s => s.ItemId, (i, s) => new { Name = (string?)i.Name, s.Count }).ToListAsync().AsTask();
+            }
+            """);
+
+        result.Diagnostics.Where(d => d.Id == "PRAG3101").Select(d => d.GetMessage()).Should().ContainSingle()
+            .Which.Should().Contain("a RightJoin takes no ordering");
+    }
+
     [Fact]
     public void AnExpressionOutsideTheSubset_IsPrag3101()
     {

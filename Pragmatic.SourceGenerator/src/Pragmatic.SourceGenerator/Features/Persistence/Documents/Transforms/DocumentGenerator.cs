@@ -140,7 +140,7 @@ internal static partial class DocumentGenerator
         var name = call.Name;
         var slot = call.NextSlot;
         var overGroups = call.Before.Any(s => s.Name == "GroupBy") && call.Before.Any(s => s.Name == "Select") && name is "Where" or "OrderBy" or "OrderByDescending" or "ThenBy" or "ThenByDescending";
-        if (call.Before.Any(s => s.Name is "Select" or "SelectMany" or "Join") && name != "Select" && !overGroups)
+        if (call.Before.Any(s => s.Name is "Select" or "SelectMany" || DocCall.IsJoin(s.Name)) && name != "Select" && !overGroups)
         {
             diagnostics.Add(Diagnostic.Create(DocDiagnostics.Unsupported, call.Invocation.GetLocation(), name, "after a Select or a SelectMany only Skip, Take and the terminals: put the filter and the ordering before it"));
             return null;
@@ -151,9 +151,10 @@ internal static partial class DocumentGenerator
         DocumentInterceptorModel Method(string returns, string typeParameters, string parameters, string body) => new(attribute, returns, name, index, typeParameters, parameters, body);
         if (name == "Select")
             return Method($"{Query}<TResult>", "<TSource, TResult>", $"this in {Query}<TSource> q, global::System.Func<TSource, TResult> selector", $"q.WithSlot({slot}, selector).As<TResult>()");
-        if (name == "Join")
+        if (DocCall.IsJoin(name))
         {
-            // The plan reads the lambdas and the inner chain's source; the chain stores the inner chain (its own slots), the two keys and the result.
+            // The plan reads the lambdas and the inner chain's source; the chain stores the inner chain (its own slots), the two keys and the result
+            // (an outer join's plan builds its rows with a result of its own, which reads the side that may be missing as null).
             return Method($"{Query}<TResult>", "<TOuter, TInner, TKey, TResult>",
                 $"this in {Query}<TOuter> q, {Query}<TInner> inner, global::System.Func<TOuter, TKey> outerKey, global::System.Func<TInner, TKey> innerKey, global::System.Func<TOuter, TInner, TResult> result",
                 $"q.WithSlot({slot}, inner).WithSlot({slot + 1}, outerKey).WithSlot({slot + 2}, innerKey).WithSlot({slot + 3}, result).As<TResult>()");

@@ -84,6 +84,25 @@ public readonly struct DocQuery<T>
     public DocQuery<TResult> Join<TInner, TKey, TResult>(DocQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(Join));
 
     /// <summary>
+    ///     A <see cref="Join{TInner, TKey, TResult}" /> that keeps each document of this chain without a match, its inner side null: the result is
+    ///     a new object of the two sides' fields, and a field of the inner side reads as null where there is none (cast a value to its nullable
+    ///     type, <c>(int?)c.Count</c>). This chain's ordering is kept; then Skip, Take and ToListAsync.
+    /// </summary>
+    public DocQuery<TResult> LeftJoin<TInner, TKey, TResult>(DocQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(LeftJoin));
+
+    /// <summary>
+    ///     A join that keeps each document of <paramref name="inner" /> without a match, this chain's side null (its fields read as null: cast a
+    ///     value to its nullable type). This chain's Wheres pick the documents that may match; it takes no ordering.
+    /// </summary>
+    public DocQuery<TResult> RightJoin<TInner, TKey, TResult>(DocQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(RightJoin));
+
+    /// <summary>
+    ///     A join that keeps the documents of both chains without a match, the other side null (the fields of both sides read as null: cast a
+    ///     value to its nullable type): the pairs and this chain's documents alone first, then the inner chain's alone. It takes no ordering.
+    /// </summary>
+    public DocQuery<TResult> FullJoin<TInner, TKey, TResult>(DocQuery<TInner> inner, Func<T, TKey> outerKey, Func<TInner, TKey> innerKey, Func<T, TInner, TResult> result) => throw NotTranslated(nameof(FullJoin));
+
+    /// <summary>
     ///     The elements of an embedded list of each document the chain selects (<c>o => o.Lines</c>), in the documents' order: then Skip, Take
     ///     and ToListAsync. MongoDB unwinds the list in an aggregate, Cosmos DB joins it in the query.
     /// </summary>
