@@ -1,0 +1,15 @@
+<Project>
+
+  <!-- Shipped as buildTransitive: reaches every project that references the package, directly or not.
+
+       Native AOT compiles for x86-64-v2 unless told otherwise, and resolves Avx2.IsSupported at compile
+       time: on that baseline every AVX2 path of this library is dropped from the binary and Vector<T> is
+       128 bits wide (the spike measured the same upload path at 32.6 ms on v2 and 27.4 ms on v3, one run
+       each, 2026-10-17). x86-64-v3 is AVX2 + FMA + BMI, every x64 processor since 2013.
+       A consumer who targets older hardware, or wants the choice, sets IlcInstructionSet before this
+       file is read and keeps it. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(IlcInstructionSet)' == '' and ('$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'linux-musl-x64')">
+    <IlcInstructionSet>x86-64-v3</IlcInstructionSet>
+  </PropertyGroup>
+
+</Project>

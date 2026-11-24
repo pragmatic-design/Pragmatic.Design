@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(PragmaticAotSmokeTarget)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsSample>true</IsSample>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Prove that the managed codecs run Native AOT, with their vector paths alive. -->
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
+  </ItemGroup>
+
+  <!-- The package ships this file as buildTransitive; a project reference does not carry it, so the smoke
+       imports it as a consumer of the package would get it, and proves what it sets. -->
+  <Import Project="..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging.Codecs\build\Pragmatic.Imaging.Codecs.targets" />
+
+</Project>

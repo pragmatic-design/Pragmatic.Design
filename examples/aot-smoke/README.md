@@ -1,10 +1,11 @@
 ﻿# Pragmatic AOT smoke
 
-Native AOT checks for the serialization seam, the HTTP path, logging, persistence, a composed host and the message
-bus. Ten samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four
-are described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
+Native AOT checks for the serialization seam, the HTTP path, logging, persistence, a composed host, the message
+bus and the image codecs. Eleven samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`).
+The first four are described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
 [8](#8-one-composed-host-pragmaticaothost), the message bus in [9](#9-the-in-memory-message-bus-pragmaticaotmessaging), the composed
-host on the documents engine in [10](#10-the-composed-host-on-the-documents-engine-pragmaticaothostdocuments).
+host on the documents engine in [10](#10-the-composed-host-on-the-documents-engine-pragmaticaothostdocuments), the image codecs
+in [11](#11-the-managed-image-codecs-pragmaticaotcodecs).
 
 **Where they run:** in CI, the `Native AOT smokes` job of `ci.yml` on `ubuntu-latest`, on every pull request and merge
 group whose scope is `full` and on every push to `main`. A release runs `ci.yml` before `pack` (`release.yml`), so a
@@ -217,6 +218,22 @@ Sample 8 on MongoDB (in Docker, started by the script as sample 6 does):
 
 The publish is warning-free, against a budget of **0**, as sample 8's (#980).
 
+## 11. The managed image codecs (`Pragmatic.Aot.Codecs`)
+
+```pwsh
+pwsh examples/aot-smoke/publish-and-smoke-codecs.ps1
+```
+
+A server's upload path on `Pragmatic.Imaging.Codecs`, published Native AOT with IL2026/IL3050 as errors: a 2048 × 1536 image
+encoded as JPEG, identified, decoded at the scale that covers a 400 × 300 thumbnail, resized to it, encoded as PNG and read back
+pixel for pixel, and a QR code. Each check prints `ok` or `FAIL`; the last line is `AOT-CODECS-OK` only when all pass.
+
+On x64 it also checks `Avx2.IsSupported`. Native AOT resolves it at compile time, and compiles for x86-64-v2 unless told
+otherwise, so on that default every AVX2 path of the codecs drops out of the binary. The package ships a `buildTransitive` targets
+file that sets x86-64-v3; a project reference does not carry it, so the smoke imports the file as a package consumer would get it.
+Without the import ILC is run with no `--instruction-set` and the check fails; with it, `--instruction-set:x86-64-v3` and the check
+passes (#983).
+
 ## Requirements
 
 The native toolchain for the target RID:
@@ -253,6 +270,7 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ proven, sample 8: 201, 200, 401 and 403 from the native binary, an enum by its name, and a publish with 0 trim/AOT warnings (#857, #858, #859) |
 | The same **composed host on the documents engine** works under AOT | ✅ proven, sample 10: sample 8's five checks over MongoDB, the documents schema applied at start, and a publish with 0 trim/AOT warnings (#980) |
 | The **in-memory message bus** dispatches to a generated handler under AOT | ✅ proven, sample 9, with 0 trim/AOT warnings (#869) |
+| The **managed image codecs** run under AOT with their vector paths alive | ✅ proven, sample 11: JPEG, PNG, resize and QR, with 0 trim/AOT warnings and AVX2 on (#983) |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
 | EF Core | out of scope, stated: the JIT option |
 

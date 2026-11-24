@@ -49,6 +49,11 @@ export const SUITES = [
     command: [],
   },
   {
+    name: 'Imaging',
+    project: 'Pragmatic.Imaging/benchmarks/Pragmatic.Imaging.Benchmarks/Pragmatic.Imaging.Benchmarks.csproj',
+    command: [],
+  },
+  {
     name: 'Persistence',
     project: 'Pragmatic.Persistence/benchmarks/Pragmatic.Persistence.Benchmarks/Pragmatic.Persistence.Benchmarks.csproj',
     command: [],

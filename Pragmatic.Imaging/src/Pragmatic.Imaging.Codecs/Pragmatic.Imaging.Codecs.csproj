@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Managed image codecs and transforms (JPEG, PNG, resampling) and barcode symbologies (QR, Code 128, Code 39, EAN): the low-level layer under Pragmatic.Imaging and Pragmatic.Documents.Pdf. No native library.</Description>
+    <PackageTags>imaging;jpeg;png;resize;qr;barcode;codec;managed;aot</PackageTags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- The AOT instruction-set default travels with the package: see the file for why. -->
+  <ItemGroup>
+    <None Include="build\Pragmatic.Imaging.Codecs.targets" Pack="true" PackagePath="buildTransitive\Pragmatic.Imaging.Codecs.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pragmatic.Imaging.Codecs.Tests" />
+    <!-- The stage benchmarks time the decoder's parts one by one. -->
+    <InternalsVisibleTo Include="Pragmatic.Imaging.Benchmarks" />
+  </ItemGroup>
+
+</Project>

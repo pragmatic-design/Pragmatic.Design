@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ExcludeSharedTesting>true</ExcludeSharedTesting>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- The pool test compares raw pointers. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
+  </ItemGroup>
+
+  <!-- The oracles: an independent codec that reads what we write and writes what we read, and an
+       independent barcode reader. Test-only. -->
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="ZXing.Net" />
+  </ItemGroup>
+
+</Project>
