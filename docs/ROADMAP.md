@@ -35,8 +35,9 @@ criteria; the beta ships when they are closed.
   decided first.
 - **The engines level with EF Core** (#819): what the Sql and documents engines do not cover is measured,
   then closed. Every Showcase test runs on both engines, or names the issue that says why not.
-- **One composed host under Native AOT** (#818): a smoke that publishes a host serving endpoints and
-  writing through the Sql engine. Until it is green, AOT is claimed per piece, not per application.
+- **One composed host under Native AOT** (#818): done on the Sql engine, a smoke that publishes a host
+  serving endpoints and writing through it with 0 trim/AOT warnings. On the documents engine, AOT is still
+  claimed per piece, not per application (#980).
 - **Where other libraries do better:** an analysis of its own, to come. Each module is compared with the
   libraries an application would otherwise use, and what they do better is refined here, generated rather
   than reflected.
