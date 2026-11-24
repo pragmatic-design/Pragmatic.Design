@@ -16,9 +16,9 @@ public sealed class AnAgentPicksItsOwnGossipPortTests
     [Fact]
     public async Task TwoAgentsStartedAtOnce_ReportDistinctPorts_AndAThirdJoinsTheFirstAtItsReportedOne()
     {
-        var starting = new[] { AgentProcess.StartAsync(GossipKey), AgentProcess.StartAsync(GossipKey) };
-        await using var first = await starting[0];
-        await using var second = await starting[1];
+        var started = await AgentProcess.TogetherAsync(AgentProcess.StartAsync(GossipKey), AgentProcess.StartAsync(GossipKey));
+        await using var first = started[0];
+        await using var second = started[1];
 
         first.GossipPort.Should().BeGreaterThan(0);
         second.GossipPort.Should().BeGreaterThan(0);

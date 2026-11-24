@@ -18,15 +18,17 @@ internal sealed class AgentProcess : IAsyncDisposable
     private const string GossipPortLine = "Gossip port: ";
 
     private readonly Process _process;
+    private readonly Task _exited;
     private readonly StringBuilder _output;
     private readonly string _dataDirectory;
 
-    private AgentProcess(int gossipPort, string socketPath, string dataDirectory, Process process, StringBuilder output)
+    private AgentProcess(int gossipPort, string socketPath, string dataDirectory, Process process, Task exited, StringBuilder output)
     {
         GossipPort = gossipPort;
         SocketPath = socketPath;
         _dataDirectory = dataDirectory;
         _process = process;
+        _exited = exited;
         _output = output;
     }
 
@@ -39,8 +41,39 @@ internal sealed class AgentProcess : IAsyncDisposable
     /// <summary>What the daemon printed, for a failure message.</summary>
     public string Output => Text(_output);
 
-    /// <summary>Starts a daemon on an ephemeral gossip port, joining <paramref name="peer" /> when given.</summary>
-    public static async Task<AgentProcess> StartAsync(string gossipKey, AgentProcess? peer = null)
+    /// <summary>Whether the daemon's process has exited; still readable once this is disposed.</summary>
+    public bool HasExited => _exited.IsCompletedSuccessfully;
+
+    /// <summary>
+    ///     Awaits daemons started at once; when one fails to start, stops every one that did before
+    ///     the failure propagates.
+    /// </summary>
+    /// <remarks>
+    ///     A daemon nobody disposes outlives the test host and holds the pipes it inherited from it, and
+    ///     the gate waits for those to close: <c>await using var a = await x; await using var b = await y;</c>
+    ///     leaks <c>y</c> when <c>x</c> throws.
+    /// </remarks>
+    public static async Task<AgentProcess[]> TogetherAsync(params Task<AgentProcess>[] starting)
+    {
+        try
+        {
+            return await Task.WhenAll(starting);
+        }
+        catch
+        {
+            // WhenAll has let every start finish, so each one that succeeded is here to stop.
+            foreach (var start in starting)
+                if (start.IsCompletedSuccessfully)
+                    await start.Result.DisposeAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    ///     Starts a daemon on an ephemeral gossip port, joining <paramref name="peer" /> when given;
+    ///     <paramref name="portArgument" /> is what <c>--port</c> receives.
+    /// </summary>
+    public static async Task<AgentProcess> StartAsync(string gossipKey, AgentProcess? peer = null, string portArgument = "0")
     {
         var dataDirectory = Path.Combine(Path.GetTempPath(), "agent-process-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dataDirectory);
@@ -73,7 +106,7 @@ internal sealed class AgentProcess : IAsyncDisposable
         start.ArgumentList.Add("--bind");
         start.ArgumentList.Add("127.0.0.1");
         start.ArgumentList.Add("--port");
-        start.ArgumentList.Add("0");
+        start.ArgumentList.Add(portArgument);
         start.ArgumentList.Add("--gossip-key");
         start.ArgumentList.Add(gossipKey);
         if (peer is not null)
@@ -105,22 +138,28 @@ internal sealed class AgentProcess : IAsyncDisposable
         {
             if (line.Data is not null) lock (output) output.AppendLine(line.Data);
         };
-        process.Exited += (_, _) => ready.TrySetException(new InvalidOperationException(
-            $"The Agent exited before it was ready:{Environment.NewLine}{Text(output)}"));
-
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
+        // WaitForExitAsync completes once the output has been read to its end too, which Exited does not
+        // wait for: a message composed at Exited can miss everything the daemon printed before it exited.
+        var exited = process.WaitForExitAsync();
+        Task first;
         try
         {
-            await ready.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            first = await Task.WhenAny(ready.Task, exited).WaitAsync(TimeSpan.FromSeconds(30));
         }
         catch (TimeoutException)
         {
             process.Kill(entireProcessTree: true);
+            await exited;
             throw new TimeoutException($"The Agent did not say it was ready within 30s:{Environment.NewLine}{Text(output)}");
         }
+
+        if (first == exited && !ready.Task.IsCompleted)
+            throw new InvalidOperationException(
+                $"The Agent exited with code {process.ExitCode} before it was ready:{Environment.NewLine}{Text(output)}");
 
         var reported = Volatile.Read(ref gossipPort);
         if (reported == 0)
@@ -130,16 +169,13 @@ internal sealed class AgentProcess : IAsyncDisposable
                 $"The Agent was ready without reporting the gossip port it bound:{Environment.NewLine}{Text(output)}");
         }
 
-        return new AgentProcess(reported, socketPath, dataDirectory, process, output);
+        return new AgentProcess(reported, socketPath, dataDirectory, process, exited, output);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (!_process.HasExited)
-        {
-            _process.Kill(entireProcessTree: true);
-            await _process.WaitForExitAsync();
-        }
+        if (!_process.HasExited) _process.Kill(entireProcessTree: true);
+        await _exited;
 
         _process.Dispose();
 
