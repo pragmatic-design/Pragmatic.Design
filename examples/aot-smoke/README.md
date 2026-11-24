@@ -1,9 +1,10 @@
 ﻿# Pragmatic AOT smoke
 
 Native AOT checks for the serialization seam, the HTTP path, logging, persistence, a composed host and the message
-bus. Nine samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four
+bus. Ten samples, each published Native AOT and run by the gate (`node scripts/check.mjs --tier aot`). The first four
 are described here; the persistence ones in [5–7](#5-7-persistence-on-the-engines), the composed host in
-[8](#8-one-composed-host-pragmaticaothost), the message bus in [9](#9-the-in-memory-message-bus-pragmaticaotmessaging).
+[8](#8-one-composed-host-pragmaticaothost), the message bus in [9](#9-the-in-memory-message-bus-pragmaticaotmessaging), the composed
+host on the documents engine in [10](#10-the-composed-host-on-the-documents-engine-pragmaticaothostdocuments).
 
 **Where they run:** in CI, the `Native AOT smokes` job of `ci.yml` on `ubuntu-latest`, on every pull request and merge
 group whose scope is `full` and on every push to `main`. A release runs `ci.yml` before `pack` (`release.yml`), so a
@@ -198,6 +199,24 @@ was `PublishAsync((dynamic)message, …)`, unguarded: it compiled C#'s runtime b
 six warnings the composed host had for the same reason in the event dispatcher. It is now behind `RuntimeFeature.IsDynamicCodeSupported`
 (#869).
 
+## 10. The composed host on the documents engine (`Pragmatic.Aot.HostDocuments`)
+
+```pwsh
+pwsh examples/aot-smoke/publish-and-smoke-host-documents.ps1
+```
+
+Sample 8 on MongoDB (in Docker, started by the script as sample 6 does):
+- **The module** (`Pragmatic.Aot.HostDocuments.Notes`): sample 8's, compiled from the same files, with its boundary on the documents
+  engine. That boundary is the one file of its own, and an index on the note's kind (`Note.Index.cs`).
+- **The host:** includes the module on its database, which the topology names as on the Showcase's documents host: the connection string
+  is MongoDB's, the database named in its path. Pragmatic Migrations, with no SQL driver referenced, has the generated start apply the
+  boundary's documents schema.
+- **The checks:** sample 8's five, from the same `SmokeClient`, and a sixth once the host has stopped: a second `EnsureAsync` of the
+  boundary's schema finds it unchanged. A write creates the collection but not its index, so only the host's start can have applied it;
+  without `UsePragmaticMigrations` that check fails, on both targets.
+
+The publish is warning-free, against a budget of **0**, as sample 8's (#980).
+
 ## Requirements
 
 The native toolchain for the target RID:
@@ -232,6 +251,7 @@ publishes with **0 IL2026/IL3050 warnings** and passes in both modes.
 | Persistence on the **documents engine** works under AOT | ✅ proven, sample 6 |
 | **Two boundaries on two engines** in one process | ✅ proven, sample 7 |
 | **One composed host** (endpoints, writes through an engine, migrations) works under AOT | ✅ proven, sample 8: 201, 200, 401 and 403 from the native binary, an enum by its name, and a publish with 0 trim/AOT warnings (#857, #858, #859) |
+| The same **composed host on the documents engine** works under AOT | ✅ proven, sample 10: sample 8's five checks over MongoDB, the documents schema applied at start, and a publish with 0 trim/AOT warnings (#980) |
 | The **in-memory message bus** dispatches to a generated handler under AOT | ✅ proven, sample 9, with 0 trim/AOT warnings (#869) |
 | The **generated client SDK** is AOT-safe | ⚠️ it carries a JSON context, not yet proven by a smoke (see below) |
 | EF Core | out of scope, stated: the JIT option |

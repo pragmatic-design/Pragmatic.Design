@@ -93,5 +93,5 @@ In short: **reflection-free in the core**; full AOT is reachable on the JSON bou
 | Standard JIT build/run | ✅ fully supported |
 | `PublishTrimmed` | ⚠️ check E2E; some modules use reflection |
 | JSON boundaries with the generated context (opt-in) | ✅ AOT-clean on the covered types (message/job/event/saga/mapping DTO) |
-| End-to-end Native AOT | ✅ one composed host on the Sql engine, 0 trim/AOT warnings (`examples/aot-smoke`, sample 8); ⚠️ elsewhere reachable by covering the JSON boundaries; SignalR + deferred types remain |
+| End-to-end Native AOT | ✅ one composed host on the Sql engine and on the documents engine, 0 trim/AOT warnings (`examples/aot-smoke`, samples 8 and 10); ⚠️ elsewhere reachable by covering the JSON boundaries; SignalR + deferred types remain |
 | SG-driven core (Actions/Persistence/...) | ✅ the generated code and what consumes it; the «the SG registered nothing» fallbacks are reflective and annotated |

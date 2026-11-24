@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>$(PragmaticAotSmokeTarget)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsSample>true</IsSample>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- The question this project answers: is a composed Pragmatic application on the documents engine a Native AOT application? The
+         composed-host smoke (Pragmatic.Aot.Host) on MongoDB: the generated host entry point, the module's exposed mutation and query over
+         HTTP, the boundary's documents schema applied at start, an authenticated caller, all published Native AOT. The trim and AOT
+         warnings of the publish are counted against a budget of 0 by publish-and-smoke-host-documents.ps1. -->
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- Every other warning is an error; the IL ones stay warnings (WarningsNotAsErrors, Directory.Build.props), hence the budget. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- CA2007: a console program has no SynchronizationContext to leave. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- Read the implicit usings of the Pragmatic projects referenced, as an application gets them from the packages. -->
+    <PragmaticInRepoImplicitUsings>true</PragmaticInRepoImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Aot.HostDocuments.Notes\Pragmatic.Aot.HostDocuments.Notes.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Mongo\Pragmatic.Persistence.Documents.Mongo.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition\Pragmatic.Composition.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Composition\src\Pragmatic.Composition.Host\Pragmatic.Composition.Host.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Identity\src\Pragmatic.Identity.AspNetCore\Pragmatic.Identity.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Authorization\src\Pragmatic.Authorization\Pragmatic.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Migrations\src\Pragmatic.Migrations\Pragmatic.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Sql smoke's caller, compiled here as it is there: the same checks against the host on the other engine. -->
+    <Compile Include="..\Pragmatic.Aot.Host\SmokeClient.cs" Link="Shared\SmokeClient.cs" />
+  </ItemGroup>
+
+</Project>

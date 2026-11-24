@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The module of the composed-host smoke on the documents engine (Pragmatic.Aot.HostDocuments): the Notes module of
+       Pragmatic.Aot.Host.Notes, the same entity, mutation, query and DTO compiled from the same files, with its boundary on the
+       documents engine. The engine is the boundary's attribute, so the boundary is the one file of its own; the namespace stays the
+       module's, as the linked files name it. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(PragmaticAotSmokeTarget)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsSample>true</IsSample>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>Pragmatic.Aot.Host.Notes</RootNamespace>
+    <PragmaticGenerateJsonContext>true</PragmaticGenerateJsonContext>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Pragmatic.Persistence.Documents.Generated</InterceptorsNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Read the implicit usings of the Pragmatic projects referenced, as an application gets them from the packages. -->
+    <PragmaticInRepoImplicitUsings>true</PragmaticInRepoImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Pragmatic.Abstractions\src\Pragmatic.Abstractions\Pragmatic.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Result\src\Pragmatic.Result\Pragmatic.Result.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Ensure\src\Pragmatic.Ensure\Pragmatic.Ensure.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence\Pragmatic.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents.Core\Pragmatic.Persistence.Documents.Core.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Persistence\src\Pragmatic.Persistence.Documents\Pragmatic.Persistence.Documents.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Specification\src\Pragmatic.Specification\Pragmatic.Specification.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Mapping\src\Pragmatic.Mapping\Pragmatic.Mapping.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Validation\src\Pragmatic.Validation\Pragmatic.Validation.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Actions\src\Pragmatic.Actions\Pragmatic.Actions.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints\Pragmatic.Endpoints.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.Endpoints\src\Pragmatic.Endpoints.AspNetCore\Pragmatic.Endpoints.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\..\Pragmatic.SourceGenerator\src\Pragmatic.SourceGenerator\Pragmatic.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Sql smoke's module, compiled here as it is there: the same declarations on the other engine. -->
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\Note.cs" Link="Shared\Note.cs" />
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\NotesModule.cs" Link="Shared\NotesModule.cs" />
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\Dtos\NoteDto.cs" Link="Shared\Dtos\NoteDto.cs" />
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\Enums\NoteKind.cs" Link="Shared\Enums\NoteKind.cs" />
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\Mutations\CreateNoteMutation.cs" Link="Shared\Mutations\CreateNoteMutation.cs" />
+    <Compile Include="..\Pragmatic.Aot.Host.Notes\Queries\GetNoteQuery.cs" Link="Shared\Queries\GetNoteQuery.cs" />
+  </ItemGroup>
+
+</Project>
