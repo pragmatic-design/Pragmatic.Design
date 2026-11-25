@@ -269,6 +269,14 @@ a module's source, the shared code or a file every project is built with, throug
   operations the row was measured on.
   The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
   allocates less asks for the baseline to come down.
+  ⚠️ The figures are only as good as BenchmarkDotNet's reading of the runtime. A version that does not
+  recognise the runtime it runs on treats it as older than .NET Core 2.0 and reports 0 for every
+  measured iteration that allocates 8 KB or less: on 0.14.0, which stops at .NET 9, a row with a few
+  operations per iteration could allocate on every call and still read 0, and jumped when something else
+  in the process pushed it past 8 KB (#1012). `RUNTIMES_BY_BENCHMARKDOTNET` in `scripts/benchmarks.mjs`
+  holds the newest .NET each version used here recognises, read in its source, and a report outside it
+  fails the run. Moving the suites to a new .NET, or BenchmarkDotNet to a new version, means checking
+  `CoreRuntime.FromVersion` of that version and adding it there.
 - **Times never fail it.** A hosted runner varies by 10–20% from one run to the next, so times are
   not compared with a stored history: base and head run on the same VM, alternated suite by suite,
   and the job summary shows the ratio for each benchmark. For a branch, run the workflow on it with

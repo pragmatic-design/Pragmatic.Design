@@ -140,7 +140,9 @@
     <!-- net11.0 reference assemblies for generator tests: what the generator emits for a consumer that can see the
          .NET 11 APIs, from tests that run on net10.0 (#834). Test projects only. -->
     <PackageVersion Include="Basic.Reference.Assemblies.Net110" Version="1.8.15" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <!-- 0.15.8 is the first used here that recognises .NET 10: 0.14.0 reported 0 for any measured iteration allocating 8 KB
+         or less on it (#1012). RUNTIMES_BY_BENCHMARKDOTNET in scripts/benchmarks.mjs holds what each version recognises. -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- Benchmark comparison only (Pragmatic.Endpoints.Benchmarks): a tuned, non-generated JSON writer
          to measure the generated response writer against (#51). Apache-2.0. -->
     <PackageVersion Include="CAPCOM.REDox" Version="1.0.0" />

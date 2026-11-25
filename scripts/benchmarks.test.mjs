@@ -11,17 +11,19 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   BUILD_TIMEOUT_SECONDS,
+  KNOWN_BENCHMARKDOTNET,
   SUITES,
   suiteArgs,
   TOLERANCE_BYTES,
   abReport,
   allocationReport,
   allocationsFromJson,
+  blindReports,
   compareAllocations,
   operationsFromJson,
   parseTime,
@@ -277,4 +279,40 @@ test('every suite builds with the long timeout, whatever it filters', () => {
   }
 
   assert.equal(BUILD_TIMEOUT_SECONDS, 900, 'the owner\'s figure (#514): past 120 s, with room for the runner');
+});
+
+/**
+ * ⚠️ BenchmarkDotNet 0.14.0 does not know .NET 10: it classes it `NotRecognized`, which sorts before .NET Core 2.0, and applies that
+ * runtime's workaround, which reports 0 for every measured iteration allocating 8 KB or less. `Blur_Managed` allocated 1,592 B over 11
+ * operations and was reported as 0 (#1012). A report from a BenchmarkDotNet that does not know the runtime it ran on is refused.
+ */
+test('a report from a BenchmarkDotNet that does not know its runtime fails the ratchet', () => {
+  const report = (bdn, runtime) => {
+    const dir = mkdtempSync(join(tmpdir(), 'bench-runtime-'));
+    writeFileSync(join(dir, 'A.B-report-full-compressed.json'), JSON.stringify({
+      HostEnvironmentInfo: { BenchmarkDotNetVersion: bdn, RuntimeVersion: runtime },
+      Benchmarks: [{ FullName: 'A.B.Log', Memory: { BytesAllocatedPerOperation: 0, TotalOperations: 11 } }],
+    }));
+    return dir;
+  };
+
+  assert.deepEqual(blindReports(report('0.14.0', '.NET 10.0.15 (10.0.1526.53008)')), [
+    { report: 'A.B', benchmarkDotNet: '0.14.0', runtime: '.NET 10.0.15 (10.0.1526.53008)' },
+  ]);
+  assert.deepEqual(blindReports(report('0.14.0', '.NET 9.0.4 (9.0.425.16305)')), []);
+  assert.deepEqual(blindReports(report(KNOWN_BENCHMARKDOTNET, '.NET 10.0.15 (10.0.1526.53008)')), []);
+  assert.equal(blindReports(report(KNOWN_BENCHMARKDOTNET, '.NET 11.0.0 (11.0.25.1)')).length, 1, 'a runtime newer than the table says');
+  assert.equal(blindReports(report('9.9.9', '.NET 10.0.15 (10.0.1526.53008)')).length, 1, 'a version nobody checked');
+  assert.equal(blindReports(report(undefined, undefined)).length, 1, 'a report that does not say');
+
+  const result = compareAllocations({ 'A.B.Log': 0 }, { 'A.B.Log': 0 }, null, null, {}, [{ report: 'A.B', benchmarkDotNet: '0.14.0', runtime: '.NET 10.0.15' }]);
+  assert.equal(result.failed, true);
+  assert.match(allocationReport(result, 1), /does not know the runtime/);
+});
+
+test('the suites are on a BenchmarkDotNet that knows the runtime they run on', () => {
+  const props = readFileSync(new URL('../Directory.Packages.props', import.meta.url), 'utf8');
+  const version = /Include="BenchmarkDotNet" Version="([^"]+)"/.exec(props)?.[1];
+
+  assert.equal(version, KNOWN_BENCHMARKDOTNET);
 });
