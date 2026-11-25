@@ -1,20 +1,21 @@
 ---
 name: pragmatic-use-imaging
-description: Use when the app makes thumbnails, converts or resizes uploads, strips metadata, applies filters or renders QR codes (Pragmatic.Imaging, a native AOT-friendly binding, no ImageSharp or SkiaSharp).
+description: Use when the app makes thumbnails, converts or resizes uploads, strips metadata, applies filters or renders QR codes (Pragmatic.Imaging, AOT-friendly, managed for PNG and JPEG, no ImageSharp or SkiaSharp).
 ---
 
 # Pragmatic Use Imaging
 
-**Covers:** Server-side image processing with Pragmatic.Imaging: decode and encode PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF; resize, thumbnail, crop, rotate; filters, QR codes, EXIF stripping, upload limits. AOT-friendly native binding, no ImageSharp or SkiaSharp.
+**Covers:** Server-side image processing with Pragmatic.Imaging: decode and encode PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF; resize, thumbnail, crop, rotate; filters, QR codes, EXIF orientation and stripping, upload limits. AOT-friendly, no ImageSharp or SkiaSharp.
 
-`Pragmatic.Imaging` is a small managed binding over a Rust native library (built on the `image` crate).
-It gives server-side .NET code a predictable, AOT-friendly image pipeline without a heavy managed
-dependency. The core APIs are **static or fluent**, with no DI required.
+`Pragmatic.Imaging` is a small image pipeline: PNG, JPEG, every operation and QR codes run on its managed
+engine (`Pragmatic.Imaging.Codecs`); WebP, AVIF, GIF, BMP and TIFF still go through a Rust native library
+(built on the `image` crate). It gives server-side .NET code a predictable, AOT-friendly image pipeline
+without a heavy managed dependency. The core APIs are **static or fluent**, with no DI required.
 
 ## When to use
 
 - Thumbnailing / resizing / format-converting user uploads or stored images.
-- Stripping EXIF metadata (privacy) via re-encode.
+- Stripping EXIF metadata (privacy): a JPEG or PNG keeps its pixels byte for byte.
 - Inspecting an upload's dimensions/format cheaply **before** a full decode.
 - Applying filters (grayscale, blur, sharpen, brightness, contrast).
 - Generating QR code PNGs.
@@ -27,11 +28,12 @@ For PDF/DOCX/CSV/XLSX documents use `pragmatic-use-documents` instead; this modu
 dotnet add package Pragmatic.Imaging
 ```
 
-> **Platform note.** The NuGet ships native binaries for **`win-x64`**, **`linux-x64`** and **`osx-arm64`**
-> (the macOS one is built by CI and not yet exercised by a test on macOS); any other RID needs a
-> locally-built native library (see the module's `native-deployment.md`). The library requires
-> **glibc** on Linux (Alpine/musl is not supported). A missing native binary fails at first use with
-> `DllNotFoundException`.
+> **Platform note.** PNG, JPEG, the operations and QR codes need no native library. For WebP, AVIF,
+> GIF, BMP and TIFF the NuGet ships native binaries for **`win-x64`**, **`linux-x64`** and
+> **`osx-arm64`** (the macOS one is built by CI and not yet exercised by a test on macOS); any other RID
+> needs a locally-built native library (see the module's `native-deployment.md`). The library requires
+> **glibc** on Linux (Alpine/musl is not supported). A missing native binary fails at the first use of
+> one of those formats with `DllNotFoundException`.
 
 ## Core entry points
 
@@ -46,8 +48,9 @@ dotnet add package Pragmatic.Imaging
 
 ## Fluent pipeline
 
-Load once, chain transforms, encode. **Always `using`**: the pipeline owns native memory. `Encode`
-does *not* dispose the pipeline, so you can encode several formats from one state.
+Load once, chain transforms, encode. **Always `using`**: the pipeline owns its pixels in native memory.
+`Encode` does *not* dispose the pipeline, so you can encode several formats from one state. A JPEG or PNG
+loads **upright**: its EXIF orientation is applied, and `Width`/`Height` are the shown size.
 
 ```csharp
 using Pragmatic.Imaging;
@@ -78,7 +81,7 @@ byte[] thumb = await ImageConverter.ThumbnailAsync(bytes, maxWidth: 400, maxHeig
                                                    format: ImageFormat.Jpeg, quality: 90);
 byte[] webp  = await ImageConverter.ConvertAsync(bytes, ImageFormat.WebP);
 byte[] fixed = ImageConverter.Resize(bytes, 1024, 768);
-byte[] clean = ImageConverter.StripExif(bytes);   // drop metadata by re-encoding (lossy for JPEG)
+byte[] clean = ImageConverter.StripExif(bytes);   // drop EXIF/XMP; JPEG/PNG not re-encoded, orientation kept
 ```
 
 ## Inspect before decoding (upload validation)
@@ -140,7 +143,7 @@ byte[] qr = QrCode.GeneratePng("https://example.com/pay/INV-2026-0001", moduleSi
 QrCode.GeneratePng("payload", output: stream);
 ```
 
-Always PNG, black on white, Medium error-correction. No colour/logo/ECC tuning.
+Always PNG, black on white, Medium error-correction, UTF-8 byte mode (up to 2,331 bytes). No colour/logo/ECC tuning.
 
 ## Error handling
 
@@ -160,8 +163,8 @@ catch (ImagingException ex) when (ex.Reason is ImagingError.MaxMegapixelsExceede
 
 `ImagingError`: `DecodeFailed`, `EncodeFailed`, `UnsupportedFormat`, `InputTooLarge`,
 `MaxWidthExceeded`, `MaxHeightExceeded`, `MaxMegapixelsExceeded`, `FormatNotAllowed`, `NativeError`.
-**Argument-shape mistakes** (zero dimension, out-of-bounds crop, non-quarter-turn rotate, empty QR
-text) throw `ArgumentException`, not `ImagingException`.
+**Argument-shape mistakes** (zero dimension, out-of-bounds crop, non-quarter-turn rotate, a negative
+blur sigma, empty or too-long QR text) throw `ArgumentException`, not `ImagingException`.
 
 ## Optional DI
 
@@ -179,13 +182,12 @@ services.AddPragmaticImaging(ImagingOptions.Strict);   // in an IStartupStep, or
 - **Dispose the pipeline** (`using`): it owns native memory the GC can't reclaim promptly.
 - **Not thread-safe**: one `ImagePipeline` per thread/task. `ImageInfo`/`QrCode`/`ImageConverter`/`ImageBatch` are safe (each opens its own pipeline).
 - **`Load(Stream)` drains the stream**: rewind if you need to re-read.
-- **EXIF is stripped on any re-encode** (this is how `StripExif` works); orientation isn't auto-applied.
-  ⚠️ A portrait photo from a phone is stored landscape with an orientation tag: its thumbnail comes out
-  **sideways**, and after the re-encode the tag is gone. This library does not read the tag either; read
-  it before processing with an EXIF reader of your choice and apply `Rotate(...)`/`Flip*()` yourself, or
-  test your upload path with a real phone photo before relying on the thumbnails.
+- **EXIF orientation is applied on load for JPEG and PNG**: a portrait phone photo comes out upright.
+  ⚠️ **Do not rotate by the tag yourself**: the image is already turned, and a `Rotate(...)` from the tag
+  turns it twice. WebP, AVIF, GIF, BMP and TIFF still go through the native library, which ignores the
+  tag: only for those, read it and rotate. An encode writes no EXIF; `StripExif` keeps the orientation.
 - **sRGB assumed**; no colour-space conversion, no arbitrary-angle rotation, no text/draw, no animation (first frame only).
-- **Async methods offload native CPU work to the thread pool**; the `CancellationToken` is checked between operations, not during a native call.
+- **Async methods offload CPU work to the thread pool**; the `CancellationToken` is checked between operations, not during a decode, encode or operation.
 
 ## Examples
 

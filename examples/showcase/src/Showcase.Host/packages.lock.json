@@ -501,6 +501,12 @@
         }
       },
       "pragmatic.imaging": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Imaging.Codecs": "[1.0.0, )"
+        }
+      },
+      "pragmatic.imaging.codecs": {
         "type": "Project"
       },
       "pragmatic.internationalization": {

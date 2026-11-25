@@ -51,7 +51,7 @@
     <!-- Documents — CSV, the format an accounts department asks for. The columns are declared on the
          row type and the serializer is generated, so nothing here formats a header by hand. -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Documents\src\Pragmatic.Documents.Csv\Pragmatic.Documents.Csv.csproj" />
-    <!-- Imaging — QR / thumbnail endpoint: exercises the Rust native pipeline (encode→decode→resize→encode) E2E over HTTP -->
+    <!-- Imaging — QR / thumbnail endpoint: exercises the managed PNG pipeline (encode→decode→resize→encode) E2E over HTTP -->
     <ProjectReference Include="..\..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
   </ItemGroup>
 

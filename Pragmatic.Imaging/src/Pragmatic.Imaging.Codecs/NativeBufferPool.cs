@@ -15,6 +15,7 @@ public static unsafe class NativeBufferPool
 
     private static readonly ConcurrentDictionary<nuint, ConcurrentBag<nint>> Blocks = new();
     private static long _retainedBytes;
+    private static long _rentedBytes;
 
     /// <summary>How much the pool may hold at rest. Default 128 MB: eight 4 MP RGBA images.</summary>
     public static long RetainedLimitBytes { get; set; } = 128L * 1024 * 1024;
@@ -22,9 +23,17 @@ public static unsafe class NativeBufferPool
     /// <summary>Bytes held at rest right now.</summary>
     public static long RetainedBytes => Interlocked.Read(ref _retainedBytes);
 
+    /// <summary>
+    ///     Every byte ever rented, returned or not: it only grows. The managed heap does not see pixel
+    ///     memory, so the difference between two readings is where a caller looks to know what an
+    ///     operation allocated, even when the operation gave it back before it returned (or threw).
+    /// </summary>
+    public static long RentedBytes => Interlocked.Read(ref _rentedBytes);
+
     /// <summary>A 64-byte-aligned block of exactly <paramref name="length" /> bytes, contents undefined.</summary>
     public static byte* Rent(nuint length)
     {
+        Interlocked.Add(ref _rentedBytes, (long)length);
         if (Blocks.TryGetValue(length, out var bag) && bag.TryTake(out var pointer))
         {
             Interlocked.Add(ref _retainedBytes, -(long)length);

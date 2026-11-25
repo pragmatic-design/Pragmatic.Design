@@ -32,7 +32,7 @@ public static class PngEncoder
         output.Write(Signature);
         WriteHeader(output, image.Width, image.Height, opaque ? PngColorType.Rgb : PngColorType.Rgba);
 
-        var idat = new PngIdatWriter(output);
+        using var idat = new PngIdatWriter(output);
         var pool = ArrayPool<byte>.Shared;
         var prior = pool.Rent(rowBytes);
         var raw = pool.Rent(rowBytes);

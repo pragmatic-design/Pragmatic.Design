@@ -8,21 +8,20 @@ internal static class TestHelper
     /// <summary>
     /// Check if the native library is available on this platform.
     /// </summary>
+    /// <remarks>
+    /// Probes the library itself: PNG, JPEG and QR codes no longer reach it, so a round trip through
+    /// them would answer "available" on a machine without it.
+    /// </remarks>
     internal static bool IsNativeAvailable()
     {
         try
         {
-            var png = CreateTestPng(2, 2);
-            _ = ImageInfo.FromBytes(png);
+            _ = Native.NativeError.GetLastError();
             return true;
         }
         catch (DllNotFoundException)
         {
             return false;
-        }
-        catch
-        {
-            return true; // DLL loaded but other error = native is available
         }
     }
 

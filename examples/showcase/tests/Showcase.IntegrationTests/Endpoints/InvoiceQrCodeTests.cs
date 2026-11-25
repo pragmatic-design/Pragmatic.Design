@@ -6,7 +6,7 @@ namespace Showcase.IntegrationTests.Endpoints;
 
 /// <summary>
 ///     E2E test for the Pragmatic.Imaging integration.
-///     Exercises the full Rust native pipeline over HTTP — QR encode → decode → resize → PNG encode —
+///     Exercises the managed PNG pipeline over HTTP — QR encode → decode → resize → PNG encode —
 ///     via <c>GET /api/invoices/qr.png</c>, asserting a valid, non-empty PNG is returned.
 ///     This is the Imaging module's Showcase end-to-end coverage (no DB needed; the feature is stateless).
 /// </summary>

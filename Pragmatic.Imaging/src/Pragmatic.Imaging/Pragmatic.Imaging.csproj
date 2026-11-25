@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Image processing via Rust native library: decode, encode, resize, crop, filters, QR. Currently ships win-x64; other platforms via CI.</Description>
+    <Description>Image processing for servers: decode, encode, resize, crop, filters, QR, EXIF orientation and stripping. PNG, JPEG and every operation run managed; WebP, AVIF, GIF, BMP and TIFF through a native library shipped for win-x64, linux-x64 and osx-arm64.</Description>
     <PackageTags>imaging;image;resize;crop;qr;webp;avif;native;aot</PackageTags>
   </PropertyGroup>
 
@@ -44,10 +44,17 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Pragmatic.Imaging.Tests" />
+    <!-- The benchmarks call the native library through these P/Invoke signatures: the baseline the
+         managed engine is measured against, now that no public path reaches it for PNG and JPEG. -->
+    <InternalsVisibleTo Include="Pragmatic.Imaging.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
   </ItemGroup>
 
 </Project>

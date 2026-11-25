@@ -16,6 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
+    <!-- The module on top of them: its PNG and JPEG paths, which need no native library. The reference
+         copies the Rust library into the output anyway; publish-and-smoke-codecs.ps1 deletes it before
+         running the binary, and the binary checks it is gone. -->
+    <ProjectReference Include="..\..\..\Pragmatic.Imaging\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
   </ItemGroup>
 
   <!-- The package ships this file as buildTransitive; a project reference does not carry it, so the smoke

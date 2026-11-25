@@ -15,7 +15,7 @@ Five concrete scenarios, each ~3 minutes.
 dotnet add package Pragmatic.Imaging
 ```
 
-The NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner, and no test runs it on macOS yet. See [native-deployment.md](/modules/imaging/native-deployment/).
+PNG, JPEG, every operation and QR codes are managed. For WebP, AVIF, GIF, BMP and TIFF the NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner, and no test runs it on macOS yet. See [native-deployment.md](/modules/imaging/native-deployment/).
 
 ---
 
@@ -141,7 +141,7 @@ When you don't need a pipeline, `ImageConverter` wraps the common cases:
 ```csharp
 byte[] thumb = await ImageConverter.ThumbnailAsync(bytes, 400, 400, ImageFormat.Jpeg, quality: 90);
 byte[] webp  = await ImageConverter.ConvertAsync(bytes, ImageFormat.WebP);
-byte[] clean = ImageConverter.StripExif(bytes);   // drop metadata via re-encode
+byte[] clean = ImageConverter.StripExif(bytes);   // drop EXIF/XMP; a JPEG or PNG is not re-encoded
 ```
 
 ### Streaming to an HTTP response

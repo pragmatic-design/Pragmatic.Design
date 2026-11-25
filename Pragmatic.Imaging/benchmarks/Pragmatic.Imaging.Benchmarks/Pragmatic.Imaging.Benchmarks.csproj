@@ -3,11 +3,14 @@
   <PropertyGroup>
     <!-- BenchmarkDotNet requires instance methods. -->
     <NoWarn>$(NoWarn);CA1822</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
-    <!-- Today's Rust-backed module: the baseline the managed codecs replace. -->
+    <!-- The module, for the native library it still ships: the baseline, called through its P/Invoke
+         signatures (internal, visible to this project), since the module's own PNG and JPEG paths are
+         managed now. -->
     <ProjectReference Include="..\..\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
   </ItemGroup>
 

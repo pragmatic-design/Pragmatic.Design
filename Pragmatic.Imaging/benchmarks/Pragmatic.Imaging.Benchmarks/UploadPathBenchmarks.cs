@@ -13,10 +13,9 @@ namespace Pragmatic.Imaging.Benchmarks;
 ///     JPEG encode of a thumbnail-sized image.
 /// </summary>
 /// <remarks>
-///     The first four compare the managed codecs with today's Rust-backed Pragmatic.Imaging, the
-///     baseline. The stages are cumulative because the native pipeline has no public entry from raw
-///     pixels: the cost of one stage is the difference between two rows, for both engines alike. The last
-///     two have no native row for the same reason. Both engines run single-threaded.
+///     Every category compares the managed codecs with the Rust library Pragmatic.Imaging shipped them
+///     to replace, called directly (<see cref="NativePipeline" />), the baseline. Both engines run
+///     single-threaded.
 /// </remarks>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
@@ -71,14 +70,21 @@ public class UploadPathBenchmarks
     public byte[] Png_Managed() => ManagedPipeline.DecodeEncodePng(_png);
 
     // The native encoder writes a larger file: little compression. This row is the managed encoder at
-    // its fastest zlib level, the comparison the time alone cannot make.
+    // its fastest zlib level, the comparison the time alone cannot make, and the level Pragmatic.Imaging
+    // writes (verify prints the three sizes).
     [Benchmark, BenchmarkCategory("4 PNG 2MP decode+encode")]
     public byte[] Png_Managed_Fastest() => ManagedPipeline.DecodeEncodePng(_png, System.IO.Compression.CompressionLevel.Fastest);
 
     [Benchmark(Baseline = true), BenchmarkCategory("5 Thumbnail from RGBA 4MP")]
+    public unsafe int Resize_Native() => NativePipeline.ThumbnailFromRgba(_rgbaBuffer.Pointer, (nuint)_rgbaBuffer.ByteLength, Fixtures.JpegWidth, Fixtures.JpegHeight);
+
+    [Benchmark, BenchmarkCategory("5 Thumbnail from RGBA 4MP")]
     public int Resize_Managed() => ManagedPipeline.ThumbnailFromRgba(_rgbaBuffer);
 
     [Benchmark(Baseline = true), BenchmarkCategory("6 Encode JPEG 400x267 q85")]
+    public unsafe byte[] Encode_Native() => NativePipeline.EncodeJpeg(_smallBuffer.Pointer, (nuint)_smallBuffer.ByteLength, Fixtures.SmallWidth, Fixtures.SmallHeight);
+
+    [Benchmark, BenchmarkCategory("6 Encode JPEG 400x267 q85")]
     public byte[] Encode_Managed() => ManagedPipeline.EncodeJpeg(_smallBuffer);
 
     /// <summary>The standard tables in one pass, as libjpeg-turbo's default does.</summary>

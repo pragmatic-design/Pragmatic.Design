@@ -1,6 +1,6 @@
 # Architecture and Core Concepts
 
-`Pragmatic.Imaging` is a .NET binding over a Rust native library built on the `image` crate. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
+`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG and every operation, and a Rust native library built on the `image` crate, still shipped, for WebP, AVIF, GIF, BMP and TIFF until their managed codecs land. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
 
 ---
 
@@ -12,35 +12,32 @@ Server-side image processing in .NET typically means:
 - **System.Drawing.Common**: dead end on non-Windows, no modern format support
 - **Call out to ImageMagick / FFmpeg**: works but adds a spawned-process failure domain
 
-Pragmatic.Imaging takes a different shape: a small, purposeful API over a Rust core that handles decoding, encoding, and transformation for the formats servers actually care about.
+Pragmatic.Imaging takes a different shape: a small, purposeful API over its own codecs for the formats servers actually care about.
 
 ## The approach
 
-- **Rust core**: a native library compiled from the `image` crate plus a thin FFI wrapper. Decoding, encoding, and transformations happen native-side.
-- **.NET binding**: a small managed API that owns the native buffer, exposes a fluent pipeline, and maps errors to `ImagingException`.
-- **Controlled native memory**: decoded pixels live in native memory; the binding deals in pointers and lengths and copies to managed arrays only when it has to.
+- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
+- **Native library, for the rest**: WebP, AVIF, GIF, BMP and TIFF are decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
+- **Controlled native memory**: decoded pixels live in a `PixelBuffer`, native memory from a pool the garbage collector does not move or count, whichever engine decoded them.
 
 ```
-    ┌────────────────────────────────────────────┐
-    │   ImagePipeline (managed)                  │
-    │   ┌─────────────────────────────────────┐  │
-    │   │ native handle → RawImage (unmanaged)│  │
-    │   └─────────────────────────────────────┘  │
-    │                                            │
-    │   Resize → Crop → Grayscale → Encode…      │
-    └────────────────────────────────────────────┘
-                       │  LibraryImport P/Invoke
-                       ▼
-    ┌────────────────────────────────────────────┐
-    │   Pragmatic.Imaging.Native.dll / .so / .dylib │
-    │   ┌─────────────────────────────────────┐  │
-    │   │ image crate + FFI shims             │  │
-    │   └─────────────────────────────────────┘  │
-    └────────────────────────────────────────────┘
+    ┌──────────────────────────────────────────────────┐
+    │   ImagePipeline                                  │
+    │   ┌───────────────────────────────────────────┐  │
+    │   │ PixelBuffer (pooled native memory)        │  │
+    │   └───────────────────────────────────────────┘  │
+    │   Resize → Crop → Grayscale → …  (managed)       │
+    └──────────────────────────────────────────────────┘
+          │ load / encode, by format
+          ├──────────────────────────┐
+          ▼                          ▼
+    Pragmatic.Imaging.Codecs   Pragmatic.Imaging.Native.dll / .so / .dylib
+    PNG, JPEG (managed)        WebP, AVIF, GIF, BMP, TIFF (LibraryImport P/Invoke)
 ```
 
 The native library file is named `Pragmatic.Imaging.Native.dll` on Windows and
-`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS: the name the P/Invoke asks for.
+`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS: the name the P/Invoke asks for. An
+application that only reads and writes PNG and JPEG never loads it.
 
 ---
 
@@ -58,9 +55,9 @@ var png = pipeline
     .Encode(ImageFormat.Png);
 ```
 
-Each method returns the same `ImagePipeline` instance: it's an **in-place builder**, not an immutable chain. You have one native buffer for the image, and every operation replaces it with the transformed result. This keeps native memory use predictable.
+Each method returns the same `ImagePipeline` instance: it's an **in-place builder**, not an immutable chain. You have one pixel buffer for the image: the flips, greyscale, brightness and contrast change it in place, and the other operations replace it with a new one and give the old one back to the pool. This keeps native memory use predictable.
 
-`Encode`/`EncodeTo` **do not** dispose the pipeline: you can encode the same pipeline state to several formats, or keep transforming afterwards. The native buffer is released only when you dispose the pipeline (via `using`); forgetting to dispose leaks native memory until the finaliser runs, so always use `using` or `await using`.
+`Encode`/`EncodeTo` **do not** dispose the pipeline: you can encode the same pipeline state to several formats, or keep transforming afterwards. The pixel buffer goes back to the pool only when you dispose the pipeline (via `using`); a forgotten pipeline holds it until the finaliser runs, so always use `using` or `await using`.
 
 ```csharp
 using var pipe = ImagePipeline.Load(bytes);
@@ -98,14 +95,15 @@ using var pipe = ImagePipeline.Load(fileStream);    // reads the whole stream (b
 - the format is identified at load time (not lazily)
 - invalid input fails fast with `ImagingException { Reason = DecodeFailed }`
 - once loaded, transformations don't pay the decode cost again
+- a JPEG or PNG with an EXIF orientation is loaded the way it is shown: a portrait phone photo, stored sideways with tag 6, comes out upright, and `Width`/`Height` are the shown size. `ImageInfo.FromBytes` reports that size too, so the limits are checked against the image that will exist.
 
 `LoadAsync(ReadOnlyMemory<byte>, ct, options)` and `LoadAsync(Stream, ct, options)` offload the CPU-bound decode to the thread pool.
 
 ### What a call holds in memory
 
-- **Decoded pixels:** width × height × 4 bytes of native memory per live pipeline, released on dispose.
+- **Decoded pixels:** width × height × 4 bytes of native memory per live pipeline, given back to the pool on dispose. `NativeBufferPool.RentedBytes` (in `Pragmatic.Imaging.Codecs`) counts every byte rented, for a caller that wants to measure it.
 - **Encoded input read from a `Stream`:** `Load(Stream)`, `LoadAsync(Stream)` and `ImageInfo.FromStream` read the encoded bytes into a buffer rented from `ArrayPool<byte>.Shared` and return it once decoded. A seekable stream sizes the buffer from its remaining length; otherwise the buffer starts at 80 KB and doubles, up to `MaxInputBytes` (or `maxBytes` for `FromStream`). So the input is held once, for the duration of the decode, and is not a fresh allocation each call.
-- **Encoded output:** `EncodeTo(stream)` and `QrCode.GeneratePng(text, stream)` write straight from the encoder's native buffer, without a managed copy. `Encode` and `GeneratePng(text)` return a `byte[]`, which is one copy of the encoded image. `EncodeToStreamAsync` goes through `EncodeAsync`, so it makes that copy too.
+- **Encoded output:** `EncodeTo(stream)` and `QrCode.GeneratePng(text, stream)` write PNG and JPEG straight into the stream (the other formats from the native encoder's buffer), without a managed copy. `Encode` and `GeneratePng(text)` return a `byte[]`, which is one copy of the encoded image. `EncodeToStreamAsync` goes through `EncodeAsync`, so it makes that copy too.
 
 ### Inspecting without decoding
 
@@ -188,7 +186,7 @@ byte[][] thumbs = await ImageBatch.ThumbnailsAsync(
 - `ImagePipeline`: **not thread-safe**. One pipeline per thread/task.
 - `ImageInfo.FromBytes`, `QrCode.GeneratePng`, `ImageConverter.*`, `ImageBatch.*`: safe to call concurrently (each opens its own pipeline).
 
-Sharing one `ImagePipeline` across threads corrupts its native state. The binding does not synchronise for you.
+Sharing one `ImagePipeline` across threads corrupts its pixel buffer. The pipeline does not synchronise for you.
 
 ---
 
@@ -209,13 +207,13 @@ catch (ImagingException ex) when (ex.Reason == ImagingError.MaxMegapixelsExceede
 
 `ImagingError` values: `NativeError`, `DecodeFailed`, `EncodeFailed`, `UnsupportedFormat`, `InputTooLarge`, `MaxWidthExceeded`, `MaxHeightExceeded`, `MaxMegapixelsExceeded`, `FormatNotAllowed`.
 
-**Argument-shape mistakes throw `ArgumentException`, not `ImagingException`**: a zero `Resize` dimension, an out-of-bounds `Crop`, a `Rotate` that isn't 90/180/270, an empty QR string. Those are programming errors, distinct from runtime imaging failures.
+**Argument-shape mistakes throw `ArgumentException`, not `ImagingException`**: a zero `Resize` dimension, an out-of-bounds `Crop`, a `Rotate` that isn't 90/180/270, a negative or non-finite blur sigma (`ArgumentOutOfRangeException`), an empty QR string or one too long for a QR code. Those are programming errors, distinct from runtime imaging failures. Encoding to `ImageFormat.Unknown` throws `ImagingException { Reason = UnsupportedFormat }`.
 
 ---
 
 ## AOT and trimming
 
-The binding is AOT-compatible: no reflection, no dynamic code generation, `LibraryImport`-generated P/Invoke. The native library ships as a `runtimes/{rid}/native/` asset in the NuGet.
+The module is AOT-compatible: no reflection, no dynamic code generation, `LibraryImport`-generated P/Invoke for the native formats. `Pragmatic.Imaging.Codecs` ships a `buildTransitive` targets file that compiles its AVX2 paths in under Native AOT (see the module README). The native library ships as a `runtimes/{rid}/native/` asset in the NuGet; the `Pragmatic.Aot.Codecs` smoke publishes PNG, JPEG, the operations and QR codes Native AOT with no native library next to the binary.
 
 See [native-deployment.md](native-deployment.md) for platform coverage and self-contained publish.
 
